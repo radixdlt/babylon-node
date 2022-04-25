@@ -65,13 +65,13 @@
 package com.radixdlt.network.messaging;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.middleware2.network.Message;
+import com.radixdlt.middleware2.network.PeerPingMessage;
+import com.radixdlt.middleware2.network.PeerPongMessage;
 import com.radixdlt.network.p2p.NodeId;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
-import com.radixdlt.middleware2.network.PeerPingMessage;
-import com.radixdlt.middleware2.network.PeerPongMessage;
-import com.radixdlt.middleware2.network.Message;
 
 /**
  * Outbound message wrapper with priority, time and destination.

@@ -70,10 +70,10 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.Random;
 import org.junit.Test;
 

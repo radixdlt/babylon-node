@@ -75,7 +75,6 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.statecomputer.forks.ForksEpochStore;
 import com.radixdlt.utils.time.Time;
-
 import java.time.Duration;
 import java.util.List;
 

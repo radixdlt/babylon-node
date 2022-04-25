@@ -68,8 +68,8 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SyncConfig;
 import java.util.stream.IntStream;
 import org.junit.Test;

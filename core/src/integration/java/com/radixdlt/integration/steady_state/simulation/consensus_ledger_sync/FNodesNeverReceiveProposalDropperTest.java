@@ -66,7 +66,6 @@ package com.radixdlt.integration.steady_state.simulation.consensus_ledger_sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.harness.simulation.NetworkDroppers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -74,6 +73,7 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SyncConfig;
 import java.util.Collection;
 import java.util.List;

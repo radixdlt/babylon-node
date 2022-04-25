@@ -66,10 +66,10 @@ package com.radixdlt.consensus;
 
 import static org.mockito.Mockito.mock;
 
+import com.radixdlt.serialization.SerializeMessageObject;
 import com.radixdlt.utils.SerializerTestDataGenerator;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
-import com.radixdlt.serialization.SerializeMessageObject;
 
 public class TimeoutCertificateTest extends SerializeMessageObject<TimeoutCertificate> {
 

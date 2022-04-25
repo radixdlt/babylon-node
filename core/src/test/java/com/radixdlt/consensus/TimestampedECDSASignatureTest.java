@@ -68,9 +68,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.serialization.SerializeObject;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
-import com.radixdlt.serialization.SerializeObject;
 
 public class TimestampedECDSASignatureTest extends SerializeObject<TimestampedECDSASignature> {
   public TimestampedECDSASignatureTest() {

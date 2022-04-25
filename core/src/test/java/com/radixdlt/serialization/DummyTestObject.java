@@ -68,6 +68,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.middleware2.network.BasicContainer;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.utils.UInt128;
 import java.util.ArrayList;
@@ -76,7 +77,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import com.radixdlt.middleware2.network.BasicContainer;
 
 /** A dummy object containing various primitives to test serialization / deserialization speed */
 @SerializerId2("test.dummy_test_object_1")

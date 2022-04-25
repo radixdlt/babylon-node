@@ -68,8 +68,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
-import io.reactivex.rxjava3.subjects.PublishSubject;
 import com.radixdlt.middleware2.network.Message;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 
 public class MessageCentralMockProvider {
 

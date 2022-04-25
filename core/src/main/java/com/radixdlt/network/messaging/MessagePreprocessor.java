@@ -69,6 +69,7 @@ import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
 import static java.util.Optional.ofNullable;
 
 import com.google.inject.Provider;
+import com.radixdlt.middleware2.network.Message;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.p2p.NodeId;
@@ -83,7 +84,6 @@ import java.time.Duration;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.radixdlt.middleware2.network.Message;
 
 /** Handles incoming messages. Deserializes raw messages and validates them. */
 final class MessagePreprocessor {

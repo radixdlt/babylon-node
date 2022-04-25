@@ -91,7 +91,6 @@ import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.utils.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.checkpoint.Genesis;
@@ -106,6 +105,8 @@ import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.IOUtils;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
@@ -114,7 +115,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
 import org.json.JSONObject;
-import com.radixdlt.utils.IOUtils;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {

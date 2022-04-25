@@ -67,6 +67,7 @@ package com.radixdlt.network.messaging;
 import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
 import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
 
+import com.radixdlt.middleware2.network.Message;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.p2p.NodeId;
@@ -85,7 +86,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.radixdlt.middleware2.network.Message;
 
 /*
  * This could be moved into MessageCentralImpl at some stage, but has been

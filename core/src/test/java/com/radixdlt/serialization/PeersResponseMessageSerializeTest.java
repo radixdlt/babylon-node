@@ -66,8 +66,8 @@ package com.radixdlt.serialization;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.middleware2.network.PeersResponseMessage;
+import com.radixdlt.network.p2p.RadixNodeUri;
 
 public class PeersResponseMessageSerializeTest
     extends SerializeMessageObject<PeersResponseMessage> {

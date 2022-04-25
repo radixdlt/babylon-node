@@ -74,12 +74,12 @@ import com.google.inject.Guice;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.serialization.TestSetupUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
 import org.assertj.core.util.Files;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import com.radixdlt.serialization.TestSetupUtils;
 
 public class RadixNodeModuleTest {
   @NetworkId private int networkId;

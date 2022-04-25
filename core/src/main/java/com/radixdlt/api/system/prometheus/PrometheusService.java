@@ -64,25 +64,26 @@
 
 package com.radixdlt.api.system.prometheus;
 
-import static com.radixdlt.api.system.prometheus.PrometheusService.JmxMetric.jmxMetric;
 import static com.radixdlt.RadixNodeApplication.SYSTEM_VERSION_KEY;
 import static com.radixdlt.RadixNodeApplication.VERSION_STRING_KEY;
+import static com.radixdlt.api.system.prometheus.PrometheusService.JmxMetric.jmxMetric;
 
 import com.google.inject.Inject;
+import com.radixdlt.RadixNodeApplication;
 import com.radixdlt.api.service.EngineStatusService;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.monitoring.InMemorySystemInfo;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.utils.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.forks.CurrentForkView;
-import com.radixdlt.monitoring.InMemorySystemInfo;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.*;
@@ -94,7 +95,6 @@ import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeDataSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.radixdlt.RadixNodeApplication;
 
 public class PrometheusService {
   private static final Logger log = LogManager.getLogger();
@@ -244,7 +244,8 @@ public class PrometheusService {
   }
 
   private void addBranchAndCommit(StringBuilder builder) {
-    var branchAndCommit = RadixNodeApplication.systemVersionInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
+    var branchAndCommit =
+        RadixNodeApplication.systemVersionInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
     appendField(builder, "branch_and_commit", branchAndCommit);
   }
 

@@ -67,10 +67,10 @@ package com.radixdlt.network.p2p.addressbook;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.serialization.SerializeMessageObject;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;
-import com.radixdlt.serialization.SerializeMessageObject;
 
 public class AddressBookEntrySerializeEmptyTest extends SerializeMessageObject<AddressBookEntry> {
   public AddressBookEntrySerializeEmptyTest() {

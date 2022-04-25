@@ -68,10 +68,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.serialization.SerializeMessageObject;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
-import com.radixdlt.serialization.SerializeMessageObject;
 
 public class GetPeersMessageTest extends SerializeMessageObject<GetPeersMessage> {
 

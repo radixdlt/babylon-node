@@ -70,12 +70,11 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.utils.properties.RuntimeProperties;
-
 import java.util.function.Function;
 
 /** Configures the key to be used for signing things as a BFT validator. */

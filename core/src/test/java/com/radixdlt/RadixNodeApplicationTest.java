@@ -64,8 +64,8 @@
 
 package com.radixdlt;
 
-import static org.junit.Assert.*;
 import static com.radixdlt.RadixNodeApplication.calculateVersionString;
+import static org.junit.Assert.*;
 
 import java.util.Map;
 import org.junit.Test;

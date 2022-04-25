@@ -76,7 +76,6 @@ import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.harness.simulation.network.LatencyProvider;
 import com.radixdlt.harness.simulation.network.RandomLatencyProvider;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
-
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;

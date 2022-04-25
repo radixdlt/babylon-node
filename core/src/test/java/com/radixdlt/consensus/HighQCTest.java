@@ -70,11 +70,11 @@ import static org.mockito.Mockito.mock;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.serialization.SerializeObject;
 import com.radixdlt.utils.LedgerHeaderMock;
 import java.util.Optional;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
-import com.radixdlt.serialization.SerializeObject;
 
 public class HighQCTest extends SerializeObject<HighQC> {
   public HighQCTest() {

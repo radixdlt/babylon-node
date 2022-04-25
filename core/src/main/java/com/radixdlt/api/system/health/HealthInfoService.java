@@ -73,9 +73,9 @@ import static com.radixdlt.api.system.health.NodeStatus.UP;
 import static com.radixdlt.monitoring.SystemCounters.CounterType;
 
 import com.google.inject.Inject;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.monitoring.SystemCounters;
 import java.util.EnumMap;
 
 public class HealthInfoService {

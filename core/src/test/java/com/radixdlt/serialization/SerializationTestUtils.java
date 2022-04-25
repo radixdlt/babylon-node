@@ -71,7 +71,6 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.radixdlt.serialization.DsonOutput.Output;
-
 import java.io.IOException;
 
 /** Utilities for test encoding and decoding with serializers. */

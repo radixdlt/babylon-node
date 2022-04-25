@@ -69,10 +69,10 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.IntStream;

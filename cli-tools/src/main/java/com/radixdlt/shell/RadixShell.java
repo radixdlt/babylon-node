@@ -71,8 +71,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.modules.RadixNodeModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
@@ -85,6 +83,9 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.middleware2.network.Message;
+import com.radixdlt.modules.ModuleRunner;
+import com.radixdlt.modules.RadixNodeModule;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.network.p2p.NodeId;
@@ -95,10 +96,10 @@ import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.utils.properties.RuntimeProperties;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import io.reactivex.rxjava3.disposables.Disposable;
 import java.io.File;
 import java.io.IOException;
@@ -113,7 +114,6 @@ import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
-import com.radixdlt.middleware2.network.Message;
 
 @SuppressWarnings("unused")
 public final class RadixShell {

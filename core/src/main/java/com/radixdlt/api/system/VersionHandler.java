@@ -68,8 +68,8 @@ import static com.radixdlt.RadixNodeApplication.SYSTEM_VERSION_KEY;
 import static com.radixdlt.RadixNodeApplication.VERSION_STRING_KEY;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.system.openapitools.model.VersionResponse;
 import com.radixdlt.RadixNodeApplication;
+import com.radixdlt.api.system.openapitools.model.VersionResponse;
 
 public class VersionHandler extends SystemGetJsonHandler<VersionResponse> {
   private final String version;
@@ -77,7 +77,10 @@ public class VersionHandler extends SystemGetJsonHandler<VersionResponse> {
   @Inject
   public VersionHandler() {
     this.version =
-        (String) RadixNodeApplication.systemVersionInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
+        (String)
+            RadixNodeApplication.systemVersionInfo()
+                .get(SYSTEM_VERSION_KEY)
+                .get(VERSION_STRING_KEY);
   }
 
   @Override

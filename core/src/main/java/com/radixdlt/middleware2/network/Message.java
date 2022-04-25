@@ -70,10 +70,9 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.time.Time;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
-
-import com.radixdlt.utils.time.Time;
 
 public abstract class Message extends BasicContainer {
   @Override

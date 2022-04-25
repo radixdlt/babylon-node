@@ -65,10 +65,9 @@
 package com.radixdlt.serialization;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.serialization.DsonOutput.Output;
-
-import java.util.Objects;
 import com.radixdlt.middleware2.network.BasicContainer;
+import com.radixdlt.serialization.DsonOutput.Output;
+import java.util.Objects;
 
 @SerializerId2("test.dummy_test_object_2")
 public final class DummyTestObject2 extends BasicContainer {

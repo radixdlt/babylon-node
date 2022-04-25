@@ -69,7 +69,6 @@ import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput.Output;
-
 import java.nio.charset.StandardCharsets;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;

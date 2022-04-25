@@ -76,9 +76,9 @@ import static org.mockito.Mockito.mock;
 
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.ScheduledStatsCollecting;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.environment.ScheduledEventDispatcher;
 import java.util.stream.IntStream;
 import org.junit.Test;
 

@@ -69,18 +69,19 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.modules.RadixNodeModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.modules.ModuleRunner;
+import com.radixdlt.modules.RadixNodeModule;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.utils.properties.RuntimeProperties;
 import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
+import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.MemoryLeakDetector;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import io.undertow.Undertow;
 import java.io.IOException;
 import java.io.InputStream;
@@ -96,7 +97,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
-import com.radixdlt.utils.IOUtils;
 
 public final class RadixNodeApplication {
   private static final Logger log = LogManager.getLogger();
@@ -268,7 +268,12 @@ public final class RadixNodeApplication {
   private static void dumpExecutionLocation() {
     try {
       String jarFile =
-          RadixNodeApplication.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+          RadixNodeApplication.class
+              .getProtectionDomain()
+              .getCodeSource()
+              .getLocation()
+              .toURI()
+              .getPath();
       System.setProperty("radix.jar", jarFile);
 
       String jarPath = jarFile;

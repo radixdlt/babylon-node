@@ -65,10 +65,10 @@
 package com.radixdlt.harness.simulation.monitors.consensus;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 

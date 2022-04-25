@@ -69,9 +69,9 @@ import static com.radixdlt.utils.functional.Tuple.unitResult;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.util.concurrent.RateLimiter;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.P2PConfig;
@@ -89,6 +89,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
 import com.radixdlt.utils.functional.Result;
 import com.radixdlt.utils.functional.Tuple.Unit;
+import com.radixdlt.utils.time.Time;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -107,7 +108,6 @@ import java.util.Optional;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.radixdlt.utils.time.Time;
 
 /**
  * Class that manages TCP connection channel. It takes care of the initial handshake, creating the

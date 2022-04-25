@@ -69,13 +69,13 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import com.google.common.collect.Lists;
+import com.radixdlt.middleware2.network.Message;
+import com.radixdlt.middleware2.network.PeerPingMessage;
+import com.radixdlt.middleware2.network.PeerPongMessage;
 import com.radixdlt.network.p2p.NodeId;
 import java.util.ArrayList;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
-import com.radixdlt.middleware2.network.PeerPingMessage;
-import com.radixdlt.middleware2.network.PeerPongMessage;
-import com.radixdlt.middleware2.network.Message;
 
 public class OutboundMessageEventTest {
 

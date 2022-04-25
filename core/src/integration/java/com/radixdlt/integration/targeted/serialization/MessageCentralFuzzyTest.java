@@ -73,9 +73,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.Slow;
+import com.radixdlt.middleware2.network.Message;
+import com.radixdlt.middleware2.network.PeerPingMessage;
+import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.network.messaging.EventQueueFactory;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.messaging.MessageCentralConfiguration;
@@ -90,15 +92,13 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
+import com.radixdlt.utils.time.Time;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.Comparator;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import com.radixdlt.middleware2.network.PeerPingMessage;
-import com.radixdlt.middleware2.network.Message;
-import com.radixdlt.utils.time.Time;
 
 @Category(Slow.class)
 public class MessageCentralFuzzyTest {

@@ -80,7 +80,6 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.DtoTxnsAndProof;
@@ -90,9 +89,11 @@ import com.radixdlt.middleware2.network.GetVerticesRequestMessage;
 import com.radixdlt.middleware2.network.GetVerticesResponseMessage;
 import com.radixdlt.middleware2.network.LedgerStatusUpdateMessage;
 import com.radixdlt.middleware2.network.MempoolAddMessage;
+import com.radixdlt.middleware2.network.Message;
 import com.radixdlt.middleware2.network.StatusResponseMessage;
 import com.radixdlt.middleware2.network.SyncRequestMessage;
 import com.radixdlt.middleware2.network.SyncResponseMessage;
+import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.networks.Addressing;
@@ -101,6 +102,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
+import com.radixdlt.utils.time.Time;
 import java.io.IOException;
 import java.security.PrivilegedAction;
 import java.time.Duration;
@@ -111,8 +113,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import com.radixdlt.middleware2.network.Message;
-import com.radixdlt.utils.time.Time;
 
 @RunWith(Parameterized.class)
 public class MessagePreprocessorTest {

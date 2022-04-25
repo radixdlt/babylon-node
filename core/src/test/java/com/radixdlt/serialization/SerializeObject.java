@@ -64,13 +64,12 @@
 
 package com.radixdlt.serialization;
 
+import static com.radixdlt.serialization.SerializationTestUtils.testEncodeDecode;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
-import static com.radixdlt.serialization.SerializationTestUtils.testEncodeDecode;
 
 import com.radixdlt.serialization.DsonOutput.Output;
-
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.Level;

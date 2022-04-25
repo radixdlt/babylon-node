@@ -64,11 +64,10 @@
 
 package com.radixdlt.serialization;
 
-import static org.junit.Assume.assumeFalse;
 import static com.radixdlt.serialization.SerializationTestUtils.testEncodeDecode;
+import static org.junit.Assume.assumeFalse;
 
 import com.radixdlt.serialization.DsonOutput.Output;
-
 import java.util.function.Supplier;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;

@@ -68,6 +68,7 @@ import static com.radixdlt.RadixNodeApplication.SYSTEM_VERSION_KEY;
 import static com.radixdlt.RadixNodeApplication.VERSION_STRING_KEY;
 
 import com.google.inject.Inject;
+import com.radixdlt.RadixNodeApplication;
 import com.radixdlt.api.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.openapitools.model.Bech32HRPs;
 import com.radixdlt.api.core.openapitools.model.NetworkConfigurationResponse;
@@ -75,7 +76,6 @@ import com.radixdlt.api.core.openapitools.model.NetworkConfigurationResponseVers
 import com.radixdlt.api.core.openapitools.model.NetworkIdentifier;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.RadixNodeApplication;
 
 public class NetworkConfigurationHandler
     extends CoreJsonRpcHandler<Void, NetworkConfigurationResponse> {

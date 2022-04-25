@@ -71,9 +71,9 @@ import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.serialization.SerializeMessageObject;
 import com.radixdlt.utils.LedgerHeaderMock;
 import java.util.Optional;
-import com.radixdlt.serialization.SerializeMessageObject;
 
 public class GetVerticesErrorResponseMessageSerializeTest
     extends SerializeMessageObject<GetVerticesErrorResponseMessage> {
