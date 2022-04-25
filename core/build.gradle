@@ -148,12 +148,6 @@ classes {
     dependsOn(versionFile)
 }
 
-jar {
-    manifest {
-        attributes 'Multi-Release': 'true'
-    }
-}
-
 integrationTest {
     jacoco {
         // We don't want integration tests included in code coverage.
