@@ -28,7 +28,7 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-      - name: Unit tests and Sonar analisys
+      - name: Unit tests and Sonar analysis
         run: ./gradlew clean check jacocoTestReport sonarqube --stacktrace --refresh-dependencies -Dsonar.login=$SONAR_TOKEN
         env:
           # Needed to get some information about the pull request, if any
@@ -54,8 +54,8 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-      - name: integration tests
-        run: ./gradlew integrationTest --refresh-dependencies
+      - name: Run steady-state integration tests
+        run: ./gradlew integrationTest --refresh-dependencies --stacktrace --scan
   targeted-integration:
     name: Targeted integration tests
     runs-on: ubuntu-20.04
@@ -75,5 +75,5 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-      - name: targeted integration tests
+      - name: Run targeted integration tests
         run: ./gradlew targetedIntegrationTest --refresh-dependencies
