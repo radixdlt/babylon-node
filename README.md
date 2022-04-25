@@ -1,4 +1,4 @@
-# radixdlt
+# Radix Babylon Node - Java
 
 This is the monorepo for consensus, execution, and networking for the [Radix DLT](https://www.radixdlt.com)
 Distributed Ledger.
@@ -9,10 +9,11 @@ It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/180
 
 Here we have:
 
-- [radixdlt-core](radixdlt-core/README.md): The core consensus and networking modules
-- [radixdlt-engine](radixdlt-engine/README.md): The Radix execution layer which provides
-  a UTXO-based state machine
-- [radixdlt-java-common](radixdlt-java-common/README.md): Common Java utilities used by various modules
+- [core](core/README.md): The core consensus and networking modules
+- [engine](engine/README.md): The Olympia Radix execution layer which provides a UTXO-based state machine
+- [common](common/README.md): Common Java utilities used by various modules
+- [cli-tools](cli-tools): Various basic command line helpers to assist with spinning up nodes and networks
+- [shell](shell): The Radix shell, which can enable you to easily spin up nodes and interact with them on-the-fly
 
 ## Contribute
 
@@ -39,4 +40,4 @@ Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions
 
 ## License
 
-The `radixdlt-core`, `radixdlt-engine`, `radixdlt-java-common` code is released under the [Radix License](LICENSE).
+The code in this repository is released under the [Radix License](LICENSE).

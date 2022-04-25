@@ -1,0 +1,34 @@
+FROM ubuntu:21.04 AS build-stage
+MAINTAINER radixdlt <devops@radixdlt.com>
+LABEL Description="Java + Ubuntu 21.04 (OpenJDK)"
+
+ENV DEBIAN_FRONTEND noninteractive
+
+CMD /bin/bash
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget curl iputils-ping dnsutils \
+    unzip software-properties-common ca-certificates-java \
+    docker.io
+#install jdk17
+RUN add-apt-repository -y ppa:openjdk-r/ppa && \
+    apt update && \
+    apt install -yq openjdk-17-jdk
+#install Gradle
+RUN wget -q https://services.gradle.org/distributions/gradle-7.2-bin.zip \
+    && unzip gradle-7.2-bin.zip -d /opt \
+    && rm gradle-7.2-bin.zip
+
+# Set Gradle in the environment variables
+ENV GRADLE_HOME=/opt/gradle-7.2
+ENV PATH=/opt/gradle-7.2/bin:$PATH
+ENV JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
+RUN docker --version
+
+COPY . /radixdlt
+WORKDIR /radixdlt
+USER root
+RUN gradle clean build -x test
+
+FROM scratch AS export-stage
+COPY --from=build-stage /core/radixdlt/build /

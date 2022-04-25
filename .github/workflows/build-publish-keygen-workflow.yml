@@ -54,7 +54,7 @@ jobs:
           gradle_command: clean build -x test
       - name: Prepare Dockerfile context
         run: |
-          unzip radixdlt-core/radixdlt/build/distributions/radixdlt-${{ steps.get_version.outputs.radixdlt_version }}.zip
+          unzip core/build/distributions/radixdlt-${{ steps.get_version.outputs.radixdlt_version }}.zip
       - name: Login to Dockerhub
         uses: docker/login-action@v1
         if:  "${{ steps.set_environment.outputs.is_release == 'true' }}"
@@ -71,7 +71,7 @@ jobs:
       - name: Docker build and push
         uses: docker/build-push-action@v2
         with:
-          file: radixdlt-core/docker/Dockerfile.keygen
+          file: docker/Dockerfile.keygen
           tags: |
             ${{ steps.set_environment.outputs.keygen_image }}:${{ steps.get_version.outputs.docker_tag }}
           push: true
