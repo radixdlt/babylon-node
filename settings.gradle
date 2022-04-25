@@ -1,4 +1,4 @@
-rootProject.name='java-node'
+rootProject.name='babylon-node'
 include ':core'
 include ':cli-tools'
 include ':engine'
