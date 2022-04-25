@@ -55,7 +55,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Run steady-state integration tests
-        run: ./gradlew integrationTest --refresh-dependencies --stacktrace --scan
+        run: ./gradlew integrationTest --refresh-dependencies --info
   targeted-integration:
     name: Targeted integration tests
     runs-on: ubuntu-20.04
