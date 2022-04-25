@@ -81,7 +81,6 @@ public class BasicContainerSubTypesEqualsVerifierTest {
   @Test
   public void verify_all_subtypes_correctly_override_equals_and_hash_code() {
     final Set<Class<? extends BasicContainer>> subTypes = new HashSet<>();
-    subTypes.addAll(findSubTypesInPkg("org.radix"));
     subTypes.addAll(findSubTypesInPkg("com.radixdlt"));
 
     final Map<Class<?>, List<String>> ignoredFieldsByClass =
