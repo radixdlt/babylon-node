@@ -24,7 +24,7 @@ cd radixdlt && git checkout release/1.0-beta.34
 RADIXDLT_ENABLE_FAUCET=True
 Run tests (note that integration tests take several minutes to run):
 ```
-./gradlew test integrationTest
+./gradlew test runAllIntegrationTests
 ```
 Unfortunately the integration tests currently use hardcoded TCP/UDP port
 numbers 12345 and 23456, and may fail if these ports are not available on
@@ -62,12 +62,12 @@ Please follow our [Code of Conduct](../CODE_OF_CONDUCT.md) in all your interacti
 
 ## Links
 
-| Link | Description |
-| :----- | :------ |
-[radixdlt.com](https://radixdlt.com/) | Radix DLT Homepage
-[documentation](https://docs.radixdlt.com/) | Radix Knowledge Base
-[forum](https://forum.radixdlt.com/) | Radix Technical Forum
-[@radixdlt](https://twitter.com/radixdlt) | Follow Radix DLT on Twitter
+| Link                                        | Description                 |
+|:--------------------------------------------|:----------------------------|
+| [radixdlt.com](https://radixdlt.com/)       | Radix DLT Homepage          |
+| [documentation](https://docs.radixdlt.com/) | Radix Knowledge Base        |
+| [forum](https://forum.radixdlt.com/)        | Radix Technical Forum       |
+| [@radixdlt](https://twitter.com/radixdlt)   | Follow Radix DLT on Twitter |
 
 ## License
 

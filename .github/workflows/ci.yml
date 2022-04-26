@@ -28,14 +28,28 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-      - name: Unit tests and Sonar analysis
-        run: ./gradlew clean check jacocoTestReport sonarqube --stacktrace --refresh-dependencies -Dsonar.login=$SONAR_TOKEN
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache Gradle packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+      - name: Unit tests
+        run: ./gradlew clean check jacocoTestReport --stacktrace --refresh-dependencies
+      - name: Sonar analysis
         env:
           # Needed to get some information about the pull request, if any
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  integration:
+        run: ./gradlew build sonarqube --info
+  steadystate-integration:
     name: Steady state integration tests
     runs-on: ubuntu-20.04
     steps:
@@ -55,7 +69,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Run steady-state integration tests
-        run: ./gradlew integrationTest --refresh-dependencies --info
+        run: ./gradlew runSteadyStateIntegrationTests --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
     runs-on: ubuntu-20.04
@@ -76,4 +90,4 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Run targeted integration tests
-        run: ./gradlew targetedIntegrationTest --refresh-dependencies
+        run: ./gradlew runTargetedIntegrationTests --refresh-dependencies

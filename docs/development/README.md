@@ -27,7 +27,7 @@ Integration tests take quite a while to run (over an hour on most machines).
 They are typically run as part of a PR.
 
 ```shell
-$ ./gradlew integrationTest
+$ ./gradlew runAllIntegrationTests
 ```
 
 ### IntelliJ IDEA Troubleshooting

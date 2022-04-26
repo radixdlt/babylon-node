@@ -109,17 +109,18 @@ configurations {
     integrationImplementation.extendsFrom testImplementation
 }
 
-task integrationTest(type: Test) {
+task runSteadyStateIntegrationTests(type: Test) {
     filter {
         includeTestsMatching "com.radixdlt.integration.steady_state.*"
     }
     testClassesDirs = sourceSets.integration.output.classesDirs
     classpath = sourceSets.integration.runtimeClasspath
-    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1 //A greater number was tried, but the tests either failed or there was no gain in performance.
+    // Use half of available processors. A greater number was tried, but the tests either failed or there was no gain in performance.
+    maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
     mustRunAfter(test)
 }
 
-task targetedIntegrationTest(type: Test) {
+task runTargetedIntegrationTests(type: Test) {
     filter {
         includeTestsMatching "com.radixdlt.integration.targeted.*"
     }
@@ -130,10 +131,10 @@ task targetedIntegrationTest(type: Test) {
     mustRunAfter(test)
 }
 
-task allIntegrationTest(type: Test) {
+task runAllIntegrationTests(type: Test) {
     testClassesDirs = sourceSets.integration.output.classesDirs
     classpath = sourceSets.integration.runtimeClasspath
-    // We're using all available processors here for now because we want to run all classes at the same time and they don't seem to be cpu intensive
+    // Use half of available processors. A greater number was tried, but the tests either failed or there was no gain in performance.
     maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
     mustRunAfter(test)
 }
