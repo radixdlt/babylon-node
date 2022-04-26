@@ -76,6 +76,7 @@ node {
     download = true
 }
 
+// Used for eg the startScripts to know which class to start
 mainClassName = project.getProperties().get('overrideMainClassName', 'com.radixdlt.RadixNodeApplication')
 
 startScripts {
@@ -149,7 +150,21 @@ classes {
     dependsOn(versionFile)
 }
 
-integrationTest {
+runAllIntegrationTests {
+    jacoco {
+        // We don't want integration tests included in code coverage.
+        enabled false
+    }
+}
+
+runSteadyStateIntegrationTests {
+    jacoco {
+        // We don't want integration tests included in code coverage.
+        enabled false
+    }
+}
+
+runTargetedIntegrationTests {
     jacoco {
         // We don't want integration tests included in code coverage.
         enabled false
