@@ -2,5 +2,8 @@
 
 set -x
 
+# vars
+RADIXDLT_SERVICE_FILE=radixdlt.service
+
 # kill the process
-systemctl stop radixdlt.service || :
+systemctl stop $RADIXDLT_SERVICE_FILE || :

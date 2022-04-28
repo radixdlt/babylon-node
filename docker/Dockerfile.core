@@ -18,7 +18,7 @@ RUN apt-get -y --no-install-recommends install openjdk-17-jdk
 
 # set entrypoint and default command
 ENTRYPOINT ["/opt/radixdlt/config_radixdlt.sh"]
-CMD ["/opt/radixdlt/bin/radixdlt"]
+CMD ["/opt/radixdlt/bin/core"]
 
 # set default environment variables
 ENV RADIXDLT_HOME=/home/radixdlt \

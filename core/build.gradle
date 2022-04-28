@@ -224,23 +224,58 @@ tasks.withType(Tar) {
     compression = Compression.GZIP
 }
 
+def debSafeVersionName() {
+    // project.version comes from radixVersion() in the root gradle property
+    def safeVersion = project.version
+            .replaceAll('-', '~') // Debian doesn't like - in the name
+            .replaceAll(/[^A-Za-z0-9.+~]/, '') // Replace versions that dev doesn't like
+
+    // Note - The deb version must start with a number
+    if (!safeVersion.matches(~/\d.+/)) {
+        safeVersion = "0~~$safeVersion"
+    }
+
+    return safeVersion
+}
+
+def debPackageName() {
+    return "radixdlt"
+}
+
+def debOutputFileName() {
+    return "${debPackageName()}_${debSafeVersionName()}_all.deb"
+}
+
 ospackage {
     os = LINUX
+
+    def x = "y'234"
 
     postInstall file('ospackage/postinst.sh')
     preUninstall file('ospackage/prerm.sh')
     postUninstall file('ospackage/postrm.sh')
 
+    // These should match the scripts in ospackage
+    def serviceName = debPackageName()
+    def optDirectory = debPackageName()
+
     from("$buildDir/install/$name") {
-        into "/opt/$name"
+        into "/opt/$optDirectory"
     }
-    from("ospackage/${name}.service") {
+    from("ospackage/${serviceName}.service") {
         into "/etc/systemd/system"
     }
 
+    // See https://github.com/nebula-plugins/gradle-ospackage-plugin/wiki/Deb-Plugin#basic-usage
     buildDeb {
         dependsOn += [installDist]
-        version = project.version.replaceAll('-', '~').replaceAll(/[^A-Za-z0-9.+:~-]/, '')
+
+        version = debSafeVersionName()
+        packageName = debPackageName()
+
+        doLast {
+            println "SUCCESS: Built deb images: ${debOutputFileName()}"
+        }
     }
     buildRpm {
         dependsOn += [installDist]
@@ -268,24 +303,36 @@ task depsize {
 }
 
 /**
- * Manages the *.deb file in the docker directory
+ * Copies the *.deb file in the docker directory
  */
-task deb4docker(type: Copy, dependsOn: buildDeb) {
-    def ospackageVersion = project.version.replaceAll('-', '~').replaceAll(/[^A-Za-z0-9.+:~-]/, '')
-
-    from("$buildDir/distributions") {
-        include "radixdlt_${ospackageVersion}_all.deb"
-    }
-    into project.file('../docker')
+task deb4docker(dependsOn: buildDeb) {
     doFirst {
+        def createdDebFileName = debOutputFileName()
+        def previousDebFileToDeleteRegex = ~/.+_all\.deb/
+        def builtDebFileLocation = "$buildDir/distributions/$createdDebFileName"
+
+        def destinationDir = project.file('../docker')
+        def destinationLocation = "$destinationDir/$createdDebFileName"
+
+        if (!file(builtDebFileLocation).exists()) {
+            throw new GradleException("Expected to find built deb package at $builtDebFileLocation but it wasn't there - perhaps the replacement regex in deb4docker is broken / needs fixing")
+        }
+        println "Built deb image found at: $builtDebFileLocation"
+
         def names = [] as Set
-        destinationDir.eachFileMatch(groovy.io.FileType.FILES, ~/radixdlt_.+_all\.deb/) {
+        destinationDir.eachFileMatch(groovy.io.FileType.FILES, previousDebFileToDeleteRegex) {
             names << it.name
         }
         names.toSorted().each {
             def rip = new File(destinationDir, it)
             rip.delete()
-            println "Deleted conflicting deb package: ${rip.name} ..."
+            println "Deleted previous deb package: ${rip.path}"
         }
+
+        copy {
+            from builtDebFileLocation
+            into destinationDir
+        }
+        println "SUCCESS: Deb image copied for the docker build to: $destinationLocation"
     }
 }
