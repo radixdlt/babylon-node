@@ -249,8 +249,6 @@ def debOutputFileName() {
 ospackage {
     os = LINUX
 
-    def x = "y'234"
-
     postInstall file('ospackage/postinst.sh')
     preUninstall file('ospackage/prerm.sh')
     postUninstall file('ospackage/postrm.sh')
@@ -274,7 +272,7 @@ ospackage {
         packageName = debPackageName()
 
         doLast {
-            println "SUCCESS: Built deb images: ${debOutputFileName()}"
+            println "SUCCESS: Built deb image: ${debOutputFileName()}"
         }
     }
     buildRpm {
