@@ -1,5 +1,5 @@
 [Unit]
-Description=Radix DLT Client
+Description=Radix DLT Babylon Java Node
 After=local-fs.target
 After=network-online.target
 After=nss-lookup.target
@@ -10,7 +10,7 @@ Wants=network-online.target
 [Service]
 User=radixdlt
 WorkingDirectory=/opt/radixdlt
-ExecStart=/opt/radixdlt/bin/radixdlt
+ExecStart=/opt/radixdlt/bin/core
 SuccessExitStatus=143
 TimeoutStopSec=10
 Restart=on-failure

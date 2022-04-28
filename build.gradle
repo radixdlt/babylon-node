@@ -74,23 +74,48 @@ plugins {
     id "com.diffplug.spotless" version "6.0.0"
 }
 
+/*
+ * Creates a nice version name we can use for built assets; from the git version.
+ * This is set to gradle's version property below.
+ */
 def radixVersion() {
+    /*
+     KNOWN ISSUE:
+     1. If there are two (simple) tags on the same commit, it selects the oldest.  This can be a problem if (eg) a
+        release and a release candidate tag share the same commit.
+
+        EXPLANATION:
+        versionDetails is from https://github.com/palantir/gradle-git-version
+        Behind the scenes, it parses "git describe --tags --always --first-parent"
+        This is used to extract the closest tag information. If there are multiple, git describe attempts to select
+         the most recent tag - but this only works if the tags are annotated - if they're simple tags, it just
+         selects the first.
+        Github release creates simple tags, not annotated tags (as of April 2022) - see discussion here
+         for suggested change: https://github.com/github/feedback/discussions/4924
+
+        WORKAROUND:
+          Manually create the annotated tag yourself for the release, eg:
+            git tag -a v1.2.1 -m "Version 1.2.1"
+          See also: https://git-scm.com/book/en/v2/Git-Basics-Tagging
+    */
     def details = versionDetails()
 
     def version
     if (details.isCleanTag) {
         version = details.lastTag
     } else {
-        version = details.branchName
-        if (version == null) {
+        if (details.branchName == null) {
             version = "detached-head-${details.gitHash}"
         } else {
-            // Prepend last tag so builddeb doesn't choke on non-numeric branch names
-            version = "${details.lastTag}-${version}"
-            version = version.replaceAll('/', '~')
+            version = "${details.branchName}-${details.gitHash}"
         }
-        version = "${version}-SNAPSHOT"
+        // Prepend SNAPSHOT so the tag name is valid regardless of the version
+        version = "SNAPSHOT-${version}"
     }
+
+    // Ensure version is safe for gradle's purposes
+    // (we do further sanitizing for debian's purposes in debSafeVersionName())
+    version = version.replaceAll('/', '~')
     return version
 }
 
