@@ -62,50 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.statecomputer.mocked;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
-import com.radixdlt.utils.TimeSupplier;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import com.google.inject.Scopes;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
-public class MockedLedgerModule extends AbstractModule {
+public class MockedStateComputerWithEpochsModule extends AbstractModule {
   @Override
-  public void configure() {
-    bind(NextTxnsGenerator.class).toInstance((view, aids) -> List.of());
-  }
-
-  @Provides
-  @Singleton
-  Ledger syncedLedger(TimeSupplier timeSupplier) {
-    return new Ledger() {
-      @Override
-      public Optional<PreparedVertex> prepare(
-          LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
-        final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
-        final LedgerHeader ledgerHeader =
-            vertex
-                .getParentHeader()
-                .getLedgerHeader()
-                .updateViewAndTimestamp(vertex.getView(), timestamp);
-
-        return Optional.of(
-            vertex
-                .withHeader(ledgerHeader, timeSupplier.currentTime())
-                .andTxns(
-                    vertex.getTxns().stream().<PreparedTxn>map(MockPrepared::new).toList(),
-                    Map.of()));
-      }
-    };
+  protected void configure() {
+    bind(StateComputer.class).to(MockedStateComputerWithEpochs.class).in(Scopes.SINGLETON);
   }
 }

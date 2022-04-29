@@ -62,21 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.statecomputer.mocked;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.crypto.HashUtils;
+import java.util.List;
 
-public class MockPrepared implements PreparedTxn {
-
-  private final Txn txn;
-
-  public MockPrepared(Txn txn) {
-    this.txn = txn;
-  }
-
+/** Generates new random hash commands */
+public final class RandomHashTxnsGenerator implements NextTxnsGenerator {
   @Override
-  public Txn txn() {
-    return txn;
+  public List<Txn> generateNextTxns(View view, List<PreparedVertex> prepared) {
+    return List.of(Txn.create(HashUtils.random256().asBytes()));
   }
 }

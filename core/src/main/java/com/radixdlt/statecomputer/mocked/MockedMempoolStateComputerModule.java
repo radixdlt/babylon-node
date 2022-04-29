@@ -62,16 +62,98 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.statecomputer.mocked;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
-import com.radixdlt.statecomputer.RandomHashTxnsGenerator;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.monitoring.SystemCounters;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-/** Module which provides a random hash command generator */
-public class MockedCommandGeneratorModule extends AbstractModule {
+/** Simple Mempool state computer */
+public class MockedMempoolStateComputerModule extends AbstractModule {
+  private static final Logger log = LogManager.getLogger();
+
   @Override
   protected void configure() {
-    bind(NextTxnsGenerator.class).to(RandomHashTxnsGenerator.class);
+    bind(new TypeLiteral<Mempool<?>>() {})
+        .to(new TypeLiteral<Mempool<Txn>>() {})
+        .in(Scopes.SINGLETON);
+  }
+
+  @Provides
+  @Singleton
+  private Mempool<Txn> mempool(
+      SystemCounters systemCounters, Random random, @MempoolMaxSize int mempoolMaxSize) {
+    return new SimpleMempool(systemCounters, mempoolMaxSize, random);
+  }
+
+  @Provides
+  @Singleton
+  private StateComputerLedger.StateComputer stateComputer(
+      Mempool<Txn> mempool,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      SystemCounters counters) {
+    return new StateComputerLedger.StateComputer() {
+      @Override
+      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
+        mempoolAdd
+            .txns()
+            .forEach(
+                txn -> {
+                  try {
+                    mempool.add(txn);
+                    counters.set(
+                        SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+                  } catch (MempoolRejectedException e) {
+                    log.error(e);
+                  }
+                });
+      }
+
+      @Override
+      public List<Txn> getNextTxnsFromMempool(List<StateComputerLedger.PreparedTxn> prepared) {
+        return mempool.getTxns(1, List.of());
+      }
+
+      @Override
+      public StateComputerLedger.StateComputerResult prepare(
+          List<StateComputerLedger.PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+        return new StateComputerLedger.StateComputerResult(
+            vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()),
+            Map.of());
+      }
+
+      @Override
+      public void commit(
+          VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+        mempool.committed(txnsAndProof.getTxns());
+        counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+
+        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
+        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
+      }
+    };
   }
 }

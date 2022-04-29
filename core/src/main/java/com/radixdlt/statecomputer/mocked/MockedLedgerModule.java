@@ -62,48 +62,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.statecomputer.mocked;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.utils.TimeSupplier;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
-/** Accumulator verifier which incorrectly always gives false positives. */
-public class IncorrectAlwaysAcceptingAccumulatorVerifierModule extends AbstractModule {
+public class MockedLedgerModule extends AbstractModule {
+  @Override
+  public void configure() {
+    bind(NextTxnsGenerator.class).toInstance((view, aids) -> List.of());
+  }
+
   @Provides
-  private LedgerAccumulatorVerifier badVerifier() {
-    return new LedgerAccumulatorVerifier() {
+  @Singleton
+  Ledger syncedLedger(TimeSupplier timeSupplier) {
+    return new Ledger() {
       @Override
-      public boolean verify(
-          AccumulatorState head, ImmutableList<HashCode> commands, AccumulatorState tail) {
-        return true;
-      }
+      public Optional<PreparedVertex> prepare(
+          LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
+        final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
+        final LedgerHeader ledgerHeader =
+            vertex
+                .getParentHeader()
+                .getLedgerHeader()
+                .updateViewAndTimestamp(vertex.getView(), timestamp);
 
-      @Override
-      public <T> Optional<List<T>> verifyAndGetExtension(
-          AccumulatorState current,
-          List<T> commands,
-          Function<T, HashCode> hashCodeMapper,
-          AccumulatorState tail) {
-        final long firstVersion = tail.getStateVersion() - commands.size() + 1;
-        if (current.getStateVersion() + 1 < firstVersion) {
-          // Missing versions
-          return Optional.empty();
-        }
-
-        if (commands.isEmpty()) {
-          return (Objects.equals(current, tail))
-              ? Optional.of(ImmutableList.of())
-              : Optional.empty();
-        }
-
-        final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
-        return Optional.of(commands.subList(startIndex, commands.size()));
+        return Optional.of(
+            vertex
+                .withHeader(ledgerHeader, timeSupplier.currentTime())
+                .andTxns(
+                    vertex.getTxns().stream().<PreparedTxn>map(MockPrepared::new).toList(),
+                    Map.of()));
       }
     };
   }

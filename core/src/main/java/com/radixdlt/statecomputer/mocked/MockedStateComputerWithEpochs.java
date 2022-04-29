@@ -62,100 +62,74 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.statecomputer.mocked;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.MockPrepared;
-import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.mempool.SimpleMempool;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.statecomputer.EpochCeilingView;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-/** Simple Mempool state computer */
-public class MockedMempoolStateComputerModule extends AbstractModule {
-  private static final Logger log = LogManager.getLogger();
+public final class MockedStateComputerWithEpochs implements StateComputer {
+  private final Function<Long, BFTValidatorSet> validatorSetMapping;
+  private final View epochHighView;
+  private final MockedStateComputer stateComputer;
+
+  @Inject
+  public MockedStateComputerWithEpochs(
+      @EpochCeilingView View epochHighView,
+      Function<Long, BFTValidatorSet> validatorSetMapping,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      Hasher hasher) {
+    this.validatorSetMapping = Objects.requireNonNull(validatorSetMapping);
+    this.epochHighView = Objects.requireNonNull(epochHighView);
+    this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
+  }
 
   @Override
-  protected void configure() {
-    bind(new TypeLiteral<Mempool<?>>() {})
-        .to(new TypeLiteral<Mempool<Txn>>() {})
-        .in(Scopes.SINGLETON);
+  public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
+
+  @Override
+  public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
+    return List.of();
   }
 
-  @Provides
-  @Singleton
-  private Mempool<Txn> mempool(
-      SystemCounters systemCounters, Random random, @MempoolMaxSize int mempoolMaxSize) {
-    return new SimpleMempool(systemCounters, mempoolMaxSize, random);
+  @Override
+  public StateComputerResult prepare(
+      List<PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+    var view = vertex.getView();
+    var epoch = vertex.getParentHeader().getLedgerHeader().getEpoch();
+    var next = vertex.getTxns();
+    if (view.compareTo(epochHighView) >= 0) {
+      return new StateComputerResult(
+          next.stream().map(MockPrepared::new).collect(Collectors.toList()),
+          ImmutableMap.of(),
+          validatorSetMapping.apply(epoch + 1));
+    } else {
+      return stateComputer.prepare(previous, vertex, timestamp);
+    }
   }
 
-  @Provides
-  @Singleton
-  private StateComputerLedger.StateComputer stateComputer(
-      Mempool<Txn> mempool,
-      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-      SystemCounters counters) {
-    return new StateComputerLedger.StateComputer() {
-      @Override
-      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
-        mempoolAdd
-            .txns()
-            .forEach(
-                txn -> {
-                  try {
-                    mempool.add(txn);
-                    counters.set(
-                        SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
-                  } catch (MempoolRejectedException e) {
-                    log.error(e);
-                  }
-                });
-      }
-
-      @Override
-      public List<Txn> getNextTxnsFromMempool(List<StateComputerLedger.PreparedTxn> prepared) {
-        return mempool.getTxns(1, List.of());
-      }
-
-      @Override
-      public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
-        return new StateComputerLedger.StateComputerResult(
-            vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()),
-            Map.of());
-      }
-
-      @Override
-      public void commit(
-          VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-        mempool.committed(txnsAndProof.getTxns());
-        counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
-
-        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
-        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
-      }
-    };
+  @Override
+  public void commit(
+      VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+    this.stateComputer.commit(verifiedTxnsAndProof, vertexStoreState);
   }
 }

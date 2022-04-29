@@ -62,15 +62,93 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.statecomputer.mocked;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
+import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.inject.Inject;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.mempool.MempoolAdd;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
-public class MockedStateComputerModule extends AbstractModule {
+public final class MockedStateComputer implements StateComputer {
+  private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
+  private final Hasher hasher;
+
+  @Inject
+  public MockedStateComputer(EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher, Hasher hasher) {
+    this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
+    this.hasher = hasher;
+  }
+
   @Override
-  public void configure() {
-    bind(StateComputer.class).to(MockedStateComputer.class).in(Scopes.SINGLETON);
+  public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
+
+  @Override
+  public List<Txn> getNextTxnsFromMempool(List<StateComputerLedger.PreparedTxn> prepared) {
+    return List.of();
+  }
+
+  @Override
+  public StateComputerLedger.StateComputerResult prepare(
+      List<StateComputerLedger.PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+    return new StateComputerLedger.StateComputerResult(
+        vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()), Map.of());
+  }
+
+  @Override
+  public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+    var output =
+        txnsAndProof
+            .getProof()
+            .getNextValidatorSet()
+            .map(
+                validatorSet -> {
+                  LedgerProof header = txnsAndProof.getProof();
+                  UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
+                  VerifiedVertex verifiedGenesisVertex =
+                      new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+                  LedgerHeader nextLedgerHeader =
+                      LedgerHeader.create(
+                          header.getEpoch() + 1,
+                          View.genesis(),
+                          header.getAccumulatorState(),
+                          header.timestamp());
+                  QuorumCertificate genesisQC =
+                      QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+                  final var initialState =
+                      VerifiedVertexStoreState.create(
+                          HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher);
+                  var proposerElection = new WeightedRotatingLeaders(validatorSet);
+                  var bftConfiguration =
+                      new BFTConfiguration(proposerElection, validatorSet, initialState);
+                  return new EpochChange(header, bftConfiguration);
+                })
+            .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
+            .orElse(ImmutableClassToInstanceMap.of());
+
+    var ledgerUpdate = new LedgerUpdate(txnsAndProof, output);
+    ledgerUpdateDispatcher.dispatch(ledgerUpdate);
   }
 }

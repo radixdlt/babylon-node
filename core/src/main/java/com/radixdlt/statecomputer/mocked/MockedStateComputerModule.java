@@ -62,15 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.statecomputer.mocked;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
-public class MockedStateComputerWithEpochsModule extends AbstractModule {
+public class MockedStateComputerModule extends AbstractModule {
   @Override
-  protected void configure() {
-    bind(StateComputer.class).to(MockedStateComputerWithEpochs.class).in(Scopes.SINGLETON);
+  public void configure() {
+    bind(StateComputer.class).to(MockedStateComputer.class).in(Scopes.SINGLETON);
   }
 }

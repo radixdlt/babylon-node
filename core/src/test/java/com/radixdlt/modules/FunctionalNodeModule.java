@@ -68,16 +68,16 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
-import com.radixdlt.ledger.MockedCommandGeneratorModule;
-import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
-import com.radixdlt.statecomputer.MockedStateComputerModule;
-import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
 import com.radixdlt.statecomputer.RadixEngineModule;
 import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
 import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.statecomputer.mocked.MockedCommandGeneratorModule;
+import com.radixdlt.statecomputer.mocked.MockedLedgerModule;
+import com.radixdlt.statecomputer.mocked.MockedMempoolStateComputerModule;
+import com.radixdlt.statecomputer.mocked.MockedStateComputerModule;
+import com.radixdlt.statecomputer.mocked.MockedStateComputerWithEpochsModule;
 import com.radixdlt.sync.MockedSyncServiceModule;
 
 /** Manages the functional components of a node */

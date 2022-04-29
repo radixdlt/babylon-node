@@ -62,74 +62,103 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.statecomputer.mocked;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Inject;
+import com.google.common.collect.Lists;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.MockPrepared;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
-import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.mempool.MempoolMetadata;
+import com.radixdlt.monitoring.SystemCounters;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
+import java.util.Random;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
-public final class MockedStateComputerWithEpochs implements StateComputer {
-  private final Function<Long, BFTValidatorSet> validatorSetMapping;
-  private final View epochHighView;
-  private final MockedStateComputer stateComputer;
+/** Simple mempool which performs no validation and removes on commit. */
+public final class SimpleMempool implements Mempool<Txn> {
+  private final Set<Txn> data = new HashSet<>();
+  private final SystemCounters counters;
+  private final Random random;
+  private final int maxSize;
 
-  @Inject
-  public MockedStateComputerWithEpochs(
-      @EpochCeilingView View epochHighView,
-      Function<Long, BFTValidatorSet> validatorSetMapping,
-      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-      Hasher hasher) {
-    this.validatorSetMapping = Objects.requireNonNull(validatorSetMapping);
-    this.epochHighView = Objects.requireNonNull(epochHighView);
-    this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
+  public SimpleMempool(SystemCounters counters, int maxSize, Random random) {
+    if (maxSize <= 0) {
+      throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
+    }
+    this.counters = Objects.requireNonNull(counters);
+    this.maxSize = maxSize;
+    this.random = Objects.requireNonNull(random);
   }
 
   @Override
-  public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
+  public Txn add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
+    if (this.data.size() >= maxSize) {
+      throw new MempoolFullException(this.data.size(), maxSize);
+    }
+    if (!this.data.add(txn)) {
+      throw new MempoolDuplicateException(String.format("Mempool already has command %s", txn));
+    }
+
+    updateCounts();
+
+    return txn;
+  }
 
   @Override
-  public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
+  public List<Txn> committed(List<Txn> commands) {
+    commands.forEach(this.data::remove);
+    updateCounts();
     return List.of();
   }
 
   @Override
-  public StateComputerResult prepare(
-      List<PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
-    var view = vertex.getView();
-    var epoch = vertex.getParentHeader().getLedgerHeader().getEpoch();
-    var next = vertex.getTxns();
-    if (view.compareTo(epochHighView) >= 0) {
-      return new StateComputerResult(
-          next.stream().map(MockPrepared::new).collect(Collectors.toList()),
-          ImmutableMap.of(),
-          validatorSetMapping.apply(epoch + 1));
+  public int getCount() {
+    return data.size();
+  }
+
+  @Override
+  public List<Txn> getTxns(int count, List<Txn> seen) {
+    int size = Math.min(count, this.data.size());
+    if (size > 0) {
+      List<Txn> commands = Lists.newArrayList();
+      var values = new ArrayList<>(this.data);
+      Collections.shuffle(values, random);
+
+      Iterator<Txn> i = values.iterator();
+      while (commands.size() < size && i.hasNext()) {
+        var a = i.next();
+        if (!seen.contains(a)) {
+          commands.add(a);
+        }
+      }
+      return commands;
     } else {
-      return stateComputer.prepare(previous, vertex, timestamp);
+      return Collections.emptyList();
     }
   }
 
   @Override
-  public void commit(
-      VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-    this.stateComputer.commit(verifiedTxnsAndProof, vertexStoreState);
+  public List<Txn> scanUpdateAndGet(
+      Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
+    return List.of();
+  }
+
+  private void updateCounts() {
+    this.counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, this.data.size());
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[%x:%s/%s]",
+        getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), maxSize);
   }
 }
