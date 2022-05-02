@@ -78,7 +78,7 @@ import com.radixdlt.statecomputer.mocked.MockedLedgerModule;
 import com.radixdlt.statecomputer.mocked.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.mocked.MockedStateComputerModule;
 import com.radixdlt.statecomputer.mocked.MockedStateComputerWithEpochsModule;
-import com.radixdlt.sync.MockedSyncServiceModule;
+import com.radixdlt.statecomputer.mocked.MockedSyncServiceModule;
 
 /** Manages the functional components of a node */
 public final class FunctionalNodeModule extends AbstractModule {

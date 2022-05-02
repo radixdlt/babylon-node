@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.statecomputer.mocked;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
@@ -70,6 +70,7 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.sync.CommittedReader;
 
 public class InMemoryCommittedReaderModule extends AbstractModule {
   @Override

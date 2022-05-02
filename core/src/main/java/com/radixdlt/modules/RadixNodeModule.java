@@ -67,18 +67,12 @@ package com.radixdlt.modules;
 import static org.apache.logging.log4j.util.Strings.isNotBlank;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.api.ApiModule;
 import com.radixdlt.atom.Txn;
-import com.radixdlt.consensus.bft.PacemakerMaxExponent;
-import com.radixdlt.consensus.bft.PacemakerRate;
-import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
@@ -91,25 +85,19 @@ import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.GenesisBuilder;
-import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.statecomputer.forks.ForkOverwritesFromPropertiesModule;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
-import com.radixdlt.statecomputer.forks.StokenetForksModule;
-import com.radixdlt.statecomputer.forks.testing.TestingForksLoader;
+import com.radixdlt.statecomputer.mocked.InMemoryCommittedReaderModule;
+import com.radixdlt.statecomputer.mocked.MockedMempoolStateComputerModule;
+import com.radixdlt.statecomputer.mocked.MockedPersistenceStoreModule;
+import com.radixdlt.statecomputer.mocked.MockedRecoveryModule;
 import com.radixdlt.store.DatabasePropertiesModule;
-import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.IOUtils;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -134,6 +122,7 @@ public final class RadixNodeModule extends AbstractModule {
             .orElseThrow(() -> new IllegalStateException("Must specify network.id"));
   }
 
+  /*
   @Provides
   @Genesis
   @Singleton
@@ -142,6 +131,7 @@ public final class RadixNodeModule extends AbstractModule {
     var proof = genesisBuilder.generateGenesisProof(genesis);
     return VerifiedTxnsAndProof.create(List.of(genesis), proof);
   }
+   */
 
   private Txn loadGenesisFile(String genesisFile) {
     try (var genesisJsonString = new FileInputStream(genesisFile)) {
@@ -209,7 +199,8 @@ public final class RadixNodeModule extends AbstractModule {
     var addressing = Addressing.ofNetworkId(networkId);
     bind(Addressing.class).toInstance(addressing);
     bindConstant().annotatedWith(NetworkId.class).to(networkId);
-    bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
+    // loadGenesis(networkId);
+    // bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
     bind(RuntimeProperties.class).toInstance(properties);
 
     // Consensus configuration
@@ -262,6 +253,10 @@ public final class RadixNodeModule extends AbstractModule {
     install(new EpochsSyncModule());
 
     // State Computer
+    install(new MockedPersistenceStoreModule());
+    install(new MockedMempoolStateComputerModule());
+    install(new InMemoryCommittedReaderModule());
+    /*
     install(new ForksModule());
 
     if (networkId == Network.MAINNET.getId()) {
@@ -292,12 +287,27 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Checkpoints
     install(new RadixEngineCheckpointModule());
+     */
+    var initialVset =
+        BFTValidatorSet.from(
+            PrivateKeys.numeric(6)
+                .limit(2)
+                .map(ECKeyPair::getPublicKey)
+                .map(k -> BFTValidator.from(BFTNode.create(k), UInt256.ONE)));
+
+    install(
+        new AbstractModule() {
+          public void configure() {
+            bind(BFTValidatorSet.class).toInstance(initialVset);
+          }
+        });
 
     // Storage
     install(new DatabasePropertiesModule());
-    install(new PersistenceModule());
-    install(new ConsensusRecoveryModule());
-    install(new LedgerRecoveryModule());
+    // install(new PersistenceModule());
+    // install(new ConsensusRecoveryModule());
+    // install(new LedgerRecoveryModule());
+    install(new MockedRecoveryModule());
 
     // System Info
     install(new SystemInfoModule());
@@ -311,10 +321,12 @@ public final class RadixNodeModule extends AbstractModule {
     install(new PeerLivenessMonitorModule());
 
     // API
+    /*
     var bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);
     var port = properties.get("api.port", DEFAULT_CORE_PORT);
     var enableTransactions = properties.get("api.transactions.enable", false);
     var enableSign = properties.get("api.sign.enable", false);
     install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
+     */
   }
 }

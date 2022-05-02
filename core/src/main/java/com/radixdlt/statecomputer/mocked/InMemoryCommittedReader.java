@@ -62,84 +62,102 @@
  * permissions under this License.
  */
 
-package com.radixdlt.recovery;
+package com.radixdlt.statecomputer.mocked;
 
-import com.google.common.hash.HashCode;
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
+import com.google.inject.Inject;
+import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LastProof;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.sync.CommittedReader;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 
-/** Starting configuration for simulation/deterministic steady state tests. */
-public class MockedRecoveryModule extends AbstractModule {
-
-  private final HashCode genesisHash;
-
-  public MockedRecoveryModule() {
-    this(HashUtils.zero256());
+/** A correct in memory committed reader used for testing */
+public final class InMemoryCommittedReader implements CommittedReader {
+  public static final class Store {
+    final TreeMap<Long, VerifiedTxnsAndProof> commandsAndProof = new TreeMap<>();
+    final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
   }
 
-  public MockedRecoveryModule(HashCode genesisHash) {
-    this.genesisHash = genesisHash;
+  private final Object lock = new Object();
+  private final LedgerAccumulatorVerifier accumulatorVerifier;
+  private final Store store;
+
+  @Inject
+  InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier, Store store) {
+    this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
+    this.store = store;
   }
 
-  @Provides
-  private ViewUpdate view(BFTConfiguration configuration, ProposerElection proposerElection) {
-    HighQC highQC = configuration.getVertexStoreState().getHighQC();
-    View view = highQC.highestQC().getView().next();
-    final BFTNode leader = proposerElection.getProposer(view);
-    final BFTNode nextLeader = proposerElection.getProposer(view.next());
+  @SuppressWarnings("unchecked")
+  public EventProcessor<LedgerUpdate> updateProcessor() {
+    return update -> {
+      synchronized (lock) {
+        var commands = update.getNewTxns();
+        long firstVersion = update.getTail().getStateVersion() - commands.size() + 1;
+        for (long version = firstVersion;
+            version <= update.getTail().getStateVersion();
+            version++) {
+          int index = (int) (version - firstVersion);
+          store.commandsAndProof.put(
+              version,
+              VerifiedTxnsAndProof.create(
+                  commands.subList(index, commands.size()), update.getTail()));
+        }
 
-    return ViewUpdate.create(view, highQC, leader, nextLeader);
+        final var nextEpoch = update.getTail().getEpoch() + 1;
+
+        if (update.getTail().isEndOfEpoch()) {
+          this.store.epochProofs.put(nextEpoch, update.getTail());
+        }
+      }
+    };
   }
 
-  @Provides
-  private BFTConfiguration configuration(
-      @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
-    var accumulatorState = new AccumulatorState(0, genesisHash);
-    UnverifiedVertex genesis =
-        UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0));
-    VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, genesisHash);
-    LedgerHeader nextLedgerHeader =
-        LedgerHeader.create(
-            proof.getEpoch() + 1, View.genesis(), proof.getAccumulatorState(), proof.timestamp());
-    var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
-    return new BFTConfiguration(
-        proposerElection,
-        validatorSet,
-        VerifiedVertexStoreState.create(
-            HighQC.from(genesisQC), verifiedGenesis, Optional.empty(), hasher));
+  @Override
+  public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+    synchronized (lock) {
+      final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+      Entry<Long, VerifiedTxnsAndProof> entry = store.commandsAndProof.higherEntry(stateVersion);
+
+      if (entry != null) {
+        List<Txn> txns =
+            accumulatorVerifier
+                .verifyAndGetExtension(
+                    start.getLedgerHeader().getAccumulatorState(),
+                    entry.getValue().getTxns(),
+                    txn -> txn.getId().asHashCode(),
+                    entry.getValue().getProof().getAccumulatorState())
+                .orElseThrow(() -> new RuntimeException());
+
+        return VerifiedTxnsAndProof.create(txns, entry.getValue().getProof());
+      }
+
+      return null;
+    }
   }
 
-  @Provides
-  @LastEpochProof
-  public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    return LedgerProof.genesis(accumulatorState, validatorSet, 0);
+  @Override
+  public Optional<LedgerProof> getEpochProof(long epoch) {
+    synchronized (lock) {
+      return Optional.ofNullable(store.epochProofs.get(epoch));
+    }
   }
 
-  @Provides
-  @LastProof
-  private LedgerProof lastProof(BFTConfiguration bftConfiguration) {
-    return bftConfiguration.getVertexStoreState().getRootHeader();
+  @Override
+  public Optional<LedgerProof> getLastProof() {
+    return Optional.ofNullable(store.commandsAndProof.lastEntry())
+        .map(p -> p.getValue().getProof());
+  }
+
+  public Store getStore() {
+    return store;
   }
 }

@@ -62,26 +62,84 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.statecomputer.mocked;
 
+import com.google.common.hash.HashCode;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
 import java.util.Optional;
 
-public final class NoOpCommittedReader implements CommittedReader {
-  @Override
-  public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
-    return null;
+/** Starting configuration for simulation/deterministic steady state tests. */
+public class MockedRecoveryModule extends AbstractModule {
+
+  private final HashCode genesisHash;
+
+  public MockedRecoveryModule() {
+    this(HashUtils.zero256());
   }
 
-  @Override
-  public Optional<LedgerProof> getEpochProof(long epoch) {
-    return Optional.empty();
+  public MockedRecoveryModule(HashCode genesisHash) {
+    this.genesisHash = genesisHash;
   }
 
-  @Override
-  public Optional<LedgerProof> getLastProof() {
-    return Optional.empty();
+  @Provides
+  private ViewUpdate view(BFTConfiguration configuration, ProposerElection proposerElection) {
+    HighQC highQC = configuration.getVertexStoreState().getHighQC();
+    View view = highQC.highestQC().getView().next();
+    final BFTNode leader = proposerElection.getProposer(view);
+    final BFTNode nextLeader = proposerElection.getProposer(view.next());
+
+    return ViewUpdate.create(view, highQC, leader, nextLeader);
+  }
+
+  @Provides
+  private BFTConfiguration configuration(
+      @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
+    var accumulatorState = new AccumulatorState(0, genesisHash);
+    UnverifiedVertex genesis =
+        UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0));
+    VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, genesisHash);
+    LedgerHeader nextLedgerHeader =
+        LedgerHeader.create(
+            proof.getEpoch() + 1, View.genesis(), proof.getAccumulatorState(), proof.timestamp());
+    var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
+    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    return new BFTConfiguration(
+        proposerElection,
+        validatorSet,
+        VerifiedVertexStoreState.create(
+            HighQC.from(genesisQC), verifiedGenesis, Optional.empty(), hasher));
+  }
+
+  @Provides
+  @LastEpochProof
+  public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
+    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    return LedgerProof.genesis(accumulatorState, validatorSet, 0);
+  }
+
+  @Provides
+  @LastProof
+  private LedgerProof lastProof(BFTConfiguration bftConfiguration) {
+    return bftConfiguration.getVertexStoreState().getRootHeader();
   }
 }

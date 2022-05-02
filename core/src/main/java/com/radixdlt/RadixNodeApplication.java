@@ -219,8 +219,10 @@ public final class RadixNodeApplication {
       log.error("Cannot start p2p server", e);
     }
 
+    /*
     final var undertow = injector.getInstance(Undertow.class);
     undertow.start();
+     */
 
     final var consensusRunner = moduleRunners.get(Runners.CONSENSUS);
     consensusRunner.start();
