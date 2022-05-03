@@ -64,10 +64,8 @@
 
 package com.radixdlt.modules;
 
-import static org.apache.logging.log4j.util.Strings.isNotBlank;
-
 import com.google.inject.AbstractModule;
-import com.radixdlt.atom.Txn;
+import com.radixdlt.api.ApiModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
@@ -83,7 +81,6 @@ import com.radixdlt.network.p2p.P2PModule;
 import com.radixdlt.network.p2p.PeerDiscoveryModule;
 import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.statecomputer.mocked.InMemoryCommittedReaderModule;
 import com.radixdlt.statecomputer.mocked.MockedMempoolStateComputerModule;
@@ -91,22 +88,15 @@ import com.radixdlt.statecomputer.mocked.MockedPersistenceStoreModule;
 import com.radixdlt.statecomputer.mocked.MockedRecoveryModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncConfig;
-import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.util.Strings;
-import org.json.JSONObject;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
-  private static final String TESTING_FORKS_VERSION_KEY = "testing_forks.version";
   private static final int DEFAULT_CORE_PORT = 3333;
   private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
   private static final Logger log = LogManager.getLogger();
@@ -122,74 +112,6 @@ public final class RadixNodeModule extends AbstractModule {
             .orElseThrow(() -> new IllegalStateException("Must specify network.id"));
   }
 
-  /*
-  @Provides
-  @Genesis
-  @Singleton
-  VerifiedTxnsAndProof genesis(@Genesis Txn genesis, GenesisBuilder genesisBuilder)
-      throws RadixEngineException {
-    var proof = genesisBuilder.generateGenesisProof(genesis);
-    return VerifiedTxnsAndProof.create(List.of(genesis), proof);
-  }
-   */
-
-  private Txn loadGenesisFile(String genesisFile) {
-    try (var genesisJsonString = new FileInputStream(genesisFile)) {
-      var genesisJson = new JSONObject(IOUtils.toString(genesisJsonString));
-      var genesisHex = genesisJson.getString("genesis");
-      return Txn.create(Bytes.fromHexString(genesisHex));
-    } catch (IOException e) {
-      throw new IllegalStateException(e);
-    }
-  }
-
-  private Txn loadGenesis(int networkId) {
-    var genesisTxnHex = properties.get("network.genesis_txn");
-    var genesisFile = properties.get("network.genesis_file");
-
-    var network = Network.ofId(networkId);
-    var networkGenesis =
-        network.flatMap(Network::genesisTxn).map(Bytes::fromHexString).map(Txn::create);
-
-    if (networkGenesis.isPresent()) {
-      validateGenesisConfigIsMissing(genesisTxnHex, genesisFile, network.get());
-
-      if (Strings.isNotBlank(genesisFile)) {
-        throw new IllegalStateException(
-            "Cannot provide genesis file for well-known network " + network.orElseThrow());
-      }
-      return networkGenesis.get();
-    } else {
-      validateGenesisConfigIsPresent(genesisTxnHex, genesisFile);
-
-      return isNotBlank(genesisTxnHex)
-          ? Txn.create(Bytes.fromHexString(genesisTxnHex))
-          : loadGenesisFile(genesisFile);
-    }
-  }
-
-  private void validateGenesisConfigIsPresent(String genesisTxnHex, String genesisFile) {
-    var genesisCount = 0;
-    genesisCount += isNotBlank(genesisTxnHex) ? 1 : 0;
-    genesisCount += isNotBlank(genesisFile) ? 1 : 0;
-
-    if (genesisCount > 1) {
-      throw new IllegalStateException("Multiple genesis txn specified.");
-    }
-
-    if (genesisCount == 0) {
-      throw new IllegalStateException("No genesis txn specified.");
-    }
-  }
-
-  private void validateGenesisConfigIsMissing(
-      String genesisTxnHex, String genesisFile, Network network) {
-    if (isNotBlank(genesisTxnHex) || isNotBlank(genesisFile)) {
-      throw new IllegalStateException(
-          "Cannot provide genesis txn for well-known network " + network);
-    }
-  }
-
   @Override
   protected void configure() {
     if (this.networkId <= 0) {
@@ -199,8 +121,7 @@ public final class RadixNodeModule extends AbstractModule {
     var addressing = Addressing.ofNetworkId(networkId);
     bind(Addressing.class).toInstance(addressing);
     bindConstant().annotatedWith(NetworkId.class).to(networkId);
-    // loadGenesis(networkId);
-    // bind(Txn.class).annotatedWith(Genesis.class).toInstance(loadGenesis(networkId));
+    var numValidators = Integer.parseInt(properties.get("network.genesis_txn"));
     bind(RuntimeProperties.class).toInstance(properties);
 
     // Consensus configuration
@@ -291,16 +212,10 @@ public final class RadixNodeModule extends AbstractModule {
     var initialVset =
         BFTValidatorSet.from(
             PrivateKeys.numeric(6)
-                .limit(2)
+                .limit(numValidators)
                 .map(ECKeyPair::getPublicKey)
                 .map(k -> BFTValidator.from(BFTNode.create(k), UInt256.ONE)));
-
-    install(
-        new AbstractModule() {
-          public void configure() {
-            bind(BFTValidatorSet.class).toInstance(initialVset);
-          }
-        });
+    bind(BFTValidatorSet.class).toInstance(initialVset);
 
     // Storage
     install(new DatabasePropertiesModule());
@@ -321,12 +236,8 @@ public final class RadixNodeModule extends AbstractModule {
     install(new PeerLivenessMonitorModule());
 
     // API
-    /*
     var bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);
     var port = properties.get("api.port", DEFAULT_CORE_PORT);
-    var enableTransactions = properties.get("api.transactions.enable", false);
-    var enableSign = properties.get("api.sign.enable", false);
-    install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
-     */
+    install(new ApiModule(bindAddress, port));
   }
 }

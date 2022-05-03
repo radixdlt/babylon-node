@@ -245,8 +245,7 @@ public final class GenerateUniverses {
                       .of(generatedValidatorKeys.get(i).getPublicKey()));
             });
     if (validatorsCount > 0) {
-      System.out.format(
-          "export RADIXDLT_GENESIS_TXN=%s%n", "Hello" + validatorsCount/*Bytes.toHexString(genesis.getPayload())*/);
+      System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", validatorsCount);
     } else {
       try (var writer = new BufferedWriter(new FileWriter("genesis.json"))) {
         writer.write(

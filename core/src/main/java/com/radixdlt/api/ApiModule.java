@@ -66,11 +66,8 @@ package com.radixdlt.api;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.core.CoreApiModule;
-import com.radixdlt.api.service.EngineStatusService;
 import com.radixdlt.api.system.SystemApiModule;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
@@ -87,22 +84,16 @@ public final class ApiModule extends AbstractModule {
 
   private final int port;
   private final String bindAddress;
-  private final boolean enableTransactions;
-  private final boolean enableSign;
 
-  public ApiModule(String bindAddress, int port, boolean enableTransactions, boolean enableSign) {
+  public ApiModule(String bindAddress, int port) {
     this.bindAddress = bindAddress;
     this.port = port;
-    this.enableTransactions = enableTransactions;
-    this.enableSign = enableSign;
   }
 
   @Override
   public void configure() {
     MapBinder.newMapBinder(binder(), String.class, HttpHandler.class);
-    bind(EngineStatusService.class).in(Scopes.SINGLETON);
     install(new SystemApiModule());
-    install(new CoreApiModule(enableTransactions, enableSign));
   }
 
   private static void fallbackHandler(HttpServerExchange exchange) {

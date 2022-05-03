@@ -82,7 +82,6 @@ import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import io.undertow.Undertow;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
