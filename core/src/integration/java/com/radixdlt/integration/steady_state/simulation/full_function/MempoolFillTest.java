@@ -81,11 +81,11 @@ import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors
 import com.radixdlt.integration.targeted.mempool.MempoolFillerModule;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.TokenIssuance;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.rev1.checkpoint.Genesis;
+import com.radixdlt.rev1.checkpoint.TokenIssuance;
+import com.radixdlt.rev1.forks.ForksModule;
+import com.radixdlt.rev1.forks.MainnetForksModule;
+import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;

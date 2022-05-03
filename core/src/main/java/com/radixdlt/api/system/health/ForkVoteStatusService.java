@@ -72,11 +72,11 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.SubstateIndex;
+import com.radixdlt.rev1.LedgerAndBFTProof;
+import com.radixdlt.rev1.forks.CandidateForkVote;
+import com.radixdlt.rev1.forks.CurrentForkView;
+import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.CandidateForkVote;
-import com.radixdlt.statecomputer.forks.CurrentForkView;
-import com.radixdlt.statecomputer.forks.Forks;
 import com.radixdlt.store.EngineStore;
 import java.util.Objects;
 

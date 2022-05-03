@@ -129,10 +129,10 @@ import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.forks.CandidateForkConfig;
-import com.radixdlt.statecomputer.forks.CurrentForkView;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.rev1.forks.CandidateForkConfig;
+import com.radixdlt.rev1.forks.CurrentForkView;
+import com.radixdlt.rev1.forks.ForkConfig;
+import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.PrivateKeys;
@@ -1272,7 +1272,7 @@ public final class CoreModelMapper {
   }
 
   public ForkVotingResult forkVotingResult(
-      com.radixdlt.statecomputer.forks.ForkVotingResult forkVotingResult) {
+      com.radixdlt.rev1.forks.ForkVotingResult forkVotingResult) {
     return new ForkVotingResult()
         .epoch(forkVotingResult.epoch())
         .candidateForkId(forkVotingResult.candidateForkId().toString())

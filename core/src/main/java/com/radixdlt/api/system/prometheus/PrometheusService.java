@@ -70,7 +70,6 @@ import static com.radixdlt.api.system.prometheus.PrometheusService.JmxMetric.jmx
 
 import com.google.inject.Inject;
 import com.radixdlt.RadixNodeApplication;
-import com.radixdlt.api.service.EngineStatusService;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -82,7 +81,6 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.forks.CurrentForkView;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -133,8 +131,6 @@ public class PrometheusService {
   private final BFTNode self;
   private final Map<String, Boolean> endpointStatuses;
   private final PeersView peersView;
-  private final CurrentForkView currentForkView;
-  private final EngineStatusService engineStatusService;
 
   @Inject
   public PrometheusService(
@@ -144,9 +140,7 @@ public class PrometheusService {
       HealthInfoService healthInfoService,
       InMemorySystemInfo inMemorySystemInfo,
       @Self BFTNode self,
-      Addressing addressing,
-      CurrentForkView currentForkView,
-      EngineStatusService engineStatusService) {
+      Addressing addressing) {
     boolean enableTransactions = properties.get("api.transactions.enable", false);
     this.endpointStatuses = Map.of("transactions", enableTransactions);
     this.systemCounters = systemCounters;
@@ -155,8 +149,6 @@ public class PrometheusService {
     this.inMemorySystemInfo = inMemorySystemInfo;
     this.self = self;
     this.addressing = addressing;
-    this.currentForkView = currentForkView;
-    this.engineStatusService = engineStatusService;
   }
 
   public String getMetrics() {
@@ -186,9 +178,6 @@ public class PrometheusService {
 
     appendCounter(builder, "total_validators", totalValidators);
 
-    appendCandidateForkRemainingEpochs(builder);
-    appendCandidateForkVotingResult(builder);
-
     appendJMXCounters(builder);
 
     appendCounterExtended(
@@ -200,20 +189,6 @@ public class PrometheusService {
         0.0);
   }
 
-  private void appendCandidateForkRemainingEpochs(StringBuilder builder) {
-    final var candidateForkRemainingEpochs =
-        engineStatusService.getCandidateForkRemainingEpochs().orElse(0L);
-
-    appendCounter(builder, "candidate_fork_remaining_epochs", candidateForkRemainingEpochs);
-  }
-
-  private void appendCandidateForkVotingResult(StringBuilder builder) {
-    appendCounter(
-        builder,
-        "candidate_fork_voting_result_percentage",
-        engineStatusService.getCandidateForkVotingResultPercentage());
-  }
-
   private String prepareNodeInfo() {
     var builder = new StringBuilder("nodeinfo{");
     addEndpontStatuses(builder);
@@ -223,7 +198,6 @@ public class PrometheusService {
         addressing.forAccounts().of(REAddr.ofPubKeyAccount(self.getKey())));
     addBranchAndCommit(builder);
     addValidatorAddress(builder);
-    addCurrentFork(builder);
     appendField(builder, "health", healthInfoService.nodeStatus().name());
     appendField(builder, "key", self.getKey().toHex());
 
@@ -247,10 +221,6 @@ public class PrometheusService {
     var branchAndCommit =
         RadixNodeApplication.systemVersionInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
     appendField(builder, "branch_and_commit", branchAndCommit);
-  }
-
-  private void addCurrentFork(StringBuilder builder) {
-    appendField(builder, "current_fork_name", currentForkView.currentForkConfig().name());
   }
 
   private void addEndpontStatuses(StringBuilder builder) {

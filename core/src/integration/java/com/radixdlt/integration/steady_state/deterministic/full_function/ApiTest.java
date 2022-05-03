@@ -70,9 +70,9 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.harness.deterministic.ActorConfiguration;
 import com.radixdlt.harness.deterministic.DeterministicActorsTest;
 import com.radixdlt.harness.deterministic.actors.*;
-import com.radixdlt.statecomputer.forks.ForkOverwritesWithShorterEpochsModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.rev1.forks.ForkOverwritesWithShorterEpochsModule;
+import com.radixdlt.rev1.forks.RERulesConfig;
+import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import java.util.List;
 import java.util.Map;
 

@@ -85,9 +85,9 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.CandidateForkVote;
-import com.radixdlt.statecomputer.forks.ForkVotingResult;
+import com.radixdlt.rev1.LedgerAndBFTProof;
+import com.radixdlt.rev1.forks.CandidateForkVote;
+import com.radixdlt.rev1.forks.ForkVotingResult;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.utils.Bytes;
 import java.util.List;
@@ -122,7 +122,7 @@ public final class ForksVotingResultsHandlerTest extends ApiTest {
   }
 
   private void storeMetadataWithForks(
-      long epoch, ImmutableSet<com.radixdlt.statecomputer.forks.ForkVotingResult> forkVotingResults)
+      long epoch, ImmutableSet<com.radixdlt.rev1.forks.ForkVotingResult> forkVotingResults)
       throws RadixEngineException {
     final var fakeTx = mock(REProcessedTxn.class);
     final var txn = mock(Txn.class);

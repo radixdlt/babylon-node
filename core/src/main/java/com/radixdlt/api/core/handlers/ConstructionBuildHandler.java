@@ -74,7 +74,7 @@ import com.radixdlt.api.core.openapitools.model.ConstructionBuildResponse;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
 
 public final class ConstructionBuildHandler

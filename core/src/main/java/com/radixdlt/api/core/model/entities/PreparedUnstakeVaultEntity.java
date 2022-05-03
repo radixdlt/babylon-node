@@ -77,7 +77,7 @@ import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.rev1.forks.RERulesConfig;
 import java.util.List;
 
 public record PreparedUnstakeVaultEntity(REAddr accountAddress) implements Entity {

@@ -72,7 +72,7 @@ import com.radixdlt.harness.simulation.MonitorKey;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.EventNeverOccursInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
-import com.radixdlt.statecomputer.InvalidProposedTxn;
+import com.radixdlt.rev1.InvalidProposedTxn;
 
 /** Monitors which check for radix engine related functionality */
 public final class RadixEngineMonitors {

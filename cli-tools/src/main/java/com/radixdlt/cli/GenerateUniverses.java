@@ -86,16 +86,16 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.statecomputer.MaxValidators;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.checkpoint.GenesisProvider;
-import com.radixdlt.statecomputer.checkpoint.TokenIssuance;
-import com.radixdlt.statecomputer.forks.CurrentForkView;
-import com.radixdlt.statecomputer.forks.ForkBuilder;
-import com.radixdlt.statecomputer.forks.ForkConfig;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
-import com.radixdlt.statecomputer.forks.NewestForkConfig;
+import com.radixdlt.rev1.MaxValidators;
+import com.radixdlt.rev1.checkpoint.Genesis;
+import com.radixdlt.rev1.checkpoint.GenesisProvider;
+import com.radixdlt.rev1.checkpoint.TokenIssuance;
+import com.radixdlt.rev1.forks.CurrentForkView;
+import com.radixdlt.rev1.forks.ForkBuilder;
+import com.radixdlt.rev1.forks.ForkConfig;
+import com.radixdlt.rev1.forks.Forks;
+import com.radixdlt.rev1.forks.MainnetForksModule;
+import com.radixdlt.rev1.forks.NewestForkConfig;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -245,8 +245,7 @@ public final class GenerateUniverses {
                       .of(generatedValidatorKeys.get(i).getPublicKey()));
             });
     if (validatorsCount > 0) {
-      System.out.format(
-          "export RADIXDLT_GENESIS_TXN=%s%n", Bytes.toHexString(genesis.getPayload()));
+      System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", validatorsCount);
     } else {
       try (var writer = new BufferedWriter(new FileWriter("genesis.json"))) {
         writer.write(

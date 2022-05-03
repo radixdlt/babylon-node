@@ -72,7 +72,7 @@ import com.radixdlt.api.core.handlers.EngineConfigurationHandler;
 import com.radixdlt.api.core.openapitools.model.EngineConfigurationRequest;
 import com.radixdlt.api.core.openapitools.model.EngineConfigurationResponse;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.utils.Bytes;
 import org.junit.Test;
 

@@ -68,7 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.rev1.LedgerAndBFTProof;
 
 public class InMemoryRadixEngineStoreModule extends AbstractModule {
   @Override

@@ -67,7 +67,7 @@ package com.radixdlt.api.core.reconstruction;
 import com.google.inject.Provider;
 import com.radixdlt.api.core.model.SubstateOperation;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.rev1.LedgerAndBFTProof;
 
 public interface RecoverableSubstate {
   SubstateOperation recover(Provider<RadixEngine<LedgerAndBFTProof>> radixEngineProvider);

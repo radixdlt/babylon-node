@@ -88,8 +88,8 @@ import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.rev1.LedgerAndBFTProof;
+import com.radixdlt.rev1.RadixEngineStateComputer;
 
 public final class WithdrawVoteHandler
     extends CoreJsonRpcHandler<UpdateVoteRequest, UpdateVoteResponse> {

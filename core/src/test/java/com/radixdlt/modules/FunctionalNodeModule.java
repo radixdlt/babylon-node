@@ -72,13 +72,13 @@ import com.radixdlt.ledger.MockedCommandGeneratorModule;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
-import com.radixdlt.statecomputer.MockedStateComputerModule;
-import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
-import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
-import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.sync.MockedSyncServiceModule;
+import com.radixdlt.rev1.MockedMempoolStateComputerModule;
+import com.radixdlt.rev1.MockedStateComputerModule;
+import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
+import com.radixdlt.rev1.RadixEngineModule;
+import com.radixdlt.rev1.RadixEngineStateComputerModule;
+import com.radixdlt.rev1.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.rev2.MockedSyncServiceModule;
 
 /** Manages the functional components of a node */
 public final class FunctionalNodeModule extends AbstractModule {

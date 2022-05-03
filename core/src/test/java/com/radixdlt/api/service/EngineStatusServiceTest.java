@@ -64,7 +64,7 @@
 
 package com.radixdlt.api.service;
 
-import static com.radixdlt.statecomputer.forks.RERulesVersion.OLYMPIA_V1;
+import static com.radixdlt.rev1.forks.RERulesVersion.OLYMPIA_V1;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -74,16 +74,16 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.CandidateForkConfig;
-import com.radixdlt.statecomputer.forks.CandidateForkConfig.Threshold;
-import com.radixdlt.statecomputer.forks.CandidateForkVote;
-import com.radixdlt.statecomputer.forks.FixedEpochForkConfig;
-import com.radixdlt.statecomputer.forks.ForkVotingResult;
-import com.radixdlt.statecomputer.forks.Forks;
-import com.radixdlt.statecomputer.forks.InMemoryForksEpochStore;
-import com.radixdlt.statecomputer.forks.RERules;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.rev1.LedgerAndBFTProof;
+import com.radixdlt.rev1.forks.CandidateForkConfig;
+import com.radixdlt.rev1.forks.CandidateForkConfig.Threshold;
+import com.radixdlt.rev1.forks.CandidateForkVote;
+import com.radixdlt.rev1.forks.FixedEpochForkConfig;
+import com.radixdlt.rev1.forks.ForkVotingResult;
+import com.radixdlt.rev1.forks.Forks;
+import com.radixdlt.rev1.forks.InMemoryForksEpochStore;
+import com.radixdlt.rev1.forks.RERules;
+import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Set;
 import org.junit.Test;

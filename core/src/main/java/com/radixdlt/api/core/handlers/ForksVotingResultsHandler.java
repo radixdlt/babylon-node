@@ -71,8 +71,8 @@ import com.radixdlt.api.core.model.CoreApiException;
 import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.ForksVotingResultsRequest;
 import com.radixdlt.api.core.openapitools.model.ForksVotingResultsResponse;
-import com.radixdlt.statecomputer.forks.ForkVotingResult;
-import com.radixdlt.statecomputer.forks.ForksEpochStore;
+import com.radixdlt.rev1.forks.ForkVotingResult;
+import com.radixdlt.rev1.forks.ForksEpochStore;
 
 public class ForksVotingResultsHandler
     extends CoreJsonRpcHandler<ForksVotingResultsRequest, ForksVotingResultsResponse> {

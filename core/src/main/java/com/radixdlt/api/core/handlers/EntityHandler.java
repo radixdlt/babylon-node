@@ -76,7 +76,7 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.rev1.LedgerAndBFTProof;
 import java.util.function.Function;
 
 public class EntityHandler extends CoreJsonRpcHandler<EntityRequest, EntityResponse> {

@@ -74,7 +74,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.network.p2p.PeerEvent;
-import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.rev1.forks.Forks;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;

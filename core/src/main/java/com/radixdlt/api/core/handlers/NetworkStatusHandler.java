@@ -80,8 +80,8 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.rev1.LedgerAndBFTProof;
+import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.store.LastProof;
 
 public final class NetworkStatusHandler
