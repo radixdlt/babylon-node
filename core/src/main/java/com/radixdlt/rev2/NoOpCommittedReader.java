@@ -62,15 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.mocked;
+package com.radixdlt.rev2;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.sync.CommittedReader;
+import java.util.Optional;
 
-public class MockedStateComputerModule extends AbstractModule {
+public final class NoOpCommittedReader implements CommittedReader {
   @Override
-  public void configure() {
-    bind(StateComputer.class).to(MockedStateComputer.class).in(Scopes.SINGLETON);
+  public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+    return null;
+  }
+
+  @Override
+  public Optional<LedgerProof> getEpochProof(long epoch) {
+    return Optional.empty();
+  }
+
+  @Override
+  public Optional<LedgerProof> getLastProof() {
+    return Optional.empty();
   }
 }

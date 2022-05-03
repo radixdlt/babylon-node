@@ -62,27 +62,50 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.mocked;
+package com.radixdlt.rev2;
 
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.sync.CommittedReader;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.utils.TimeSupplier;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
-public final class NoOpCommittedReader implements CommittedReader {
+public class MockedLedgerModule extends AbstractModule {
   @Override
-  public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
-    return null;
+  public void configure() {
+    bind(NextTxnsGenerator.class).toInstance((view, aids) -> List.of());
   }
 
-  @Override
-  public Optional<LedgerProof> getEpochProof(long epoch) {
-    return Optional.empty();
-  }
+  @Provides
+  @Singleton
+  Ledger syncedLedger(TimeSupplier timeSupplier) {
+    return new Ledger() {
+      @Override
+      public Optional<PreparedVertex> prepare(
+          LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
+        final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
+        final LedgerHeader ledgerHeader =
+            vertex
+                .getParentHeader()
+                .getLedgerHeader()
+                .updateViewAndTimestamp(vertex.getView(), timestamp);
 
-  @Override
-  public Optional<LedgerProof> getLastProof() {
-    return Optional.empty();
+        return Optional.of(
+            vertex
+                .withHeader(ledgerHeader, timeSupplier.currentTime())
+                .andTxns(
+                    vertex.getTxns().stream().<PreparedTxn>map(MockPrepared::new).toList(),
+                    Map.of()));
+      }
+    };
   }
 }

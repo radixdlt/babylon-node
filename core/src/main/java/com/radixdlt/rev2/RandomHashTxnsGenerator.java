@@ -62,15 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.mocked;
+package com.radixdlt.rev2;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.crypto.HashUtils;
+import java.util.List;
 
-public class MockedStateComputerWithEpochsModule extends AbstractModule {
+/** Generates new random hash commands */
+public final class RandomHashTxnsGenerator implements NextTxnsGenerator {
   @Override
-  protected void configure() {
-    bind(StateComputer.class).to(MockedStateComputerWithEpochs.class).in(Scopes.SINGLETON);
+  public List<Txn> generateNextTxns(View view, List<PreparedVertex> prepared) {
+    return List.of(Txn.create(HashUtils.random256().asBytes()));
   }
 }

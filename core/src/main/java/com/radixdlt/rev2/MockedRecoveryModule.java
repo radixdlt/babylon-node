@@ -62,74 +62,84 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.mocked;
+package com.radixdlt.rev2;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Inject;
-import com.radixdlt.atom.Txn;
+import com.google.common.hash.HashCode;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
-import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.statecomputer.EpochCeilingView;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
+import java.util.Optional;
 
-public final class MockedStateComputerWithEpochs implements StateComputer {
-  private final Function<Long, BFTValidatorSet> validatorSetMapping;
-  private final View epochHighView;
-  private final MockedStateComputer stateComputer;
+/** Starting configuration for simulation/deterministic steady state tests. */
+public class MockedRecoveryModule extends AbstractModule {
 
-  @Inject
-  public MockedStateComputerWithEpochs(
-      @EpochCeilingView View epochHighView,
-      Function<Long, BFTValidatorSet> validatorSetMapping,
-      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-      Hasher hasher) {
-    this.validatorSetMapping = Objects.requireNonNull(validatorSetMapping);
-    this.epochHighView = Objects.requireNonNull(epochHighView);
-    this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
+  private final HashCode genesisHash;
+
+  public MockedRecoveryModule() {
+    this(HashUtils.zero256());
   }
 
-  @Override
-  public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
-
-  @Override
-  public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
-    return List.of();
+  public MockedRecoveryModule(HashCode genesisHash) {
+    this.genesisHash = genesisHash;
   }
 
-  @Override
-  public StateComputerResult prepare(
-      List<PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
-    var view = vertex.getView();
-    var epoch = vertex.getParentHeader().getLedgerHeader().getEpoch();
-    var next = vertex.getTxns();
-    if (view.compareTo(epochHighView) >= 0) {
-      return new StateComputerResult(
-          next.stream().map(MockPrepared::new).collect(Collectors.toList()),
-          ImmutableMap.of(),
-          validatorSetMapping.apply(epoch + 1));
-    } else {
-      return stateComputer.prepare(previous, vertex, timestamp);
-    }
+  @Provides
+  private ViewUpdate view(BFTConfiguration configuration, ProposerElection proposerElection) {
+    HighQC highQC = configuration.getVertexStoreState().getHighQC();
+    View view = highQC.highestQC().getView().next();
+    final BFTNode leader = proposerElection.getProposer(view);
+    final BFTNode nextLeader = proposerElection.getProposer(view.next());
+
+    return ViewUpdate.create(view, highQC, leader, nextLeader);
   }
 
-  @Override
-  public void commit(
-      VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-    this.stateComputer.commit(verifiedTxnsAndProof, vertexStoreState);
+  @Provides
+  private BFTConfiguration configuration(
+      @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
+    var accumulatorState = new AccumulatorState(0, genesisHash);
+    UnverifiedVertex genesis =
+        UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0));
+    VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, genesisHash);
+    LedgerHeader nextLedgerHeader =
+        LedgerHeader.create(
+            proof.getEpoch() + 1, View.genesis(), proof.getAccumulatorState(), proof.timestamp());
+    var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
+    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    return new BFTConfiguration(
+        proposerElection,
+        validatorSet,
+        VerifiedVertexStoreState.create(
+            HighQC.from(genesisQC), verifiedGenesis, Optional.empty(), hasher));
+  }
+
+  @Provides
+  @LastEpochProof
+  public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
+    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    return LedgerProof.genesis(accumulatorState, validatorSet, 0);
+  }
+
+  @Provides
+  @LastProof
+  private LedgerProof lastProof(BFTConfiguration bftConfiguration) {
+    return bftConfiguration.getVertexStoreState().getRootHeader();
   }
 }

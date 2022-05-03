@@ -62,15 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.mocked;
+package com.radixdlt.rev2;
 
-import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 
-/** Module which provides a random hash command generator */
-public class MockedCommandGeneratorModule extends AbstractModule {
+public class MockPrepared implements PreparedTxn {
+
+  private final Txn txn;
+
+  public MockPrepared(Txn txn) {
+    this.txn = txn;
+  }
+
   @Override
-  protected void configure() {
-    bind(NextTxnsGenerator.class).to(RandomHashTxnsGenerator.class);
+  public Txn txn() {
+    return txn;
   }
 }

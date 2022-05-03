@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.mocked;
+package com.radixdlt.integration.steady_state.simulation.consensus_ledger_sync;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;

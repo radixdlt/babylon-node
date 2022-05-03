@@ -94,7 +94,7 @@ import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import com.radixdlt.statecomputer.forks.InMemoryForksEpochStore;
-import com.radixdlt.statecomputer.mocked.InMemoryCommittedReader;
+import com.radixdlt.rev2.InMemoryCommittedReader;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Maybe;

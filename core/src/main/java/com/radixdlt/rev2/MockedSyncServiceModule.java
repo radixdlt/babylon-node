@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.mocked;
+package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;

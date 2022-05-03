@@ -77,7 +77,7 @@ import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.statecomputer.mocked.InMemoryCommittedReader;
+import com.radixdlt.rev2.InMemoryCommittedReader;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

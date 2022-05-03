@@ -82,10 +82,10 @@ import com.radixdlt.network.p2p.PeerDiscoveryModule;
 import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.statecomputer.mocked.InMemoryCommittedReaderModule;
-import com.radixdlt.statecomputer.mocked.MockedMempoolStateComputerModule;
-import com.radixdlt.statecomputer.mocked.MockedPersistenceStoreModule;
-import com.radixdlt.statecomputer.mocked.MockedRecoveryModule;
+import com.radixdlt.rev2.InMemoryCommittedReaderModule;
+import com.radixdlt.rev2.MockedMempoolStateComputerModule;
+import com.radixdlt.rev2.MockedPersistenceStoreModule;
+import com.radixdlt.rev2.MockedRecoveryModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.PrivateKeys;
@@ -121,7 +121,16 @@ public final class RadixNodeModule extends AbstractModule {
     var addressing = Addressing.ofNetworkId(networkId);
     bind(Addressing.class).toInstance(addressing);
     bindConstant().annotatedWith(NetworkId.class).to(networkId);
+
+    // Use genesis to specify number of validators for now
     var numValidators = Integer.parseInt(properties.get("network.genesis_txn"));
+    var initialVset =
+        BFTValidatorSet.from(
+            PrivateKeys.numeric(6)
+                .limit(numValidators)
+                .map(ECKeyPair::getPublicKey)
+                .map(k -> BFTValidator.from(BFTNode.create(k), UInt256.ONE)));
+    bind(BFTValidatorSet.class).toInstance(initialVset);
     bind(RuntimeProperties.class).toInstance(properties);
 
     // Consensus configuration
@@ -177,45 +186,6 @@ public final class RadixNodeModule extends AbstractModule {
     install(new MockedPersistenceStoreModule());
     install(new MockedMempoolStateComputerModule());
     install(new InMemoryCommittedReaderModule());
-    /*
-    install(new ForksModule());
-
-    if (networkId == Network.MAINNET.getId()) {
-      log.info("Using mainnet forks");
-      install(new MainnetForksModule());
-    } else if (properties.get("testing_forks.enable", false)) {
-      String testingForkConfigName =
-          properties.get("testing_forks.fork_config_name", "TestingForksModuleV1");
-      if (testingForkConfigName.isBlank()) {
-        testingForkConfigName = "TestingForksModuleV1";
-      }
-      log.info("Using testing fork config '{}'", testingForkConfigName);
-      install(
-          new TestingForksLoader()
-              .createTestingForksModuleConfigFromClassName(testingForkConfigName));
-    } else {
-      log.info("Using stokenet forks");
-      install(new StokenetForksModule());
-    }
-
-    if (properties.get("overwrite_forks.enable", false)) {
-      log.info("Enabling fork overwrites");
-      install(new ForkOverwritesFromPropertiesModule());
-    }
-    install(new RadixEngineStateComputerModule());
-    install(new RadixEngineModule());
-    install(new RadixEngineStoreModule());
-
-    // Checkpoints
-    install(new RadixEngineCheckpointModule());
-     */
-    var initialVset =
-        BFTValidatorSet.from(
-            PrivateKeys.numeric(6)
-                .limit(numValidators)
-                .map(ECKeyPair::getPublicKey)
-                .map(k -> BFTValidator.from(BFTNode.create(k), UInt256.ONE)));
-    bind(BFTValidatorSet.class).toInstance(initialVset);
 
     // Storage
     install(new DatabasePropertiesModule());
