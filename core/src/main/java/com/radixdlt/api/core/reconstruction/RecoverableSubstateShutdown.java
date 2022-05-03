@@ -69,8 +69,8 @@ import com.radixdlt.api.core.model.SubstateOperation;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
 import java.nio.ByteBuffer;
 
 public final class RecoverableSubstateShutdown implements RecoverableSubstate {

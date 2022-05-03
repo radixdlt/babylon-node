@@ -79,8 +79,8 @@ import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.rev1.LedgerAndBFTProof;
+import com.radixdlt.rev1.RadixEngineStateComputer;
 
 public final class ConstructionParseHandler
     extends CoreJsonRpcHandler<ConstructionParseRequest, ConstructionParseResponse> {

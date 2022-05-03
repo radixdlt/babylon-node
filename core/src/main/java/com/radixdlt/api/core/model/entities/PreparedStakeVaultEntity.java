@@ -82,7 +82,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
 import java.util.List;

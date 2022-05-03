@@ -69,7 +69,7 @@ import com.radixdlt.api.core.model.entities.EntityDoesNotSupportResourceDepositE
 import com.radixdlt.api.core.model.entities.EntityDoesNotSupportResourceWithdrawException;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.rev1.forks.RERulesConfig;
 import java.io.Serializable;
 import java.util.List;
 

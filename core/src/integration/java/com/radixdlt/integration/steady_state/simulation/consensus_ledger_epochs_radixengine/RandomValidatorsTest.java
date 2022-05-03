@@ -77,10 +77,10 @@ import com.radixdlt.harness.simulation.application.NodeValidatorRandomRegistrato
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.statecomputer.forks.ForksModule;
-import com.radixdlt.statecomputer.forks.MainnetForksModule;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
-import com.radixdlt.statecomputer.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.rev1.forks.ForksModule;
+import com.radixdlt.rev1.forks.MainnetForksModule;
+import com.radixdlt.rev1.forks.RERulesConfig;
+import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;

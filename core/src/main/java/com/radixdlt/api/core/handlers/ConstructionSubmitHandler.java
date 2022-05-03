@@ -74,7 +74,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.rev1.RadixEngineStateComputer;
 
 public final class ConstructionSubmitHandler
     extends CoreJsonRpcHandler<ConstructionSubmitRequest, ConstructionSubmitResponse> {

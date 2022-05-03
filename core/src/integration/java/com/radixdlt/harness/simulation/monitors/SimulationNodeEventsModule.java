@@ -76,7 +76,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.statecomputer.InvalidProposedTxn;
+import com.radixdlt.rev1.InvalidProposedTxn;
 
 /** Module which manages node testing events for simulation */
 public final class SimulationNodeEventsModule extends AbstractModule {

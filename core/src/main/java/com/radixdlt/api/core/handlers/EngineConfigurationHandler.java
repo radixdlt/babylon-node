@@ -75,8 +75,8 @@ import com.radixdlt.api.core.openapitools.model.EngineStateIdentifier;
 import com.radixdlt.api.core.openapitools.model.StateIdentifier;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.rev1.checkpoint.Genesis;
+import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.utils.Bytes;
 
 public final class EngineConfigurationHandler

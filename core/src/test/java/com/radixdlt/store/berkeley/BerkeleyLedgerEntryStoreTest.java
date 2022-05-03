@@ -64,7 +64,7 @@
 
 package com.radixdlt.store.berkeley;
 
-import static com.radixdlt.statecomputer.forks.RERulesVersion.OLYMPIA_V1;
+import static com.radixdlt.rev1.forks.RERulesVersion.OLYMPIA_V1;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -84,11 +84,11 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.forks.CandidateForkConfig;
-import com.radixdlt.statecomputer.forks.CandidateForkVote;
-import com.radixdlt.statecomputer.forks.ForkVotingResult;
-import com.radixdlt.statecomputer.forks.RERulesConfig;
+import com.radixdlt.rev1.LedgerAndBFTProof;
+import com.radixdlt.rev1.forks.CandidateForkConfig;
+import com.radixdlt.rev1.forks.CandidateForkVote;
+import com.radixdlt.rev1.forks.ForkVotingResult;
+import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.StoreConfig;
 import java.io.IOException;

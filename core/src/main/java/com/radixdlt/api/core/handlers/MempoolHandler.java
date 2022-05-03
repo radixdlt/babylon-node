@@ -71,7 +71,7 @@ import com.radixdlt.api.core.model.CoreModelMapper;
 import com.radixdlt.api.core.openapitools.model.MempoolRequest;
 import com.radixdlt.api.core.openapitools.model.MempoolResponse;
 import com.radixdlt.api.core.openapitools.model.TransactionIdentifier;
-import com.radixdlt.statecomputer.RadixEngineMempool;
+import com.radixdlt.rev1.RadixEngineMempool;
 
 public final class MempoolHandler extends CoreJsonRpcHandler<MempoolRequest, MempoolResponse> {
   private final CoreModelMapper coreModelMapper;

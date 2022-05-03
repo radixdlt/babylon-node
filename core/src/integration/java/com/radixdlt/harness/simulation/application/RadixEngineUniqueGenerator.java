@@ -72,8 +72,8 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
-import com.radixdlt.statecomputer.forks.CurrentForkView;
+import com.radixdlt.rev1.checkpoint.Genesis;
+import com.radixdlt.rev1.forks.CurrentForkView;
 import java.nio.charset.StandardCharsets;
 
 /**

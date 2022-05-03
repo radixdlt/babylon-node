@@ -80,7 +80,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.keys.LocalSigner;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
+import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.utils.Bytes;
 
 public final class KeySignHandler extends CoreJsonRpcHandler<KeySignRequest, KeySignResponse> {

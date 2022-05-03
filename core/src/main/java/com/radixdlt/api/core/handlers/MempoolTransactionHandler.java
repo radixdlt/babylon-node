@@ -77,8 +77,8 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.statecomputer.LedgerAndBFTProof;
-import com.radixdlt.statecomputer.RadixEngineMempool;
+import com.radixdlt.rev1.LedgerAndBFTProof;
+import com.radixdlt.rev1.RadixEngineMempool;
 
 public class MempoolTransactionHandler
     extends CoreJsonRpcHandler<MempoolTransactionRequest, MempoolTransactionResponse> {

@@ -74,7 +74,7 @@ import com.radixdlt.api.core.openapitools.model.UpcomingFork;
 import com.radixdlt.api.core.openapitools.model.Validator;
 import com.radixdlt.api.service.EngineStatusService;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.statecomputer.forks.Forks;
+import com.radixdlt.rev1.forks.Forks;
 
 public class EngineStatusHandler
     extends CoreJsonRpcHandler<EngineStatusRequest, EngineStatusResponse> {

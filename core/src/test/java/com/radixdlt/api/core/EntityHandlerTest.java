@@ -93,7 +93,7 @@ import com.radixdlt.api.core.openapitools.model.ValidatorSystemMetadata;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.statecomputer.checkpoint.Genesis;
+import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.utils.Bytes;
 import org.junit.Test;
 
