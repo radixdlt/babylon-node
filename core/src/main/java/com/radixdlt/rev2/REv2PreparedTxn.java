@@ -64,25 +64,18 @@
 
 package com.radixdlt.rev2;
 
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.sync.CommittedReader;
-import java.util.Optional;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.ledger.StateComputerLedger;
 
-public final class NoOpCommittedReader implements CommittedReader {
-  @Override
-  public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
-    return null;
+public class REv2PreparedTxn implements StateComputerLedger.PreparedTxn {
+  private final Txn txn;
+
+  public REv2PreparedTxn(Txn txn) {
+    this.txn = txn;
   }
 
   @Override
-  public Optional<LedgerProof> getEpochProof(long epoch) {
-    return Optional.empty();
-  }
-
-  @Override
-  public Optional<LedgerProof> getLastProof() {
-    return Optional.empty();
+  public Txn txn() {
+    return txn;
   }
 }

@@ -62,120 +62,100 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.statecomputer;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.AbstractModule;
-import com.google.inject.Module;
-import com.radixdlt.environment.NoEpochsConsensusModule;
-import com.radixdlt.environment.NoEpochsSyncModule;
-import com.radixdlt.ledger.MockedCommandGeneratorModule;
-import com.radixdlt.ledger.MockedLedgerModule;
-import com.radixdlt.mempool.MempoolReceiverModule;
-import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.rev2.MockedSyncServiceModule;
-import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
-import com.radixdlt.statecomputer.MockedStateComputerModule;
-import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
-import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
-import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.MockPrepared;
+import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.mempool.SimpleMempool;
+import com.radixdlt.monitoring.SystemCounters;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-/** Manages the functional components of a node */
-public final class FunctionalNodeModule extends AbstractModule {
-  private final boolean hasConsensus;
-  private final boolean hasSync;
-
-  // State manager
-  private final boolean hasLedger;
-  private final boolean hasMempool;
-  private final boolean hasRadixEngine;
-
-  private final boolean hasMempoolRelayer;
-
-  private final boolean hasEpochs;
-
-  // FIXME: This is required for now for shared syncing, remove after refactor
-  private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
-
-  public FunctionalNodeModule() {
-    this(true, true, true, true, true, true, true);
-  }
-
-  public FunctionalNodeModule(
-      boolean hasConsensus,
-      boolean hasLedger,
-      boolean hasMempool,
-      boolean hasMempoolRelayer,
-      boolean hasRadixEngine,
-      boolean hasEpochs,
-      boolean hasSync) {
-    this.hasConsensus = hasConsensus;
-    this.hasLedger = hasLedger;
-    this.hasMempool = hasMempool;
-    this.hasMempoolRelayer = hasMempoolRelayer;
-    this.hasRadixEngine = hasRadixEngine;
-    this.hasEpochs = hasEpochs;
-    this.hasSync = hasSync;
-  }
+/** Simple Mempool state computer */
+public class MockedMempoolStateComputerModule extends AbstractModule {
+  private static final Logger log = LogManager.getLogger();
 
   @Override
-  public void configure() {
-    install(new EventLoggerModule());
-    install(new DispatcherModule());
+  protected void configure() {
+    bind(new TypeLiteral<Mempool<?>>() {})
+        .to(new TypeLiteral<Mempool<Txn>>() {})
+        .in(Scopes.SINGLETON);
+  }
 
-    // Consensus
-    if (hasConsensus) {
-      install(new ConsensusModule());
-      if (hasEpochs) {
-        install(new EpochsConsensusModule());
-      } else {
-        install(new NoEpochsConsensusModule());
+  @Provides
+  @Singleton
+  private Mempool<Txn> mempool(
+      SystemCounters systemCounters, Random random, @MempoolMaxSize int mempoolMaxSize) {
+    return new SimpleMempool(systemCounters, mempoolMaxSize, random);
+  }
+
+  @Provides
+  @Singleton
+  private StateComputerLedger.StateComputer stateComputer(
+      Mempool<Txn> mempool,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      SystemCounters counters) {
+    return new StateComputerLedger.StateComputer() {
+      @Override
+      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
+        mempoolAdd
+            .txns()
+            .forEach(
+                txn -> {
+                  try {
+                    mempool.add(txn);
+                    counters.set(
+                        SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+                  } catch (MempoolRejectedException e) {
+                    log.error(e);
+                  }
+                });
       }
-    }
 
-    // Sync
-    if (hasLedger) {
-      if (!hasSync) {
-        install(mockedSyncServiceModule);
-      } else {
-        install(new SyncServiceModule());
-        if (hasEpochs) {
-          install(new EpochsSyncModule());
-        } else {
-          install(new NoEpochsSyncModule());
-        }
+      @Override
+      public List<Txn> getNextTxnsFromMempool(List<StateComputerLedger.PreparedTxn> prepared) {
+        return mempool.getTxns(1, List.of());
       }
-    }
 
-    // State Manager
-    if (!hasLedger) {
-      install(new MockedLedgerModule());
-    } else {
-      install(new LedgerModule());
-
-      if (!hasMempool) {
-        install(new MockedCommandGeneratorModule());
-
-        if (!hasEpochs) {
-          install(new MockedStateComputerModule());
-        } else {
-          install(new MockedStateComputerWithEpochsModule());
-        }
-      } else {
-        install(new MempoolReceiverModule());
-
-        if (hasMempoolRelayer) {
-          install(new MempoolRelayerModule());
-        }
-
-        if (!hasRadixEngine) {
-          install(new MockedMempoolStateComputerModule());
-        } else {
-          install(new RadixEngineStateComputerModule());
-          install(new RadixEngineModule());
-          install(new RadixEngineCheckpointModule());
-        }
+      @Override
+      public StateComputerLedger.StateComputerResult prepare(
+          List<StateComputerLedger.PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+        return new StateComputerLedger.StateComputerResult(
+            vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()),
+            Map.of());
       }
-    }
+
+      @Override
+      public void commit(
+          VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+        mempool.committed(txnsAndProof.getTxns());
+        counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+
+        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
+        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
+      }
+    };
   }
 }

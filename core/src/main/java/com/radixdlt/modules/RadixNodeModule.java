@@ -82,10 +82,7 @@ import com.radixdlt.network.p2p.PeerDiscoveryModule;
 import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.rev2.InMemoryCommittedReaderModule;
-import com.radixdlt.rev2.MockedMempoolStateComputerModule;
-import com.radixdlt.rev2.MockedPersistenceStoreModule;
-import com.radixdlt.rev2.MockedRecoveryModule;
+import com.radixdlt.rev2.*;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.PrivateKeys;
@@ -184,7 +181,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // State Computer
     install(new MockedPersistenceStoreModule());
-    install(new MockedMempoolStateComputerModule());
+    install(new REv2StateComputerModule());
     install(new InMemoryCommittedReaderModule());
 
     // Storage

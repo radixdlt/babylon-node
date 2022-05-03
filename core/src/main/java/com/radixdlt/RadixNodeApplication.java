@@ -82,6 +82,7 @@ import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.utils.properties.RuntimeProperties;
+import io.undertow.Undertow;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -218,10 +219,8 @@ public final class RadixNodeApplication {
       log.error("Cannot start p2p server", e);
     }
 
-    /*
     final var undertow = injector.getInstance(Undertow.class);
     undertow.start();
-     */
 
     final var consensusRunner = moduleRunners.get(Runners.CONSENSUS);
     consensusRunner.start();

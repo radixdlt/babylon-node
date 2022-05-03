@@ -62,120 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.ledger;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Module;
-import com.radixdlt.environment.NoEpochsConsensusModule;
-import com.radixdlt.environment.NoEpochsSyncModule;
-import com.radixdlt.ledger.MockedCommandGeneratorModule;
-import com.radixdlt.ledger.MockedLedgerModule;
-import com.radixdlt.mempool.MempoolReceiverModule;
-import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.rev2.MockedSyncServiceModule;
-import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
-import com.radixdlt.statecomputer.MockedStateComputerModule;
-import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
-import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
-import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 
-/** Manages the functional components of a node */
-public final class FunctionalNodeModule extends AbstractModule {
-  private final boolean hasConsensus;
-  private final boolean hasSync;
-
-  // State manager
-  private final boolean hasLedger;
-  private final boolean hasMempool;
-  private final boolean hasRadixEngine;
-
-  private final boolean hasMempoolRelayer;
-
-  private final boolean hasEpochs;
-
-  // FIXME: This is required for now for shared syncing, remove after refactor
-  private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
-
-  public FunctionalNodeModule() {
-    this(true, true, true, true, true, true, true);
-  }
-
-  public FunctionalNodeModule(
-      boolean hasConsensus,
-      boolean hasLedger,
-      boolean hasMempool,
-      boolean hasMempoolRelayer,
-      boolean hasRadixEngine,
-      boolean hasEpochs,
-      boolean hasSync) {
-    this.hasConsensus = hasConsensus;
-    this.hasLedger = hasLedger;
-    this.hasMempool = hasMempool;
-    this.hasMempoolRelayer = hasMempoolRelayer;
-    this.hasRadixEngine = hasRadixEngine;
-    this.hasEpochs = hasEpochs;
-    this.hasSync = hasSync;
-  }
-
+/** Module which provides a random hash command generator */
+public class MockedCommandGeneratorModule extends AbstractModule {
   @Override
-  public void configure() {
-    install(new EventLoggerModule());
-    install(new DispatcherModule());
-
-    // Consensus
-    if (hasConsensus) {
-      install(new ConsensusModule());
-      if (hasEpochs) {
-        install(new EpochsConsensusModule());
-      } else {
-        install(new NoEpochsConsensusModule());
-      }
-    }
-
-    // Sync
-    if (hasLedger) {
-      if (!hasSync) {
-        install(mockedSyncServiceModule);
-      } else {
-        install(new SyncServiceModule());
-        if (hasEpochs) {
-          install(new EpochsSyncModule());
-        } else {
-          install(new NoEpochsSyncModule());
-        }
-      }
-    }
-
-    // State Manager
-    if (!hasLedger) {
-      install(new MockedLedgerModule());
-    } else {
-      install(new LedgerModule());
-
-      if (!hasMempool) {
-        install(new MockedCommandGeneratorModule());
-
-        if (!hasEpochs) {
-          install(new MockedStateComputerModule());
-        } else {
-          install(new MockedStateComputerWithEpochsModule());
-        }
-      } else {
-        install(new MempoolReceiverModule());
-
-        if (hasMempoolRelayer) {
-          install(new MempoolRelayerModule());
-        }
-
-        if (!hasRadixEngine) {
-          install(new MockedMempoolStateComputerModule());
-        } else {
-          install(new RadixEngineStateComputerModule());
-          install(new RadixEngineModule());
-          install(new RadixEngineCheckpointModule());
-        }
-      }
-    }
+  protected void configure() {
+    bind(NextTxnsGenerator.class).to(RandomHashTxnsGenerator.class);
   }
 }

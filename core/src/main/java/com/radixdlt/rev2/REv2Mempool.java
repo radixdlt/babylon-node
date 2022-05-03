@@ -62,120 +62,95 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.rev2;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Module;
-import com.radixdlt.environment.NoEpochsConsensusModule;
-import com.radixdlt.environment.NoEpochsSyncModule;
-import com.radixdlt.ledger.MockedCommandGeneratorModule;
-import com.radixdlt.ledger.MockedLedgerModule;
-import com.radixdlt.mempool.MempoolReceiverModule;
-import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.rev2.MockedSyncServiceModule;
-import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
-import com.radixdlt.statecomputer.MockedStateComputerModule;
-import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
-import com.radixdlt.statecomputer.RadixEngineModule;
-import com.radixdlt.statecomputer.RadixEngineStateComputerModule;
-import com.radixdlt.statecomputer.checkpoint.RadixEngineCheckpointModule;
+import com.google.common.collect.Lists;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.mempool.MempoolMetadata;
+import com.radixdlt.monitoring.SystemCounters;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
-/** Manages the functional components of a node */
-public final class FunctionalNodeModule extends AbstractModule {
-  private final boolean hasConsensus;
-  private final boolean hasSync;
+public class REv2Mempool implements Mempool<Txn> {
+  private final Set<Txn> data = new HashSet<>();
+  private final SystemCounters counters;
+  private final Random random;
+  private final int maxSize;
 
-  // State manager
-  private final boolean hasLedger;
-  private final boolean hasMempool;
-  private final boolean hasRadixEngine;
-
-  private final boolean hasMempoolRelayer;
-
-  private final boolean hasEpochs;
-
-  // FIXME: This is required for now for shared syncing, remove after refactor
-  private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
-
-  public FunctionalNodeModule() {
-    this(true, true, true, true, true, true, true);
-  }
-
-  public FunctionalNodeModule(
-      boolean hasConsensus,
-      boolean hasLedger,
-      boolean hasMempool,
-      boolean hasMempoolRelayer,
-      boolean hasRadixEngine,
-      boolean hasEpochs,
-      boolean hasSync) {
-    this.hasConsensus = hasConsensus;
-    this.hasLedger = hasLedger;
-    this.hasMempool = hasMempool;
-    this.hasMempoolRelayer = hasMempoolRelayer;
-    this.hasRadixEngine = hasRadixEngine;
-    this.hasEpochs = hasEpochs;
-    this.hasSync = hasSync;
+  public REv2Mempool(SystemCounters counters, int maxSize, Random random) {
+    if (maxSize <= 0) {
+      throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
+    }
+    this.counters = Objects.requireNonNull(counters);
+    this.maxSize = maxSize;
+    this.random = Objects.requireNonNull(random);
   }
 
   @Override
-  public void configure() {
-    install(new EventLoggerModule());
-    install(new DispatcherModule());
-
-    // Consensus
-    if (hasConsensus) {
-      install(new ConsensusModule());
-      if (hasEpochs) {
-        install(new EpochsConsensusModule());
-      } else {
-        install(new NoEpochsConsensusModule());
-      }
+  public Txn add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
+    if (this.data.size() >= maxSize) {
+      throw new MempoolFullException(this.data.size(), maxSize);
+    }
+    if (!this.data.add(txn)) {
+      throw new MempoolDuplicateException(String.format("Mempool already has command %s", txn));
     }
 
-    // Sync
-    if (hasLedger) {
-      if (!hasSync) {
-        install(mockedSyncServiceModule);
-      } else {
-        install(new SyncServiceModule());
-        if (hasEpochs) {
-          install(new EpochsSyncModule());
-        } else {
-          install(new NoEpochsSyncModule());
+    updateCounts();
+
+    return txn;
+  }
+
+  @Override
+  public List<Txn> committed(List<Txn> commands) {
+    commands.forEach(this.data::remove);
+    updateCounts();
+    return List.of();
+  }
+
+  @Override
+  public int getCount() {
+    return data.size();
+  }
+
+  @Override
+  public List<Txn> getTxns(int count, List<Txn> seen) {
+    int size = Math.min(count, this.data.size());
+    if (size > 0) {
+      List<Txn> commands = Lists.newArrayList();
+      var values = new ArrayList<>(this.data);
+      Collections.shuffle(values, random);
+
+      Iterator<Txn> i = values.iterator();
+      while (commands.size() < size && i.hasNext()) {
+        var a = i.next();
+        if (!seen.contains(a)) {
+          commands.add(a);
         }
       }
-    }
-
-    // State Manager
-    if (!hasLedger) {
-      install(new MockedLedgerModule());
+      return commands;
     } else {
-      install(new LedgerModule());
-
-      if (!hasMempool) {
-        install(new MockedCommandGeneratorModule());
-
-        if (!hasEpochs) {
-          install(new MockedStateComputerModule());
-        } else {
-          install(new MockedStateComputerWithEpochsModule());
-        }
-      } else {
-        install(new MempoolReceiverModule());
-
-        if (hasMempoolRelayer) {
-          install(new MempoolRelayerModule());
-        }
-
-        if (!hasRadixEngine) {
-          install(new MockedMempoolStateComputerModule());
-        } else {
-          install(new RadixEngineStateComputerModule());
-          install(new RadixEngineModule());
-          install(new RadixEngineCheckpointModule());
-        }
-      }
+      return Collections.emptyList();
     }
+  }
+
+  @Override
+  public List<Txn> scanUpdateAndGet(
+      Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
+    return List.of();
+  }
+
+  private void updateCounts() {
+    this.counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, this.data.size());
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[%x:%s/%s]",
+        getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), maxSize);
   }
 }
