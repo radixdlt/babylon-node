@@ -182,6 +182,7 @@ jacocoTestReport {
 dependencies {
     implementation project(':olympia-engine')
     implementation project(':common')
+    implementation project(':state-manager')
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     implementation 'io.swagger:swagger-annotations:1.5.0'
