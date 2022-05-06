@@ -1,6 +1,8 @@
-# radix-engine-library
+# olympia-engine
 
-radix-engine-library is a UTXO-based state machine.
+The `olympia-engine` is a UTXO-based state machine that was used in Olympia.
+
+It will be replaced by the babylon engine `state-manager`.
 
 ## Contribute
 
@@ -17,4 +19,4 @@ Please follow our [Code of Conduct](../CODE_OF_CONDUCT.md) in all your interacti
 
 ## License
 
-The `radixdlt-engine` code is released under the [Radix License](../LICENSE).
+The `olympia-engine` code is released under the [Radix License](../LICENSE).

@@ -1,10 +1,10 @@
 rootProject.name='babylon-node'
 include ':core'
 include ':cli-tools'
-include ':engine'
+include ':olympia-engine'
 include ':common'
 
 project(':core').projectDir = new File('core')
 project(':cli-tools').projectDir = new File('cli-tools')
-project(':engine').projectDir = new File('engine')
+project(':olympia-engine').projectDir = new File('olympia-engine')
 project(':common').projectDir = new File('common')

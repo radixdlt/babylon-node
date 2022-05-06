@@ -180,7 +180,7 @@ jacocoTestReport {
 }
 
 dependencies {
-    implementation project(':engine')
+    implementation project(':olympia-engine')
     implementation project(':common')
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 

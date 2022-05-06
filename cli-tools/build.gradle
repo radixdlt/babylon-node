@@ -74,7 +74,7 @@ compileTestJava {
 dependencies {
     implementation project(':core')
     implementation project(':common')
-    implementation project(':engine')
+    implementation project(':olympia-engine')
 
     implementation 'commons-cli:commons-cli'
     implementation "com.github.akarnokd:rxjava3-extensions"
@@ -132,7 +132,7 @@ task generateDevUniverse(type: Exec) {
 
     dependsOn ':core:jar'
     dependsOn ':common:jar'
-    dependsOn ':engine:jar'
+    dependsOn ':olympia-engine:jar'
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
@@ -146,7 +146,7 @@ task generateGenesisFile(type: Exec) {
 
     dependsOn ':core:jar'
     dependsOn ':common:jar'
-    dependsOn ':engine:jar'
+    dependsOn ':olympia-engine:jar'
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
