@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -69,14 +70,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-
 import java.text.DateFormat;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-@javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2021-11-24T23:25:44.231186-06:00[America/Chicago]")
+@javax.annotation.processing.Generated(
+    value = "org.openapitools.codegen.languages.JavaClientCodegen",
+    date = "2021-11-24T23:25:44.231186-06:00[America/Chicago]")
 public class JSON {
   private ObjectMapper mapper;
 
@@ -93,6 +95,7 @@ public class JSON {
 
   /**
    * Set the date format for JSON (de)serialization with Date properties.
+   *
    * @param dateFormat Date format
    */
   public void setDateFormat(DateFormat dateFormat) {
@@ -104,11 +107,13 @@ public class JSON {
    *
    * @return object mapper
    */
-  public ObjectMapper getMapper() { return mapper; }
+  public ObjectMapper getMapper() {
+    return mapper;
+  }
 
   /**
-   * Returns the target model class that should be used to deserialize the input data.
-   * The discriminator mappings are used to determine the target model class.
+   * Returns the target model class that should be used to deserialize the input data. The
+   * discriminator mappings are used to determine the target model class.
    *
    * @param node The input data.
    * @param modelClass The class that contains the discriminator mappings.
@@ -121,9 +126,7 @@ public class JSON {
     return null;
   }
 
-  /**
-   * Helper class to register the discriminator mappings.
-   */
+  /** Helper class to register the discriminator mappings. */
   private static class ClassDiscriminatorMapping {
     // The model class name.
     Class<?> modelClass;
@@ -165,9 +168,9 @@ public class JSON {
     }
 
     /**
-     * Returns the target model class that should be used to deserialize the input data.
-     * This function can be invoked for anyOf/oneOf composed models with discriminator mappings.
-     * The discriminator mappings are used to determine the target model class.
+     * Returns the target model class that should be used to deserialize the input data. This
+     * function can be invoked for anyOf/oneOf composed models with discriminator mappings. The
+     * discriminator mappings are used to determine the target model class.
      *
      * @param node The input data.
      * @param visitedClasses The set of classes that have already been visited.
@@ -212,13 +215,14 @@ public class JSON {
   /**
    * Returns true if inst is an instance of modelClass in the OpenAPI model hierarchy.
    *
-   * The Java class hierarchy is not implemented the same way as the OpenAPI model hierarchy,
-   * so it's not possible to use the instanceof keyword.
+   * <p>The Java class hierarchy is not implemented the same way as the OpenAPI model hierarchy, so
+   * it's not possible to use the instanceof keyword.
    *
    * @param modelClass A OpenAPI model class.
    * @param inst The instance object.
    */
-  public static boolean isInstanceOf(Class<?> modelClass, Object inst, Set<Class<?>> visitedClasses) {
+  public static boolean isInstanceOf(
+      Class<?> modelClass, Object inst, Set<Class<?>> visitedClasses) {
     if (modelClass.isInstance(inst)) {
       // This handles the 'allOf' use case with single parent inheritance.
       return true;
@@ -242,34 +246,32 @@ public class JSON {
     return false;
   }
 
-  /**
-   * A map of discriminators for all model classes.
-   */
+  /** A map of discriminators for all model classes. */
   private static Map<Class<?>, ClassDiscriminatorMapping> modelDiscriminators = new HashMap<>();
 
-  /**
-   * A map of oneOf/anyOf descendants for each model class.
-   */
+  /** A map of oneOf/anyOf descendants for each model class. */
   private static Map<Class<?>, Map<String, Class<?>>> modelDescendants = new HashMap<>();
 
   /**
-    * Register a model class discriminator.
-    *
-    * @param modelClass the model class
-    * @param discriminatorPropertyName the name of the discriminator property
-    * @param mappings a map with the discriminator mappings.
-    */
-  public static void registerDiscriminator(Class<?> modelClass, String discriminatorPropertyName, Map<String, Class<?>> mappings) {
-    ClassDiscriminatorMapping m = new ClassDiscriminatorMapping(modelClass, discriminatorPropertyName, mappings);
+   * Register a model class discriminator.
+   *
+   * @param modelClass the model class
+   * @param discriminatorPropertyName the name of the discriminator property
+   * @param mappings a map with the discriminator mappings.
+   */
+  public static void registerDiscriminator(
+      Class<?> modelClass, String discriminatorPropertyName, Map<String, Class<?>> mappings) {
+    ClassDiscriminatorMapping m =
+        new ClassDiscriminatorMapping(modelClass, discriminatorPropertyName, mappings);
     modelDiscriminators.put(modelClass, m);
   }
 
   /**
-    * Register the oneOf/anyOf descendants of the modelClass.
-    *
-    * @param modelClass the model class
-    * @param descendants a map of oneOf/anyOf descendants.
-    */
+   * Register the oneOf/anyOf descendants of the modelClass.
+   *
+   * @param modelClass the model class
+   * @param descendants a map of oneOf/anyOf descendants.
+   */
   public static void registerDescendants(Class<?> modelClass, Map<String, Class<?>> descendants) {
     modelDescendants.put(modelClass, descendants);
   }
@@ -281,19 +283,19 @@ public class JSON {
   }
 
   /**
-    * Get the default JSON instance.
-    *
-    * @return the default JSON instance
-    */
+   * Get the default JSON instance.
+   *
+   * @return the default JSON instance
+   */
   public static JSON getDefault() {
     return json;
   }
 
   /**
-    * Set the default JSON instance.
-    *
-    * @param json JSON instance to be used
-    */
+   * Set the default JSON instance.
+   *
+   * @param json JSON instance to be used
+   */
   public static void setDefault(JSON json) {
     JSON.json = json;
   }

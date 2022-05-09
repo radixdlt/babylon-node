@@ -73,10 +73,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
-import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -103,7 +100,6 @@ import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.PrivateKeys;
@@ -202,10 +198,6 @@ public abstract class DeterministicActorsTest {
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
             bindConstant().annotatedWith(NetworkId.class).to(Network.LOCALNET.getId());
-            bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
-            Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-                .addBinding()
-                .to(BerkeleyRecoverableProcessedTxnStore.class);
           }
 
           @Provides

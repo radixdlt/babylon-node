@@ -74,8 +74,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.api.core.reconstruction.BerkeleyRecoverableProcessedTxnStore;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
@@ -95,7 +93,6 @@ import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -143,10 +140,6 @@ public abstract class AbstractRadixEngineTest {
             new AbstractModule() {
               @Override
               protected void configure() {
-                bind(BerkeleyRecoverableProcessedTxnStore.class).in(Scopes.SINGLETON);
-                Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class)
-                    .addBinding()
-                    .to(BerkeleyRecoverableProcessedTxnStore.class);
                 bindConstant()
                     .annotatedWith(DatabaseLocation.class)
                     .to(folder.getRoot().getAbsolutePath());
