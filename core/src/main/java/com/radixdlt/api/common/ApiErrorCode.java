@@ -62,35 +62,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.common;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.radixdlt.api.common.JSON;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
+public enum ApiErrorCode {
+  BAD_REQUEST(400, "Bad request"),
+  NOT_FOUND(404, "Not found"),
+  CONFLICT(409, "State Conflict"),
+  INTERNAL_SERVER_ERROR(500, "Internal Server Error"),
+  NOT_SUPPORTED(501, "Not supported"),
+  UNAVAILABLE(503, "Unavailable");
 
-abstract class SystemGetJsonHandler<T> implements HttpHandler {
-  private static final String CONTENT_TYPE_JSON = "application/json";
-  private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
+  private final int errorCode;
+  private final String message;
 
-  public abstract T handleRequest();
+  ApiErrorCode(int errorCode, String message) {
+    this.errorCode = errorCode;
+    this.message = message;
+  }
+
+  public int getErrorCode() {
+    return errorCode;
+  }
+
+  public String getMessage() {
+    return message;
+  }
 
   @Override
-  public final void handleRequest(HttpServerExchange exchange) throws Exception {
-    if (exchange.isInIoThread()) {
-      exchange.dispatch(this);
-      return;
-    }
-
-    exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
-    exchange.startBlocking();
-
-    var mapper = JSON.getDefault().getMapper();
-    var response = handleRequest();
-    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-    exchange.setStatusCode(200);
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    exchange.getResponseSender().send(mapper.writeValueAsString(response));
+  public String toString() {
+    return errorCode + " " + message;
   }
 }

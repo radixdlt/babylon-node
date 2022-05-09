@@ -62,13 +62,9 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.common;
 
 import com.google.common.base.Throwables;
-import com.radixdlt.api.core.model.CoreApiErrorCode;
-import com.radixdlt.api.core.openapitools.JSON;
-import com.radixdlt.api.core.openapitools.model.InternalServerError;
-import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ExceptionHandler;
@@ -82,8 +78,8 @@ public class UnhandledExceptionHandler implements HttpHandler {
     var rootCause = Throwables.getRootCause(ex);
     var unexpectedError =
         new UnexpectedError()
-            .code(CoreApiErrorCode.INTERNAL_SERVER_ERROR.getErrorCode())
-            .message(CoreApiErrorCode.INTERNAL_SERVER_ERROR.getMessage())
+            .code(ApiErrorCode.INTERNAL_SERVER_ERROR.getErrorCode())
+            .message(ApiErrorCode.INTERNAL_SERVER_ERROR.getMessage())
             .details(
                 new InternalServerError()
                     .cause(rootCause.getMessage())

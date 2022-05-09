@@ -67,6 +67,7 @@ package com.radixdlt.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Inject;
+import com.radixdlt.api.common.UnhandledExceptionHandler;
 import com.radixdlt.api.core.openapitools.model.InternalServerError;
 import com.radixdlt.api.core.openapitools.model.UnexpectedError;
 import org.junit.Test;
