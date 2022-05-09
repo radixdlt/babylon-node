@@ -116,9 +116,6 @@ import com.radixdlt.network.p2p.liveness.PeerPingTimeout;
 import com.radixdlt.network.p2p.liveness.PeersLivenessCheckTrigger;
 import com.radixdlt.network.p2p.liveness.Ping;
 import com.radixdlt.network.p2p.liveness.Pong;
-import com.radixdlt.rev1.InvalidProposedTxn;
-import com.radixdlt.rev1.REOutput;
-import com.radixdlt.rev1.TxnsRemovedFromMempool;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -134,8 +131,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Manages dispatching of internal events to a given environment TODO: Move all other events into
- * this module
+ * Manages dispatching of internal events to a given environment
+ * TODO: Move all other events into this module
  */
 public class DispatcherModule extends AbstractModule {
   private static final Logger logger = LogManager.getLogger();
@@ -148,26 +145,12 @@ public class DispatcherModule extends AbstractModule {
     bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {})
         .toProvider(Dispatchers.dispatcherProvider(MempoolAddSuccess.class))
         .in(Scopes.SINGLETON);
-
-    // TODO: Remove, this hack required for initial genesis event emit
-    bind(new TypeLiteral<EventDispatcher<REOutput>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(REOutput.class))
-        .in(Scopes.SINGLETON);
-
-    bind(new TypeLiteral<EventDispatcher<TxnsRemovedFromMempool>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(TxnsRemovedFromMempool.class))
-        .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() {})
         .toProvider(Dispatchers.dispatcherProvider(MempoolRelayTrigger.class))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
         .toProvider(
             Dispatchers.dispatcherProvider(NoVote.class, v -> CounterType.BFT_NO_VOTES_SENT))
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() {})
-        .toProvider(
-            Dispatchers.dispatcherProvider(
-                InvalidProposedTxn.class, v -> CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() {})
         .toProvider(

@@ -76,7 +76,6 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.BerkeleyAddressBookStore;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.MemoryLeakDetector;
@@ -251,12 +250,6 @@ public final class RadixNodeApplication {
 
     try {
       injector.getInstance(BerkeleySafetyStateStore.class).close();
-    } catch (Exception e) {
-      // no-op
-    }
-
-    try {
-      injector.getInstance(BerkeleyLedgerEntryStore.class).close();
     } catch (Exception e) {
       // no-op
     }

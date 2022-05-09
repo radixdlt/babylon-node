@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.rev1.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;

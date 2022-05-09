@@ -82,6 +82,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
 import com.radixdlt.rev1.modules.LedgerRecoveryModule;
 import com.radixdlt.rev1.modules.PersistenceModule;
+import com.radixdlt.rev1.modules.RadixEngineStoreModule;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.TimeSupplier;

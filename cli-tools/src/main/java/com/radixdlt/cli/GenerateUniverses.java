@@ -116,6 +116,9 @@ import org.apache.commons.cli.Options;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 
+/**
+ * Generates the universe (genesis commit) for the Olympia Radix Engine
+ */
 public final class GenerateUniverses {
   private GenerateUniverses() {}
 

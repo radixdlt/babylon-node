@@ -75,6 +75,7 @@ import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.rev1.MockedMempoolStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
+import com.radixdlt.rev1.ReV1DispatcherModule;
 import com.radixdlt.rev1.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
@@ -122,6 +123,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   public void configure() {
     install(new EventLoggerModule());
     install(new DispatcherModule());
+    install(new ReV1DispatcherModule());
 
     // Consensus
     if (hasConsensus) {

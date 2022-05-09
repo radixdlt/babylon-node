@@ -84,8 +84,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.networks.Addressing;
-import com.radixdlt.rev1.InvalidProposedTxn;
-import com.radixdlt.rev1.REOutput;
 import com.radixdlt.utils.Bytes;
 import java.util.function.Function;
 import org.apache.logging.log4j.Level;
@@ -110,12 +108,14 @@ public final class EventLoggerModule extends AbstractModule {
     };
   }
 
+  /* BAB-TODO: Add something equivalent back in
   @ProvidesIntoSet
   EventProcessorOnDispatch<?> invalidProposedTxn(Function<ECPublicKey, String> nodeString) {
     return new EventProcessorOnDispatch<>(
         InvalidProposedTxn.class,
         i -> logger.warn("eng_badprp{proposer={}}", nodeString.apply(i.getProposer())));
   }
+  */
 
   @ProvidesIntoSet
   EventProcessorOnDispatch<?> logTimeouts(Function<BFTNode, String> nodeString) {
@@ -166,16 +166,26 @@ public final class EventLoggerModule extends AbstractModule {
       Function<ECPublicKey, String> nodeString,
       RateLimiter logLimiter,
       LedgerUpdate ledgerUpdate) {
+
+  /* BAB-TODO: Add something equivalent back in
     var output = ledgerUpdate.getStateComputerOutput().getInstance(REOutput.class);
+   */
     var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
 
+
+  /* BAB-TODO: Add something equivalent back in
     logLedgerUpdate(
         ledgerUpdate, countUserTxns(output), calculateLoggingLevel(logLimiter, epochChange));
+   */
+    long fakeUserTransactionCount = 0;
+    logLedgerUpdate(
+        ledgerUpdate, fakeUserTransactionCount, calculateLoggingLevel(logLimiter, epochChange));
 
     if (epochChange != null) {
       logEpochChange(self, epochChange);
     }
 
+  /* BAB-TODO: Add something equivalent back in
     if (output == null) {
       return;
     }
@@ -183,6 +193,7 @@ public final class EventLoggerModule extends AbstractModule {
     output.getProcessedTxns().stream()
         .flatMap(t -> t.getEvents().stream())
         .forEach(e -> logValidatorEvents(self, nodeString, e));
+   */
   }
 
   private static void logEpochChange(BFTNode self, EpochChange epochChange) {
@@ -195,13 +206,15 @@ public final class EventLoggerModule extends AbstractModule {
         Amount.ofSubunits(validatorSet.getTotalPower()));
   }
 
+  /* BAB-TODO: Add something equivalent back in
   private static long countUserTxns(REOutput output) {
     return output != null
         ? output.getProcessedTxns().stream().filter(t -> !t.isSystemOnly()).count()
         : 0;
   }
+  */
 
-  private static void logLedgerUpdate(LedgerUpdate ledgerUpdate, long userTxns, Level logLevel) {
+  private static void logLedgerUpdate(LedgerUpdate ledgerUpdate, long userTransactionsCount, Level logLevel) {
     if (!logger.isEnabled(logLevel)) {
       return;
     }
@@ -215,7 +228,7 @@ public final class EventLoggerModule extends AbstractModule {
         proof.getStateVersion(),
         Bytes.toHexString(proof.getAccumulatorState().getAccumulatorHash().asBytes())
             .substring(0, 16),
-        userTxns);
+        userTransactionsCount);
   }
 
   @SuppressWarnings("UnstableApiUsage")

@@ -74,11 +74,10 @@ import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.rev1.REOutput;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
+
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Manages system information to be consumed by clients such as the api. */
@@ -87,8 +86,10 @@ public final class InMemorySystemInfo {
   private final AtomicReference<EpochView> currentView =
       new AtomicReference<>(EpochView.of(0L, View.genesis()));
   private final AtomicReference<QuorumCertificate> highQC = new AtomicReference<>();
+  /* BAB-TODO: Add back in missed proposal tracking
   private final AtomicMarkableReference<Optional<ValidatorBFTDataEvent>> missedProposals =
       new AtomicMarkableReference<>(Optional.empty(), false);
+   */
   private final AtomicReference<LedgerProof> ledgerProof;
   private final AtomicReference<LedgerProof> epochsLedgerProof;
   private final BFTNode self;
@@ -122,6 +123,7 @@ public final class InMemorySystemInfo {
         epochsLedgerProof.set(update.getTail());
       }
 
+      /*
       update.getStateComputerOutput().getInstance(REOutput.class).getProcessedTxns().stream()
           .flatMap(processedTxn -> processedTxn.getEvents().stream())
           .filter(ValidatorBFTDataEvent.class::isInstance)
@@ -129,6 +131,7 @@ public final class InMemorySystemInfo {
           .filter(event -> event.validatorKey().equals(self.getKey()))
           .map(Optional::of)
           .forEach(event -> missedProposals.set(event, true));
+       */
     };
   }
 

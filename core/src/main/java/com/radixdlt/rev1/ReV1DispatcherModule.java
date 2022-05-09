@@ -62,86 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.health;
+package com.radixdlt.rev1;
 
-import com.google.common.collect.Streams;
-import com.google.common.hash.HashCode;
-import com.google.inject.Inject;
-import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.rev1.LedgerAndBFTProof;
-import com.radixdlt.rev1.forks.CandidateForkVote;
-import com.radixdlt.rev1.forks.CurrentForkView;
-import com.radixdlt.rev1.forks.Forks;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.store.EngineStore;
-import java.util.Objects;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.environment.Dispatchers;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
 
-public final class ForkVoteStatusService {
-  public enum ForkVoteStatus {
-    VOTE_REQUIRED,
-    NO_ACTION_NEEDED
-  }
+/**
+ * REV1-related events pulled out of DispatcherModule
+ */
+public class ReV1DispatcherModule extends AbstractModule {
+  @Override
+  public void configure() {
+    // TODO: Remove, this hack required for initial genesis event emit
+    bind(new TypeLiteral<EventDispatcher<REOutput>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(REOutput.class))
+        .in(Scopes.SINGLETON);
 
-  private final BFTNode self;
-  private final EngineStore<LedgerAndBFTProof> engineStore;
-  private final Forks forks;
-  private final CurrentForkView currentForkView;
-
-  @Inject
-  public ForkVoteStatusService(
-      @Self BFTNode self,
-      EngineStore<LedgerAndBFTProof> engineStore,
-      Forks forks,
-      CurrentForkView currentForkView) {
-    this.self = Objects.requireNonNull(self);
-    this.engineStore = Objects.requireNonNull(engineStore);
-    this.forks = Objects.requireNonNull(forks);
-    this.currentForkView = Objects.requireNonNull(currentForkView);
-  }
-
-  public ForkVoteStatus forkVoteStatus() {
-    final var currentFork = currentForkView.currentForkConfig();
-
-    if (forks.getCandidateFork().isEmpty()
-        || forks.getCandidateFork().get().name().equals(currentFork.name())) {
-      return ForkVoteStatus.NO_ACTION_NEEDED;
-    }
-
-    final var expectedCandidateForkVote =
-        CandidateForkVote.create(self.getKey(), forks.getCandidateFork().get());
-
-    final var substateDeserialization =
-        currentFork.engineRules().parser().getSubstateDeserialization();
-
-    try (var validatorMetadataCursor =
-        engineStore.openIndexedCursor(
-            SubstateIndex.create(
-                SubstateTypeId.VALIDATOR_SYSTEM_META_DATA.id(), ValidatorSystemMetadata.class))) {
-
-      final var maybeSelfForkVote =
-          Streams.stream(validatorMetadataCursor)
-              .map(
-                  s -> {
-                    try {
-                      return (ValidatorSystemMetadata)
-                          substateDeserialization.deserialize(s.getData());
-                    } catch (DeserializeException e) {
-                      throw new IllegalStateException(
-                          "Failed to deserialize ValidatorMetaData substate");
-                    }
-                  })
-              .filter(vm -> vm.validatorKey().equals(self.getKey()))
-              .findAny()
-              .map(substate -> HashCode.fromBytes(substate.data()))
-              .map(CandidateForkVote::new);
-
-      return maybeSelfForkVote.filter(expectedCandidateForkVote::equals).isPresent()
-          ? ForkVoteStatus.NO_ACTION_NEEDED
-          : ForkVoteStatus.VOTE_REQUIRED;
-    }
+    bind(new TypeLiteral<EventDispatcher<TxnsRemovedFromMempool>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(TxnsRemovedFromMempool.class))
+        .in(Scopes.SINGLETON);
+    bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() {})
+        .toProvider(
+            Dispatchers.dispatcherProvider(
+                InvalidProposedTxn.class, v -> CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
+        .in(Scopes.SINGLETON);
   }
 }
