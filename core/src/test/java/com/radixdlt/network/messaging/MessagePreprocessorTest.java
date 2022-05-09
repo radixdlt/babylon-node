@@ -67,7 +67,6 @@ package com.radixdlt.network.messaging;
 import static com.radixdlt.utils.SerializerTestDataGenerator.randomProposal;
 import static com.radixdlt.utils.SerializerTestDataGenerator.randomVote;
 import static com.radixdlt.utils.functional.Tuple.tuple;
-import static java.security.AccessController.doPrivileged;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -104,7 +103,6 @@ import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.functional.Tuple.Tuple2;
 import com.radixdlt.utils.time.Time;
 import java.io.IOException;
-import java.security.PrivilegedAction;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -226,12 +224,9 @@ public class MessagePreprocessorTest {
   private static void setField(Object instance, String fieldName, Object toSet) throws Exception {
     var field = instance.getClass().getDeclaredField(fieldName);
 
-    doPrivileged(
-        (PrivilegedAction<Void>)
-            () -> {
-              field.setAccessible(true);
-              return null;
-            });
+    // In Java 17, the security manager is deprecated and by default disabled,
+    // so we can just change the field accessibility.
+    field.setAccessible(true);
 
     field.set(instance, toSet);
   }
