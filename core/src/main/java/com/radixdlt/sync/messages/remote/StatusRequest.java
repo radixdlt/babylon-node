@@ -64,7 +64,7 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.middleware2.network.StatusRequestMessage;
+import com.radixdlt.network.messages.StatusRequestMessage;
 
 /**
  * A request to get the current status of a remote node. Node should respond with a StatusResponse

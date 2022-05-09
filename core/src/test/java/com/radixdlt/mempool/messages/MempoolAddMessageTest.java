@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.middleware2.network.MempoolAddMessage;
+import com.radixdlt.network.messages.MempoolAddMessage;
 import java.util.ArrayList;
 import java.util.List;
 import nl.jqno.equalsverifier.EqualsVerifier;

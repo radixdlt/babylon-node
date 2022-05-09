@@ -64,7 +64,7 @@
 
 package com.radixdlt.network.messaging;
 
-import com.radixdlt.middleware2.network.Message;
+import com.radixdlt.network.Message;
 import com.radixdlt.network.p2p.NodeId;
 import io.reactivex.rxjava3.core.Observable;
 import java.io.IOException;

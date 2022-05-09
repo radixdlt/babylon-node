@@ -65,7 +65,7 @@
 package com.radixdlt.serialization;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.middleware2.network.BasicContainer;
+import com.radixdlt.network.BasicContainer;
 import com.radixdlt.serialization.DsonOutput.Output;
 import java.util.Objects;
 

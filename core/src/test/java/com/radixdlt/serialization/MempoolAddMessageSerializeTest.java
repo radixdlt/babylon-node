@@ -65,7 +65,7 @@
 package com.radixdlt.serialization;
 
 import com.radixdlt.atom.Txn;
-import com.radixdlt.middleware2.network.MempoolAddMessage;
+import com.radixdlt.network.messages.MempoolAddMessage;
 import java.util.List;
 
 public class MempoolAddMessageSerializeTest extends SerializeMessageObject<MempoolAddMessage> {
