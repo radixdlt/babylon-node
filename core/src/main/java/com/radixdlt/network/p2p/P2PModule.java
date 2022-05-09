@@ -84,7 +84,7 @@ import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.network.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
+import com.radixdlt.store.BerkeleyAddressBookStore;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
 public final class P2PModule extends AbstractModule {
@@ -107,9 +107,7 @@ public final class P2PModule extends AbstractModule {
     bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
     bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
     bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
-    bind(AddressBookPersistence.class)
-        .to(BerkeleyAddressBookPersistence.class)
-        .in(Scopes.SINGLETON);
+    bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class).in(Scopes.SINGLETON);
     bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
     bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
     bind(PeerManager.class).in(Scopes.SINGLETON);

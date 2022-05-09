@@ -131,6 +131,8 @@ import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.NoOpForksEpochStore;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.rev1.modules.RadixEngineModule;
+import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;

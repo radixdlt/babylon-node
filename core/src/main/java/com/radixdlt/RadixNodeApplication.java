@@ -71,14 +71,13 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.modules.RadixNodeModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.store.berkeley.BerkeleyAddressBookPersistence;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
+import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
+import com.radixdlt.store.BerkeleyAddressBookStore;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -245,7 +244,7 @@ public final class RadixNodeApplication {
         .forEach((k, moduleRunner) -> moduleRunner.stop());
 
     try {
-      injector.getInstance(BerkeleyAddressBookPersistence.class).close();
+      injector.getInstance(BerkeleyAddressBookStore.class).close();
     } catch (Exception e) {
       // no-op
     }

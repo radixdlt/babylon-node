@@ -62,89 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store.berkeley.atom;
+package com.radixdlt.rev2.modules;
 
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.utils.Pair;
-import java.io.IOException;
-import java.util.function.BiConsumer;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.rev2.InMemoryCommittedReader;
+import com.radixdlt.sync.CommittedReader;
 
-/**
- * Interface for append-only log file. The file consists of variable length chunks with following
- * format:
- *
- * <pre>
- *     [size (64-bit little-endian)] [byte0, byte1, ..., byteN]
- * </pre>
- */
-public interface AppendLog {
-  /**
-   * Open compressed R/W append log.
-   *
-   * @param path log file path
-   * @param counters system counters to use
-   * @return append log
-   * @throws IOException
-   */
-  static AppendLog openCompressed(String path, SystemCounters counters) throws IOException {
-    return CompressedAppendLog.open(openSimple(path), counters);
+public class InMemoryCommittedReaderModule extends AbstractModule {
+  @Override
+  public void configure() {
+    bind(InMemoryCommittedReader.Store.class).toInstance(new InMemoryCommittedReader.Store());
+    bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
   }
 
-  /**
-   * Open plain R/W append log.
-   *
-   * @param path log file path
-   * @return append log
-   * @throws IOException
-   */
-  static AppendLog openSimple(String path) throws IOException {
-    return SimpleAppendLog.open(path);
+  @Singleton
+  @ProvidesIntoSet
+  public EventProcessorOnDispatch<?> eventProcessor(InMemoryCommittedReader reader) {
+    return new EventProcessorOnDispatch<>(LedgerUpdate.class, reader.updateProcessor());
   }
-
-  /** Get position at which next chunk will be written. */
-  long position();
-
-  /**
-   * Truncate the file to specified length.
-   *
-   * @param position position to which file should be truncated.
-   */
-  void truncate(long position);
-
-  /**
-   * Write next chunk.
-   *
-   * @param data data to write
-   * @return successful result with chunk length or failure with error description.
-   */
-  long write(byte[] data, long expectedOffset) throws IOException;
-
-  /**
-   * Read chunk at specified position.
-   *
-   * @param offset offset to read from
-   * @return successful result with chunk length or failure with error description.
-   */
-  default byte[] read(long offset) throws IOException {
-    return readChunk(offset).getFirst();
-  }
-
-  /**
-   * Read chunk at specified position.
-   *
-   * @param offset offset to read from
-   * @return successful result with chunk length or failure with error description.
-   */
-  Pair<byte[], Integer> readChunk(long offset) throws IOException;
-
-  /** Force flushing data to disk. */
-  void flush() throws IOException;
-
-  /** Close append log. */
-  void close();
-
-  /**
-   * Scan log from start to end and submit every found chunk and its offset into provided consumer.
-   */
-  void forEach(BiConsumer<byte[], Long> chunkConsumer);
 }

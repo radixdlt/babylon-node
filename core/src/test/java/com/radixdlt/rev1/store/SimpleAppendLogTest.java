@@ -62,20 +62,96 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.rev1.store;
 
-/** Specifies high level configuration options for persistent storage */
-public final class StoreConfig {
-  private final int minimumProofBlockSize;
+import static com.radixdlt.rev1.store.AppendLog.openCompressed;
+import static com.radixdlt.rev1.store.AppendLog.openSimple;
+import static org.junit.Assert.assertArrayEquals;
+import static org.mockito.Mockito.mock;
 
-  public StoreConfig(int minimumProofBlockSize) {
-    if (minimumProofBlockSize < 1) {
-      throw new IllegalArgumentException("Proof block size must be >= 1.");
-    }
-    this.minimumProofBlockSize = minimumProofBlockSize;
+import com.radixdlt.monitoring.SystemCounters;
+import java.io.IOException;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+public class SimpleAppendLogTest {
+  private final SystemCounters systemCounters = mock(SystemCounters.class);
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  @Test
+  public void appendLogCanBeCreated() throws IOException {
+    String path = createTempPath();
+
+    readAfterWrite(openSimple(path));
   }
 
-  public int getMinimumProofBlockSize() {
-    return minimumProofBlockSize;
+  @Test
+  public void appendLogCanBeReadFromTheBeginning() throws IOException {
+    var path = createTempPath();
+
+    writeLogEntriesAndClose(openSimple(path));
+
+    readSequentially(openSimple(path));
+  }
+
+  @Test
+  public void compressedAppendLogCanBeCreated() throws IOException {
+    String path = createTempPath();
+
+    readAfterWrite(openCompressed(path, systemCounters));
+  }
+
+  @Test
+  public void compressedAppendLogCanBeReadFromTheBeginning() throws IOException {
+    var path = createTempPath();
+
+    writeLogEntriesAndClose(openCompressed(path, systemCounters));
+
+    readSequentially(openCompressed(path, systemCounters));
+  }
+
+  private String createTempPath() throws IOException {
+    return folder.newFile().getAbsolutePath();
+  }
+
+  private void readSequentially(final AppendLog newAppendLog) throws IOException {
+    long pos;
+
+    pos = checkSingleChunk(newAppendLog, 0L, new byte[] {0x01});
+    pos = checkSingleChunk(newAppendLog, pos, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05});
+    pos =
+        checkSingleChunk(
+            newAppendLog, pos, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x0C, 0x7F, -1});
+  }
+
+  private void writeLogEntriesAndClose(final AppendLog appendLog) throws IOException {
+    var s0 = appendLog.write(new byte[] {0x01}, 0);
+    var s1 = appendLog.write(new byte[] {0x01, 0x02, 0x03, 0x04, 0x05}, s0);
+    appendLog.write(new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x0C, 0x7F, -1}, s0 + s1);
+    appendLog.close();
+  }
+
+  private void readAfterWrite(final AppendLog appendLog) throws IOException {
+    checkReadAfterWrite(appendLog, new byte[] {0x01});
+    checkReadAfterWrite(appendLog, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05});
+    checkReadAfterWrite(appendLog, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x0C, 0x7F, -1});
+  }
+
+  private void checkReadAfterWrite(AppendLog appendLog, byte[] data) throws IOException {
+    long pos = appendLog.position();
+    appendLog.write(data, pos);
+
+    assertArrayEquals(data, appendLog.read(pos));
+  }
+
+  private long checkSingleChunk(AppendLog appendLog, long offset, byte[] expect)
+      throws IOException {
+    var result = appendLog.readChunk(offset);
+
+    assertArrayEquals(expect, result.getFirst());
+
+    return offset + result.getSecond() + Integer.BYTES;
   }
 }

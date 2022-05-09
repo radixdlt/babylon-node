@@ -62,26 +62,18 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.consensus.bft;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.CommittedReader;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-public class InMemoryCommittedReaderModule extends AbstractModule {
-  @Override
-  public void configure() {
-    bind(InMemoryCommittedReader.Store.class).toInstance(new InMemoryCommittedReader.Store());
-    bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
-  }
-
-  @Singleton
-  @ProvidesIntoSet
-  public EventProcessorOnDispatch<?> eventProcessor(InMemoryCommittedReader reader) {
-    return new EventProcessorOnDispatch<>(LedgerUpdate.class, reader.updateProcessor());
+public class SerializedVertexStoreStateTest {
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(SerializedVertexStoreState.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
   }
 }

@@ -94,7 +94,7 @@ import com.radixdlt.harness.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.harness.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
-import com.radixdlt.modules.FunctionalNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.monitoring.SystemCounters;
@@ -104,9 +104,9 @@ import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.EpochCeilingView;
-import com.radixdlt.rev2.InMemoryCommittedReaderModule;
-import com.radixdlt.rev2.MockedPersistenceStoreModule;
-import com.radixdlt.rev2.MockedRecoveryModule;
+import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
+import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.rev2.modules.MockedRecoveryModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.TimeSupplier;
@@ -214,14 +214,14 @@ public final class DeterministicTest {
 
     public DeterministicTest buildWithEpochs(View epochHighView) {
       Objects.requireNonNull(epochHighView);
-      modules.add(new FunctionalNodeModule(true, true, false, false, false, true, false));
+      modules.add(new FunctionalRadixNodeModule(true, true, false, false, false, true, false));
       addEpochedConsensusProcessorModule(epochHighView);
       return build();
     }
 
     public DeterministicTest buildWithEpochsAndSync(View epochHighView, SyncConfig syncConfig) {
       Objects.requireNonNull(epochHighView);
-      modules.add(new FunctionalNodeModule(true, true, false, false, false, true, true));
+      modules.add(new FunctionalRadixNodeModule(true, true, false, false, false, true, true));
       modules.add(new InMemoryCommittedReaderModule());
       modules.add(
           new AbstractModule() {
@@ -241,7 +241,7 @@ public final class DeterministicTest {
     }
 
     public DeterministicTest buildWithoutEpochs() {
-      modules.add(new FunctionalNodeModule(true, false, false, false, false, false, false));
+      modules.add(new FunctionalRadixNodeModule(true, false, false, false, false, false, false));
       addNonEpochedConsensusProcessorModule();
       return build();
     }

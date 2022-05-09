@@ -62,120 +62,96 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.consensus.bft;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Module;
-import com.radixdlt.environment.NoEpochsConsensusModule;
-import com.radixdlt.environment.NoEpochsSyncModule;
-import com.radixdlt.ledger.MockedCommandGeneratorModule;
-import com.radixdlt.ledger.MockedLedgerModule;
-import com.radixdlt.mempool.MempoolReceiverModule;
-import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.rev1.MockedMempoolStateComputerModule;
-import com.radixdlt.rev1.MockedStateComputerModule;
-import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
-import com.radixdlt.rev1.RadixEngineModule;
-import com.radixdlt.rev1.RadixEngineStateComputerModule;
-import com.radixdlt.rev1.checkpoint.RadixEngineCheckpointModule;
-import com.radixdlt.rev2.MockedSyncServiceModule;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.TimeoutCertificate;
+import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
+import java.util.Objects;
+import java.util.Optional;
 
-/** Manages the functional components of a node */
-public final class FunctionalNodeModule extends AbstractModule {
-  private final boolean hasConsensus;
-  private final boolean hasSync;
+/** Vertex Store State version which can be serialized. */
+@SerializerId2("store.vertices")
+public final class SerializedVertexStoreState {
 
-  // State manager
-  private final boolean hasLedger;
-  private final boolean hasMempool;
-  private final boolean hasRadixEngine;
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(Output.ALL)
+  SerializerDummy serializer = SerializerDummy.DUMMY;
 
-  private final boolean hasMempoolRelayer;
+  @JsonProperty("root")
+  @DsonOutput(Output.ALL)
+  private final UnverifiedVertex root;
 
-  private final boolean hasEpochs;
+  @JsonProperty("vertices")
+  @DsonOutput(Output.ALL)
+  private final ImmutableList<UnverifiedVertex> vertices;
 
-  // FIXME: This is required for now for shared syncing, remove after refactor
-  private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
+  @JsonProperty("high_qc")
+  @DsonOutput(Output.ALL)
+  private final HighQC highQC;
 
-  public FunctionalNodeModule() {
-    this(true, true, true, true, true, true, true);
+  @JsonProperty("highest_tc")
+  @DsonOutput(Output.ALL)
+  private final TimeoutCertificate highestTC;
+
+  @JsonCreator
+  public SerializedVertexStoreState(
+      @JsonProperty(value = "high_qc", required = true) HighQC highQC,
+      @JsonProperty(value = "root", required = true) UnverifiedVertex root,
+      @JsonProperty(value = "vertices", required = true) ImmutableList<UnverifiedVertex> vertices,
+      @JsonProperty("highest_tc") TimeoutCertificate highestTC) {
+    this.root = Objects.requireNonNull(root);
+    this.vertices = Objects.requireNonNull(vertices);
+    this.highQC = Objects.requireNonNull(highQC);
+    this.highestTC = highestTC;
   }
 
-  public FunctionalNodeModule(
-      boolean hasConsensus,
-      boolean hasLedger,
-      boolean hasMempool,
-      boolean hasMempoolRelayer,
-      boolean hasRadixEngine,
-      boolean hasEpochs,
-      boolean hasSync) {
-    this.hasConsensus = hasConsensus;
-    this.hasLedger = hasLedger;
-    this.hasMempool = hasMempool;
-    this.hasMempoolRelayer = hasMempoolRelayer;
-    this.hasRadixEngine = hasRadixEngine;
-    this.hasEpochs = hasEpochs;
-    this.hasSync = hasSync;
+  public UnverifiedVertex getRoot() {
+    return root;
+  }
+
+  public ImmutableList<UnverifiedVertex> getVertices() {
+    return vertices;
+  }
+
+  public HighQC getHighQC() {
+    return highQC;
+  }
+
+  public Optional<TimeoutCertificate> getHighestTC() {
+    return Optional.ofNullable(highestTC);
   }
 
   @Override
-  public void configure() {
-    install(new EventLoggerModule());
-    install(new DispatcherModule());
+  public int hashCode() {
+    return Objects.hash(root, vertices, highQC, highestTC);
+  }
 
-    // Consensus
-    if (hasConsensus) {
-      install(new ConsensusModule());
-      if (hasEpochs) {
-        install(new EpochsConsensusModule());
-      } else {
-        install(new NoEpochsConsensusModule());
-      }
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
     }
 
-    // Sync
-    if (hasLedger) {
-      if (!hasSync) {
-        install(mockedSyncServiceModule);
-      } else {
-        install(new SyncServiceModule());
-        if (hasEpochs) {
-          install(new EpochsSyncModule());
-        } else {
-          install(new NoEpochsSyncModule());
-        }
-      }
-    }
+    return (o instanceof SerializedVertexStoreState other)
+        && Objects.equals(this.root, other.root)
+        && Objects.equals(this.vertices, other.vertices)
+        && Objects.equals(this.highQC, other.highQC)
+        && Objects.equals(this.highestTC, other.highestTC);
+  }
 
-    // State Manager
-    if (!hasLedger) {
-      install(new MockedLedgerModule());
-    } else {
-      install(new LedgerModule());
-
-      if (!hasMempool) {
-        install(new MockedCommandGeneratorModule());
-
-        if (!hasEpochs) {
-          install(new MockedStateComputerModule());
-        } else {
-          install(new MockedStateComputerWithEpochsModule());
-        }
-      } else {
-        install(new MempoolReceiverModule());
-
-        if (hasMempoolRelayer) {
-          install(new MempoolRelayerModule());
-        }
-
-        if (!hasRadixEngine) {
-          install(new MockedMempoolStateComputerModule());
-        } else {
-          install(new RadixEngineStateComputerModule());
-          install(new RadixEngineModule());
-          install(new RadixEngineCheckpointModule());
-        }
-      }
-    }
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{highQC=%s root=%s vertices=%s highestTc=%s}",
+        this.getClass().getSimpleName(), this.highQC, this.root, this.vertices, this.highestTC);
   }
 }

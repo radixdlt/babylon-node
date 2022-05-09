@@ -62,15 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store.berkeley;
+package com.radixdlt.rev1.store;
 
-/** A Tempo exception */
-public class BerkeleyStoreException extends RuntimeException {
-  public BerkeleyStoreException(String message) {
-    super(message);
-  }
+import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.constraintmachine.RawSubstateBytes;
+import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.store.DatabaseEnvironment;
+import com.sleepycat.je.Transaction;
+import java.util.Optional;
+import java.util.function.Function;
 
-  public BerkeleyStoreException(String message, Throwable cause) {
-    super(message, cause);
-  }
+/**
+ * Simple way to add an additional store TODO: perhaps needs to be integrated at a higher level with
+ * RadixEngine TODO: Make more generic rather than just attachment to BerkeleyLedgerEntryStore TODO:
+ * Implement all other additional databases with this interface
+ */
+public interface BerkeleyAdditionalStore {
+  void open(DatabaseEnvironment dbEnv);
+
+  void close();
+
+  void process(
+      Transaction dbTxn,
+      REProcessedTxn txn,
+      long stateVersion,
+      Function<SystemMapKey, Optional<RawSubstateBytes>> mapper);
 }

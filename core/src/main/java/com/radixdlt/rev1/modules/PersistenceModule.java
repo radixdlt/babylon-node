@@ -62,26 +62,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.rev1.modules;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.Mempool;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.consensus.bft.SerializedVertexStoreState;
+import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
+import com.radixdlt.rev1.store.StoreConfig;
+import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.ResourceStore;
+import java.util.Optional;
 
-public class RadixEngineStateComputerModule extends AbstractModule {
+/** Module which manages persistent storage */
+public class PersistenceModule extends AbstractModule {
   @Override
   protected void configure() {
-    bind(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
-    bind(RadixEngineMempool.class).in(Scopes.SINGLETON);
-    bind(StateComputerLedger.StateComputer.class)
-        .to(RadixEngineStateComputer.class)
-        .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<Mempool<?>>() {}).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
-    bind(new TypeLiteral<Mempool<REProcessedTxn>>() {})
-        .to(RadixEngineMempool.class)
-        .in(Scopes.SINGLETON);
+    // TODO: should be singletons?
+    bind(ResourceStore.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
+    bind(PersistentVertexStore.class).to(BerkeleyLedgerEntryStore.class);
+    bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
+    bind(BerkeleySafetyStateStore.class).in(Scopes.SINGLETON);
+    bind(DatabaseEnvironment.class).in(Scopes.SINGLETON);
+  }
+
+  @Provides
+  Optional<SerializedVertexStoreState> serializedVertexStoreState(BerkeleyLedgerEntryStore store) {
+    return store.loadLastVertexStoreState();
+  }
+
+  @Provides
+  StoreConfig storeConfig() {
+    return new StoreConfig(1000);
+  }
+
+  @ProvidesIntoSet
+  @ProcessOnDispatch
+  public EventProcessor<BFTHighQCUpdate> persistQC(
+      PersistentVertexStore persistentVertexStore, SystemCounters systemCounters) {
+    return update -> {
+      systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+      persistentVertexStore.save(update.getVertexStoreState());
+    };
+  }
+
+  @ProvidesIntoSet
+  @ProcessOnDispatch
+  public EventProcessor<BFTInsertUpdate> persistUpdates(
+      PersistentVertexStore persistentVertexStore, SystemCounters systemCounters) {
+    return update -> {
+      systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+      persistentVertexStore.save(update.getVertexStoreState());
+    };
   }
 }

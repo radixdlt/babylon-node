@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store.berkeley;
+package com.radixdlt.rev1.store;
 
 import static com.radixdlt.rev1.forks.RERulesVersion.OLYMPIA_V1;
 import static org.junit.Assert.assertEquals;
@@ -90,7 +90,6 @@ import com.radixdlt.rev1.forks.CandidateForkVote;
 import com.radixdlt.rev1.forks.ForkVotingResult;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.StoreConfig;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

@@ -79,8 +79,10 @@ import com.radixdlt.network.p2p.NoOpPeerControl;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
+import com.radixdlt.rev1.modules.LedgerRecoveryModule;
+import com.radixdlt.rev1.modules.PersistenceModule;
 import com.radixdlt.store.DatabaseCacheSize;
-import com.radixdlt.store.PersistenceModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.TimeSupplier;
 
@@ -110,7 +112,7 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 
     install(new InMemoryBFTKeyModule());
     install(new CryptoModule());
-    install(new FunctionalNodeModule());
+    install(new FunctionalRadixNodeModule());
     install(new RadixEngineStoreModule());
     install(new PersistenceModule());
     install(new ConsensusRecoveryModule());

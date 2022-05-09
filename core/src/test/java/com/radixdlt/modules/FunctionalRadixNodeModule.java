@@ -64,55 +64,118 @@
 
 package com.radixdlt.modules;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import com.google.inject.AbstractModule;
+import com.google.inject.Module;
+import com.radixdlt.environment.NoEpochsConsensusModule;
+import com.radixdlt.environment.NoEpochsSyncModule;
+import com.radixdlt.ledger.MockedCommandGeneratorModule;
+import com.radixdlt.ledger.MockedLedgerModule;
+import com.radixdlt.mempool.MempoolReceiverModule;
+import com.radixdlt.mempool.MempoolRelayerModule;
+import com.radixdlt.rev1.MockedMempoolStateComputerModule;
+import com.radixdlt.rev1.MockedStateComputerModule;
+import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
+import com.radixdlt.rev1.checkpoint.RadixEngineCheckpointModule;
+import com.radixdlt.rev1.modules.RadixEngineModule;
+import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
+import com.radixdlt.rev2.modules.MockedSyncServiceModule;
 
-import com.google.inject.Guice;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.RadixKeyStore;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.serialization.TestSetupUtils;
-import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.File;
-import org.assertj.core.util.Files;
-import org.junit.BeforeClass;
-import org.junit.Test;
+/** Manages the functional components of a node */
+public final class FunctionalRadixNodeModule extends AbstractModule {
+  private final boolean hasConsensus;
+  private final boolean hasSync;
 
-public class RadixNodeModuleTest {
-  @NetworkId private int networkId;
+  // State manager
+  private final boolean hasLedger;
+  private final boolean hasMempool;
+  private final boolean hasRadixEngine;
 
-  @BeforeClass
-  public static void beforeClass() {
-    TestSetupUtils.installBouncyCastleProvider();
+  private final boolean hasMempoolRelayer;
+
+  private final boolean hasEpochs;
+
+  // FIXME: This is required for now for shared syncing, remove after refactor
+  private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
+
+  public FunctionalRadixNodeModule() {
+    this(true, true, true, true, true, true, true);
   }
 
-  @Test
-  public void testInjectorNotNullToken() {
-    final var properties = createDefaultProperties();
-    when(properties.get(eq("network.id"))).thenReturn("99");
-    when(properties.get(eq("network.genesis_txn"))).thenReturn("00");
-    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
+  public FunctionalRadixNodeModule(
+      boolean hasConsensus,
+      boolean hasLedger,
+      boolean hasMempool,
+      boolean hasMempoolRelayer,
+      boolean hasRadixEngine,
+      boolean hasEpochs,
+      boolean hasSync) {
+    this.hasConsensus = hasConsensus;
+    this.hasLedger = hasLedger;
+    this.hasMempool = hasMempool;
+    this.hasMempoolRelayer = hasMempoolRelayer;
+    this.hasRadixEngine = hasRadixEngine;
+    this.hasEpochs = hasEpochs;
+    this.hasSync = hasSync;
   }
 
-  private RuntimeProperties createDefaultProperties() {
-    final var properties = mock(RuntimeProperties.class);
-    doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
-    var keyStore = new File("nonesuch.ks");
-    Files.delete(keyStore);
-    generateKeystore(keyStore);
+  @Override
+  public void configure() {
+    install(new EventLoggerModule());
+    install(new DispatcherModule());
 
-    when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");
-    return properties;
-  }
+    // Consensus
+    if (hasConsensus) {
+      install(new ConsensusModule());
+      if (hasEpochs) {
+        install(new EpochsConsensusModule());
+      } else {
+        install(new NoEpochsConsensusModule());
+      }
+    }
 
-  private void generateKeystore(File keyStore) {
-    try {
-      RadixKeyStore.fromFile(keyStore, null, true).writeKeyPair("node", ECKeyPair.generateNew());
-    } catch (Exception e) {
-      throw new IllegalStateException("Unable to create keystore");
+    // Sync
+    if (hasLedger) {
+      if (!hasSync) {
+        install(mockedSyncServiceModule);
+      } else {
+        install(new SyncServiceModule());
+        if (hasEpochs) {
+          install(new EpochsSyncModule());
+        } else {
+          install(new NoEpochsSyncModule());
+        }
+      }
+    }
+
+    // State Manager
+    if (!hasLedger) {
+      install(new MockedLedgerModule());
+    } else {
+      install(new LedgerModule());
+
+      if (!hasMempool) {
+        install(new MockedCommandGeneratorModule());
+
+        if (!hasEpochs) {
+          install(new MockedStateComputerModule());
+        } else {
+          install(new MockedStateComputerWithEpochsModule());
+        }
+      } else {
+        install(new MempoolReceiverModule());
+
+        if (hasMempoolRelayer) {
+          install(new MempoolRelayerModule());
+        }
+
+        if (!hasRadixEngine) {
+          install(new MockedMempoolStateComputerModule());
+        } else {
+          install(new RadixEngineStateComputerModule());
+          install(new RadixEngineModule());
+          install(new RadixEngineCheckpointModule());
+        }
+      }
     }
   }
 }

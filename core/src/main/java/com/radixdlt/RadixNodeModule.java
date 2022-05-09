@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.api.ApiModule;
@@ -74,6 +74,7 @@ import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
+import com.radixdlt.modules.*;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.network.messaging.MessagingModule;
@@ -82,7 +83,10 @@ import com.radixdlt.network.p2p.PeerDiscoveryModule;
 import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.rev2.*;
+import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
+import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.rev2.modules.MockedRecoveryModule;
+import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.PrivateKeys;

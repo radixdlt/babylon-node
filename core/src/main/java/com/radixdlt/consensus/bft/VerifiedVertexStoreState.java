@@ -71,7 +71,6 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;

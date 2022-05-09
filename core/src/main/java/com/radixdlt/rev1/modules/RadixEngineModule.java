@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.rev1.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -75,6 +75,10 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.rev1.EpochCeilingView;
+import com.radixdlt.rev1.LedgerAndBFTProof;
+import com.radixdlt.rev1.MaxSigsPerRound;
+import com.radixdlt.rev1.MaxValidators;
 import com.radixdlt.rev1.forks.CurrentForkView;
 import com.radixdlt.rev1.forks.ForkConfig;
 import com.radixdlt.rev1.forks.Forks;

@@ -62,75 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store.berkeley;
+package com.radixdlt.rev1.store;
 
-import static com.radixdlt.utils.SerializerTestDataGenerator.randomView;
-import static com.radixdlt.utils.SerializerTestDataGenerator.randomVote;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+/** Specifies high level configuration options for persistent storage */
+public final class StoreConfig {
+  private final int minimumProofBlockSize;
 
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.store.DatabaseEnvironment;
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.Environment;
-import com.sleepycat.je.OperationStatus;
-import java.util.Optional;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
+  public StoreConfig(int minimumProofBlockSize) {
+    if (minimumProofBlockSize < 1) {
+      throw new IllegalArgumentException("Proof block size must be >= 1.");
+    }
+    this.minimumProofBlockSize = minimumProofBlockSize;
+  }
 
-public class BerkeleySafetyStateStoreTest {
-
-  @Test
-  public void should_be_able_to_restore_committed_state() {
-    final var db = mock(Database.class);
-    final var env = mock(Environment.class);
-    final var dbEnv = mock(DatabaseEnvironment.class);
-    final var tx = mock(com.sleepycat.je.Transaction.class);
-    when(dbEnv.getEnvironment()).thenReturn(env);
-    when(env.openDatabase(any(), any(), any())).thenReturn(db);
-
-    final var store =
-        new BerkeleySafetyStateStore(
-            dbEnv, DefaultSerialization.getInstance(), new SystemCountersImpl());
-
-    final var safetyState = new SafetyState(randomView(), Optional.of(randomVote()));
-
-    when(env.beginTransaction(any(), any())).thenReturn(tx);
-
-    when(db.put(any(), any(), any())).thenReturn(OperationStatus.SUCCESS);
-
-    ArgumentCaptor<DatabaseEntry> entryCaptor = ArgumentCaptor.forClass(DatabaseEntry.class);
-
-    store.commitState(safetyState);
-
-    verify(db, times(1)).put(any(), any(), entryCaptor.capture());
-    verify(tx, times(1)).commit();
-    verifyNoMoreInteractions(tx);
-
-    final var cursor = mock(Cursor.class);
-    when(db.openCursor(any(), any())).thenReturn(cursor);
-
-    when(cursor.getLast(any(), any(), any()))
-        .thenAnswer(
-            invocation -> {
-              DatabaseEntry entry = (DatabaseEntry) invocation.getArguments()[1];
-              entry.setData(entryCaptor.getValue().getData());
-              return OperationStatus.SUCCESS;
-            });
-
-    var state = store.get();
-
-    assertTrue(state.isPresent());
-    assertEquals(safetyState, state.get());
+  public int getMinimumProofBlockSize() {
+    return minimumProofBlockSize;
   }
 }

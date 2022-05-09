@@ -62,96 +62,95 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store.berkeley;
+package com.radixdlt.rev2.modules;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
-import java.util.Optional;
+import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.inject.*;
+import com.radixdlt.atom.Txn;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.rev2.REv2Mempool;
+import com.radixdlt.rev2.REv2PreparedTxn;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-/** Vertex Store State version which can be serialized. */
-@SerializerId2("store.vertices")
-public final class SerializedVertexStoreState {
-
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(Output.ALL)
-  SerializerDummy serializer = SerializerDummy.DUMMY;
-
-  @JsonProperty("root")
-  @DsonOutput(Output.ALL)
-  private final UnverifiedVertex root;
-
-  @JsonProperty("vertices")
-  @DsonOutput(Output.ALL)
-  private final ImmutableList<UnverifiedVertex> vertices;
-
-  @JsonProperty("high_qc")
-  @DsonOutput(Output.ALL)
-  private final HighQC highQC;
-
-  @JsonProperty("highest_tc")
-  @DsonOutput(Output.ALL)
-  private final TimeoutCertificate highestTC;
-
-  @JsonCreator
-  public SerializedVertexStoreState(
-      @JsonProperty(value = "high_qc", required = true) HighQC highQC,
-      @JsonProperty(value = "root", required = true) UnverifiedVertex root,
-      @JsonProperty(value = "vertices", required = true) ImmutableList<UnverifiedVertex> vertices,
-      @JsonProperty("highest_tc") TimeoutCertificate highestTC) {
-    this.root = Objects.requireNonNull(root);
-    this.vertices = Objects.requireNonNull(vertices);
-    this.highQC = Objects.requireNonNull(highQC);
-    this.highestTC = highestTC;
-  }
-
-  public UnverifiedVertex getRoot() {
-    return root;
-  }
-
-  public ImmutableList<UnverifiedVertex> getVertices() {
-    return vertices;
-  }
-
-  public HighQC getHighQC() {
-    return highQC;
-  }
-
-  public Optional<TimeoutCertificate> getHighestTC() {
-    return Optional.ofNullable(highestTC);
-  }
+public class REv2StateComputerModule extends AbstractModule {
+  private static final Logger log = LogManager.getLogger();
 
   @Override
-  public int hashCode() {
-    return Objects.hash(root, vertices, highQC, highestTC);
+  protected void configure() {
+    bind(new TypeLiteral<Mempool<?>>() {})
+        .to(new TypeLiteral<Mempool<Txn>>() {})
+        .in(Scopes.SINGLETON);
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (o == this) {
-      return true;
-    }
-
-    return (o instanceof SerializedVertexStoreState other)
-        && Objects.equals(this.root, other.root)
-        && Objects.equals(this.vertices, other.vertices)
-        && Objects.equals(this.highQC, other.highQC)
-        && Objects.equals(this.highestTC, other.highestTC);
+  @Provides
+  @Singleton
+  private Mempool<Txn> mempool(
+      SystemCounters systemCounters, Random random, @MempoolMaxSize int mempoolMaxSize) {
+    return new REv2Mempool(systemCounters, mempoolMaxSize, random);
   }
 
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{highQC=%s root=%s vertices=%s highestTc=%s}",
-        this.getClass().getSimpleName(), this.highQC, this.root, this.vertices, this.highestTC);
+  @Provides
+  @Singleton
+  private StateComputerLedger.StateComputer stateComputer(
+      Mempool<Txn> mempool,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      SystemCounters counters) {
+    return new StateComputerLedger.StateComputer() {
+      @Override
+      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
+        mempoolAdd
+            .txns()
+            .forEach(
+                txn -> {
+                  try {
+                    mempool.add(txn);
+                    counters.set(
+                        SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+                  } catch (MempoolRejectedException e) {
+                    log.error(e);
+                  }
+                });
+      }
+
+      @Override
+      public List<Txn> getNextTxnsFromMempool(List<StateComputerLedger.PreparedTxn> prepared) {
+        return mempool.getTxns(1, List.of());
+      }
+
+      @Override
+      public StateComputerLedger.StateComputerResult prepare(
+          List<StateComputerLedger.PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+        return new StateComputerLedger.StateComputerResult(
+            vertex.getTxns().stream().map(REv2PreparedTxn::new).collect(Collectors.toList()),
+            Map.of());
+      }
+
+      @Override
+      public void commit(
+          VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+        mempool.committed(txnsAndProof.getTxns());
+        counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+
+        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
+        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
+      }
+    };
   }
 }

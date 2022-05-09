@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store.berkeley;
+package com.radixdlt.rev1.store;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
 import static com.radixdlt.utils.Longs.fromByteArray;
@@ -89,6 +89,7 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.consensus.bft.SerializedVertexStoreState;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -114,11 +115,10 @@ import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.store.BerkeleyStoreException;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.ResourceStore;
-import com.radixdlt.store.StoreConfig;
-import com.radixdlt.store.berkeley.atom.AppendLog;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.Shorts;

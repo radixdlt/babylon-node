@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.rev1.modules;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
@@ -73,6 +73,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.bft.SerializedVertexStoreState;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
@@ -88,7 +89,6 @@ import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LastStoredProof;
-import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Optional;
 

@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.rev2.modules;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;

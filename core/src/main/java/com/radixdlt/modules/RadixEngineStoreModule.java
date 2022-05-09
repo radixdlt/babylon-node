@@ -70,9 +70,9 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.forks.ForksEpochStore;
+import com.radixdlt.rev1.store.BerkeleyAdditionalStore;
+import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.berkeley.BerkeleyAdditionalStore;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.CommittedReader;
 
 public class RadixEngineStoreModule extends AbstractModule {

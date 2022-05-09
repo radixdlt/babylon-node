@@ -62,29 +62,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store.berkeley;
+package com.radixdlt;
 
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.store.DatabaseEnvironment;
-import com.sleepycat.je.Transaction;
-import java.util.Optional;
-import java.util.function.Function;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-/**
- * Simple way to add an additional store TODO: perhaps needs to be integrated at a higher level with
- * RadixEngine TODO: Make more generic rather than just attachment to BerkeleyLedgerEntryStore TODO:
- * Implement all other additional databases with this interface
- */
-public interface BerkeleyAdditionalStore {
-  void open(DatabaseEnvironment dbEnv);
+import com.google.inject.Guice;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.RadixKeyStore;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.serialization.TestSetupUtils;
+import com.radixdlt.utils.properties.RuntimeProperties;
+import java.io.File;
+import org.assertj.core.util.Files;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-  void close();
+public class RadixNodeModuleTest {
+  @NetworkId private int networkId;
 
-  void process(
-      Transaction dbTxn,
-      REProcessedTxn txn,
-      long stateVersion,
-      Function<SystemMapKey, Optional<RawSubstateBytes>> mapper);
+  @BeforeClass
+  public static void beforeClass() {
+    TestSetupUtils.installBouncyCastleProvider();
+  }
+
+  @Test
+  public void testInjectorNotNullToken() {
+    final var properties = createDefaultProperties();
+    when(properties.get(eq("network.id"))).thenReturn("99");
+    when(properties.get(eq("network.genesis_txn"))).thenReturn("00");
+    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
+  }
+
+  private RuntimeProperties createDefaultProperties() {
+    final var properties = mock(RuntimeProperties.class);
+    doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
+    var keyStore = new File("nonesuch.ks");
+    Files.delete(keyStore);
+    generateKeystore(keyStore);
+
+    when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");
+    return properties;
+  }
+
+  private void generateKeystore(File keyStore) {
+    try {
+      RadixKeyStore.fromFile(keyStore, null, true).writeKeyPair("node", ECKeyPair.generateNew());
+    } catch (Exception e) {
+      throw new IllegalStateException("Unable to create keystore");
+    }
+  }
 }

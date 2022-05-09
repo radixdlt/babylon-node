@@ -62,75 +62,89 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.rev1.store;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.store.LastEpochProof;
-import java.util.Optional;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.utils.Pair;
+import java.io.IOException;
+import java.util.function.BiConsumer;
 
-/** Manages consensus recovery on startup */
-public class ConsensusRecoveryModule extends AbstractModule {
-  @Provides
-  private ViewUpdate view(
-      VerifiedVertexStoreState vertexStoreState, BFTConfiguration configuration) {
-    var highQC = vertexStoreState.getHighQC();
-    var view = highQC.highestQC().getView().next();
-    var proposerElection = configuration.getProposerElection();
-    var leader = proposerElection.getProposer(view);
-    var nextLeader = proposerElection.getProposer(view.next());
-
-    return ViewUpdate.create(view, highQC, leader, nextLeader);
+/**
+ * Interface for append-only log file. The file consists of variable length chunks with following
+ * format:
+ *
+ * <pre>
+ *     [size (64-bit little-endian)] [byte0, byte1, ..., byteN]
+ * </pre>
+ */
+public interface AppendLog {
+  /**
+   * Open compressed R/W append log.
+   *
+   * @param path log file path
+   * @param counters system counters to use
+   * @return append log
+   * @throws IOException
+   */
+  static AppendLog openCompressed(String path, SystemCounters counters) throws IOException {
+    return CompressedAppendLog.open(openSimple(path), counters);
   }
 
-  @Provides
-  @Singleton
-  private BFTConfiguration initialConfig(
-      BFTValidatorSet validatorSet, VerifiedVertexStoreState vertexStoreState) {
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
-    return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
+  /**
+   * Open plain R/W append log.
+   *
+   * @param path log file path
+   * @return append log
+   * @throws IOException
+   */
+  static AppendLog openSimple(String path) throws IOException {
+    return SimpleAppendLog.open(path);
   }
 
-  @Provides
-  private BFTValidatorSet validatorSet(@LastEpochProof LedgerProof lastEpochProof) {
-    return lastEpochProof
-        .getNextValidatorSet()
-        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+  /** Get position at which next chunk will be written. */
+  long position();
+
+  /**
+   * Truncate the file to specified length.
+   *
+   * @param position position to which file should be truncated.
+   */
+  void truncate(long position);
+
+  /**
+   * Write next chunk.
+   *
+   * @param data data to write
+   * @return successful result with chunk length or failure with error description.
+   */
+  long write(byte[] data, long expectedOffset) throws IOException;
+
+  /**
+   * Read chunk at specified position.
+   *
+   * @param offset offset to read from
+   * @return successful result with chunk length or failure with error description.
+   */
+  default byte[] read(long offset) throws IOException {
+    return readChunk(offset).getFirst();
   }
 
-  @Provides
-  @Singleton
-  private SafetyState safetyState(
-      EpochChange initialEpoch, PersistentSafetyStateStore safetyStore) {
-    return safetyStore
-        .get()
-        .flatMap(
-            safetyState -> {
-              final long safetyStateEpoch =
-                  safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
+  /**
+   * Read chunk at specified position.
+   *
+   * @param offset offset to read from
+   * @return successful result with chunk length or failure with error description.
+   */
+  Pair<byte[], Integer> readChunk(long offset) throws IOException;
 
-              if (safetyStateEpoch > initialEpoch.getEpoch()) {
-                throw new IllegalStateException(
-                    String.format(
-                        "Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
-                        safetyStateEpoch, initialEpoch.getEpoch()));
-              } else if (safetyStateEpoch == initialEpoch.getEpoch()) {
-                return Optional.of(safetyState);
-              } else {
-                return Optional.empty();
-              }
-            })
-        .orElse(new SafetyState());
-  }
+  /** Force flushing data to disk. */
+  void flush() throws IOException;
+
+  /** Close append log. */
+  void close();
+
+  /**
+   * Scan log from start to end and submit every found chunk and its offset into provided consumer.
+   */
+  void forEach(BiConsumer<byte[], Long> chunkConsumer);
 }

@@ -113,9 +113,7 @@ import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.middleware2.network.GetVerticesRequestRateLimit;
-import com.radixdlt.modules.ConsensusRecoveryModule;
-import com.radixdlt.modules.FunctionalNodeModule;
-import com.radixdlt.modules.LedgerRecoveryModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.monitoring.SystemCounters;
@@ -125,15 +123,17 @@ import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.EpochCeilingView;
-import com.radixdlt.rev1.RadixEngineModule;
 import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.forks.InMemoryForksEpochStoreModule;
 import com.radixdlt.rev1.forks.NoOpForksEpochStore;
-import com.radixdlt.rev2.InMemoryCommittedReaderModule;
-import com.radixdlt.rev2.MockedPersistenceStoreModule;
-import com.radixdlt.rev2.MockedRecoveryModule;
+import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
+import com.radixdlt.rev1.modules.LedgerRecoveryModule;
+import com.radixdlt.rev1.modules.RadixEngineModule;
+import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
+import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.rev2.modules.MockedRecoveryModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SyncConfig;
@@ -540,7 +540,7 @@ public final class SimulationTest {
 
       // Functional
       modules.add(
-          new FunctionalNodeModule(
+          new FunctionalRadixNodeModule(
               ledgerType.hasConsensus,
               ledgerType.hasLedger,
               ledgerType.hasMempool,

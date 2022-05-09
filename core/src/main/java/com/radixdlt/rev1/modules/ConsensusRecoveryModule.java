@@ -62,64 +62,75 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.rev1.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
-import com.radixdlt.store.berkeley.SerializedVertexStoreState;
+import com.radixdlt.consensus.safety.SafetyState;
+import com.radixdlt.store.LastEpochProof;
 import java.util.Optional;
 
-/** Module which manages persistent storage */
-public class PersistenceModule extends AbstractModule {
-  @Override
-  protected void configure() {
-    // TODO: should be singletons?
-    bind(ResourceStore.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
-    bind(PersistentVertexStore.class).to(BerkeleyLedgerEntryStore.class);
-    bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
-    bind(BerkeleySafetyStateStore.class).in(Scopes.SINGLETON);
-    bind(DatabaseEnvironment.class).in(Scopes.SINGLETON);
+/** Manages consensus recovery on startup */
+public class ConsensusRecoveryModule extends AbstractModule {
+  @Provides
+  private ViewUpdate view(
+      VerifiedVertexStoreState vertexStoreState, BFTConfiguration configuration) {
+    var highQC = vertexStoreState.getHighQC();
+    var view = highQC.highestQC().getView().next();
+    var proposerElection = configuration.getProposerElection();
+    var leader = proposerElection.getProposer(view);
+    var nextLeader = proposerElection.getProposer(view.next());
+
+    return ViewUpdate.create(view, highQC, leader, nextLeader);
   }
 
   @Provides
-  Optional<SerializedVertexStoreState> serializedVertexStoreState(BerkeleyLedgerEntryStore store) {
-    return store.loadLastVertexStoreState();
+  @Singleton
+  private BFTConfiguration initialConfig(
+      BFTValidatorSet validatorSet, VerifiedVertexStoreState vertexStoreState) {
+    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
   }
 
   @Provides
-  StoreConfig storeConfig() {
-    return new StoreConfig(1000);
+  private BFTValidatorSet validatorSet(@LastEpochProof LedgerProof lastEpochProof) {
+    return lastEpochProof
+        .getNextValidatorSet()
+        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
   }
 
-  @ProvidesIntoSet
-  @ProcessOnDispatch
-  public EventProcessor<BFTHighQCUpdate> persistQC(
-      PersistentVertexStore persistentVertexStore, SystemCounters systemCounters) {
-    return update -> {
-      systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
-      persistentVertexStore.save(update.getVertexStoreState());
-    };
-  }
+  @Provides
+  @Singleton
+  private SafetyState safetyState(
+      EpochChange initialEpoch, PersistentSafetyStateStore safetyStore) {
+    return safetyStore
+        .get()
+        .flatMap(
+            safetyState -> {
+              final long safetyStateEpoch =
+                  safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
 
-  @ProvidesIntoSet
-  @ProcessOnDispatch
-  public EventProcessor<BFTInsertUpdate> persistUpdates(
-      PersistentVertexStore persistentVertexStore, SystemCounters systemCounters) {
-    return update -> {
-      systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
-      persistentVertexStore.save(update.getVertexStoreState());
-    };
+              if (safetyStateEpoch > initialEpoch.getEpoch()) {
+                throw new IllegalStateException(
+                    String.format(
+                        "Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
+                        safetyStateEpoch, initialEpoch.getEpoch()));
+              } else if (safetyStateEpoch == initialEpoch.getEpoch()) {
+                return Optional.of(safetyState);
+              } else {
+                return Optional.empty();
+              }
+            })
+        .orElse(new SafetyState());
   }
 }
