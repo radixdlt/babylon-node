@@ -81,12 +81,7 @@ public abstract class ApiTest extends DeterministicActorsTest {
       RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
   private static final Amount PER_BYTE_FEE = Amount.ofMicroTokens(2);
   private static final List<ActorConfiguration> ACTOR_CONFIGURATIONS =
-      List.of(
-          new ActorConfiguration(ApiTxnSubmitter::new, 1, 2),
-          new ActorConfiguration(BalanceReconciler::new, 1, 10),
-          new ActorConfiguration(RandomNodeRestarter::new, 1, 10),
-          new ActorConfiguration(NativeTokenRewardsChecker::new, 1, 100),
-          new ActorConfiguration(ApiBalanceToRadixEngineChecker::new, 1, 200));
+      List.of(new ActorConfiguration(RandomNodeRestarter::new, 1, 10));
 
   public ApiTest(Module forkOverrideModule, Module byzantineModule) {
     super(forkOverrideModule, byzantineModule);

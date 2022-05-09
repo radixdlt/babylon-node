@@ -62,35 +62,130 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.common;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.radixdlt.api.common.JSON;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
+import com.fasterxml.jackson.annotation.*;
+import io.swagger.annotations.ApiModelProperty;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
-abstract class SystemGetJsonHandler<T> implements HttpHandler {
-  private static final String CONTENT_TYPE_JSON = "application/json";
-  private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
+/** InternalServerError */
+@JsonPropertyOrder({
+  InternalServerError.JSON_PROPERTY_EXCEPTION,
+  InternalServerError.JSON_PROPERTY_CAUSE
+})
+@javax.annotation.processing.Generated(
+    value = "org.openapitools.codegen.languages.JavaClientCodegen",
+    date = "2021-12-02T17:26:14.947922-06:00[America/Chicago]")
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "type",
+    visible = true)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
+})
+public class InternalServerError extends BaseError {
+  public static final String JSON_PROPERTY_EXCEPTION = "exception";
+  private String exception;
 
-  public abstract T handleRequest();
+  public static final String JSON_PROPERTY_CAUSE = "cause";
+  private String cause;
+
+  public InternalServerError exception(String exception) {
+    this.exception = exception;
+    return this;
+  }
+
+  /**
+   * Get exception
+   *
+   * @return exception
+   */
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_EXCEPTION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public String getException() {
+    return exception;
+  }
+
+  @JsonProperty(JSON_PROPERTY_EXCEPTION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setException(String exception) {
+    this.exception = exception;
+  }
+
+  public InternalServerError cause(String cause) {
+    this.cause = cause;
+    return this;
+  }
+
+  /**
+   * Get cause
+   *
+   * @return cause
+   */
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_CAUSE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public String getCause() {
+    return cause;
+  }
+
+  @JsonProperty(JSON_PROPERTY_CAUSE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setCause(String cause) {
+    this.cause = cause;
+  }
+
+  /** Return true if this InternalServerError object is equal to o. */
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    InternalServerError internalServerError = (InternalServerError) o;
+    return Objects.equals(this.exception, internalServerError.exception)
+        && Objects.equals(this.cause, internalServerError.cause)
+        && super.equals(o);
+  }
 
   @Override
-  public final void handleRequest(HttpServerExchange exchange) throws Exception {
-    if (exchange.isInIoThread()) {
-      exchange.dispatch(this);
-      return;
+  public int hashCode() {
+    return Objects.hash(exception, cause, super.hashCode());
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("class InternalServerError {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    exception: ").append(toIndentedString(exception)).append("\n");
+    sb.append("    cause: ").append(toIndentedString(cause)).append("\n");
+    sb.append("}");
+    return sb.toString();
+  }
+
+  /**
+   * Convert the given object to string with each line indented by 4 spaces (except the first line).
+   */
+  private String toIndentedString(Object o) {
+    if (o == null) {
+      return "null";
     }
+    return o.toString().replace("\n", "\n    ");
+  }
 
-    exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
-    exchange.startBlocking();
-
-    var mapper = JSON.getDefault().getMapper();
-    var response = handleRequest();
-    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-    exchange.setStatusCode(200);
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    exchange.getResponseSender().send(mapper.writeValueAsString(response));
+  static {
+    // Initialize and register the discriminator mappings.
+    Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+    mappings.put("InternalServerError", InternalServerError.class);
+    JSON.registerDiscriminator(InternalServerError.class, "type", mappings);
   }
 }

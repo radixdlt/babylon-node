@@ -62,35 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.common;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.radixdlt.api.common.JSON;
+import com.google.common.base.Throwables;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.util.Headers;
 
-abstract class SystemGetJsonHandler<T> implements HttpHandler {
-  private static final String CONTENT_TYPE_JSON = "application/json";
-  private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
-
-  public abstract T handleRequest();
-
+public class UnhandledExceptionHandler implements HttpHandler {
   @Override
-  public final void handleRequest(HttpServerExchange exchange) throws Exception {
-    if (exchange.isInIoThread()) {
-      exchange.dispatch(this);
-      return;
-    }
-
-    exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
-    exchange.startBlocking();
-
-    var mapper = JSON.getDefault().getMapper();
-    var response = handleRequest();
-    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-    exchange.setStatusCode(200);
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    exchange.getResponseSender().send(mapper.writeValueAsString(response));
+  public void handleRequest(HttpServerExchange exchange) throws Exception {
+    // TODO: Find a place to log this
+    var ex = exchange.getAttachment(ExceptionHandler.THROWABLE);
+    var rootCause = Throwables.getRootCause(ex);
+    var unexpectedError =
+        new UnexpectedError()
+            .code(ApiErrorCode.INTERNAL_SERVER_ERROR.getErrorCode())
+            .message(ApiErrorCode.INTERNAL_SERVER_ERROR.getMessage())
+            .details(
+                new InternalServerError()
+                    .cause(rootCause.getMessage())
+                    .exception(rootCause.getClass().getSimpleName())
+                    .type("InternalServerError"));
+    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
+    exchange.setStatusCode(500);
+    exchange
+        .getResponseSender()
+        .send(JSON.getDefault().getMapper().writeValueAsString(unexpectedError));
   }
 }

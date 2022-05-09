@@ -62,35 +62,143 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.common;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.radixdlt.api.common.JSON;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 
-abstract class SystemGetJsonHandler<T> implements HttpHandler {
-  private static final String CONTENT_TYPE_JSON = "application/json";
-  private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
+/** UnexpectedError */
+@JsonPropertyOrder({
+  UnexpectedError.JSON_PROPERTY_CODE,
+  UnexpectedError.JSON_PROPERTY_MESSAGE,
+  UnexpectedError.JSON_PROPERTY_DETAILS
+})
+@javax.annotation.processing.Generated(
+    value = "org.openapitools.codegen.languages.JavaClientCodegen",
+    date = "2021-11-27T18:10:54.384551-06:00[America/Chicago]")
+public class UnexpectedError {
+  public static final String JSON_PROPERTY_CODE = "code";
+  private Integer code;
 
-  public abstract T handleRequest();
+  public static final String JSON_PROPERTY_MESSAGE = "message";
+  private String message;
+
+  public static final String JSON_PROPERTY_DETAILS = "details";
+  private BaseError details;
+
+  public UnexpectedError code(Integer code) {
+    this.code = code;
+    return this;
+  }
+
+  /**
+   * Get code
+   *
+   * @return code
+   */
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_CODE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public Integer getCode() {
+    return code;
+  }
+
+  @JsonProperty(JSON_PROPERTY_CODE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setCode(Integer code) {
+    this.code = code;
+  }
+
+  public UnexpectedError message(String message) {
+    this.message = message;
+    return this;
+  }
+
+  /**
+   * Get message
+   *
+   * @return message
+   */
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public String getMessage() {
+    return message;
+  }
+
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMessage(String message) {
+    this.message = message;
+  }
+
+  public UnexpectedError details(BaseError details) {
+    this.details = details;
+    return this;
+  }
+
+  /**
+   * Get details
+   *
+   * @return details
+   */
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public BaseError getDetails() {
+    return details;
+  }
+
+  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setDetails(BaseError details) {
+    this.details = details;
+  }
+
+  /** Return true if this UnexpectedError object is equal to o. */
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    UnexpectedError unexpectedError = (UnexpectedError) o;
+    return Objects.equals(this.code, unexpectedError.code)
+        && Objects.equals(this.message, unexpectedError.message)
+        && Objects.equals(this.details, unexpectedError.details);
+  }
 
   @Override
-  public final void handleRequest(HttpServerExchange exchange) throws Exception {
-    if (exchange.isInIoThread()) {
-      exchange.dispatch(this);
-      return;
+  public int hashCode() {
+    return Objects.hash(code, message, details);
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("class UnexpectedError {\n");
+    sb.append("    code: ").append(toIndentedString(code)).append("\n");
+    sb.append("    message: ").append(toIndentedString(message)).append("\n");
+    sb.append("    details: ").append(toIndentedString(details)).append("\n");
+    sb.append("}");
+    return sb.toString();
+  }
+
+  /**
+   * Convert the given object to string with each line indented by 4 spaces (except the first line).
+   */
+  private String toIndentedString(Object o) {
+    if (o == null) {
+      return "null";
     }
-
-    exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
-    exchange.startBlocking();
-
-    var mapper = JSON.getDefault().getMapper();
-    var response = handleRequest();
-    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-    exchange.setStatusCode(200);
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    exchange.getResponseSender().send(mapper.writeValueAsString(response));
+    return o.toString().replace("\n", "\n    ");
   }
 }

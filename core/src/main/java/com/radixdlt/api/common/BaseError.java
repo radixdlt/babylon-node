@@ -62,35 +62,98 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.common;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.radixdlt.api.common.JSON;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
+import com.fasterxml.jackson.annotation.*;
+import io.swagger.annotations.ApiModelProperty;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
-abstract class SystemGetJsonHandler<T> implements HttpHandler {
-  private static final String CONTENT_TYPE_JSON = "application/json";
-  private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
+/** CoreError */
+@JsonPropertyOrder({BaseError.JSON_PROPERTY_TYPE})
+@javax.annotation.processing.Generated(
+    value = "org.openapitools.codegen.languages.JavaClientCodegen",
+    date = "2021-12-07T21:34:53.770127-06:00[America/Chicago]")
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "type",
+    visible = true)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
+})
+public class BaseError implements Serializable {
+  public static final String JSON_PROPERTY_TYPE = "type";
+  private String type;
 
-  public abstract T handleRequest();
+  public BaseError type(String type) {
+    this.type = type;
+    return this;
+  }
+
+  /**
+   * Get type
+   *
+   * @return type
+   */
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public String getType() {
+    return type;
+  }
+
+  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setType(String type) {
+    this.type = type;
+  }
+
+  /** Return true if this CoreError object is equal to o. */
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    BaseError baseError = (BaseError) o;
+    return Objects.equals(this.type, baseError.type);
+  }
 
   @Override
-  public final void handleRequest(HttpServerExchange exchange) throws Exception {
-    if (exchange.isInIoThread()) {
-      exchange.dispatch(this);
-      return;
+  public int hashCode() {
+    return Objects.hash(type);
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("class BaseError {\n");
+    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("}");
+    return sb.toString();
+  }
+
+  /**
+   * Convert the given object to string with each line indented by 4 spaces (except the first line).
+   */
+  private String toIndentedString(Object o) {
+    if (o == null) {
+      return "null";
     }
+    return o.toString().replace("\n", "\n    ");
+  }
 
-    exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
-    exchange.startBlocking();
-
-    var mapper = JSON.getDefault().getMapper();
-    var response = handleRequest();
-    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-    exchange.setStatusCode(200);
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    exchange.getResponseSender().send(mapper.writeValueAsString(response));
+  static {
+    // Initialize and register the discriminator mappings.
+    Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+    mappings.put("InternalServerError", InternalServerError.class);
+    mappings.put("CoreError", BaseError.class);
+    JSON.registerDiscriminator(BaseError.class, "type", mappings);
   }
 }
