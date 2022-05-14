@@ -75,10 +75,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;

@@ -65,7 +65,6 @@
 package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DsonOutput;
@@ -75,10 +74,6 @@ import com.radixdlt.serialization.Serialization;
 public class Sha256Hasher implements Hasher {
 
   private final Serialization serialization;
-
-  public static Sha256Hasher withDefaultSerialization() {
-    return new Sha256Hasher(DefaultSerialization.getInstance());
-  }
 
   public Sha256Hasher(Serialization serialization) {
     this.serialization = serialization;

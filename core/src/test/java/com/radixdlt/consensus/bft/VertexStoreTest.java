@@ -92,6 +92,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.serialization.DefaultSerialization;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -113,7 +114,7 @@ public class VertexStoreTest {
   private EventDispatcher<BFTRebuildUpdate> rebuildUpdateEventDispatcher;
   private EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateEventDispatcher;
   private EventDispatcher<BFTCommittedUpdate> committedSender;
-  private Hasher hasher = Sha256Hasher.withDefaultSerialization();
+  private Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 
   private static final LedgerHeader MOCKED_HEADER =
       LedgerHeader.create(0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);

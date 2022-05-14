@@ -66,12 +66,12 @@ package com.radixdlt.network.p2p.transport;
 
 import static org.junit.Assert.assertArrayEquals;
 
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.network.p2p.transport.handshake.Secrets;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Pair;
 import io.netty.buffer.Unpooled;

@@ -99,7 +99,6 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.RadixEngineResult;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.ByzantineQuorumException;
-import com.radixdlt.ledger.CommittedBadTxnException;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;

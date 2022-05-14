@@ -68,12 +68,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atom.REFieldSerialization;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -81,14 +77,12 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.annotation.concurrent.Immutable;
-import org.json.JSONArray;
 
 /**
  * A collection of <a href="https://en.wikipedia.org/wiki/
@@ -125,24 +119,6 @@ public final class TimestampedECDSASignatures {
                 .collect(Collectors.toMap(e -> toBFTNode(e.getKey()), Map.Entry::getValue));
 
     return new TimestampedECDSASignatures(signaturesByNode);
-  }
-
-  public static TimestampedECDSASignatures fromJSON(JSONArray json) throws DeserializeException {
-    var builder = ImmutableMap.<BFTNode, TimestampedECDSASignature>builder();
-    for (int i = 0; i < json.length(); i++) {
-      var signatureJson = json.getJSONObject(i);
-
-      try {
-        var key = ECPublicKey.fromHex(signatureJson.getString("key"));
-        var bytes = Bytes.fromHexString(signatureJson.getString("signature"));
-        var signature = REFieldSerialization.deserializeSignature(ByteBuffer.wrap(bytes));
-        var timestamp = signatureJson.getLong("timestamp");
-        builder.put(BFTNode.create(key), TimestampedECDSASignature.from(timestamp, signature));
-      } catch (PublicKeyException e) {
-        throw new DeserializeException(e.getMessage());
-      }
-    }
-    return new TimestampedECDSASignatures(builder.build());
   }
 
   /** Returns a new empty instance. */

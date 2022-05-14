@@ -68,12 +68,12 @@ import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 

@@ -74,6 +74,7 @@ import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.serialization.DefaultSerialization;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -83,7 +84,7 @@ public class SimpleLedgerAccumulatorAndVerifierTest {
 
   @Before
   public void setup() {
-    hasher = Sha256Hasher.withDefaultSerialization();
+    hasher = new Sha256Hasher(DefaultSerialization.getInstance());
     accumulatorAndVerifier = new SimpleLedgerAccumulatorAndVerifier(hasher);
   }
 

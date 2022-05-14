@@ -71,7 +71,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
@@ -89,6 +88,7 @@ import com.radixdlt.rev1.forks.CandidateForkConfig;
 import com.radixdlt.rev1.forks.CandidateForkVote;
 import com.radixdlt.rev1.forks.ForkVotingResult;
 import com.radixdlt.rev1.forks.RERulesConfig;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.DatabaseEnvironment;
 import java.io.IOException;
 import java.util.ArrayList;

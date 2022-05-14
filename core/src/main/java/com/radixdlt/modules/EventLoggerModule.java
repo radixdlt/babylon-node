@@ -167,16 +167,15 @@ public final class EventLoggerModule extends AbstractModule {
       RateLimiter logLimiter,
       LedgerUpdate ledgerUpdate) {
 
-  /* BAB-TODO: Add something equivalent back in
-    var output = ledgerUpdate.getStateComputerOutput().getInstance(REOutput.class);
-   */
+    /* BAB-TODO: Add something equivalent back in
+     var output = ledgerUpdate.getStateComputerOutput().getInstance(REOutput.class);
+    */
     var epochChange = ledgerUpdate.getStateComputerOutput().getInstance(EpochChange.class);
 
-
-  /* BAB-TODO: Add something equivalent back in
-    logLedgerUpdate(
-        ledgerUpdate, countUserTxns(output), calculateLoggingLevel(logLimiter, epochChange));
-   */
+    /* BAB-TODO: Add something equivalent back in
+     logLedgerUpdate(
+         ledgerUpdate, countUserTxns(output), calculateLoggingLevel(logLimiter, epochChange));
+    */
     long fakeUserTransactionCount = 0;
     logLedgerUpdate(
         ledgerUpdate, fakeUserTransactionCount, calculateLoggingLevel(logLimiter, epochChange));
@@ -185,15 +184,15 @@ public final class EventLoggerModule extends AbstractModule {
       logEpochChange(self, epochChange);
     }
 
-  /* BAB-TODO: Add something equivalent back in
-    if (output == null) {
-      return;
-    }
+    /* BAB-TODO: Add something equivalent back in
+     if (output == null) {
+       return;
+     }
 
-    output.getProcessedTxns().stream()
-        .flatMap(t -> t.getEvents().stream())
-        .forEach(e -> logValidatorEvents(self, nodeString, e));
-   */
+     output.getProcessedTxns().stream()
+         .flatMap(t -> t.getEvents().stream())
+         .forEach(e -> logValidatorEvents(self, nodeString, e));
+    */
   }
 
   private static void logEpochChange(BFTNode self, EpochChange epochChange) {
@@ -214,7 +213,8 @@ public final class EventLoggerModule extends AbstractModule {
   }
   */
 
-  private static void logLedgerUpdate(LedgerUpdate ledgerUpdate, long userTransactionsCount, Level logLevel) {
+  private static void logLedgerUpdate(
+      LedgerUpdate ledgerUpdate, long userTransactionsCount, Level logLevel) {
     if (!logger.isEnabled(logLevel)) {
       return;
     }

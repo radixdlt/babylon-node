@@ -68,7 +68,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
@@ -80,6 +79,7 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.serialization.DefaultSerialization;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;

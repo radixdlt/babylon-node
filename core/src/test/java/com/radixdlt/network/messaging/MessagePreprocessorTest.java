@@ -76,7 +76,6 @@ import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECKeyPair;
@@ -97,6 +96,7 @@ import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;

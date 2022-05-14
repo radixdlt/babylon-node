@@ -97,6 +97,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Optional;
 import org.junit.Before;
@@ -105,7 +106,7 @@ import org.mockito.ArgumentCaptor;
 
 public class PacemakerTest {
 
-  private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+  private static final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 
   private BFTNode self = mock(BFTNode.class);
   private SystemCounters counters = mock(SystemCounters.class);

@@ -79,7 +79,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.*;
@@ -133,6 +132,7 @@ import com.radixdlt.rev1.forks.NoOpForksEpochStore;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -170,7 +170,7 @@ public class RadixEngineStateComputerTest {
       ImmutableList.of(ECKeyPair.generateNew(), ECKeyPair.generateNew());
   private ECKeyPair unregisteredNode = ECKeyPair.generateNew();
 
-  private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+  private static final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 
   private Module getExternalModule() {
     return new AbstractModule() {
@@ -185,7 +185,7 @@ public class RadixEngineStateComputerTest {
 
         bind(ProposerElection.class).toInstance(new WeightedRotatingLeaders(validatorSet));
         bind(Serialization.class).toInstance(serialization);
-        bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
+        bind(Hasher.class).toInstance(new Sha256Hasher(DefaultSerialization.getInstance()));
         bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(engineStore);
         bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 

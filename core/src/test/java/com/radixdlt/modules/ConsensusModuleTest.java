@@ -136,6 +136,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.GetVerticesRequestRateLimit;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
@@ -153,7 +154,7 @@ public class ConsensusModuleTest {
 
   @Inject private VertexStore vertexStore;
 
-  private Hasher hasher = Sha256Hasher.withDefaultSerialization();
+  private Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 
   private BFTConfiguration bftConfiguration;
 

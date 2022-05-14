@@ -94,6 +94,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.TypedMocks;
@@ -123,7 +124,7 @@ public class StateComputerLedgerTest {
   private QuorumCertificate genesisQC;
 
   private final Txn nextTxn = Txn.create(new byte[] {0});
-  private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+  private final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
   private final PreparedTxn successfulNextCommand =
       new PreparedTxn() {
         @Override

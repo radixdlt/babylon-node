@@ -72,7 +72,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.monitoring.SystemCountersImpl;
@@ -89,6 +88,7 @@ import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;

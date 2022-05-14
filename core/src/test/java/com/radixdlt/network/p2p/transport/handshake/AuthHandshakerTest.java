@@ -67,11 +67,11 @@ package com.radixdlt.network.p2p.transport.handshake;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeError;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import io.netty.buffer.Unpooled;
 import java.security.SecureRandom;

@@ -62,24 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.serialization;
 
-import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
+import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 
-public class CommittedBadTxnException extends ByzantineQuorumException {
-  public CommittedBadTxnException(VerifiedTxnsAndProof txnsAndProof, RadixEngineException cause) {
-    super(
-        "epoch="
-            + txnsAndProof.getProof().getEpoch()
-            + " version="
-            + versionWithIssue(txnsAndProof, cause),
-        cause);
+public final class DefaultSerialization {
+
+  private DefaultSerialization() {
+    throw new IllegalStateException("Can't construct");
   }
 
-  private static long versionWithIssue(
-      VerifiedTxnsAndProof txnsAndProof, RadixEngineException cause) {
-    return txnsAndProof.getProof().getStateVersion()
-        - txnsAndProof.getTxns().size()
-        + cause.getTxnIndex();
+  private static class LazyHolder {
+    static final Serialization INSTANCE =
+        Serialization.create(
+            ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
+  }
+
+  /**
+   * A singleton created using {@link ClasspathScanningSerializerIds} and {@link
+   * ClasspathScanningSerializationPolicy}
+   *
+   * @return A singleton created using {@link ClasspathScanningSerializerIds} and {@link
+   *     ClasspathScanningSerializationPolicy},
+   */
+  public static Serialization getInstance() {
+    return LazyHolder.INSTANCE;
   }
 }

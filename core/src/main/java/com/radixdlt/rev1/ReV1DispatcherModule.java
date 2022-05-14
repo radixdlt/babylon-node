@@ -71,9 +71,7 @@ import com.radixdlt.environment.Dispatchers;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 
-/**
- * REV1-related events pulled out of DispatcherModule
- */
+/** REV1-related events pulled out of DispatcherModule */
 public class ReV1DispatcherModule extends AbstractModule {
   @Override
   public void configure() {
