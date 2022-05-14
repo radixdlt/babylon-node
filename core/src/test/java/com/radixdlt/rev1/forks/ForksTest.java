@@ -369,14 +369,13 @@ public final class ForksTest {
 
     // latest epoch is 11, so fork2 should be stored...
     final var proof = proofAtEpoch(11L);
-    when(committedReader.getLastProof()).thenReturn(Optional.of(proof));
 
     // ...but it isn't
     when(forksEpochStore.getStoredForks()).thenReturn(ImmutableMap.of(0L, fork1.name()));
 
     final var exception =
         assertThrows(
-            IllegalStateException.class, () -> forks.init(committedReader, forksEpochStore));
+            IllegalStateException.class, () -> forks.init(proof, forksEpochStore));
 
     assertTrue(exception.getMessage().toLowerCase().contains("forks inconsistency"));
   }
@@ -392,7 +391,6 @@ public final class ForksTest {
     final var forksEpochStore = mock(ForksEpochStore.class);
 
     final var proof = proofAtEpoch(11L);
-    when(committedReader.getLastProof()).thenReturn(Optional.of(proof));
 
     when(forksEpochStore.getStoredForks())
         .thenReturn(
@@ -404,7 +402,7 @@ public final class ForksTest {
 
     final var exception =
         assertThrows(
-            IllegalStateException.class, () -> forks.init(committedReader, forksEpochStore));
+            IllegalStateException.class, () -> forks.init(proof, forksEpochStore));
 
     assertTrue(exception.getMessage().toLowerCase().contains("forks inconsistency"));
   }

@@ -67,12 +67,17 @@ package com.radixdlt.harness.deterministic.actors;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.harness.deterministic.DeterministicActor;
 import java.util.Random;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Randomly restarts a node in a deterministic test */
 public final class RandomNodeRestarter implements DeterministicActor {
+  private static final Logger logger = LogManager.getLogger();
+
   @Override
   public String execute(MultiNodeDeterministicRunner runner, Random random) {
     var nodeIndex = random.nextInt(runner.getSize());
+    logger.info("Restarting{node_index={}}", nodeIndex);
     runner.restartNode(nodeIndex);
     return String.format("Restarted{node_index=%s}", nodeIndex);
   }
