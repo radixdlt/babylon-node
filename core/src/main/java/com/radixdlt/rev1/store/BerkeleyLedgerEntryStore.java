@@ -402,7 +402,10 @@ public final class BerkeleyLedgerEntryStore
 
     ledgerAndBFTProof
         .getNextForkName()
-        .ifPresent(nextForkName -> this.storeForkAtEpoch(dbTransaction, ledgerAndBFTProof.getProof().getNextEpoch(), nextForkName));
+        .ifPresent(
+            nextForkName ->
+                this.storeForkAtEpoch(
+                    dbTransaction, ledgerAndBFTProof.getProof().getNextEpoch(), nextForkName));
   }
 
   private void storeForksVotingResults(
