@@ -87,7 +87,7 @@ public final class EpochChange {
   }
 
   public long getEpoch() {
-    return proof.getEpoch() + 1;
+    return proof.getNextEpoch();
   }
 
   public LedgerProof getProof() {

@@ -80,7 +80,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.rev1.LedgerAndBFTProof;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
@@ -364,18 +363,16 @@ public final class ForksTest {
 
     final var forks = Forks.create(Set.of(fork1, fork2));
 
-    final var committedReader = mock(CommittedReader.class);
     final var forksEpochStore = mock(ForksEpochStore.class);
 
     // latest epoch is 11, so fork2 should be stored...
-    final var proof = proofAtEpoch(11L);
+    final var currentEpoch = 11L;
 
     // ...but it isn't
     when(forksEpochStore.getStoredForks()).thenReturn(ImmutableMap.of(0L, fork1.name()));
 
     final var exception =
-        assertThrows(
-            IllegalStateException.class, () -> forks.init(proof, forksEpochStore));
+        assertThrows(IllegalStateException.class, () -> forks.init(currentEpoch, forksEpochStore));
 
     assertTrue(exception.getMessage().toLowerCase().contains("forks inconsistency"));
   }
@@ -387,10 +384,9 @@ public final class ForksTest {
 
     final var forks = Forks.create(Set.of(fork1));
 
-    final var committedReader = mock(CommittedReader.class);
     final var forksEpochStore = mock(ForksEpochStore.class);
 
-    final var proof = proofAtEpoch(11L);
+    final var currentEpoch = 11L;
 
     when(forksEpochStore.getStoredForks())
         .thenReturn(
@@ -401,8 +397,7 @@ public final class ForksTest {
                 "fork2" /* fork2 was executed at epoch 10 according to the ledger */));
 
     final var exception =
-        assertThrows(
-            IllegalStateException.class, () -> forks.init(proof, forksEpochStore));
+        assertThrows(IllegalStateException.class, () -> forks.init(currentEpoch, forksEpochStore));
 
     assertTrue(exception.getMessage().toLowerCase().contains("forks inconsistency"));
   }

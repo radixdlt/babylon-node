@@ -120,7 +120,7 @@ public class MockedRecoveryModule extends AbstractModule {
     VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, genesisHash);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
-            proof.getEpoch() + 1, View.genesis(), proof.getAccumulatorState(), proof.timestamp());
+            proof.getNextEpoch(), View.genesis(), proof.getAccumulatorState(), proof.timestamp());
     var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     return new BFTConfiguration(

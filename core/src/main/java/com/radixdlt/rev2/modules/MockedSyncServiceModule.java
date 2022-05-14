@@ -136,8 +136,8 @@ public class MockedSyncServiceModule extends AbstractModule {
           }
 
           if (update.getTail().isEndOfEpoch()) {
-            logger.info("Epoch Proof: " + (update.getTail().getEpoch() + 1));
-            sharedEpochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
+            logger.info("Epoch Proof: " + (update.getTail().getNextEpoch()));
+            sharedEpochProofs.put(update.getTail().getNextEpoch(), update.getTail());
           }
         });
   }
@@ -150,7 +150,7 @@ public class MockedSyncServiceModule extends AbstractModule {
       EventDispatcher<VerifiedTxnsAndProof> syncCommandsDispatcher) {
     return new EventProcessor<>() {
       long currentVersion = genesis.getStateVersion();
-      long currentEpoch = genesis.getEpoch() + 1;
+      long currentEpoch = genesis.getNextEpoch();
 
       private void syncTo(LedgerProof proof) {
         var txns =
@@ -159,11 +159,7 @@ public class MockedSyncServiceModule extends AbstractModule {
                 .collect(ImmutableList.toImmutableList());
         syncCommandsDispatcher.dispatch(VerifiedTxnsAndProof.create(txns, proof));
         currentVersion = proof.getStateVersion();
-        if (proof.isEndOfEpoch()) {
-          currentEpoch = proof.getEpoch() + 1;
-        } else {
-          currentEpoch = proof.getEpoch();
-        }
+        currentEpoch = proof.isEndOfEpoch() ? proof.getNextEpoch() : proof.getEpoch();
       }
 
       @Override
