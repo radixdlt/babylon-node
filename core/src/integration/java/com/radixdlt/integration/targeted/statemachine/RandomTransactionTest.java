@@ -69,7 +69,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
@@ -84,6 +83,7 @@ import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 import java.util.Random;
@@ -94,7 +94,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class RandomTxnTest {
+public class RandomTransactionTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
   private static final Logger logger = LogManager.getLogger();
   @Rule public TemporaryFolder folder = new TemporaryFolder();
@@ -138,7 +138,7 @@ public class RandomTxnTest {
       for (int j = 0; j < len; j++) {
         payload[j] = random.nextBoolean() ? (byte) random.nextInt(10) : payload[j];
       }
-      var txns = List.of(Txn.create(payload));
+      var txns = List.of(Transaction.create(payload));
       if (i % 1000 == 0) {
         logger.info(i + "/" + count);
       }

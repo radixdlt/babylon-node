@@ -64,17 +64,17 @@
 
 package com.radixdlt.ledger;
 
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 
 /** Generates new random hash commands */
 public final class RandomHashTxnsGenerator implements NextTxnsGenerator {
   @Override
-  public List<Txn> generateNextTxns(View view, List<PreparedVertex> prepared) {
-    return List.of(Txn.create(HashUtils.random256().asBytes()));
+  public List<Transaction> generateNextTxns(View view, List<PreparedVertex> prepared) {
+    return List.of(Transaction.create(HashUtils.random256().asBytes()));
   }
 }

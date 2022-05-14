@@ -65,7 +65,6 @@
 package com.radixdlt.serialization;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
@@ -78,6 +77,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.LedgerHeaderMock;
 import java.util.List;
 import java.util.Optional;
@@ -96,7 +96,7 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
     BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
     VoteData voteData = new VoteData(header, parent, null);
     QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    var txn = Txn.create(new byte[] {0, 1, 2, 3});
+    var txn = Transaction.create(new byte[] {0, 1, 2, 3});
 
     // add a particle to ensure atom is valid and has at least one shard
     BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());

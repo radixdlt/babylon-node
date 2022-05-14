@@ -137,6 +137,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -267,7 +268,7 @@ public class RadixEngineStateComputerTest {
     setupGenesis();
   }
 
-  private Txn systemUpdateTxn(long nextView, long nextEpoch) throws TxBuilderException {
+  private Transaction systemUpdateTxn(long nextView, long nextEpoch) throws TxBuilderException {
     TxBuilder builder;
     if (nextEpoch >= 2) {
       var request =
@@ -286,11 +287,11 @@ public class RadixEngineStateComputerTest {
     return builder.buildWithoutSignature();
   }
 
-  private Txn systemUpdateCommand(long nextView, long nextEpoch) throws TxBuilderException {
+  private Transaction systemUpdateCommand(long nextView, long nextEpoch) throws TxBuilderException {
     return systemUpdateTxn(nextView, nextEpoch);
   }
 
-  private Txn registerCommand(ECKeyPair keyPair) throws TxBuilderException {
+  private Transaction registerCommand(ECKeyPair keyPair) throws TxBuilderException {
     return radixEngine
         .construct(new RegisterValidator(keyPair.getPublicKey()))
         .signAndBuild(keyPair::sign);

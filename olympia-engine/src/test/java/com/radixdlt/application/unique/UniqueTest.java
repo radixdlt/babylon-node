@@ -83,6 +83,7 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.transactions.Transaction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.Before;
@@ -94,7 +95,7 @@ public class UniqueTest {
   private EngineStore<Void> store;
   private REParser parser;
   private SubstateSerialization serialization;
-  private Txn genesis;
+  private Transaction genesis;
 
   @Before
   public void setup() throws Exception {

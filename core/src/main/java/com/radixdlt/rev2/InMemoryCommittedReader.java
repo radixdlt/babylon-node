@@ -65,7 +65,6 @@
 package com.radixdlt.rev2;
 
 import com.google.inject.Inject;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.DtoLedgerProof;
@@ -73,6 +72,7 @@ import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -128,7 +128,7 @@ public final class InMemoryCommittedReader implements CommittedReader {
       Entry<Long, VerifiedTxnsAndProof> entry = store.commandsAndProof.higherEntry(stateVersion);
 
       if (entry != null) {
-        List<Txn> txns =
+        List<Transaction> transactions =
             accumulatorVerifier
                 .verifyAndGetExtension(
                     start.getLedgerHeader().getAccumulatorState(),
@@ -137,7 +137,7 @@ public final class InMemoryCommittedReader implements CommittedReader {
                     entry.getValue().getProof().getAccumulatorState())
                 .orElseThrow(() -> new RuntimeException());
 
-        return VerifiedTxnsAndProof.create(txns, entry.getValue().getProof());
+        return VerifiedTxnsAndProof.create(transactions, entry.getValue().getProof());
       }
 
       return null;

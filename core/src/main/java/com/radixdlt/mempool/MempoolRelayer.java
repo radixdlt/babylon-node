@@ -66,13 +66,13 @@ package com.radixdlt.mempool;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Singleton;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.transactions.Transaction;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -132,8 +132,8 @@ public final class MempoolRelayer {
     };
   }
 
-  private void relayCommands(List<Txn> txns, ImmutableList<BFTNode> ignorePeers) {
-    final var mempoolAddMsg = MempoolAdd.create(txns);
+  private void relayCommands(List<Transaction> transactions, ImmutableList<BFTNode> ignorePeers) {
+    final var mempoolAddMsg = MempoolAdd.create(transactions);
     final var peers =
         this.peersView.peers().map(PeersView.PeerInfo::bftNode).collect(Collectors.toList());
     peers.removeAll(ignorePeers);
@@ -142,7 +142,7 @@ public final class MempoolRelayer {
         .limit(maxPeers)
         .forEach(
             peer -> {
-              counters.add(CounterType.MEMPOOL_RELAYS_SENT, txns.size());
+              counters.add(CounterType.MEMPOOL_RELAYS_SENT, transactions.size());
               this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
             });
   }

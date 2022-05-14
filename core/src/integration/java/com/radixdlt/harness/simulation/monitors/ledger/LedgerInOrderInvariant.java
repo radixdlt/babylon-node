@@ -64,10 +64,10 @@
 
 package com.radixdlt.harness.simulation.monitors.ledger;
 
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.transactions.Transaction;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -87,7 +87,7 @@ public class LedgerInOrderInvariant implements TestInvariant {
 
   @Override
   public Observable<TestInvariantError> check(RunningNetwork network) {
-    Map<BFTNode, List<Txn>> commandsPerNode = new HashMap<>();
+    Map<BFTNode, List<Transaction>> commandsPerNode = new HashMap<>();
     network.getNodes().forEach(n -> commandsPerNode.put(n, new ArrayList<>()));
 
     return network

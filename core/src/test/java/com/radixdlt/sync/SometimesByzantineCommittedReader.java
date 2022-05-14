@@ -66,7 +66,6 @@ package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -78,6 +77,7 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.rev2.InMemoryCommittedReader;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -110,7 +110,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 
   private static class ByzantineVerifiedCommandsAndProofBuilder {
     private DtoLedgerProof request;
-    private UnaryOperator<Txn> commandMapper;
+    private UnaryOperator<Transaction> commandMapper;
     private VerifiedTxnsAndProof base;
     private TimestampedECDSASignatures overwriteSignatures;
     private LedgerAccumulator accumulator;
@@ -134,7 +134,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
     }
 
     public ByzantineVerifiedCommandsAndProofBuilder replaceCommands(
-        UnaryOperator<Txn> commandMapper) {
+        UnaryOperator<Transaction> commandMapper) {
       this.commandMapper = commandMapper;
       return this;
     }
@@ -146,17 +146,18 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
     }
 
     public VerifiedTxnsAndProof build() {
-      List<Txn> txns;
+      List<Transaction> transactions;
       if (commandMapper != null) {
-        txns = base.getTxns().stream().map(commandMapper).collect(ImmutableList.toImmutableList());
+        transactions =
+            base.getTxns().stream().map(commandMapper).collect(ImmutableList.toImmutableList());
       } else {
-        txns = base.getTxns();
+        transactions = base.getTxns();
       }
 
       AccumulatorState accumulatorState;
       if (accumulator != null) {
         accumulatorState = request.getLedgerHeader().getAccumulatorState();
-        for (var txn : txns) {
+        for (var txn : transactions) {
           accumulatorState = accumulator.accumulate(accumulatorState, txn.getId().asHashCode());
         }
       } else {
@@ -175,7 +176,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
       var headerAndProof =
           new LedgerProof(base.getProof().toDto().getOpaque(), ledgerHeader, signatures);
 
-      return VerifiedTxnsAndProof.create(txns, headerAndProof);
+      return VerifiedTxnsAndProof.create(transactions, headerAndProof);
     }
   }
 
@@ -201,7 +202,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
         return new ByzantineVerifiedCommandsAndProofBuilder()
             .hasher(hasher)
             .base(correctCommands)
-            .replaceCommands(cmd -> Txn.create(new byte[] {0}))
+            .replaceCommands(cmd -> Transaction.create(new byte[] {0}))
             .build();
       }
     },
@@ -215,7 +216,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
         return new ByzantineVerifiedCommandsAndProofBuilder()
             .hasher(hasher)
             .base(correctCommands)
-            .replaceCommands(cmd -> Txn.create(new byte[] {0}))
+            .replaceCommands(cmd -> Transaction.create(new byte[] {0}))
             .accumulator(request, accumulator)
             .overwriteSignatures(new TimestampedECDSASignatures())
             .build();
@@ -231,7 +232,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
         return new ByzantineVerifiedCommandsAndProofBuilder()
             .hasher(hasher)
             .base(correctCommands)
-            .replaceCommands(cmd -> Txn.create(new byte[] {0}))
+            .replaceCommands(cmd -> Transaction.create(new byte[] {0}))
             .accumulator(request, accumulator)
             .build();
       }

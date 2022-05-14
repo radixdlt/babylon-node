@@ -67,10 +67,10 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.Objects;
@@ -119,7 +119,7 @@ public final class REProcessedTxn {
     return parsedTxn.txn().getId();
   }
 
-  public Txn getTxn() {
+  public Transaction getTxn() {
     return parsedTxn.txn();
   }
 

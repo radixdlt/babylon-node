@@ -66,7 +66,6 @@ package com.radixdlt.consensus.liveness;
 
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Proposal;
@@ -89,6 +88,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
 import java.util.Objects;
@@ -210,22 +210,22 @@ public final class Pacemaker {
     final HighQC highQC = this.latestViewUpdate.getHighQC();
     final QuorumCertificate highestQC = highQC.highestQC();
 
-    final List<Txn> nextTxns;
+    final List<Transaction> nextTransactions;
 
     // Propose null atom in the case that we are at the end of the epoch
     // TODO: Remove isEndOfEpoch knowledge from consensus
     if (highestQC.getProposed().getLedgerHeader().isEndOfEpoch()) {
-      nextTxns = List.of();
+      nextTransactions = List.of();
     } else {
       final List<PreparedVertex> preparedVertices =
           vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
-      nextTxns = nextTxnsGenerator.generateNextTxns(view, preparedVertices);
+      nextTransactions = nextTxnsGenerator.generateNextTxns(view, preparedVertices);
       systemCounters.add(
-          SystemCounters.CounterType.BFT_PACEMAKER_PROPOSED_TRANSACTIONS, nextTxns.size());
+          SystemCounters.CounterType.BFT_PACEMAKER_PROPOSED_TRANSACTIONS, nextTransactions.size());
     }
 
     final UnverifiedVertex proposedVertex =
-        UnverifiedVertex.create(highestQC, view, nextTxns, self);
+        UnverifiedVertex.create(highestQC, view, nextTransactions, self);
     final VerifiedVertex verifiedVertex =
         new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
     return safetyRules.signProposal(

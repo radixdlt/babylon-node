@@ -62,54 +62,18 @@
  * permissions under this License.
  */
 
-package com.radixdlt.atom;
+package com.radixdlt.rev1;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
-import java.util.Objects;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-public final class Txn {
-  private final byte[] payload;
-  private final AID id;
-
-  private Txn(byte[] payload) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
-  }
-
-  @JsonCreator
-  public static Txn create(byte[] payload) {
-    return new Txn(payload);
-  }
-
-  public AID getId() {
-    return id;
-  }
-
-  @JsonValue
-  public byte[] getPayload() {
-    return payload;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Txn)) {
-      return false;
-    }
-
-    Txn other = (Txn) o;
-    return Objects.equals(this.id, other.id);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
+public class InvalidProposedTransactionTest {
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(InvalidProposedTxn.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
   }
 }

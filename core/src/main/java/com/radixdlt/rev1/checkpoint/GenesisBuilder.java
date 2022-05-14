@@ -69,7 +69,6 @@ import static com.radixdlt.atom.TxAction.*;
 import com.google.inject.Inject;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -86,6 +85,7 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.transactions.Transaction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -115,7 +115,7 @@ public final class GenesisBuilder {
             rules.config().maxMessageLen());
   }
 
-  public Txn build(String message, long timestamp, List<TxAction> actions)
+  public Transaction build(String message, long timestamp, List<TxAction> actions)
       throws TxBuilderException, RadixEngineException {
     var txnConstructionRequest = TxnConstructionRequest.create();
     txnConstructionRequest.msg(message.getBytes(StandardCharsets.UTF_8));
@@ -132,9 +132,9 @@ public final class GenesisBuilder {
     return txn;
   }
 
-  public LedgerProof generateGenesisProof(Txn txn) throws RadixEngineException {
+  public LedgerProof generateGenesisProof(Transaction transaction) throws RadixEngineException {
     var branch = radixEngine.transientBranch();
-    var result = branch.execute(List.of(txn), PermissionLevel.SYSTEM);
+    var result = branch.execute(List.of(transaction), PermissionLevel.SYSTEM);
     radixEngine.deleteBranches();
     var genesisValidatorSet =
         result.getProcessedTxn().getEvents().stream()
@@ -152,7 +152,7 @@ public final class GenesisBuilder {
             .orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
 
     var init = new AccumulatorState(0, HashUtils.zero256());
-    var accumulatorState = ledgerAccumulator.accumulate(init, txn.getId().asHashCode());
+    var accumulatorState = ledgerAccumulator.accumulate(init, transaction.getId().asHashCode());
     var genesisProof = LedgerProof.genesis(accumulatorState, genesisValidatorSet, 0L);
     if (!genesisProof.isEndOfEpoch()) {
       throw new IllegalStateException("Genesis must be end of epoch");

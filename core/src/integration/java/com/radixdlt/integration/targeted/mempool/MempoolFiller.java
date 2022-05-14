@@ -68,7 +68,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.application.tokens.TokenUtils;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
@@ -84,6 +83,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.RadixEngineMempool;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
 import java.util.Random;
@@ -170,7 +170,7 @@ public final class MempoolFiller {
               .splitNative(REAddr.ofNativeToken(), account, minSize)
               .avoidSubstates(shuttingDown);
 
-      var txns = new ArrayList<Txn>();
+      var txns = new ArrayList<Transaction>();
       for (int i = 0; i < numTransactions; i++) {
         try {
           var builder = radixEngine.construct(txnConstructionRequest);

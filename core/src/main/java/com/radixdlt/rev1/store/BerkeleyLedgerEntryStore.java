@@ -86,7 +86,6 @@ import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.SerializedVertexStoreState;
@@ -120,6 +119,7 @@ import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.ResourceStore;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.Shorts;
 import com.radixdlt.utils.UInt256;
@@ -132,7 +132,6 @@ import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
 import com.sleepycat.je.SecondaryCursor;
 import com.sleepycat.je.SecondaryDatabase;
-import com.sleepycat.je.Transaction;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -236,7 +235,7 @@ public final class BerkeleyLedgerEntryStore
     }
   }
 
-  private Transaction createTransaction() {
+  private com.sleepycat.je.Transaction createTransaction() {
     return withTime(
         () -> beginTransaction(),
         CounterType.ELAPSED_BDB_LEDGER_CREATE_TX,
@@ -317,15 +316,17 @@ public final class BerkeleyLedgerEntryStore
     return BerkeleyLedgerEntryStore.this.openIndexedCursor(null, index);
   }
 
-  private Optional<RawSubstateBytes> getInternal(Transaction dbTxn, SystemMapKey mapKey) {
+  private Optional<RawSubstateBytes> getInternal(
+      com.sleepycat.je.Transaction dbTransaction, SystemMapKey mapKey) {
     var key = new DatabaseEntry(mapKey.array());
     var substateId = new DatabaseEntry();
-    var result = mapDatabase.get(dbTxn, key, substateId, null);
+    var result = mapDatabase.get(dbTransaction, key, substateId, null);
     if (result != SUCCESS) {
       return Optional.empty();
     }
 
-    var substate = loadSubstate(dbTxn, SubstateId.fromBytes(substateId.getData())).orElseThrow();
+    var substate =
+        loadSubstate(dbTransaction, SubstateId.fromBytes(substateId.getData())).orElseThrow();
     var substateBytes = new RawSubstateBytes(substateId.getData(), substate.array());
     return Optional.of(substateBytes);
   }
@@ -335,17 +336,18 @@ public final class BerkeleyLedgerEntryStore
     return getInternal(null, mapKey);
   }
 
-  private void storeTxn(Transaction dbTxn, REProcessedTxn txn) {
+  private void storeTxn(com.sleepycat.je.Transaction dbTransaction, REProcessedTxn txn) {
     withTime(
-        () -> doStore(dbTxn, txn),
+        () -> doStore(dbTransaction, txn),
         CounterType.ELAPSED_BDB_LEDGER_STORE,
         CounterType.COUNT_BDB_LEDGER_STORE);
   }
 
-  private void storeMetadata(Transaction dbTxn, LedgerAndBFTProof ledgerAndBFTProof) {
+  private void storeMetadata(
+      com.sleepycat.je.Transaction dbTransaction, LedgerAndBFTProof ledgerAndBFTProof) {
     var proof = ledgerAndBFTProof.getProof();
 
-    try (var atomCursor = txnDatabase.openCursor(dbTxn, null)) {
+    try (var atomCursor = txnDatabase.openCursor(dbTransaction, null)) {
       var key = entry();
       var status = atomCursor.getLast(key, null, DEFAULT);
       if (status == NOTFOUND) {
@@ -362,7 +364,7 @@ public final class BerkeleyLedgerEntryStore
       }
     }
 
-    try (var proofCursor = proofDatabase.openCursor(dbTxn, null)) {
+    try (var proofCursor = proofDatabase.openCursor(dbTransaction, null)) {
       var prevHeaderKey = entry();
       var status = proofCursor.getLast(prevHeaderKey, null, DEFAULT);
       // Cannot remove end of epoch proofs
@@ -391,25 +393,27 @@ public final class BerkeleyLedgerEntryStore
       systemCounters.increment(CounterType.COUNT_BDB_LEDGER_PROOFS_ADDED);
     }
 
-    ledgerAndBFTProof.vertexStoreState().ifPresent(v -> doSave(dbTxn, v));
+    ledgerAndBFTProof.vertexStoreState().ifPresent(v -> doSave(dbTransaction, v));
 
     final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
 
     ledgerAndBFTProof
         .getForksVotingResults()
-        .ifPresent(forksVotingResults -> storeForksVotingResults(dbTxn, forksVotingResults));
+        .ifPresent(
+            forksVotingResults -> storeForksVotingResults(dbTransaction, forksVotingResults));
 
     ledgerAndBFTProof
         .getNextForkName()
-        .ifPresent(nextForkName -> this.storeForkAtEpoch(dbTxn, nextEpoch, nextForkName));
+        .ifPresent(nextForkName -> this.storeForkAtEpoch(dbTransaction, nextEpoch, nextForkName));
   }
 
   private void storeForksVotingResults(
-      Transaction dbTxn, ImmutableSet<ForkVotingResult> forksVotingResults) {
+      com.sleepycat.je.Transaction dbTransaction,
+      ImmutableSet<ForkVotingResult> forksVotingResults) {
     forksVotingResults.forEach(
         forkVotingResult ->
             forksVotingResultsDatabase.put(
-                dbTxn,
+                dbTransaction,
                 new DatabaseEntry(Longs.toByteArray(forkVotingResult.epoch())),
                 new DatabaseEntry(encodeForkVotingResult(forkVotingResult))));
   }
@@ -511,10 +515,11 @@ public final class BerkeleyLedgerEntryStore
     return new ForkVotingResult(epoch, candidateForkId, stakePercentageVoted);
   }
 
-  private void storeForkAtEpoch(Transaction dbTxn, long newEpoch, String forkName) {
+  private void storeForkAtEpoch(
+      com.sleepycat.je.Transaction dbTransaction, long newEpoch, String forkName) {
     final var key = new DatabaseEntry(Longs.toByteArray(newEpoch));
     final var entry = new DatabaseEntry(forkName.getBytes(ForkConfig.FORK_NAME_CHARSET));
-    if (forkConfigDatabase.putNoOverwrite(dbTxn, key, entry) != SUCCESS) {
+    if (forkConfigDatabase.putNoOverwrite(dbTransaction, key, entry) != SUCCESS) {
       throw new BerkeleyStoreException("Duplicate fork hash stored for epoch " + newEpoch);
     }
   }
@@ -865,7 +870,7 @@ public final class BerkeleyLedgerEntryStore
 
   private static class BerkeleySubstateCursor implements CloseableCursor<RawSubstateBytes> {
     private final SecondaryDatabase db;
-    private final com.sleepycat.je.Transaction dbTxn;
+    private final com.sleepycat.je.Transaction dbTransaction;
     private final byte[] indexableBytes;
     private final boolean reverse;
     private SecondaryCursor cursor;
@@ -876,8 +881,8 @@ public final class BerkeleyLedgerEntryStore
     private DatabaseEntry substateIdBytes = entry();
 
     BerkeleySubstateCursor(
-        com.sleepycat.je.Transaction dbTxn, SecondaryDatabase db, byte[] indexableBytes) {
-      this.dbTxn = dbTxn;
+        com.sleepycat.je.Transaction dbTransaction, SecondaryDatabase db, byte[] indexableBytes) {
+      this.dbTransaction = dbTransaction;
       this.db = db;
       this.indexableBytes = indexableBytes;
       this.reverse =
@@ -888,7 +893,7 @@ public final class BerkeleyLedgerEntryStore
     }
 
     private void open() {
-      this.cursor = db.openCursor(dbTxn, null);
+      this.cursor = db.openCursor(dbTransaction, null);
       if (reverse) {
         if ((indexableBytes[0] & 0x80) != 0) {
           throw new IllegalStateException("Unexpected first byte.");
@@ -942,26 +947,28 @@ public final class BerkeleyLedgerEntryStore
   }
 
   private CloseableCursor<RawSubstateBytes> openIndexedCursor(
-      Transaction dbTxn, SubstateIndex<?> index) {
-    var cursor = new BerkeleySubstateCursor(dbTxn, indexedSubstatesDatabase, index.getPrefix());
+      com.sleepycat.je.Transaction dbTransaction, SubstateIndex<?> index) {
+    var cursor =
+        new BerkeleySubstateCursor(dbTransaction, indexedSubstatesDatabase, index.getPrefix());
     cursor.open();
     return cursor;
   }
 
   private void upParticle(
-      com.sleepycat.je.Transaction txn, ByteBuffer bytes, SubstateId substateId) {
+      com.sleepycat.je.Transaction transaction, ByteBuffer bytes, SubstateId substateId) {
     byte[] particleKey = substateId.asBytes();
     var value = new DatabaseEntry(bytes.array(), bytes.position(), bytes.remaining());
-    substatesDatabase.putNoOverwrite(txn, entry(particleKey), value);
+    substatesDatabase.putNoOverwrite(transaction, entry(particleKey), value);
   }
 
-  private void downVirtualSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
+  private void downVirtualSubstate(
+      com.sleepycat.je.Transaction transaction, SubstateId substateId) {
     var particleKey = substateId.asBytes();
-    substatesDatabase.putNoOverwrite(txn, entry(particleKey), downEntry());
+    substatesDatabase.putNoOverwrite(transaction, entry(particleKey), downEntry());
   }
 
-  private void downSubstate(com.sleepycat.je.Transaction txn, SubstateId substateId) {
-    var status = substatesDatabase.delete(txn, entry(substateId.asBytes()));
+  private void downSubstate(com.sleepycat.je.Transaction transaction, SubstateId substateId) {
+    var status = substatesDatabase.delete(transaction, entry(substateId.asBytes()));
     if (status != SUCCESS) {
       throw new IllegalStateException("Downing particle does not exist " + substateId);
     }
@@ -983,27 +990,29 @@ public final class BerkeleyLedgerEntryStore
   }
 
   private void insertIntoMapDatabaseOrFail(
-      com.sleepycat.je.Transaction txn, SystemMapKey mapKey, SubstateId substateId) {
+      com.sleepycat.je.Transaction transaction, SystemMapKey mapKey, SubstateId substateId) {
     var key = new DatabaseEntry(mapKey.array());
     var value = new DatabaseEntry(substateId.asBytes());
-    var result = mapDatabase.putNoOverwrite(txn, key, value);
+    var result = mapDatabase.putNoOverwrite(transaction, key, value);
     if (result != SUCCESS) {
       throw new IllegalStateException("Unable to insert into map database");
     }
   }
 
-  private void deleteFromMapDatabaseOrFail(com.sleepycat.je.Transaction txn, SystemMapKey mapKey) {
+  private void deleteFromMapDatabaseOrFail(
+      com.sleepycat.je.Transaction transaction, SystemMapKey mapKey) {
     var key = new DatabaseEntry(mapKey.array());
-    var result = mapDatabase.delete(txn, key);
+    var result = mapDatabase.delete(transaction, key);
     if (result != SUCCESS) {
       throw new IllegalStateException("Unable to delete from map database");
     }
   }
 
-  private void executeStateUpdate(com.sleepycat.je.Transaction txn, REStateUpdate stateUpdate) {
+  private void executeStateUpdate(
+      com.sleepycat.je.Transaction transaction, REStateUpdate stateUpdate) {
     if (stateUpdate.isBootUp()) {
       var buf = stateUpdate.getStateBuf();
-      upParticle(txn, buf, stateUpdate.getId());
+      upParticle(transaction, buf, stateUpdate.getId());
 
       // FIXME: Superhack
       if (stateUpdate.getParsed() instanceof TokenResource) {
@@ -1011,7 +1020,7 @@ public final class BerkeleyLedgerEntryStore
         var addr = p.addr();
         var buf2 = stateUpdate.getStateBuf();
         var value = new DatabaseEntry(buf2.array(), buf2.position(), buf2.remaining());
-        resourceDatabase.putNoOverwrite(txn, new DatabaseEntry(addr.getBytes()), value);
+        resourceDatabase.putNoOverwrite(transaction, new DatabaseEntry(addr.getBytes()), value);
       }
 
       // TODO: The following is not required for verification. Only useful for construction
@@ -1020,38 +1029,38 @@ public final class BerkeleyLedgerEntryStore
         var p = (VirtualParent) stateUpdate.getParsed();
         var typeByte = p.data()[0];
         var mapKey = SystemMapKey.ofSystem(typeByte);
-        insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
+        insertIntoMapDatabaseOrFail(transaction, mapKey, stateUpdate.getId());
       } else if (stateUpdate.getParsed() instanceof ResourceData) {
         var p = (ResourceData) stateUpdate.getParsed();
         var mapKey = SystemMapKey.ofResourceData(p.addr(), stateUpdate.typeByte());
-        insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
+        insertIntoMapDatabaseOrFail(transaction, mapKey, stateUpdate.getId());
       } else if (stateUpdate.getParsed() instanceof ValidatorData) {
         var p = (ValidatorData) stateUpdate.getParsed();
         var mapKey =
             SystemMapKey.ofSystem(stateUpdate.typeByte(), p.validatorKey().getCompressedBytes());
-        insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
+        insertIntoMapDatabaseOrFail(transaction, mapKey, stateUpdate.getId());
       } else if (stateUpdate.getParsed() instanceof SystemData) {
         var mapKey = SystemMapKey.ofSystem(stateUpdate.typeByte());
-        insertIntoMapDatabaseOrFail(txn, mapKey, stateUpdate.getId());
+        insertIntoMapDatabaseOrFail(transaction, mapKey, stateUpdate.getId());
       }
     } else if (stateUpdate.isShutDown()) {
       if (stateUpdate.getId().isVirtual()) {
-        downVirtualSubstate(txn, stateUpdate.getId());
+        downVirtualSubstate(transaction, stateUpdate.getId());
       } else {
-        downSubstate(txn, stateUpdate.getId());
+        downSubstate(transaction, stateUpdate.getId());
 
         if (stateUpdate.getParsed() instanceof ResourceData) {
           var p = (ResourceData) stateUpdate.getParsed();
           var mapKey = SystemMapKey.ofResourceData(p.addr(), stateUpdate.typeByte());
-          deleteFromMapDatabaseOrFail(txn, mapKey);
+          deleteFromMapDatabaseOrFail(transaction, mapKey);
         } else if (stateUpdate.getParsed() instanceof ValidatorData) {
           var p = (ValidatorData) stateUpdate.getParsed();
           var mapKey =
               SystemMapKey.ofSystem(stateUpdate.typeByte(), p.validatorKey().getCompressedBytes());
-          deleteFromMapDatabaseOrFail(txn, mapKey);
+          deleteFromMapDatabaseOrFail(transaction, mapKey);
         } else if (stateUpdate.getParsed() instanceof SystemData) {
           var mapKey = SystemMapKey.ofSystem(stateUpdate.typeByte());
-          deleteFromMapDatabaseOrFail(txn, mapKey);
+          deleteFromMapDatabaseOrFail(transaction, mapKey);
         }
       }
     } else {
@@ -1059,10 +1068,10 @@ public final class BerkeleyLedgerEntryStore
     }
   }
 
-  private void doStore(Transaction dbTxn, REProcessedTxn txn) {
+  private void doStore(com.sleepycat.je.Transaction dbTransaction, REProcessedTxn txn) {
     final long stateVersion;
     final long expectedOffset;
-    try (var cursor = txnDatabase.openCursor(dbTxn, null)) {
+    try (var cursor = txnDatabase.openCursor(dbTransaction, null)) {
       var key = entry();
       var data = entry();
       var status = cursor.getLast(key, data, DEFAULT);
@@ -1085,7 +1094,8 @@ public final class BerkeleyLedgerEntryStore
       // Store atom indices
       var pKey = toPKey(stateVersion);
       var atomPosData = txnEntry(expectedOffset, storedSize, aid);
-      failIfNotSuccess(txnDatabase.putNoOverwrite(dbTxn, pKey, atomPosData), "Atom write for", aid);
+      failIfNotSuccess(
+          txnDatabase.putNoOverwrite(dbTransaction, pKey, atomPosData), "Atom write for", aid);
       addBytesWrite(atomPosData, pKey);
       systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
 
@@ -1104,11 +1114,11 @@ public final class BerkeleyLedgerEntryStore
                 elapsed.elapsed(TimeUnit.SECONDS));
           }
           try {
-            this.executeStateUpdate(dbTxn, stateUpdate);
+            this.executeStateUpdate(dbTransaction, stateUpdate);
             count++;
           } catch (Exception e) {
-            if (dbTxn != null) {
-              dbTxn.abort();
+            if (dbTransaction != null) {
+              dbTransaction.abort();
             }
             throw new BerkeleyStoreException(
                 "Unable to store transaction, failed on stateUpdate " + count + ": " + stateUpdate,
@@ -1118,11 +1128,11 @@ public final class BerkeleyLedgerEntryStore
       }
 
       additionalStores.forEach(
-          b -> b.process(dbTxn, txn, stateVersion, k -> getInternal(dbTxn, k)));
+          b -> b.process(dbTransaction, txn, stateVersion, k -> getInternal(dbTransaction, k)));
 
     } catch (Exception e) {
-      if (dbTxn != null) {
-        dbTxn.abort();
+      if (dbTransaction != null) {
+        dbTransaction.abort();
       }
       throw new BerkeleyStoreException("Unable to store atom:\n" + txn, e);
     }
@@ -1146,9 +1156,9 @@ public final class BerkeleyLedgerEntryStore
     long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
     final var startTime = System.nanoTime();
 
-    com.sleepycat.je.Transaction txn = beginTransaction();
+    com.sleepycat.je.Transaction transaction = beginTransaction();
     final LedgerProof nextHeader;
-    try (var proofCursor = proofDatabase.openCursor(txn, null)) {
+    try (var proofCursor = proofDatabase.openCursor(transaction, null)) {
       final var headerSearchKey = toPKey(stateVersion + 1);
       final var headerValue = entry();
       var headerCursorStatus = proofCursor.getSearchKeyRange(headerSearchKey, headerValue, DEFAULT);
@@ -1157,10 +1167,10 @@ public final class BerkeleyLedgerEntryStore
       }
       nextHeader = deserializeOrElseFail(headerValue.getData(), LedgerProof.class);
     } finally {
-      txn.commit();
+      transaction.commit();
     }
 
-    final var txns = ImmutableList.<Txn>builder();
+    final var txns = ImmutableList.<Transaction>builder();
     final var atomSearchKey = toPKey(stateVersion + 1);
     final var atomPosData = entry();
 
@@ -1174,7 +1184,7 @@ public final class BerkeleyLedgerEntryStore
         }
         var offset = fromByteArray(atomPosData.getData());
         var txnBytes = txnLog.read(offset);
-        txns.add(Txn.create(txnBytes));
+        txns.add(Transaction.create(txnBytes));
         atomCursorStatus = txnCursor.getNext(atomSearchKey, atomPosData, DEFAULT);
         count++;
       } while (count < atomCount);
@@ -1188,10 +1198,10 @@ public final class BerkeleyLedgerEntryStore
     }
   }
 
-  public List<Txn> getCommittedTxns(long stateVersion, long limit) {
+  public List<Transaction> getCommittedTxns(long stateVersion, long limit) {
     try (var txnCursor = txnDatabase.openCursor(null, null)) {
       var iterator =
-          new Iterator<Txn>() {
+          new Iterator<Transaction>() {
             final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion + 1));
             final DatabaseEntry value = new DatabaseEntry();
             OperationStatus status =
@@ -1205,7 +1215,7 @@ public final class BerkeleyLedgerEntryStore
             }
 
             @Override
-            public Txn next() {
+            public Transaction next() {
               if (status != SUCCESS) {
                 throw new NoSuchElementException();
               }
@@ -1216,7 +1226,7 @@ public final class BerkeleyLedgerEntryStore
               } catch (IOException e) {
                 throw new IllegalStateException("Unable to read transaction", e);
               }
-              Txn next = Txn.create(txnBytes);
+              Transaction next = Transaction.create(txnBytes);
 
               status = txnCursor.getNext(key, value, null);
               return next;
@@ -1231,13 +1241,13 @@ public final class BerkeleyLedgerEntryStore
     return loadAddr(null, addr);
   }
 
-  private Optional<ByteBuffer> loadAddr(Transaction dbTxn, REAddr addr) {
+  private Optional<ByteBuffer> loadAddr(com.sleepycat.je.Transaction dbTransaction, REAddr addr) {
     var buf = ByteBuffer.allocate(128);
     buf.put(addr.getBytes());
     var pos = buf.position();
     var key = new DatabaseEntry(buf.array(), 0, pos);
     var value = entry();
-    var status = resourceDatabase.get(dbTxn, key, value, DEFAULT);
+    var status = resourceDatabase.get(dbTransaction, key, value, DEFAULT);
     if (status != SUCCESS) {
       return Optional.empty();
     }
@@ -1245,17 +1255,18 @@ public final class BerkeleyLedgerEntryStore
     return entryToSubstate(value);
   }
 
-  private boolean isVirtualDown(Transaction dbTxn, SubstateId substateId) {
+  private boolean isVirtualDown(com.sleepycat.je.Transaction dbTransaction, SubstateId substateId) {
     var key = entry(substateId.asBytes());
     var value = entry();
-    var status = substatesDatabase.get(dbTxn, key, value, DEFAULT);
+    var status = substatesDatabase.get(dbTransaction, key, value, DEFAULT);
     return status == SUCCESS;
   }
 
-  private Optional<ByteBuffer> loadSubstate(Transaction dbTxn, SubstateId substateId) {
+  private Optional<ByteBuffer> loadSubstate(
+      com.sleepycat.je.Transaction dbTransaction, SubstateId substateId) {
     var key = entry(substateId.asBytes());
     var value = entry();
-    var status = substatesDatabase.get(dbTxn, key, value, DEFAULT);
+    var status = substatesDatabase.get(dbTransaction, key, value, DEFAULT);
     if (status != SUCCESS) {
       return Optional.empty();
     }

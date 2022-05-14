@@ -64,19 +64,19 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.atom.Txn;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Objects;
 
 /** Message to attempt to add commands to the mempool */
-public record MempoolAdd(List<Txn> txns) {
-  public static MempoolAdd create(Txn txn) {
-    Objects.requireNonNull(txn);
-    return new MempoolAdd(List.of(txn));
+public record MempoolAdd(List<Transaction> transactions) {
+  public static MempoolAdd create(Transaction transaction) {
+    Objects.requireNonNull(transaction);
+    return new MempoolAdd(List.of(transaction));
   }
 
-  public static MempoolAdd create(List<Txn> txns) {
-    Objects.requireNonNull(txns);
-    return new MempoolAdd(txns);
+  public static MempoolAdd create(List<Transaction> transactions) {
+    Objects.requireNonNull(transactions);
+    return new MempoolAdd(transactions);
   }
 }

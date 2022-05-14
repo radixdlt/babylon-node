@@ -64,9 +64,9 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 
 /** Generates a new proposed command for a given view */
@@ -80,5 +80,5 @@ public interface NextTxnsGenerator {
    * @param prepared vertices with commands which have already been prepared
    * @return new command to execute next
    */
-  List<Txn> generateNextTxns(View view, List<PreparedVertex> prepared);
+  List<Transaction> generateNextTxns(View view, List<PreparedVertex> prepared);
 }

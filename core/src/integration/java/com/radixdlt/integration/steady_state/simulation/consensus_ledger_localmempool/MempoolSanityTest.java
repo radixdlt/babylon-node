@@ -68,7 +68,6 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.harness.simulation.Monitor;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -80,6 +79,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.Mempools;
+import com.radixdlt.transactions.Transaction;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -111,7 +111,7 @@ public class MempoolSanityTest {
                 new AbstractModule() {
                   @Override
                   protected void configure() {
-                    bind(new TypeLiteral<Mempool<Txn>>() {}).toInstance(Mempools.empty());
+                    bind(new TypeLiteral<Mempool<Transaction>>() {}).toInstance(Mempools.empty());
                   }
                 })
             .build();

@@ -68,7 +68,6 @@ import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.engine.RadixEngine;
@@ -81,6 +80,7 @@ import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolMetadata;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -122,20 +122,20 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   }
 
   @Override
-  public REProcessedTxn add(Txn txn) throws MempoolRejectedException {
+  public REProcessedTxn add(Transaction transaction) throws MempoolRejectedException {
     if (this.data.size() >= maxSize) {
       throw new MempoolFullException(this.data.size(), maxSize);
     }
 
-    if (this.data.containsKey(txn.getId())) {
+    if (this.data.containsKey(transaction.getId())) {
       throw new MempoolDuplicateException(
-          String.format("Mempool already has command %s", txn.getId()));
+          String.format("Mempool already has command %s", transaction.getId()));
     }
 
     final RadixEngineResult<LedgerAndBFTProof> result;
     try {
       RadixEngine.RadixEngineBranch<LedgerAndBFTProof> checker = radixEngine.transientBranch();
-      result = checker.execute(List.of(txn));
+      result = checker.execute(List.of(transaction));
     } catch (RadixEngineException e) {
       // TODO: allow missing dependency atoms to live for a certain amount of time
       throw new MempoolRejectedException(e);
@@ -145,18 +145,20 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 
     var mempoolTxn = MempoolMetadata.create(System.currentTimeMillis());
     var data = Pair.of(result.getProcessedTxn(), mempoolTxn);
-    this.data.put(txn.getId(), data);
+    this.data.put(transaction.getId(), data);
     result
         .getProcessedTxn()
         .substateDependencies()
-        .forEach(substateId -> substateIndex.merge(substateId, Set.of(txn.getId()), Sets::union));
+        .forEach(
+            substateId ->
+                substateIndex.merge(substateId, Set.of(transaction.getId()), Sets::union));
 
     return result.getProcessedTxn();
   }
 
   @Override
-  public List<Txn> committed(List<REProcessedTxn> transactions) {
-    final var removed = new ArrayList<Txn>();
+  public List<Transaction> committed(List<REProcessedTxn> transactions) {
+    final var removed = new ArrayList<Transaction>();
     final var committedIds =
         transactions.stream().map(p -> p.getTxn().getId()).collect(Collectors.toSet());
 
@@ -189,7 +191,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   }
 
   @Override
-  public List<Txn> getTxns(int count, List<REProcessedTxn> prepared) {
+  public List<Transaction> getTxns(int count, List<REProcessedTxn> prepared) {
     // TODO: Order by highest fees paid
     var copy = new TreeSet<>(data.keySet());
     prepared.stream()
@@ -199,7 +201,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
         .distinct()
         .forEach(copy::remove);
 
-    var txns = new ArrayList<Txn>();
+    var txns = new ArrayList<Transaction>();
 
     for (int i = 0; i < count && !copy.isEmpty(); i++) {
       var txId = copy.first();
@@ -224,7 +226,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   }
 
   @Override
-  public List<Txn> scanUpdateAndGet(
+  public List<Transaction> scanUpdateAndGet(
       Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
     return this.data.values().stream()
         .filter(e -> predicate.test(e.getSecond()))

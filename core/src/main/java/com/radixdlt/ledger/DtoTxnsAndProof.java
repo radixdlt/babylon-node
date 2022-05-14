@@ -69,12 +69,12 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
@@ -89,7 +89,7 @@ public final class DtoTxnsAndProof {
 
   @JsonProperty("txns")
   @DsonOutput(Output.ALL)
-  private final List<Txn> txns;
+  private final List<Transaction> transactions;
 
   @JsonProperty("head")
   @DsonOutput(Output.ALL)
@@ -101,18 +101,18 @@ public final class DtoTxnsAndProof {
 
   @JsonCreator
   public DtoTxnsAndProof(
-      @JsonProperty("txns") List<Txn> txns,
+      @JsonProperty("txns") List<Transaction> transactions,
       @JsonProperty(value = "head", required = true) DtoLedgerProof head,
       @JsonProperty(value = "tail", required = true) DtoLedgerProof tail) {
-    this.txns = txns == null ? ImmutableList.of() : txns;
+    this.transactions = transactions == null ? ImmutableList.of() : transactions;
     this.head = requireNonNull(head);
     this.tail = requireNonNull(tail);
 
-    this.txns.forEach(Objects::requireNonNull);
+    this.transactions.forEach(Objects::requireNonNull);
   }
 
-  public List<Txn> getTxns() {
-    return txns;
+  public List<Transaction> getTxns() {
+    return transactions;
   }
 
   public DtoLedgerProof getHead() {
@@ -135,13 +135,13 @@ public final class DtoTxnsAndProof {
     }
 
     return (o instanceof DtoTxnsAndProof that)
-        && Objects.equals(txns, that.txns)
+        && Objects.equals(transactions, that.transactions)
         && Objects.equals(head, that.head)
         && Objects.equals(tail, that.tail);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(txns, head, tail);
+    return Objects.hash(transactions, head, tail);
   }
 }

@@ -80,7 +80,6 @@ import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HighQC;
@@ -144,6 +143,7 @@ import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -177,7 +177,7 @@ public class EpochManagerTest {
         }
 
         @Override
-        public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
+        public List<Transaction> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
           return List.of();
         }
 

@@ -66,7 +66,6 @@ package com.radixdlt.rev2.modules;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.*;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -81,6 +80,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev2.REv2Mempool;
 import com.radixdlt.rev2.REv2PreparedTxn;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -95,13 +95,13 @@ public class REv2StateComputerModule extends AbstractModule {
   @Override
   protected void configure() {
     bind(new TypeLiteral<Mempool<?>>() {})
-        .to(new TypeLiteral<Mempool<Txn>>() {})
+        .to(new TypeLiteral<Mempool<Transaction>>() {})
         .in(Scopes.SINGLETON);
   }
 
   @Provides
   @Singleton
-  private Mempool<Txn> mempool(
+  private Mempool<Transaction> mempool(
       SystemCounters systemCounters, Random random, @MempoolMaxSize int mempoolMaxSize) {
     return new REv2Mempool(systemCounters, mempoolMaxSize, random);
   }
@@ -109,14 +109,14 @@ public class REv2StateComputerModule extends AbstractModule {
   @Provides
   @Singleton
   private StateComputerLedger.StateComputer stateComputer(
-      Mempool<Txn> mempool,
+      Mempool<Transaction> mempool,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
       SystemCounters counters) {
     return new StateComputerLedger.StateComputer() {
       @Override
       public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
         mempoolAdd
-            .txns()
+            .transactions()
             .forEach(
                 txn -> {
                   try {
@@ -130,7 +130,8 @@ public class REv2StateComputerModule extends AbstractModule {
       }
 
       @Override
-      public List<Txn> getNextTxnsFromMempool(List<StateComputerLedger.PreparedTxn> prepared) {
+      public List<Transaction> getNextTxnsFromMempool(
+          List<StateComputerLedger.PreparedTxn> prepared) {
         return mempool.getTxns(1, List.of());
       }
 

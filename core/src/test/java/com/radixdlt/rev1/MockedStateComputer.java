@@ -66,7 +66,6 @@ package com.radixdlt.rev1;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.Inject;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
@@ -87,6 +86,7 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -107,7 +107,7 @@ public final class MockedStateComputer implements StateComputer {
   public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
 
   @Override
-  public List<Txn> getNextTxnsFromMempool(List<StateComputerLedger.PreparedTxn> prepared) {
+  public List<Transaction> getNextTxnsFromMempool(List<StateComputerLedger.PreparedTxn> prepared) {
     return List.of();
   }
 

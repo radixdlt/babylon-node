@@ -62,18 +62,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.transactions;
 
-import com.google.common.hash.HashCode;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import com.radixdlt.identifiers.AID;
+import java.util.Objects;
 
-public class InvalidProposedTxnTest {
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(InvalidProposedTxn.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+/**
+ * A wrapper around the raw bytes of a transaction submission. The transaction is yet to be parsed,
+ * and may be invalid.
+ */
+public final class Transaction {
+  private final byte[] payload;
+  private final AID id;
+
+  private Transaction(byte[] payload) {
+    this.payload = Objects.requireNonNull(payload);
+    this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
+  }
+
+  @JsonCreator
+  public static Transaction create(byte[] payload) {
+    return new Transaction(payload);
+  }
+
+  public AID getId() {
+    return id;
+  }
+
+  @JsonValue
+  public byte[] getPayload() {
+    return payload;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof Transaction)) {
+      return false;
+    }
+
+    Transaction other = (Transaction) o;
+    return Objects.equals(this.id, other.id);
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
   }
 }

@@ -76,7 +76,6 @@ import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxLowLevelBuilder;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -102,6 +101,7 @@ import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -152,7 +152,7 @@ public class MempoolTest {
     return peersView.peers().findFirst().get().bftNode();
   }
 
-  private Txn createTxn(ECKeyPair keyPair, int numMutexes) throws Exception {
+  private Transaction createTxn(ECKeyPair keyPair, int numMutexes) throws Exception {
     final var atomBuilder =
         TxLowLevelBuilder.newBuilder(
             currentForkView.currentForkConfig().engineRules().serialization());
@@ -169,7 +169,7 @@ public class MempoolTest {
     return atomBuilder.sig(signature).build();
   }
 
-  private Txn createTxn(ECKeyPair keyPair) throws Exception {
+  private Transaction createTxn(ECKeyPair keyPair) throws Exception {
     return createTxn(keyPair, 1);
   }
 
@@ -275,7 +275,7 @@ public class MempoolTest {
   public void add_bad_command_to_mempool() {
     // Arrange
     getInjector().injectMembers(this);
-    final var txn = Txn.create(new byte[0]);
+    final var txn = Transaction.create(new byte[0]);
 
     // Act
     MempoolAdd mempoolAdd = MempoolAdd.create(txn);

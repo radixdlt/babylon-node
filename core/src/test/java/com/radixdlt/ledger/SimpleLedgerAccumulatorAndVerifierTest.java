@@ -70,11 +70,11 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.transactions.Transaction;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -125,7 +125,7 @@ public class SimpleLedgerAccumulatorAndVerifierTest {
 
   @Test
   public void when_single_command_truncate_from_perfect_version__then_should_return_equivalent() {
-    var txn = Txn.create(new byte[] {0});
+    var txn = Transaction.create(new byte[] {0});
     AccumulatorState headState = new AccumulatorState(345, HashUtils.zero256());
     AccumulatorState nextState =
         accumulatorAndVerifier.accumulate(headState, txn.getId().asHashCode());

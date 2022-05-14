@@ -65,18 +65,18 @@
 package com.radixdlt.rev2;
 
 import com.google.common.collect.Lists;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolMetadata;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.transactions.Transaction;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class REv2Mempool implements Mempool<Txn> {
-  private final Set<Txn> data = new HashSet<>();
+public class REv2Mempool implements Mempool<Transaction> {
+  private final Set<Transaction> data = new HashSet<>();
   private final SystemCounters counters;
   private final Random random;
   private final int maxSize;
@@ -91,21 +91,23 @@ public class REv2Mempool implements Mempool<Txn> {
   }
 
   @Override
-  public Txn add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
+  public Transaction add(Transaction transaction)
+      throws MempoolFullException, MempoolDuplicateException {
     if (this.data.size() >= maxSize) {
       throw new MempoolFullException(this.data.size(), maxSize);
     }
-    if (!this.data.add(txn)) {
-      throw new MempoolDuplicateException(String.format("Mempool already has command %s", txn));
+    if (!this.data.add(transaction)) {
+      throw new MempoolDuplicateException(
+          String.format("Mempool already has command %s", transaction));
     }
 
     updateCounts();
 
-    return txn;
+    return transaction;
   }
 
   @Override
-  public List<Txn> committed(List<Txn> commands) {
+  public List<Transaction> committed(List<Transaction> commands) {
     commands.forEach(this.data::remove);
     updateCounts();
     return List.of();
@@ -117,14 +119,14 @@ public class REv2Mempool implements Mempool<Txn> {
   }
 
   @Override
-  public List<Txn> getTxns(int count, List<Txn> seen) {
+  public List<Transaction> getTxns(int count, List<Transaction> seen) {
     int size = Math.min(count, this.data.size());
     if (size > 0) {
-      List<Txn> commands = Lists.newArrayList();
+      List<Transaction> commands = Lists.newArrayList();
       var values = new ArrayList<>(this.data);
       Collections.shuffle(values, random);
 
-      Iterator<Txn> i = values.iterator();
+      Iterator<Transaction> i = values.iterator();
       while (commands.size() < size && i.hasNext()) {
         var a = i.next();
         if (!seen.contains(a)) {
@@ -138,7 +140,7 @@ public class REv2Mempool implements Mempool<Txn> {
   }
 
   @Override
-  public List<Txn> scanUpdateAndGet(
+  public List<Transaction> scanUpdateAndGet(
       Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
     return List.of();
   }

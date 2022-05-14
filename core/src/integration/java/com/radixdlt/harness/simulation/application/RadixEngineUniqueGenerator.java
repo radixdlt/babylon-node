@@ -68,12 +68,12 @@ import com.google.inject.Inject;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.rev1.forks.CurrentForkView;
+import com.radixdlt.transactions.Transaction;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -85,10 +85,10 @@ public class RadixEngineUniqueGenerator implements TxnGenerator {
 
   @Inject private CurrentForkView currentForkView;
 
-  @Inject @Genesis private Txn genesis;
+  @Inject @Genesis private Transaction genesis;
 
   @Override
-  public Txn nextTxn() {
+  public Transaction nextTxn() {
     var keyPair = ECKeyPair.generateNew();
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "smthng");
     var builder =

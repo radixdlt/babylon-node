@@ -114,7 +114,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class TxnSizeFeeTest {
+public class TransactionSizeFeeTest {
   @Parameterized.Parameters
   public static Collection<Object[]> parameters() {
     return List.of(
@@ -130,7 +130,7 @@ public class TxnSizeFeeTest {
   private final Amount costPerByte;
   private static final long MAX_SIZE = 507;
 
-  public TxnSizeFeeTest(Amount costPerByte) {
+  public TransactionSizeFeeTest(Amount costPerByte) {
     this.costPerByte = costPerByte;
   }
 

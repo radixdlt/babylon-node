@@ -64,19 +64,19 @@
 
 package com.radixdlt.ledger;
 
-import com.radixdlt.atom.Txn;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.transactions.Transaction;
 
 public class MockPrepared implements PreparedTxn {
 
-  private final Txn txn;
+  private final Transaction transaction;
 
-  public MockPrepared(Txn txn) {
-    this.txn = txn;
+  public MockPrepared(Transaction transaction) {
+    this.transaction = transaction;
   }
 
   @Override
-  public Txn txn() {
-    return txn;
+  public Transaction transaction() {
+    return transaction;
   }
 }

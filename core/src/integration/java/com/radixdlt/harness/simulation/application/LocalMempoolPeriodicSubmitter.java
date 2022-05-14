@@ -64,11 +64,11 @@
 
 package com.radixdlt.harness.simulation.application;
 
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.simulation.SimulationTest.SimulationNetworkActor;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -79,7 +79,7 @@ import java.util.concurrent.TimeUnit;
 /** Contributes to steady state by submitting commands to the mempool every few seconds */
 public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
 
-  private final PublishSubject<Pair<Txn, BFTNode>> txns;
+  private final PublishSubject<Pair<Transaction, BFTNode>> txns;
   private final TxnGenerator txnGenerator;
   private final NodeSelector nodeSelector;
 
@@ -91,11 +91,11 @@ public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
     this.nodeSelector = nodeSelector;
   }
 
-  private void act(RunningNetwork network, Txn txn, BFTNode node) {
-    network.getDispatcher(MempoolAdd.class, node).dispatch(MempoolAdd.create(txn));
+  private void act(RunningNetwork network, Transaction transaction, BFTNode node) {
+    network.getDispatcher(MempoolAdd.class, node).dispatch(MempoolAdd.create(transaction));
   }
 
-  public Observable<Pair<Txn, BFTNode>> issuedTxns() {
+  public Observable<Pair<Transaction, BFTNode>> issuedTxns() {
     return txns.observeOn(Schedulers.io());
   }
 

@@ -110,6 +110,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.forks.Forks;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -173,14 +174,15 @@ public final class RadixEngineStateComputer implements StateComputer {
     this.proposerElection = proposerElection;
   }
 
-  public record RadixEngineTxn(Txn txn, REProcessedTxn processed, PermissionLevel permissionLevel)
+  public record RadixEngineTxn(
+      Transaction transaction, REProcessedTxn processed, PermissionLevel permissionLevel)
       implements PreparedTxn {}
 
   public REProcessedTxn test(byte[] payload, boolean isSigned) throws RadixEngineException {
     synchronized (lock) {
       var txn =
           isSigned
-              ? Txn.create(payload)
+              ? Transaction.create(payload)
               : TxLowLevelBuilder.newBuilder(payload).sig(ECDSASignature.zeroSignature()).build();
 
       var checker = radixEngine.transientBranch();
@@ -193,19 +195,20 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
   }
 
-  public REProcessedTxn addToMempool(Txn txn) throws MempoolRejectedException {
-    return addToMempool(txn, null);
+  public REProcessedTxn addToMempool(Transaction transaction) throws MempoolRejectedException {
+    return addToMempool(transaction, null);
   }
 
-  public REProcessedTxn addToMempool(Txn txn, BFTNode origin) throws MempoolRejectedException {
+  public REProcessedTxn addToMempool(Transaction transaction, BFTNode origin)
+      throws MempoolRejectedException {
     synchronized (lock) {
       try {
-        var processed = mempool.add(txn);
+        var processed = mempool.add(transaction);
 
         systemCounters.increment(CounterType.MEMPOOL_ADD_SUCCESS);
         systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 
-        var success = MempoolAddSuccess.create(txn, processed, origin);
+        var success = MempoolAddSuccess.create(transaction, processed, origin);
         mempoolAddSuccessEventDispatcher.dispatch(success);
 
         return processed;
@@ -221,7 +224,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   @Override
   public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
     mempoolAdd
-        .txns()
+        .transactions()
         .forEach(
             txn -> {
               try {
@@ -236,7 +239,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   @Override
-  public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
+  public List<Transaction> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
     synchronized (lock) {
       var cmds =
           prepared.stream().map(RadixEngineTxn.class::cast).map(RadixEngineTxn::processed).toList();
@@ -265,7 +268,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       systemActions.action(new NextEpoch(timestamp));
     }
 
-    final Txn systemUpdate;
+    final Transaction systemUpdate;
     final RadixEngineResult<LedgerAndBFTProof> result;
     try {
       // TODO: combine construct/execute
@@ -281,19 +284,21 @@ public final class RadixEngineStateComputer implements StateComputer {
   private void executeUserCommands(
       BFTNode proposer,
       RadixEngineBranch<LedgerAndBFTProof> branch,
-      List<Txn> nextTxns,
+      List<Transaction> nextTransactions,
       ImmutableList.Builder<PreparedTxn> successBuilder,
-      ImmutableMap.Builder<Txn, Exception> errorBuilder) {
+      ImmutableMap.Builder<Transaction, Exception> errorBuilder) {
     // TODO: This check should probably be done before getting into state computer
     this.maxSigsPerRound.ifPresent(
         max -> {
-          if (nextTxns.size() > max) {
-            log.warn("{} proposing {} txns when limit is {}", proposer, nextTxns.size(), max);
+          if (nextTransactions.size() > max) {
+            log.warn(
+                "{} proposing {} txns when limit is {}", proposer, nextTransactions.size(), max);
           }
         });
-    var numToProcess = Integer.min(nextTxns.size(), this.maxSigsPerRound.orElse(Integer.MAX_VALUE));
+    var numToProcess =
+        Integer.min(nextTransactions.size(), this.maxSigsPerRound.orElse(Integer.MAX_VALUE));
     for (int i = 0; i < numToProcess; i++) {
-      var txn = nextTxns.get(i);
+      var txn = nextTransactions.get(i);
       final RadixEngineResult<LedgerAndBFTProof> result;
       try {
         result = branch.execute(List.of(txn));
@@ -322,7 +327,7 @@ public final class RadixEngineStateComputer implements StateComputer {
         final var radixEngineCommand = (RadixEngineTxn) command;
         try {
           transientBranch.execute(
-              List.of(radixEngineCommand.txn()), radixEngineCommand.permissionLevel());
+              List.of(radixEngineCommand.transaction()), radixEngineCommand.permissionLevel());
         } catch (RadixEngineException e) {
           throw new IllegalStateException(
               "Re-execution of already prepared transaction failed: "
@@ -336,7 +341,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
       successBuilder.add(systemTxn);
 
-      var exceptionBuilder = ImmutableMap.<Txn, Exception>builder();
+      var exceptionBuilder = ImmutableMap.<Transaction, Exception>builder();
       var nextValidatorSet =
           systemTxn.processed().getEvents().stream()
               .filter(REEvent.NextValidatorSetEvent.class::isInstance)

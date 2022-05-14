@@ -64,7 +64,6 @@
 
 package com.radixdlt.serialization;
 
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -74,6 +73,7 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.LedgerHeaderMock;
 import java.util.List;
 
@@ -91,7 +91,7 @@ public class UnverifiedVertexSerializeTest extends SerializeObject<UnverifiedVer
 
     QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
-    var txn = Txn.create(new byte[] {0, 1, 2, 3});
+    var txn = Transaction.create(new byte[] {0, 1, 2, 3});
 
     return UnverifiedVertex.create(qc, view, List.of(txn), BFTNode.random());
   }

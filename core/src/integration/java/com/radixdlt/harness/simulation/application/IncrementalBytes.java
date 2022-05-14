@@ -65,14 +65,14 @@
 package com.radixdlt.harness.simulation.application;
 
 import com.google.common.primitives.Longs;
-import com.radixdlt.atom.Txn;
+import com.radixdlt.transactions.Transaction;
 
 /** Submits unique bytes (incrementally) to a network */
 public class IncrementalBytes implements TxnGenerator {
   private long commandId = 0;
 
   @Override
-  public Txn nextTxn() {
-    return Txn.create(Longs.toByteArray(commandId++));
+  public Transaction nextTxn() {
+    return Transaction.create(Longs.toByteArray(commandId++));
   }
 }

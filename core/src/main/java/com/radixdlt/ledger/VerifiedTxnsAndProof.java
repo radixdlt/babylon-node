@@ -64,31 +64,31 @@
 
 package com.radixdlt.ledger;
 
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Objects;
 
 /** Commands along with proof that they have been committed on ledger. */
 public final class VerifiedTxnsAndProof {
-  private final List<Txn> txns;
+  private final List<Transaction> transactions;
   private final LedgerProof proof;
 
-  private VerifiedTxnsAndProof(List<Txn> txns, LedgerProof proof) {
-    this.txns = Objects.requireNonNull(txns);
+  private VerifiedTxnsAndProof(List<Transaction> transactions, LedgerProof proof) {
+    this.transactions = Objects.requireNonNull(transactions);
     this.proof = Objects.requireNonNull(proof);
   }
 
-  public static VerifiedTxnsAndProof create(List<Txn> txns, LedgerProof proof) {
-    return new VerifiedTxnsAndProof(txns, proof);
+  public static VerifiedTxnsAndProof create(List<Transaction> transactions, LedgerProof proof) {
+    return new VerifiedTxnsAndProof(transactions, proof);
   }
 
-  public List<Txn> getTxns() {
-    return txns;
+  public List<Transaction> getTxns() {
+    return transactions;
   }
 
-  public boolean contains(Txn txn) {
-    return txns.contains(txn);
+  public boolean contains(Transaction transaction) {
+    return transactions.contains(transaction);
   }
 
   public LedgerProof getProof() {
@@ -97,7 +97,7 @@ public final class VerifiedTxnsAndProof {
 
   @Override
   public int hashCode() {
-    return Objects.hash(txns, proof);
+    return Objects.hash(transactions, proof);
   }
 
   @Override
@@ -107,11 +107,13 @@ public final class VerifiedTxnsAndProof {
     }
 
     VerifiedTxnsAndProof other = (VerifiedTxnsAndProof) o;
-    return Objects.equals(this.txns, other.txns) && Objects.equals(this.proof, other.proof);
+    return Objects.equals(this.transactions, other.transactions)
+        && Objects.equals(this.proof, other.proof);
   }
 
   @Override
   public String toString() {
-    return String.format("%s{txns=%s proof=%s}", this.getClass().getSimpleName(), txns, proof);
+    return String.format(
+        "%s{txns=%s proof=%s}", this.getClass().getSimpleName(), transactions, proof);
   }
 }

@@ -77,7 +77,6 @@ import static org.mockito.Mockito.verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Ledger;
@@ -93,6 +92,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -182,7 +182,8 @@ public class VertexStoreTest {
           }
 
           var rawVertex =
-              UnverifiedVertex.create(qc, view, List.of(Txn.create(new byte[0])), BFTNode.random());
+              UnverifiedVertex.create(
+                  qc, view, List.of(Transaction.create(new byte[0])), BFTNode.random());
           HashCode hash = hasher.hash(rawVertex);
           VerifiedVertex vertex = new VerifiedVertex(rawVertex, hash);
           lastParentHeader.set(new BFTHeader(view, hash, MOCKED_HEADER));

@@ -66,7 +66,6 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
 import com.radixdlt.application.tokens.scrypt.Tokens;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.DefaultedSystemLoanException;
 import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
@@ -79,6 +78,7 @@ import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructio
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,7 +87,7 @@ import java.util.function.Function;
 
 // TODO: Cleanup permissions to access to these methods
 public final class ExecutionContext {
-  private final Txn txn;
+  private final Transaction transaction;
   private final PermissionLevel level;
   private final boolean skipAuthorization;
   private final TokenHoldingBucket reserve;
@@ -99,8 +99,9 @@ public final class ExecutionContext {
   private boolean chargedOneTimeFee = false;
   private List<REEvent> events = new ArrayList<>();
 
-  public ExecutionContext(Txn txn, PermissionLevel level, boolean skipAuthorization, int sigsLeft) {
-    this.txn = txn;
+  public ExecutionContext(
+      Transaction transaction, PermissionLevel level, boolean skipAuthorization, int sigsLeft) {
+    this.transaction = transaction;
     this.level = level;
     this.skipAuthorization = skipAuthorization;
     this.sigsLeft = sigsLeft;
@@ -157,13 +158,13 @@ public final class ExecutionContext {
     feeDeposit = tokens.getAmount().getLow();
   }
 
-  public void chargeOneTimeTransactionFee(Function<Txn, UInt256> feeComputer)
+  public void chargeOneTimeTransactionFee(Function<Transaction, UInt256> feeComputer)
       throws DepletedFeeReserveException {
     if (chargedOneTimeFee) {
       return;
     }
 
-    var fee = feeComputer.apply(txn);
+    var fee = feeComputer.apply(transaction);
     charge(fee);
     chargedOneTimeFee = true;
   }

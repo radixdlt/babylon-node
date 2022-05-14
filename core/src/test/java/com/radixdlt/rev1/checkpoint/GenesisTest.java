@@ -69,7 +69,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
@@ -79,6 +78,7 @@ import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
 import java.util.Collection;
@@ -95,17 +95,17 @@ public class GenesisTest {
     return Arrays.stream(Network.values())
         .flatMap(n -> n.genesisTxn().stream())
         .map(Bytes::fromHexString)
-        .map(Txn::create)
+        .map(Transaction::create)
         .map(txn -> new Object[] {txn})
         .toList();
   }
 
   private static final Logger logger = LogManager.getLogger();
-  private final Txn genesis;
+  private final Transaction genesis;
 
   @Inject private GenesisBuilder genesisBuilder;
 
-  public GenesisTest(Txn genesis) {
+  public GenesisTest(Transaction genesis) {
     this.genesis = genesis;
   }
 

@@ -72,7 +72,6 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -90,6 +89,7 @@ import com.radixdlt.rev1.forks.ForkVotingResult;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.transactions.Transaction;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -227,7 +227,7 @@ public final class BerkeleyLedgerEntryStoreTest {
   private void storeMetadataWithForks(long epoch, ImmutableSet<ForkVotingResult> forkVotingResults)
       throws RadixEngineException {
     final var fakeTx = mock(REProcessedTxn.class);
-    final var txn = mock(Txn.class);
+    final var txn = mock(Transaction.class);
     when(txn.getId()).thenReturn(AID.from(HashUtils.random256().asBytes()));
     when(fakeTx.getTxn()).thenReturn(txn);
     when(fakeTx.getGroupedStateUpdates()).thenReturn(List.of());

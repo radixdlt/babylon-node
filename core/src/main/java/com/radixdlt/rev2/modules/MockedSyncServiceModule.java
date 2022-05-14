@@ -70,7 +70,6 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -93,6 +92,7 @@ import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.transactions.Transaction;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.LongStream;
@@ -102,7 +102,7 @@ import org.apache.logging.log4j.Logger;
 public class MockedSyncServiceModule extends AbstractModule {
   private static final Logger logger = LogManager.getLogger();
 
-  private final ConcurrentMap<Long, Txn> sharedCommittedCommands;
+  private final ConcurrentMap<Long, Transaction> sharedCommittedCommands;
   private final ConcurrentMap<Long, LedgerProof> sharedEpochProofs;
 
   public MockedSyncServiceModule() {

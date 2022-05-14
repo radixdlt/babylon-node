@@ -68,7 +68,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -77,6 +76,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
@@ -155,12 +155,12 @@ public final class UnverifiedVertex {
   }
 
   public static UnverifiedVertex create(
-      QuorumCertificate qc, View view, List<Txn> txns, BFTNode proposer) {
+      QuorumCertificate qc, View view, List<Transaction> transactions, BFTNode proposer) {
     if (view.number() == 0) {
       throw new IllegalArgumentException("Only genesis can have view 0.");
     }
 
-    var txnBytes = txns.stream().map(Txn::getPayload).toList();
+    var txnBytes = transactions.stream().map(Transaction::getPayload).toList();
 
     return new UnverifiedVertex(qc, view, txnBytes, proposer, false);
   }
@@ -187,8 +187,8 @@ public final class UnverifiedVertex {
     return view;
   }
 
-  public List<Txn> getTxns() {
-    return txns == null ? List.of() : txns.stream().map(Txn::create).toList();
+  public List<Transaction> getTxns() {
+    return txns == null ? List.of() : txns.stream().map(Transaction::create).toList();
   }
 
   @JsonProperty("view")

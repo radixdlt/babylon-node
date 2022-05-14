@@ -74,7 +74,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -95,6 +94,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.TypedMocks;
@@ -123,13 +123,13 @@ public class StateComputerLedgerTest {
   private VerifiedVertex genesisVertex;
   private QuorumCertificate genesisQC;
 
-  private final Txn nextTxn = Txn.create(new byte[] {0});
+  private final Transaction nextTransaction = Transaction.create(new byte[] {0});
   private final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
   private final PreparedTxn successfulNextCommand =
       new PreparedTxn() {
         @Override
-        public Txn txn() {
-          return nextTxn;
+        public Transaction transaction() {
+          return nextTransaction;
         }
       };
 
@@ -224,7 +224,7 @@ public class StateComputerLedgerTest {
         .thenReturn(
             new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
     var unverifiedVertex =
-        UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTxn), BFTNode.random());
+        UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTransaction), BFTNode.random());
     var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
     // Act
@@ -250,7 +250,7 @@ public class StateComputerLedgerTest {
 
     // Act
     var unverifiedVertex =
-        UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTxn), BFTNode.random());
+        UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTransaction), BFTNode.random());
     var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
     Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
@@ -262,10 +262,10 @@ public class StateComputerLedgerTest {
                 x ->
                     accumulatorVerifier.verifyAndGetExtension(
                         ledgerHeader.getAccumulatorState(),
-                        List.of(nextTxn),
+                        List.of(nextTransaction),
                         txn -> txn.getId().asHashCode(),
                         x.getLedgerHeader().getAccumulatorState())))
-        .contains(List.of(nextTxn));
+        .contains(List.of(nextTransaction));
   }
 
   @Test
@@ -281,7 +281,7 @@ public class StateComputerLedgerTest {
         LedgerHeader.create(genesisEpoch, View.of(2), accumulatorState, 1234);
     final LedgerProof header =
         new LedgerProof(HashUtils.random256(), ledgerHeader, new TimestampedECDSASignatures());
-    var verified = VerifiedTxnsAndProof.create(List.of(nextTxn), header);
+    var verified = VerifiedTxnsAndProof.create(List.of(nextTransaction), header);
 
     // Act
     sut.syncEventProcessor().process(verified);

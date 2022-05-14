@@ -76,7 +76,6 @@ import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -99,6 +98,7 @@ import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.core.Flowable;
 import java.util.Comparator;
@@ -151,7 +151,7 @@ public final class MempoolRunnerTest {
     Guice.createInjector(createModule()).injectMembers(this);
     moduleRunners.get(Runners.MEMPOOL).start();
 
-    MempoolAdd mempoolAdd = MempoolAdd.create(Txn.create(new byte[0]));
+    MempoolAdd mempoolAdd = MempoolAdd.create(Transaction.create(new byte[0]));
     mempoolAddEventDispatcher.dispatch(mempoolAdd);
 
     verify(stateComputer, timeout(1000).times(1)).addToMempool(eq(mempoolAdd), isNull());

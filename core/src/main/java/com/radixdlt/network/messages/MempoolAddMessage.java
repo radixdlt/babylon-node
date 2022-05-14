@@ -66,11 +66,11 @@ package com.radixdlt.network.messages;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.network.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Objects;
 
@@ -86,12 +86,12 @@ public final class MempoolAddMessage extends Message {
     this.txns.forEach(Objects::requireNonNull);
   }
 
-  public static MempoolAddMessage from(List<Txn> txns) {
-    return new MempoolAddMessage(txns.stream().map(Txn::getPayload).toList());
+  public static MempoolAddMessage from(List<Transaction> transactions) {
+    return new MempoolAddMessage(transactions.stream().map(Transaction::getPayload).toList());
   }
 
-  public List<Txn> getTxns() {
-    return txns == null ? List.of() : txns.stream().map(Txn::create).toList();
+  public List<Transaction> getTxns() {
+    return txns == null ? List.of() : txns.stream().map(Transaction::create).toList();
   }
 
   @Override

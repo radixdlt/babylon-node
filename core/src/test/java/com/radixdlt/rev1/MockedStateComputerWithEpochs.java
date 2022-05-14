@@ -66,7 +66,6 @@ package com.radixdlt.rev1;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -81,6 +80,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -107,7 +107,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
 
   @Override
-  public List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
+  public List<Transaction> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
     return List.of();
   }
 

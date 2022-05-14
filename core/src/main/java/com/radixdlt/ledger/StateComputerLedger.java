@@ -67,7 +67,6 @@ package com.radixdlt.ledger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
@@ -85,6 +84,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -97,24 +97,25 @@ import java.util.Optional;
 public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 
   public interface PreparedTxn {
-    Txn txn();
+    Transaction transaction();
   }
 
   public static class StateComputerResult {
     private final List<PreparedTxn> preparedTxns;
-    private final Map<Txn, Exception> failedCommands;
+    private final Map<Transaction, Exception> failedCommands;
     private final BFTValidatorSet nextValidatorSet;
 
     public StateComputerResult(
         List<PreparedTxn> preparedTxns,
-        Map<Txn, Exception> failedCommands,
+        Map<Transaction, Exception> failedCommands,
         BFTValidatorSet nextValidatorSet) {
       this.preparedTxns = Objects.requireNonNull(preparedTxns);
       this.failedCommands = Objects.requireNonNull(failedCommands);
       this.nextValidatorSet = nextValidatorSet;
     }
 
-    public StateComputerResult(List<PreparedTxn> preparedTxns, Map<Txn, Exception> failedCommands) {
+    public StateComputerResult(
+        List<PreparedTxn> preparedTxns, Map<Transaction, Exception> failedCommands) {
       this(preparedTxns, failedCommands, null);
     }
 
@@ -126,7 +127,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
       return preparedTxns;
     }
 
-    public Map<Txn, Exception> getFailedCommands() {
+    public Map<Transaction, Exception> getFailedCommands() {
       return failedCommands;
     }
   }
@@ -134,7 +135,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
   public interface StateComputer {
     void addToMempool(MempoolAdd mempoolAdd, BFTNode origin);
 
-    List<Txn> getNextTxnsFromMempool(List<PreparedTxn> prepared);
+    List<Transaction> getNextTxnsFromMempool(List<PreparedTxn> prepared);
 
     StateComputerResult prepare(List<PreparedTxn> previous, VerifiedVertex vertex, long timestamp);
 
@@ -187,7 +188,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
   }
 
   @Override
-  public List<Txn> generateNextTxns(View view, List<PreparedVertex> prepared) {
+  public List<Transaction> generateNextTxns(View view, List<PreparedVertex> prepared) {
     final ImmutableList<PreparedTxn> preparedTxns =
         prepared.stream()
             .flatMap(PreparedVertex::successfulCommands)
@@ -237,7 +238,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
           this.verifier.verifyAndGetExtension(
               this.currentLedgerHeader.getAccumulatorState(),
               prevCommands,
-              p -> p.txn().getId().asHashCode(),
+              p -> p.transaction().getId().asHashCode(),
               parentAccumulatorState);
 
       // TODO: Write a test to get here
@@ -254,7 +255,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
       AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
       for (PreparedTxn txn : result.getSuccessfulCommands()) {
         accumulatorState =
-            this.accumulator.accumulate(accumulatorState, txn.txn().getId().asHashCode());
+            this.accumulator.accumulate(accumulatorState, txn.transaction().getId().asHashCode());
       }
 
       final LedgerHeader ledgerHeader =
@@ -275,13 +276,13 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
 
   public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
     return committedUpdate -> {
-      final ImmutableList<Txn> txns =
+      final ImmutableList<Transaction> transactions =
           committedUpdate.committed().stream()
               .flatMap(PreparedVertex::successfulCommands)
-              .map(PreparedTxn::txn)
+              .map(PreparedTxn::transaction)
               .collect(ImmutableList.toImmutableList());
       var proof = committedUpdate.vertexStoreState().getRootHeader();
-      var verifiedTxnsAndProof = VerifiedTxnsAndProof.create(txns, proof);
+      var verifiedTxnsAndProof = VerifiedTxnsAndProof.create(transactions, proof);
 
       // TODO: Make these two atomic (RPNV1-827)
       this.commit(verifiedTxnsAndProof, committedUpdate.vertexStoreState());

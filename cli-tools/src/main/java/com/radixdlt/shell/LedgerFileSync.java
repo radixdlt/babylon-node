@@ -66,7 +66,6 @@ package com.radixdlt.shell;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.DtoLedgerProof;
@@ -77,6 +76,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Compress;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -147,7 +147,7 @@ public final class LedgerFileSync {
 
     @JsonProperty("txns")
     @DsonOutput(DsonOutput.Output.ALL)
-    private final List<Txn> txns;
+    private final List<Transaction> transactions;
 
     @JsonProperty("proof")
     @DsonOutput(DsonOutput.Output.ALL)
@@ -155,13 +155,14 @@ public final class LedgerFileSync {
 
     @JsonCreator
     public CommandsAndProof(
-        @JsonProperty("txns") List<Txn> txns, @JsonProperty("proof") DtoLedgerProof proof) {
-      this.txns = Objects.requireNonNull(txns);
+        @JsonProperty("txns") List<Transaction> transactions,
+        @JsonProperty("proof") DtoLedgerProof proof) {
+      this.transactions = Objects.requireNonNull(transactions);
       this.proof = Objects.requireNonNull(proof);
     }
 
-    public List<Txn> getTxns() {
-      return txns;
+    public List<Transaction> getTxns() {
+      return transactions;
     }
 
     public DtoLedgerProof getProof() {
@@ -177,12 +178,12 @@ public final class LedgerFileSync {
         return false;
       }
       final var that = (CommandsAndProof) o;
-      return Objects.equals(txns, that.txns) && Objects.equals(proof, that.proof);
+      return Objects.equals(transactions, that.transactions) && Objects.equals(proof, that.proof);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(txns, proof);
+      return Objects.hash(transactions, proof);
     }
   }
 }

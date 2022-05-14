@@ -64,18 +64,18 @@
 
 package com.radixdlt.rev2;
 
-import com.radixdlt.atom.Txn;
 import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.transactions.Transaction;
 
 public class REv2PreparedTxn implements StateComputerLedger.PreparedTxn {
-  private final Txn txn;
+  private final Transaction transaction;
 
-  public REv2PreparedTxn(Txn txn) {
-    this.txn = txn;
+  public REv2PreparedTxn(Transaction transaction) {
+    this.transaction = transaction;
   }
 
   @Override
-  public Txn txn() {
-    return txn;
+  public Transaction transaction() {
+    return transaction;
   }
 }

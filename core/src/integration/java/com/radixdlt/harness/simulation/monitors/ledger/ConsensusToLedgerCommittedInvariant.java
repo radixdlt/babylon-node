@@ -64,12 +64,12 @@
 
 package com.radixdlt.harness.simulation.monitors.ledger;
 
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.transactions.Transaction;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -90,11 +90,11 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 
   @Override
   public Observable<TestInvariantError> check(RunningNetwork network) {
-    BehaviorSubject<Set<Txn>> committedTxns = BehaviorSubject.create();
+    BehaviorSubject<Set<Transaction>> committedTxns = BehaviorSubject.create();
     Disposable d =
         network
             .ledgerUpdates()
-            .<Set<Txn>>scan(
+            .<Set<Transaction>>scan(
                 new HashSet<>(),
                 (set, next) -> {
                   set.addAll(next.getSecond().getNewTxns());
@@ -115,7 +115,7 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
         .flatMapMaybe(
             txn ->
                 committedTxns
-                    .filter(cmdSet -> cmdSet.contains(txn.txn()))
+                    .filter(cmdSet -> cmdSet.contains(txn.transaction()))
                     .timeout(10, TimeUnit.SECONDS)
                     .firstOrError()
                     .ignoreElement()

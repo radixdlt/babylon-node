@@ -81,7 +81,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -137,6 +136,7 @@ import com.radixdlt.rev2.modules.MockedRecoveryModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -582,7 +582,7 @@ public final class SimulationTest {
 
               @Genesis
               @Provides
-              Txn genesis(@Genesis VerifiedTxnsAndProof txnsAndProof) {
+              Transaction genesis(@Genesis VerifiedTxnsAndProof txnsAndProof) {
                 return txnsAndProof.getTxns().get(0);
               }
             });

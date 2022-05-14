@@ -64,13 +64,13 @@
 
 package com.radixdlt.rev1;
 
-import com.radixdlt.atom.Txn;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Objects;
 
 /** Event describing atoms which have been removed from the mempool after a commit. */
-public record TxnsRemovedFromMempool(List<Txn> removed) {
-  public static TxnsRemovedFromMempool create(List<Txn> removed) {
+public record TxnsRemovedFromMempool(List<Transaction> removed) {
+  public static TxnsRemovedFromMempool create(List<Transaction> removed) {
     Objects.requireNonNull(removed);
     return new TxnsRemovedFromMempool(removed);
   }

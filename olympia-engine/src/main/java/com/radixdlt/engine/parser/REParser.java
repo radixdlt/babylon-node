@@ -66,7 +66,6 @@ package com.radixdlt.engine.parser;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.application.system.scrypt.Syscall;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.constraintmachine.CallData;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REOp;
@@ -77,6 +76,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
@@ -95,7 +95,7 @@ public final class REParser {
   }
 
   public static class ParserState {
-    private final Txn txn;
+    private final Transaction transaction;
     private final List<REInstruction> instructions = new ArrayList<>();
     private byte[] msg = null;
     private int upSubstateCount = 0;
@@ -104,8 +104,8 @@ public final class REParser {
     private int position = 0;
     private boolean disableResourceAllocAndDestroy = false;
 
-    ParserState(Txn txn) {
-      this.txn = txn;
+    ParserState(Transaction transaction) {
+      this.transaction = transaction;
     }
 
     public List<REInstruction> instructions() {
@@ -138,7 +138,7 @@ public final class REParser {
     }
 
     public AID txnId() {
-      return txn.getId();
+      return transaction.getId();
     }
 
     public int upSubstateCount() {
@@ -178,13 +178,13 @@ public final class REParser {
     }
   }
 
-  public ParsedTxn parse(Txn txn) throws TxnParseException {
+  public ParsedTxn parse(Transaction transaction) throws TxnParseException {
     UInt256 feePaid = null;
     ECDSASignature sig = null;
     int sigPosition = 0;
-    var parserState = new ParserState(txn);
+    var parserState = new ParserState(transaction);
 
-    var buf = ByteBuffer.wrap(txn.getPayload());
+    var buf = ByteBuffer.wrap(transaction.getPayload());
     while (buf.hasRemaining()) {
       if (sig != null) {
         throw new TxnParseException(parserState, "Signature must be last");
@@ -253,16 +253,16 @@ public final class REParser {
     parserState.finish();
 
     return new ParsedTxn(
-        txn,
+        transaction,
         feePaid,
         parserState.instructions,
         parserState.msg,
-        sig == null ? null : Pair.of(calculatePayloadHash(txn, sigPosition), sig),
+        sig == null ? null : Pair.of(calculatePayloadHash(transaction, sigPosition), sig),
         parserState.disableResourceAllocAndDestroy);
   }
 
-  private HashCode calculatePayloadHash(Txn txn, int sigPosition) {
-    return HashUtils.sha256(txn.getPayload(), 0, sigPosition); // This is a double hash
+  private HashCode calculatePayloadHash(Transaction transaction, int sigPosition) {
+    return HashUtils.sha256(transaction.getPayload(), 0, sigPosition); // This is a double hash
   }
 
   private REInstruction readInstruction(ParserState parserState, ByteBuffer buf)

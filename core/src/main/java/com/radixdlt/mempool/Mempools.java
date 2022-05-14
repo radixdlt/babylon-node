@@ -64,7 +64,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.atom.Txn;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -78,13 +78,13 @@ public class Mempools {
   public static <T> Mempool<T> empty() {
     return new Mempool<>() {
       @Override
-      public T add(Txn txn) throws MempoolFullException, MempoolDuplicateException {
+      public T add(Transaction transaction) throws MempoolFullException, MempoolDuplicateException {
         // No-op
         return null;
       }
 
       @Override
-      public List<Txn> committed(List<T> committed) {
+      public List<Transaction> committed(List<T> committed) {
         return List.of();
       }
 
@@ -94,12 +94,12 @@ public class Mempools {
       }
 
       @Override
-      public List<Txn> getTxns(int count, List<T> seen) {
+      public List<Transaction> getTxns(int count, List<T> seen) {
         return List.of();
       }
 
       @Override
-      public List<Txn> scanUpdateAndGet(
+      public List<Transaction> scanUpdateAndGet(
           Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
         return List.of();
       }

@@ -64,8 +64,8 @@
 
 package com.radixdlt.rev1;
 
-import com.radixdlt.atom.Txn;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.transactions.Transaction;
 import java.util.Objects;
 
 /**
@@ -73,19 +73,20 @@ import java.util.Objects;
  */
 public final class InvalidProposedTxn {
   private final ECPublicKey proposer;
-  private final Txn txn;
+  private final Transaction transaction;
   private final Exception e;
 
-  private InvalidProposedTxn(ECPublicKey proposer, Txn txn, Exception e) {
+  private InvalidProposedTxn(ECPublicKey proposer, Transaction transaction, Exception e) {
     this.proposer = proposer;
-    this.txn = txn;
+    this.transaction = transaction;
     this.e = e;
   }
 
-  public static InvalidProposedTxn create(ECPublicKey proposer, Txn txn, Exception e) {
-    Objects.requireNonNull(txn);
+  public static InvalidProposedTxn create(
+      ECPublicKey proposer, Transaction transaction, Exception e) {
+    Objects.requireNonNull(transaction);
     Objects.requireNonNull(e);
-    return new InvalidProposedTxn(proposer, txn, e);
+    return new InvalidProposedTxn(proposer, transaction, e);
   }
 
   public ECPublicKey getProposer() {
@@ -99,12 +100,13 @@ public final class InvalidProposedTxn {
   @Override
   public String toString() {
     return String.format(
-        "%s{txn=%s ex=%s}", this.getClass().getSimpleName(), this.txn.getId(), this.e.toString());
+        "%s{txn=%s ex=%s}",
+        this.getClass().getSimpleName(), this.transaction.getId(), this.e.toString());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(proposer, txn, e);
+    return Objects.hash(proposer, transaction, e);
   }
 
   @Override
@@ -116,6 +118,6 @@ public final class InvalidProposedTxn {
     InvalidProposedTxn other = (InvalidProposedTxn) o;
     return Objects.equals(this.proposer, other.proposer)
         && Objects.equals(this.e, other.e)
-        && Objects.equals(this.txn, other.txn);
+        && Objects.equals(this.transaction, other.transaction);
   }
 }

@@ -65,9 +65,9 @@
 package com.radixdlt.ledger;
 
 import com.google.common.collect.ClassToInstanceMap;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -87,7 +87,7 @@ public final class LedgerUpdate {
     return output;
   }
 
-  public List<Txn> getNewTxns() {
+  public List<Transaction> getNewTxns() {
     return verifiedTxnsAndProof.getTxns();
   }
 

@@ -81,7 +81,6 @@ import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashSigner;
@@ -139,6 +138,7 @@ import com.radixdlt.network.GetVerticesRequestRateLimit;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
@@ -264,12 +264,13 @@ public class ConsensusModuleTest {
 
   private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(
       QuorumCertificate parent, BFTNode bftNode) {
-    return createNextVertex(parent, bftNode, Txn.create(new byte[] {0}));
+    return createNextVertex(parent, bftNode, Transaction.create(new byte[] {0}));
   }
 
   private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(
-      QuorumCertificate parent, BFTNode bftNode, Txn txn) {
-    var unverifiedVertex = UnverifiedVertex.create(parent, View.of(1), List.of(txn), bftNode);
+      QuorumCertificate parent, BFTNode bftNode, Transaction transaction) {
+    var unverifiedVertex =
+        UnverifiedVertex.create(parent, View.of(1), List.of(transaction), bftNode);
     var hash = hasher.hash(unverifiedVertex);
     var verifiedVertex = new VerifiedVertex(unverifiedVertex, hash);
     var next =
@@ -344,9 +345,9 @@ public class ConsensusModuleTest {
     final var parentQc = vertexStore.highQC().highestQC();
     final var parentVertex = createNextVertex(parentQc, bftNode1);
     final var proposedVertex1 =
-        createNextVertex(parentVertex.getFirst(), bftNode1, Txn.create(new byte[] {1}));
+        createNextVertex(parentVertex.getFirst(), bftNode1, Transaction.create(new byte[] {1}));
     final var proposedVertex2 =
-        createNextVertex(parentVertex.getFirst(), bftNode2, Txn.create(new byte[] {2}));
+        createNextVertex(parentVertex.getFirst(), bftNode2, Transaction.create(new byte[] {2}));
     final var unsyncedHighQC1 =
         HighQC.from(proposedVertex1.getFirst(), proposedVertex1.getFirst(), Optional.empty());
     final var unsyncedHighQC2 =

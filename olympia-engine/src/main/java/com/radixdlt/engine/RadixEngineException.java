@@ -64,39 +64,40 @@
 
 package com.radixdlt.engine;
 
-import com.radixdlt.atom.Txn;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Bytes;
 
 /** Exception thrown by Radix Engine */
 @SuppressWarnings("serial")
 public final class RadixEngineException extends Exception {
-  private final Txn txn;
+  private final Transaction transaction;
   private final int txnIndex;
   private final int batchSize;
 
-  public RadixEngineException(int txnIndex, int batchSize, Txn txn, Exception cause) {
+  public RadixEngineException(
+      int txnIndex, int batchSize, Transaction transaction, Exception cause) {
     super(
         "index="
             + txnIndex
             + " batchSize="
             + batchSize
             + " txnId="
-            + txn.getId()
+            + transaction.getId()
             + " txn_size="
-            + txn.getPayload().length
+            + transaction.getPayload().length
             + " txn="
-            + txnToString(txn),
+            + txnToString(transaction),
         cause);
-    this.txn = txn;
+    this.transaction = transaction;
     this.txnIndex = txnIndex;
     this.batchSize = batchSize;
   }
 
-  private static String txnToString(Txn txn) {
-    if (txn.getPayload().length > 2048) {
-      return Bytes.toHexString(txn.getPayload()).substring(0, 2048) + "...";
+  private static String txnToString(Transaction transaction) {
+    if (transaction.getPayload().length > 2048) {
+      return Bytes.toHexString(transaction.getPayload()).substring(0, 2048) + "...";
     } else {
-      return Bytes.toHexString(txn.getPayload());
+      return Bytes.toHexString(transaction.getPayload());
     }
   }
 
@@ -104,8 +105,8 @@ public final class RadixEngineException extends Exception {
     return batchSize;
   }
 
-  public Txn getTxn() {
-    return txn;
+  public Transaction getTxn() {
+    return transaction;
   }
 
   public int getTxnIndex() {

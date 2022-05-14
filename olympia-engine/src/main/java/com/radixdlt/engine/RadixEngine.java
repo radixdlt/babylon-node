@@ -76,7 +76,6 @@ import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
@@ -100,6 +99,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.TransientEngineStore;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import java.util.ArrayList;
@@ -220,21 +220,24 @@ public final class RadixEngine<M> {
       }
     }
 
-    public RadixEngineResult<M> execute(List<Txn> txns) throws RadixEngineException {
-      assertNotDeleted();
-      return engine.execute(txns);
-    }
-
-    public RadixEngineResult<M> execute(List<Txn> txns, boolean skipAuthorization)
+    public RadixEngineResult<M> execute(List<Transaction> transactions)
         throws RadixEngineException {
       assertNotDeleted();
-      return engine.execute(txns, Optional.empty(), PermissionLevel.USER, skipAuthorization);
+      return engine.execute(transactions);
     }
 
-    public RadixEngineResult<M> execute(List<Txn> txns, PermissionLevel permissionLevel)
+    public RadixEngineResult<M> execute(List<Transaction> transactions, boolean skipAuthorization)
         throws RadixEngineException {
       assertNotDeleted();
-      return engine.execute(txns, null, permissionLevel);
+      return engine.execute(
+          transactions, Optional.empty(), PermissionLevel.USER, skipAuthorization);
+    }
+
+    public RadixEngineResult<M> execute(
+        List<Transaction> transactions, PermissionLevel permissionLevel)
+        throws RadixEngineException {
+      assertNotDeleted();
+      return engine.execute(transactions, null, permissionLevel);
     }
 
     public TxBuilder construct(TxnConstructionRequest request) throws TxBuilderException {
@@ -292,11 +295,11 @@ public final class RadixEngine<M> {
 
   private REProcessedTxn verify(
       EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction,
-      Txn txn,
+      Transaction transaction,
       ExecutionContext context)
       throws AuthorizationException, TxnParseException, ConstraintMachineException {
 
-    var parsedTxn = parser.parse(txn);
+    var parsedTxn = parser.parse(transaction);
     var signedByKey = getSignedByKey(parsedTxn, context);
     signedByKey.ifPresent(context::setKey);
 
@@ -309,25 +312,29 @@ public final class RadixEngine<M> {
         parsedTxn, signedByKey.orElse(null), stateUpdates, context.getEvents());
   }
 
-  public RadixEngineResult<M> execute(List<Txn> txns) throws RadixEngineException {
-    return execute(txns, null, PermissionLevel.USER);
+  public RadixEngineResult<M> execute(List<Transaction> transactions) throws RadixEngineException {
+    return execute(transactions, null, PermissionLevel.USER);
   }
 
-  public RadixEngineResult<M> execute(List<Txn> txns, M meta, PermissionLevel permissionLevel)
+  public RadixEngineResult<M> execute(
+      List<Transaction> transactions, M meta, PermissionLevel permissionLevel)
       throws RadixEngineException {
-    return execute(txns, Optional.ofNullable(meta), permissionLevel, false);
+    return execute(transactions, Optional.ofNullable(meta), permissionLevel, false);
   }
 
   /**
    * Atomically stores the given atom into the store. If the atom has any conflicts or dependency
    * issues the atom will not be stored.
    *
-   * @param txns transactions to execute
+   * @param transactions transactions to execute
    * @param permissionLevel permission level to execute on
    * @throws RadixEngineException on state conflict or dependency issues
    */
   public RadixEngineResult<M> execute(
-      List<Txn> txns, Optional<M> meta, PermissionLevel permissionLevel, boolean skipAuthorization)
+      List<Transaction> transactions,
+      Optional<M> meta,
+      PermissionLevel permissionLevel,
+      boolean skipAuthorization)
       throws RadixEngineException {
     synchronized (stateUpdateEngineLock) {
       if (!branches.isEmpty()) {
@@ -338,13 +345,13 @@ public final class RadixEngine<M> {
                 branches.size()));
       }
       return engineStore.transaction(
-          store -> executeInternal(store, txns, meta, permissionLevel, skipAuthorization));
+          store -> executeInternal(store, transactions, meta, permissionLevel, skipAuthorization));
     }
   }
 
   private RadixEngineResult<M> executeInternal(
       EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction,
-      List<Txn> txns,
+      List<Transaction> transactions,
       Optional<M> metaOpt,
       PermissionLevel permissionLevel,
       boolean skipAuthorization)
@@ -357,8 +364,8 @@ public final class RadixEngine<M> {
     var storageStopwatch = Stopwatch.createUnstarted();
     var verificationStopwatch = Stopwatch.createUnstarted();
 
-    for (int i = 0; i < txns.size(); i++) {
-      var txn = txns.get(i);
+    for (int i = 0; i < transactions.size(); i++) {
+      var txn = transactions.get(i);
 
       verificationStopwatch.start();
       var context = new ExecutionContext(txn, permissionLevel, skipAuthorization, sigsLeft);
@@ -366,7 +373,7 @@ public final class RadixEngine<M> {
       try {
         processedTxn = this.verify(engineStoreInTransaction, txn, context);
       } catch (TxnParseException | AuthorizationException | ConstraintMachineException e) {
-        throw new RadixEngineException(i, txns.size(), txn, e);
+        throw new RadixEngineException(i, transactions.size(), txn, e);
       }
       verificationStopwatch.stop();
 

@@ -67,7 +67,6 @@ package com.radixdlt.utils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
@@ -86,6 +85,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.transactions.Transaction;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
@@ -115,7 +115,7 @@ public class SerializerTestDataGenerator {
 
   public static Proposal randomProposal() {
     var qc = randomQC();
-    var txn = Txn.create(new byte[] {0, 1, 2, 3});
+    var txn = Transaction.create(new byte[] {0, 1, 2, 3});
     var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
     var vertex = UnverifiedVertex.create(qc, randomView(), List.of(txn), author);
     return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());

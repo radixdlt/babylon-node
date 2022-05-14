@@ -64,25 +64,25 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.atom.Txn;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.transactions.Transaction;
 import java.util.Objects;
 import java.util.Optional;
 
 /** Message indicating that a command was successfully added to the mempool */
 public final class MempoolAddSuccess {
-  private final Txn txn;
+  private final Transaction transaction;
   private final Object processedTxn;
   private final BFTNode origin;
 
-  private MempoolAddSuccess(Txn txn, Object processedTxn, BFTNode origin) {
-    this.txn = txn;
+  private MempoolAddSuccess(Transaction transaction, Object processedTxn, BFTNode origin) {
+    this.transaction = transaction;
     this.processedTxn = processedTxn;
     this.origin = origin;
   }
 
-  public Txn getTxn() {
-    return txn;
+  public Transaction getTxn() {
+    return transaction;
   }
 
   public <T> T getProcessedTxn(Class<T> processedTxnClass) {
@@ -93,14 +93,15 @@ public final class MempoolAddSuccess {
     return Optional.ofNullable(origin);
   }
 
-  public static MempoolAddSuccess create(Txn txn, Object processedTxn, BFTNode origin) {
-    Objects.requireNonNull(txn);
-    return new MempoolAddSuccess(txn, processedTxn, origin);
+  public static MempoolAddSuccess create(
+      Transaction transaction, Object processedTxn, BFTNode origin) {
+    Objects.requireNonNull(transaction);
+    return new MempoolAddSuccess(transaction, processedTxn, origin);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(txn, processedTxn, origin);
+    return Objects.hash(transaction, processedTxn, origin);
   }
 
   @Override
@@ -110,13 +111,13 @@ public final class MempoolAddSuccess {
     }
 
     MempoolAddSuccess other = (MempoolAddSuccess) o;
-    return Objects.equals(this.txn, other.txn)
+    return Objects.equals(this.transaction, other.transaction)
         && Objects.equals(this.processedTxn, other.processedTxn)
         && Objects.equals(this.origin, other.origin);
   }
 
   @Override
   public String toString() {
-    return String.format("%s{txn=%s}", this.getClass().getSimpleName(), this.txn);
+    return String.format("%s{txn=%s}", this.getClass().getSimpleName(), this.transaction);
   }
 }

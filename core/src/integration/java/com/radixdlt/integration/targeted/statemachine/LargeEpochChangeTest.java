@@ -82,7 +82,6 @@ import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.atom.Txn;
 import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
@@ -109,6 +108,7 @@ import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
+import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
@@ -236,7 +236,7 @@ public class LargeEpochChangeTest {
             signatures.elapsed(TimeUnit.SECONDS),
             execution.elapsed(TimeUnit.SECONDS));
       }
-      var txns = new ArrayList<Txn>();
+      var txns = new ArrayList<Transaction>();
       systemConstruction.start();
       var sysTxn =
           sut.construct(new NextRound(round, false, 1, v -> TEST_KEY.getPublicKey()))
