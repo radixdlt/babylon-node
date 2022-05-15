@@ -428,7 +428,7 @@ public final class Forks {
       return false;
     }
 
-    if (ledgerAndBFTProof.getProof().getNextValidatorSet().isEmpty()) {
+    if (!ledgerAndBFTProof.getProof().isEndOfEpoch()) {
       return false;
     }
 
