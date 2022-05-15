@@ -69,11 +69,11 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Run steady-state integration tests
-        # Adding --warn outputs application logs at WARN or above, which is useful
+        # Adding --info outputs application logs, which is useful
         #   for debugging failures where the node calls System.exit(X), which appear
         #   in the build logs as something like:
         # "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
-        run: ./gradlew runSteadyStateIntegrationTests --refresh-dependencies --warn
+        run: ./gradlew runSteadyStateIntegrationTests --refresh-dependencies --info
   targeted-integration:
     name: Targeted integration tests
     runs-on: ubuntu-20.04
@@ -94,8 +94,8 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Run targeted integration tests
-        # Adding --warn outputs application logs at WARN or above, which is useful
+        # Adding --info outputs application logs, which is useful
         #   for debugging failures where the node calls System.exit(X), which appear
         #   in the build logs as something like:
         # "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
-        run: ./gradlew runTargetedIntegrationTests --refresh-dependencies --warn
+        run: ./gradlew runTargetedIntegrationTests --refresh-dependencies --info
