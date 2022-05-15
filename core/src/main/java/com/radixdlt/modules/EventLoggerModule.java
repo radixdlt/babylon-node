@@ -199,7 +199,7 @@ public final class EventLoggerModule extends AbstractModule {
     var validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
     logger.info(
         "lgr_nepoch{epoch={} included={} num_validators={} total_stake={}}",
-        epochChange.getEpoch(),
+        epochChange.getNextEpoch(),
         validatorSet.containsNode(self),
         validatorSet.getValidators().size(),
         Amount.ofSubunits(validatorSet.getTotalPower()));

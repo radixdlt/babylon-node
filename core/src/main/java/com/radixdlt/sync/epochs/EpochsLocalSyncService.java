@@ -130,11 +130,11 @@ public class EpochsLocalSyncService {
   private void processLocalSyncRequest(LocalSyncRequest request) {
     final long targetEpoch = request.getTarget().getEpoch();
 
-    if (targetEpoch < currentEpoch.getEpoch()) {
+    if (targetEpoch < currentEpoch.getNextEpoch()) {
       log.trace(
           "Request epoch {} is lower from current {} ignoring: {}",
           targetEpoch,
-          currentEpoch.getEpoch(),
+          currentEpoch.getNextEpoch(),
           request);
       return;
     }

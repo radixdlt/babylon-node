@@ -159,7 +159,7 @@ public final class OutdatedNodeForksTest {
             .subscribe(
                 epochChange -> {
                   latestEpochChange.set(epochChange);
-                  if (epochChange.getEpoch() == 11L) {
+                  if (epochChange.getNextEpoch() == 11L) {
                     // verify that the correct nodes have executed fork1 and fork2 at correct epochs
                     final var maybeInvalidNode =
                         correctNodes.stream()
@@ -188,7 +188,7 @@ public final class OutdatedNodeForksTest {
                           "Expected test node to miss forks at epoch 5 and 10, but they've been"
                               + " executed");
                     }
-                  } else if (epochChange.getEpoch() == 12L) {
+                  } else if (epochChange.getNextEpoch() == 12L) {
                     // restart the test node at epoch 12 with the correct fork configuration
                     final var keyPair =
                         runningTest.getNetwork().getInstance(ECKeyPair.class, nodeUnderTest);
@@ -208,7 +208,7 @@ public final class OutdatedNodeForksTest {
                                     .toInstance(m -> m);
                               }
                             });
-                  } else if (epochChange.getEpoch() == 13L) {
+                  } else if (epochChange.getNextEpoch() == 13L) {
                     final var nodeUnderTestForks =
                         network.getInstance(ForksEpochStore.class, nodeUnderTest).getStoredForks();
 
@@ -230,6 +230,6 @@ public final class OutdatedNodeForksTest {
     testErrorsDisposable.dispose();
 
     // just a sanity check to make sure that at least 14 epochs have passed
-    assertTrue(latestEpochChange.get().getEpoch() > 14);
+    assertTrue(latestEpochChange.get().getNextEpoch() > 14);
   }
 }

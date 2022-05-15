@@ -120,12 +120,12 @@ public class ConsensusRecoveryModule extends AbstractModule {
               final long safetyStateEpoch =
                   safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
 
-              if (safetyStateEpoch > initialEpoch.getEpoch()) {
+              if (safetyStateEpoch > initialEpoch.getNextEpoch()) {
                 throw new IllegalStateException(
                     String.format(
                         "Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
-                        safetyStateEpoch, initialEpoch.getEpoch()));
-              } else if (safetyStateEpoch == initialEpoch.getEpoch()) {
+                        safetyStateEpoch, initialEpoch.getNextEpoch()));
+              } else if (safetyStateEpoch == initialEpoch.getNextEpoch()) {
                 return Optional.of(safetyState);
               } else {
                 return Optional.empty();

@@ -167,15 +167,15 @@ public final class CoordinatedForkSanityTest {
                     reportError.accept("Expected all validators to have the same power");
                   }
 
-                  if (epochChange.getEpoch() == 10L) {
+                  if (epochChange.getNextEpoch() == 10L) {
                     // half nodes vote in epoch 10
                     halfOfTheNodes.forEach(node -> updateValidatorWithNewestFork(network, node));
-                  } else if (epochChange.getEpoch() == 11L) {
+                  } else if (epochChange.getNextEpoch() == 11L) {
                     // verify that at epoch 11 the network is still at fork idx 2
                     if (!verifyCurrentFork(network, forks.get(2))) {
                       reportError.accept("Expected to be at a different fork (2) at epoch 11");
                     }
-                  } else if (epochChange.getEpoch() == 12L) {
+                  } else if (epochChange.getNextEpoch() == 12L) {
                     // verify that at epoch 12 the network is still at fork idx 2
                     if (!verifyCurrentFork(network, forks.get(2))) {
                       reportError.accept("Expected to be at a different fork (2) at epoch 12");
@@ -183,12 +183,12 @@ public final class CoordinatedForkSanityTest {
 
                     // one more node votes in epoch 12
                     updateValidatorWithNewestFork(network, oneMoreNode);
-                  } else if (epochChange.getEpoch() == 19L) {
+                  } else if (epochChange.getNextEpoch() == 19L) {
                     // still no change at epoch 19 (min epoch is 20)
                     if (!verifyCurrentFork(network, forks.get(2))) {
                       reportError.accept("Expected to be at a different fork (2) at epoch 19");
                     }
-                  } else if (epochChange.getEpoch() == 21L) {
+                  } else if (epochChange.getNextEpoch() == 21L) {
                     // verify that at epoch 21 we've successfully switched to the fork with voting
                     // (idx 3)
                     if (!verifyCurrentFork(network, forks.get(3))) {
@@ -219,7 +219,7 @@ public final class CoordinatedForkSanityTest {
     testErrorsDisposable.dispose();
 
     // make sure that at least 20 epochs have passed (fork min epoch)
-    assertTrue(latestEpochChange.get().getEpoch() > 20);
+    assertTrue(latestEpochChange.get().getNextEpoch() > 20);
 
     // verify that at the end of test all nodes are at fork idx 3
     if (!verifyCurrentFork(network, forks.get(3))) {

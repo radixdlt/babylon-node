@@ -348,6 +348,7 @@ public class EpochManagerTest {
                 HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher));
     LedgerProof proof = mock(LedgerProof.class);
     when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
+    when(proof.getNextEpoch()).thenReturn(header.getEpoch() + 2);
     var epochChange = new EpochChange(proof, bftConfiguration);
     var ledgerUpdate =
         new LedgerUpdate(
@@ -359,7 +360,7 @@ public class EpochManagerTest {
 
     // Assert
     verify(proposalDispatcher, never())
-        .dispatch(any(Iterable.class), argThat(p -> p.getEpoch() == epochChange.getEpoch()));
+        .dispatch(any(Iterable.class), argThat(p -> p.getEpoch() == epochChange.getNextEpoch()));
     verify(voteDispatcher, never()).dispatch(any(BFTNode.class), any());
   }
 }

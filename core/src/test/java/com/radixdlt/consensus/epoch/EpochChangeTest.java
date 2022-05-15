@@ -85,6 +85,7 @@ public class EpochChangeTest {
   public void setup() {
     this.proof = mock(LedgerProof.class);
     when(proof.getEpoch()).thenReturn(323L);
+    when(proof.getNextEpoch()).thenReturn(324L);
     this.configuration = mock(BFTConfiguration.class);
 
     this.epochChange = new EpochChange(proof, configuration);
@@ -99,7 +100,7 @@ public class EpochChangeTest {
 
   @Test
   public void when_get_next_epoch__then_should_be_epoch_after_proof() {
-    assertThat(epochChange.getEpoch()).isEqualTo(324L);
+    assertThat(epochChange.getNextEpoch()).isEqualTo(324L);
   }
 
   @Test

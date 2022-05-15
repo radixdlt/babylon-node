@@ -86,7 +86,7 @@ public final class EpochChange {
     return bftConfiguration.getVertexStoreState().getRootHeader();
   }
 
-  public long getEpoch() {
+  public long getNextEpoch() {
     return proof.getNextEpoch();
   }
 
