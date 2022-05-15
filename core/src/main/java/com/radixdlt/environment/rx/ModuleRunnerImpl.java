@@ -113,6 +113,8 @@ public final class ModuleRunnerImpl implements ModuleRunner {
                     "Unhandled exception in the event processing loop. Shutting down the node. ",
                     e);
                 Thread.sleep(1000);
+                // This may cause integration test errors which look like:
+                // Process 'Gradle Test Executor 1' finished with non-zero exit value 255
                 System.exit(-1);
               });
     }
