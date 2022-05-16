@@ -112,9 +112,8 @@ public final class InMemoryCommittedReader implements CommittedReader {
                   commands.subList(index, commands.size()), update.getTail()));
         }
 
-        final var nextEpoch = update.getTail().getNextEpoch();
-
         if (update.getTail().isEndOfEpoch()) {
+          final var nextEpoch = update.getTail().getNextEpoch();
           this.store.epochProofs.put(nextEpoch, update.getTail());
         }
       }

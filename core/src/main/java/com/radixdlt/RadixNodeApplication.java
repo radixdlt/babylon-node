@@ -175,7 +175,8 @@ public final class RadixNodeApplication {
       log.fatal("Unable to start", ex);
       LogManager.shutdown(); // Flush any async logs
 
-      // This (or more likely, the one in ModuleRunnerImpl.java) may cause integration test errors which look like:
+      // This (or more likely, the one in ModuleRunnerImpl.java) may cause integration test errors
+      // which look like:
       // "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
       java.lang.System.exit(-1);
     }
