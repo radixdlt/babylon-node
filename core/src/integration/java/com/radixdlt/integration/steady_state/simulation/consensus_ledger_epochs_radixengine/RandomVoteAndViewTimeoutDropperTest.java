@@ -80,6 +80,7 @@ import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.rev2.modules.MockedRecoveryModule;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -103,7 +104,8 @@ public class RandomVoteAndViewTimeoutDropperTest {
               new MainnetForksModule(),
               new RadixEngineForksLatestOnlyModule(
                   RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
-              new ForksModule())
+              new ForksModule(),
+              new MockedRecoveryModule())
           .ledgerAndRadixEngineWithEpochHighView()
           .addTestModules(
               ConsensusMonitors.safety(),

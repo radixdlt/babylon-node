@@ -94,6 +94,7 @@ import com.radixdlt.rev1.forks.ForkConfig;
 import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.forks.ForksModule;
+import com.radixdlt.rev2.modules.MockedRecoveryModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
 import java.time.Duration;
@@ -115,7 +116,8 @@ public final class CoordinatedForkSanityTest {
             .numNodes(NUM_VALIDATORS, Collections.nCopies(NUM_VALIDATORS, UInt256.ONE))
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
             .fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
-            .addRadixEngineConfigModules(new MockedForksModule(2), new ForksModule())
+            .addRadixEngineConfigModules(
+                new MockedForksModule(2), new ForksModule(), new MockedRecoveryModule())
             .addNodeModule(MempoolConfig.asModule(1000, 10))
             .addTestModules(
                 ConsensusMonitors.safety(),

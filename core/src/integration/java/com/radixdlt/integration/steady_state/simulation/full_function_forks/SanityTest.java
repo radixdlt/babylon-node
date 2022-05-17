@@ -83,6 +83,7 @@ import com.radixdlt.rev1.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
+import com.radixdlt.rev2.modules.MockedRecoveryModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
 import java.time.Duration;
@@ -137,7 +138,8 @@ public class SanityTest {
                         9800,
                         10,
                         MSG.maxLength())),
-                new ForksModule())
+                new ForksModule(),
+                new MockedRecoveryModule())
             .addNodeModule(MempoolConfig.asModule(1000, 10))
             .addTestModules(
                 ConsensusMonitors.safety(),

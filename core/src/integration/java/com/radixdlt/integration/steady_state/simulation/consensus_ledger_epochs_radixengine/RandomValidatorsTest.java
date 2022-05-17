@@ -81,6 +81,7 @@ import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.rev2.modules.MockedRecoveryModule;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -111,7 +112,8 @@ public class RandomValidatorsTest {
                       9800,
                       50,
                       MSG.maxLength())),
-              new ForksModule())
+              new ForksModule(),
+              new MockedRecoveryModule())
           .ledgerAndRadixEngineWithEpochHighView()
           .addTestModules(
               ConsensusMonitors.safety(),
