@@ -86,9 +86,14 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.store.LastStoredProof;
 import java.util.Optional;
 
-/** Starting configuration for simulation/deterministic steady state tests. */
+/**
+ * Starting configuration for simulation/deterministic steady state tests. Also, used as a temporary
+ * starting placeholder for Babylon. Should be put back in the tests folder once replaced by the
+ * state-manager.
+ */
 public class MockedRecoveryModule extends AbstractModule {
 
   private final HashCode genesisHash;
@@ -128,6 +133,12 @@ public class MockedRecoveryModule extends AbstractModule {
         validatorSet,
         VerifiedVertexStoreState.create(
             HighQC.from(genesisQC), verifiedGenesis, Optional.empty(), hasher));
+  }
+
+  @Provides
+  @LastStoredProof
+  public Optional<LedgerProof> lastStoredProof() {
+    return Optional.empty();
   }
 
   @Provides

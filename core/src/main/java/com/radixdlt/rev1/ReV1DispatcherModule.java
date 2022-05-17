@@ -75,11 +75,6 @@ import com.radixdlt.monitoring.SystemCounters.CounterType;
 public class ReV1DispatcherModule extends AbstractModule {
   @Override
   public void configure() {
-    // TODO: Remove, this hack required for initial genesis event emit
-    bind(new TypeLiteral<EventDispatcher<REOutput>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(REOutput.class))
-        .in(Scopes.SINGLETON);
-
     bind(new TypeLiteral<EventDispatcher<TxnsRemovedFromMempool>>() {})
         .toProvider(Dispatchers.dispatcherProvider(TxnsRemovedFromMempool.class))
         .in(Scopes.SINGLETON);

@@ -77,7 +77,6 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.atom.MutableTokenDefinition;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
 import com.radixdlt.crypto.ECKeyPair;
@@ -95,7 +94,6 @@ import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -113,9 +111,6 @@ public class MutableTokenAndResourceFeeTest {
   @Inject private RadixEngine<LedgerAndBFTProof> sut;
 
   @Inject private BerkeleyLedgerEntryStore ledgerEntryStore;
-
-  // FIXME: Hack, need this in order to cause provider for genesis to be stored
-  @Inject @LastStoredProof private LedgerProof ledgerProof;
 
   private Injector createInjector() {
     return Guice.createInjector(

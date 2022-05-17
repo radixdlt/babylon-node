@@ -68,25 +68,29 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.rev1.EpochCeilingView;
-import com.radixdlt.rev1.LedgerAndBFTProof;
-import com.radixdlt.rev1.MaxSigsPerRound;
-import com.radixdlt.rev1.MaxValidators;
+import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.rev1.*;
+import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.rev1.forks.CurrentForkView;
 import com.radixdlt.rev1.forks.ForkConfig;
 import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.forks.NewestForkConfig;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastStoredProof;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 /** Module which manages execution of commands */
@@ -94,11 +98,8 @@ public class RadixEngineModule extends AbstractModule {
   @Provides
   @Singleton
   private CurrentForkView currentForkView(
-      CommittedReader committedReader, ForksEpochStore forksEpochStore, Forks forks) {
-    // We'd ideally like to take a @LastEpochProof dependency here instead of a
-    // CommittedReader, but the LedgerRecoveryModule has a RadixEngineModule dependency,
-    // so this doesn't work. Instead, let's create it ourselves here.
-    forks.init(getCurrentEpoch(committedReader), forksEpochStore);
+      @LastEpochProof LedgerProof lastEpochProof, ForksEpochStore forksEpochStore, Forks forks) {
+    forks.init(lastEpochProof.getNextEpoch(), forksEpochStore);
 
     final var latestStoredForkNameOpt =
         forksEpochStore.getStoredForks().entrySet().stream()
@@ -109,15 +110,6 @@ public class RadixEngineModule extends AbstractModule {
         latestStoredForkNameOpt.flatMap(forks::getByName).orElseGet(forks::genesisFork);
 
     return new CurrentForkView(forks, initialForkConfig);
-  }
-
-  private long getCurrentEpoch(CommittedReader committedReader) {
-    var lastProofOptional = committedReader.getLastProof();
-    if (lastProofOptional.isEmpty()) {
-      return 0;
-    }
-    var lastProof = lastProofOptional.get();
-    return lastProof.isEndOfEpoch() ? lastProof.getNextEpoch() : lastProof.getEpoch();
   }
 
   @Provides
@@ -161,7 +153,10 @@ public class RadixEngineModule extends AbstractModule {
   @Provides
   @Singleton
   private RadixEngine<LedgerAndBFTProof> getRadixEngine(
-      EngineStore<LedgerAndBFTProof> engineStore, CurrentForkView currentForkView) {
+      EngineStore<LedgerAndBFTProof> engineStore,
+      CurrentForkView currentForkView,
+      @LastStoredProof Optional<LedgerProof> lastStoredProof,
+      @Genesis VerifiedTxnsAndProof genesis) {
     final var rules = currentForkView.currentForkConfig().engineRules();
     final var cmConfig = rules.constraintMachineConfig();
     var cm =
@@ -170,14 +165,35 @@ public class RadixEngineModule extends AbstractModule {
             cmConfig.getDeserialization(),
             cmConfig.getVirtualSubstateDeserialization(),
             cmConfig.getMeter());
-    return new RadixEngine<>(
-        rules.parser(),
-        rules.serialization(),
-        rules.actionConstructors(),
-        cm,
-        engineStore,
-        rules.postProcessor(),
-        rules.config().maxMessageLen());
+    var engine =
+        new RadixEngine<>(
+            rules.parser(),
+            rules.serialization(),
+            rules.actionConstructors(),
+            cm,
+            engineStore,
+            rules.postProcessor(),
+            rules.config().maxMessageLen());
+
+    if (lastStoredProof.isEmpty()) {
+      runGenesisTransaction(engine, genesis);
+    }
+
+    return engine;
+  }
+
+  private void runGenesisTransaction(
+      RadixEngine<LedgerAndBFTProof> engine, VerifiedTxnsAndProof genesis) {
+
+    var txns = genesis.getTxns();
+    var proof = LedgerAndBFTProof.create(genesis.getProof());
+    try {
+      engine.execute(txns, proof, PermissionLevel.SYSTEM);
+    } catch (RadixEngineException e) {
+      throw new IllegalStateException(
+          "Error during node initialization - unable to successfully execute genesis transaction",
+          e);
+    }
   }
 
   @ProvidesIntoSet

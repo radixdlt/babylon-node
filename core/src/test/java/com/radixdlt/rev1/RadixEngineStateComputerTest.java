@@ -92,13 +92,10 @@ import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.crypto.ECKeyPair;
@@ -111,7 +108,6 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.NoOpCommittedReader;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -132,11 +128,11 @@ import com.radixdlt.rev1.forks.NoOpForksEpochStore;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
+import com.radixdlt.rev2.modules.MockedRecoveryModule;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
@@ -188,16 +184,15 @@ public class RadixEngineStateComputerTest {
         bind(Serialization.class).toInstance(serialization);
         bind(Hasher.class).toInstance(new Sha256Hasher(DefaultSerialization.getInstance()));
         bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(engineStore);
-        bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
+
+        bind(BFTValidatorSet.class).toInstance(validatorSet);
+        install(new MockedRecoveryModule());
+        bind(ForksEpochStore.class).toInstance(new NoOpForksEpochStore());
 
         install(MempoolConfig.asModule(10, 10));
         install(new MainnetForksModule());
         install(new RadixEngineForksLatestOnlyModule());
         install(new ForksModule());
-
-        // HACK
-        bind(CommittedReader.class).toInstance(new NoOpCommittedReader());
-        bind(ForksEpochStore.class).toInstance(new NoOpForksEpochStore());
 
         bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 
@@ -207,8 +202,6 @@ public class RadixEngineStateComputerTest {
             .toInstance(TypedMocks.rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<TxnsRemovedFromMempool>>() {})
             .toInstance(TypedMocks.rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<REOutput>>() {})
-            .toInstance(TypedMocks.rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() {})
             .toInstance(TypedMocks.rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {})
@@ -217,39 +210,6 @@ public class RadixEngineStateComputerTest {
         bind(SystemCounters.class).to(SystemCountersImpl.class);
       }
     };
-  }
-
-  private void setupGenesis() throws RadixEngineException {
-    var branch = radixEngine.transientBranch();
-    var result = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
-    var genesisValidatorSet =
-        result.getProcessedTxns().get(0).getEvents().stream()
-            .filter(REEvent.NextValidatorSetEvent.class::isInstance)
-            .map(REEvent.NextValidatorSetEvent.class::cast)
-            .findFirst()
-            .map(
-                e ->
-                    BFTValidatorSet.from(
-                        e.nextValidators().stream()
-                            .map(
-                                v ->
-                                    BFTValidator.from(
-                                        BFTNode.create(v.validatorKey()), v.amount()))))
-            .orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
-    radixEngine.deleteBranches();
-
-    var genesisLedgerHeader =
-        LedgerProof.genesis(
-            new AccumulatorState(0, hasher.hash(genesisTxns.getTxns().get(0).getId())),
-            genesisValidatorSet,
-            0);
-    if (!genesisLedgerHeader.isEndOfEpoch()) {
-      throw new IllegalStateException("Genesis must be end of epoch");
-    }
-    radixEngine.execute(
-        genesisTxns.getTxns(),
-        LedgerAndBFTProof.create(genesisLedgerHeader),
-        PermissionLevel.SYSTEM);
   }
 
   @Before
@@ -265,7 +225,6 @@ public class RadixEngineStateComputerTest {
                 Amount.ofTokens(100)),
             getExternalModule())
         .injectMembers(this);
-    setupGenesis();
   }
 
   private Transaction systemUpdateTxn(long nextView, long nextEpoch) throws TxBuilderException {

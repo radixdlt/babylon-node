@@ -77,14 +77,8 @@ import com.radixdlt.consensus.bft.SerializedVertexStoreState;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.rev1.LedgerAndBFTProof;
-import com.radixdlt.rev1.REOutput;
 import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
@@ -97,35 +91,21 @@ public final class LedgerRecoveryModule extends AbstractModule {
   @Provides
   @Singleton
   @LastStoredProof
-  LedgerProof lastStoredProof(
-      // TODO: Remove this by moving the genesis committedDispatcher.dispatch to getRadixEngine
-      RadixEngine<LedgerAndBFTProof> radixEngine,
-      CommittedReader committedReader,
-      @Genesis VerifiedTxnsAndProof genesis,
-      EventDispatcher<REOutput> committedDispatcher // FIXME: this is hack so client can get genesis
-      ) {
-    return committedReader
-        .getLastProof()
-        .orElseGet(
-            () -> {
-              var txns = genesis.getTxns();
-              var proof = LedgerAndBFTProof.create(genesis.getProof());
-              try {
-                var result = radixEngine.execute(txns, proof, PermissionLevel.SYSTEM);
-                committedDispatcher.dispatch(REOutput.create(result.getProcessedTxns()));
-              } catch (RadixEngineException e) {
-                throw new IllegalStateException("Error during node initialization", e);
-              }
-
-              return genesis.getProof();
-            });
+  Optional<LedgerProof> lastStoredProof(CommittedReader committedReader) {
+    return committedReader.getLastProof();
   }
 
   @Provides
   @Singleton
   @LastProof
   LedgerProof lastProof(
-      VerifiedVertexStoreState vertexStoreState, @LastStoredProof LedgerProof lastStoredProof) {
+      @Genesis VerifiedTxnsAndProof genesis,
+      VerifiedVertexStoreState vertexStoreState,
+      @LastStoredProof Optional<LedgerProof> lastStoredProofOptional) {
+    if (lastStoredProofOptional.isEmpty()) {
+      return genesis.getProof();
+    }
+    var lastStoredProof = lastStoredProofOptional.get();
     if (lastStoredProof.isEndOfEpoch()) {
       return vertexStoreState.getRootHeader();
     } else {
@@ -137,7 +117,13 @@ public final class LedgerRecoveryModule extends AbstractModule {
   @Singleton
   @LastEpochProof
   LedgerProof lastEpochProof(
-      CommittedReader committedReader, @LastStoredProof LedgerProof lastStoredProof) {
+      @Genesis VerifiedTxnsAndProof genesis,
+      CommittedReader committedReader,
+      @LastStoredProof Optional<LedgerProof> lastStoredProofOptional) {
+    if (lastStoredProofOptional.isEmpty()) {
+      return genesis.getProof();
+    }
+    var lastStoredProof = lastStoredProofOptional.get();
     if (lastStoredProof.isEndOfEpoch()) {
       return lastStoredProof;
     }

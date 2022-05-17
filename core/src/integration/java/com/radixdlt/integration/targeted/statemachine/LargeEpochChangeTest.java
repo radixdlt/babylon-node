@@ -107,7 +107,6 @@ import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -134,9 +133,6 @@ public class LargeEpochChangeTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   @Inject private RadixEngine<LedgerAndBFTProof> sut;
-
-  // FIXME: Hack, need this in order to cause provider for genesis to be stored
-  @Inject @LastStoredProof private LedgerProof ledgerProof;
 
   private Injector createInjector() {
     return Guice.createInjector(
