@@ -565,6 +565,7 @@ public final class SimulationTest {
             new AbstractModule() {
               public void configure() {
                 install(new RadixEngineModule());
+                install(new LedgerRecoveryModule());
                 install(new InMemoryRadixEngineStoreModule());
                 install(new MockedCryptoModule());
                 install(
