@@ -65,21 +65,26 @@
 package com.radixdlt.mempool;
 
 import com.google.common.collect.Lists;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolMetadata;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.transactions.Transaction;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class REv2Mempool implements Mempool<Transaction> {
+  private static final Logger log = LogManager.getLogger();
   private final Set<Transaction> data = new HashSet<>();
   private final SystemCounters counters;
   private final Random random;
   private final int maxSize;
+
+  static {
+    System.loadLibrary("stateman");
+  }
+
+  private static native String hello(String input);
 
   public REv2Mempool(SystemCounters counters, int maxSize, Random random) {
     if (maxSize <= 0) {
@@ -88,6 +93,9 @@ public class REv2Mempool implements Mempool<Transaction> {
     this.counters = Objects.requireNonNull(counters);
     this.maxSize = maxSize;
     this.random = Objects.requireNonNull(random);
+    String output = hello("REv2Mempool calling rust");
+
+    log.warn(output);
   }
 
   @Override
