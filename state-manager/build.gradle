@@ -64,6 +64,15 @@
 
 apply plugin: 'java-library'
 
+task buildRustDebug(type:Exec) {
+     workingDir 'src/main/rust/stateman'
+     commandLine 'cargo', 'build'
+}
+
+compileJava {
+    dependsOn buildRustDebug
+}
+
 dependencies {
     api project(':common')
 
