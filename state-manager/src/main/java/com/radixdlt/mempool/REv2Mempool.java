@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.mempool;
 
 import com.google.common.collect.Lists;
 import com.radixdlt.mempool.Mempool;
