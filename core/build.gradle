@@ -264,6 +264,10 @@ ospackage {
     from("ospackage/${serviceName}.service") {
         into "/etc/systemd/system"
     }
+    // XXX: This ought to be done somewhere else.
+    from("../state-manager/src/main/rust/stateman/target/debug/libstateman.so") {
+       into "/usr/lib/jni/"
+    }
 
     // See https://github.com/nebula-plugins/gradle-ospackage-plugin/wiki/Deb-Plugin#basic-usage
     buildDeb {
