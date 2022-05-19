@@ -75,6 +75,8 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Map;
+
 public class SimulationNetworkTest {
   private BFTNode node1;
   private BFTNode node2;
@@ -85,7 +87,7 @@ public class SimulationNetworkTest {
   public void setup() {
     node1 = mock(BFTNode.class);
     node2 = mock(BFTNode.class);
-    this.channelCommunication = new InOrderChannels(msg -> 50);
+    this.channelCommunication = new InOrderChannels(msg -> 50, Map.of());
     this.network = new SimulationNetwork(channelCommunication);
   }
 

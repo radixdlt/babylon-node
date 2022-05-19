@@ -62,67 +62,39 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation.network;
+package com.radixdlt.harness.simulation;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.harness.simulation.network.SimulationNetwork.ChannelCommunication;
+import com.google.inject.AbstractModule;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.ClassMapKey;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.harness.simulation.network.SimulationNetwork.MessageInTransit;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-public final class InOrderChannels implements ChannelCommunication {
-  private final LatencyProvider latencyProvider;
-  private final Map<Class<?>, Function<MessageInTransit, MessageInTransit>> messageModifiers;
-
-  @Inject
-  public InOrderChannels(
-      LatencyProvider latencyProvider,
-      Map<Class<?>, Function<MessageInTransit, MessageInTransit>> messageModifiers) {
-    this.latencyProvider = Objects.requireNonNull(latencyProvider);
-    this.messageModifiers = Objects.requireNonNull(messageModifiers);
+public final class NetworkMessageModifiers {
+  public static AbstractModule modifyProposals(
+      Function<MessageInTransit, MessageInTransit> proposalModifier) {
+    return new AbstractModule() {
+      @ProvidesIntoMap
+      @ClassMapKey(Proposal.class)
+      @Singleton
+      public Function<MessageInTransit, MessageInTransit> proposalModifier() {
+        return proposalModifier;
+      }
+    };
   }
 
-  private SimulationNetwork.MessageInTransit addLatencyIfNotToSelf(
-      SimulationNetwork.MessageInTransit msg, BFTNode receiver) {
-    if (msg.getSender().equals(receiver)) {
-      return msg;
-    } else {
-      return msg.delayed(latencyProvider.nextLatency(msg));
-    }
-  }
-
-  public static Timed<SimulationNetwork.MessageInTransit> delayCarryover(
-      Timed<SimulationNetwork.MessageInTransit> prev,
-      Timed<SimulationNetwork.MessageInTransit> next) {
-    int delayCarryover = (int) Math.max(prev.time() + prev.value().getDelay() - next.time(), 0);
-    int additionalDelay = (int) (next.value().getDelay() - delayCarryover);
-    if (additionalDelay > 0) {
-      return new Timed<>(
-          next.value().delayAfterPrevious(additionalDelay), next.time(), next.unit());
-    } else {
-      return next;
-    }
-  }
-
-  @Override
-  public Observable<SimulationNetwork.MessageInTransit> transform(
-      BFTNode sender, BFTNode receiver, Observable<SimulationNetwork.MessageInTransit> messages) {
-    return messages
-        .map(msg -> addLatencyIfNotToSelf(msg, receiver))
-        .filter(msg -> msg.getDelay() >= 0)
-        .map(
-            msg ->
-                this.messageModifiers.getOrDefault(msg.getContent().getClass(), m -> m).apply(msg))
-        .timestamp(TimeUnit.MILLISECONDS)
-        .scan(InOrderChannels::delayCarryover)
-        .concatMap(
-            p ->
-                Observable.just(p.value())
-                    .delay(p.value().getDelayAfterPrevious(), TimeUnit.MILLISECONDS));
+  public static AbstractModule modifyVotes(
+      Function<MessageInTransit, MessageInTransit> voteModifier) {
+    return new AbstractModule() {
+      @ProvidesIntoMap
+      @ClassMapKey(Vote.class)
+      @Singleton
+      public Function<MessageInTransit, MessageInTransit> voteModifier() {
+        return voteModifier;
+      }
+    };
   }
 }

@@ -69,17 +69,23 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.harness.simulation.network.LatencyProvider;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.harness.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class SimulationNetworkModule extends AbstractModule {
   @Override
   protected void configure() {
     Multibinder.newSetBinder(binder(), new TypeLiteral<Predicate<MessageInTransit>>() {});
+    MapBinder.newMapBinder(
+        binder(),
+        new TypeLiteral<Class<?>>() {},
+        new TypeLiteral<Function<MessageInTransit, MessageInTransit>>() {});
     bind(SimulationNetwork.class).in(Scopes.SINGLETON);
   }
 

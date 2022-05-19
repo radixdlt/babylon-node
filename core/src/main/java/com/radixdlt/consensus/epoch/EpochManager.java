@@ -71,6 +71,7 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
@@ -120,6 +121,7 @@ public final class EpochManager {
   private final BFTSyncFactory bftSyncFactory;
   private final Hasher hasher;
   private final HashSigner signer;
+  private final HashVerifier hashVerifier;
   private final PacemakerTimeoutCalculator timeoutCalculator;
   private final SystemCounters counters;
   private final Map<Long, List<ConsensusEvent>> queuedEvents;
@@ -159,6 +161,7 @@ public final class EpochManager {
       SystemCounters counters,
       Hasher hasher,
       HashSigner signer,
+      HashVerifier hashVerifier,
       PacemakerTimeoutCalculator timeoutCalculator,
       PacemakerStateFactory pacemakerStateFactory,
       PersistentSafetyStateStore persistentSafetyStateStore) {
@@ -192,6 +195,7 @@ public final class EpochManager {
     this.bftSyncRequestProcessorFactory = bftSyncRequestProcessorFactory;
     this.hasher = requireNonNull(hasher);
     this.signer = requireNonNull(signer);
+    this.hashVerifier = requireNonNull(hashVerifier);
     this.timeoutCalculator = requireNonNull(timeoutCalculator);
     this.bftFactory = bftFactory;
     this.counters = requireNonNull(counters);
@@ -235,7 +239,13 @@ public final class EpochManager {
     // Consensus Drivers
     final var safetyRules =
         new SafetyRules(
-            self, SafetyState.initialState(), persistentSafetyStateStore, hasher, signer);
+            self,
+            SafetyState.initialState(),
+            persistentSafetyStateStore,
+            hasher,
+            signer,
+            hashVerifier,
+            validatorSet);
     final var pacemaker =
         pacemakerFactory.create(
             validatorSet,
@@ -244,7 +254,8 @@ public final class EpochManager {
             safetyRules,
             initialViewUpdate,
             nextEpoch);
-    final var bftSync = bftSyncFactory.create(vertexStore, pacemakerState, bftConfiguration);
+    final var bftSync =
+        bftSyncFactory.create(safetyRules, vertexStore, pacemakerState, bftConfiguration);
 
     this.syncLedgerUpdateProcessor = bftSync.baseLedgerUpdateEventProcessor();
     this.syncTimeoutProcessor = bftSync.vertexRequestTimeoutEventProcessor();
