@@ -69,6 +69,10 @@ task buildRustDebug(type:Exec) {
      commandLine 'cargo', 'build'
 }
 
+tasks.withType(Test) {
+    systemProperty "java.library.path", "src/main/rust/stateman/target/debug"
+}
+
 compileJava {
     dependsOn buildRustDebug
 }
@@ -81,6 +85,7 @@ dependencies {
     testImplementation 'nl.jqno.equalsverifier:equalsverifier'
     testImplementation 'org.assertj:assertj-core'
 }
+
 
 jacocoTestReport {
     dependsOn test
