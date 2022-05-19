@@ -27,6 +27,7 @@ api.users
 .env 
 *.swo
 *.swp
+*~
 # ignore jar files, but keep Gradle wrapper
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
