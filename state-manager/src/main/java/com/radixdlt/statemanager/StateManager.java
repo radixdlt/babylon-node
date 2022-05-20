@@ -83,13 +83,14 @@ public final class StateManager {
   via JNI env, and they should never be accessed in any other way.
   The remaining fields are read-only values (for now, but this might change) passed to Rust. */
   public static class RustInteropState {
+    @SuppressWarnings("unused")
     private final byte[] publicKey;
 
     @SuppressWarnings("unused")
-    private long transactionStoreRef;
+    private final long transactionStoreRef = 0;
 
     @SuppressWarnings("unused")
-    private long vertexStoreRef;
+    private final long vertexStoreRef = 0;
 
     RustInteropState(byte[] publicKey) {
       this.publicKey = Objects.requireNonNull(publicKey);
