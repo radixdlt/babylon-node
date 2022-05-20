@@ -62,42 +62,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.vertexstore;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import com.radixdlt.statemanager.StateManager.RustInteropState;
+import java.util.Objects;
 
-import com.radixdlt.crypto.ECKeyPair;
-import org.junit.Test;
+public final class RustVertexStore implements VertexStore {
 
-public final class StateManagerTest {
+  private final RustInteropState rustInteropState;
 
-  @Test
-  public void test_rust_interop() {
-    final var key1 = ECKeyPair.generateNew().getPublicKey();
-    final var stateManagerNode1 = StateManager.create(key1);
-
-    final var key2 = ECKeyPair.generateNew().getPublicKey();
-    final var stateManagerNode2 = StateManager.create(key2);
-
-    assertEquals(key1, stateManagerNode1.getPublicKey());
-    assertEquals(key1, stateManagerNode1.getPublicKey());
-    assertEquals(key2, stateManagerNode2.getPublicKey());
-
-    stateManagerNode1.transactionStore().insertTransaction(1L, new byte[] {1, 2, 3});
-    assertArrayEquals(
-        new byte[] {1, 2, 3},
-        stateManagerNode1.transactionStore().getTransactionAtStateVersion(1L));
-
-    final var vertex = new byte[] {3, 4, 5};
-    assertFalse(stateManagerNode1.vertexStore().containsVertex(vertex));
-    stateManagerNode1.vertexStore().insertVertex(vertex);
-    assertTrue(stateManagerNode1.vertexStore().containsVertex(vertex));
-    assertFalse(stateManagerNode2.vertexStore().containsVertex(vertex));
-
-    stateManagerNode1.shutdown();
-    stateManagerNode2.shutdown();
+  public RustVertexStore(RustInteropState rustInteropState) {
+    this.rustInteropState = Objects.requireNonNull(rustInteropState);
   }
+
+  @Override
+  public void insertVertex(byte[] vertex) {
+    insertVertex(this.rustInteropState, vertex);
+  }
+
+  @Override
+  public boolean containsVertex(byte[] vertex) {
+    return containsVertex(rustInteropState, vertex);
+  }
+
+  private static native void insertVertex(RustInteropState rustInteropState, byte[] vertex);
+
+  private static native boolean containsVertex(RustInteropState rustInteropState, byte[] vertex);
 }

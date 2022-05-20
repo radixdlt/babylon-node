@@ -62,37 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.transaction;
 
-import com.radixdlt.crypto.ECPublicKey;
+public interface TransactionStore {
+  void insertTransaction(long stateVersion, byte[] transactionBytes);
 
-public final class StateManagerRustInterop {
-
-  static {
-    System.loadLibrary("stateman");
-  }
-
-  static class RustStateRef {
-    @SuppressWarnings("unused")
-    /* Stores a pointer to the Rust state across JNI calls.
-    It's set on the Rust side via the JNI env and should never be accessed in any other way. */
-    private long value;
-
-    RustStateRef(ECPublicKey publicKey) {
-      init(this, publicKey.getBytes());
-    }
-  }
-
-  private StateManagerRustInterop() {}
-
-  static native void init(RustStateRef rustStateRef, byte[] publicKey);
-
-  static native byte[] getPublicKey(RustStateRef rustStateRef);
-
-  static native void insertTransaction(
-      RustStateRef rustStateRef, long stateVersion, byte[] transactionBytes);
-
-  static native byte[] getTransactionAtStateVersion(RustStateRef rustStateRef, long stateVersion);
-
-  static native void cleanup(RustStateRef rustStateRef);
+  byte[] getTransactionAtStateVersion(long stateVersion);
 }

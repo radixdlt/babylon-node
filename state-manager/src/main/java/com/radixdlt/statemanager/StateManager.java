@@ -66,55 +66,76 @@ package com.radixdlt.statemanager;
 
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.statemanager.StateManagerRustInterop.RustStateRef;
+import com.radixdlt.transaction.RustTransactionStore;
+import com.radixdlt.transaction.TransactionStore;
+import com.radixdlt.vertexstore.RustVertexStore;
+import com.radixdlt.vertexstore.VertexStore;
 import java.util.Objects;
 
 public final class StateManager {
 
-  public static StateManager create(ECPublicKey self) {
-    return new StateManager(new RustStateRef(self));
+  static {
+    System.loadLibrary("stateman");
   }
 
-  private RustStateRef rustStateRef;
+  /* Stores Rust state across JNI calls.
+  Fields with "Ref" suffix are pointers to the Rust objects created and set on the Rust side
+  via JNI env, and they should never be accessed in any other way.
+  The remaining fields are read-only values (for now, but this might change) passed to Rust. */
+  public static class RustInteropState {
+    private final byte[] publicKey;
 
-  private StateManager(RustStateRef rustStateRef) {
-    this.rustStateRef = Objects.requireNonNull(rustStateRef);
+    @SuppressWarnings("unused")
+    private long transactionStoreRef;
+
+    @SuppressWarnings("unused")
+    private long vertexStoreRef;
+
+    RustInteropState(byte[] publicKey) {
+      this.publicKey = Objects.requireNonNull(publicKey);
+      init(this);
+    }
+  }
+
+  public static StateManager create(ECPublicKey publicKey) {
+    return new StateManager(new RustInteropState(publicKey.getBytes()));
+  }
+
+  private final RustInteropState rustInteropState;
+
+  private final VertexStore vertexStore;
+
+  private final TransactionStore transactionStore;
+
+  private StateManager(RustInteropState rustInteropState) {
+    this.rustInteropState = Objects.requireNonNull(rustInteropState);
+    this.vertexStore = new RustVertexStore(rustInteropState);
+    this.transactionStore = new RustTransactionStore(rustInteropState);
   }
 
   public ECPublicKey getPublicKey() {
-    ensureValidStateRef();
-
-    final var keyBytes = StateManagerRustInterop.getPublicKey(this.rustStateRef);
     try {
-      return ECPublicKey.fromBytes(keyBytes);
+      return ECPublicKey.fromBytes(getPublicKey(this.rustInteropState));
     } catch (PublicKeyException e) {
       throw new IllegalStateException(e);
     }
   }
 
-  public void insertTransaction(long stateVersion, byte[] transactionBytes) {
-    ensureValidStateRef();
-
-    StateManagerRustInterop.insertTransaction(this.rustStateRef, stateVersion, transactionBytes);
+  public VertexStore vertexStore() {
+    return this.vertexStore;
   }
 
-  public byte[] getTransactionAtStateVersion(long stateVersion) {
-    ensureValidStateRef();
-
-    return StateManagerRustInterop.getTransactionAtStateVersion(this.rustStateRef, stateVersion);
+  public TransactionStore transactionStore() {
+    return this.transactionStore;
   }
 
   public void shutdown() {
-    StateManagerRustInterop.cleanup(this.rustStateRef);
-    this.rustStateRef = null;
+    cleanup(this.rustInteropState);
   }
 
-  private void ensureValidStateRef() {
-    // Having a strange null refs errors from the JNI call might not be obvious to debug
-    // so better to check here if we're trying to access the state manager
-    // after it's been shut down.
-    if (this.rustStateRef == null) {
-      throw new IllegalStateException("StateManager has been shut down");
-    }
-  }
+  private static native void init(RustInteropState rustInteropState);
+
+  private static native byte[] getPublicKey(RustInteropState rustInteropState);
+
+  private static native void cleanup(RustInteropState rustInteropState);
 }
