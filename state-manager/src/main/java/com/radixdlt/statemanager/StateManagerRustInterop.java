@@ -64,15 +64,26 @@
 
 package com.radixdlt.statemanager;
 
-public final class StateManagerRustInterop {
+import com.radixdlt.crypto.ECPublicKey;
 
-  record RustStateRef(long value) { }
+public final class StateManagerRustInterop {
 
   static {
     System.loadLibrary("stateman");
   }
 
-  static native RustStateRef init(byte[] publicKey);
+  static class RustStateRef {
+    @SuppressWarnings("unused")
+    /* Stores a pointer to the Rust state across JNI calls.
+       It's set on the Rust side via the JNI env and should never be accessed in any other way. */
+    private long value;
+
+    RustStateRef(ECPublicKey publicKey) {
+      init(this, publicKey.getBytes());
+    }
+  }
+
+  static native void init(RustStateRef rustStateRef, byte[] publicKey);
 
   static native byte[] getPublicKey(RustStateRef rustStateRef);
 

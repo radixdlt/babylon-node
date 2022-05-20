@@ -1,7 +1,7 @@
 mod transaction_store;
 
-use jni::objects::{JClass, JObject, JValue};
-use jni::sys::{jbyteArray, jobject, jlong};
+use jni::objects::{JClass, JObject};
+use jni::sys::{jbyteArray, jlong};
 use jni::JNIEnv;
 use transaction_store::*;
 
@@ -16,8 +16,9 @@ struct NodeState {
 pub extern "system" fn Java_com_radixdlt_statemanager_StateManagerRustInterop_init(
     env: JNIEnv,
     _class: JClass,
+    rust_state_ref: JObject,
     j_public_key: jbyteArray
-) -> jobject {
+) {
     let public_key: Vec<u8> = env.convert_byte_array(j_public_key)
         .expect("Can't convert public key byte array to vec");
 
@@ -26,17 +27,8 @@ pub extern "system" fn Java_com_radixdlt_statemanager_StateManagerRustInterop_in
         transaction_store: TransactionStore::new()
     };
 
-    let rust_state_ref_class =
-        env.find_class("com/radixdlt/statemanager/StateManagerRustInterop$RustStateRef")
-            .expect("Can't get RustStateRef class");
-
-    let rust_state_ref = env.new_object(rust_state_ref_class, "(J)V", &[JValue::Long(0)])
-        .expect("Can't instantiate RustStateRef");
-
     env.set_rust_field(rust_state_ref, STATE_REF_FIELD_NAME, node_state)
         .expect("Can't set state ref field on RustStateRef");
-
-    *rust_state_ref
 }
 
 #[no_mangle]

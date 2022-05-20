@@ -71,7 +71,7 @@ import com.radixdlt.statemanager.StateManagerRustInterop.RustStateRef;
 public final class StateManager {
 
   public static StateManager create(ECPublicKey self) {
-    return new StateManager(StateManagerRustInterop.init(self.getBytes()));
+    return new StateManager(new RustStateRef(self));
   }
 
   private final RustStateRef rustStateRef;
