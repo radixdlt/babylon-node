@@ -92,7 +92,7 @@ public final class StateManager {
     @SuppressWarnings("unused")
     private final long vertexStoreRef = 0;
 
-    RustInteropState(byte[] publicKey) {
+    private RustInteropState(byte[] publicKey) {
       this.publicKey = Objects.requireNonNull(publicKey);
       init(this);
     }
