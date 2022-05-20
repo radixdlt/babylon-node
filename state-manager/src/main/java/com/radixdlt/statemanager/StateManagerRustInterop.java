@@ -75,7 +75,7 @@ public final class StateManagerRustInterop {
   static class RustStateRef {
     @SuppressWarnings("unused")
     /* Stores a pointer to the Rust state across JNI calls.
-       It's set on the Rust side via the JNI env and should never be accessed in any other way. */
+    It's set on the Rust side via the JNI env and should never be accessed in any other way. */
     private long value;
 
     RustStateRef(ECPublicKey publicKey) {
@@ -87,7 +87,8 @@ public final class StateManagerRustInterop {
 
   static native byte[] getPublicKey(RustStateRef rustStateRef);
 
-  static native void insertTransaction(RustStateRef rustStateRef, long stateVersion, byte[] transactionBytes);
+  static native void insertTransaction(
+      RustStateRef rustStateRef, long stateVersion, byte[] transactionBytes);
 
   static native byte[] getTransactionAtStateVersion(RustStateRef rustStateRef, long stateVersion);
 }
