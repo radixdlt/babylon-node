@@ -265,7 +265,7 @@ ospackage {
         into "/etc/systemd/system"
     }
     // XXX: This ought to be done somewhere else.
-    from("../state-manager/src/main/rust/stateman/target/debug/libstateman.so") {
+    from("${project(':state-manager').projectDir}/src/main/rust/stateman/target/debug/libstateman.so") {
        into "/usr/lib/jni/"
     }
 

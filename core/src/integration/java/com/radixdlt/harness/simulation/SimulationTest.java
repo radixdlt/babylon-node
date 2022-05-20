@@ -80,6 +80,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
+import com.radixdlt.StateManagerModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -537,6 +538,7 @@ public final class SimulationTest {
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
       modules.add(new MockedPeersViewModule(this.addressBookNodes));
+      modules.add(new StateManagerModule());
 
       // Functional
       modules.add(

@@ -72,6 +72,17 @@ pub extern "system" fn Java_com_radixdlt_statemanager_StateManagerRustInterop_ge
     })
 }
 
+#[no_mangle]
+pub extern "system" fn Java_com_radixdlt_statemanager_StateManagerRustInterop_cleanup(
+    env: JNIEnv,
+    _class: JClass,
+    rust_state_ref: JObject
+) {
+    let node_state: NodeState = env.take_rust_field(rust_state_ref, STATE_REF_FIELD_NAME)
+        .expect("Can't get NodeState ref from JNI env");
+    drop(node_state);
+}
+
 fn with_node_state<F, R>(
     env: JNIEnv,
     rust_state_ref: JObject,

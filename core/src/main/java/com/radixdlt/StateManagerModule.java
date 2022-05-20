@@ -66,13 +66,35 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.statemanager.StateManager;
 
 public final class StateManagerModule extends AbstractModule {
   @Provides
   StateManager stateManager(@Self BFTNode self) {
     return StateManager.create(self.getKey());
+  }
+
+  @ProvidesIntoMap
+  @StringMapKey(Runners.STATE_MANAGER)
+  @Singleton
+  ModuleRunner stateManagerModuleRunner(StateManager stateManager) {
+    return new ModuleRunner() {
+      @Override
+      public void start() {
+        // no-op
+      }
+
+      @Override
+      public void stop() {
+        stateManager.shutdown();
+      }
+    };
   }
 }

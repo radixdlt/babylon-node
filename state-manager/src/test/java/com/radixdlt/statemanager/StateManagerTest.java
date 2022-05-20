@@ -86,5 +86,8 @@ public final class StateManagerTest {
 
     stateManagerNode1.insertTransaction(1L, new byte[] {1, 2, 3});
     assertArrayEquals(new byte[] {1, 2, 3}, stateManagerNode1.getTransactionAtStateVersion(1L));
+
+    stateManagerNode1.shutdown();
+    stateManagerNode2.shutdown();
   }
 }

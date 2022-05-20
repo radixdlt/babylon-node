@@ -91,4 +91,6 @@ public final class StateManagerRustInterop {
       RustStateRef rustStateRef, long stateVersion, byte[] transactionBytes);
 
   static native byte[] getTransactionAtStateVersion(RustStateRef rustStateRef, long stateVersion);
+
+  static native void cleanup(RustStateRef rustStateRef);
 }

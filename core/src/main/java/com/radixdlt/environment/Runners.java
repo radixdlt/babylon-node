@@ -70,6 +70,7 @@ public final class Runners {
   public static final String MEMPOOL = "mempool";
   public static final String CONSENSUS = "consensus";
   public static final String SYSTEM_INFO = "info";
+  public static final String STATE_MANAGER = "state_manager";
 
   private Runners() {}
 }

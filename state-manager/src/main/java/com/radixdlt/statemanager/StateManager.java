@@ -67,6 +67,7 @@ package com.radixdlt.statemanager;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.statemanager.StateManagerRustInterop.RustStateRef;
+import java.util.Objects;
 
 public final class StateManager {
 
@@ -74,13 +75,15 @@ public final class StateManager {
     return new StateManager(new RustStateRef(self));
   }
 
-  private final RustStateRef rustStateRef;
+  private RustStateRef rustStateRef;
 
   private StateManager(RustStateRef rustStateRef) {
-    this.rustStateRef = rustStateRef;
+    this.rustStateRef = Objects.requireNonNull(rustStateRef);
   }
 
   public ECPublicKey getPublicKey() {
+    ensureValidStateRef();
+
     final var keyBytes = StateManagerRustInterop.getPublicKey(this.rustStateRef);
     try {
       return ECPublicKey.fromBytes(keyBytes);
@@ -90,10 +93,28 @@ public final class StateManager {
   }
 
   public void insertTransaction(long stateVersion, byte[] transactionBytes) {
+    ensureValidStateRef();
+
     StateManagerRustInterop.insertTransaction(this.rustStateRef, stateVersion, transactionBytes);
   }
 
   public byte[] getTransactionAtStateVersion(long stateVersion) {
+    ensureValidStateRef();
+
     return StateManagerRustInterop.getTransactionAtStateVersion(this.rustStateRef, stateVersion);
+  }
+
+  public void shutdown() {
+    StateManagerRustInterop.cleanup(this.rustStateRef);
+    this.rustStateRef = null;
+  }
+
+  private void ensureValidStateRef() {
+    // Having a strange null refs errors from the JNI call might not be obvious to debug
+    // so better to check here if we're trying to access the state manager
+    // after it's been shut down.
+    if (this.rustStateRef == null) {
+      throw new IllegalStateException("StateManager has been shut down");
+    }
   }
 }
