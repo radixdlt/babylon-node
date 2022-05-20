@@ -72,10 +72,9 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.harness.simulation.network.SimulationNetwork.ChannelCommunication;
 import io.reactivex.rxjava3.observers.TestObserver;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Map;
 
 public class SimulationNetworkTest {
   private BFTNode node1;
