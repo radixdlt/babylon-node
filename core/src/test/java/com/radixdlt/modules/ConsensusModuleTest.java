@@ -64,7 +64,6 @@
 
 package com.radixdlt.modules;
 
-import static com.radixdlt.crypto.ECDSASignature.zeroSignature;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -156,6 +155,9 @@ public class ConsensusModuleTest {
 
   private Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 
+  private ECKeyPair validatorKeyPair;
+
+  private BFTNode validatorBftNode;
   private BFTConfiguration bftConfiguration;
 
   private ECKeyPair ecKeyPair;
@@ -170,8 +172,10 @@ public class ConsensusModuleTest {
     var hashedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
     var qc =
         QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(accumulatorState, null, 0));
+    this.validatorKeyPair = ECKeyPair.generateNew();
+    this.validatorBftNode = BFTNode.create(this.validatorKeyPair.getPublicKey());
     var validatorSet =
-        BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
+        BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorBftNode, UInt256.ONE)));
     var vertexStoreState =
         VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis, Optional.empty(), hasher);
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
@@ -234,6 +238,7 @@ public class ConsensusModuleTest {
         bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
         bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
         bind(BFTConfiguration.class).toInstance(bftConfiguration);
+        bind(BFTValidatorSet.class).toInstance(bftConfiguration.getValidatorSet());
         LedgerProof proof = mock(LedgerProof.class);
         when(proof.getView()).thenReturn(View.genesis());
         bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(proof);
@@ -263,14 +268,15 @@ public class ConsensusModuleTest {
   }
 
   private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(
-      QuorumCertificate parent, BFTNode bftNode) {
-    return createNextVertex(parent, bftNode, Transaction.create(new byte[] {0}));
+      QuorumCertificate parent, ECKeyPair proposerKeyPair) {
+    return createNextVertex(parent, proposerKeyPair, Transaction.create(new byte[] {0}));
   }
 
   private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(
-      QuorumCertificate parent, BFTNode bftNode, Transaction transaction) {
+      QuorumCertificate parent, ECKeyPair proposerKeyPair, Transaction txn) {
+    final var proposerBftNode = BFTNode.create(proposerKeyPair.getPublicKey());
     var unverifiedVertex =
-        UnverifiedVertex.create(parent, View.of(1), List.of(transaction), bftNode);
+        UnverifiedVertex.create(parent, View.of(1), List.of(txn), proposerBftNode);
     var hash = hasher.hash(unverifiedVertex);
     var verifiedVertex = new VerifiedVertex(unverifiedVertex, hash);
     var next =
@@ -278,12 +284,15 @@ public class ConsensusModuleTest {
             View.of(1),
             verifiedVertex.getId(),
             LedgerHeader.create(1, View.of(1), new AccumulatorState(1, HashUtils.zero256()), 1));
-    var voteData = new VoteData(next, parent.getProposed(), parent.getParent());
+    final var voteData = new VoteData(next, parent.getProposed(), parent.getParent());
+    final var timestamp = 1;
+    final var voteDataHash = Vote.getHashOfData(hasher, voteData, timestamp);
+    final var qcSignature = proposerKeyPair.sign(voteDataHash);
     var unsyncedQC =
         new QuorumCertificate(
             voteData,
             new TimestampedECDSASignatures(
-                Map.of(bftNode, TimestampedECDSASignature.from(1, zeroSignature()))));
+                Map.of(proposerBftNode, TimestampedECDSASignature.from(timestamp, qcSignature))));
 
     return Pair.of(unsyncedQC, verifiedVertex);
   }
@@ -291,12 +300,11 @@ public class ConsensusModuleTest {
   @Test
   public void on_sync_request_timeout_should_retry() {
     // Arrange
-    BFTNode bftNode = BFTNode.random();
     QuorumCertificate parent = vertexStore.highQC().highestQC();
-    Pair<QuorumCertificate, VerifiedVertex> nextVertex = createNextVertex(parent, bftNode);
+    Pair<QuorumCertificate, VerifiedVertex> nextVertex = createNextVertex(parent, validatorKeyPair);
     HighQC unsyncedHighQC =
         HighQC.from(nextVertex.getFirst(), nextVertex.getFirst(), Optional.empty());
-    bftSync.syncToQC(unsyncedHighQC, bftNode);
+    bftSync.syncToQC(unsyncedHighQC, validatorBftNode);
     GetVerticesRequest request = new GetVerticesRequest(nextVertex.getSecond().getId(), 1);
     VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
 
@@ -307,7 +315,7 @@ public class ConsensusModuleTest {
     // Assert
     verify(requestSender, times(2))
         .dispatch(
-            eq(bftNode),
+            eq(validatorBftNode),
             argThat(
                 r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
   }
@@ -317,9 +325,9 @@ public class ConsensusModuleTest {
     // Arrange
     BFTNode bftNode = BFTNode.random();
     QuorumCertificate parent = vertexStore.highQC().highestQC();
-    Pair<QuorumCertificate, VerifiedVertex> nextVertex = createNextVertex(parent, bftNode);
+    Pair<QuorumCertificate, VerifiedVertex> nextVertex = createNextVertex(parent, validatorKeyPair);
     Pair<QuorumCertificate, VerifiedVertex> nextNextVertex =
-        createNextVertex(nextVertex.getFirst(), bftNode);
+        createNextVertex(nextVertex.getFirst(), validatorKeyPair);
     HighQC unsyncedHighQC =
         HighQC.from(nextNextVertex.getFirst(), nextNextVertex.getFirst(), Optional.empty());
     bftSync.syncToQC(unsyncedHighQC, bftNode);
@@ -340,32 +348,32 @@ public class ConsensusModuleTest {
 
   @Test
   public void bft_sync_should_sync_two_different_QCs_with_the_same_parent() {
-    final var bftNode1 = BFTNode.random();
-    final var bftNode2 = BFTNode.random();
     final var parentQc = vertexStore.highQC().highestQC();
-    final var parentVertex = createNextVertex(parentQc, bftNode1);
+    final var parentVertex = createNextVertex(parentQc, validatorKeyPair);
     final var proposedVertex1 =
-        createNextVertex(parentVertex.getFirst(), bftNode1, Transaction.create(new byte[] {1}));
+        createNextVertex(
+            parentVertex.getFirst(), validatorKeyPair, Transaction.create(new byte[] {1}));
     final var proposedVertex2 =
-        createNextVertex(parentVertex.getFirst(), bftNode2, Transaction.create(new byte[] {2}));
+        createNextVertex(
+            parentVertex.getFirst(), validatorKeyPair, Transaction.create(new byte[] {2}));
     final var unsyncedHighQC1 =
         HighQC.from(proposedVertex1.getFirst(), proposedVertex1.getFirst(), Optional.empty());
     final var unsyncedHighQC2 =
         HighQC.from(proposedVertex2.getFirst(), proposedVertex2.getFirst(), Optional.empty());
 
-    bftSync.syncToQC(unsyncedHighQC1, bftNode1);
-    bftSync.syncToQC(unsyncedHighQC2, bftNode2);
+    bftSync.syncToQC(unsyncedHighQC1, validatorBftNode);
+    bftSync.syncToQC(unsyncedHighQC2, validatorBftNode);
 
     nothrowSleep(100);
     final var response1 = new GetVerticesResponse(ImmutableList.of(proposedVertex1.getSecond()));
-    bftSync.responseProcessor().process(bftNode1, response1);
+    bftSync.responseProcessor().process(validatorBftNode, response1);
 
     final var response2 = new GetVerticesResponse(ImmutableList.of(proposedVertex2.getSecond()));
-    bftSync.responseProcessor().process(bftNode2, response2);
+    bftSync.responseProcessor().process(validatorBftNode, response2);
 
     verify(requestSender, times(1))
         .dispatch(
-            eq(bftNode1),
+            eq(validatorBftNode),
             argThat(
                 r ->
                     r.getCount() == 1
@@ -373,7 +381,7 @@ public class ConsensusModuleTest {
 
     verify(requestSender, times(1))
         .dispatch(
-            eq(bftNode2),
+            eq(validatorBftNode),
             argThat(
                 r ->
                     r.getCount() == 1

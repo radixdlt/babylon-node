@@ -336,12 +336,13 @@ public class EpochsConsensusModule extends AbstractModule {
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       SystemCounters counters,
       Hasher hasher) {
-    return (vertexStore, pacemakerState, configuration) ->
+    return (safetyRules, vertexStore, pacemakerState, configuration) ->
         new BFTSync(
             self,
             syncRequestRateLimiter,
             vertexStore,
             hasher,
+            safetyRules,
             pacemakerState,
             Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
             requestSender,

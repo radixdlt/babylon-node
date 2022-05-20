@@ -77,6 +77,7 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hasher;
 import java.util.Optional;
@@ -90,6 +91,7 @@ public class BFTEventVerifierTest {
   private Hasher hasher;
   private HashVerifier verifier;
   private BFTEventVerifier eventVerifier;
+  private SafetyRules safetyRules;
 
   @Before
   public void setup() {
@@ -97,7 +99,9 @@ public class BFTEventVerifierTest {
     this.forwardTo = mock(BFTEventProcessor.class);
     this.hasher = mock(Hasher.class);
     this.verifier = mock(HashVerifier.class);
-    this.eventVerifier = new BFTEventVerifier(validatorSet, forwardTo, hasher, verifier);
+    this.safetyRules = mock(SafetyRules.class);
+    this.eventVerifier =
+        new BFTEventVerifier(validatorSet, forwardTo, hasher, verifier, safetyRules);
   }
 
   @Test
@@ -128,6 +132,7 @@ public class BFTEventVerifierTest {
     when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
     when(validatorSet.containsNode(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), any())).thenReturn(true);
+    when(safetyRules.verifyHighQcAgainstTheValidatorSet(any())).thenReturn(true);
     eventVerifier.processProposal(proposal);
     verify(forwardTo, times(1)).processProposal(eq(proposal));
   }
@@ -170,6 +175,7 @@ public class BFTEventVerifierTest {
     when(validatorSet.containsNode(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), eq(voteSignature))).thenReturn(true);
     when(verifier.verify(any(), any(), eq(timeoutSignature))).thenReturn(true);
+    when(safetyRules.verifyHighQcAgainstTheValidatorSet(any())).thenReturn(true);
     eventVerifier.processVote(vote);
     verify(forwardTo, times(1)).processVote(eq(vote));
   }

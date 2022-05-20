@@ -72,6 +72,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.harness.simulation.network.SimulationNetwork.ChannelCommunication;
 import io.reactivex.rxjava3.observers.TestObserver;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -85,7 +86,7 @@ public class SimulationNetworkTest {
   public void setup() {
     node1 = mock(BFTNode.class);
     node2 = mock(BFTNode.class);
-    this.channelCommunication = new InOrderChannels(msg -> 50);
+    this.channelCommunication = new InOrderChannels(msg -> 50, Map.of());
     this.network = new SimulationNetwork(channelCommunication);
   }
 

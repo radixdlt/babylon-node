@@ -75,9 +75,11 @@ import static org.mockito.Mockito.when;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
@@ -103,13 +105,19 @@ public class SafetyRulesTest {
     when(hasher.hashBytes(any())).thenReturn(HashUtils.random256());
     HashSigner hashSigner = mock(HashSigner.class);
     when(hashSigner.sign(any(HashCode.class))).thenReturn(ECDSASignature.zeroSignature());
+
+    final var hashVerifier = mock(HashVerifier.class);
+    final var validatorSet = mock(BFTValidatorSet.class);
+
     this.safetyRules =
         new SafetyRules(
             mock(BFTNode.class),
             safetyState,
             mock(PersistentSafetyStateStore.class),
             hasher,
-            hashSigner);
+            hashSigner,
+            hashVerifier,
+            validatorSet);
   }
 
   @Test
@@ -134,13 +142,18 @@ public class SafetyRulesTest {
     Vote lastVote = mock(Vote.class);
     when(lastVote.getView()).thenReturn(View.of(1));
 
-    SafetyRules safetyRules =
+    final var hashVerifier = mock(HashVerifier.class);
+    final var validatorSet = mock(BFTValidatorSet.class);
+
+    final var safetyRules =
         new SafetyRules(
             BFTNode.random(),
             new SafetyState(View.of(2), Optional.of(lastVote)),
             mock(PersistentSafetyStateStore.class),
             hasher,
-            hashSigner);
+            hashSigner,
+            hashVerifier,
+            validatorSet);
 
     VerifiedVertex vertex = mock(VerifiedVertex.class);
     when(vertex.getView()).thenReturn(View.of(3));

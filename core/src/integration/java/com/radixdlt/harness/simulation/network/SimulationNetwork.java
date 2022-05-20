@@ -154,6 +154,10 @@ public class SimulationNetwork {
       return receiver;
     }
 
+    public MessageInTransit replaceContent(Object newContent) {
+      return new MessageInTransit(newContent, sender, receiver, delay, delayAfterPrevious);
+    }
+
     @Override
     public String toString() {
       return String.format(

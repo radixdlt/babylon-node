@@ -68,6 +68,7 @@ import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -75,7 +76,9 @@ import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.VoteTimeout;
@@ -94,6 +97,8 @@ public final class SafetyRules {
   private final BFTNode self;
   private final Hasher hasher;
   private final HashSigner signer;
+  private final HashVerifier hashVerifier;
+  private final BFTValidatorSet validatorSet;
   private final PersistentSafetyStateStore persistentSafetyStateStore;
 
   private SafetyState state;
@@ -104,12 +109,16 @@ public final class SafetyRules {
       SafetyState initialState,
       PersistentSafetyStateStore persistentSafetyStateStore,
       Hasher hasher,
-      HashSigner signer) {
+      HashSigner signer,
+      HashVerifier hashVerifier,
+      BFTValidatorSet validatorSet) {
     this.self = self;
     this.state = Objects.requireNonNull(initialState);
     this.persistentSafetyStateStore = Objects.requireNonNull(persistentSafetyStateStore);
     this.hasher = Objects.requireNonNull(hasher);
     this.signer = Objects.requireNonNull(signer);
+    this.hashVerifier = Objects.requireNonNull(hashVerifier);
+    this.validatorSet = Objects.requireNonNull(validatorSet);
   }
 
   private boolean checkLastVoted(VerifiedVertex proposedVertex) {
@@ -243,5 +252,73 @@ public final class SafetyRules {
 
   public Optional<Vote> getLastVote(View view) {
     return this.state.getLastVote().filter(lastVote -> lastVote.getView().equals(view));
+  }
+
+  public boolean verifyHighQcAgainstTheValidatorSet(HighQC highQC) {
+    return verifyQcAgainstTheValidatorSet(highQC.highestQC())
+        && verifyQcAgainstTheValidatorSet(highQC.highestCommittedQC())
+        && highQC.highestTC().stream().allMatch(this::verifyTcAgainstTheValidatorSet);
+  }
+
+  public boolean verifyQcAgainstTheValidatorSet(QuorumCertificate qc) {
+    if (isGenesisQc(qc)) {
+      // A genesis QC doesn't require any signatures
+      return true;
+    }
+
+    if (!areAllQcTimestampedSignaturesValid(qc)) {
+      logger.warn("QC {} contains invalid signatures", qc);
+      return false;
+    }
+
+    final var validationState = ValidationState.forValidatorSet(validatorSet);
+
+    final var allSignaturesAddedSuccessfully =
+        qc.getTimestampedSignatures().getSignatures().entrySet().stream()
+            .allMatch(
+                e ->
+                    validationState.addSignature(
+                        e.getKey(), e.getValue().timestamp(), e.getValue().signature()));
+
+    return allSignaturesAddedSuccessfully && validationState.complete();
+  }
+
+  private boolean isGenesisQc(QuorumCertificate qc) {
+    final var committedAndParentAndProposedAreTheSame =
+        qc.getCommitted()
+            .map(
+                committed -> qc.getProposed().equals(committed) && qc.getParent().equals(committed))
+            .orElse(false);
+
+    final var isGenesisView = qc.getProposed().getView().isGenesis();
+
+    return committedAndParentAndProposedAreTheSame && isGenesisView;
+  }
+
+  private boolean areAllQcTimestampedSignaturesValid(QuorumCertificate qc) {
+    final var voteData = qc.getVoteData();
+    return qc.getTimestampedSignatures().getSignatures().entrySet().stream()
+        .allMatch(
+            e -> {
+              final var nodePublicKey = e.getKey().getKey();
+              final var voteHash = Vote.getHashOfData(hasher, voteData, e.getValue().timestamp());
+              return hashVerifier.verify(nodePublicKey, voteHash, e.getValue().signature());
+            });
+  }
+
+  public boolean verifyTcAgainstTheValidatorSet(TimeoutCertificate tc) {
+    return tc.getSigners().allMatch(validatorSet::containsNode)
+        && areAllTcTimestampedSignaturesValid(tc);
+  }
+
+  private boolean areAllTcTimestampedSignaturesValid(TimeoutCertificate tc) {
+    final var voteTimeout = new VoteTimeout(tc.getView(), tc.getEpoch());
+    final var voteTimeoutHash = hasher.hash(voteTimeout);
+    return tc.getTimestampedSignatures().getSignatures().entrySet().stream()
+        .allMatch(
+            e -> {
+              final var nodePublicKey = e.getKey().getKey();
+              return hashVerifier.verify(nodePublicKey, voteTimeoutHash, e.getValue().signature());
+            });
   }
 }

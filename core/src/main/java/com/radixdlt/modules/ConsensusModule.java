@@ -257,12 +257,14 @@ public final class ConsensusModule extends AbstractModule {
       Random random,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Hasher hasher,
+      SafetyRules safetyRules,
       SystemCounters counters) {
     return new BFTSync(
         self,
         syncRequestRateLimiter,
         vertexStore,
         hasher,
+        safetyRules,
         pacemakerReducer,
         Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
         requestSender,

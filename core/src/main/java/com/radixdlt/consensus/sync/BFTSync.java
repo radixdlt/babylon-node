@@ -77,6 +77,7 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
 import com.radixdlt.consensus.bft.ViewVotingResult.FormedTC;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
+import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -160,6 +161,7 @@ public final class BFTSync implements BFTSyncer {
   private final BFTNode self;
   private final VertexStore vertexStore;
   private final Hasher hasher;
+  private final SafetyRules safetyRules;
   private final PacemakerReducer pacemakerReducer;
   private final Map<HashCode, SyncState> syncing = new HashMap<>();
   private final TreeMap<LedgerHeader, List<HashCode>> ledgerSyncing;
@@ -183,6 +185,7 @@ public final class BFTSync implements BFTSyncer {
       RateLimiter syncRequestRateLimiter,
       VertexStore vertexStore,
       Hasher hasher,
+      SafetyRules safetyRules,
       PacemakerReducer pacemakerReducer,
       Comparator<LedgerHeader> ledgerHeaderComparator,
       RemoteEventDispatcher<GetVerticesRequest> requestSender,
@@ -196,6 +199,7 @@ public final class BFTSync implements BFTSyncer {
     this.syncRequestRateLimiter = Objects.requireNonNull(syncRequestRateLimiter);
     this.vertexStore = vertexStore;
     this.hasher = Objects.requireNonNull(hasher);
+    this.safetyRules = Objects.requireNonNull(safetyRules);
     this.pacemakerReducer = pacemakerReducer;
     this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
     this.requestSender = requestSender;
@@ -513,6 +517,12 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private void processGetVerticesErrorResponse(BFTNode sender, GetVerticesErrorResponse response) {
+    if (!safetyRules.verifyHighQcAgainstTheValidatorSet(response.highQC())) {
+      // If the response is invalid we just ignore it and wait for the timeout event
+      log.warn("Received an invalid BFT sync error response. Ignoring.");
+      return;
+    }
+
     this.runOnThreads.add(Thread.currentThread().getName());
 
     // TODO: check response
@@ -545,9 +555,17 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private void processGetVerticesResponse(BFTNode sender, GetVerticesResponse response) {
-    this.runOnThreads.add(Thread.currentThread().getName());
+    final var allVerticesHaveValidQc =
+        response.getVertices().stream()
+            .allMatch(v -> safetyRules.verifyQcAgainstTheValidatorSet(v.getQC()));
 
-    // TODO: check response
+    if (!allVerticesHaveValidQc) {
+      // If the response is invalid we just ignore it and wait for the timeout event
+      log.warn("Received an invalid BFT sync response. Ignoring.");
+      return;
+    }
+
+    this.runOnThreads.add(Thread.currentThread().getName());
 
     log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 

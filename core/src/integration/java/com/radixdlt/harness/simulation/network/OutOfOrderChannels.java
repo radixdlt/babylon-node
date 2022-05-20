@@ -70,16 +70,23 @@ import com.radixdlt.harness.simulation.network.SimulationNetwork.ChannelCommunic
 import com.radixdlt.harness.simulation.network.SimulationNetwork.MessageInTransit;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /** Provides message ordering in a channel which does not necessarily need to be in order. */
 public class OutOfOrderChannels implements ChannelCommunication {
   private final LatencyProvider latencyProvider;
 
+  private final Map<Class<?>, Function<MessageInTransit, MessageInTransit>> messageModifiers;
+
   @Inject
-  public OutOfOrderChannels(LatencyProvider latencyProvider) {
+  public OutOfOrderChannels(
+      LatencyProvider latencyProvider,
+      Map<Class<?>, Function<MessageInTransit, MessageInTransit>> messageModifiers) {
     this.latencyProvider = Objects.requireNonNull(latencyProvider);
+    this.messageModifiers = Objects.requireNonNull(messageModifiers);
   }
 
   @Override
@@ -88,6 +95,9 @@ public class OutOfOrderChannels implements ChannelCommunication {
     return messages
         .map(msg -> msg.delayed(latencyProvider.nextLatency(msg)))
         .filter(msg -> msg.getDelay() >= 0)
+        .map(
+            msg ->
+                this.messageModifiers.getOrDefault(msg.getContent().getClass(), m -> m).apply(msg))
         .flatMap(
             msg ->
                 Observable.just(msg)

@@ -62,86 +62,106 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs;
+package com.radixdlt.integration.steady_state.simulation.consensus;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimeoutCertificate;
+import com.radixdlt.consensus.TimestampedECDSASignature;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkMessageModifiers;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import java.time.Duration;
-import java.util.Optional;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
+import com.radixdlt.harness.simulation.network.SimulationNetwork.MessageInTransit;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.assertj.core.api.AssertionsForClassTypes;
-import org.assertj.core.api.Condition;
 import org.junit.Test;
 
-public class RandomValidatorsTest {
-  private static final int numNodes = 50;
+public final class InvalidQcIsIgnoredTest {
 
-  private final Builder bftTestBuilder =
-      SimulationTest.builder()
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .pacemakerTimeout(5000)
-          .numNodes(numNodes)
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
-              ConsensusMonitors.timestampChecker(Duration.ofSeconds(5L)),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              ConsensusMonitors.epochCeilingView(View.of(100)),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered());
+  private static final Function<MessageInTransit, MessageInTransit>
+      REPLACE_PROPOSALS_QC_WITH_INVALID_SIGS =
+          msg -> {
+            final var proposal = (Proposal) msg.getContent();
+            final var modifiedProposal =
+                new Proposal(
+                    proposal.getVertex(),
+                    replaceSignaturesWithZero(proposal.highQC().highestCommittedQC()),
+                    proposal.getSignature(),
+                    proposal
+                        .highQC()
+                        .highestTC()
+                        .map(InvalidQcIsIgnoredTest::replaceSignaturesWithZero));
+            return msg.replaceContent(modifiedProposal);
+          };
 
-  private static Function<Long, IntStream> randomEpochToNodesMapper(
-      Function<Long, Random> randomSupplier) {
-    return epoch -> {
-      var indices = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
-      var random = randomSupplier.apply(epoch);
-      for (long i = 0; i < epoch; i++) {
-        random.nextInt(numNodes);
-      }
-      return IntStream.range(0, random.nextInt(numNodes) + 1)
-          .map(i -> indices.remove(random.nextInt(indices.size())));
-    };
+  private static final Function<MessageInTransit, MessageInTransit>
+      REPLACE_VOTES_QC_WITH_INVALID_SIGS =
+          msg -> {
+            final var vote = (Vote) msg.getContent();
+            final var modifiedVote =
+                new Vote(
+                    vote.getAuthor(),
+                    vote.getVoteData(),
+                    vote.getTimestamp(),
+                    vote.getSignature(),
+                    HighQC.from(
+                        replaceSignaturesWithZero(vote.highQC().highestQC()),
+                        replaceSignaturesWithZero(vote.highQC().highestCommittedQC()),
+                        vote.highQC()
+                            .highestTC()
+                            .map(InvalidQcIsIgnoredTest::replaceSignaturesWithZero)),
+                    vote.getTimeoutSignature());
+            return msg.replaceContent(modifiedVote);
+          };
+
+  private static TimeoutCertificate replaceSignaturesWithZero(TimeoutCertificate tc) {
+    return new TimeoutCertificate(
+        tc.getEpoch(), tc.getView(), replaceSignaturesWithZero(tc.getTimestampedSignatures()));
   }
 
-  private static Function<Long, IntStream> goodRandomEpochToNodesMapper() {
-    return randomEpochToNodesMapper(Random::new);
+  private static QuorumCertificate replaceSignaturesWithZero(QuorumCertificate qc) {
+    return new QuorumCertificate(
+        qc.getVoteData(), replaceSignaturesWithZero(qc.getTimestampedSignatures()));
   }
 
-  private static Function<Long, IntStream> badRandomEpochToNodesMapper() {
-    // random number generator which gives a different number per node
-    var random = new Random();
-    return randomEpochToNodesMapper(l -> random);
+  private static TimestampedECDSASignatures replaceSignaturesWithZero(
+      TimestampedECDSASignatures sigs) {
+    return new TimestampedECDSASignatures(
+        sigs.getSignatures().entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    e ->
+                        TimestampedECDSASignature.from(
+                            e.getValue().timestamp(), ECDSASignature.zeroSignature()))));
   }
 
   @Test
-  public void
-      given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
-    SimulationTest bftTest =
-        bftTestBuilder.ledgerAndEpochs(View.of(100), goodRandomEpochToNodesMapper()).build();
+  public void given_invalid_qc_signatures__then_should_never_make_progress() {
+    final var simulationTest =
+        SimulationTest.builder()
+            .networkModules(
+                NetworkOrdering.inOrder(),
+                NetworkLatencies.fixed(),
+                NetworkMessageModifiers.modifyProposals(REPLACE_PROPOSALS_QC_WITH_INVALID_SIGS),
+                NetworkMessageModifiers.modifyVotes(REPLACE_VOTES_QC_WITH_INVALID_SIGS))
+            .pacemakerTimeout(1000)
+            .addTestModules(ConsensusMonitors.noneCommitted())
+            .numNodes(3)
+            .build();
 
-    final var checkResults = bftTest.run().awaitCompletion();
+    final var checkResults = simulationTest.run().awaitCompletion();
     assertThat(checkResults)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-  }
-
-  @Test
-  public void given_nondeterministic_randomized_validator_sets__then_should_fail() {
-    SimulationTest bftTest =
-        bftTestBuilder.ledgerAndEpochs(View.of(100), badRandomEpochToNodesMapper()).build();
-
-    final var checkResults = bftTest.run().awaitCompletion();
-    assertThat(checkResults).hasValueSatisfying(new Condition<>(Optional::isPresent, "Has error"));
   }
 }

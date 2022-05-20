@@ -186,6 +186,6 @@ public final class BFTBuilder {
 
     BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(reducer, bftSyncer, viewUpdate);
 
-    return new BFTEventVerifier(validatorSet, preprocessor, hasher, verifier);
+    return new BFTEventVerifier(validatorSet, preprocessor, hasher, verifier, safetyRules);
   }
 }
