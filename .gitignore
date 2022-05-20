@@ -2,6 +2,9 @@
 build/
 .gradle/
 
+# rust stuff
+target/
+
 # eclipse stuff
 bin/
 .settings/
