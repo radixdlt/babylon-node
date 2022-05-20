@@ -78,7 +78,7 @@ public final class StateManager {
     System.loadLibrary("stateman");
   }
 
-  /* Stores Rust state across JNI calls.
+  /** Stores Rust state across JNI calls.
   Fields with "Ref" suffix are pointers to the Rust objects created and set on the Rust side
   via JNI env, and they should never be accessed in any other way.
   The remaining fields are read-only values (for now, but this might change) passed to Rust. */
