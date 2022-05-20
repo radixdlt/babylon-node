@@ -167,8 +167,8 @@ public final class LedgerProof {
   }
 
   /**
-   * This method should only be called on end-of-epoch Ledger Proofs. This returns the old epoch,
-   * not the new epoch.
+   * This returns the new epoch, after an epoch change. This method should only be called on
+   * end-of-epoch Ledger Proofs.
    */
   public long getNextEpoch() {
     if (!ledgerHeader.isEndOfEpoch()) {

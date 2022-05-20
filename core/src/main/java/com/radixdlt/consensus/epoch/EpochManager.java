@@ -150,7 +150,7 @@ public final class EpochManager {
       VertexStoreBFTSyncRequestProcessor requestProcessor,
       BFTSync initialBFTSync,
       RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
-      EpochChange initialEpoch,
+      EpochChange lastEpochChange,
       PacemakerFactory pacemakerFactory,
       VertexStoreFactory vertexStoreFactory,
       BFTSyncFactory bftSyncFactory,
@@ -162,7 +162,7 @@ public final class EpochManager {
       PacemakerTimeoutCalculator timeoutCalculator,
       PacemakerStateFactory pacemakerStateFactory,
       PersistentSafetyStateStore persistentSafetyStateStore) {
-    var isValidator = initialEpoch.getBFTConfiguration().getValidatorSet().containsNode(self);
+    var isValidator = lastEpochChange.getBFTConfiguration().getValidatorSet().containsNode(self);
     // TODO: these should all be removed
     if (!isValidator) {
       this.bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
@@ -184,7 +184,7 @@ public final class EpochManager {
         isValidator ? Set.of(initialBFTEventProcessor::processBFTRebuildUpdate) : Set.of();
 
     this.ledgerStatusUpdateDispatcher = requireNonNull(ledgerStatusUpdateDispatcher);
-    this.lastEpochChange = requireNonNull(initialEpoch);
+    this.lastEpochChange = requireNonNull(lastEpochChange);
     this.self = requireNonNull(self);
     this.pacemakerFactory = requireNonNull(pacemakerFactory);
     this.vertexStoreFactory = requireNonNull(vertexStoreFactory);
