@@ -83,6 +83,8 @@ public final class StateManagerRustInterop {
     }
   }
 
+  private StateManagerRustInterop() {}
+
   static native void init(RustStateRef rustStateRef, byte[] publicKey);
 
   static native byte[] getPublicKey(RustStateRef rustStateRef);
