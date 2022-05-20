@@ -443,7 +443,7 @@ public final class RadixEngineStateComputer implements StateComputer {
                         new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
                     var nextLedgerHeader =
                         LedgerHeader.create(
-                            header.getEpoch() + 1,
+                            header.getNextEpoch(),
                             View.genesis(),
                             header.getAccumulatorState(),
                             header.timestamp());

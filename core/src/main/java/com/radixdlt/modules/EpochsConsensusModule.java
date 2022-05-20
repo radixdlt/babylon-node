@@ -245,7 +245,7 @@ public class EpochsConsensusModule extends AbstractModule {
       EpochChange initialEpoch) {
     return localTimeout -> {
       Epoched<ScheduledLocalTimeout> epochTimeout =
-          Epoched.from(initialEpoch.getEpoch(), localTimeout);
+          Epoched.from(initialEpoch.getNextEpoch(), localTimeout);
       localTimeoutSender.dispatch(epochTimeout, localTimeout.millisecondsWaitTime());
     };
   }
@@ -255,7 +255,8 @@ public class EpochsConsensusModule extends AbstractModule {
   private EventProcessor<ViewUpdate> initialViewUpdateSender(
       EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher, EpochChange initialEpoch) {
     return viewUpdate -> {
-      EpochViewUpdate epochViewUpdate = new EpochViewUpdate(initialEpoch.getEpoch(), viewUpdate);
+      EpochViewUpdate epochViewUpdate =
+          new EpochViewUpdate(initialEpoch.getNextEpoch(), viewUpdate);
       epochViewUpdateEventDispatcher.dispatch(epochViewUpdate);
     };
   }
@@ -279,7 +280,7 @@ public class EpochsConsensusModule extends AbstractModule {
       EpochChange initialEpoch, EventDispatcher<EpochLocalTimeoutOccurrence> timeoutDispatcher) {
     return timeoutOccurrence ->
         timeoutDispatcher.dispatch(
-            new EpochLocalTimeoutOccurrence(initialEpoch.getEpoch(), timeoutOccurrence));
+            new EpochLocalTimeoutOccurrence(initialEpoch.getNextEpoch(), timeoutOccurrence));
   }
 
   @Provides

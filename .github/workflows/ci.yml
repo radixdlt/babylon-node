@@ -69,11 +69,12 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Run steady-state integration tests
-        # Adding --info outputs application logs, which is useful
-        #   for debugging failures where the node calls System.exit(X), which appear
-        #   in the build logs as something like:
+        # If you need better logging, you should add --info to the below command to output application logs.
+        #   This is useful to debug failures caused by an uncaught exception.
+        #   In this case, the node calls System.exit(X), which appear in the integration test logs
+        #   as something like:
         # "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
-        run: ./gradlew runSteadyStateIntegrationTests --refresh-dependencies --info
+        run: ./gradlew runSteadyStateIntegrationTests --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
     runs-on: ubuntu-20.04
@@ -94,8 +95,9 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Run targeted integration tests
-        # Adding --info outputs application logs, which is useful
-        #   for debugging failures where the node calls System.exit(X), which appear
-        #   in the build logs as something like:
+        # If you need better logging, you should add --info to the below command to output application logs.
+        #   This is useful to debug failures caused by an uncaught exception.
+        #   In this case, the node calls System.exit(X), which appear in the integration test logs
+        #   as something like:
         # "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
-        run: ./gradlew runTargetedIntegrationTests --refresh-dependencies --info
+        run: ./gradlew runTargetedIntegrationTests --refresh-dependencies

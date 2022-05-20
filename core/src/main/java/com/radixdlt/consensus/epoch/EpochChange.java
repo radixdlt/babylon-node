@@ -86,8 +86,8 @@ public final class EpochChange {
     return bftConfiguration.getVertexStoreState().getRootHeader();
   }
 
-  public long getEpoch() {
-    return proof.getEpoch() + 1;
+  public long getNextEpoch() {
+    return proof.getNextEpoch();
   }
 
   public LedgerProof getProof() {

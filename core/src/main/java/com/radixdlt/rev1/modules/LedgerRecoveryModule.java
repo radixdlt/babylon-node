@@ -98,7 +98,8 @@ public final class LedgerRecoveryModule extends AbstractModule {
   @Singleton
   @LastStoredProof
   LedgerProof lastStoredProof(
-      RadixEngine<LedgerAndBFTProof> radixEngine, // TODO: Remove
+      // TODO: Remove this by moving the genesis committedDispatcher.dispatch to getRadixEngine
+      RadixEngine<LedgerAndBFTProof> radixEngine,
       CommittedReader committedReader,
       @Genesis VerifiedTxnsAndProof genesis,
       EventDispatcher<REOutput> committedDispatcher // FIXME: this is hack so client can get genesis
@@ -168,7 +169,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
     var verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
     var nextLedgerHeader =
         LedgerHeader.create(
-            lastEpochProof.getEpoch() + 1,
+            lastEpochProof.getNextEpoch(),
             View.genesis(),
             lastEpochProof.getAccumulatorState(),
             lastEpochProof.timestamp());
@@ -187,7 +188,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
         .filter(
             vertexStoreState ->
                 vertexStoreState.getHighQC().highestQC().getEpoch()
-                    == lastEpochProof.getEpoch() + 1)
+                    == lastEpochProof.getNextEpoch())
         .map(state -> serializedToVerifiedVertexStore(state, hasher))
         .orElseGet(() -> epochProofToGenesisVertexStore(lastEpochProof, hasher));
   }

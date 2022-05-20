@@ -73,7 +73,6 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.NextCandidateForkPostProcessor;
 import com.radixdlt.rev1.NextFixedEpochForkPostProcessor;
-import com.radixdlt.sync.CommittedReader;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.Set;
@@ -229,10 +228,9 @@ public final class Forks {
     }
   }
 
-  public void init(CommittedReader committedReader, ForksEpochStore forksEpochStore) {
+  public void init(long currentEpoch, ForksEpochStore forksEpochStore) {
     this.forksEpochStore = forksEpochStore;
     final var initialStoredForks = forksEpochStore.getStoredForks();
-    final var currentEpoch = committedReader.getLastProof().map(LedgerProof::getEpoch).orElse(0L);
 
     log.info(
         "Forks init [stored_forks: {}, configured_forks: {}]", initialStoredForks, forkConfigs());
@@ -430,11 +428,11 @@ public final class Forks {
       return false;
     }
 
-    if (ledgerAndBFTProof.getProof().getNextValidatorSet().isEmpty()) {
+    if (!ledgerAndBFTProof.getProof().isEndOfEpoch()) {
       return false;
     }
 
-    final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
+    final var nextEpoch = ledgerAndBFTProof.getProof().getNextEpoch();
     final var candidateForkId = CandidateForkVote.candidateForkId(candidateFork);
 
     final var maybeCurrentForkVotingResult =
@@ -463,7 +461,7 @@ public final class Forks {
       CandidateForkConfig candidateFork,
       LedgerProof ledgerProof,
       CloseableCursor<ForkVotingResult> forkVotingResultsCursor) {
-    final var nextEpoch = ledgerProof.getEpoch() + 1;
+    final var nextEpoch = ledgerProof.getNextEpoch();
     if (!forkWithinAllowedEpochRange(nextEpoch, candidateFork)) {
       return false;
     }

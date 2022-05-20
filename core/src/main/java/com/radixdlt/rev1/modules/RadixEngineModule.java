@@ -95,7 +95,10 @@ public class RadixEngineModule extends AbstractModule {
   @Singleton
   private CurrentForkView currentForkView(
       CommittedReader committedReader, ForksEpochStore forksEpochStore, Forks forks) {
-    forks.init(committedReader, forksEpochStore);
+    // We'd ideally like to take a @LastEpochProof dependency here instead of a
+    // CommittedReader, but the LedgerRecoveryModule has a RadixEngineModule dependency,
+    // so this doesn't work. Instead, let's create it ourselves here.
+    forks.init(getCurrentEpoch(committedReader), forksEpochStore);
 
     final var latestStoredForkNameOpt =
         forksEpochStore.getStoredForks().entrySet().stream()
@@ -106,6 +109,15 @@ public class RadixEngineModule extends AbstractModule {
         latestStoredForkNameOpt.flatMap(forks::getByName).orElseGet(forks::genesisFork);
 
     return new CurrentForkView(forks, initialForkConfig);
+  }
+
+  private long getCurrentEpoch(CommittedReader committedReader) {
+    var lastProofOptional = committedReader.getLastProof();
+    if (lastProofOptional.isEmpty()) {
+      return 0;
+    }
+    var lastProof = lastProofOptional.get();
+    return lastProof.isEndOfEpoch() ? lastProof.getNextEpoch() : lastProof.getEpoch();
   }
 
   @Provides

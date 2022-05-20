@@ -76,18 +76,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.rev1.LedgerAndBFTProof;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.Test;
 
 public final class ForksTest {
@@ -149,35 +143,35 @@ public final class ForksTest {
         Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
-                1L /* next epoch = 2; minEpoch <!= 2 <= maxEpoch */,
+                2L /* next epoch = 2; minEpoch <!= 2 <= maxEpoch */,
                 votesFor(2L, candidate, threshold.requiredStake())),
             emptyForksEpochStore));
     assertTrue(
         Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
-                2L /* next epoch = 3; minEpoch <= 3 <= maxEpoch */,
+                3L /* next epoch = 3; minEpoch <= 3 <= maxEpoch */,
                 votesFor(3L, candidate, threshold.requiredStake())),
             emptyForksEpochStore));
     assertTrue(
         Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
-                3L /* next epoch = 4; minEpoch <= 4 <= maxEpoch */,
+                4L /* next epoch = 4; minEpoch <= 4 <= maxEpoch */,
                 votesFor(4L, candidate, threshold.requiredStake())),
             emptyForksEpochStore));
     assertTrue(
         Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
-                4L /* next epoch = 5; minEpoch <= 5 <= maxEpoch */,
+                5L /* next epoch = 5; minEpoch <= 5 <= maxEpoch */,
                 votesFor(5L, candidate, threshold.requiredStake())),
             emptyForksEpochStore));
     assertFalse(
         Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
-                5L /* next epoch = 6; minEpoch <= 6 <!= maxEpoch */,
+                6L /* next epoch = 6; minEpoch <= 6 <!= maxEpoch */,
                 votesFor(6L, candidate, threshold.requiredStake())),
             emptyForksEpochStore));
   }
@@ -197,7 +191,7 @@ public final class ForksTest {
         Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
-                candidate.minEpoch() - 1,
+                candidate.minEpoch(),
                 votesFor(
                     candidate.minEpoch(),
                     candidate,
@@ -208,7 +202,7 @@ public final class ForksTest {
         Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
-                candidate.minEpoch() - 1,
+                candidate.minEpoch(),
                 votesFor(
                     candidate.minEpoch(),
                     candidate,
@@ -219,7 +213,7 @@ public final class ForksTest {
         Forks.shouldCandidateForkBeEnacted(
             candidate,
             proofForCandidate(
-                candidate.minEpoch() - 1,
+                candidate.minEpoch(),
                 votesFor(
                     candidate.minEpoch(),
                     candidate,
@@ -243,7 +237,7 @@ public final class ForksTest {
 
     final var proofAtEpoch15 =
         proofForCandidate(
-            15L, /* proof at epoch 15 */
+            16L, /* proof starting epoch 16 */
             votesFor(16L /* contains votes for epoch 16 */, candidate, threshold.requiredStake()));
 
     assertFalse(Forks.shouldCandidateForkBeEnacted(candidate, proofAtEpoch15, forksEpochStore));
@@ -283,14 +277,15 @@ public final class ForksTest {
         new ForkVotingResult(14L, candidateForkId, threshold.requiredStake()));
     forksEpochStore1.storeForkVotingResult(
         new ForkVotingResult(15L, candidateForkId, (short) (threshold.requiredStake() - 1)));
-    final var proofAtEpoch15 =
+    final var proofStartingEpoch16 =
         proofForCandidate(
-            15L, /* Proof at epoch 15 */
+            16L, /* Proof starting epoch 16 */
             votesFor(16L /* Contains votes for epoch 16 */, candidate, threshold.requiredStake()));
 
     // Votes for epoch 13, 14, gap at epoch 15, and then another vote at epoch 16.
     // The gap should reset the counter, so the fork shouldn't be enacted.
-    assertFalse(Forks.shouldCandidateForkBeEnacted(candidate, proofAtEpoch15, forksEpochStore1));
+    assertFalse(
+        Forks.shouldCandidateForkBeEnacted(candidate, proofStartingEpoch16, forksEpochStore1));
 
     final var forksEpochStore2 = new InMemoryForksEpochStore(new InMemoryForksEpochStore.Store());
     forksEpochStore2.storeForkVotingResult(
@@ -303,13 +298,14 @@ public final class ForksTest {
         new ForkVotingResult(16L, candidateForkId, threshold.requiredStake()));
     forksEpochStore2.storeForkVotingResult(
         new ForkVotingResult(17L, candidateForkId, threshold.requiredStake()));
-    final var proofAtEpoch17 =
+    final var proofStartingEpoch18 =
         proofForCandidate(
-            17L, /* Proof at epoch 17 */
+            18L, /* Proof starting epoch 18 */
             votesFor(18L /* Contains votes for epoch 18 */, candidate, threshold.requiredStake()));
 
     // Votes for epoch 13, 14, gap at epoch 15, and then three consecutive votes in e16, e17 and e18
-    assertTrue(Forks.shouldCandidateForkBeEnacted(candidate, proofAtEpoch17, forksEpochStore2));
+    assertTrue(
+        Forks.shouldCandidateForkBeEnacted(candidate, proofStartingEpoch18, forksEpochStore2));
   }
 
   @Test
@@ -327,24 +323,21 @@ public final class ForksTest {
 
     final var forksEpochStore = new InMemoryForksEpochStore(new InMemoryForksEpochStore.Store());
 
-    final var proofAtEpoch15 =
+    final var proofStartingEpoch16 =
         proofForCandidate(
-            15L, /* proof at epoch 15 */
+            16L, /* proof at epoch 16 */
             votesFor(16L /* contains votes for epoch 16 */, candidate, threshold.requiredStake()));
 
     forksEpochStore.storeForkVotingResult(new ForkVotingResult(13L, candidateForkId, (short) 7500));
-    assertTrue(Forks.shouldCandidateForkBeEnacted(candidate, proofAtEpoch15, forksEpochStore));
+    assertTrue(
+        Forks.shouldCandidateForkBeEnacted(candidate, proofStartingEpoch16, forksEpochStore));
   }
 
   private LedgerAndBFTProof proofForCandidate(
-      long epoch, ImmutableSet<ForkVotingResult> forksVotingResults) {
+      long nextEpoch, ImmutableSet<ForkVotingResult> forksVotingResults) {
     final var ledgerProof = mock(LedgerProof.class);
-    // value is not used, but optional needs to be present in proof (test for epoch boundary)
-    final var validatorSet =
-        BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
-    when(ledgerProof.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
-
-    when(ledgerProof.getEpoch()).thenReturn(epoch);
+    when(ledgerProof.isEndOfEpoch()).thenReturn(true);
+    when(ledgerProof.getNextEpoch()).thenReturn(nextEpoch);
 
     return LedgerAndBFTProof.create(ledgerProof).withForksVotingResults(forksVotingResults);
   }
@@ -364,19 +357,16 @@ public final class ForksTest {
 
     final var forks = Forks.create(Set.of(fork1, fork2));
 
-    final var committedReader = mock(CommittedReader.class);
     final var forksEpochStore = mock(ForksEpochStore.class);
 
     // latest epoch is 11, so fork2 should be stored...
-    final var proof = proofAtEpoch(11L);
-    when(committedReader.getLastProof()).thenReturn(Optional.of(proof));
+    final var currentEpoch = 11L;
 
     // ...but it isn't
     when(forksEpochStore.getStoredForks()).thenReturn(ImmutableMap.of(0L, fork1.name()));
 
     final var exception =
-        assertThrows(
-            IllegalStateException.class, () -> forks.init(committedReader, forksEpochStore));
+        assertThrows(IllegalStateException.class, () -> forks.init(currentEpoch, forksEpochStore));
 
     assertTrue(exception.getMessage().toLowerCase().contains("forks inconsistency"));
   }
@@ -388,11 +378,9 @@ public final class ForksTest {
 
     final var forks = Forks.create(Set.of(fork1));
 
-    final var committedReader = mock(CommittedReader.class);
     final var forksEpochStore = mock(ForksEpochStore.class);
 
-    final var proof = proofAtEpoch(11L);
-    when(committedReader.getLastProof()).thenReturn(Optional.of(proof));
+    final var currentEpoch = 11L;
 
     when(forksEpochStore.getStoredForks())
         .thenReturn(
@@ -403,8 +391,7 @@ public final class ForksTest {
                 "fork2" /* fork2 was executed at epoch 10 according to the ledger */));
 
     final var exception =
-        assertThrows(
-            IllegalStateException.class, () -> forks.init(committedReader, forksEpochStore));
+        assertThrows(IllegalStateException.class, () -> forks.init(currentEpoch, forksEpochStore));
 
     assertTrue(exception.getMessage().toLowerCase().contains("forks inconsistency"));
   }
@@ -465,11 +452,5 @@ public final class ForksTest {
     final var forksEpochStore = new InMemoryForksEpochStore(new InMemoryForksEpochStore.Store());
     forkVotingResults.forEach(forksEpochStore::storeForkVotingResult);
     return forksEpochStore;
-  }
-
-  private LedgerProof proofAtEpoch(long epoch) {
-    final var ledgerProof = mock(LedgerProof.class);
-    when(ledgerProof.getEpoch()).thenReturn(epoch);
-    return ledgerProof;
   }
 }

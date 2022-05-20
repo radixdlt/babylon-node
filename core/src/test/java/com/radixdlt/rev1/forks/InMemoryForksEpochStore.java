@@ -98,10 +98,11 @@ public final class InMemoryForksEpochStore implements ForksEpochStore {
         final var ledgerAndBftProof =
             (LedgerAndBFTProof) update.getStateComputerOutput().get(LedgerAndBFTProof.class);
         if (ledgerAndBftProof != null) {
-          final var nextEpoch = update.getTail().getEpoch() + 1;
           ledgerAndBftProof
               .getNextForkName()
-              .ifPresent(nextForkName -> this.store.storedForks.put(nextEpoch, nextForkName));
+              .ifPresent(
+                  nextForkName ->
+                      this.store.storedForks.put(update.getTail().getNextEpoch(), nextForkName));
         }
       }
     };

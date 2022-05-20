@@ -126,7 +126,7 @@ public final class EpochManager {
   private final BFTFactory bftFactory;
   private final PacemakerStateFactory pacemakerStateFactory;
 
-  private EpochChange currentEpoch;
+  private EpochChange lastEpochChange;
 
   private EventProcessor<VertexRequestTimeout> syncTimeoutProcessor;
   private EventProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
@@ -150,7 +150,7 @@ public final class EpochManager {
       VertexStoreBFTSyncRequestProcessor requestProcessor,
       BFTSync initialBFTSync,
       RemoteEventDispatcher<LedgerStatusUpdate> ledgerStatusUpdateDispatcher,
-      EpochChange initialEpoch,
+      EpochChange lastEpochChange,
       PacemakerFactory pacemakerFactory,
       VertexStoreFactory vertexStoreFactory,
       BFTSyncFactory bftSyncFactory,
@@ -162,7 +162,7 @@ public final class EpochManager {
       PacemakerTimeoutCalculator timeoutCalculator,
       PacemakerStateFactory pacemakerStateFactory,
       PersistentSafetyStateStore persistentSafetyStateStore) {
-    var isValidator = initialEpoch.getBFTConfiguration().getValidatorSet().containsNode(self);
+    var isValidator = lastEpochChange.getBFTConfiguration().getValidatorSet().containsNode(self);
     // TODO: these should all be removed
     if (!isValidator) {
       this.bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
@@ -184,7 +184,7 @@ public final class EpochManager {
         isValidator ? Set.of(initialBFTEventProcessor::processBFTRebuildUpdate) : Set.of();
 
     this.ledgerStatusUpdateDispatcher = requireNonNull(ledgerStatusUpdateDispatcher);
-    this.currentEpoch = requireNonNull(initialEpoch);
+    this.lastEpochChange = requireNonNull(lastEpochChange);
     this.self = requireNonNull(self);
     this.pacemakerFactory = requireNonNull(pacemakerFactory);
     this.vertexStoreFactory = requireNonNull(vertexStoreFactory);
@@ -201,7 +201,7 @@ public final class EpochManager {
   }
 
   private void updateEpochState() {
-    var config = this.currentEpoch.getBFTConfiguration();
+    var config = this.lastEpochChange.getBFTConfiguration();
     var validatorSet = config.getValidatorSet();
 
     if (!validatorSet.containsNode(self)) {
@@ -216,10 +216,10 @@ public final class EpochManager {
       return;
     }
 
-    final var nextEpoch = this.currentEpoch.getEpoch();
+    final var nextEpoch = this.lastEpochChange.getNextEpoch();
 
     // Config
-    final var bftConfiguration = this.currentEpoch.getBFTConfiguration();
+    final var bftConfiguration = this.lastEpochChange.getBFTConfiguration();
     final var proposerElection = bftConfiguration.getProposerElection();
     final var highQC = bftConfiguration.getVertexStoreState().getHighQC();
     final var view = highQC.highestQC().getView().next();
@@ -272,7 +272,7 @@ public final class EpochManager {
   }
 
   private long currentEpoch() {
-    return this.currentEpoch.getEpoch();
+    return this.lastEpochChange.getNextEpoch();
   }
 
   public EventProcessor<LedgerUpdate> epochsLedgerUpdateEventProcessor() {
@@ -291,17 +291,17 @@ public final class EpochManager {
 
   private void processEpochChange(EpochChange epochChange) {
     // Sanity check
-    if (epochChange.getEpoch() != this.currentEpoch() + 1) {
+    if (epochChange.getNextEpoch() != this.currentEpoch() + 1) {
       // safe, as message is internal
       throw new IllegalStateException(
-          "Bad Epoch change: " + epochChange + " current epoch: " + this.currentEpoch);
+          "Bad Epoch change: " + epochChange + " current epoch: " + this.lastEpochChange);
     }
 
-    if (this.currentEpoch.getBFTConfiguration().getValidatorSet().containsNode(this.self)) {
+    if (this.lastEpochChange.getBFTConfiguration().getValidatorSet().containsNode(this.self)) {
       final var currentAndNextValidators =
           ImmutableSet.<BFTValidator>builder()
               .addAll(epochChange.getBFTConfiguration().getValidatorSet().getValidators())
-              .addAll(this.currentEpoch.getBFTConfiguration().getValidatorSet().getValidators())
+              .addAll(this.lastEpochChange.getBFTConfiguration().getValidatorSet().getValidators())
               .build();
 
       final var ledgerStatusUpdate = LedgerStatusUpdate.create(epochChange.getGenesisHeader());
@@ -312,13 +312,13 @@ public final class EpochManager {
       }
     }
 
-    this.currentEpoch = epochChange;
+    this.lastEpochChange = epochChange;
     this.updateEpochState();
     this.bftEventProcessor.start();
 
     // Execute any queued up consensus events
     final List<ConsensusEvent> queuedEventsForEpoch =
-        queuedEvents.getOrDefault(epochChange.getEpoch(), Collections.emptyList());
+        queuedEvents.getOrDefault(epochChange.getNextEpoch(), Collections.emptyList());
     var highView =
         queuedEventsForEpoch.stream()
             .map(ConsensusEvent::getView)
@@ -329,7 +329,7 @@ public final class EpochManager {
         .filter(e -> e.getView().equals(highView))
         .forEach(this::processConsensusEventInternal);
 
-    queuedEvents.remove(epochChange.getEpoch());
+    queuedEvents.remove(epochChange.getNextEpoch());
   }
 
   private void processConsensusEventInternal(ConsensusEvent consensusEvent) {

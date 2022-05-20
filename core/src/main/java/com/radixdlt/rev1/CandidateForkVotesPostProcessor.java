@@ -137,7 +137,7 @@ public final class CandidateForkVotesPostProcessor implements PostProcessor<Ledg
   private ImmutableSet<ForkVotingResult> prepareForksVotingResults(
       EngineStore.EngineStoreInTransaction<LedgerAndBFTProof> engineStore,
       LedgerAndBFTProof ledgerAndBFTProof) {
-    final var nextEpoch = ledgerAndBFTProof.getProof().getEpoch() + 1;
+    final var nextEpoch = ledgerAndBFTProof.getProof().getNextEpoch();
     final var validatorSet = ledgerAndBFTProof.getProof().getNextValidatorSet().orElseThrow();
     final var totalPower = validatorSet.getTotalPower();
     final var totalPowerVotedMap = totalStakePowerVotedByFork(engineStore, validatorSet);
