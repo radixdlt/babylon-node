@@ -145,7 +145,7 @@ public final class RxEnvironmentModule extends AbstractModule {
       Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers,
       Set<StartProcessorOnRunner> startProcessors) {
     final var runnerName = Runners.CONSENSUS;
-    final var builder = ModuleRunnerImpl.builder();
+    final var builder = RxModuleRunnerImpl.builder();
     addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
     addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
     addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
@@ -159,7 +159,7 @@ public final class RxEnvironmentModule extends AbstractModule {
   public ModuleRunner systemInfoRunner(
       @Self String name, Set<EventProcessorOnRunner<?>> processors, RxEnvironment rxEnvironment) {
     final var runnerName = Runners.SYSTEM_INFO;
-    final var builder = ModuleRunnerImpl.builder();
+    final var builder = RxModuleRunnerImpl.builder();
     addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
     return builder.build("SystemInfo " + name);
   }
@@ -175,7 +175,7 @@ public final class RxEnvironmentModule extends AbstractModule {
       RxRemoteEnvironment rxRemoteEnvironment,
       Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers) {
     final var runnerName = Runners.MEMPOOL;
-    final var builder = ModuleRunnerImpl.builder();
+    final var builder = RxModuleRunnerImpl.builder();
     addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
     addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
     addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
@@ -194,7 +194,7 @@ public final class RxEnvironmentModule extends AbstractModule {
       Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers) {
 
     final var runnerName = Runners.SYNC;
-    final var builder = ModuleRunnerImpl.builder();
+    final var builder = RxModuleRunnerImpl.builder();
     addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
     addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
     addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
@@ -212,7 +212,7 @@ public final class RxEnvironmentModule extends AbstractModule {
       RxRemoteEnvironment rxRemoteEnvironment,
       Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers) {
     final var runnerName = Runners.P2P_NETWORK;
-    final var builder = ModuleRunnerImpl.builder();
+    final var builder = RxModuleRunnerImpl.builder();
     addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
     addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
     addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
@@ -223,7 +223,7 @@ public final class RxEnvironmentModule extends AbstractModule {
       Class<T> eventClass,
       RxRemoteEnvironment rxEnvironment,
       RemoteEventProcessorOnRunner<?> processor,
-      ModuleRunnerImpl.Builder builder) {
+      RxModuleRunnerImpl.Builder builder) {
     final Flowable<RemoteEvent<T>> events;
     if (processor.getRateLimitDelayMs() > 0) {
       events =
@@ -245,7 +245,7 @@ public final class RxEnvironmentModule extends AbstractModule {
       TypeLiteral<T> typeLiteral,
       RxEnvironment rxEnvironment,
       EventProcessorOnRunner<?> processor,
-      ModuleRunnerImpl.Builder builder) {
+      RxModuleRunnerImpl.Builder builder) {
     if (processor.getRateLimitDelayMs() > 0) {
       final Flowable<T> events =
           rxEnvironment
@@ -267,7 +267,7 @@ public final class RxEnvironmentModule extends AbstractModule {
       Class<T> eventClass,
       RxEnvironment rxEnvironment,
       EventProcessorOnRunner<?> processor,
-      ModuleRunnerImpl.Builder builder) {
+      RxModuleRunnerImpl.Builder builder) {
     if (processor.getRateLimitDelayMs() > 0) {
       final Flowable<T> events =
           rxEnvironment
@@ -289,7 +289,7 @@ public final class RxEnvironmentModule extends AbstractModule {
   private void addScheduledEventProducersOnRunner(
       Set<ScheduledEventProducerOnRunner<?>> allScheduledEventProducers,
       String runnerName,
-      ModuleRunnerImpl.Builder builder) {
+      RxModuleRunnerImpl.Builder builder) {
     allScheduledEventProducers.stream()
         .filter(p -> p.runnerName().equals(runnerName))
         .forEach(
@@ -304,7 +304,7 @@ public final class RxEnvironmentModule extends AbstractModule {
   private void addStartProcessorsOnRunner(
       Set<StartProcessorOnRunner> allStartProcessors,
       String runnerName,
-      ModuleRunnerImpl.Builder builder) {
+      RxModuleRunnerImpl.Builder builder) {
     allStartProcessors.stream()
         .filter(p -> p.runnerName().equals(runnerName))
         .map(StartProcessorOnRunner::processor)
@@ -315,7 +315,7 @@ public final class RxEnvironmentModule extends AbstractModule {
       Set<RemoteEventProcessorOnRunner<?>> allRemoteProcessors,
       RxRemoteEnvironment rxRemoteEnvironment,
       String runnerName,
-      ModuleRunnerImpl.Builder builder) {
+      RxModuleRunnerImpl.Builder builder) {
     final var remoteEventClasses =
         allRemoteProcessors.stream()
             .filter(p -> p.getRunnerName().equals(runnerName))
@@ -332,7 +332,7 @@ public final class RxEnvironmentModule extends AbstractModule {
       Set<EventProcessorOnRunner<?>> allProcessors,
       RxEnvironment rxEnvironment,
       String runnerName,
-      ModuleRunnerImpl.Builder builder) {
+      RxModuleRunnerImpl.Builder builder) {
     final var runnerProcessors =
         allProcessors.stream()
             .filter(p -> p.getRunnerName().equals(runnerName))

@@ -206,6 +206,8 @@ public final class RadixNodeModule extends AbstractModule {
     install(new PeerDiscoveryModule());
     install(new PeerLivenessMonitorModule());
 
+    install(new StateManagerModule());
+
     // API
     var bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);
     var port = properties.get("api.port", DEFAULT_CORE_PORT);

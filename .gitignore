@@ -2,6 +2,9 @@
 build/
 .gradle/
 
+# rust stuff
+target/
+
 # eclipse stuff
 bin/
 .settings/
@@ -27,6 +30,7 @@ api.users
 .env 
 *.swo
 *.swp
+*~
 # ignore jar files, but keep Gradle wrapper
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
@@ -52,3 +56,6 @@ package-lock.json
 **/resources/markdown
 
 configs/
+
+# rust
+target/

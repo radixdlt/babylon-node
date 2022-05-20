@@ -62,96 +62,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.statemanager;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.inject.*;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.mempool.REv2Mempool;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.rev2.REv2PreparedTxn;
-import com.radixdlt.transactions.Transaction;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.statemanager.StateManagerRustInterop.RustStateRef;
+import java.util.Objects;
 
-public class REv2StateComputerModule extends AbstractModule {
-  private static final Logger log = LogManager.getLogger();
+public final class StateManager {
 
-  @Override
-  protected void configure() {
-    bind(new TypeLiteral<Mempool<?>>() {})
-        .to(new TypeLiteral<Mempool<Transaction>>() {})
-        .in(Scopes.SINGLETON);
+  public static StateManager create(ECPublicKey self) {
+    return new StateManager(new RustStateRef(self));
   }
 
-  @Provides
-  @Singleton
-  private Mempool<Transaction> mempool(
-      SystemCounters systemCounters, Random random, @MempoolMaxSize int mempoolMaxSize) {
-    return new REv2Mempool(systemCounters, mempoolMaxSize, random);
+  private RustStateRef rustStateRef;
+
+  private StateManager(RustStateRef rustStateRef) {
+    this.rustStateRef = Objects.requireNonNull(rustStateRef);
   }
 
-  @Provides
-  @Singleton
-  private StateComputerLedger.StateComputer stateComputer(
-      Mempool<Transaction> mempool,
-      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-      SystemCounters counters) {
-    return new StateComputerLedger.StateComputer() {
-      @Override
-      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
-        mempoolAdd
-            .transactions()
-            .forEach(
-                txn -> {
-                  try {
-                    mempool.add(txn);
-                    counters.set(
-                        SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
-                  } catch (MempoolRejectedException e) {
-                    log.error(e);
-                  }
-                });
-      }
+  public ECPublicKey getPublicKey() {
+    ensureValidStateRef();
 
-      @Override
-      public List<Transaction> getNextTxnsFromMempool(
-          List<StateComputerLedger.PreparedTxn> prepared) {
-        return mempool.getTxns(1, List.of());
-      }
+    final var keyBytes = StateManagerRustInterop.getPublicKey(this.rustStateRef);
+    try {
+      return ECPublicKey.fromBytes(keyBytes);
+    } catch (PublicKeyException e) {
+      throw new IllegalStateException(e);
+    }
+  }
 
-      @Override
-      public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
-        return new StateComputerLedger.StateComputerResult(
-            vertex.getTxns().stream().map(REv2PreparedTxn::new).collect(Collectors.toList()),
-            Map.of());
-      }
+  public void insertTransaction(long stateVersion, byte[] transactionBytes) {
+    ensureValidStateRef();
 
-      @Override
-      public void commit(
-          VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-        mempool.committed(txnsAndProof.getTxns());
-        counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+    StateManagerRustInterop.insertTransaction(this.rustStateRef, stateVersion, transactionBytes);
+  }
 
-        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
-        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
-      }
-    };
+  public byte[] getTransactionAtStateVersion(long stateVersion) {
+    ensureValidStateRef();
+
+    return StateManagerRustInterop.getTransactionAtStateVersion(this.rustStateRef, stateVersion);
+  }
+
+  public void shutdown() {
+    StateManagerRustInterop.cleanup(this.rustStateRef);
+    this.rustStateRef = null;
+  }
+
+  private void ensureValidStateRef() {
+    // Having a strange null refs errors from the JNI call might not be obvious to debug
+    // so better to check here if we're trying to access the state manager
+    // after it's been shut down.
+    if (this.rustStateRef == null) {
+      throw new IllegalStateException("StateManager has been shut down");
+    }
   }
 }

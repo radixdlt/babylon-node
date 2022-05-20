@@ -90,7 +90,7 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class ModuleRunnerImpl implements ModuleRunner {
+public final class RxModuleRunnerImpl implements ModuleRunner {
   private static final Logger logger = LogManager.getLogger();
   private ScheduledExecutorService executorService;
   private final String threadName;
@@ -120,7 +120,7 @@ public final class ModuleRunnerImpl implements ModuleRunner {
     }
   }
 
-  private ModuleRunnerImpl(
+  private RxModuleRunnerImpl(
       String threadName,
       Set<StartProcessor> startProcessors, // TODO: combine with onStart
       List<Subscription<?>> subscriptions,
@@ -177,8 +177,8 @@ public final class ModuleRunnerImpl implements ModuleRunner {
       return this;
     }
 
-    public ModuleRunnerImpl build(String threadName) {
-      return new ModuleRunnerImpl(
+    public RxModuleRunnerImpl build(String threadName) {
+      return new RxModuleRunnerImpl(
           threadName,
           Set.copyOf(startProcessors),
           subscriptionsBuilder.build(),

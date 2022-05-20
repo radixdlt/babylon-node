@@ -62,95 +62,38 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.inject.*;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.mempool.REv2Mempool;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.rev2.REv2PreparedTxn;
-import com.radixdlt.transactions.Transaction;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.modules.ModuleRunner;
+import com.radixdlt.statemanager.StateManager;
 
-public class REv2StateComputerModule extends AbstractModule {
-  private static final Logger log = LogManager.getLogger();
-
-  @Override
-  protected void configure() {
-    bind(new TypeLiteral<Mempool<?>>() {})
-        .to(new TypeLiteral<Mempool<Transaction>>() {})
-        .in(Scopes.SINGLETON);
+public final class StateManagerModule extends AbstractModule {
+  @Provides
+  StateManager stateManager(@Self BFTNode self) {
+    return StateManager.create(self.getKey());
   }
 
-  @Provides
+  @ProvidesIntoMap
+  @StringMapKey(Runners.STATE_MANAGER)
   @Singleton
-  private Mempool<Transaction> mempool(
-      SystemCounters systemCounters, Random random, @MempoolMaxSize int mempoolMaxSize) {
-    return new REv2Mempool(systemCounters, mempoolMaxSize, random);
-  }
-
-  @Provides
-  @Singleton
-  private StateComputerLedger.StateComputer stateComputer(
-      Mempool<Transaction> mempool,
-      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-      SystemCounters counters) {
-    return new StateComputerLedger.StateComputer() {
+  ModuleRunner stateManagerModuleRunner(StateManager stateManager) {
+    return new ModuleRunner() {
       @Override
-      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
-        mempoolAdd
-            .transactions()
-            .forEach(
-                txn -> {
-                  try {
-                    mempool.add(txn);
-                    counters.set(
-                        SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
-                  } catch (MempoolRejectedException e) {
-                    log.error(e);
-                  }
-                });
+      public void start() {
+        // no-op
       }
 
       @Override
-      public List<Transaction> getNextTxnsFromMempool(
-          List<StateComputerLedger.PreparedTxn> prepared) {
-        return mempool.getTxns(1, List.of());
-      }
-
-      @Override
-      public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
-        return new StateComputerLedger.StateComputerResult(
-            vertex.getTxns().stream().map(REv2PreparedTxn::new).collect(Collectors.toList()),
-            Map.of());
-      }
-
-      @Override
-      public void commit(
-          VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-        mempool.committed(txnsAndProof.getTxns());
-        counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
-
-        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
-        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
+      public void stop() {
+        stateManager.shutdown();
       }
     };
   }

@@ -62,96 +62,96 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.mempool;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.inject.*;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.mempool.REv2Mempool;
+import com.google.common.collect.Lists;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.rev2.REv2PreparedTxn;
 import com.radixdlt.transactions.Transaction;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class REv2StateComputerModule extends AbstractModule {
+public class REv2Mempool implements Mempool<Transaction> {
   private static final Logger log = LogManager.getLogger();
+  private final Set<Transaction> data = new HashSet<>();
+  private final SystemCounters counters;
+  private final Random random;
+  private final int maxSize;
+
+  public REv2Mempool(SystemCounters counters, int maxSize, Random random) {
+    if (maxSize <= 0) {
+      throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
+    }
+    this.counters = Objects.requireNonNull(counters);
+    this.maxSize = maxSize;
+    this.random = Objects.requireNonNull(random);
+  }
 
   @Override
-  protected void configure() {
-    bind(new TypeLiteral<Mempool<?>>() {})
-        .to(new TypeLiteral<Mempool<Transaction>>() {})
-        .in(Scopes.SINGLETON);
+  public Transaction add(Transaction transaction)
+      throws MempoolFullException, MempoolDuplicateException {
+    if (this.data.size() >= maxSize) {
+      throw new MempoolFullException(this.data.size(), maxSize);
+    }
+    if (!this.data.add(transaction)) {
+      throw new MempoolDuplicateException(
+          String.format("Mempool already has command %s", transaction));
+    }
+
+    updateCounts();
+
+    return transaction;
   }
 
-  @Provides
-  @Singleton
-  private Mempool<Transaction> mempool(
-      SystemCounters systemCounters, Random random, @MempoolMaxSize int mempoolMaxSize) {
-    return new REv2Mempool(systemCounters, mempoolMaxSize, random);
+  @Override
+  public List<Transaction> committed(List<Transaction> commands) {
+    commands.forEach(this.data::remove);
+    updateCounts();
+    return List.of();
   }
 
-  @Provides
-  @Singleton
-  private StateComputerLedger.StateComputer stateComputer(
-      Mempool<Transaction> mempool,
-      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-      SystemCounters counters) {
-    return new StateComputerLedger.StateComputer() {
-      @Override
-      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
-        mempoolAdd
-            .transactions()
-            .forEach(
-                txn -> {
-                  try {
-                    mempool.add(txn);
-                    counters.set(
-                        SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
-                  } catch (MempoolRejectedException e) {
-                    log.error(e);
-                  }
-                });
-      }
+  @Override
+  public int getCount() {
+    return data.size();
+  }
 
-      @Override
-      public List<Transaction> getNextTxnsFromMempool(
-          List<StateComputerLedger.PreparedTxn> prepared) {
-        return mempool.getTxns(1, List.of());
-      }
+  @Override
+  public List<Transaction> getTxns(int count, List<Transaction> seen) {
+    int size = Math.min(count, this.data.size());
+    if (size > 0) {
+      List<Transaction> commands = Lists.newArrayList();
+      var values = new ArrayList<>(this.data);
+      Collections.shuffle(values, random);
 
-      @Override
-      public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
-        return new StateComputerLedger.StateComputerResult(
-            vertex.getTxns().stream().map(REv2PreparedTxn::new).collect(Collectors.toList()),
-            Map.of());
+      Iterator<Transaction> i = values.iterator();
+      while (commands.size() < size && i.hasNext()) {
+        var a = i.next();
+        if (!seen.contains(a)) {
+          commands.add(a);
+        }
       }
+      return commands;
+    } else {
+      return Collections.emptyList();
+    }
+  }
 
-      @Override
-      public void commit(
-          VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-        mempool.committed(txnsAndProof.getTxns());
-        counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+  @Override
+  public List<Transaction> scanUpdateAndGet(
+      Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
+    return List.of();
+  }
 
-        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
-        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
-      }
-    };
+  private void updateCounts() {
+    this.counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, this.data.size());
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[%x:%s/%s]",
+        getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), maxSize);
   }
 }
