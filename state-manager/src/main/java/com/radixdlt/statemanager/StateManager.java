@@ -62,96 +62,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.statemanager;
 
-import com.google.common.collect.Lists;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.transactions.Transaction;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.statemanager.StateManagerRustInterop.RustStateRef;
+import java.util.Objects;
 
-public class REv2Mempool implements Mempool<Transaction> {
-  private static final Logger log = LogManager.getLogger();
-  private final Set<Transaction> data = new HashSet<>();
-  private final SystemCounters counters;
-  private final Random random;
-  private final int maxSize;
+public final class StateManager {
 
-  public REv2Mempool(SystemCounters counters, int maxSize, Random random) {
-    if (maxSize <= 0) {
-      throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
-    }
-    this.counters = Objects.requireNonNull(counters);
-    this.maxSize = maxSize;
-    this.random = Objects.requireNonNull(random);
+  public static StateManager create(ECPublicKey self) {
+    return new StateManager(new RustStateRef(self));
   }
 
-  @Override
-  public Transaction add(Transaction transaction)
-      throws MempoolFullException, MempoolDuplicateException {
-    if (this.data.size() >= maxSize) {
-      throw new MempoolFullException(this.data.size(), maxSize);
-    }
-    if (!this.data.add(transaction)) {
-      throw new MempoolDuplicateException(
-          String.format("Mempool already has command %s", transaction));
-    }
+  private RustStateRef rustStateRef;
 
-    updateCounts();
-
-    return transaction;
+  private StateManager(RustStateRef rustStateRef) {
+    this.rustStateRef = Objects.requireNonNull(rustStateRef);
   }
 
-  @Override
-  public List<Transaction> committed(List<Transaction> commands) {
-    commands.forEach(this.data::remove);
-    updateCounts();
-    return List.of();
-  }
+  public ECPublicKey getPublicKey() {
+    ensureValidStateRef();
 
-  @Override
-  public int getCount() {
-    return data.size();
-  }
-
-  @Override
-  public List<Transaction> getTxns(int count, List<Transaction> seen) {
-    int size = Math.min(count, this.data.size());
-    if (size > 0) {
-      List<Transaction> commands = Lists.newArrayList();
-      var values = new ArrayList<>(this.data);
-      Collections.shuffle(values, random);
-
-      Iterator<Transaction> i = values.iterator();
-      while (commands.size() < size && i.hasNext()) {
-        var a = i.next();
-        if (!seen.contains(a)) {
-          commands.add(a);
-        }
-      }
-      return commands;
-    } else {
-      return Collections.emptyList();
+    final var keyBytes = StateManagerRustInterop.getPublicKey(this.rustStateRef);
+    try {
+      return ECPublicKey.fromBytes(keyBytes);
+    } catch (PublicKeyException e) {
+      throw new IllegalStateException(e);
     }
   }
 
-  @Override
-  public List<Transaction> scanUpdateAndGet(
-      Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
-    return List.of();
+  public void insertTransaction(long stateVersion, byte[] transactionBytes) {
+    ensureValidStateRef();
+
+    StateManagerRustInterop.insertTransaction(this.rustStateRef, stateVersion, transactionBytes);
   }
 
-  private void updateCounts() {
-    this.counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, this.data.size());
+  public byte[] getTransactionAtStateVersion(long stateVersion) {
+    ensureValidStateRef();
+
+    return StateManagerRustInterop.getTransactionAtStateVersion(this.rustStateRef, stateVersion);
   }
 
-  @Override
-  public String toString() {
-    return String.format(
-        "%s[%x:%s/%s]",
-        getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), maxSize);
+  public void shutdown() {
+    StateManagerRustInterop.cleanup(this.rustStateRef);
+    this.rustStateRef = null;
+  }
+
+  private void ensureValidStateRef() {
+    // Having a strange null refs errors from the JNI call might not be obvious to debug
+    // so better to check here if we're trying to access the state manager
+    // after it's been shut down.
+    if (this.rustStateRef == null) {
+      throw new IllegalStateException("StateManager has been shut down");
+    }
   }
 }

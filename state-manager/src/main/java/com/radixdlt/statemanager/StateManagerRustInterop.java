@@ -62,96 +62,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.statemanager;
 
-import com.google.common.collect.Lists;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.transactions.Transaction;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.radixdlt.crypto.ECPublicKey;
 
-public class REv2Mempool implements Mempool<Transaction> {
-  private static final Logger log = LogManager.getLogger();
-  private final Set<Transaction> data = new HashSet<>();
-  private final SystemCounters counters;
-  private final Random random;
-  private final int maxSize;
+public final class StateManagerRustInterop {
 
-  public REv2Mempool(SystemCounters counters, int maxSize, Random random) {
-    if (maxSize <= 0) {
-      throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
-    }
-    this.counters = Objects.requireNonNull(counters);
-    this.maxSize = maxSize;
-    this.random = Objects.requireNonNull(random);
+  static {
+    System.loadLibrary("stateman");
   }
 
-  @Override
-  public Transaction add(Transaction transaction)
-      throws MempoolFullException, MempoolDuplicateException {
-    if (this.data.size() >= maxSize) {
-      throw new MempoolFullException(this.data.size(), maxSize);
-    }
-    if (!this.data.add(transaction)) {
-      throw new MempoolDuplicateException(
-          String.format("Mempool already has command %s", transaction));
-    }
+  static class RustStateRef {
+    @SuppressWarnings("unused")
+    /* Stores a pointer to the Rust state across JNI calls.
+    It's set on the Rust side via the JNI env and should never be accessed in any other way. */
+    private long value;
 
-    updateCounts();
-
-    return transaction;
-  }
-
-  @Override
-  public List<Transaction> committed(List<Transaction> commands) {
-    commands.forEach(this.data::remove);
-    updateCounts();
-    return List.of();
-  }
-
-  @Override
-  public int getCount() {
-    return data.size();
-  }
-
-  @Override
-  public List<Transaction> getTxns(int count, List<Transaction> seen) {
-    int size = Math.min(count, this.data.size());
-    if (size > 0) {
-      List<Transaction> commands = Lists.newArrayList();
-      var values = new ArrayList<>(this.data);
-      Collections.shuffle(values, random);
-
-      Iterator<Transaction> i = values.iterator();
-      while (commands.size() < size && i.hasNext()) {
-        var a = i.next();
-        if (!seen.contains(a)) {
-          commands.add(a);
-        }
-      }
-      return commands;
-    } else {
-      return Collections.emptyList();
+    RustStateRef(ECPublicKey publicKey) {
+      init(this, publicKey.getBytes());
     }
   }
 
-  @Override
-  public List<Transaction> scanUpdateAndGet(
-      Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
-    return List.of();
-  }
+  private StateManagerRustInterop() {}
 
-  private void updateCounts() {
-    this.counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, this.data.size());
-  }
+  static native void init(RustStateRef rustStateRef, byte[] publicKey);
 
-  @Override
-  public String toString() {
-    return String.format(
-        "%s[%x:%s/%s]",
-        getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), maxSize);
-  }
+  static native byte[] getPublicKey(RustStateRef rustStateRef);
+
+  static native void insertTransaction(
+      RustStateRef rustStateRef, long stateVersion, byte[] transactionBytes);
+
+  static native byte[] getTransactionAtStateVersion(RustStateRef rustStateRef, long stateVersion);
+
+  static native void cleanup(RustStateRef rustStateRef);
 }

@@ -62,96 +62,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.statemanager;
 
-import com.google.common.collect.Lists;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.transactions.Transaction;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
-public class REv2Mempool implements Mempool<Transaction> {
-  private static final Logger log = LogManager.getLogger();
-  private final Set<Transaction> data = new HashSet<>();
-  private final SystemCounters counters;
-  private final Random random;
-  private final int maxSize;
+import com.radixdlt.crypto.ECKeyPair;
+import org.junit.Test;
 
-  public REv2Mempool(SystemCounters counters, int maxSize, Random random) {
-    if (maxSize <= 0) {
-      throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
-    }
-    this.counters = Objects.requireNonNull(counters);
-    this.maxSize = maxSize;
-    this.random = Objects.requireNonNull(random);
-  }
+public final class StateManagerTest {
 
-  @Override
-  public Transaction add(Transaction transaction)
-      throws MempoolFullException, MempoolDuplicateException {
-    if (this.data.size() >= maxSize) {
-      throw new MempoolFullException(this.data.size(), maxSize);
-    }
-    if (!this.data.add(transaction)) {
-      throw new MempoolDuplicateException(
-          String.format("Mempool already has command %s", transaction));
-    }
+  @Test
+  public void test_rust_interop() {
+    final var key1 = ECKeyPair.generateNew().getPublicKey();
+    final var stateManagerNode1 = StateManager.create(key1);
 
-    updateCounts();
+    final var key2 = ECKeyPair.generateNew().getPublicKey();
+    final var stateManagerNode2 = StateManager.create(key2);
 
-    return transaction;
-  }
+    assertEquals(key1, stateManagerNode1.getPublicKey());
+    assertEquals(key1, stateManagerNode1.getPublicKey());
+    assertEquals(key2, stateManagerNode2.getPublicKey());
 
-  @Override
-  public List<Transaction> committed(List<Transaction> commands) {
-    commands.forEach(this.data::remove);
-    updateCounts();
-    return List.of();
-  }
+    stateManagerNode1.insertTransaction(1L, new byte[] {1, 2, 3});
+    assertArrayEquals(new byte[] {1, 2, 3}, stateManagerNode1.getTransactionAtStateVersion(1L));
 
-  @Override
-  public int getCount() {
-    return data.size();
-  }
-
-  @Override
-  public List<Transaction> getTxns(int count, List<Transaction> seen) {
-    int size = Math.min(count, this.data.size());
-    if (size > 0) {
-      List<Transaction> commands = Lists.newArrayList();
-      var values = new ArrayList<>(this.data);
-      Collections.shuffle(values, random);
-
-      Iterator<Transaction> i = values.iterator();
-      while (commands.size() < size && i.hasNext()) {
-        var a = i.next();
-        if (!seen.contains(a)) {
-          commands.add(a);
-        }
-      }
-      return commands;
-    } else {
-      return Collections.emptyList();
-    }
-  }
-
-  @Override
-  public List<Transaction> scanUpdateAndGet(
-      Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
-    return List.of();
-  }
-
-  private void updateCounts() {
-    this.counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, this.data.size());
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s[%x:%s/%s]",
-        getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), maxSize);
+    stateManagerNode1.shutdown();
+    stateManagerNode2.shutdown();
   }
 }

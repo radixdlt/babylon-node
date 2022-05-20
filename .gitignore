@@ -56,3 +56,6 @@ package-lock.json
 **/resources/markdown
 
 configs/
+
+# rust
+target/
