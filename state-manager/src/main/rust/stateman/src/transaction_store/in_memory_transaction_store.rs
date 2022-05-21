@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+#[derive(Debug)]
 pub struct TransactionStore {
     in_memory_store: BTreeMap<u64, Vec<u8>>
 }

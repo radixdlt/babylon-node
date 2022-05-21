@@ -75,27 +75,25 @@ import org.junit.Test;
 public final class StateManagerTest {
 
   @Test
-  public void test_rust_interop() {
+  public void test_rust_interop() throws InterruptedException {
     final var key1 = ECKeyPair.generateNew().getPublicKey();
     final var stateManagerNode1 = StateManager.create(key1);
 
     final var key2 = ECKeyPair.generateNew().getPublicKey();
     final var stateManagerNode2 = StateManager.create(key2);
 
-    assertEquals(key1, stateManagerNode1.getPublicKey());
-    assertEquals(key1, stateManagerNode1.getPublicKey());
-    assertEquals(key2, stateManagerNode2.getPublicKey());
-
     stateManagerNode1.transactionStore().insertTransaction(1L, new byte[] {1, 2, 3});
     assertArrayEquals(
-        new byte[] {1, 2, 3},
-        stateManagerNode1.transactionStore().getTransactionAtStateVersion(1L));
+      new byte[] {1, 2, 3},
+      stateManagerNode1.transactionStore().getTransactionAtStateVersion(1L));
 
     final var vertex = new byte[] {3, 4, 5};
     assertFalse(stateManagerNode1.vertexStore().containsVertex(vertex));
     stateManagerNode1.vertexStore().insertVertex(vertex);
     assertTrue(stateManagerNode1.vertexStore().containsVertex(vertex));
     assertFalse(stateManagerNode2.vertexStore().containsVertex(vertex));
+
+    Thread.sleep(20000);
 
     stateManagerNode1.shutdown();
     stateManagerNode2.shutdown();
