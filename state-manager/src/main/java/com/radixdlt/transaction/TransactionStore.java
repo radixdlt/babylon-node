@@ -68,4 +68,6 @@ public interface TransactionStore {
   void insertTransaction(long stateVersion, byte[] transactionBytes);
 
   byte[] getTransactionAtStateVersion(long stateVersion);
+
+  StoredTransaction getLastTransactionData();
 }

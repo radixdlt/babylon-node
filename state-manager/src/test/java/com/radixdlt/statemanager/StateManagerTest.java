@@ -64,10 +64,7 @@
 
 package com.radixdlt.statemanager;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import com.radixdlt.crypto.ECKeyPair;
 import org.junit.Test;
@@ -96,6 +93,8 @@ public final class StateManagerTest {
     stateManagerNode1.vertexStore().insertVertex(vertex);
     assertTrue(stateManagerNode1.vertexStore().containsVertex(vertex));
     assertFalse(stateManagerNode2.vertexStore().containsVertex(vertex));
+
+    assertNull(stateManagerNode2.transactionStore().getLastTransactionData());
 
     stateManagerNode1.shutdown();
     stateManagerNode2.shutdown();

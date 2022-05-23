@@ -71,6 +71,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.StateManagerModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
@@ -122,7 +123,7 @@ public class PacemakerTest {
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath());
           }
-        });
+        }, new StateManagerModule());
   }
 
   @Test

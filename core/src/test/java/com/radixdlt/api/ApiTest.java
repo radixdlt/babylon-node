@@ -72,6 +72,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
+import com.radixdlt.StateManagerModule;
 import com.radixdlt.api.common.JSON;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
@@ -168,7 +169,7 @@ public abstract class ApiTest {
                     .thenReturn(true);
                 bind(RuntimeProperties.class).toInstance(runtimeProperties);
               }
-            });
+            }, new StateManagerModule());
     injector.injectMembers(this);
   }
 

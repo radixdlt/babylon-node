@@ -85,9 +85,16 @@ public final class RustTransactionStore implements TransactionStore {
     return getTransactionAtStateVersion(this.rustInteropState, stateVersion);
   }
 
+  @Override
+  public StoredTransaction getLastTransactionData() {
+    return getLastTransactionData(this.rustInteropState);
+  }
+
   private static native void insertTransaction(
       RustInteropState rustInteropState, long stateVersion, byte[] transactionBytes);
 
   private static native byte[] getTransactionAtStateVersion(
       RustInteropState rustInteropState, long stateVersion);
+
+  private static native StoredTransaction getLastTransactionData(RustInteropState rustInteropState);
 }

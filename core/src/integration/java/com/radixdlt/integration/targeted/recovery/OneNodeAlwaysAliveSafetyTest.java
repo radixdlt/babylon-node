@@ -74,6 +74,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.StateManagerModule;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.Proposal;
@@ -266,7 +267,7 @@ public class OneNodeAlwaysAliveSafetyTest {
           private EventProcessorOnDispatch<?> viewQuorumReachedEventProcessor(@Self BFTNode node) {
             return nodeEvents.processorOnDispatch(node, ViewQuorumReached.class);
           }
-        });
+        }, new StateManagerModule());
   }
 
   private void restartNode(int index) {

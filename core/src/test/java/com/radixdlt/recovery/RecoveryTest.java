@@ -74,6 +74,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.StateManagerModule;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.LedgerProof;
@@ -216,7 +217,8 @@ public class RecoveryTest {
                 .to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
           }
         },
-        new PersistedNodeForTestingModule());
+        new PersistedNodeForTestingModule(),
+            new StateManagerModule());
   }
 
   private RadixEngine<LedgerAndBFTProof> getRadixEngine() {

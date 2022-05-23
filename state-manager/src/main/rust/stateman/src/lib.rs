@@ -7,7 +7,7 @@ use jni::JNIEnv;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use crate::interop_state::*;
-use crate::transaction_store::TransactionStore;
+use crate::transaction_store::TransactionAndProofStore;
 use crate::vertex_store::VertexStore;
 
 #[no_mangle]
@@ -20,7 +20,7 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_init(
     env.set_rust_field(interop_state, INTEROP_STATE_VERTEX_STORE_REF, vertex_store)
         .expect("Can't put VertexStore into JNI env");
 
-    let transaction_store = TransactionStore::new();
+    let transaction_store = TransactionAndProofStore::new();
     env.set_rust_field(interop_state, INTEROP_STATE_TRANSACTION_STORE_REF, transaction_store)
         .expect("Can't put TransactionStore into JNI env");
 }
@@ -47,7 +47,7 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
         .expect("Can't take VertexStore from JNI env");
     drop(vertex_store);
 
-    let transaction_store: TransactionStore = env.take_rust_field(interop_state, INTEROP_STATE_TRANSACTION_STORE_REF)
+    let transaction_store: TransactionAndProofStore = env.take_rust_field(interop_state, INTEROP_STATE_TRANSACTION_STORE_REF)
         .expect("Can't take TransactionStore from JNI env");
     drop(transaction_store);
 }

@@ -77,6 +77,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
@@ -88,6 +89,7 @@ import com.radixdlt.rev1.forks.CandidateForkVote;
 import com.radixdlt.rev1.forks.ForkVotingResult;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.transactions.Transaction;
 import java.io.IOException;
@@ -116,7 +118,8 @@ public final class BerkeleyLedgerEntryStoreTest {
                 dir.getRoot().getAbsolutePath(), (long) (Runtime.getRuntime().maxMemory() * 0.125)),
             new StoreConfig(1000),
             new SystemCountersImpl(0L),
-            Set.of());
+            Set.of(),
+            StateManager.create(ECKeyPair.generateNew().getPublicKey()));
   }
 
   @Test

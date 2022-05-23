@@ -74,6 +74,7 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.util.Modules;
+import com.radixdlt.StateManagerModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -205,7 +206,8 @@ public abstract class DeterministicActorsTest {
             return () ->
                 allNodes.stream().filter(n -> !self.equals(n)).map(PeersView.PeerInfo::fromBftNode);
           }
-        });
+        },
+        new StateManagerModule());
   }
 
   private static class RunningActor {

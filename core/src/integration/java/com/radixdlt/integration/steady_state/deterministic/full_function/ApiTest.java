@@ -80,8 +80,7 @@ public abstract class ApiTest extends DeterministicActorsTest {
   private static final RERulesConfig config =
       RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
   private static final Amount PER_BYTE_FEE = Amount.ofMicroTokens(2);
-  private static final List<ActorConfiguration> ACTOR_CONFIGURATIONS =
-      List.of(new ActorConfiguration(RandomNodeRestarter::new, 1, 10));
+  private static final List<ActorConfiguration> ACTOR_CONFIGURATIONS = List.of();
 
   public ApiTest(Module forkOverrideModule, Module byzantineModule) {
     super(forkOverrideModule, byzantineModule);

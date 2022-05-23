@@ -65,16 +65,13 @@
 package com.radixdlt.rev1.store;
 
 import static com.google.common.primitives.UnsignedBytes.lexicographicalComparator;
-import static com.radixdlt.utils.Longs.fromByteArray;
 import static com.sleepycat.je.LockMode.DEFAULT;
-import static com.sleepycat.je.OperationStatus.NOTFOUND;
 import static com.sleepycat.je.OperationStatus.SUCCESS;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.Bytes;
 import com.google.inject.Inject;
@@ -114,6 +111,7 @@ import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.store.BerkeleyStoreException;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.EngineStore;
@@ -127,17 +125,13 @@ import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.Get;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
 import com.sleepycat.je.SecondaryCursor;
 import com.sleepycat.je.SecondaryDatabase;
-import java.io.File;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -190,10 +184,10 @@ public final class BerkeleyLedgerEntryStore
   private static final String PROOF_DB_NAME = "radix.proof_db";
   private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
   private static final String LEDGER_NAME = "radix.ledger";
-  private Database txnDatabase; // Txns by state version; Append-only
-  private AppendLog txnLog; // Atom data append only log
 
   private final Set<BerkeleyAdditionalStore> additionalStores;
+
+  private final StateManager stateManager;
 
   @Inject
   public BerkeleyLedgerEntryStore(
@@ -201,7 +195,8 @@ public final class BerkeleyLedgerEntryStore
       DatabaseEnvironment dbEnv,
       StoreConfig storeConfig,
       SystemCounters systemCounters,
-      Set<BerkeleyAdditionalStore> additionalStores) {
+      Set<BerkeleyAdditionalStore> additionalStores,
+      StateManager stateManager) {
     this.serialization = Objects.requireNonNull(serialization);
     this.dbEnv = Objects.requireNonNull(dbEnv);
     this.systemCounters = Objects.requireNonNull(systemCounters);
@@ -209,10 +204,10 @@ public final class BerkeleyLedgerEntryStore
     this.additionalStores = additionalStores;
 
     this.open();
+    this.stateManager = stateManager;
   }
 
   public void close() {
-    safeClose(txnDatabase);
     safeClose(resourceDatabase);
     safeClose(mapDatabase);
 
@@ -229,10 +224,6 @@ public final class BerkeleyLedgerEntryStore
     safeClose(forksVotingResultsDatabase);
 
     additionalStores.forEach(BerkeleyAdditionalStore::close);
-
-    if (txnLog != null) {
-      txnLog.close();
-    }
   }
 
   private com.sleepycat.je.Transaction createTransaction() {
@@ -347,21 +338,14 @@ public final class BerkeleyLedgerEntryStore
       com.sleepycat.je.Transaction dbTransaction, LedgerAndBFTProof ledgerAndBFTProof) {
     var proof = ledgerAndBFTProof.getProof();
 
-    try (var atomCursor = txnDatabase.openCursor(dbTransaction, null)) {
-      var key = entry();
-      var status = atomCursor.getLast(key, null, DEFAULT);
-      if (status == NOTFOUND) {
-        throw new IllegalStateException("No atom found before storing proof.");
-      }
-
-      long lastVersion = Longs.fromByteArray(key.getData());
-      if (lastVersion != proof.getStateVersion()) {
-        throw new IllegalStateException(
-            "Proof version "
-                + proof.getStateVersion()
-                + " does not match last transaction: "
-                + lastVersion);
-      }
+    var storedTransaction = this.stateManager.transactionStore().getLastTransactionData();
+    long lastVersion = storedTransaction.stateVersion();
+    if (lastVersion != proof.getStateVersion()) {
+      throw new IllegalStateException(
+          "Proof version "
+              + proof.getStateVersion()
+              + " does not match last transaction: "
+              + lastVersion);
     }
 
     try (var proofCursor = proofDatabase.openCursor(dbTransaction, null)) {
@@ -614,7 +598,6 @@ public final class BerkeleyLedgerEntryStore
       // resource is not changed here, the resource is just accessed.
       @SuppressWarnings("resource")
       var env = dbEnv.getEnvironment();
-      txnDatabase = env.openDatabase(null, TXN_DB_NAME, primaryConfig);
 
       resourceDatabase = env.openDatabase(null, RESOURCE_DB_NAME, rriConfig);
       mapDatabase = env.openDatabase(null, MAP_DB_NAME, rriConfig);
@@ -745,9 +728,6 @@ public final class BerkeleyLedgerEntryStore
           env.openDatabase(
               null, FORKS_VOTING_RESULTS_DB, primaryConfig.clone().setSortedDuplicates(true));
 
-      txnLog =
-          AppendLog.openCompressed(
-              new File(env.getHome(), LEDGER_NAME).getAbsolutePath(), systemCounters);
     } catch (Exception e) {
       throw new BerkeleyStoreException("Error while opening databases", e);
     }
@@ -1071,32 +1051,18 @@ public final class BerkeleyLedgerEntryStore
   private void doStore(com.sleepycat.je.Transaction dbTransaction, REProcessedTxn txn) {
     final long stateVersion;
     final long expectedOffset;
-    try (var cursor = txnDatabase.openCursor(dbTransaction, null)) {
-      var key = entry();
-      var data = entry();
-      var status = cursor.getLast(key, data, DEFAULT);
-      if (status == OperationStatus.NOTFOUND) {
-        stateVersion = 1;
-        expectedOffset = 0;
-      } else {
-        stateVersion = Longs.fromByteArray(key.getData()) + 1;
-        long prevOffset = Longs.fromByteArray(data.getData());
-        long prevSize = Longs.fromByteArray(data.getData(), Long.BYTES);
-        expectedOffset = prevOffset + prevSize;
-      }
+    var storedTransaction = this.stateManager.transactionStore().getLastTransactionData();
+    if (storedTransaction == null) {
+      stateVersion = 1;
+    } else {
+      stateVersion = storedTransaction.stateVersion() + 1;
     }
 
     try {
-      // Transaction / Syncing database
-      var aid = txn.getTxn().getId();
-      // Write atom data as soon as possible
-      var storedSize = txnLog.write(txn.getTxn().getPayload(), expectedOffset);
-      // Store atom indices
-      var pKey = toPKey(stateVersion);
-      var atomPosData = txnEntry(expectedOffset, storedSize, aid);
-      failIfNotSuccess(
-          txnDatabase.putNoOverwrite(dbTransaction, pKey, atomPosData), "Atom write for", aid);
-      addBytesWrite(atomPosData, pKey);
+      byte[] payload = txn.getTxn().getPayload();
+      this.stateManager.transactionStore().insertTransaction(stateVersion, payload);
+
+      addBytesWrite(Long.BYTES + payload.length);
       systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
 
       // State database
@@ -1131,9 +1097,6 @@ public final class BerkeleyLedgerEntryStore
           b -> b.process(dbTransaction, txn, stateVersion, k -> getInternal(dbTransaction, k)));
 
     } catch (Exception e) {
-      if (dbTransaction != null) {
-        dbTransaction.abort();
-      }
       throw new BerkeleyStoreException("Unable to store atom:\n" + txn, e);
     }
   }
@@ -1171,68 +1134,29 @@ public final class BerkeleyLedgerEntryStore
     }
 
     final var txns = ImmutableList.<Transaction>builder();
-    final var atomSearchKey = toPKey(stateVersion + 1);
-    final var atomPosData = entry();
+    final var atomSearchKey = stateVersion + 1;
 
-    try (var txnCursor = txnDatabase.openCursor(null, null)) {
+    try {
       int atomCount = (int) (nextHeader.getStateVersion() - stateVersion);
       int count = 0;
-      var atomCursorStatus = txnCursor.getSearchKeyRange(atomSearchKey, atomPosData, DEFAULT);
       do {
-        if (atomCursorStatus != SUCCESS) {
+        var data =
+            this.stateManager
+                .transactionStore()
+                .getTransactionAtStateVersion(atomSearchKey + count);
+        if (data == null) {
           throw new BerkeleyStoreException("Atom database search failure");
         }
-        var offset = fromByteArray(atomPosData.getData());
-        var txnBytes = txnLog.read(offset);
-        txns.add(Transaction.create(txnBytes));
-        atomCursorStatus = txnCursor.getNext(atomSearchKey, atomPosData, DEFAULT);
+        txns.add(Transaction.create(data));
         count++;
       } while (count < atomCount);
 
       return VerifiedTxnsAndProof.create(txns.build(), nextHeader);
-    } catch (IOException e) {
+    } catch (Exception e) {
       throw new BerkeleyStoreException("Unable to read from atom store.", e);
     } finally {
       addTime(
           startTime, CounterType.ELAPSED_BDB_LEDGER_ENTRIES, CounterType.COUNT_BDB_LEDGER_ENTRIES);
-    }
-  }
-
-  public List<Transaction> getCommittedTxns(long stateVersion, long limit) {
-    try (var txnCursor = txnDatabase.openCursor(null, null)) {
-      var iterator =
-          new Iterator<Transaction>() {
-            final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion + 1));
-            final DatabaseEntry value = new DatabaseEntry();
-            OperationStatus status =
-                txnCursor.get(key, value, Get.SEARCH, null) != null
-                    ? SUCCESS
-                    : OperationStatus.NOTFOUND;
-
-            @Override
-            public boolean hasNext() {
-              return status == SUCCESS;
-            }
-
-            @Override
-            public Transaction next() {
-              if (status != SUCCESS) {
-                throw new NoSuchElementException();
-              }
-              var offset = fromByteArray(value.getData());
-              byte[] txnBytes;
-              try {
-                txnBytes = txnLog.read(offset);
-              } catch (IOException e) {
-                throw new IllegalStateException("Unable to read transaction", e);
-              }
-              Transaction next = Transaction.create(txnBytes);
-
-              status = txnCursor.getNext(key, value, null);
-              return next;
-            }
-          };
-      return Streams.stream(iterator).limit(limit).onClose(txnCursor::close).toList();
     }
   }
 
@@ -1366,9 +1290,8 @@ public final class BerkeleyLedgerEntryStore
     systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_READ, amount);
   }
 
-  private void addBytesWrite(DatabaseEntry entryA, DatabaseEntry entryB) {
-    long amount = (long) entryA.getSize() + (long) entryB.getSize();
-    systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_WRITE, amount);
+  private void addBytesWrite(long numBytesWritten) {
+    systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_WRITE, numBytesWritten);
   }
 
   private static void executeOrElseThrow(Supplier<OperationStatus> execute, String errorMessage) {

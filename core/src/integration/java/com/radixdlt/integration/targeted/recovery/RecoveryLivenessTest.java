@@ -75,6 +75,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.StateManagerModule;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -300,7 +301,7 @@ public class RecoveryLivenessTest {
             return () ->
                 allNodes.stream().filter(n -> !self.equals(n)).map(PeersView.PeerInfo::fromBftNode);
           }
-        });
+        }, new StateManagerModule());
   }
 
   private void restartNode(int index) {

@@ -70,6 +70,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.radixdlt.StateManagerModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -129,7 +130,7 @@ public class MempoolFillerTest {
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath());
           }
-        });
+        }, new StateManagerModule());
   }
 
   @Test

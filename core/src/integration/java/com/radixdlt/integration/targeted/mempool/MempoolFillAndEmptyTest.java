@@ -70,6 +70,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.radixdlt.StateManagerModule;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.crypto.ECKeyPair;
@@ -126,7 +127,7 @@ public final class MempoolFillAndEmptyTest {
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath());
           }
-        });
+        }, new StateManagerModule());
   }
 
   private void fillAndEmptyMempool() {
