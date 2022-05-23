@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+#[derive(Debug)]
 pub struct VertexStore {
     in_mem_store: HashSet<Vec<u8>>
 }

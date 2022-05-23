@@ -65,7 +65,6 @@
 package com.radixdlt.statemanager;
 
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStore;
 import com.radixdlt.vertexstore.RustVertexStore;
@@ -85,17 +84,10 @@ public final class StateManager {
    */
   public static final class RustInteropState {
     @SuppressWarnings("unused")
-    private final byte[] publicKey;
-
-    @SuppressWarnings("unused")
-    private final long transactionStoreRef = 0;
-
-    @SuppressWarnings("unused")
-    private final long vertexStoreRef = 0;
+    private final long stateManager = 0;
 
     private RustInteropState(byte[] publicKey) {
-      this.publicKey = Objects.requireNonNull(publicKey);
-      init(this);
+      init(this, publicKey);
     }
   }
 
@@ -115,14 +107,6 @@ public final class StateManager {
     this.transactionStore = new RustTransactionStore(rustInteropState);
   }
 
-  public ECPublicKey getPublicKey() {
-    try {
-      return ECPublicKey.fromBytes(getPublicKey(this.rustInteropState));
-    } catch (PublicKeyException e) {
-      throw new IllegalStateException(e);
-    }
-  }
-
   public VertexStore vertexStore() {
     return this.vertexStore;
   }
@@ -135,9 +119,7 @@ public final class StateManager {
     cleanup(this.rustInteropState);
   }
 
-  private static native void init(RustInteropState rustInteropState);
-
-  private static native byte[] getPublicKey(RustInteropState rustInteropState);
+  private static native void init(RustInteropState rustInteropState, byte[] publicKey);
 
   private static native void cleanup(RustInteropState rustInteropState);
 }
