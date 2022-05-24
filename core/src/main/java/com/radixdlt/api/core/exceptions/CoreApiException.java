@@ -62,87 +62,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core.exceptions;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.api.common.UnhandledExceptionHandler;
-import com.radixdlt.api.core.CoreApiModule;
-import com.radixdlt.api.system.SystemApiModule;
-import io.undertow.Handlers;
-import io.undertow.Undertow;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.RequestLimitingHandler;
-import io.undertow.util.StatusCodes;
-import java.util.Map;
+import com.radixdlt.api.core.CoreApiErrorCode;
+import com.radixdlt.api.core.generated.models.CoreErrorDetails;
+import com.radixdlt.api.core.generated.models.ErrorResponse;
 
-public final class ApiModule extends AbstractModule {
-  private static final int MAXIMUM_CONCURRENT_REQUESTS =
-      Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
-  private static final int QUEUE_SIZE = 2000;
+public final class CoreApiException extends Exception {
+  private final CoreApiErrorCode errorCode;
+  private final CoreErrorDetails errorDetails;
 
-  private final int port;
-  private final String bindAddress;
-  private final boolean enableTransactions;
-  private final boolean enableSign;
-
-  public ApiModule(String bindAddress, int port, boolean enableTransactions, boolean enableSign) {
-    this.bindAddress = bindAddress;
-    this.port = port;
-    this.enableTransactions = enableTransactions;
-    this.enableSign = enableSign;
+  private CoreApiException(CoreApiErrorCode errorCode, CoreErrorDetails errorDetails) {
+    super(errorCode + ": " + errorDetails);
+    this.errorCode = errorCode;
+    this.errorDetails = errorDetails;
   }
 
-  @Override
-  public void configure() {
-    // MapBinder.newMapBinder(binder(), String.class, HttpHandler.class);
-    install(new SystemApiModule());
-    install(new CoreApiModule(enableTransactions, enableSign));
+  public ErrorResponse toError() {
+    return new ErrorResponse()
+        .code(errorCode.getErrorCode())
+        .message(errorCode.getMessage())
+        .details(errorDetails);
   }
 
-  private static void fallbackHandler(HttpServerExchange exchange) {
-    exchange.setStatusCode(StatusCodes.NOT_FOUND);
-    exchange
-        .getResponseSender()
-        .send(
-            "No matching path found for "
-                + exchange.getRequestMethod()
-                + " "
-                + exchange.getRequestPath());
+  public static CoreApiException badRequest(CoreErrorDetails errorDetails) {
+    return new CoreApiException(CoreApiErrorCode.BAD_REQUEST, errorDetails);
   }
 
-  private static void invalidMethodHandler(HttpServerExchange exchange) {
-    exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
-    exchange
-        .getResponseSender()
-        .send(
-            "Invalid method, path exists for "
-                + exchange.getRequestMethod()
-                + " "
-                + exchange.getRequestPath());
+  public static CoreApiException conflict(CoreErrorDetails errorDetails) {
+    return new CoreApiException(CoreApiErrorCode.CONFLICT, errorDetails);
   }
 
-  private HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> handlers) {
-    var handler = Handlers.routing(true); // add path params to query params with this flag
-    handlers.forEach((r, h) -> handler.add(r.method(), r.path(), h));
-    handler.setFallbackHandler(ApiModule::fallbackHandler);
-    handler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
-
-    // NB - the Core API should have already handled exceptions in the CoreJsonRpcHandler
-    var exceptionHandler = Handlers.exceptionHandler(handler);
-    exceptionHandler.addExceptionHandler(Exception.class, new UnhandledExceptionHandler());
-    return handler;
+  public static CoreApiException notFound(CoreErrorDetails errorDetails) {
+    return new CoreApiException(CoreApiErrorCode.NOT_FOUND, errorDetails);
   }
 
-  @Provides
-  @Singleton
-  public Undertow undertow(Map<HandlerRoute, HttpHandler> handlers) {
-    var handler =
-        new RequestLimitingHandler(
-            MAXIMUM_CONCURRENT_REQUESTS, QUEUE_SIZE, configureRoutes(handlers));
+  public static CoreApiException notSupported(CoreErrorDetails errorDetails) {
+    return new CoreApiException(CoreApiErrorCode.NOT_SUPPORTED, errorDetails);
+  }
 
-    return Undertow.builder().addHttpListener(port, bindAddress).setHandler(handler).build();
+  public static CoreApiException unavailable(CoreErrorDetails errorDetails) {
+    return new CoreApiException(CoreApiErrorCode.UNAVAILABLE, errorDetails);
   }
 }

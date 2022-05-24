@@ -60,7 +60,6 @@ def generate_models(package_name, spec_file, api_package, tmp_client_folder, out
     shutil.copytree(os.path.join(java_code_root, 'models'), os.path.join(out_location, 'models')) 
     safe_os_remove(os.path.join(out_location, 'models', 'AbstractOpenApiSchema.java'))
 
-    safe_os_remove(tmp_client_folder)
     logging.info("Successfully generated the %s package" % package_name)
 
 if __name__ == "__main__":    
@@ -96,4 +95,4 @@ if __name__ == "__main__":
     logging.info("Code has been created.")
     
     # clean up  
-    safe_os_remove(OPENAPI_TEMP_GENERATION_FOLDER, silent=True)    
+    safe_os_remove(OPENAPI_TEMP_GENERATION_FOLDER, silent=True)

@@ -62,87 +62,95 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.api.common.UnhandledExceptionHandler;
-import com.radixdlt.api.core.CoreApiModule;
-import com.radixdlt.api.system.SystemApiModule;
-import io.undertow.Handlers;
-import io.undertow.Undertow;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Throwables;
+import com.radixdlt.api.common.JSON;
+import com.radixdlt.api.core.exceptions.CoreApiException;
+import com.radixdlt.api.core.generated.models.ErrorResponse;
+import com.radixdlt.api.core.generated.models.InternalServerError;
+import com.radixdlt.api.core.generated.models.InvalidJsonError;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.RequestLimitingHandler;
-import io.undertow.util.StatusCodes;
-import java.util.Map;
+import io.undertow.util.Headers;
 
-public final class ApiModule extends AbstractModule {
-  private static final int MAXIMUM_CONCURRENT_REQUESTS =
-      Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
-  private static final int QUEUE_SIZE = 2000;
+public abstract class CoreJsonRpcHandler<T, U> implements HttpHandler {
+  private static final String CONTENT_TYPE_JSON = "application/json";
+  private static final long DEFAULT_MAX_REQUEST_SIZE = 1024L * 1024L;
 
-  private final int port;
-  private final String bindAddress;
-  private final boolean enableTransactions;
-  private final boolean enableSign;
+  private final Class<T> requestClass;
+  private final ObjectMapper objectMapper;
 
-  public ApiModule(String bindAddress, int port, boolean enableTransactions, boolean enableSign) {
-    this.bindAddress = bindAddress;
-    this.port = port;
-    this.enableTransactions = enableTransactions;
-    this.enableSign = enableSign;
+  protected CoreJsonRpcHandler(Class<T> requestClass) {
+    this.requestClass = requestClass;
+    this.objectMapper = JSON.getDefault().getMapper();
   }
+
+  public abstract U handleRequest(T request) throws CoreApiException;
 
   @Override
-  public void configure() {
-    // MapBinder.newMapBinder(binder(), String.class, HttpHandler.class);
-    install(new SystemApiModule());
-    install(new CoreApiModule(enableTransactions, enableSign));
+  public final void handleRequest(HttpServerExchange exchange) throws Exception {
+    if (exchange.isInIoThread()) {
+      exchange.dispatch(this);
+      return;
+    }
+
+    exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
+    exchange.startBlocking();
+    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+
+    T request;
+    try {
+      request = objectMapper.readValue(exchange.getInputStream(), requestClass);
+    } catch (JsonMappingException | JsonParseException e) {
+      var errorResponse = createParseErrorResponse(e);
+      exchange.setStatusCode(500);
+      exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+      return;
+    }
+
+    U response;
+    try {
+      response = handleRequest(request);
+    } catch (CoreApiException e) {
+      var errorResponse = e.toError();
+      exchange.setStatusCode(500);
+      exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+      return;
+    } catch (Exception e) {
+      var errorResponse = createUnknownExceptionResponse(e);
+      exchange.setStatusCode(500);
+      exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+      return;
+    }
+
+    exchange.setStatusCode(200);
+    objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    exchange.getResponseSender().send(objectMapper.writeValueAsString(response));
   }
 
-  private static void fallbackHandler(HttpServerExchange exchange) {
-    exchange.setStatusCode(StatusCodes.NOT_FOUND);
-    exchange
-        .getResponseSender()
-        .send(
-            "No matching path found for "
-                + exchange.getRequestMethod()
-                + " "
-                + exchange.getRequestPath());
+  public ErrorResponse createParseErrorResponse(Exception e) {
+    return new ErrorResponse()
+        .code(CoreApiErrorCode.BAD_REQUEST.getErrorCode())
+        .message(CoreApiErrorCode.BAD_REQUEST.getMessage())
+        .details(new InvalidJsonError().cause(e.getMessage()).type("InvalidJsonError"));
   }
 
-  private static void invalidMethodHandler(HttpServerExchange exchange) {
-    exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
-    exchange
-        .getResponseSender()
-        .send(
-            "Invalid method, path exists for "
-                + exchange.getRequestMethod()
-                + " "
-                + exchange.getRequestPath());
-  }
+  public ErrorResponse createUnknownExceptionResponse(Exception e) {
+    // TODO-NT-258 - consider hiding error message and returning a Trace GUID
+    var rootCause = Throwables.getRootCause(e);
 
-  private HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> handlers) {
-    var handler = Handlers.routing(true); // add path params to query params with this flag
-    handlers.forEach((r, h) -> handler.add(r.method(), r.path(), h));
-    handler.setFallbackHandler(ApiModule::fallbackHandler);
-    handler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
-
-    // NB - the Core API should have already handled exceptions in the CoreJsonRpcHandler
-    var exceptionHandler = Handlers.exceptionHandler(handler);
-    exceptionHandler.addExceptionHandler(Exception.class, new UnhandledExceptionHandler());
-    return handler;
-  }
-
-  @Provides
-  @Singleton
-  public Undertow undertow(Map<HandlerRoute, HttpHandler> handlers) {
-    var handler =
-        new RequestLimitingHandler(
-            MAXIMUM_CONCURRENT_REQUESTS, QUEUE_SIZE, configureRoutes(handlers));
-
-    return Undertow.builder().addHttpListener(port, bindAddress).setHandler(handler).build();
+    return new ErrorResponse()
+        .code(CoreApiErrorCode.INTERNAL_SERVER_ERROR.getErrorCode())
+        .message(CoreApiErrorCode.INTERNAL_SERVER_ERROR.getMessage())
+        .details(
+            new InternalServerError()
+                .cause(rootCause.getMessage())
+                .exception(rootCause.getClass().getSimpleName())
+                .type("InternalServerError"));
   }
 }

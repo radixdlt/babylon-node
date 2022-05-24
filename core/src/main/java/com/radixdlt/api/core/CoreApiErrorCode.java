@@ -62,87 +62,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.api.common.UnhandledExceptionHandler;
-import com.radixdlt.api.core.CoreApiModule;
-import com.radixdlt.api.system.SystemApiModule;
-import io.undertow.Handlers;
-import io.undertow.Undertow;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.RequestLimitingHandler;
-import io.undertow.util.StatusCodes;
-import java.util.Map;
+public enum CoreApiErrorCode {
+  BAD_REQUEST(400, "Bad request"),
+  NOT_FOUND(404, "Not found"),
+  CONFLICT(409, "State Conflict"),
+  INTERNAL_SERVER_ERROR(500, "Internal Server Error"),
+  NOT_SUPPORTED(501, "Not supported"),
+  UNAVAILABLE(503, "Unavailable");
 
-public final class ApiModule extends AbstractModule {
-  private static final int MAXIMUM_CONCURRENT_REQUESTS =
-      Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
-  private static final int QUEUE_SIZE = 2000;
+  private final int errorCode;
+  private final String message;
 
-  private final int port;
-  private final String bindAddress;
-  private final boolean enableTransactions;
-  private final boolean enableSign;
+  CoreApiErrorCode(int errorCode, String message) {
+    this.errorCode = errorCode;
+    this.message = message;
+  }
 
-  public ApiModule(String bindAddress, int port, boolean enableTransactions, boolean enableSign) {
-    this.bindAddress = bindAddress;
-    this.port = port;
-    this.enableTransactions = enableTransactions;
-    this.enableSign = enableSign;
+  public int getErrorCode() {
+    return errorCode;
+  }
+
+  public String getMessage() {
+    return message;
   }
 
   @Override
-  public void configure() {
-    // MapBinder.newMapBinder(binder(), String.class, HttpHandler.class);
-    install(new SystemApiModule());
-    install(new CoreApiModule(enableTransactions, enableSign));
-  }
-
-  private static void fallbackHandler(HttpServerExchange exchange) {
-    exchange.setStatusCode(StatusCodes.NOT_FOUND);
-    exchange
-        .getResponseSender()
-        .send(
-            "No matching path found for "
-                + exchange.getRequestMethod()
-                + " "
-                + exchange.getRequestPath());
-  }
-
-  private static void invalidMethodHandler(HttpServerExchange exchange) {
-    exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
-    exchange
-        .getResponseSender()
-        .send(
-            "Invalid method, path exists for "
-                + exchange.getRequestMethod()
-                + " "
-                + exchange.getRequestPath());
-  }
-
-  private HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> handlers) {
-    var handler = Handlers.routing(true); // add path params to query params with this flag
-    handlers.forEach((r, h) -> handler.add(r.method(), r.path(), h));
-    handler.setFallbackHandler(ApiModule::fallbackHandler);
-    handler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
-
-    // NB - the Core API should have already handled exceptions in the CoreJsonRpcHandler
-    var exceptionHandler = Handlers.exceptionHandler(handler);
-    exceptionHandler.addExceptionHandler(Exception.class, new UnhandledExceptionHandler());
-    return handler;
-  }
-
-  @Provides
-  @Singleton
-  public Undertow undertow(Map<HandlerRoute, HttpHandler> handlers) {
-    var handler =
-        new RequestLimitingHandler(
-            MAXIMUM_CONCURRENT_REQUESTS, QUEUE_SIZE, configureRoutes(handlers));
-
-    return Undertow.builder().addHttpListener(port, bindAddress).setHandler(handler).build();
+  public String toString() {
+    return errorCode + " " + message;
   }
 }
