@@ -67,7 +67,7 @@ package com.radixdlt.api;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.api.common.UnhandledExceptionHandler;
+import com.radixdlt.api.common.HandlerRoute;
 import com.radixdlt.api.core.CoreApiModule;
 import com.radixdlt.api.system.SystemApiModule;
 import io.undertow.Handlers;
@@ -130,9 +130,9 @@ public final class ApiModule extends AbstractModule {
     handler.setFallbackHandler(ApiModule::fallbackHandler);
     handler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
 
-    // NB - the Core API should have already handled exceptions in the CoreJsonRpcHandler
-    var exceptionHandler = Handlers.exceptionHandler(handler);
-    exceptionHandler.addExceptionHandler(Exception.class, new UnhandledExceptionHandler());
+    // NB - the Core API and System API have already caught/handled exceptions in the
+    //      CoreJsonRpcHandler, and SystemGetJsonHandler, so we don't need to add a default error
+    // handler here
     return handler;
   }
 

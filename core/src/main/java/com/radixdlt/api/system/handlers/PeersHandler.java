@@ -62,28 +62,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
-
-import static org.assertj.core.api.Assertions.assertThat;
+package com.radixdlt.api.system.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.api.system.handlers.ConfigurationHandler;
-import org.junit.Test;
+import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.SystemModelMapper;
+import com.radixdlt.api.system.generated.models.SystemPeersResponse;
+import com.radixdlt.network.p2p.PeersView;
 
-public class ConfigurationHandlerTest extends ApiTest {
-  @Inject private ConfigurationHandler sut;
+public final class PeersHandler extends SystemGetJsonHandler<SystemPeersResponse> {
 
-  @Test
-  public void can_retrieve_configuration() throws Exception {
-    // Arrange
-    start();
+  private final SystemModelMapper systemModelMapper;
+  private final PeersView peersView;
 
-    // Act
-    var response = handleRequestWithExpectedResponse(sut, SystemConfigurationResponse.class);
+  @Inject
+  PeersHandler(SystemModelMapper systemModelMapper, PeersView peersView) {
+    super();
+    this.systemModelMapper = systemModelMapper;
+    this.peersView = peersView;
+  }
 
-    // Assert
-    assertThat(response.getBft()).isNotNull();
+  @Override
+  public SystemPeersResponse handleRequest() {
+    var response = new SystemPeersResponse();
+    peersView.peers().map(systemModelMapper::peer).forEach(response::addPeersItem);
+    return response;
   }
 }

@@ -62,28 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
-
-import static org.assertj.core.api.Assertions.assertThat;
+package com.radixdlt.api.system.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.api.system.handlers.ConfigurationHandler;
-import org.junit.Test;
+import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.SystemModelMapper;
+import com.radixdlt.api.system.generated.models.SystemMetricsResponse;
+import com.radixdlt.monitoring.SystemCounters;
 
-public class ConfigurationHandlerTest extends ApiTest {
-  @Inject private ConfigurationHandler sut;
+public final class MetricsHandler extends SystemGetJsonHandler<SystemMetricsResponse> {
+  private final SystemCounters systemCounters;
+  private final SystemModelMapper systemModelMapper;
 
-  @Test
-  public void can_retrieve_configuration() throws Exception {
-    // Arrange
-    start();
+  @Inject
+  MetricsHandler(SystemModelMapper systemModelMapper, SystemCounters systemCounters) {
+    super();
+    this.systemModelMapper = systemModelMapper;
+    this.systemCounters = systemCounters;
+  }
 
-    // Act
-    var response = handleRequestWithExpectedResponse(sut, SystemConfigurationResponse.class);
-
-    // Assert
-    assertThat(response.getBft()).isNotNull();
+  @Override
+  public SystemMetricsResponse handleRequest() {
+    return new SystemMetricsResponse()
+        .bft(systemModelMapper.bftMetrics(systemCounters))
+        .mempool(systemModelMapper.mempoolMetrics(systemCounters))
+        .sync(systemModelMapper.syncMetrics(systemCounters))
+        .networking(systemModelMapper.networkingMetrics(systemCounters));
   }
 }

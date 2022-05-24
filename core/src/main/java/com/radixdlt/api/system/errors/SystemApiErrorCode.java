@@ -62,28 +62,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.system.errors;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public enum SystemApiErrorCode {
+  BAD_REQUEST(400, "Bad request"),
+  NOT_FOUND(404, "Not found"),
+  CONFLICT(409, "State Conflict"),
+  INTERNAL_SERVER_ERROR(500, "Internal Server Error"),
+  NOT_SUPPORTED(501, "Not supported"),
+  UNAVAILABLE(503, "Unavailable");
 
-import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.api.system.handlers.ConfigurationHandler;
-import org.junit.Test;
+  private final int errorCode;
+  private final String message;
 
-public class ConfigurationHandlerTest extends ApiTest {
-  @Inject private ConfigurationHandler sut;
+  SystemApiErrorCode(int errorCode, String message) {
+    this.errorCode = errorCode;
+    this.message = message;
+  }
 
-  @Test
-  public void can_retrieve_configuration() throws Exception {
-    // Arrange
-    start();
+  public int getErrorCode() {
+    return errorCode;
+  }
 
-    // Act
-    var response = handleRequestWithExpectedResponse(sut, SystemConfigurationResponse.class);
+  public String getMessage() {
+    return message;
+  }
 
-    // Assert
-    assertThat(response.getBft()).isNotNull();
+  @Override
+  public String toString() {
+    return errorCode + " " + message;
   }
 }

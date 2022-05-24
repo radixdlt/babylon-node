@@ -62,28 +62,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.core.handlers;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.radixdlt.RadixNodeApplication.SYSTEM_VERSION_KEY;
+import static com.radixdlt.RadixNodeApplication.VERSION_STRING_KEY;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.api.system.handlers.ConfigurationHandler;
-import org.junit.Test;
+import com.radixdlt.RadixNodeApplication;
+import com.radixdlt.api.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.exceptions.CoreApiException;
+import com.radixdlt.api.core.generated.models.Bech32HRPs;
+import com.radixdlt.api.core.generated.models.NetworkConfigurationResponse;
+import com.radixdlt.api.core.generated.models.NetworkConfigurationResponseVersion;
+import com.radixdlt.api.core.generated.models.NetworkIdentifier;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 
-public class ConfigurationHandlerTest extends ApiTest {
-  @Inject private ConfigurationHandler sut;
+public final class NetworkConfigurationHandler
+    extends CoreJsonRpcHandler<Void, NetworkConfigurationResponse> {
+  private final Network network;
 
-  @Test
-  public void can_retrieve_configuration() throws Exception {
-    // Arrange
-    start();
+  @Inject
+  NetworkConfigurationHandler(@NetworkId int networkId) {
+    super(Void.class);
+    this.network = Network.ofId(networkId).orElseThrow();
+  }
 
-    // Act
-    var response = handleRequestWithExpectedResponse(sut, SystemConfigurationResponse.class);
-
-    // Assert
-    assertThat(response.getBft()).isNotNull();
+  @Override
+  public NetworkConfigurationResponse handleRequest(Void request) throws CoreApiException {
+    return new NetworkConfigurationResponse()
+        .networkIdentifier(new NetworkIdentifier().network(network.name().toLowerCase()))
+        .bech32HumanReadableParts(
+            new Bech32HRPs()
+                .accountHrp(network.getAccountHrp())
+                .validatorHrp(network.getValidatorHrp())
+                .nodeHrp(network.getNodeHrp())
+                .resourceHrpSuffix(network.getResourceHrpSuffix()))
+        .version(
+            new NetworkConfigurationResponseVersion()
+                .apiVersion("1.0.0")
+                .coreVersion(
+                    RadixNodeApplication.systemVersionInfo()
+                        .get(SYSTEM_VERSION_KEY)
+                        .get(VERSION_STRING_KEY)
+                        .toString()));
   }
 }

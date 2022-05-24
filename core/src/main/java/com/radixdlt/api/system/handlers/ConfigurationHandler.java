@@ -62,28 +62,64 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
-
-import static org.assertj.core.api.Assertions.assertThat;
+package com.radixdlt.api.system.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
+import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.SystemModelMapper;
+import com.radixdlt.api.system.generated.models.BFTConfiguration;
+import com.radixdlt.api.system.generated.models.MempoolConfiguration;
 import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.api.system.handlers.ConfigurationHandler;
-import org.junit.Test;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.MempoolThrottleMs;
+import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.sync.SyncConfig;
 
-public class ConfigurationHandlerTest extends ApiTest {
-  @Inject private ConfigurationHandler sut;
+public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfigurationResponse> {
 
-  @Test
-  public void can_retrieve_configuration() throws Exception {
-    // Arrange
-    start();
+  private final long pacemakerTimeout;
+  private final int bftSyncPatienceMillis;
+  private final int mempoolMaxSize;
+  private final long mempoolThrottleMs;
+  private final SyncConfig syncConfig;
+  private final P2PConfig p2PConfig;
+  private final ECPublicKey self;
+  private final SystemModelMapper systemModelMapper;
 
-    // Act
-    var response = handleRequestWithExpectedResponse(sut, SystemConfigurationResponse.class);
+  @Inject
+  ConfigurationHandler(
+      @Self ECPublicKey self,
+      @PacemakerTimeout long pacemakerTimeout,
+      @BFTSyncPatienceMillis int bftSyncPatienceMillis,
+      @MempoolMaxSize int mempoolMaxSize,
+      @MempoolThrottleMs long mempoolThrottleMs,
+      SyncConfig syncConfig,
+      P2PConfig p2PConfig,
+      SystemModelMapper systemModelMapper) {
+    super();
+    this.self = self;
+    this.pacemakerTimeout = pacemakerTimeout;
+    this.bftSyncPatienceMillis = bftSyncPatienceMillis;
+    this.mempoolMaxSize = mempoolMaxSize;
+    this.mempoolThrottleMs = mempoolThrottleMs;
+    this.syncConfig = syncConfig;
+    this.p2PConfig = p2PConfig;
+    this.systemModelMapper = systemModelMapper;
+  }
 
-    // Assert
-    assertThat(response.getBft()).isNotNull();
+  @Override
+  public SystemConfigurationResponse handleRequest() {
+    return new SystemConfigurationResponse()
+        .bft(
+            new BFTConfiguration()
+                .bftSyncPatience(bftSyncPatienceMillis)
+                .pacemakerTimeout(pacemakerTimeout))
+        .mempool(new MempoolConfiguration().maxSize(mempoolMaxSize).throttle(mempoolThrottleMs))
+        .sync(systemModelMapper.syncConfiguration(syncConfig))
+        .networking(systemModelMapper.networkingConfiguration(self, p2PConfig));
   }
 }

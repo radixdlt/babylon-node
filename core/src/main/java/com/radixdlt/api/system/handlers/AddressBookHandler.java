@@ -62,28 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
-
-import static org.assertj.core.api.Assertions.assertThat;
+package com.radixdlt.api.system.handlers;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.api.system.handlers.ConfigurationHandler;
-import org.junit.Test;
+import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.SystemModelMapper;
+import com.radixdlt.api.system.generated.models.SystemAddressBookResponse;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
 
-public class ConfigurationHandlerTest extends ApiTest {
-  @Inject private ConfigurationHandler sut;
+public final class AddressBookHandler extends SystemGetJsonHandler<SystemAddressBookResponse> {
+  private final AddressBook addressBook;
+  private final SystemModelMapper systemModelMapper;
 
-  @Test
-  public void can_retrieve_configuration() throws Exception {
-    // Arrange
-    start();
+  @Inject
+  AddressBookHandler(AddressBook addressBook, SystemModelMapper systemModelMapper) {
+    super();
+    this.addressBook = addressBook;
+    this.systemModelMapper = systemModelMapper;
+  }
 
-    // Act
-    var response = handleRequestWithExpectedResponse(sut, SystemConfigurationResponse.class);
-
-    // Assert
-    assertThat(response.getBft()).isNotNull();
+  @Override
+  public SystemAddressBookResponse handleRequest() {
+    var response = new SystemAddressBookResponse();
+    addressBook
+        .knownPeers()
+        .forEach((n, entry) -> response.addEntriesItem(systemModelMapper.addressBookEntry(entry)));
+    return response;
   }
 }

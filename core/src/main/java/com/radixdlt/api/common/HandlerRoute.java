@@ -62,28 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.common;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import io.undertow.util.HttpString;
+import io.undertow.util.Methods;
+import java.util.Objects;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.api.system.handlers.ConfigurationHandler;
-import org.junit.Test;
+public record HandlerRoute(HttpString method, String path) {
+  public static HandlerRoute post(String path) {
+    Objects.requireNonNull(path);
+    return new HandlerRoute(Methods.POST, path);
+  }
 
-public class ConfigurationHandlerTest extends ApiTest {
-  @Inject private ConfigurationHandler sut;
-
-  @Test
-  public void can_retrieve_configuration() throws Exception {
-    // Arrange
-    start();
-
-    // Act
-    var response = handleRequestWithExpectedResponse(sut, SystemConfigurationResponse.class);
-
-    // Assert
-    assertThat(response.getBft()).isNotNull();
+  public static HandlerRoute get(String path) {
+    Objects.requireNonNull(path);
+    return new HandlerRoute(Methods.GET, path);
   }
 }

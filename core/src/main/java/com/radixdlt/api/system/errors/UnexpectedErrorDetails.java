@@ -62,28 +62,142 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.system.errors;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import io.swagger.annotations.ApiModelProperty;
+import java.util.Objects;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.api.system.handlers.ConfigurationHandler;
-import org.junit.Test;
+/** UnexpecteUnexpectedErrorDetailsdError */
+@JsonPropertyOrder({
+  UnexpectedErrorDetails.JSON_PROPERTY_CODE,
+  UnexpectedErrorDetails.JSON_PROPERTY_MESSAGE,
+  UnexpectedErrorDetails.JSON_PROPERTY_DETAILS
+})
+@javax.annotation.processing.Generated(
+    value = "org.openapitools.codegen.languages.JavaClientCodegen")
+public class UnexpectedErrorDetails {
+  public static final String JSON_PROPERTY_CODE = "code";
+  private Integer code;
 
-public class ConfigurationHandlerTest extends ApiTest {
-  @Inject private ConfigurationHandler sut;
+  public static final String JSON_PROPERTY_MESSAGE = "message";
+  private String message;
 
-  @Test
-  public void can_retrieve_configuration() throws Exception {
-    // Arrange
-    start();
+  public static final String JSON_PROPERTY_DETAILS = "details";
+  private SystemBaseError details;
 
-    // Act
-    var response = handleRequestWithExpectedResponse(sut, SystemConfigurationResponse.class);
+  public UnexpectedErrorDetails code(Integer code) {
+    this.code = code;
+    return this;
+  }
 
-    // Assert
-    assertThat(response.getBft()).isNotNull();
+  /**
+   * Get code
+   *
+   * @return code
+   */
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_CODE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public Integer getCode() {
+    return code;
+  }
+
+  @JsonProperty(JSON_PROPERTY_CODE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setCode(Integer code) {
+    this.code = code;
+  }
+
+  public UnexpectedErrorDetails message(String message) {
+    this.message = message;
+    return this;
+  }
+
+  /**
+   * Get message
+   *
+   * @return message
+   */
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public String getMessage() {
+    return message;
+  }
+
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMessage(String message) {
+    this.message = message;
+  }
+
+  public UnexpectedErrorDetails details(SystemBaseError details) {
+    this.details = details;
+    return this;
+  }
+
+  /**
+   * Get details
+   *
+   * @return details
+   */
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public SystemBaseError getDetails() {
+    return details;
+  }
+
+  @JsonProperty(JSON_PROPERTY_DETAILS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setDetails(SystemBaseError details) {
+    this.details = details;
+  }
+
+  /** Return true if this UnexpectedError object is equal to o. */
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    UnexpectedErrorDetails unexpectedError = (UnexpectedErrorDetails) o;
+    return Objects.equals(this.code, unexpectedError.code)
+        && Objects.equals(this.message, unexpectedError.message)
+        && Objects.equals(this.details, unexpectedError.details);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(code, message, details);
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("class UnexpectedError {\n");
+    sb.append("    code: ").append(toIndentedString(code)).append("\n");
+    sb.append("    message: ").append(toIndentedString(message)).append("\n");
+    sb.append("    details: ").append(toIndentedString(details)).append("\n");
+    sb.append("}");
+    return sb.toString();
+  }
+
+  /**
+   * Convert the given object to string with each line indented by 4 spaces (except the first line).
+   */
+  private String toIndentedString(Object o) {
+    if (o == null) {
+      return "null";
+    }
+    return o.toString().replace("\n", "\n    ");
   }
 }

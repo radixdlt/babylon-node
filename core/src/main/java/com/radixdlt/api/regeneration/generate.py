@@ -8,9 +8,12 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', level=log
 
 CORE_API_SPEC_LOCATION = '../core/core-api-spec.yaml'
 CORE_API_GENERATED_DESTINATION = '../core/generated/'
+SYSTEM_API_SPEC_LOCATION = '../system/system-api-spec.yaml'
+SYSTEM_API_GENERATED_DESTINATION = '../system/generated/'
 
 COMMON_API_PACKAGE = 'com.radixdlt.api.common'
 CORE_API_PACKAGE = 'com.radixdlt.api.core'
+SYSTEM_API_PACKAGE = 'com.radixdlt.api.system'
 
 OPENAPI_GENERATION_FOLDER='.'
 OPENAPI_TEMP_GENERATION_FOLDER='./temp'
@@ -63,7 +66,7 @@ def generate_models(package_name, spec_file, api_package, tmp_client_folder, out
     logging.info("Successfully generated the %s package" % package_name)
 
 if __name__ == "__main__":    
-    logger.info('Will generate models for the Core API')
+    logger.info('Will generate models from the API specifications')
 
     # Set working directory to be the same directory as this script
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -87,10 +90,16 @@ if __name__ == "__main__":
     replace_in_file(core_api_spec_temp_filename, 'openapi: 3.1.0', 'openapi: 3.0.0')
     logging.info('Loaded Core API Spec from {}'.format(os.path.abspath(CORE_API_SPEC_LOCATION)))
 
+    system_api_spec_temp_filename = os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, 'system_api_spec.yaml')
+    copy_file(SYSTEM_API_SPEC_LOCATION, system_api_spec_temp_filename)
+    replace_in_file(system_api_spec_temp_filename, 'openapi: 3.1.0', 'openapi: 3.0.0')
+    logging.info('Loaded System API Spec from {}'.format(os.path.abspath(SYSTEM_API_SPEC_LOCATION)))
+
     # generate the clients
     logging.info('Generating code from specs...')
 
     generate_models("core-api", core_api_spec_temp_filename, CORE_API_PACKAGE, os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, "core-api"), CORE_API_GENERATED_DESTINATION)
+    generate_models("system-api", system_api_spec_temp_filename, SYSTEM_API_PACKAGE, os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, "system-api"), SYSTEM_API_GENERATED_DESTINATION)
 
     logging.info("Code has been created.")
     

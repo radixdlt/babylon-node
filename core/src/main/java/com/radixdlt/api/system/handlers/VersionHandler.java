@@ -62,28 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.system.handlers;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.radixdlt.RadixNodeApplication.SYSTEM_VERSION_KEY;
+import static com.radixdlt.RadixNodeApplication.VERSION_STRING_KEY;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.api.system.handlers.ConfigurationHandler;
-import org.junit.Test;
+import com.radixdlt.RadixNodeApplication;
+import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.generated.models.VersionResponse;
 
-public class ConfigurationHandlerTest extends ApiTest {
-  @Inject private ConfigurationHandler sut;
+public class VersionHandler extends SystemGetJsonHandler<VersionResponse> {
+  private final String version;
 
-  @Test
-  public void can_retrieve_configuration() throws Exception {
-    // Arrange
-    start();
+  @Inject
+  public VersionHandler() {
+    super();
+    this.version =
+        (String)
+            RadixNodeApplication.systemVersionInfo()
+                .get(SYSTEM_VERSION_KEY)
+                .get(VERSION_STRING_KEY);
+  }
 
-    // Act
-    var response = handleRequestWithExpectedResponse(sut, SystemConfigurationResponse.class);
-
-    // Assert
-    assertThat(response.getBft()).isNotNull();
+  @Override
+  public VersionResponse handleRequest() {
+    return new VersionResponse().version(version);
   }
 }

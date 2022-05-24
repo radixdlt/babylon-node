@@ -66,8 +66,8 @@ package com.radixdlt.api.core;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.HandlerRoute;
-import com.radixdlt.api.core.endpoints.NetworkConfigurationHandler;
+import com.radixdlt.api.common.HandlerRoute;
+import com.radixdlt.api.core.handlers.NetworkConfigurationHandler;
 import io.undertow.server.HttpHandler;
 
 public class CoreApiModule extends AbstractModule {

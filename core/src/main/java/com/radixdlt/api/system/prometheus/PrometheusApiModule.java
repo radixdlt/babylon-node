@@ -67,7 +67,7 @@ package com.radixdlt.api.system.prometheus;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.HandlerRoute;
+import com.radixdlt.api.common.HandlerRoute;
 import io.undertow.server.HttpHandler;
 
 public final class PrometheusApiModule extends AbstractModule {

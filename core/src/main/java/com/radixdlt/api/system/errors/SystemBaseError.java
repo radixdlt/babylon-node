@@ -62,28 +62,98 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.system.errors;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.fasterxml.jackson.annotation.*;
+import com.radixdlt.api.common.JSON;
+import io.swagger.annotations.ApiModelProperty;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.api.system.handlers.ConfigurationHandler;
-import org.junit.Test;
+/** SystemBaseError */
+@JsonPropertyOrder({SystemBaseError.JSON_PROPERTY_TYPE})
+@javax.annotation.processing.Generated(
+    value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "type",
+    visible = true)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
+})
+public class SystemBaseError implements Serializable {
+  public static final String JSON_PROPERTY_TYPE = "type";
+  private String type;
 
-public class ConfigurationHandlerTest extends ApiTest {
-  @Inject private ConfigurationHandler sut;
+  public SystemBaseError type(String type) {
+    this.type = type;
+    return this;
+  }
 
-  @Test
-  public void can_retrieve_configuration() throws Exception {
-    // Arrange
-    start();
+  /**
+   * Get type
+   *
+   * @return type
+   */
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public String getType() {
+    return type;
+  }
 
-    // Act
-    var response = handleRequestWithExpectedResponse(sut, SystemConfigurationResponse.class);
+  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setType(String type) {
+    this.type = type;
+  }
 
-    // Assert
-    assertThat(response.getBft()).isNotNull();
+  /** Return true if this CoreError object is equal to o. */
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    SystemBaseError baseError = (SystemBaseError) o;
+    return Objects.equals(this.type, baseError.type);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(type);
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("class BaseError {\n");
+    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("}");
+    return sb.toString();
+  }
+
+  /**
+   * Convert the given object to string with each line indented by 4 spaces (except the first line).
+   */
+  private String toIndentedString(Object o) {
+    if (o == null) {
+      return "null";
+    }
+    return o.toString().replace("\n", "\n    ");
+  }
+
+  static {
+    // Initialize and register the discriminator mappings.
+    Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+    mappings.put("InternalServerError", InternalServerError.class);
+    mappings.put("CoreError", SystemBaseError.class);
+    JSON.registerDiscriminator(SystemBaseError.class, "type", mappings);
   }
 }
