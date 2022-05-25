@@ -2,12 +2,14 @@ use std::collections::HashSet;
 
 #[derive(Debug)]
 pub struct VertexStore {
-    in_mem_store: HashSet<Vec<u8>>
+    in_mem_store: HashSet<Vec<u8>>,
 }
 
 impl VertexStore {
     pub fn new() -> VertexStore {
-        VertexStore { in_mem_store: HashSet::new() }
+        VertexStore {
+            in_mem_store: HashSet::new(),
+        }
     }
 
     pub fn insert_vertex(&mut self, vertex: Vec<u8>) {

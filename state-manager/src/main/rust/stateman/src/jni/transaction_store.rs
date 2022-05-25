@@ -1,7 +1,7 @@
-use jni::JNIEnv;
+use crate::jni::state_manager::jni_state_manager;
 use jni::objects::{JClass, JObject};
 use jni::sys::{jbyteArray, jlong};
-use crate::state_manager::get_state_manager_from_jni_env;
+use jni::JNIEnv;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_insertTransaction(
@@ -9,16 +9,20 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_insertTran
     _class: JClass,
     interop_state: JObject,
     j_state_version: jlong,
-    j_transaction_bytes: jbyteArray
+    j_transaction_bytes: jbyteArray,
 ) {
-    let state_manager = get_state_manager_from_jni_env(env, interop_state);
+    let state_manager = jni_state_manager(env, interop_state);
 
-    let transaction_bytes: Vec<u8> = env.convert_byte_array(j_transaction_bytes)
+    let transaction_bytes: Vec<u8> = env
+        .convert_byte_array(j_transaction_bytes)
         .expect("Can't convert transaction data byte array to vec");
 
     // Only get the lock for transaction store
-    state_manager.transaction_store.lock()
-        .unwrap().insert_transaction(j_state_version as u64, transaction_bytes);
+    state_manager
+        .transaction_store
+        .lock()
+        .unwrap()
+        .insert_transaction(j_state_version as u64, transaction_bytes);
 }
 
 #[no_mangle]
@@ -26,15 +30,15 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
     env: JNIEnv,
     _class: JClass,
     interop_state: JObject,
-    j_state_version: jlong
+    j_state_version: jlong,
 ) -> jbyteArray {
-    let state_manager = get_state_manager_from_jni_env(env, interop_state);
+    let state_manager = jni_state_manager(env, interop_state);
 
     // Only get the lock for transaction store
     let transaction_store = state_manager.transaction_store.lock().unwrap();
 
     let transaction_data = transaction_store.get_transaction(j_state_version as u64);
 
-    env.byte_array_from_slice(&transaction_data)
+    env.byte_array_from_slice(transaction_data)
         .expect("Can't create jbyteArray for transaction data")
 }

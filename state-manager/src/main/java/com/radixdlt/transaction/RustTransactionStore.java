@@ -64,30 +64,30 @@
 
 package com.radixdlt.transaction;
 
-import com.radixdlt.statemanager.StateManager.RustInteropState;
+import com.radixdlt.statemanager.StateManager.RustState;
 import java.util.Objects;
 
 public final class RustTransactionStore implements TransactionStore {
 
-  private final RustInteropState rustInteropState;
+  private final RustState rustState;
 
-  public RustTransactionStore(RustInteropState rustInteropState) {
-    this.rustInteropState = Objects.requireNonNull(rustInteropState);
+  public RustTransactionStore(RustState rustState) {
+    this.rustState = Objects.requireNonNull(rustState);
   }
 
   @Override
   public void insertTransaction(long stateVersion, byte[] transactionBytes) {
-    insertTransaction(this.rustInteropState, stateVersion, transactionBytes);
+    insertTransaction(this.rustState, stateVersion, transactionBytes);
   }
 
   @Override
   public byte[] getTransactionAtStateVersion(long stateVersion) {
-    return getTransactionAtStateVersion(this.rustInteropState, stateVersion);
+    return getTransactionAtStateVersion(this.rustState, stateVersion);
   }
 
   private static native void insertTransaction(
-      RustInteropState rustInteropState, long stateVersion, byte[] transactionBytes);
+      RustState rustState, long stateVersion, byte[] transactionBytes);
 
   private static native byte[] getTransactionAtStateVersion(
-      RustInteropState rustInteropState, long stateVersion);
+      RustState rustState, long stateVersion);
 }

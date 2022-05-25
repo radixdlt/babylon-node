@@ -82,29 +82,29 @@ public final class StateManager {
    * created and set on the Rust side via JNI env, and they should never be accessed in any other
    * way. The remaining fields are read-only values (for now, but this might change) passed to Rust.
    */
-  public static final class RustInteropState {
+  public static final class RustState {
     @SuppressWarnings("unused")
     private final long stateManager = 0;
 
-    private RustInteropState(byte[] publicKey) {
+    private RustState(byte[] publicKey) {
       init(this, publicKey);
     }
   }
 
   public static StateManager create(ECPublicKey publicKey) {
-    return new StateManager(new RustInteropState(publicKey.getBytes()));
+    return new StateManager(new RustState(publicKey.getBytes()));
   }
 
-  private final RustInteropState rustInteropState;
+  private final RustState rustState;
 
   private final VertexStore vertexStore;
 
   private final TransactionStore transactionStore;
 
-  private StateManager(RustInteropState rustInteropState) {
-    this.rustInteropState = Objects.requireNonNull(rustInteropState);
-    this.vertexStore = new RustVertexStore(rustInteropState);
-    this.transactionStore = new RustTransactionStore(rustInteropState);
+  private StateManager(RustState rustState) {
+    this.rustState = Objects.requireNonNull(rustState);
+    this.vertexStore = new RustVertexStore(rustState);
+    this.transactionStore = new RustTransactionStore(rustState);
   }
 
   public VertexStore vertexStore() {
@@ -116,10 +116,10 @@ public final class StateManager {
   }
 
   public void shutdown() {
-    cleanup(this.rustInteropState);
+    cleanup(this.rustState);
   }
 
-  private static native void init(RustInteropState rustInteropState, byte[] publicKey);
+  private static native void init(RustState rustState, byte[] publicKey);
 
-  private static native void cleanup(RustInteropState rustInteropState);
+  private static native void cleanup(RustState rustState);
 }
