@@ -62,64 +62,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.transaction;
 
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.transaction.RustTransactionStore;
-import com.radixdlt.transaction.TransactionStore;
-import com.radixdlt.vertexstore.RustVertexStore;
-import com.radixdlt.vertexstore.VertexStore;
+import com.radixdlt.statemanager.StateManager.RustInteropState;
 import java.util.Objects;
 
-public final class StateManager {
-
-  static {
-    System.loadLibrary("stateman");
-  }
-
-  /**
-   * Stores Rust state across JNI calls. Fields with "Ref" suffix are pointers to the Rust objects
-   * created and set on the Rust side via JNI env, and they should never be accessed in any other
-   * way. The remaining fields are read-only values (for now, but this might change) passed to Rust.
-   */
-  public static final class RustInteropState {
-    @SuppressWarnings("unused")
-    private final long stateManager = 0;
-
-    private RustInteropState(byte[] publicKey) {
-      init(this, publicKey);
-    }
-  }
-
-  public static StateManager create(ECPublicKey publicKey) {
-    return new StateManager(new RustInteropState(publicKey.getBytes()));
-  }
+public final class RustTransactionStore implements TransactionStore {
 
   private final RustInteropState rustInteropState;
 
-  private final VertexStore vertexStore;
-
-  private final TransactionStore transactionStore;
-
-  private StateManager(RustInteropState rustInteropState) {
+  public RustTransactionStore(RustInteropState rustInteropState) {
     this.rustInteropState = Objects.requireNonNull(rustInteropState);
-    this.vertexStore = new RustVertexStore(rustInteropState);
-    this.transactionStore = new RustTransactionStore(rustInteropState);
   }
 
-  public VertexStore vertexStore() {
-    return this.vertexStore;
+  @Override
+  public void insertTransaction(long stateVersion, byte[] transactionBytes) {
+    insertTransaction(this.rustInteropState, stateVersion, transactionBytes);
   }
 
-  public TransactionStore transactionStore() {
-    return this.transactionStore;
+  @Override
+  public byte[] getTransactionAtStateVersion(long stateVersion) {
+    return getTransactionAtStateVersion(this.rustInteropState, stateVersion);
   }
 
-  public void shutdown() {
-    cleanup(this.rustInteropState);
-  }
+  private static native void insertTransaction(
+      RustInteropState rustInteropState, long stateVersion, byte[] transactionBytes);
 
-  private static native void init(RustInteropState rustInteropState, byte[] publicKey);
-
-  private static native void cleanup(RustInteropState rustInteropState);
+  private static native byte[] getTransactionAtStateVersion(
+      RustInteropState rustInteropState, long stateVersion);
 }
