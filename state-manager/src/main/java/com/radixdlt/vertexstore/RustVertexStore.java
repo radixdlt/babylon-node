@@ -64,28 +64,28 @@
 
 package com.radixdlt.vertexstore;
 
-import com.radixdlt.statemanager.StateManager.RustInteropState;
+import com.radixdlt.statemanager.StateManager.RustState;
 import java.util.Objects;
 
 public final class RustVertexStore implements VertexStore {
 
-  private final RustInteropState rustInteropState;
+  private final RustState rustState;
 
-  public RustVertexStore(RustInteropState rustInteropState) {
-    this.rustInteropState = Objects.requireNonNull(rustInteropState);
+  public RustVertexStore(RustState rustState) {
+    this.rustState = Objects.requireNonNull(rustState);
   }
 
   @Override
   public void insertVertex(byte[] vertex) {
-    insertVertex(this.rustInteropState, vertex);
+    insertVertex(this.rustState, vertex);
   }
 
   @Override
   public boolean containsVertex(byte[] vertex) {
-    return containsVertex(rustInteropState, vertex);
+    return containsVertex(rustState, vertex);
   }
 
-  private static native void insertVertex(RustInteropState rustInteropState, byte[] vertex);
+  private static native void insertVertex(RustState rustState, byte[] vertex);
 
-  private static native boolean containsVertex(RustInteropState rustInteropState, byte[] vertex);
+  private static native boolean containsVertex(RustState rustState, byte[] vertex);
 }
