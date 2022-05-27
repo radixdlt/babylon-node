@@ -70,6 +70,7 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.modules.ModuleRunner;
@@ -77,8 +78,8 @@ import com.radixdlt.statemanager.StateManager;
 
 public final class StateManagerModule extends AbstractModule {
   @Provides
-  StateManager stateManager(@Self BFTNode self) {
-    return StateManager.create(self.getKey());
+  StateManager stateManager(@MempoolMaxSize int mempoolMaxSize) {
+    return StateManager.create(mempoolMaxSize);
   }
 
   @ProvidesIntoMap

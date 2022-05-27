@@ -86,13 +86,13 @@ public final class StateManager {
     @SuppressWarnings("unused")
     private final long stateManager = 0;
 
-    private RustState(byte[] publicKey) {
-      init(this, publicKey);
+    private RustState(long mempoolSize) {
+      init(this, mempoolSize);
     }
   }
 
-  public static StateManager create(ECPublicKey publicKey) {
-    return new StateManager(new RustState(publicKey.getBytes()));
+  public static StateManager create(long mempoolSize) {
+    return new StateManager(new RustState(mempoolSize));
   }
 
   private final RustState rustState;
@@ -119,7 +119,7 @@ public final class StateManager {
     cleanup(this.rustState);
   }
 
-  private static native void init(RustState rustState, byte[] publicKey);
+  private static native void init(RustState rustState, long mempoolSize);
 
   private static native void cleanup(RustState rustState);
 }

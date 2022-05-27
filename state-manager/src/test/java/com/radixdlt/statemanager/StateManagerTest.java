@@ -68,7 +68,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import org.junit.Test;
 
@@ -79,11 +78,10 @@ public final class StateManagerTest {
 
   @Test
   public void test_rust_interop() throws InterruptedException {
-    final var key1 = ECKeyPair.generateNew().getPublicKey();
-    final var stateManagerNode1 = StateManager.create(key1);
 
-    final var key2 = ECKeyPair.generateNew().getPublicKey();
-    final var stateManagerNode2 = StateManager.create(key2);
+    final var mempoolSize = 100;
+    final var stateManagerNode1 = StateManager.create(mempoolSize);
+    final var stateManagerNode2 = StateManager.create(mempoolSize);
 
     // Just to check that concurrent access is possible
     var rand = new Random();
