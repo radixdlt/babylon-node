@@ -64,7 +64,6 @@
 
 package com.radixdlt.statemanager;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStore;
 import com.radixdlt.vertexstore.RustVertexStore;

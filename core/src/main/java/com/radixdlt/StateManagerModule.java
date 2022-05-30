@@ -69,10 +69,8 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.statemanager.StateManager;
 
