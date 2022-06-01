@@ -64,20 +64,19 @@
 
 package com.radixdlt.keygen;
 
-import static com.radixdlt.errors.ApiErrors.MISSING_PARAMETER;
-import static com.radixdlt.errors.InternalErrors.GENERAL;
-import static com.radixdlt.errors.InternalErrors.MISSING_KEYSTORE_FILE;
-import static com.radixdlt.errors.InternalErrors.UNABLE_TO_LOAD_KEYSTORE;
-import static com.radixdlt.errors.InternalErrors.UNABLE_TO_PARSE_COMMAND_LINE;
-import static com.radixdlt.utils.functional.Failure.failure;
-import static com.radixdlt.utils.functional.Result.allOf;
-import static com.radixdlt.utils.functional.Result.fromOptional;
+import static com.radixdlt.keygen.KeyGeneratorErrors.MISSING_KEYSTORE_FILE;
+import static com.radixdlt.keygen.KeyGeneratorErrors.MISSING_PARAMETER;
+import static com.radixdlt.keygen.KeyGeneratorErrors.UNABLE_TO_LOAD_KEYSTORE;
+import static com.radixdlt.keygen.KeyGeneratorErrors.UNABLE_TO_PARSE_COMMAND_LINE;
+import static com.radixdlt.lang.Result.all;
+import static com.radixdlt.lang.Result.fromOptional;
 import static java.util.Optional.ofNullable;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
-import com.radixdlt.utils.functional.Failure;
-import com.radixdlt.utils.functional.Result;
+import com.radixdlt.lang.Cause;
+import com.radixdlt.lang.Causes;
+import com.radixdlt.lang.Result;
 import java.io.File;
 import java.security.Security;
 import org.apache.commons.cli.CommandLine;
@@ -112,24 +111,24 @@ public class KeyGenerator {
   }
 
   public static void main(String[] args) {
-    var rc = new KeyGenerator().run(args).fold(Failure::code, __ -> 0);
+    var rc = new KeyGenerator().run(args).fold(unused -> -1, unused -> 0);
     System.exit(rc);
   }
 
   private Result<Void> run(String[] args) {
     return parseParameters(args)
-        .filter(commandLine -> !commandLine.hasOption("h"), irrelevant())
-        .filter(commandLine -> commandLine.getOptions().length != 0, irrelevant())
+        .filter(irrelevant(), commandLine -> !commandLine.hasOption("h"))
+        .filter(irrelevant(), commandLine -> commandLine.getOptions().length != 0)
         .flatMap(
             cli ->
-                allOf(parseKeystore(cli), parsePassword(cli), parseKeypair(cli), parseShowPk(cli))
+                all(parseKeystore(cli), parsePassword(cli), parseKeypair(cli), parseShowPk(cli))
                     .flatMap(this::generateKeypair))
         .onFailure(failure -> usage(failure.message()))
         .onSuccessDo(() -> System.out.println("Done"));
   }
 
-  private Failure irrelevant() {
-    return failure(0, "");
+  private Cause irrelevant() {
+    return Causes.cause("");
   }
 
   private void usage(String message) {
@@ -155,8 +154,8 @@ public class KeyGenerator {
         "Writing keypair '%s' [public key: %s]%ninto %s keystore %s%n",
         keypairName, publicKey, newFile ? "new" : "existing", keystore);
 
-    return Result.wrap(
-        UNABLE_TO_LOAD_KEYSTORE,
+    return Result.lift(
+        unused -> UNABLE_TO_LOAD_KEYSTORE,
         () -> {
           RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), newFile)
               .writeKeyPair(keypairName, keyPair);
@@ -171,11 +170,11 @@ public class KeyGenerator {
   private Result<Void> printPublicKey(
       File keystoreFile, String password, String keypairName, boolean newFile) {
     if (!keystoreFile.exists() || !keystoreFile.canRead()) {
-      return Result.fail(MISSING_KEYSTORE_FILE.with(keystoreFile));
+      return MISSING_KEYSTORE_FILE.result();
     }
 
-    return Result.wrap(
-        GENERAL,
+    return Result.lift(
+        unused -> irrelevant(),
         () -> {
           ECKeyPair keyPair =
               RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), newFile)
@@ -195,16 +194,15 @@ public class KeyGenerator {
   }
 
   private Result<String> parseKeypair(CommandLine commandLine) {
-    return requiredString(commandLine, "n").or(Result.ok(DEFAULT_KEYPAIR_NAME));
+    return requiredString(commandLine, "n").orElse(Result.ok(DEFAULT_KEYPAIR_NAME));
   }
 
   private Result<String> requiredString(CommandLine commandLine, String opt) {
-    return fromOptional(
-        () -> MISSING_PARAMETER.with(opt), ofNullable(commandLine.getOptionValue(opt)));
+    return fromOptional(MISSING_PARAMETER, ofNullable(commandLine.getOptionValue(opt)));
   }
 
   private Result<CommandLine> parseParameters(String[] args) {
-    return Result.wrap(
-        UNABLE_TO_PARSE_COMMAND_LINE, () -> new DefaultParser().parse(options, args));
+    return Result.lift(
+        unused -> UNABLE_TO_PARSE_COMMAND_LINE, () -> new DefaultParser().parse(options, args));
   }
 }

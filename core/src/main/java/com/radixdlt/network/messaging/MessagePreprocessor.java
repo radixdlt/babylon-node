@@ -69,6 +69,7 @@ import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
 import static java.util.Optional.ofNullable;
 
 import com.google.inject.Provider;
+import com.radixdlt.lang.Result;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.Message;
@@ -78,7 +79,6 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.functional.Result;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;

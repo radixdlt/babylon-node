@@ -511,6 +511,10 @@ public sealed interface Result<T> permits Success, Failure {
     }
   }
 
+  static <T> Result<T> fromOptional(Cause cause, Optional<T> source) {
+    return source.map(Result::ok).orElseGet(cause::result);
+  }
+
   /**
    * Wrap value returned by provided lambda into success {@link Result} if call succeeds or into
    * failure {@link Result} if call throws exception.

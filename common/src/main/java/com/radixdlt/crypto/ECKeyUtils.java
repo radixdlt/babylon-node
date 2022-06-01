@@ -64,15 +64,12 @@
 
 package com.radixdlt.crypto;
 
-import static com.radixdlt.errors.ApiErrors.UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.RuntimeUtils;
-import com.radixdlt.utils.functional.Result;
 import java.math.BigInteger;
 import java.security.Provider;
 import java.security.SecureRandom;
@@ -265,22 +262,6 @@ public class ECKeyUtils {
    * @param publicKey corresponding public key from the private key used to sign hash.
    * @return recoverable signature
    */
-  public static Result<ECDSASignature> toRecoverable(
-      ECDSASignature signature, byte[] hash, ECPublicKey publicKey) {
-    return Result.wrap(
-        UNABLE_TO_MAKE_SIGNATURE_RECOVERABLE,
-        () -> {
-          var v = calculateV(signature.getR(), signature.getS(), publicKey.getBytes(), hash);
-          return ECDSASignature.create(signature.getR(), signature.getS(), v);
-        });
-  }
-
-  public static ECDSASignature toRecoverableSig(
-      ECDSASignature signature, byte[] hash, ECPublicKey publicKey) {
-    var v = calculateV(signature.getR(), signature.getS(), publicKey.getBytes(), hash);
-    return ECDSASignature.create(signature.getR(), signature.getS(), v);
-  }
-
   static Optional<ECPoint> recoverFromSignature(int v, BigInteger r, BigInteger s, byte[] hash) {
     var curveN = curve().getN();
     var point = r.add(BigInteger.valueOf((long) v / 2).multiply(curveN));

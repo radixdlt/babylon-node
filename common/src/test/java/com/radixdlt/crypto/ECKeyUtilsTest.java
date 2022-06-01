@@ -72,7 +72,6 @@ import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import java.math.BigInteger;
 import java.util.Arrays;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class ECKeyUtilsTest {
@@ -220,21 +219,5 @@ public class ECKeyUtilsTest {
     var key = new byte[ECKeyPair.BYTES];
     Arrays.fill(key, (byte) -1);
     ECKeyUtils.validatePrivate(key);
-  }
-
-  @Test
-  public void testToRecoverable() throws PublicKeyException {
-    var keyPair = ECKeyPair.generateNew();
-    var hash = HashUtils.transactionIdHash("123456".getBytes());
-    var signature = keyPair.sign(hash);
-
-    ECKeyUtils.toRecoverable(signature, hash.asBytes(), keyPair.getPublicKey())
-        .onFailureDo(Assert::fail)
-        .onSuccess(
-            sig ->
-                ECPublicKey.recoverFrom(hash, sig)
-                    .ifPresentOrElse(
-                        recovered -> assertEquals(recovered, keyPair.getPublicKey()),
-                        Assert::fail));
   }
 }

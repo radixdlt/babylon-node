@@ -64,13 +64,15 @@
 
 package com.radixdlt.network.p2p.transport;
 
+import static com.radixdlt.lang.Unit.unitResult;
 import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
-import static com.radixdlt.utils.functional.Tuple.unitResult;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Unit;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.NodeId;
@@ -87,8 +89,6 @@ import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RateCalculator;
-import com.radixdlt.utils.functional.Result;
-import com.radixdlt.utils.functional.Tuple.Unit;
 import com.radixdlt.utils.time.Time;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
