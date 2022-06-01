@@ -97,10 +97,6 @@ public final class Unit implements Tuple.Tuple0 {
     return UNIT;
   }
 
-  //    public static <T> Unit unit(final T ignored) {
-  //        return UNIT;
-  //    }
-
   public static <T1, T2> Unit unit(final T1 ignored1, final T2 ignored2) {
     return UNIT;
   }
