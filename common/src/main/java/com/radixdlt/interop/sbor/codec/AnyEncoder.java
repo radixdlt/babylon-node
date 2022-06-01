@@ -89,15 +89,13 @@ record AnyEncoder(ByteArrayOutputStream output, CodecMap codecMap) implements En
       return encodeOption(option);
     }
 
-    if (value instanceof Either<?,?> either) {
+    if (value instanceof Either<?, ?> either) {
       return encodeEither(either);
     }
 
-    return codecMap.get(value.getClass())
-      .fold(
-        UNSUPPORTED_TYPE::result,
-        codec -> ((ClassCodec<Object>) codec).encode(this, value)
-      );
+    return codecMap
+        .get(value.getClass())
+        .fold(UNSUPPORTED_TYPE::result, codec -> ((ClassCodec<Object>) codec).encode(this, value));
   }
 
   @Override
@@ -111,12 +109,11 @@ record AnyEncoder(ByteArrayOutputStream output, CodecMap codecMap) implements En
     encodeTypeId(TYPE_OPTION);
 
     option.apply(
-      () -> writeByte(OPTION_TYPE_NONE.typeId()),
-      v -> {
-        writeByte(OPTION_TYPE_SOME.typeId());
-        encode(v);
-      }
-    );
+        () -> writeByte(OPTION_TYPE_NONE.typeId()),
+        v -> {
+          writeByte(OPTION_TYPE_SOME.typeId());
+          encode(v);
+        });
 
     return Unit.unitResult();
   }
@@ -125,13 +122,15 @@ record AnyEncoder(ByteArrayOutputStream output, CodecMap codecMap) implements En
   public Result<Unit> encodeEither(Either<?, ?> either) {
     encodeTypeId(TYPE_RESULT);
 
-    either.apply(left -> {
-      writeByte(RESULT_TYPE_ERR.typeId());
-      encode(left);
-    }, right -> {
-      writeByte(RESULT_TYPE_OK.typeId());
-      encode(right);
-    });
+    either.apply(
+        left -> {
+          writeByte(RESULT_TYPE_ERR.typeId());
+          encode(left);
+        },
+        right -> {
+          writeByte(RESULT_TYPE_OK.typeId());
+          encode(right);
+        });
 
     return Unit.unitResult();
   }

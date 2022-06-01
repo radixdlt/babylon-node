@@ -77,9 +77,7 @@ public interface ClassCodec<T> {
   List<ClassField<T>> fields();
 
   default List<?> values(T value) {
-    return fields().stream()
-      .map(field -> field.getter().apply(value))
-      .toList();
+    return fields().stream().map(field -> field.getter().apply(value)).toList();
   }
 
   default Result<Unit> encode(EncoderApi encoder, T value) {
@@ -89,18 +87,19 @@ public interface ClassCodec<T> {
     encoder.writeInt(values.size());
 
     return values.stream()
-      .map(encoder::encode)
-      .filter(Result::isFailure)
-      .findAny()
-      .orElseGet(Unit::unitResult);
+        .map(encoder::encode)
+        .filter(Result::isFailure)
+        .findAny()
+        .orElseGet(Unit::unitResult);
   }
 
   default Result<T> decode(DecoderApi decoder) {
-    return decoder.expectType(TYPE_STRUCT)
-      .flatMap(decoder::readInt)
-      .filter(INVALID_FIELD_COUNT, value -> value == fields().size())
-      .map(() -> decoder)
-      .flatMap(this::decodeFields);
+    return decoder
+        .expectType(TYPE_STRUCT)
+        .flatMap(decoder::readInt)
+        .filter(INVALID_FIELD_COUNT, value -> value == fields().size())
+        .map(() -> decoder)
+        .flatMap(this::decodeFields);
   }
 
   Result<T> decodeFields(DecoderApi anyDecoder);

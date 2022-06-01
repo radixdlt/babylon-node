@@ -64,10 +64,6 @@
 
 package com.radixdlt.interop.sbor.api;
 
-import static com.radixdlt.lang.Option.option;
-
-import com.radixdlt.lang.Option;
-
 public enum TypeId {
   TYPE_UNIT(0x00),
   TYPE_BOOL(0x01),
@@ -89,7 +85,7 @@ public enum TypeId {
   TYPE_ARRAY(0x22),
   TYPE_TUPLE(0x23),
   TYPE_RESULT(0x24),
-  TYPE_VEC(0x30),  // collections
+  TYPE_VEC(0x30), // collections
   TYPE_TREE_SET(0x31),
   TYPE_TREE_MAP(0x32),
   TYPE_HASH_SET(0x33),

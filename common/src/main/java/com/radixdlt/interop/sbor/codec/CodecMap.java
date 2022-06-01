@@ -72,9 +72,7 @@ import com.radixdlt.lang.Unit;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Container for mapping between codec and class.
- */
+/** Container for mapping between codec and class. */
 public final class CodecMap {
   @SuppressWarnings("rawtypes")
   private final Map<Class, ClassCodec> classEncodingMap = new HashMap<>();

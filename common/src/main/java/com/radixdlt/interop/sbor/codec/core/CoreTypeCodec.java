@@ -98,9 +98,10 @@ public abstract sealed class CoreTypeCodec<T> implements ClassCodec<T> {
   }
 
   @Override
-  abstract public Result<T> decode(DecoderApi decoder);
+  public abstract Result<T> decode(DecoderApi decoder);
 
-  protected  <V> Result<Unit> encodePlainType(EncoderApi encoder, TypeId typeId, V value, Consumer<V> typeEncoder) {
+  protected <V> Result<Unit> encodePlainType(
+      EncoderApi encoder, TypeId typeId, V value, Consumer<V> typeEncoder) {
     encoder.encodeTypeId(typeId);
     typeEncoder.accept(value);
 
@@ -127,32 +128,38 @@ public abstract sealed class CoreTypeCodec<T> implements ClassCodec<T> {
 
     @Override
     public Result<Boolean> decode(DecoderApi decoder) {
-      return decoder.expectType(TYPE_BOOL)
-        .flatMap(decoder::readByte)
-        .flatMap(value -> value == 0
-                          ? Result.ok(false)
-                          : value == 1
-                            ? success(true)
-                            : INVALID_BOOLEAN.result());
+      return decoder
+          .expectType(TYPE_BOOL)
+          .flatMap(decoder::readByte)
+          .flatMap(
+              value ->
+                  value == 0
+                      ? Result.ok(false)
+                      : value == 1 ? success(true) : INVALID_BOOLEAN.result());
     }
   }
 
   public static final class StringCodec extends CoreTypeCodec<String> {
     @Override
     public Result<Unit> encode(EncoderApi encoder, String string) {
-      return encodePlainType(encoder, TYPE_STRING, string, (stringValue) -> {
-        var stringBytes = stringValue.getBytes(StandardCharsets.UTF_8);
-        encoder.writeInt(stringBytes.length);
-        encoder.writeBytes(stringBytes);
-      });
+      return encodePlainType(
+          encoder,
+          TYPE_STRING,
+          string,
+          (stringValue) -> {
+            var stringBytes = stringValue.getBytes(StandardCharsets.UTF_8);
+            encoder.writeInt(stringBytes.length);
+            encoder.writeBytes(stringBytes);
+          });
     }
 
     @Override
     public Result<String> decode(DecoderApi decoder) {
-      return decoder.expectType(TYPE_STRING)
-        .flatMap(decoder::readInt)
-        .flatMap(decoder::readBytes)
-        .map(bytes -> new String(bytes, StandardCharsets.UTF_8));
+      return decoder
+          .expectType(TYPE_STRING)
+          .flatMap(decoder::readInt)
+          .flatMap(decoder::readBytes)
+          .map(bytes -> new String(bytes, StandardCharsets.UTF_8));
     }
   }
 

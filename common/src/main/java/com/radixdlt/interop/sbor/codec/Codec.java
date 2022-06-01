@@ -74,22 +74,19 @@ public record Codec(CodecMap codecs) {
   public Result<byte[]> encode(Object value) {
     var outputStream = new ByteArrayOutputStream();
 
-    return new AnyEncoder(outputStream, codecs).encode(value)
-      .map(outputStream::toByteArray);
+    return new AnyEncoder(outputStream, codecs).encode(value).map(outputStream::toByteArray);
   }
 
   public <T> Result<byte[]> encodeOption(Option<T> value) {
     var outputStream = new ByteArrayOutputStream();
 
-    return new AnyEncoder(outputStream, codecs).encodeOption(value)
-      .map(outputStream::toByteArray);
+    return new AnyEncoder(outputStream, codecs).encodeOption(value).map(outputStream::toByteArray);
   }
 
   public <L, R> Result<byte[]> encodeEither(Either<L, R> value) {
     var outputStream = new ByteArrayOutputStream();
 
-    return new AnyEncoder(outputStream, codecs).encodeEither(value)
-      .map(outputStream::toByteArray);
+    return new AnyEncoder(outputStream, codecs).encodeEither(value).map(outputStream::toByteArray);
   }
 
   public <T> Result<T> decode(byte[] input, Class<T> clazz) {
@@ -100,7 +97,9 @@ public record Codec(CodecMap codecs) {
     return new AnyDecoder(new ByteArrayInputStream(input), codecs).decodeOption(clazz);
   }
 
-  public <L, R> Result<Either<L, R>> decodeEither(byte[] input, Class<L> leftClass, Class<R> rightClass) {
-    return new AnyDecoder(new ByteArrayInputStream(input), codecs).decodeEither(leftClass, rightClass);
+  public <L, R> Result<Either<L, R>> decodeEither(
+      byte[] input, Class<L> leftClass, Class<R> rightClass) {
+    return new AnyDecoder(new ByteArrayInputStream(input), codecs)
+        .decodeEither(leftClass, rightClass);
   }
 }

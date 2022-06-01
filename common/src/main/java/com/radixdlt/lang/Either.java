@@ -67,39 +67,37 @@ package com.radixdlt.lang;
 import com.radixdlt.lang.Functions.FN1;
 import java.util.function.Consumer;
 
-/**
- * The type which can hold one of two values of different types.
- */
-//TODO: extend API
+/** The type which can hold one of two values of different types. */
+// TODO: extend API
 public interface Either<L, R> {
   /**
-   * Handle both possible states (left/right) and produce single value from it. Depending on which (left or right)
-   * value is stored in particular instance, respective mapping function is invoked.
+   * Handle both possible states (left/right) and produce single value from it. Depending on which
+   * (left or right) value is stored in particular instance, respective mapping function is invoked.
    *
    * @param leftMapper function to transform left value into output value
    * @param rightMapper function to transform right value into output value
-   *
    * @return result of application of one of the mappers.
    */
   <T> T fold(FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper);
 
   /**
-   * Invoke side-effect-producing consumer to the Either container. Depending on which (left or right)
-   * value is stored in particular instance, respective consumer is invoked.
+   * Invoke side-effect-producing consumer to the Either container. Depending on which (left or
+   * right) value is stored in particular instance, respective consumer is invoked.
    *
    * @param leftConsumer function to process left value
    * @param rightConsumer function to process right value
-   *
    * @return result of application of one of the mappers.
    */
   default void apply(Consumer<? super L> leftConsumer, Consumer<? super R> rightConsumer) {
-    fold(left -> {
-      leftConsumer.accept(left);
-      return null;
-    }, right -> {
-      rightConsumer.accept(right);
-      return null;
-    });
+    fold(
+        left -> {
+          leftConsumer.accept(left);
+          return null;
+        },
+        right -> {
+          rightConsumer.accept(right);
+          return null;
+        });
   }
 
   /**
@@ -109,11 +107,13 @@ public interface Either<L, R> {
    */
   static <L, R> Either<L, R> left(L left) {
     record left<L, R>(L value) implements Either<L, R> {
-        @Override
-        public <T> T fold(FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
-          return leftMapper.apply(value());
-        }
-    };
+      @Override
+      public <T> T fold(
+          FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
+        return leftMapper.apply(value());
+      }
+    }
+    ;
     return new left<>(left);
   }
 
@@ -125,7 +125,8 @@ public interface Either<L, R> {
   static <L, R> Either<L, R> right(R right) {
     record right<L, R>(R value) implements Either<L, R> {
       @Override
-      public <T> T fold(FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
+      public <T> T fold(
+          FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
         return rightMapper.apply(value());
       }
     }
