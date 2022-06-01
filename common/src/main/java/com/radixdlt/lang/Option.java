@@ -122,10 +122,10 @@ public sealed interface Option<T> permits Some, None {
    *
    * @param supplier Source of replacement value.
    * @return current instance if it is empty or the instance with the replacement value if current
-   *     instance is preseent.
+   *     instance is present.
    */
   default <U> Option<U> flatMap(Supplier<Option<U>> supplier) {
-    return fold(Option::empty, __ -> supplier.get());
+    return fold(Option::empty, unused -> supplier.get());
   }
 
   /**
@@ -232,7 +232,7 @@ public sealed interface Option<T> permits Some, None {
    * @return either current instance or provided replacement instance if current instance is empty
    */
   default Option<T> orElse(Option<T> replacement) {
-    return fold(() -> replacement, __ -> this);
+    return fold(() -> replacement, unused -> this);
   }
 
   /**
@@ -243,7 +243,7 @@ public sealed interface Option<T> permits Some, None {
    * @return either current instance or provided replacement instance if current instance is empty
    */
   default Option<T> orElse(Supplier<Option<T>> supplier) {
-    return fold(supplier, __ -> this);
+    return fold(supplier, unused -> this);
   }
 
   /**
@@ -252,7 +252,7 @@ public sealed interface Option<T> permits Some, None {
    * @return {@code true} if instance is present and {@code false} otherwise.
    */
   default boolean isPresent() {
-    return fold(() -> false, __ -> true);
+    return fold(() -> false, Functions::toTrue);
   }
 
   /**
@@ -261,7 +261,7 @@ public sealed interface Option<T> permits Some, None {
    * @return {@code true} if instance is empty and {@code false} otherwise.
    */
   default boolean isEmpty() {
-    return fold(() -> true, __ -> false);
+    return fold(() -> true, Functions::toFalse);
   }
 
   /**
@@ -335,7 +335,7 @@ public sealed interface Option<T> permits Some, None {
    */
   @SuppressWarnings("unchecked")
   static <R> Option<R> empty() {
-    return (Option<R>) NONE;
+    return NONE;
   }
 
   /**
@@ -345,7 +345,7 @@ public sealed interface Option<T> permits Some, None {
    */
   @SuppressWarnings("unchecked")
   static <R> Option<R> none() {
-    return (Option<R>) NONE;
+    return NONE;
   }
 
   /**
@@ -427,6 +427,7 @@ public sealed interface Option<T> permits Some, None {
    * generates warning at compile time.
    *
    * @return value stored inside present instance.
+   * @deprecated to prevent unchecked use.
    */
   @Deprecated
   default T unwrap() {
@@ -471,7 +472,7 @@ public sealed interface Option<T> permits Some, None {
           }
           return op;
         },
-        __ -> op);
+        unused -> op);
   }
 
   /**
@@ -484,6 +485,7 @@ public sealed interface Option<T> permits Some, None {
    *     containing list of values.
    */
   @SafeVarargs
+  @SuppressWarnings("varargs")
   static <T> Option<List<T>> allOf(Option<T>... values) {
     return allOf(List.of(values));
   }

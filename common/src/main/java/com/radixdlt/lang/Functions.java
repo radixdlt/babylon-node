@@ -222,7 +222,7 @@ public interface Functions {
    * Universal consumers of values which do nothing with input values. Useful for cases when API
    * requires function, but there is no need to do anything with the received values.
    */
-  static <T1> void unitFn() {}
+  static void unitFn() {}
 
   static <T1> void unitFn(T1 value) {}
 

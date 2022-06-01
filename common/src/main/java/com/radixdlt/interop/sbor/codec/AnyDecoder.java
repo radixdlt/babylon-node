@@ -79,6 +79,7 @@ import com.radixdlt.interop.sbor.api.OptionTypeId;
 import com.radixdlt.interop.sbor.api.ResultTypeId;
 import com.radixdlt.interop.sbor.api.TypeId;
 import com.radixdlt.lang.Either;
+import com.radixdlt.lang.Functions;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
@@ -215,7 +216,7 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
   public Result<byte[]> readBytes(int length) {
     var bytes = new byte[length];
 
-    return Result.lift(__ -> EOF, () -> input.read(bytes))
+    return Result.lift(unused -> EOF, () -> input.read(bytes))
         .filter(EOF, readLen -> readLen == length)
         .map(() -> bytes);
   }
@@ -232,7 +233,7 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
         return EOF.result();
       }
 
-      result.apply(__ -> {}, value -> output[index[0]] = value);
+      result.apply(Functions::unitFn, value -> output[index[0]] = value);
     }
 
     return success(output);
@@ -250,7 +251,7 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
         return EOF.result();
       }
 
-      result.apply(__ -> {}, value -> output[index[0]] = value);
+      result.apply(Functions::unitFn, value -> output[index[0]] = value);
     }
 
     return success(output);
@@ -268,7 +269,7 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
         return EOF.result();
       }
 
-      result.apply(__ -> {}, value -> output[index[0]] = value);
+      result.apply(Functions::unitFn, value -> output[index[0]] = value);
     }
 
     return success(output);

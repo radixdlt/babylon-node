@@ -76,14 +76,11 @@ import java.util.List;
 public interface ClassCodec<T> {
   List<ClassField<T>> fields();
 
-  default List<?> values(T value) {
-    return fields().stream().map(field -> field.getter().apply(value)).toList();
-  }
-
   default Result<Unit> encode(EncoderApi encoder, T value) {
     encoder.encodeTypeId(TYPE_STRUCT);
 
-    var values = values((T) value);
+    var values = fields().stream().map(field -> field.getter().apply(value)).toList();
+
     encoder.writeInt(values.size());
 
     return values.stream()

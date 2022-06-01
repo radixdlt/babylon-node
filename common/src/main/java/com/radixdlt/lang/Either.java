@@ -113,7 +113,7 @@ public interface Either<L, R> {
         return leftMapper.apply(value());
       }
     }
-    ;
+
     return new left<>(left);
   }
 

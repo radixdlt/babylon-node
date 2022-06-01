@@ -77,7 +77,7 @@ public final class CodecMap {
   @SuppressWarnings("rawtypes")
   private final Map<Class, ClassCodec> classEncodingMap = new HashMap<>();
 
-  {
+  public CodecMap() {
     classEncodingMap.put(Unit.class, new CoreTypeCodec.UnitCodec());
     classEncodingMap.put(String.class, new CoreTypeCodec.StringCodec());
 

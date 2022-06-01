@@ -108,7 +108,7 @@ public sealed interface Result<T> permits Success, Failure {
    */
   @SuppressWarnings("unchecked")
   default <R> Result<R> map(Supplier<R> supplier) {
-    return fold(l -> (Result<R>) this, __ -> success(supplier.get()));
+    return fold(l -> (Result<R>) this, unused -> success(supplier.get()));
   }
 
   /**
@@ -133,7 +133,7 @@ public sealed interface Result<T> permits Success, Failure {
    */
   @SuppressWarnings("unchecked")
   default <R> Result<R> flatMap(Supplier<Result<R>> mapper) {
-    return fold(t -> (Result<R>) this, __ -> mapper.get());
+    return fold(t -> (Result<R>) this, unused -> mapper.get());
   }
 
   /**
@@ -338,7 +338,7 @@ public sealed interface Result<T> permits Success, Failure {
    * @return value stored in current instance (in case of success) or replacement value.
    */
   default T or(T replacement) {
-    return fold(__ -> replacement, Functions::id);
+    return fold(unused -> replacement, Functions::id);
   }
 
   /**
@@ -349,7 +349,7 @@ public sealed interface Result<T> permits Success, Failure {
    * @return value stored in current instance (in case of success) or replacement value.
    */
   default T or(Supplier<T> supplier) {
-    return fold(__ -> supplier.get(), Functions::id);
+    return fold(unused -> supplier.get(), Functions::id);
   }
 
   /**
@@ -360,7 +360,7 @@ public sealed interface Result<T> permits Success, Failure {
    * @return current instance (in case of success) or replacement instance.
    */
   default Result<T> orElse(Result<T> replacement) {
-    return fold(__ -> replacement, __ -> this);
+    return fold(unused -> replacement, unused -> this);
   }
 
   /**
@@ -371,7 +371,7 @@ public sealed interface Result<T> permits Success, Failure {
    * @return current instance (in case of success) or replacement instance.
    */
   default Result<T> orElse(Supplier<Result<T>> supplier) {
-    return fold(__ -> supplier.get(), __ -> this);
+    return fold(unused -> supplier.get(), unused -> this);
   }
 
   /**
@@ -384,6 +384,7 @@ public sealed interface Result<T> permits Success, Failure {
    * generates warning at compile time.
    *
    * @return value stored inside present instance.
+   * @deprecated to prevent unchecked use.
    */
   @Deprecated
   default T unwrap() {

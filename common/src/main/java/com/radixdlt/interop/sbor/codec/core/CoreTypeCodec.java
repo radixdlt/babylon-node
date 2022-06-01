@@ -97,9 +97,6 @@ public abstract sealed class CoreTypeCodec<T> implements ClassCodec<T> {
     return Result.failure(DecodingError.UNSUPPORTED_TYPE);
   }
 
-  @Override
-  public abstract Result<T> decode(DecoderApi decoder);
-
   protected <V> Result<Unit> encodePlainType(
       EncoderApi encoder, TypeId typeId, V value, Consumer<V> typeEncoder) {
     encoder.encodeTypeId(typeId);
@@ -133,9 +130,11 @@ public abstract sealed class CoreTypeCodec<T> implements ClassCodec<T> {
           .flatMap(decoder::readByte)
           .flatMap(
               value ->
-                  value == 0
-                      ? Result.ok(false)
-                      : value == 1 ? success(true) : INVALID_BOOLEAN.result());
+                  switch (value) {
+                    case 0 -> success(false);
+                    case 1 -> success(true);
+                    default -> INVALID_BOOLEAN.result();
+                  });
     }
   }
 
@@ -146,7 +145,7 @@ public abstract sealed class CoreTypeCodec<T> implements ClassCodec<T> {
           encoder,
           TYPE_STRING,
           string,
-          (stringValue) -> {
+          stringValue -> {
             var stringBytes = stringValue.getBytes(StandardCharsets.UTF_8);
             encoder.writeInt(stringBytes.length);
             encoder.writeBytes(stringBytes);

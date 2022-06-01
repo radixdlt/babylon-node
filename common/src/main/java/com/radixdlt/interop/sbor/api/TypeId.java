@@ -92,13 +92,13 @@ public enum TypeId {
   TYPE_HASH_MAP(0x34),
   TYPE_CUSTOM_START(0x80); // custom types start from 0x80 and values are encoded as `len + data`
 
-  private final byte typeId;
+  private final byte id;
 
-  TypeId(int typeId) {
-    this.typeId = (byte) typeId;
+  TypeId(int id) {
+    this.id = (byte) id;
   }
 
   public byte typeId() {
-    return typeId;
+    return id;
   }
 }
