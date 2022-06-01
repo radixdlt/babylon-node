@@ -62,85 +62,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.interop.sbor.api;
 
-import static com.radixdlt.interop.sbor.codec.ClassField.plain;
-import static com.radixdlt.lang.Result.all;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
+import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
-import java.util.List;
-import java.util.Objects;
 
-/**
- * A wrapper around the raw bytes of a transaction submission. The transaction is yet to be parsed,
- * and may be invalid.
- */
-public final class Transaction {
-  private final byte[] payload;
-  private final AID id;
+public enum EncodingError implements Cause {
+  UNSUPPORTED_TYPE("Unsupported type");
 
-  private Transaction(byte[] payload, AID id) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = Objects.requireNonNull(id);
-  }
+  private String message;
+  private Result<?> result;
 
-  private Transaction(byte[] payload) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
-  }
-
-  @JsonCreator
-  public static Transaction create(byte[] payload) {
-    return new Transaction(payload);
-  }
-
-  public AID getId() {
-    return id;
-  }
-
-  @JsonValue
-  public byte[] getPayload() {
-    return payload;
+  EncodingError(String message) {
+    this.message = message;
+    this.result = Result.failure(this);
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(id);
+  public String message() {
+    return message;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Transaction)) {
-      return false;
-    }
-
-    Transaction other = (Transaction) o;
-    return Objects.equals(this.id, other.id);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
-  }
-
-  /** SBOR decoding */
-  public static class TransactionCodec implements ClassCodec<Transaction> {
-    @Override
-    public List<ClassField<Transaction>> fields() {
-      return List.of(
-          plain(byte[].class, Transaction::getPayload), plain(AID.class, Transaction::getId));
-    }
-
-    @Override
-    public Result<Transaction> decodeFields(DecoderApi decoder) {
-      return all(decoder.decode(byte[].class), decoder.decode(AID.class)).map(Transaction::new);
-    }
+  public <T> Result<T> result() {
+    return (Result<T>) result;
   }
 }

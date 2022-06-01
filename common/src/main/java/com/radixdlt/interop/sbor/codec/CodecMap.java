@@ -62,85 +62,53 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.interop.sbor.codec;
 
-import static com.radixdlt.interop.sbor.codec.ClassField.plain;
-import static com.radixdlt.lang.Result.all;
+import static com.radixdlt.lang.Option.option;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
-import com.radixdlt.lang.Result;
-import java.util.List;
-import java.util.Objects;
+import com.radixdlt.interop.sbor.codec.core.CoreTypeCodec;
+import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Unit;
+import java.util.HashMap;
+import java.util.Map;
 
-/**
- * A wrapper around the raw bytes of a transaction submission. The transaction is yet to be parsed,
- * and may be invalid.
- */
-public final class Transaction {
-  private final byte[] payload;
-  private final AID id;
+/** Container for mapping between codec and class. */
+public final class CodecMap {
+  @SuppressWarnings("rawtypes")
+  private final Map<Class, ClassCodec> classEncodingMap = new HashMap<>();
 
-  private Transaction(byte[] payload, AID id) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = Objects.requireNonNull(id);
+  public CodecMap() {
+    classEncodingMap.put(Unit.class, new CoreTypeCodec.UnitCodec());
+    classEncodingMap.put(String.class, new CoreTypeCodec.StringCodec());
+
+    classEncodingMap.put(Boolean.class, new CoreTypeCodec.BooleanCodec());
+    classEncodingMap.put(boolean.class, new CoreTypeCodec.BooleanCodec());
+
+    classEncodingMap.put(Byte.class, new CoreTypeCodec.ByteCodec());
+    classEncodingMap.put(byte.class, new CoreTypeCodec.ByteCodec());
+
+    classEncodingMap.put(Short.class, new CoreTypeCodec.ShortCodec());
+    classEncodingMap.put(short.class, new CoreTypeCodec.ShortCodec());
+
+    classEncodingMap.put(Integer.class, new CoreTypeCodec.IntegerCodec());
+    classEncodingMap.put(int.class, new CoreTypeCodec.IntegerCodec());
+
+    classEncodingMap.put(Long.class, new CoreTypeCodec.LongCodec());
+    classEncodingMap.put(long.class, new CoreTypeCodec.LongCodec());
+
+    classEncodingMap.put(byte[].class, new CoreTypeCodec.ByteArrayCodec());
+    classEncodingMap.put(short[].class, new CoreTypeCodec.ShortArrayCodec());
+    classEncodingMap.put(int[].class, new CoreTypeCodec.IntegerArrayCodec());
+    classEncodingMap.put(long[].class, new CoreTypeCodec.LongArrayCodec());
   }
 
-  private Transaction(byte[] payload) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
+  @SuppressWarnings("unchecked")
+  public <T> Option<ClassCodec<T>> get(Class<T> clazz) {
+    return option(classEncodingMap.get(clazz));
   }
 
-  @JsonCreator
-  public static Transaction create(byte[] payload) {
-    return new Transaction(payload);
-  }
-
-  public AID getId() {
-    return id;
-  }
-
-  @JsonValue
-  public byte[] getPayload() {
-    return payload;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Transaction)) {
-      return false;
-    }
-
-    Transaction other = (Transaction) o;
-    return Objects.equals(this.id, other.id);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
-  }
-
-  /** SBOR decoding */
-  public static class TransactionCodec implements ClassCodec<Transaction> {
-    @Override
-    public List<ClassField<Transaction>> fields() {
-      return List.of(
-          plain(byte[].class, Transaction::getPayload), plain(AID.class, Transaction::getId));
-    }
-
-    @Override
-    public Result<Transaction> decodeFields(DecoderApi decoder) {
-      return all(decoder.decode(byte[].class), decoder.decode(AID.class)).map(Transaction::new);
-    }
+  public <T> CodecMap register(Class<T> clazz, ClassCodec<T> codec) {
+    classEncodingMap.put(clazz, codec);
+    return this;
   }
 }

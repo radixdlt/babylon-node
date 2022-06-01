@@ -62,85 +62,62 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.lang;
 
-import static com.radixdlt.interop.sbor.codec.ClassField.plain;
-import static com.radixdlt.lang.Result.all;
+import com.radixdlt.lang.Functions.FN1;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.text.MessageFormat;
+import java.util.function.Predicate;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
-import com.radixdlt.lang.Result;
-import java.util.List;
-import java.util.Objects;
+/** Frequently used variants of {@link Cause}. */
+public final class Causes {
+  public static final Cause IRRELEVANT = new SimpleCause("irrelevant");
 
-/**
- * A wrapper around the raw bytes of a transaction submission. The transaction is yet to be parsed,
- * and may be invalid.
- */
-public final class Transaction {
-  private final byte[] payload;
-  private final AID id;
+  private Causes() {}
 
-  private Transaction(byte[] payload, AID id) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = Objects.requireNonNull(id);
+  /** Simplest possible variant of {@link Cause} which contains only message describing the cause */
+  record SimpleCause(String message) implements Cause {}
+
+  /**
+   * Construct a simple cause with a given message.
+   *
+   * @param message message describing the cause
+   * @return created instance
+   */
+  public static Cause cause(String message) {
+    return new SimpleCause(message);
   }
 
-  private Transaction(byte[] payload) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
+  /**
+   * Construct a simple cause from provided {@link Throwable}.
+   *
+   * @param throwable the instance of {@link Throwable} to extract stack trace and message from
+   * @return created instance
+   */
+  public static Cause fromThrowable(Throwable throwable) {
+    var sw = new StringWriter();
+    throwable.printStackTrace(new PrintWriter(sw));
+
+    return new SimpleCause(sw.toString());
   }
 
-  @JsonCreator
-  public static Transaction create(byte[] payload) {
-    return new Transaction(payload);
-  }
-
-  public AID getId() {
-    return id;
-  }
-
-  @JsonValue
-  public byte[] getPayload() {
-    return payload;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Transaction)) {
-      return false;
-    }
-
-    Transaction other = (Transaction) o;
-    return Objects.equals(this.id, other.id);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
-  }
-
-  /** SBOR decoding */
-  public static class TransactionCodec implements ClassCodec<Transaction> {
-    @Override
-    public List<ClassField<Transaction>> fields() {
-      return List.of(
-          plain(byte[].class, Transaction::getPayload), plain(AID.class, Transaction::getId));
-    }
-
-    @Override
-    public Result<Transaction> decodeFields(DecoderApi decoder) {
-      return all(decoder.decode(byte[].class), decoder.decode(AID.class)).map(Transaction::new);
-    }
+  /**
+   * Create a mapper which will map a value into a formatted message. Main use case for this
+   * function - creation of mappers for {@link Result#filter(FN1, Predicate)}:
+   *
+   * <blockquote>
+   *
+   * <pre>
+   * filter(Causes.with1("Value {0} is below threshold"), value -> value > 321)
+   * </pre>
+   *
+   * </blockquote>
+   *
+   * @param template the message template prepared for {@link MessageFormat}
+   * @return created mapping function
+   */
+  public static <T> FN1<Cause, T> with1(String template) {
+    return (T input) -> cause(MessageFormat.format(template, input));
   }
 }

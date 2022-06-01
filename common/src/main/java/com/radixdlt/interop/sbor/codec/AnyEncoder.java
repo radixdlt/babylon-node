@@ -62,85 +62,121 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.interop.sbor.codec;
 
-import static com.radixdlt.interop.sbor.codec.ClassField.plain;
-import static com.radixdlt.lang.Result.all;
+import static com.radixdlt.interop.sbor.api.EncodingError.UNSUPPORTED_TYPE;
+import static com.radixdlt.interop.sbor.api.OptionTypeId.OPTION_TYPE_NONE;
+import static com.radixdlt.interop.sbor.api.OptionTypeId.OPTION_TYPE_SOME;
+import static com.radixdlt.interop.sbor.api.ResultTypeId.RESULT_TYPE_ERR;
+import static com.radixdlt.interop.sbor.api.ResultTypeId.RESULT_TYPE_OK;
+import static com.radixdlt.interop.sbor.api.TypeId.TYPE_ARRAY;
+import static com.radixdlt.interop.sbor.api.TypeId.TYPE_OPTION;
+import static com.radixdlt.interop.sbor.api.TypeId.TYPE_RESULT;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
+import com.radixdlt.interop.sbor.api.EncoderApi;
+import com.radixdlt.interop.sbor.api.TypeId;
+import com.radixdlt.lang.Either;
+import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
-import java.util.List;
-import java.util.Objects;
+import com.radixdlt.lang.Unit;
+import java.io.ByteArrayOutputStream;
 
-/**
- * A wrapper around the raw bytes of a transaction submission. The transaction is yet to be parsed,
- * and may be invalid.
- */
-public final class Transaction {
-  private final byte[] payload;
-  private final AID id;
+record AnyEncoder(ByteArrayOutputStream output, CodecMap codecMap) implements EncoderApi {
+  @SuppressWarnings("unchecked")
+  @Override
+  public Result<Unit> encode(Object value) {
+    if (value instanceof Option<?> option) {
+      return encodeOption(option);
+    }
 
-  private Transaction(byte[] payload, AID id) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = Objects.requireNonNull(id);
-  }
+    if (value instanceof Either<?, ?> either) {
+      return encodeEither(either);
+    }
 
-  private Transaction(byte[] payload) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
-  }
-
-  @JsonCreator
-  public static Transaction create(byte[] payload) {
-    return new Transaction(payload);
-  }
-
-  public AID getId() {
-    return id;
-  }
-
-  @JsonValue
-  public byte[] getPayload() {
-    return payload;
+    return codecMap
+        .get(value.getClass())
+        .fold(UNSUPPORTED_TYPE::result, codec -> ((ClassCodec<Object>) codec).encode(this, value));
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(id);
+  public Result<Unit> encodeTypeId(TypeId typeId) {
+    writeByte(typeId.typeId());
+    return Unit.unitResult();
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Transaction)) {
-      return false;
-    }
+  public Result<Unit> encodeOption(Option<?> option) {
+    encodeTypeId(TYPE_OPTION);
 
-    Transaction other = (Transaction) o;
-    return Objects.equals(this.id, other.id);
+    option.apply(
+        () -> writeByte(OPTION_TYPE_NONE.typeId()),
+        v -> {
+          writeByte(OPTION_TYPE_SOME.typeId());
+          encode(v);
+        });
+
+    return Unit.unitResult();
   }
 
   @Override
-  public String toString() {
-    return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
+  public Result<Unit> encodeEither(Either<?, ?> either) {
+    encodeTypeId(TYPE_RESULT);
+
+    either.apply(
+        left -> {
+          writeByte(RESULT_TYPE_ERR.typeId());
+          encode(left);
+        },
+        right -> {
+          writeByte(RESULT_TYPE_OK.typeId());
+          encode(right);
+        });
+
+    return Unit.unitResult();
   }
 
-  /** SBOR decoding */
-  public static class TransactionCodec implements ClassCodec<Transaction> {
-    @Override
-    public List<ClassField<Transaction>> fields() {
-      return List.of(
-          plain(byte[].class, Transaction::getPayload), plain(AID.class, Transaction::getId));
-    }
+  @Override
+  public void encodeArrayHeader(TypeId typeId, int length) {
+    encodeTypeId(TYPE_ARRAY);
+    encodeTypeId(typeId);
+    writeInt(length);
+  }
 
-    @Override
-    public Result<Transaction> decodeFields(DecoderApi decoder) {
-      return all(decoder.decode(byte[].class), decoder.decode(AID.class)).map(Transaction::new);
+  @Override
+  public void writeByte(byte value) {
+    output.write(value);
+  }
+
+  @Override
+  public void writeBytes(byte[] value) {
+    if (value.length > 0) {
+      output.writeBytes(value);
     }
+  }
+
+  @Override
+  public void writeShort(short value) {
+    writeByte((byte) (value & 0xFF));
+    writeByte((byte) ((value >> 8) & 0xFF));
+  }
+
+  @Override
+  public void writeInt(int value) {
+    writeByte((byte) (value & 0xFF));
+    writeByte((byte) ((value >> 8) & 0xFF));
+    writeByte((byte) ((value >> 16) & 0xFF));
+    writeByte((byte) ((value >> 24) & 0xFF));
+  }
+
+  @Override
+  public void writeLong(long value) {
+    writeByte((byte) (value & 0xFF));
+    writeByte((byte) ((value >> 8) & 0xFF));
+    writeByte((byte) ((value >> 16) & 0xFF));
+    writeByte((byte) ((value >> 24) & 0xFF));
+    writeByte((byte) ((value >> 32) & 0xFF));
+    writeByte((byte) ((value >> 40) & 0xFF));
+    writeByte((byte) ((value >> 48) & 0xFF));
+    writeByte((byte) ((value >> 56) & 0xFF));
   }
 }

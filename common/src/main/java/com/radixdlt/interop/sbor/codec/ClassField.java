@@ -62,85 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.interop.sbor.codec;
 
-import static com.radixdlt.interop.sbor.codec.ClassField.plain;
-import static com.radixdlt.lang.Result.all;
+import com.radixdlt.lang.Either;
+import com.radixdlt.lang.Functions.FN1;
+import com.radixdlt.lang.Option;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
-import com.radixdlt.lang.Result;
-import java.util.List;
-import java.util.Objects;
-
-/**
- * A wrapper around the raw bytes of a transaction submission. The transaction is yet to be parsed,
- * and may be invalid.
- */
-public final class Transaction {
-  private final byte[] payload;
-  private final AID id;
-
-  private Transaction(byte[] payload, AID id) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = Objects.requireNonNull(id);
+public record ClassField<T>(
+    Class<?> baseType, Class<?> firstArg, Class<?> secondArg, FN1<?, T> getter) {
+  public static <T> ClassField<T> plain(Class<?> baseType, FN1<?, T> getter) {
+    return new ClassField<>(baseType, null, null, getter);
   }
 
-  private Transaction(byte[] payload) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
+  public static <V, T> ClassField<T> forOption(Class<V> firstArg, FN1<Option<V>, T> getter) {
+    return new ClassField<>(Option.class, firstArg, null, getter);
   }
 
-  @JsonCreator
-  public static Transaction create(byte[] payload) {
-    return new Transaction(payload);
-  }
-
-  public AID getId() {
-    return id;
-  }
-
-  @JsonValue
-  public byte[] getPayload() {
-    return payload;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Transaction)) {
-      return false;
-    }
-
-    Transaction other = (Transaction) o;
-    return Objects.equals(this.id, other.id);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
-  }
-
-  /** SBOR decoding */
-  public static class TransactionCodec implements ClassCodec<Transaction> {
-    @Override
-    public List<ClassField<Transaction>> fields() {
-      return List.of(
-          plain(byte[].class, Transaction::getPayload), plain(AID.class, Transaction::getId));
-    }
-
-    @Override
-    public Result<Transaction> decodeFields(DecoderApi decoder) {
-      return all(decoder.decode(byte[].class), decoder.decode(AID.class)).map(Transaction::new);
-    }
+  public static <L, R, T> ClassField<T> forEither(
+      Class<L> leftType, Class<R> rightType, FN1<Either<L, R>, T> getter) {
+    return new ClassField<>(Either.class, leftType, rightType, getter);
   }
 }

@@ -62,85 +62,130 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.lang;
 
-import static com.radixdlt.interop.sbor.codec.ClassField.plain;
-import static com.radixdlt.lang.Result.all;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
-import com.radixdlt.lang.Result;
-import java.util.List;
-import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
- * A wrapper around the raw bytes of a transaction submission. The transaction is yet to be parsed,
- * and may be invalid.
+ * From https://en.wikipedia.org/wiki/Unit_type :
+ *
+ * <blockquote>
+ *
+ * In the area of mathematical logic and computer science known as type theory, a unit type is a
+ * type that allows only one value (and thus can hold no information). The carrier (underlying set)
+ * associated with a unit type can be any singleton set. There is an isomorphism between any two
+ * such sets, so it is customary to talk about the unit type and ignore the details of its value.
+ * One may also regard the unit type as the type of 0-tuples, i.e. the product of no types.
+ *
+ * <p>The unit type is the terminal object in the category of types and typed functions. It should
+ * not be confused with the zero or bottom type, which allows no values and is the initial object in
+ * this category. Similarly, the Boolean is the type with two values.
+ *
+ * <p>The unit type is implemented in most functional programming languages. The void type that is
+ * used in some imperative programming languages serves some of its functions, but because its
+ * carrier set is empty, it has some limitations.
+ *
+ * </blockquote>
  */
-public final class Transaction {
-  private final byte[] payload;
-  private final AID id;
+public final class Unit implements Tuple.Tuple0 {
+  private Unit() {}
 
-  private Transaction(byte[] payload, AID id) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = Objects.requireNonNull(id);
+  private static final Unit UNIT = new Unit();
+  private static final Result<Unit> UNIT_RESULT = Result.success(UNIT);
+
+  public static Unit unit() {
+    return UNIT;
   }
 
-  private Transaction(byte[] payload) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
+  public static <T1, T2> Unit unit(final T1 ignored1, final T2 ignored2) {
+    return UNIT;
   }
 
-  @JsonCreator
-  public static Transaction create(byte[] payload) {
-    return new Transaction(payload);
+  public static <T1, T2, T3> Unit unit(final T1 ignored1, final T2 ignored2, final T3 ignored3) {
+    return UNIT;
   }
 
-  public AID getId() {
-    return id;
+  public static <T1, T2, T3, T4> Unit unit(
+      final T1 ignored1, final T2 ignored2, final T3 ignored3, final T4 ignored4) {
+    return UNIT;
   }
 
-  @JsonValue
-  public byte[] getPayload() {
-    return payload;
+  public static <T1, T2, T3, T4, T5> Unit unit(
+      final T1 ignored1,
+      final T2 ignored2,
+      final T3 ignored3,
+      final T4 ignored4,
+      final T5 ignored5) {
+    return UNIT;
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(id);
+  public static <T1, T2, T3, T4, T5, T6> Unit unit(
+      final T1 ignored1,
+      final T2 ignored2,
+      final T3 ignored3,
+      final T4 ignored4,
+      final T5 ignored5,
+      final T6 ignored6) {
+    return UNIT;
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Transaction)) {
-      return false;
-    }
+  public static <T1, T2, T3, T4, T5, T6, T7> Unit unit(
+      final T1 ignored1,
+      final T2 ignored2,
+      final T3 ignored3,
+      final T4 ignored4,
+      final T5 ignored5,
+      final T6 ignored6,
+      final T7 ignored7) {
+    return UNIT;
+  }
 
-    Transaction other = (Transaction) o;
-    return Objects.equals(this.id, other.id);
+  public static <T1, T2, T3, T4, T5, T6, T7, T8> Unit unit(
+      final T1 ignored1,
+      final T2 ignored2,
+      final T3 ignored3,
+      final T4 ignored4,
+      final T5 ignored5,
+      final T6 ignored6,
+      final T7 ignored7,
+      final T8 ignored8) {
+    return UNIT;
+  }
+
+  public static <T1, T2, T3, T4, T5, T6, T7, T8, T9> Unit unit(
+      final T1 ignored1,
+      final T2 ignored2,
+      final T3 ignored3,
+      final T4 ignored4,
+      final T5 ignored5,
+      final T6 ignored6,
+      final T7 ignored7,
+      final T8 ignored8,
+      final T9 ignored9) {
+    return UNIT;
+  }
+
+  public static Result<Unit> unitResult() {
+    return UNIT_RESULT;
   }
 
   @Override
   public String toString() {
-    return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
+    return "()";
   }
 
-  /** SBOR decoding */
-  public static class TransactionCodec implements ClassCodec<Transaction> {
-    @Override
-    public List<ClassField<Transaction>> fields() {
-      return List.of(
-          plain(byte[].class, Transaction::getPayload), plain(AID.class, Transaction::getId));
-    }
+  @Override
+  public boolean equals(Object obj) {
+    return obj instanceof Tuple0;
+  }
 
-    @Override
-    public Result<Transaction> decodeFields(DecoderApi decoder) {
-      return all(decoder.decode(byte[].class), decoder.decode(AID.class)).map(Transaction::new);
-    }
+  @Override
+  public int hashCode() {
+    return super.hashCode();
+  }
+
+  @Override
+  public <T> T map(Supplier<T> mapper) {
+    return mapper.get();
   }
 }

@@ -62,85 +62,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.interop.sbor.api;
 
-import static com.radixdlt.interop.sbor.codec.ClassField.plain;
-import static com.radixdlt.lang.Result.all;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
+import com.radixdlt.lang.Either;
+import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
-import java.util.List;
-import java.util.Objects;
+import com.radixdlt.lang.Unit;
 
-/**
- * A wrapper around the raw bytes of a transaction submission. The transaction is yet to be parsed,
- * and may be invalid.
- */
-public final class Transaction {
-  private final byte[] payload;
-  private final AID id;
+public interface DecoderApi {
+  <T> Result<T> decode(Class<T> type);
 
-  private Transaction(byte[] payload, AID id) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = Objects.requireNonNull(id);
-  }
+  Result<Unit> expectType(TypeId typeId);
 
-  private Transaction(byte[] payload) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
-  }
+  Result<Integer> decodeArrayHeader(TypeId expectedId);
 
-  @JsonCreator
-  public static Transaction create(byte[] payload) {
-    return new Transaction(payload);
-  }
+  Result<Byte> readByte();
 
-  public AID getId() {
-    return id;
-  }
+  Result<Short> readShort();
 
-  @JsonValue
-  public byte[] getPayload() {
-    return payload;
-  }
+  Result<Integer> readInt();
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(id);
-  }
+  Result<Long> readLong();
 
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Transaction)) {
-      return false;
-    }
+  Result<byte[]> readBytes(int length);
 
-    Transaction other = (Transaction) o;
-    return Objects.equals(this.id, other.id);
-  }
+  Result<short[]> readShorts(int length);
 
-  @Override
-  public String toString() {
-    return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
-  }
+  Result<int[]> readIntegers(int length);
 
-  /** SBOR decoding */
-  public static class TransactionCodec implements ClassCodec<Transaction> {
-    @Override
-    public List<ClassField<Transaction>> fields() {
-      return List.of(
-          plain(byte[].class, Transaction::getPayload), plain(AID.class, Transaction::getId));
-    }
+  Result<long[]> readLongs(int length);
 
-    @Override
-    public Result<Transaction> decodeFields(DecoderApi decoder) {
-      return all(decoder.decode(byte[].class), decoder.decode(AID.class)).map(Transaction::new);
-    }
-  }
+  <T> Result<Option<T>> decodeOption(Class<T> valueType);
+
+  <L, R> Result<Either<L, R>> decodeEither(Class<L> leftValueType, Class<R> rightValueType);
 }

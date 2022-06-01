@@ -62,85 +62,75 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.lang;
 
-import static com.radixdlt.interop.sbor.codec.ClassField.plain;
-import static com.radixdlt.lang.Result.all;
+import com.radixdlt.lang.Functions.FN1;
+import java.util.function.Consumer;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
-import com.radixdlt.lang.Result;
-import java.util.List;
-import java.util.Objects;
+/** The type which can hold one of two values of different types. */
+// TODO: extend API
+public interface Either<L, R> {
+  /**
+   * Handle both possible states (left/right) and produce single value from it. Depending on which
+   * (left or right) value is stored in particular instance, respective mapping function is invoked.
+   *
+   * @param leftMapper function to transform left value into output value
+   * @param rightMapper function to transform right value into output value
+   * @return result of application of one of the mappers.
+   */
+  <T> T fold(FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper);
 
-/**
- * A wrapper around the raw bytes of a transaction submission. The transaction is yet to be parsed,
- * and may be invalid.
- */
-public final class Transaction {
-  private final byte[] payload;
-  private final AID id;
-
-  private Transaction(byte[] payload, AID id) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = Objects.requireNonNull(id);
+  /**
+   * Invoke side-effect-producing consumer to the Either container. Depending on which (left or
+   * right) value is stored in particular instance, respective consumer is invoked.
+   *
+   * @param leftConsumer function to process left value
+   * @param rightConsumer function to process right value
+   * @return result of application of one of the mappers.
+   */
+  default void apply(Consumer<? super L> leftConsumer, Consumer<? super R> rightConsumer) {
+    fold(
+        left -> {
+          leftConsumer.accept(left);
+          return null;
+        },
+        right -> {
+          rightConsumer.accept(right);
+          return null;
+        });
   }
 
-  private Transaction(byte[] payload) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
-  }
-
-  @JsonCreator
-  public static Transaction create(byte[] payload) {
-    return new Transaction(payload);
-  }
-
-  public AID getId() {
-    return id;
-  }
-
-  @JsonValue
-  public byte[] getPayload() {
-    return payload;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Transaction)) {
-      return false;
+  /**
+   * Create instance which contains left value.
+   *
+   * @return created instance.
+   */
+  static <L, R> Either<L, R> left(L left) {
+    record left<L, R>(L value) implements Either<L, R> {
+      @Override
+      public <T> T fold(
+          FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
+        return leftMapper.apply(value());
+      }
     }
 
-    Transaction other = (Transaction) o;
-    return Objects.equals(this.id, other.id);
+    return new left<>(left);
   }
 
-  @Override
-  public String toString() {
-    return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
-  }
-
-  /** SBOR decoding */
-  public static class TransactionCodec implements ClassCodec<Transaction> {
-    @Override
-    public List<ClassField<Transaction>> fields() {
-      return List.of(
-          plain(byte[].class, Transaction::getPayload), plain(AID.class, Transaction::getId));
+  /**
+   * Create instance which contains right value.
+   *
+   * @return created instance.
+   */
+  static <L, R> Either<L, R> right(R right) {
+    record right<L, R>(R value) implements Either<L, R> {
+      @Override
+      public <T> T fold(
+          FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
+        return rightMapper.apply(value());
+      }
     }
 
-    @Override
-    public Result<Transaction> decodeFields(DecoderApi decoder) {
-      return all(decoder.decode(byte[].class), decoder.decode(AID.class)).map(Transaction::new);
-    }
+    return new right<>(right);
   }
 }
