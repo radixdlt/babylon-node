@@ -66,6 +66,8 @@ package com.radixdlt.identifiers;
 
 import static com.radixdlt.errors.ApiErrors.INVALID_AID_LENGTH;
 import static com.radixdlt.errors.ApiErrors.INVALID_AID_STRING;
+import static com.radixdlt.interop.sbor.codec.ClassField.plain;
+import static com.radixdlt.lang.Result.all;
 import static com.radixdlt.utils.functional.Result.fromOptional;
 import static java.util.Optional.ofNullable;
 
@@ -73,10 +75,14 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.interop.sbor.api.DecoderApi;
+import com.radixdlt.interop.sbor.codec.ClassCodec;
+import com.radixdlt.interop.sbor.codec.ClassField;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.functional.Result;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -239,5 +245,18 @@ public final class AID implements Comparable<AID> {
   /** Get a lexical comparator for this type. */
   public static Comparator<AID> lexicalComparator() {
     return LexicalComparatorHolder.INSTANCE;
+  }
+
+  /** SBOR Codec */
+  public static class AIDCodec implements ClassCodec<AID> {
+    @Override
+    public List<ClassField<AID>> fields() {
+      return List.of(plain(byte[].class, AID::getBytes));
+    }
+
+    @Override
+    public com.radixdlt.lang.Result<AID> decodeFields(DecoderApi decoder) {
+      return all(decoder.decode(byte[].class)).map(AID::new);
+    }
   }
 }

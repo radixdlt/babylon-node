@@ -69,6 +69,8 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+import com.radixdlt.interop.sbor.codec.Codec;
+import com.radixdlt.interop.sbor.codec.CodecMap;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -121,5 +123,17 @@ public class AIDTest {
     assertThatThrownBy(() -> AID.from(bytes, -1)).isInstanceOf(IllegalArgumentException.class);
     assertThatThrownBy(() -> AID.from(bytes, AID.BYTES + 1))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void testSBORSerialization() {
+    byte[] bytes = new byte[AID.BYTES * 2];
+    AID aid0 = AID.from(bytes, 0);
+
+    var codec = new Codec(new CodecMap().register(AID.class, new AID.AIDCodec()));
+    var r0 = codec.encode(aid0).unwrap();
+    var aid1 = codec.decode(r0, AID.class).unwrap();
+
+    assertEquals(aid0, aid1);
   }
 }
