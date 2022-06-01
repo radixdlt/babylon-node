@@ -1,4 +1,4 @@
-use crate::jni::state_manager::jni_state_manager;
+use crate::jni::state_manager::JNIStateManager;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -10,7 +10,7 @@ extern "system" fn Java_com_radixdlt_vertexstore_RustVertexStore_insertVertex(
     interop_state: JObject,
     j_vertex: jbyteArray,
 ) {
-    let state_manager = jni_state_manager(env, interop_state);
+    let state_manager = JNIStateManager::get_state_manager(env, interop_state);
 
     let vertex: Vec<u8> = env.convert_byte_array(j_vertex).unwrap();
 
@@ -29,7 +29,7 @@ extern "system" fn Java_com_radixdlt_vertexstore_RustVertexStore_containsVertex(
     interop_state: JObject,
     j_vertex: jbyteArray,
 ) -> bool {
-    let state_manager = jni_state_manager(env, interop_state);
+    let state_manager = JNIStateManager::get_state_manager(env, interop_state);
 
     let vertex: Vec<u8> = env.convert_byte_array(j_vertex).unwrap();
 

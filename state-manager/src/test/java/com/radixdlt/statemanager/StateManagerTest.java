@@ -68,34 +68,35 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import org.junit.Test;
-
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import org.junit.Test;
 
 public final class StateManagerTest {
 
   @Test
   public void test_rust_interop() throws InterruptedException {
-    final var key1 = ECKeyPair.generateNew().getPublicKey();
-    final var stateManagerNode1 = StateManager.create(key1);
 
-    final var key2 = ECKeyPair.generateNew().getPublicKey();
-    final var stateManagerNode2 = StateManager.create(key2);
+    final var mempoolSize = 100;
+    final var stateManagerNode1 = StateManager.create(mempoolSize);
+    final var stateManagerNode2 = StateManager.create(mempoolSize);
 
     // Just to check that concurrent access is possible
     var rand = new Random();
     var cdl = new CountDownLatch(1000);
-    for (int i=0; i<1000; i++) {
-      new Thread(() -> {
-        var tx = HashUtils.random256();
-        var stateVer = rand.nextLong();
-        stateManagerNode1.transactionStore().insertTransaction(stateVer, tx.asBytes());
-        assertArrayEquals(tx.asBytes(), stateManagerNode1.transactionStore().getTransactionAtStateVersion(stateVer));
-        cdl.countDown();
-      }).start();
+    for (int i = 0; i < 1000; i++) {
+      new Thread(
+              () -> {
+                var tx = HashUtils.random256();
+                var stateVer = rand.nextLong();
+                stateManagerNode1.transactionStore().insertTransaction(stateVer, tx.asBytes());
+                assertArrayEquals(
+                    tx.asBytes(),
+                    stateManagerNode1.transactionStore().getTransactionAtStateVersion(stateVer));
+                cdl.countDown();
+              })
+          .start();
     }
 
     final var vertex = new byte[] {3, 4, 5};

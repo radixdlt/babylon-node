@@ -88,6 +88,5 @@ public final class RustTransactionStore implements TransactionStore {
   private static native void insertTransaction(
       RustState rustState, long stateVersion, byte[] transactionBytes);
 
-  private static native byte[] getTransactionAtStateVersion(
-      RustState rustState, long stateVersion);
+  private static native byte[] getTransactionAtStateVersion(RustState rustState, long stateVersion);
 }
