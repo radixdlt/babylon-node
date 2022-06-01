@@ -66,7 +66,6 @@ package com.radixdlt.consensus.sync;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.monitoring.SystemCounters;
@@ -78,14 +77,14 @@ import org.apache.logging.log4j.Logger;
 public final class VertexStoreBFTSyncRequestProcessor
     implements RemoteEventProcessor<GetVerticesRequest> {
   private static final Logger log = LogManager.getLogger();
-  private final VertexStore vertexStore;
+  private final BabylonVertexStoreAdapter vertexStore;
   private final RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher;
   private final RemoteEventDispatcher<GetVerticesResponse> responseDispatcher;
   private final SystemCounters systemCounters;
 
   @Inject
   public VertexStoreBFTSyncRequestProcessor(
-      VertexStore vertexStore,
+      BabylonVertexStoreAdapter vertexStore,
       RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher,
       RemoteEventDispatcher<GetVerticesResponse> responseDispatcher,
       SystemCounters systemCounters) {

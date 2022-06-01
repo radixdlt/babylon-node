@@ -110,7 +110,6 @@ import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewUpdate;
@@ -121,6 +120,7 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -151,7 +151,7 @@ import org.junit.Test;
 public class ConsensusModuleTest {
   @Inject private BFTSync bftSync;
 
-  @Inject private VertexStore vertexStore;
+  @Inject private BabylonVertexStoreAdapter vertexStore;
 
   private Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 

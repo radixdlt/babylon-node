@@ -62,19 +62,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus.sync;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimeoutCertificate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 
-/** A Vertex Store factory */
-public interface VertexStoreFactory {
+public interface BabylonVertexStore {
+  record CommittedUpdate(ImmutableList<PreparedVertex> committedVertices) {}
 
-  /**
-   * Creates a new VertexStore given initial vertex and QC
-   *
-   * @param vertexStoreState the initial vertex store state
-   * @return a new VertexStore
-   */
-  BabylonVertexStoreAdapter create(VerifiedVertexStoreState vertexStoreState);
+  sealed interface InsertQcResult {
+    record Inserted(
+        HighQC newHighQc,
+        // TODO: remove me once vertex store persistence and commit on the java side are gone
+        VerifiedVertexStoreState verifiedVertexStoreState,
+        Optional<CommittedUpdate> committedUpdate)
+        implements InsertQcResult {}
+
+    record Ignored() implements InsertQcResult {}
+
+    record VertexIsMissing() implements InsertQcResult {}
+  }
+
+  record InsertVertexChainResult(
+      List<InsertQcResult.Inserted> insertedQcs, List<BFTInsertUpdate> insertUpdates) {}
+
+  InsertQcResult insertQc(QuorumCertificate qc);
+
+  void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
+
+  Optional<BFTInsertUpdate> insertVertex(VerifiedVertex vertex);
+
+  InsertVertexChainResult insertVertexChain(VerifiedVertexChain verifiedVertexChain);
+
+  Optional<VerifiedVertexStoreState> tryRebuild(VerifiedVertexStoreState vertexStoreState);
+
+  boolean containsVertex(HashCode vertexId);
+
+  HighQC highQC();
+
+  VerifiedVertex getRoot();
+
+  LinkedList<PreparedVertex> getPathFromRoot(HashCode vertexId);
+
+  Optional<PreparedVertex> getPreparedVertex(HashCode id);
+
+  Optional<ImmutableList<VerifiedVertex>> getVertices(HashCode vertexId, int count);
 }

@@ -67,11 +67,11 @@ package com.radixdlt.consensus;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
 import com.radixdlt.environment.EventProcessor;
 
 /** Creates a new bft processor */
@@ -84,7 +84,7 @@ public interface BFTFactory {
   BFTEventProcessor create(
       BFTNode self,
       Pacemaker pacemaker,
-      VertexStore vertexStore,
+      BabylonVertexStoreAdapter vertexStore,
       BFTSyncer bftSyncer,
       EventProcessor<ViewQuorumReached> viewQuorumReachedEventProcessor,
       BFTValidatorSet validatorSet,

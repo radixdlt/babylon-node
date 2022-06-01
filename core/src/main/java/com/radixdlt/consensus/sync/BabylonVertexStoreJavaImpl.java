@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.sync;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
@@ -71,8 +71,14 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.MissingParentException;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexChain;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventDispatcher;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -84,13 +90,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 
 /** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
 @NotThreadSafe
-public final class VertexStore {
-
-  private final EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher;
-  private final EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher;
-  private final EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher;
-  private final EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher;
-
+public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
   private final Hasher hasher;
   private final Ledger ledger;
 
@@ -103,23 +103,15 @@ public final class VertexStore {
   private QuorumCertificate highestCommittedQC;
   private Optional<TimeoutCertificate> highestTC;
 
-  private VertexStore(
+  private BabylonVertexStoreJavaImpl(
       Ledger ledger,
       Hasher hasher,
       VerifiedVertex rootVertex,
       QuorumCertificate commitQC,
       QuorumCertificate highestQC,
-      EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
-      EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
-      EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
-      EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher,
       Optional<TimeoutCertificate> highestTC) {
     this.ledger = Objects.requireNonNull(ledger);
     this.hasher = Objects.requireNonNull(hasher);
-    this.bftUpdateDispatcher = Objects.requireNonNull(bftUpdateDispatcher);
-    this.bftRebuildDispatcher = Objects.requireNonNull(bftRebuildDispatcher);
-    this.highQCUpdateDispatcher = Objects.requireNonNull(highQCUpdateDispatcher);
-    this.bftCommittedDispatcher = Objects.requireNonNull(bftCommittedDispatcher);
     this.rootVertex = Objects.requireNonNull(rootVertex);
     this.highestQC = Objects.requireNonNull(highestQC);
     this.highestCommittedQC = Objects.requireNonNull(commitQC);
@@ -127,25 +119,15 @@ public final class VertexStore {
     this.highestTC = Objects.requireNonNull(highestTC);
   }
 
-  public static VertexStore create(
-      VerifiedVertexStoreState vertexStoreState,
-      Ledger ledger,
-      Hasher hasher,
-      EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
-      EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
-      EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateDispatcher,
-      EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher) {
-    VertexStore vertexStore =
-        new VertexStore(
+  public static BabylonVertexStoreJavaImpl create(
+      VerifiedVertexStoreState vertexStoreState, Ledger ledger, Hasher hasher) {
+    BabylonVertexStoreJavaImpl vertexStore =
+        new BabylonVertexStoreJavaImpl(
             ledger,
             hasher,
             vertexStoreState.getRoot(),
             vertexStoreState.getHighQC().highestCommittedQC(),
             vertexStoreState.getHighQC().highestQC(),
-            bftUpdateDispatcher,
-            bftRebuildDispatcher,
-            bftHighQCUpdateDispatcher,
-            bftCommittedDispatcher,
             vertexStoreState.getHighQC().highestTC());
 
     for (VerifiedVertex vertex : vertexStoreState.getVertices()) {
@@ -157,14 +139,7 @@ public final class VertexStore {
         // TODO: Cleanup and remove
         VerifiedVertexStoreState pruned = vertexStoreState.prune(hasher);
         if (!pruned.equals(vertexStoreState)) {
-          return create(
-              pruned,
-              ledger,
-              hasher,
-              bftUpdateDispatcher,
-              bftRebuildDispatcher,
-              bftHighQCUpdateDispatcher,
-              bftCommittedDispatcher);
+          return create(pruned, ledger, hasher);
         }
 
         // FIXME: If this occurs then it means that our highQC may not have an associated vertex
@@ -186,15 +161,14 @@ public final class VertexStore {
     return rootVertex;
   }
 
-  public boolean tryRebuild(VerifiedVertexStoreState vertexStoreState) {
-
+  public Optional<VerifiedVertexStoreState> tryRebuild(VerifiedVertexStoreState vertexStoreState) {
     // FIXME: Currently this assumes vertexStoreState is a chain with no forks which is our only use
     // case at the moment.
     LinkedList<PreparedVertex> prepared = new LinkedList<>();
     for (VerifiedVertex vertex : vertexStoreState.getVertices()) {
       Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(prepared, vertex);
       if (preparedVertexMaybe.isEmpty()) {
-        return false;
+        return Optional.empty();
       }
 
       prepared.add(preparedVertexMaybe.get());
@@ -214,53 +188,38 @@ public final class VertexStore {
       siblings.add(preparedVertex.getId());
     }
 
-    bftRebuildDispatcher.dispatch(BFTRebuildUpdate.create(vertexStoreState));
-    return true;
+    return Optional.of(vertexStoreState);
   }
 
   public boolean containsVertex(HashCode vertexId) {
     return vertices.containsKey(vertexId) || rootVertex.getId().equals(vertexId);
   }
 
-  public void insertVertexChain(VerifiedVertexChain verifiedVertexChain) {
-    for (VerifiedVertex v : verifiedVertexChain.getVertices()) {
-      if (!addQC(v.getQC())) {
-        return;
-      }
-
-      insertVertex(v);
-    }
-  }
-
-  public boolean addQC(QuorumCertificate qc) {
+  public InsertQcResult insertQc(QuorumCertificate qc) {
     if (!this.containsVertex(qc.getProposed().getVertexId())) {
-      return false;
+      return new BabylonVertexStore.InsertQcResult.VertexIsMissing(); // false
     }
 
-    if (!vertexChildren.get(qc.getProposed().getVertexId()).isEmpty()) {
+    final var hasAnyChildren = !vertexChildren.get(qc.getProposed().getVertexId()).isEmpty();
+    if (hasAnyChildren) {
       // TODO: Check to see if qc's match in case there's a fault
-      return true;
+      return new BabylonVertexStore.InsertQcResult.Ignored();
     }
 
+    // proposed vertex doesn't have any children
     boolean isHighQC = qc.getView().gt(highestQC.getView());
-    boolean isHighCommit = qc.getCommittedAndLedgerStateProof(hasher).isPresent();
-    if (!isHighQC && !isHighCommit) {
-      return true;
+    boolean isAnythingCommitted = qc.getCommittedAndLedgerStateProof(hasher).isPresent();
+    if (!isHighQC && !isAnythingCommitted) {
+      return new BabylonVertexStore.InsertQcResult.Ignored();
     }
 
     if (isHighQC) {
       highestQC = qc;
     }
 
-    if (isHighCommit) {
-      qc.getCommitted().ifPresent(header -> this.commit(header, qc));
-    } else {
-      // TODO: we lose all other tail QCs on this save, Not sure if this is okay...investigate...
-      VerifiedVertexStoreState vertexStoreState = getState();
-      this.highQCUpdateDispatcher.dispatch(BFTHighQCUpdate.create(vertexStoreState));
-    }
+    final var committedUpdate = qc.getCommitted().flatMap(header -> this.commit(header, qc));
 
-    return true;
+    return new BabylonVertexStore.InsertQcResult.Inserted(highQC(), getState(), committedUpdate);
   }
 
   private void getChildrenVerticesList(
@@ -298,15 +257,6 @@ public final class VertexStore {
   }
 
   /**
-   * Returns the highest inserted timeout certificate.
-   *
-   * @return the highest inserted timeout certificate
-   */
-  public Optional<TimeoutCertificate> getHighestTimeoutCertificate() {
-    return this.highestTC;
-  }
-
-  /**
    * Returns the vertex with specified id or empty if not exists.
    *
    * @param id the id of a vertex
@@ -317,28 +267,49 @@ public final class VertexStore {
     return Optional.ofNullable(vertices.get(id));
   }
 
+  public InsertVertexChainResult insertVertexChain(VerifiedVertexChain verifiedVertexChain) {
+    final var bftInsertUpdates = new ArrayList<BFTInsertUpdate>();
+    final var insertedQcs = new ArrayList<InsertQcResult.Inserted>();
+    for (VerifiedVertex v : verifiedVertexChain.getVertices()) {
+      final var insertQcResult = insertQc(v.getQC());
+
+      switch (insertQcResult) {
+        case InsertQcResult.VertexIsMissing missing:
+          return new InsertVertexChainResult(insertedQcs, bftInsertUpdates);
+        case InsertQcResult.Ignored ignored:
+          return new InsertVertexChainResult(insertedQcs, bftInsertUpdates);
+        case InsertQcResult.Inserted inserted:
+          insertedQcs.add(inserted);
+      }
+
+      insertVertex(v).ifPresent(bftInsertUpdates::add);
+    }
+
+    return new InsertVertexChainResult(insertedQcs, bftInsertUpdates);
+  }
+
   /**
    * Inserts a vertex and then attempts to create the next header.
    *
    * @param vertex vertex to insert
    */
-  public void insertVertex(VerifiedVertex vertex) {
+  public Optional<BFTInsertUpdate> insertVertex(VerifiedVertex vertex) {
     PreparedVertex v = vertices.get(vertex.getId());
     if (v != null) {
-      return;
+      return Optional.empty();
     }
 
     if (!this.containsVertex(vertex.getParentId())) {
       throw new MissingParentException(vertex.getParentId());
     }
 
-    insertVertexInternal(vertex);
+    return insertVertexInternal(vertex);
   }
 
-  private void insertVertexInternal(VerifiedVertex vertex) {
+  private Optional<BFTInsertUpdate> insertVertexInternal(VerifiedVertex vertex) {
     LinkedList<PreparedVertex> previous = getPathFromRoot(vertex.getParentId());
     Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(previous, vertex);
-    preparedVertexMaybe.ifPresent(
+    return preparedVertexMaybe.map(
         preparedVertex -> {
           vertices.put(preparedVertex.getId(), preparedVertex);
           vertexChildren.put(preparedVertex.getId(), new HashSet<>());
@@ -346,9 +317,7 @@ public final class VertexStore {
           siblings.add(preparedVertex.getId());
 
           VerifiedVertexStoreState vertexStoreState = getState();
-          BFTInsertUpdate update =
-              BFTInsertUpdate.insertedVertex(preparedVertex, siblings.size(), vertexStoreState);
-          bftUpdateDispatcher.dispatch(update);
+          return BFTInsertUpdate.insertedVertex(preparedVertex, siblings.size(), vertexStoreState);
         });
   }
 
@@ -373,16 +342,13 @@ public final class VertexStore {
    * @param header the header to be committed
    * @param commitQC the proof of commit
    */
-  private void commit(BFTHeader header, QuorumCertificate commitQC) {
+  private Optional<CommittedUpdate> commit(BFTHeader header, QuorumCertificate commitQC) {
     if (header.getView().compareTo(this.rootVertex.getView()) <= 0) {
-      return;
+      return Optional.empty();
     }
 
     final HashCode vertexId = header.getVertexId();
     final VerifiedVertex tipVertex = vertices.get(vertexId).getVertex();
-    if (tipVertex == null) {
-      throw new IllegalStateException("Committing vertex not in store: " + header);
-    }
 
     this.rootVertex = tipVertex;
     this.highestCommittedQC = commitQC;
@@ -393,8 +359,7 @@ public final class VertexStore {
       prev = path.get(i).getId();
     }
 
-    VerifiedVertexStoreState vertexStoreState = getState();
-    this.bftCommittedDispatcher.dispatch(new BFTCommittedUpdate(path, vertexStoreState));
+    return Optional.of(new CommittedUpdate(path));
   }
 
   public LinkedList<PreparedVertex> getPathFromRoot(HashCode vertexId) {

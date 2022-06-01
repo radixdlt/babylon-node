@@ -87,6 +87,8 @@ import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
+import com.radixdlt.consensus.sync.BabylonVertexStoreJavaImpl;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -108,7 +110,7 @@ public class VertexStoreTest {
   private Function<Boolean, VerifiedVertex> nextSkippableVertex;
   private HashCode genesisHash;
   private QuorumCertificate rootQC;
-  private VertexStore sut;
+  private BabylonVertexStoreAdapter sut;
   private Ledger ledger;
   private EventDispatcher<BFTInsertUpdate> bftUpdateSender;
   private EventDispatcher<BFTRebuildUpdate> rebuildUpdateEventDispatcher;
@@ -145,14 +147,15 @@ public class VertexStoreTest {
         new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
     this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
     this.sut =
-        VertexStore.create(
-            VerifiedVertexStoreState.create(
-                HighQC.from(rootQC), genesisVertex, Optional.empty(), hasher),
-            ledger,
-            hasher,
+        new BabylonVertexStoreAdapter(
+            BabylonVertexStoreJavaImpl.create(
+                VerifiedVertexStoreState.create(
+                    HighQC.from(rootQC), genesisVertex, Optional.empty(), hasher),
+                ledger,
+                hasher),
+            bftHighQCUpdateEventDispatcher,
             bftUpdateSender,
             rebuildUpdateEventDispatcher,
-            bftHighQCUpdateEventDispatcher,
             committedSender);
 
     AtomicReference<BFTHeader> lastParentHeader =
@@ -204,7 +207,7 @@ public class VertexStoreTest {
 
     // Act
     QuorumCertificate qc = vertices.get(1).getQC();
-    sut.addQC(qc);
+    sut.insertQc(qc);
 
     // Assert
     assertThat(sut.highQC().highestQC()).isEqualTo(qc);
@@ -221,7 +224,7 @@ public class VertexStoreTest {
 
     // Act
     QuorumCertificate qc = vertices.get(3).getQC();
-    boolean success = sut.addQC(qc);
+    boolean success = sut.insertQc(qc);
 
     // Assert
     assertThat(success).isTrue();
@@ -244,7 +247,7 @@ public class VertexStoreTest {
 
     // Act
     QuorumCertificate qc = this.nextVertex.get().getQC();
-    boolean success = sut.addQC(qc);
+    boolean success = sut.insertQc(qc);
 
     // Assert
     assertThat(success).isFalse();
@@ -259,7 +262,7 @@ public class VertexStoreTest {
             HighQC.from(vertices.get(3).getQC()),
             vertices.get(0),
             vertices.stream().skip(1).collect(ImmutableList.toImmutableList()),
-            sut.getHighestTimeoutCertificate(),
+            sut.highQC().highestTC(),
             hasher);
 
     // Act
@@ -283,12 +286,12 @@ public class VertexStoreTest {
         new TimeoutCertificate(1, View.of(101), mock(TimestampedECDSASignatures.class));
 
     sut.insertTimeoutCertificate(initialTC);
-    assertEquals(initialTC, sut.getHighestTimeoutCertificate().orElse(null));
+    assertEquals(initialTC, sut.highQC().highestTC().orElse(null));
 
     sut.insertTimeoutCertificate(higherTC);
-    assertEquals(higherTC, sut.getHighestTimeoutCertificate().orElse(null));
+    assertEquals(higherTC, sut.highQC().highestTC().orElse(null));
 
     sut.insertTimeoutCertificate(initialTC);
-    assertEquals(higherTC, sut.getHighestTimeoutCertificate().orElse(null));
+    assertEquals(higherTC, sut.highQC().highestTC().orElse(null));
   }
 }

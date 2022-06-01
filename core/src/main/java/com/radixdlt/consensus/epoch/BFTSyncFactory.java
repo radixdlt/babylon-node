@@ -65,16 +65,16 @@
 package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
 
 /** Creates a new bft sync given a vertex store and pacemaker */
 public interface BFTSyncFactory {
   BFTSync create(
       SafetyRules safetyRules,
-      VertexStore vertexStore,
+      BabylonVertexStoreAdapter vertexStore,
       PacemakerState pacemakerState,
       BFTConfiguration configuration);
 }

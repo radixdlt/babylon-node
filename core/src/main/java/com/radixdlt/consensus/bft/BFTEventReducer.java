@@ -72,6 +72,7 @@ import com.radixdlt.consensus.bft.VoteProcessingResult.*;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -89,7 +90,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
   private static final Logger log = LogManager.getLogger();
 
   private final BFTNode self;
-  private final VertexStore vertexStore;
+  private final BabylonVertexStoreAdapter vertexStore;
   private final Pacemaker pacemaker;
   private final EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher;
   private final EventDispatcher<NoVote> noVoteDispatcher;
@@ -113,7 +114,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
   public BFTEventReducer(
       BFTNode self,
       Pacemaker pacemaker,
-      VertexStore vertexStore,
+      BabylonVertexStoreAdapter vertexStore,
       EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,

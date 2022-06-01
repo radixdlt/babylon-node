@@ -89,7 +89,6 @@ import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
@@ -104,6 +103,9 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.consensus.sync.BabylonVertexStore;
+import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
+import com.radixdlt.consensus.sync.BabylonVertexStoreJavaImpl;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
@@ -191,7 +193,7 @@ public final class ConsensusModule extends AbstractModule {
       BFTConfiguration config,
       BFTFactory bftFactory,
       Pacemaker pacemaker,
-      VertexStore vertexStore,
+      BabylonVertexStoreAdapter vertexStore,
       BFTSync bftSync,
       SafetyRules safetyRules,
       ViewUpdate viewUpdate) {
@@ -213,7 +215,7 @@ public final class ConsensusModule extends AbstractModule {
       SafetyRules safetyRules,
       SystemCounters counters,
       BFTConfiguration configuration,
-      VertexStore vertexStore,
+      BabylonVertexStoreAdapter vertexStore,
       EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
       ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
       PacemakerTimeoutCalculator timeoutCalculator,
@@ -248,7 +250,7 @@ public final class ConsensusModule extends AbstractModule {
   private BFTSync bftSync(
       @Self BFTNode self,
       @GetVerticesRequestRateLimit RateLimiter syncRequestRateLimiter,
-      VertexStore vertexStore,
+      BabylonVertexStoreAdapter vertexStore,
       PacemakerReducer pacemakerReducer,
       RemoteEventDispatcher<GetVerticesRequest> requestSender,
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
@@ -278,21 +280,25 @@ public final class ConsensusModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private VertexStore vertexStore(
+  private BabylonVertexStore babylonVertexStore(
+      BFTConfiguration bftConfiguration, Ledger ledger, Hasher hasher) {
+    return BabylonVertexStoreJavaImpl.create(
+        bftConfiguration.getVertexStoreState(), ledger, hasher);
+  }
+
+  @Provides
+  @Singleton
+  private BabylonVertexStoreAdapter babylonVertexStoreAdapter(
+      BabylonVertexStore babylonVertexStore,
       EventDispatcher<BFTInsertUpdate> updateSender,
       EventDispatcher<BFTRebuildUpdate> rebuildUpdateDispatcher,
       EventDispatcher<BFTHighQCUpdate> highQCUpdateEventDispatcher,
-      EventDispatcher<BFTCommittedUpdate> committedSender,
-      BFTConfiguration bftConfiguration,
-      Ledger ledger,
-      Hasher hasher) {
-    return VertexStore.create(
-        bftConfiguration.getVertexStoreState(),
-        ledger,
-        hasher,
+      EventDispatcher<BFTCommittedUpdate> committedSender) {
+    return new BabylonVertexStoreAdapter(
+        babylonVertexStore,
+        highQCUpdateEventDispatcher,
         updateSender,
         rebuildUpdateDispatcher,
-        highQCUpdateEventDispatcher,
         committedSender);
   }
 }
