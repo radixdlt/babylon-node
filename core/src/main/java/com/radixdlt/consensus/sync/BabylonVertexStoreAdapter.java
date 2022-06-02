@@ -79,7 +79,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -121,10 +121,8 @@ public final class BabylonVertexStoreAdapter {
   }
 
   public boolean insertQc(QuorumCertificate qc) {
-    final var result = babylonVertexStore.insertQc(qc);
-
-    switch (result) {
-      case BabylonVertexStore.InsertQcResult.Inserted inserted:
+    return switch (babylonVertexStore.insertQc(qc)) {
+      case BabylonVertexStore.InsertQcResult.Inserted inserted -> {
         // TODO: why is this if statement needed?
         if (inserted.committedUpdate().isEmpty()) {
           this.highQCUpdateDispatcher.dispatch(
@@ -138,21 +136,18 @@ public final class BabylonVertexStoreAdapter {
                         new BFTCommittedUpdate(
                             committedUpdate.committedVertices(),
                             inserted.verifiedVertexStoreState())));
-        return true;
-      case BabylonVertexStore.InsertQcResult.Ignored ignored:
-        return true;
-      case BabylonVertexStore.InsertQcResult.VertexIsMissing vertexIsMissing:
-        return false;
-    }
-
-    throw new IllegalStateException();
+        yield true;
+      }
+      case BabylonVertexStore.InsertQcResult.Ignored ignored -> true;
+      case BabylonVertexStore.InsertQcResult.VertexIsMissing vertexIsMissing -> false;
+    };
   }
 
   public Optional<PreparedVertex> getPreparedVertex(HashCode id) {
     return babylonVertexStore.getPreparedVertex(id);
   }
 
-  public LinkedList<PreparedVertex> getPathFromRoot(HashCode vertexId) {
+  public List<PreparedVertex> getPathFromRoot(HashCode vertexId) {
     return babylonVertexStore.getPathFromRoot(vertexId);
   }
 

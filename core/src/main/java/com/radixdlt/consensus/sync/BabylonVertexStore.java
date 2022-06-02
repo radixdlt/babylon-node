@@ -74,7 +74,6 @@ import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
@@ -113,7 +112,7 @@ public interface BabylonVertexStore {
 
   VerifiedVertex getRoot();
 
-  LinkedList<PreparedVertex> getPathFromRoot(HashCode vertexId);
+  List<PreparedVertex> getPathFromRoot(HashCode vertexId);
 
   Optional<PreparedVertex> getPreparedVertex(HashCode id);
 
