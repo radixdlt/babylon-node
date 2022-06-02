@@ -64,11 +64,8 @@
 
 package com.radixdlt.utils;
 
-import static com.radixdlt.errors.ApiErrors.UNABLE_TO_PARSE_UINT;
-
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
-import com.radixdlt.utils.functional.Result;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -253,17 +250,6 @@ public final class UInt384 implements Comparable<UInt384> {
     } else {
       throw new NumberFormatException(s);
     }
-  }
-
-  /**
-   * Functional style friendly version of {@link #from(String)}.
-   *
-   * @param input The string to parse
-   * @return Success {@link Result} if value can be successfully parsed and failure {@link Result}
-   *     otherwise.
-   */
-  public static Result<UInt384> fromString(String input) {
-    return Result.wrap(() -> UNABLE_TO_PARSE_UINT.with(input), () -> from(input));
   }
 
   // Pad short (< BYTES length) array with appropriate lead bytes.

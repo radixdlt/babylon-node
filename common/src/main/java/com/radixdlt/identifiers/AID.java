@@ -64,12 +64,8 @@
 
 package com.radixdlt.identifiers;
 
-import static com.radixdlt.errors.ApiErrors.INVALID_AID_LENGTH;
-import static com.radixdlt.errors.ApiErrors.INVALID_AID_STRING;
 import static com.radixdlt.interop.sbor.codec.ClassField.plain;
 import static com.radixdlt.lang.Result.all;
-import static com.radixdlt.utils.functional.Result.fromOptional;
-import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -79,7 +75,6 @@ import com.radixdlt.interop.sbor.api.DecoderApi;
 import com.radixdlt.interop.sbor.codec.ClassCodec;
 import com.radixdlt.interop.sbor.codec.ClassField;
 import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.functional.Result;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -202,32 +197,6 @@ public final class AID implements Comparable<AID> {
     }
 
     return new AID(Bytes.fromHexString(hexBytes));
-  }
-
-  /**
-   * Functional style friendly version of {@link #from(String)}.
-   *
-   * @param input The string to parse
-   * @return Success {@link Result} if value can be successfully parsed and failure {@link Result}
-   *     otherwise.
-   */
-  public static Result<AID> fromString(String input) {
-    return fromOptional(INVALID_AID_STRING, ofNullable(input))
-        .filter(bytes -> bytes.length() == BYTES * 2, INVALID_AID_LENGTH)
-        .map(Bytes::fromHexString)
-        .flatMap(AID::fromBytes);
-  }
-
-  /**
-   * Create an AID from bytes. Unlike {@link #from(byte[])} this method does not throw an exception.
-   *
-   * @param input The bytes (must be of length AID.BYTES)
-   * @return Success result in case of successful conversion and failure result in case of error.
-   */
-  public static Result<AID> fromBytes(byte[] input) {
-    return fromOptional(INVALID_AID_STRING, ofNullable(input))
-        .filter(bytes -> bytes.length == HASH_BYTES, INVALID_AID_LENGTH)
-        .map(AID::new);
   }
 
   @Override

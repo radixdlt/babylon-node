@@ -64,10 +64,10 @@
 
 package com.radixdlt.network.p2p;
 
+import static com.radixdlt.lang.Unit.unitResult;
 import static com.radixdlt.monitoring.SystemCounters.CounterType.*;
 import static com.radixdlt.network.messaging.MessagingErrors.PEER_BANNED;
 import static com.radixdlt.network.messaging.MessagingErrors.SELF_CONNECTION_ATTEMPT;
-import static com.radixdlt.utils.functional.Tuple.unitResult;
 import static java.util.function.Predicate.not;
 
 import com.google.common.collect.ImmutableList;
@@ -77,6 +77,8 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Unit;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.PeerEvent.PeerBanned;
@@ -90,8 +92,6 @@ import com.radixdlt.network.p2p.addressbook.AddressBookEntry;
 import com.radixdlt.network.p2p.transport.PeerChannel;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.Lists;
-import com.radixdlt.utils.functional.Result;
-import com.radixdlt.utils.functional.Tuple.Unit;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.Collection;

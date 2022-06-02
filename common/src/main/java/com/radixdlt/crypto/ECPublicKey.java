@@ -64,8 +64,6 @@
 
 package com.radixdlt.crypto;
 
-import static com.radixdlt.errors.ApiErrors.INVALID_PUBLIC_KEY;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
@@ -74,7 +72,6 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.functional.Result;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -121,10 +118,6 @@ public final class ECPublicKey {
 
   public static Optional<ECPublicKey> recoverFrom(HashCode hash, ECDSASignature signature) {
     return ECKeyUtils.recoverFromSignature(signature, hash.asBytes()).map(ECPublicKey::new);
-  }
-
-  public static Result<ECPublicKey> fromHexString(String hexadecimal) {
-    return Result.wrap(INVALID_PUBLIC_KEY, () -> fromHex(hexadecimal));
   }
 
   public EUID euid() {

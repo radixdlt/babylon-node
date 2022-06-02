@@ -64,14 +64,11 @@
 
 package com.radixdlt.utils;
 
-import static com.radixdlt.errors.ApiErrors.UNABLE_TO_PARSE_UINT;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
-import com.radixdlt.utils.functional.Result;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -250,17 +247,6 @@ public final class UInt256 implements Comparable<UInt256>, Serializable {
     } else {
       throw new NumberFormatException(s);
     }
-  }
-
-  /**
-   * Functional style friendly version of {@link #from(String)}. Instead of throwing exceptions this
-   * method returns {@link Result}.
-   *
-   * @param input The string to parse
-   * @return Success {@link Result} if value can be parsed and failure {@link Result} otherwise.
-   */
-  public static Result<UInt256> fromString(String input) {
-    return Result.wrap(() -> UNABLE_TO_PARSE_UINT.with(input), () -> from(input));
   }
 
   // Pad short (< BYTES length) array with appropriate lead bytes.
