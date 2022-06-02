@@ -69,7 +69,7 @@ import static com.radixdlt.interop.sbor.api.OptionTypeId.OPTION_TYPE_NONE;
 import static com.radixdlt.interop.sbor.api.OptionTypeId.OPTION_TYPE_SOME;
 import static com.radixdlt.interop.sbor.api.ResultTypeId.RESULT_TYPE_ERR;
 import static com.radixdlt.interop.sbor.api.ResultTypeId.RESULT_TYPE_OK;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_ARRAY;
+import static com.radixdlt.interop.sbor.api.TypeId.TYPE_VEC;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_OPTION;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_RESULT;
 
@@ -137,7 +137,7 @@ record AnyEncoder(ByteArrayOutputStream output, CodecMap codecMap) implements En
 
   @Override
   public void encodeArrayHeader(TypeId typeId, int length) {
-    encodeTypeId(TYPE_ARRAY);
+    encodeTypeId(TYPE_VEC);
     encodeTypeId(typeId);
     writeInt(length);
   }
