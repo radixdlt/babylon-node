@@ -69,9 +69,9 @@ import static com.radixdlt.interop.sbor.api.DecodingError.INVALID_OPTION;
 import static com.radixdlt.interop.sbor.api.DecodingError.INVALID_RESULT;
 import static com.radixdlt.interop.sbor.api.DecodingError.TYPE_MISMATCH;
 import static com.radixdlt.interop.sbor.api.DecodingError.UNSUPPORTED_TYPE;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_VEC;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_OPTION;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_RESULT;
+import static com.radixdlt.interop.sbor.api.TypeId.TYPE_VEC;
 import static com.radixdlt.lang.Result.success;
 
 import com.radixdlt.interop.sbor.api.DecoderApi;

@@ -69,8 +69,8 @@ import static com.radixdlt.interop.sbor.api.TypeId.TYPE_BOOL;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_I16;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_I32;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_I64;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_U8;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_STRING;
+import static com.radixdlt.interop.sbor.api.TypeId.TYPE_U8;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_UNIT;
 import static com.radixdlt.lang.Result.success;
 

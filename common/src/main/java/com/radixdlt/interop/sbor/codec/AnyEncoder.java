@@ -69,9 +69,9 @@ import static com.radixdlt.interop.sbor.api.OptionTypeId.OPTION_TYPE_NONE;
 import static com.radixdlt.interop.sbor.api.OptionTypeId.OPTION_TYPE_SOME;
 import static com.radixdlt.interop.sbor.api.ResultTypeId.RESULT_TYPE_ERR;
 import static com.radixdlt.interop.sbor.api.ResultTypeId.RESULT_TYPE_OK;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_VEC;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_OPTION;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_RESULT;
+import static com.radixdlt.interop.sbor.api.TypeId.TYPE_VEC;
 
 import com.radixdlt.interop.sbor.api.EncoderApi;
 import com.radixdlt.interop.sbor.api.TypeId;
