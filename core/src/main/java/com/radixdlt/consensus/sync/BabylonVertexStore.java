@@ -74,8 +74,8 @@ import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.lang.Option;
 import java.util.List;
-import java.util.Optional;
 
 public interface BabylonVertexStore {
   record CommittedUpdate(ImmutableList<PreparedVertex> committedVertices) {}
@@ -85,7 +85,7 @@ public interface BabylonVertexStore {
         HighQC newHighQc,
         // TODO: remove me once vertex store persistence and commit on the java side are gone
         VerifiedVertexStoreState verifiedVertexStoreState,
-        Optional<CommittedUpdate> committedUpdate)
+        Option<CommittedUpdate> committedUpdate)
         implements InsertQcResult {}
 
     record Ignored() implements InsertQcResult {}
@@ -100,11 +100,11 @@ public interface BabylonVertexStore {
 
   void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
 
-  Optional<BFTInsertUpdate> insertVertex(VerifiedVertex vertex);
+  Option<BFTInsertUpdate> insertVertex(VerifiedVertex vertex);
 
   InsertVertexChainResult insertVertexChain(VerifiedVertexChain verifiedVertexChain);
 
-  Optional<VerifiedVertexStoreState> tryRebuild(VerifiedVertexStoreState vertexStoreState);
+  Option<VerifiedVertexStoreState> tryRebuild(VerifiedVertexStoreState vertexStoreState);
 
   boolean containsVertex(HashCode vertexId);
 
@@ -114,7 +114,7 @@ public interface BabylonVertexStore {
 
   List<PreparedVertex> getPathFromRoot(HashCode vertexId);
 
-  Optional<PreparedVertex> getPreparedVertex(HashCode id);
+  Option<PreparedVertex> getPreparedVertex(HashCode id);
 
-  Optional<ImmutableList<VerifiedVertex>> getVertices(HashCode vertexId, int count);
+  Option<ImmutableList<VerifiedVertex>> getVertices(HashCode vertexId, int count);
 }

@@ -78,6 +78,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.lang.Option;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -161,14 +162,14 @@ public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
     return rootVertex;
   }
 
-  public Optional<VerifiedVertexStoreState> tryRebuild(VerifiedVertexStoreState vertexStoreState) {
+  public Option<VerifiedVertexStoreState> tryRebuild(VerifiedVertexStoreState vertexStoreState) {
     // FIXME: Currently this assumes vertexStoreState is a chain with no forks which is our only use
     // case at the moment.
     LinkedList<PreparedVertex> prepared = new LinkedList<>();
     for (VerifiedVertex vertex : vertexStoreState.getVertices()) {
       Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(prepared, vertex);
       if (preparedVertexMaybe.isEmpty()) {
-        return Optional.empty();
+        return Option.empty();
       }
 
       prepared.add(preparedVertexMaybe.get());
@@ -188,7 +189,7 @@ public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
       siblings.add(preparedVertex.getId());
     }
 
-    return Optional.of(vertexStoreState);
+    return Option.present(vertexStoreState);
   }
 
   public boolean containsVertex(HashCode vertexId) {
@@ -217,7 +218,8 @@ public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
       highestQC = qc;
     }
 
-    final var committedUpdate = qc.getCommitted().flatMap(header -> this.commit(header, qc));
+    final var committedUpdate =
+        Option.from(qc.getCommitted().flatMap(header -> this.commit(header, qc)));
 
     return new BabylonVertexStore.InsertQcResult.Inserted(highQC(), getState(), committedUpdate);
   }
@@ -263,8 +265,8 @@ public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
    * @return the specified vertex or empty
    */
   // TODO: reimplement in async way
-  public Optional<PreparedVertex> getPreparedVertex(HashCode id) {
-    return Optional.ofNullable(vertices.get(id));
+  public Option<PreparedVertex> getPreparedVertex(HashCode id) {
+    return Option.option(vertices.get(id));
   }
 
   public InsertVertexChainResult insertVertexChain(VerifiedVertexChain verifiedVertexChain) {
@@ -282,7 +284,7 @@ public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
           insertedQcs.add(inserted);
       }
 
-      insertVertex(v).ifPresent(bftInsertUpdates::add);
+      insertVertex(v).onPresent(bftInsertUpdates::add);
     }
 
     return new InsertVertexChainResult(insertedQcs, bftInsertUpdates);
@@ -293,10 +295,10 @@ public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
    *
    * @param vertex vertex to insert
    */
-  public Optional<BFTInsertUpdate> insertVertex(VerifiedVertex vertex) {
+  public Option<BFTInsertUpdate> insertVertex(VerifiedVertex vertex) {
     PreparedVertex v = vertices.get(vertex.getId());
     if (v != null) {
-      return Optional.empty();
+      return Option.empty();
     }
 
     if (!this.containsVertex(vertex.getParentId())) {
@@ -306,9 +308,9 @@ public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
     return insertVertexInternal(vertex);
   }
 
-  private Optional<BFTInsertUpdate> insertVertexInternal(VerifiedVertex vertex) {
+  private Option<BFTInsertUpdate> insertVertexInternal(VerifiedVertex vertex) {
     LinkedList<PreparedVertex> previous = getPathFromRoot(vertex.getParentId());
-    Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(previous, vertex);
+    final var preparedVertexMaybe = Option.from(ledger.prepare(previous, vertex));
     return preparedVertexMaybe.map(
         preparedVertex -> {
           vertices.put(preparedVertex.getId(), preparedVertex);
@@ -393,7 +395,7 @@ public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
    * @param count the number of vertices to retrieve
    * @return the list of vertices if all found, otherwise an empty list
    */
-  public Optional<ImmutableList<VerifiedVertex>> getVertices(HashCode vertexId, int count) {
+  public Option<ImmutableList<VerifiedVertex>> getVertices(HashCode vertexId, int count) {
     HashCode nextId = vertexId;
     ImmutableList.Builder<VerifiedVertex> builder = ImmutableList.builderWithExpectedSize(count);
     for (int i = 0; i < count; i++) {
@@ -404,13 +406,13 @@ public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
         final PreparedVertex preparedVertex = this.vertices.get(nextId);
         verifiedVertex = preparedVertex.getVertex();
       } else {
-        return Optional.empty();
+        return Option.empty();
       }
 
       builder.add(verifiedVertex);
       nextId = verifiedVertex.getParentId();
     }
 
-    return Optional.of(builder.build());
+    return Option.present(builder.build());
   }
 }

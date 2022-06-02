@@ -109,7 +109,7 @@ public final class BabylonVertexStoreAdapter {
   public boolean tryRebuild(VerifiedVertexStoreState vertexStoreState) {
     final var result = babylonVertexStore.tryRebuild(vertexStoreState);
 
-    result.ifPresent(
+    result.onPresent(
         newVertexStoreState ->
             bftRebuildDispatcher.dispatch(BFTRebuildUpdate.create(newVertexStoreState)));
 
@@ -130,7 +130,7 @@ public final class BabylonVertexStoreAdapter {
         }
         inserted
             .committedUpdate()
-            .ifPresent(
+            .onPresent(
                 committedUpdate ->
                     this.bftCommittedDispatcher.dispatch(
                         new BFTCommittedUpdate(
@@ -144,7 +144,7 @@ public final class BabylonVertexStoreAdapter {
   }
 
   public Optional<PreparedVertex> getPreparedVertex(HashCode id) {
-    return babylonVertexStore.getPreparedVertex(id);
+    return babylonVertexStore.getPreparedVertex(id).toOptional();
   }
 
   public List<PreparedVertex> getPathFromRoot(HashCode vertexId) {
@@ -161,7 +161,7 @@ public final class BabylonVertexStoreAdapter {
                   BFTHighQCUpdate.create(insertedQc.verifiedVertexStoreState()));
               insertedQc
                   .committedUpdate()
-                  .ifPresent(
+                  .onPresent(
                       committedUpdate ->
                           this.bftCommittedDispatcher.dispatch(
                               new BFTCommittedUpdate(
@@ -172,12 +172,12 @@ public final class BabylonVertexStoreAdapter {
   }
 
   public Optional<ImmutableList<VerifiedVertex>> getVertices(HashCode vertexId, int count) {
-    return babylonVertexStore.getVertices(vertexId, count);
+    return babylonVertexStore.getVertices(vertexId, count).toOptional();
   }
 
   public void insertVertex(VerifiedVertex vertex) {
     final var result = babylonVertexStore.insertVertex(vertex);
-    result.ifPresent(bftUpdateDispatcher::dispatch);
+    result.onPresent(bftUpdateDispatcher::dispatch);
   }
 
   public boolean containsVertex(HashCode vertexId) {
