@@ -254,14 +254,6 @@ public class ECKeyUtils {
     return recoverFromSignature(signature.getV(), signature.getR(), signature.getS(), hash);
   }
 
-  /**
-   * Restore recoverable signature from non-recoverable signature and public key.
-   *
-   * @param signature original non-recoverable signature
-   * @param hash hash from which signature was created
-   * @param publicKey corresponding public key from the private key used to sign hash.
-   * @return recoverable signature
-   */
   static Optional<ECPoint> recoverFromSignature(int v, BigInteger r, BigInteger s, byte[] hash) {
     var curveN = curve().getN();
     var point = r.add(BigInteger.valueOf((long) v / 2).multiply(curveN));

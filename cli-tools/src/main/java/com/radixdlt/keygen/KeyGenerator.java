@@ -64,19 +64,20 @@
 
 package com.radixdlt.keygen;
 
+import static com.radixdlt.keygen.KeyGeneratorErrors.IRRELEVANT;
 import static com.radixdlt.keygen.KeyGeneratorErrors.MISSING_KEYSTORE_FILE;
 import static com.radixdlt.keygen.KeyGeneratorErrors.MISSING_PARAMETER;
 import static com.radixdlt.keygen.KeyGeneratorErrors.UNABLE_TO_LOAD_KEYSTORE;
 import static com.radixdlt.keygen.KeyGeneratorErrors.UNABLE_TO_PARSE_COMMAND_LINE;
 import static com.radixdlt.lang.Result.all;
 import static com.radixdlt.lang.Result.fromOptional;
+import static com.radixdlt.lang.Unit.unit;
 import static java.util.Optional.ofNullable;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
-import com.radixdlt.lang.Cause;
-import com.radixdlt.lang.Causes;
 import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Unit;
 import java.io.File;
 import java.security.Security;
 import org.apache.commons.cli.CommandLine;
@@ -115,20 +116,16 @@ public class KeyGenerator {
     System.exit(rc);
   }
 
-  private Result<Void> run(String[] args) {
+  private Result<Unit> run(String[] args) {
     return parseParameters(args)
-        .filter(irrelevant(), commandLine -> !commandLine.hasOption("h"))
-        .filter(irrelevant(), commandLine -> commandLine.getOptions().length != 0)
+        .filter(IRRELEVANT::swallow, commandLine -> !commandLine.hasOption("h"))
+        .filter(IRRELEVANT::swallow, commandLine -> commandLine.getOptions().length != 0)
         .flatMap(
             cli ->
                 all(parseKeystore(cli), parsePassword(cli), parseKeypair(cli), parseShowPk(cli))
                     .flatMap(this::generateKeypair))
         .onFailure(failure -> usage(failure.message()))
         .onSuccessDo(() -> System.out.println("Done"));
-  }
-
-  private Cause irrelevant() {
-    return Causes.cause("");
   }
 
   private void usage(String message) {
@@ -138,7 +135,7 @@ public class KeyGenerator {
     new HelpFormatter().printHelp(KeyGenerator.class.getSimpleName(), options, true);
   }
 
-  private Result<Void> generateKeypair(
+  private Result<Unit> generateKeypair(
       String keystore, String password, String keypairName, boolean shouldShowPk) {
     var keystoreFile = new File(keystore);
     var newFile = !keystoreFile.canWrite();
@@ -155,11 +152,11 @@ public class KeyGenerator {
         keypairName, publicKey, newFile ? "new" : "existing", keystore);
 
     return Result.lift(
-        unused -> UNABLE_TO_LOAD_KEYSTORE,
+        UNABLE_TO_LOAD_KEYSTORE::swallow,
         () -> {
           RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), newFile)
               .writeKeyPair(keypairName, keyPair);
-          return null;
+          return unit();
         });
   }
 
@@ -167,21 +164,21 @@ public class KeyGenerator {
     return Result.ok(commandLine.hasOption("pk"));
   }
 
-  private Result<Void> printPublicKey(
+  private Result<Unit> printPublicKey(
       File keystoreFile, String password, String keypairName, boolean newFile) {
     if (!keystoreFile.exists() || !keystoreFile.canRead()) {
       return MISSING_KEYSTORE_FILE.result();
     }
 
     return Result.lift(
-        unused -> irrelevant(),
+        unused -> IRRELEVANT.swallow((Object) unused),
         () -> {
-          ECKeyPair keyPair =
+          var keyPair =
               RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), newFile)
                   .readKeyPair(keypairName, false);
           System.out.printf(
               "Public key of keypair '%s': %s%n", keypairName, keyPair.getPublicKey().toHex());
-          return null;
+          return unit();
         });
   }
 
@@ -203,6 +200,6 @@ public class KeyGenerator {
 
   private Result<CommandLine> parseParameters(String[] args) {
     return Result.lift(
-        unused -> UNABLE_TO_PARSE_COMMAND_LINE, () -> new DefaultParser().parse(options, args));
+        UNABLE_TO_PARSE_COMMAND_LINE::swallow, () -> new DefaultParser().parse(options, args));
   }
 }

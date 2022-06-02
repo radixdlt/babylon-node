@@ -67,6 +67,7 @@ package com.radixdlt.keygen;
 import com.radixdlt.lang.Cause;
 
 public enum KeyGeneratorErrors implements Cause {
+  IRRELEVANT(""),
   MISSING_PARAMETER("The parameter is missing"),
   MISSING_KEYSTORE_FILE("keystore file does not exist or is not accessible"),
 
@@ -82,5 +83,9 @@ public enum KeyGeneratorErrors implements Cause {
   @Override
   public String message() {
     return message;
+  }
+
+  public <T> Cause swallow(T unused) {
+    return this;
   }
 }
