@@ -68,6 +68,9 @@ import static java.util.stream.Collectors.groupingBy;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.network.p2p.transport.PeerChannel;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 
@@ -86,17 +89,35 @@ public final class PeerManagerPeersView implements PeersView {
         this.peerManager.activeChannels().stream()
             .collect(groupingBy(PeerChannel::getRemoteNodeId));
 
-    return grouppedByNodeId.entrySet().stream()
-        .map(
-            e -> {
-              final var channelsInfo =
-                  e.getValue().stream()
-                      .map(
-                          c ->
-                              PeerChannelInfo.create(
-                                  c.getUri(), c.getHost(), c.getPort(), c.isOutbound()))
-                      .collect(ImmutableList.toImmutableList());
-              return PeerInfo.create(e.getKey(), channelsInfo);
-            });
+    return getPeerInfo(grouppedByNodeId);
+  }
+
+  @Override
+  public Stream<PeerInfo> peers(Set<String> capabilitiesNames) {
+    final var grouppedByNodeId =
+        this.peerManager.activeChannels().stream()
+            .filter(it -> it.getRemotePeerCapabilitiesNames().contains(capabilitiesNames))
+            .collect(groupingBy(PeerChannel::getRemoteNodeId));
+
+    return getPeerInfo(grouppedByNodeId);
+  }
+
+  private Stream<PeerInfo> getPeerInfo(Map<NodeId, List<PeerChannel>> grouppedByNodeId) {
+    return grouppedByNodeId.entrySet().stream().map(this::toPeerInfo);
+  }
+
+  private PeerInfo toPeerInfo(Map.Entry<NodeId, List<PeerChannel>> e) {
+    final var channelsInfo =
+        e.getValue().stream()
+            .map(
+                c ->
+                    PeerChannelInfo.create(
+                        c.getUri(),
+                        c.getHost(),
+                        c.getPort(),
+                        c.isOutbound(),
+                        c.getRemotePeerCapabilitiesNames()))
+            .collect(ImmutableList.toImmutableList());
+    return PeerInfo.create(e.getKey(), channelsInfo);
   }
 }

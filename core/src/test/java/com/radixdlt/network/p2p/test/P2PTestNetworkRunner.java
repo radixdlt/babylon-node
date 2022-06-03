@@ -73,6 +73,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
+import com.radixdlt.capability.CapabilitiesModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyOps;
@@ -109,6 +110,7 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.IntStream;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
@@ -191,6 +193,7 @@ public final class P2PTestNetworkRunner {
         new PeerDiscoveryModule(),
         new PeerLivenessMonitorModule(),
         new DispatcherModule(),
+        new CapabilitiesModule(Set.of("ledger-sync")),
         new AbstractModule() {
           @Override
           protected void configure() {

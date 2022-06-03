@@ -68,6 +68,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import com.radixdlt.capability.CapabilityName;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
@@ -96,10 +97,7 @@ import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.utils.Pair;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -292,7 +290,8 @@ public final class LocalSyncService {
   }
 
   private ImmutableSet<BFTNode> choosePeersForSyncCheck() {
-    final var allPeers = this.peersView.peers().collect(Collectors.toList());
+    var ledgerSyncCapability = Set.of(CapabilityName.LEDGER_SYNC);
+    final var allPeers = this.peersView.peers(ledgerSyncCapability).collect(Collectors.toList());
     Collections.shuffle(allPeers);
     return allPeers.stream()
         .limit(this.syncConfig.syncCheckMaxPeers())

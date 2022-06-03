@@ -68,6 +68,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /** Retrieve the node's current peers */
@@ -78,17 +79,28 @@ public interface PeersView {
     private String host;
     private int port;
     private boolean isOutbound;
+    private Set<String> capabilitiesNames;
 
     public static PeerChannelInfo create(
-        Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
-      return new PeerChannelInfo(uri, host, port, isOutbound);
+        Optional<RadixNodeUri> uri,
+        String host,
+        int port,
+        boolean isOutbound,
+        Set<String> capabilitiesNames) {
+      return new PeerChannelInfo(uri, host, port, isOutbound, capabilitiesNames);
     }
 
-    private PeerChannelInfo(Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
+    private PeerChannelInfo(
+        Optional<RadixNodeUri> uri,
+        String host,
+        int port,
+        boolean isOutbound,
+        Set<String> capabilitiesNames) {
       this.uri = uri;
       this.host = host;
       this.port = port;
       this.isOutbound = isOutbound;
+      this.capabilitiesNames = capabilitiesNames;
     }
 
     public Optional<RadixNodeUri> getUri() {
@@ -105,6 +117,10 @@ public interface PeersView {
 
     public boolean isOutbound() {
       return isOutbound;
+    }
+
+    public Set<String> getCapabilitiesNames() {
+      return capabilitiesNames;
     }
 
     @Override
@@ -181,6 +197,14 @@ public interface PeersView {
   }
 
   Stream<PeerInfo> peers();
+
+  /**
+   * Returns the known peers which support the given capabilities.
+   *
+   * @param capabilitiesNames a set of capabilities names.
+   * @return a stream with the known peers which support the given capabilities.
+   */
+  Stream<PeerInfo> peers(Set<String> capabilitiesNames);
 
   default boolean hasPeer(BFTNode bftNode) {
     return peers().anyMatch(peer -> peer.nodeId.getPublicKey().equals(bftNode.getKey()));

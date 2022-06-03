@@ -62,99 +62,64 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.messaging;
+package com.radixdlt.capability;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static java.util.stream.Collectors.partitioningBy;
 
-import com.google.inject.Provider;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.Message;
-import com.radixdlt.network.messages.ConsensusEventMessage;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.PeerControl;
-import com.radixdlt.network.p2p.PeerManager;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.utils.Compress;
-import com.radixdlt.utils.TimeSupplier;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.observers.TestObserver;
-import java.util.Comparator;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import com.radixdlt.network.messages.*;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-@RunWith(MockitoJUnitRunner.class)
-public class MessageCentralImplTest {
+/**
+ * Defines the current {@ling Capability} set defined in the node as well as which ones are enabled
+ * and disabled.
+ */
+public class Capabilities {
 
-  @Mock private MessageCentralConfiguration messageCentralConfig;
+  private final Set<Capability> enabledCapabilities;
+  private final Set<Class<? extends Message>> unsupportedMessages;
 
-  @Mock private Serialization serialization;
+  public Capabilities(Set<String> disabledCapabilitiesNames) {
+    var capabilities =
+        Set.of(
+            new Capability(
+                CapabilityName.LEDGER_SYNC,
+                Set.of(
+                    SyncResponseMessage.class,
+                    StatusResponseMessage.class,
+                    LedgerStatusUpdateMessage.class)));
 
-  @Mock private PeerManager peerManager;
+    var capabilitiesPartition =
+        capabilities.stream()
+            .collect(
+                partitioningBy(
+                    it -> disabledCapabilitiesNames.contains(it.capabilityName()),
+                    Collectors.toSet()));
 
-  @Mock private InboundMessage inboundMessage;
+    this.enabledCapabilities = capabilitiesPartition.get(false);
+    var disabledCapabilities = capabilitiesPartition.get(true);
+    this.unsupportedMessages =
+        disabledCapabilities.stream()
+            .flatMap(it -> it.unsupportedMessagesWhenDisabled().stream())
+            .collect(Collectors.toSet());
+  }
 
-  @Mock private TimeSupplier timeSupplier;
+  /**
+   * Returns the {@ling Capability} set currently enabled in the system.
+   *
+   * @return a set of {@link Capability}
+   */
+  public Set<Capability> getEnabledCapabilities() {
+    return this.enabledCapabilities;
+  }
 
-  @Mock private EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory;
-
-  @Mock private SystemCounters systemCounters;
-
-  @Mock private Provider<PeerControl> peerControl;
-
-  @Test
-  public void
-      when_messagesOf_is_called__then_underlying_pipeline_should_run_on_rxjava_computation_pool()
-          throws Exception {
-    // given
-    when(messageCentralConfig.messagingOutboundQueueMax(anyInt())).thenReturn(1);
-
-    when(serialization.fromDson(any(byte[].class), eq(Message.class)))
-        .thenReturn(mock(ConsensusEventMessage.class));
-
-    when(inboundMessage.message()).thenReturn(Compress.compress("".getBytes()));
-    when(inboundMessage.source()).thenReturn(mock(NodeId.class));
-
-    Observable<InboundMessage> inboundMessages =
-        Observable.create(
-            emitter -> {
-              emitter.onNext(inboundMessage);
-              emitter.onComplete();
-            });
-    when(peerManager.messages()).thenReturn(inboundMessages);
-
-    when(outboundEventQueueFactory.createEventQueue(anyInt(), any(Comparator.class)))
-        .thenReturn(new SimplePriorityBlockingQueue<>(1, OutboundMessageEvent.comparator()));
-
-    MessageCentralImpl messageCentral =
-        new MessageCentralImpl(
-            messageCentralConfig,
-            serialization,
-            peerManager,
-            timeSupplier,
-            outboundEventQueueFactory,
-            systemCounters,
-            peerControl,
-            Addressing.ofNetwork(Network.LOCALNET),
-            null);
-
-    TestObserver<String> observer = TestObserver.create();
-
-    // when
-    messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .map(e -> Thread.currentThread().getName())
-        .subscribe(observer);
-
-    messageCentral.close();
-    observer.await();
-
-    // then
-    observer.assertValue(v -> v.startsWith("RxComputationThreadPool"));
+  /**
+   * Returns {@code true} if the specified message is supported.
+   *
+   * @param message @@return {@code true} if the specified message is supported.
+   */
+  public boolean isMessageSupported(Message message) {
+    return !this.unsupportedMessages.contains(message);
   }
 }

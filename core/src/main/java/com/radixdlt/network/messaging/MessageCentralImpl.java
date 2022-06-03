@@ -69,6 +69,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.api.system.health.MovingAverage;
+import com.radixdlt.capability.Capabilities;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.Message;
@@ -115,6 +116,9 @@ public final class MessageCentralImpl implements MessageCentral {
   private final SimpleBlockingQueue<OutboundMessageEvent> outboundQueue;
   private final SimpleThreadPool<OutboundMessageEvent> outboundThreadPool;
 
+  private final Capabilities capabilities;
+  private Object it;
+
   @Inject
   public MessageCentralImpl(
       MessageCentralConfiguration config,
@@ -124,7 +128,8 @@ public final class MessageCentralImpl implements MessageCentral {
       EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
       SystemCounters counters,
       Provider<PeerControl> peerControl,
-      Addressing addressing) {
+      Addressing addressing,
+      Capabilities capabilities) {
     this.counters = Objects.requireNonNull(counters);
     this.outboundQueue =
         outboundEventQueueFactory.createEventQueue(
@@ -159,6 +164,8 @@ public final class MessageCentralImpl implements MessageCentral {
             .map(Optional::get)
             .publish()
             .autoConnect();
+
+    this.capabilities = capabilities;
   }
 
   private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
@@ -182,8 +189,12 @@ public final class MessageCentralImpl implements MessageCentral {
                 return Optional.empty();
               },
               messageFromPeer -> {
-                logPreprocessedMessageAndUpdateCounters(messageFromPeer, processingStopwatch);
-                return Optional.of(messageFromPeer);
+                if (capabilities.isMessageSupported(messageFromPeer.getMessage())) {
+                  logPreprocessedMessageAndUpdateCounters(messageFromPeer, processingStopwatch);
+                  return Optional.of(messageFromPeer);
+                } else {
+                  return Optional.empty();
+                }
               });
     } catch (Exception ex) {
       final var msg =

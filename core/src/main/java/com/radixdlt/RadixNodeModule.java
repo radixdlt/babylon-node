@@ -66,6 +66,7 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.api.ApiModule;
+import com.radixdlt.capability.CapabilitiesModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
@@ -93,6 +94,7 @@ import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -212,5 +214,8 @@ public final class RadixNodeModule extends AbstractModule {
     var bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);
     var port = properties.get("api.port", DEFAULT_CORE_PORT);
     install(new ApiModule(bindAddress, port));
+
+    var disabledCapabilities = Set.of(properties.get("disabled_capabilities", "").split(","));
+    install(new CapabilitiesModule(disabledCapabilities));
   }
 }

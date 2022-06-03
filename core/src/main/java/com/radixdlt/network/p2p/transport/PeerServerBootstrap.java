@@ -65,6 +65,7 @@
 package com.radixdlt.network.p2p.transport;
 
 import com.google.inject.Inject;
+import com.radixdlt.capability.Capabilities;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
@@ -93,6 +94,7 @@ public final class PeerServerBootstrap {
   private final SecureRandom secureRandom;
   private final ECKeyOps ecKeyOps;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
+  private final Capabilities capabilities;
 
   @Inject
   public PeerServerBootstrap(
@@ -103,7 +105,8 @@ public final class PeerServerBootstrap {
       Serialization serialization,
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
-      EventDispatcher<PeerEvent> peerEventDispatcher) {
+      EventDispatcher<PeerEvent> peerEventDispatcher,
+      Capabilities capabilities) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.networkId = networkId;
@@ -113,6 +116,7 @@ public final class PeerServerBootstrap {
     this.secureRandom = Objects.requireNonNull(secureRandom);
     this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
     this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
+    this.capabilities = capabilities;
   }
 
   public void start() throws InterruptedException {
@@ -136,7 +140,8 @@ public final class PeerServerBootstrap {
                 secureRandom,
                 ecKeyOps,
                 peerEventDispatcher,
-                Optional.empty()));
+                Optional.empty(),
+                capabilities));
 
     serverBootstrap.bind(config.listenAddress(), config.listenPort()).sync();
   }

@@ -116,10 +116,20 @@ public final class FrameCodecTest {
       throws Exception {
     final var handshaker1 =
         new AuthHandshaker(
-            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, "fork1");
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey1),
+            (byte) 0x01,
+            "fork1",
+            null);
     final var handshaker2 =
         new AuthHandshaker(
-            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01, "fork1");
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey2),
+            (byte) 0x01,
+            "fork1",
+            null);
 
     final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
     final var handshaker2ResultPair =

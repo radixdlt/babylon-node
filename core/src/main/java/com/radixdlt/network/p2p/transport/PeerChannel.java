@@ -69,6 +69,7 @@ import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.util.concurrent.RateLimiter;
+import com.radixdlt.capability.Capabilities;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Result;
@@ -105,6 +106,7 @@ import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -143,6 +145,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
   private final RateCalculator outMessagesStats = new RateCalculator(Duration.ofSeconds(10), 128);
 
+  private Set<String> remotePeerCapabilitiesNames;
+
   public PeerChannel(
       P2PConfig config,
       Addressing addressing,
@@ -155,7 +159,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       EventDispatcher<PeerEvent> peerEventDispatcher,
       Optional<RadixNodeUri> uri,
       SocketChannel nettyChannel,
-      Optional<InetSocketAddress> remoteAddress) {
+      Optional<InetSocketAddress> remoteAddress,
+      Capabilities capabilities) {
     this.counters = requireNonNull(counters);
     this.addressing = requireNonNull(addressing);
     this.peerEventDispatcher = requireNonNull(peerEventDispatcher);
@@ -164,7 +169,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     uri.map(RadixNodeUri::getNodeId).ifPresent(nodeId -> this.remoteNodeId = nodeId);
 
     this.authHandshaker =
-        new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId, newestForkName);
+        new AuthHandshaker(
+            serialization, secureRandom, ecKeyOps, networkId, newestForkName, capabilities);
     this.nettyChannel = requireNonNull(nettyChannel);
     this.remoteAddress = requireNonNull(remoteAddress);
 
@@ -229,6 +235,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     this.remoteNodeId = successResult.remoteNodeId();
     this.frameCodec = new FrameCodec(successResult.secrets());
     this.remoteNewestForkName = successResult.newestForkName();
+    this.remotePeerCapabilitiesNames = successResult.remotePeerCapabilitiesNames();
+
     this.state = ChannelState.ACTIVE;
 
     if (log.isTraceEnabled()) {
@@ -362,6 +370,10 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
   public Optional<String> getRemoteNewestForkName() {
     return remoteNewestForkName;
+  }
+
+  public Set<String> getRemotePeerCapabilitiesNames() {
+    return remotePeerCapabilitiesNames;
   }
 
   @Override
