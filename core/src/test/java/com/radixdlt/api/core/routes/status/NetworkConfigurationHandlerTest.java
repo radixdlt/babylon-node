@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.routes;
+package com.radixdlt.api.core.routes.status;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

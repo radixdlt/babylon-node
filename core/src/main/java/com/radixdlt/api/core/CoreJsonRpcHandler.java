@@ -77,6 +77,7 @@ import com.radixdlt.api.core.generated.models.InvalidJsonError;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import java.io.IOException;
 
 public abstract class CoreJsonRpcHandler<T, U> implements HttpHandler {
   private static final String CONTENT_TYPE_JSON = "application/json";
@@ -100,47 +101,46 @@ public abstract class CoreJsonRpcHandler<T, U> implements HttpHandler {
     }
 
     exchange.setMaxEntitySize(DEFAULT_MAX_REQUEST_SIZE);
-    exchange.startBlocking();
     exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
 
-    T request;
     try {
-      request = objectMapper.readValue(exchange.getInputStream(), requestClass);
+      var request = readRequest(exchange);
+      var response = handleRequest(request);
+
+      exchange.setStatusCode(200);
+      objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+      exchange.getResponseSender().send(objectMapper.writeValueAsString(response));
     } catch (JsonMappingException | JsonParseException e) {
-      var errorResponse = createParseErrorResponse(e);
-      exchange.setStatusCode(500);
-      exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
-      return;
-    }
-
-    U response;
-    try {
-      response = handleRequest(request);
+      writeErrorResponse(exchange, createParseErrorResponse(e));
     } catch (CoreApiException e) {
-      var errorResponse = e.toError();
-      exchange.setStatusCode(500);
-      exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
-      return;
+      writeErrorResponse(exchange, e.toError());
     } catch (Exception e) {
-      var errorResponse = createUnknownExceptionResponse(e);
-      exchange.setStatusCode(500);
-      exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
-      return;
+      writeErrorResponse(exchange, createUnknownExceptionResponse(e));
     }
-
-    exchange.setStatusCode(200);
-    objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-    exchange.getResponseSender().send(objectMapper.writeValueAsString(response));
   }
 
-  public ErrorResponse createParseErrorResponse(Exception e) {
+  private T readRequest(HttpServerExchange exchange) throws IOException {
+    if (requestClass == Void.class) {
+      return objectMapper.readValue("{}", requestClass);
+    }
+    exchange.startBlocking();
+    return objectMapper.readValue(exchange.getInputStream(), requestClass);
+  }
+
+  private void writeErrorResponse(HttpServerExchange exchange, ErrorResponse errorResponse)
+      throws IOException {
+    exchange.setStatusCode(500);
+    exchange.getResponseSender().send(objectMapper.writeValueAsString(errorResponse));
+  }
+
+  private ErrorResponse createParseErrorResponse(Exception e) {
     return new ErrorResponse()
         .code(CoreApiErrorCode.BAD_REQUEST.getErrorCode())
         .message(CoreApiErrorCode.BAD_REQUEST.getMessage())
         .details(new InvalidJsonError().cause(e.getMessage()).type("InvalidJsonError"));
   }
 
-  public ErrorResponse createUnknownExceptionResponse(Exception e) {
+  private ErrorResponse createUnknownExceptionResponse(Exception e) {
     // TODO-NT-258 - consider hiding error message and returning a Trace GUID
     var rootCause = Throwables.getRootCause(e);
 

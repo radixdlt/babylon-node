@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.routes;
+package com.radixdlt.api.core.routes.status;
 
 import static com.radixdlt.RadixNodeApplication.SYSTEM_VERSION_KEY;
 import static com.radixdlt.RadixNodeApplication.VERSION_STRING_KEY;

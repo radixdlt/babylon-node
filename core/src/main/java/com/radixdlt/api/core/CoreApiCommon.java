@@ -64,32 +64,28 @@
 
 package com.radixdlt.api.core;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.common.HandlerRoute;
-import com.radixdlt.api.core.routes.status.NetworkConfigurationHandler;
-import com.radixdlt.api.core.routes.status.NetworkSyncStatusHandler;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.core.exceptions.CoreApiException;
+import com.radixdlt.api.core.generated.models.NetworkIdentifier;
+import com.radixdlt.api.core.generated.models.NetworkNotSupportedError;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 
-public class CoreApiModule extends AbstractModule {
-  private final boolean transactionsEnable;
-  private final boolean signEnable;
+public class CoreApiCommon {
+  private final Network network;
 
-  public CoreApiModule(boolean transactionsEnable, boolean signEnable) {
-    this.transactionsEnable = transactionsEnable;
-    this.signEnable = signEnable;
+  @Inject
+  CoreApiCommon(@NetworkId int networkId) {
+    this.network = Network.ofId(networkId).orElseThrow();
   }
 
-  @Override
-  protected void configure() {
-    var routeBinder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class);
-    addRoute(routeBinder, "/status/network-configuration", NetworkConfigurationHandler.class);
-    addRoute(routeBinder, "/status/network-sync", NetworkSyncStatusHandler.class);
-  }
-
-  private void addRoute(
-      MapBinder<HandlerRoute, HttpHandler> routeBinder, String path, Class handler) {
-    var coreApiRootPath = "/core";
-    routeBinder.addBinding(HandlerRoute.post(coreApiRootPath + path)).to(handler);
+  public void verifyNetwork(NetworkIdentifier networkIdentifier) throws CoreApiException {
+    if (!networkIdentifier.getNetwork().equals(this.network.name().toLowerCase())) {
+      throw CoreApiException.notSupported(
+          new NetworkNotSupportedError()
+              .addSupportedNetworksItem(
+                  new NetworkIdentifier().network(this.network.name().toLowerCase()))
+              .type(NetworkNotSupportedError.class.getSimpleName()));
+    }
   }
 }

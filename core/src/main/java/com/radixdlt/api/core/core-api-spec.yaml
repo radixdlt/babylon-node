@@ -24,7 +24,7 @@ tags:
     x-displayName: Key Endpoints
     description: To sign certain transactions with the node's own key.
 paths:
-  "/network/configuration":
+  "/status/network-configuration":
     post:
       summary: Get Network Configuration
       description: Returns the network configuration of the network the node is connected to.
@@ -45,6 +45,31 @@ paths:
                 "$ref": "#/components/schemas/NetworkConfigurationResponse"
         '500':
           description: An unexpected error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/status/network-sync":
+    post:
+      summary: Get Network Sync Status
+      description: Returns the current sync status of the node.
+      tags:
+        - Status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/NetworkSyncStatusRequest"
+      responses:
+        '200':
+          description: Network Status
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NetworkSyncStatusResponse"
+        '500':
+          description: An Unexpected Error
           content:
             application/json:
               schema:
@@ -121,9 +146,9 @@ components:
           properties:
             cause:
               type: string
-###################################
-# REQUEST: /network/configuration #
-###################################
+##########################################
+# REQUEST: /status/network-configuration #
+##########################################
     NetworkConfigurationRequest:
       type: object
       example: {}
@@ -166,4 +191,51 @@ components:
         node_hrp:
           type: string
         resource_hrp_suffix:
+          type: string
+#################################
+# REQUEST: /status/network-sync #
+#################################
+    NetworkSyncStatusRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+      example:
+        network_identifier:
+          network: mainnet
+    NetworkSyncStatusResponse:
+      type: object
+      required:
+        - sync_status
+        - peers
+      properties:
+        sync_status:
+          $ref: "#/components/schemas/SyncStatus"
+          description: Information on how synced the node is to the rest of the network.
+        peers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Peer"
+          description: List of peers of the node.
+    SyncStatus:
+      type: object
+      required:
+        - current_state_version
+        - target_state_version
+      properties:
+        current_state_version:
+          type: integer
+          format: int64
+        target_state_version:
+          type: integer
+          format: int64
+    Peer:
+      type: object
+      required:
+        - peer_id
+      properties:
+        peer_id:
           type: string

@@ -62,34 +62,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.routes.status;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.common.HandlerRoute;
-import com.radixdlt.api.core.routes.status.NetworkConfigurationHandler;
-import com.radixdlt.api.core.routes.status.NetworkSyncStatusHandler;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.core.CoreApiCommon;
+import com.radixdlt.api.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.exceptions.CoreApiException;
+import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.networks.Addressing;
+import java.util.List;
 
-public class CoreApiModule extends AbstractModule {
-  private final boolean transactionsEnable;
-  private final boolean signEnable;
+public final class NetworkSyncStatusHandler
+    extends CoreJsonRpcHandler<NetworkSyncStatusRequest, NetworkSyncStatusResponse> {
+  private final CoreApiCommon coreApiCommon;
+  private final SystemCounters systemCounters;
+  private final PeersView peersView;
+  private final Addressing addressing;
 
-  public CoreApiModule(boolean transactionsEnable, boolean signEnable) {
-    this.transactionsEnable = transactionsEnable;
-    this.signEnable = signEnable;
+  @Inject
+  NetworkSyncStatusHandler(
+      CoreApiCommon coreApiCommon,
+      SystemCounters systemCounters,
+      PeersView peersView,
+      Addressing addressing) {
+    super(NetworkSyncStatusRequest.class);
+    this.coreApiCommon = coreApiCommon;
+    this.systemCounters = systemCounters;
+    this.peersView = peersView;
+    this.addressing = addressing;
   }
 
   @Override
-  protected void configure() {
-    var routeBinder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class);
-    addRoute(routeBinder, "/status/network-configuration", NetworkConfigurationHandler.class);
-    addRoute(routeBinder, "/status/network-sync", NetworkSyncStatusHandler.class);
+  public NetworkSyncStatusResponse handleRequest(NetworkSyncStatusRequest request)
+      throws CoreApiException {
+    coreApiCommon.verifyNetwork(request.getNetworkIdentifier());
+
+    return new NetworkSyncStatusResponse().syncStatus(getSyncStatus()).peers(getPeers());
   }
 
-  private void addRoute(
-      MapBinder<HandlerRoute, HttpHandler> routeBinder, String path, Class handler) {
-    var coreApiRootPath = "/core";
-    routeBinder.addBinding(HandlerRoute.post(coreApiRootPath + path)).to(handler);
+  private SyncStatus getSyncStatus() {
+    return new SyncStatus()
+        .currentStateVersion(systemCounters.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
+        .targetStateVersion(
+            systemCounters.get(SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION));
+  }
+
+  private List<Peer> getPeers() {
+    return peersView.peers().map(this::mapPeer).toList();
+  }
+
+  private Peer mapPeer(PeersView.PeerInfo peerInfo) {
+    return new Peer().peerId(addressing.forNodes().of(peerInfo.getNodeId().getPublicKey()));
   }
 }
