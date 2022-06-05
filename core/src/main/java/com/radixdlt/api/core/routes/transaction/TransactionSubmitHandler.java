@@ -97,23 +97,19 @@ public final class TransactionSubmitHandler
     // BAB-TODO: This will need to pass more information from the mempool when it's available
     try {
       mempool.add(transaction);
-      return new TransactionSubmitResponse()
-          .duplicate(false);
+      return new TransactionSubmitResponse().duplicate(false);
     } catch (MempoolDuplicateException e) {
-      return new TransactionSubmitResponse()
-          .duplicate(true);
+      return new TransactionSubmitResponse().duplicate(true);
     } catch (MempoolFullException e) {
       throw CoreApiException.unavailable(
           new MempoolFullError()
               .mempoolTransactionCount(e.getMaxSize())
-              .type(MempoolFullError.class.getSimpleName())
-      );
+              .type(MempoolFullError.class.getSimpleName()));
     } catch (MempoolRejectedException e) {
       throw CoreApiException.badRequest(
           new InvalidTransactionError()
               .message(e.getMessage())
-              .type(InvalidTransactionError.class.getSimpleName())
-      );
+              .type(InvalidTransactionError.class.getSimpleName()));
     }
   }
 }
