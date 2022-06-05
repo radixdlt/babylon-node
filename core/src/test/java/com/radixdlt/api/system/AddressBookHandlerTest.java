@@ -71,7 +71,7 @@ import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.system.generated.models.Address;
 import com.radixdlt.api.system.generated.models.AddressBookEntry;
 import com.radixdlt.api.system.generated.models.SystemAddressBookResponse;
-import com.radixdlt.api.system.handlers.AddressBookHandler;
+import com.radixdlt.api.system.routes.AddressBookHandler;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.networks.Addressing;

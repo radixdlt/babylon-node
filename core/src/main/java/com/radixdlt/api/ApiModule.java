@@ -97,7 +97,6 @@ public final class ApiModule extends AbstractModule {
 
   @Override
   public void configure() {
-    // MapBinder.newMapBinder(binder(), String.class, HttpHandler.class);
     install(new SystemApiModule());
     install(new CoreApiModule(enableTransactions, enableSign));
   }
@@ -106,11 +105,7 @@ public final class ApiModule extends AbstractModule {
     exchange.setStatusCode(StatusCodes.NOT_FOUND);
     exchange
         .getResponseSender()
-        .send(
-            "No matching path found for "
-                + exchange.getRequestMethod()
-                + " "
-                + exchange.getRequestPath());
+        .send("No API route found at this path");
   }
 
   private static void invalidMethodHandler(HttpServerExchange exchange) {
@@ -118,22 +113,23 @@ public final class ApiModule extends AbstractModule {
     exchange
         .getResponseSender()
         .send(
-            "Invalid method, path exists for "
+            "Invalid method "
                 + exchange.getRequestMethod()
-                + " "
-                + exchange.getRequestPath());
+                + " for the route at this path");
   }
 
-  private HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> handlers) {
-    var handler = Handlers.routing(true); // add path params to query params with this flag
-    handlers.forEach((r, h) -> handler.add(r.method(), r.path(), h));
-    handler.setFallbackHandler(ApiModule::fallbackHandler);
-    handler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
+  private HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> allRouteHandlers) {
+    // The true flag enables query parameters to be rewriting to path parameters
+    var combinedApiHandler = Handlers.routing(true);
+    allRouteHandlers.forEach((route, h) -> combinedApiHandler.add(route.method(), route.path(), h));
+    combinedApiHandler.setFallbackHandler(ApiModule::fallbackHandler);
+    combinedApiHandler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
 
     // NB - the Core API and System API have already caught/handled exceptions in the
-    //      CoreJsonRpcHandler, and SystemGetJsonHandler, so we don't need to add a default error
-    // handler here
-    return handler;
+    //      CoreJsonRpcHandler, and SystemGetJsonHandler, so we don't need to override a default error handler here.
+    //      The default undertow handler should be sufficient in any edge cases:
+    //      https://github.com/undertow-io/undertow-docs/blob/master/src/main/asciidoc/error-handling.asciidoc
+    return combinedApiHandler;
   }
 
   @Provides

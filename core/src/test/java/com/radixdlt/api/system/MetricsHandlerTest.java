@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.system.generated.models.SystemMetricsResponse;
-import com.radixdlt.api.system.handlers.MetricsHandler;
+import com.radixdlt.api.system.routes.MetricsHandler;
 import org.junit.Test;
 
 public class MetricsHandlerTest extends ApiTest {

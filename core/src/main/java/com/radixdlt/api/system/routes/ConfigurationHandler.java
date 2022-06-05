@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.handlers;
+package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;

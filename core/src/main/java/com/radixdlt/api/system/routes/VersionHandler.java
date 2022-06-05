@@ -62,49 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.handlers;
+package com.radixdlt.api.system.routes;
 
 import static com.radixdlt.RadixNodeApplication.SYSTEM_VERSION_KEY;
 import static com.radixdlt.RadixNodeApplication.VERSION_STRING_KEY;
 
 import com.google.inject.Inject;
 import com.radixdlt.RadixNodeApplication;
-import com.radixdlt.api.core.CoreJsonRpcHandler;
-import com.radixdlt.api.core.exceptions.CoreApiException;
-import com.radixdlt.api.core.generated.models.Bech32HRPs;
-import com.radixdlt.api.core.generated.models.NetworkConfigurationResponse;
-import com.radixdlt.api.core.generated.models.NetworkConfigurationResponseVersion;
-import com.radixdlt.api.core.generated.models.NetworkIdentifier;
-import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
+import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.generated.models.VersionResponse;
 
-public final class NetworkConfigurationHandler
-    extends CoreJsonRpcHandler<Void, NetworkConfigurationResponse> {
-  private final Network network;
+public class VersionHandler extends SystemGetJsonHandler<VersionResponse> {
+  private final String version;
 
   @Inject
-  NetworkConfigurationHandler(@NetworkId int networkId) {
-    super(Void.class);
-    this.network = Network.ofId(networkId).orElseThrow();
+  public VersionHandler() {
+    super();
+    this.version =
+        (String)
+            RadixNodeApplication.systemVersionInfo()
+                .get(SYSTEM_VERSION_KEY)
+                .get(VERSION_STRING_KEY);
   }
 
   @Override
-  public NetworkConfigurationResponse handleRequest(Void request) throws CoreApiException {
-    return new NetworkConfigurationResponse()
-        .networkIdentifier(new NetworkIdentifier().network(network.name().toLowerCase()))
-        .bech32HumanReadableParts(
-            new Bech32HRPs()
-                .accountHrp(network.getAccountHrp())
-                .validatorHrp(network.getValidatorHrp())
-                .nodeHrp(network.getNodeHrp())
-                .resourceHrpSuffix(network.getResourceHrpSuffix()))
-        .version(
-            new NetworkConfigurationResponseVersion()
-                .apiVersion("1.0.0")
-                .coreVersion(
-                    RadixNodeApplication.systemVersionInfo()
-                        .get(SYSTEM_VERSION_KEY)
-                        .get(VERSION_STRING_KEY)
-                        .toString()));
+  public VersionResponse handleRequest() {
+    return new VersionResponse().version(version);
   }
 }

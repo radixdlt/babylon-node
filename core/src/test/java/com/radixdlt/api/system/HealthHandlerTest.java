@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.system.generated.models.HealthResponse;
-import com.radixdlt.api.system.handlers.HealthHandler;
+import com.radixdlt.api.system.routes.HealthHandler;
 import org.junit.Test;
 
 public class HealthHandlerTest extends ApiTest {

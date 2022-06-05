@@ -62,30 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.handlers;
+package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.SystemModelMapper;
-import com.radixdlt.api.system.generated.models.SystemPeersResponse;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.api.system.generated.models.SystemMetricsResponse;
+import com.radixdlt.monitoring.SystemCounters;
 
-public final class PeersHandler extends SystemGetJsonHandler<SystemPeersResponse> {
-
+public final class MetricsHandler extends SystemGetJsonHandler<SystemMetricsResponse> {
+  private final SystemCounters systemCounters;
   private final SystemModelMapper systemModelMapper;
-  private final PeersView peersView;
 
   @Inject
-  PeersHandler(SystemModelMapper systemModelMapper, PeersView peersView) {
+  MetricsHandler(SystemModelMapper systemModelMapper, SystemCounters systemCounters) {
     super();
     this.systemModelMapper = systemModelMapper;
-    this.peersView = peersView;
+    this.systemCounters = systemCounters;
   }
 
   @Override
-  public SystemPeersResponse handleRequest() {
-    var response = new SystemPeersResponse();
-    peersView.peers().map(systemModelMapper::peer).forEach(response::addPeersItem);
-    return response;
+  public SystemMetricsResponse handleRequest() {
+    return new SystemMetricsResponse()
+        .bft(systemModelMapper.bftMetrics(systemCounters))
+        .mempool(systemModelMapper.mempoolMetrics(systemCounters))
+        .sync(systemModelMapper.syncMetrics(systemCounters))
+        .networking(systemModelMapper.networkingMetrics(systemCounters));
   }
 }

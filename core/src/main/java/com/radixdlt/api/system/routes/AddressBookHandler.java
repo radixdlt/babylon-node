@@ -62,31 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.handlers;
+package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.SystemModelMapper;
-import com.radixdlt.api.system.generated.models.SystemMetricsResponse;
-import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.api.system.generated.models.SystemAddressBookResponse;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
 
-public final class MetricsHandler extends SystemGetJsonHandler<SystemMetricsResponse> {
-  private final SystemCounters systemCounters;
+public final class AddressBookHandler extends SystemGetJsonHandler<SystemAddressBookResponse> {
+  private final AddressBook addressBook;
   private final SystemModelMapper systemModelMapper;
 
   @Inject
-  MetricsHandler(SystemModelMapper systemModelMapper, SystemCounters systemCounters) {
+  AddressBookHandler(AddressBook addressBook, SystemModelMapper systemModelMapper) {
     super();
+    this.addressBook = addressBook;
     this.systemModelMapper = systemModelMapper;
-    this.systemCounters = systemCounters;
   }
 
   @Override
-  public SystemMetricsResponse handleRequest() {
-    return new SystemMetricsResponse()
-        .bft(systemModelMapper.bftMetrics(systemCounters))
-        .mempool(systemModelMapper.mempoolMetrics(systemCounters))
-        .sync(systemModelMapper.syncMetrics(systemCounters))
-        .networking(systemModelMapper.networkingMetrics(systemCounters));
+  public SystemAddressBookResponse handleRequest() {
+    var response = new SystemAddressBookResponse();
+    addressBook
+        .knownPeers()
+        .forEach((n, entry) -> response.addEntriesItem(systemModelMapper.addressBookEntry(entry)));
+    return response;
   }
 }

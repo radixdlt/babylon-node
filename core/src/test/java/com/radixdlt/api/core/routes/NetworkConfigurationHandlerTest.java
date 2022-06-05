@@ -62,31 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.handlers;
+package com.radixdlt.api.core.routes;
 
-import static com.radixdlt.RadixNodeApplication.SYSTEM_VERSION_KEY;
-import static com.radixdlt.RadixNodeApplication.VERSION_STRING_KEY;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Inject;
-import com.radixdlt.RadixNodeApplication;
-import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.generated.models.VersionResponse;
+import com.radixdlt.api.ApiTest;
+import com.radixdlt.api.core.generated.models.NetworkConfigurationResponse;
+import com.radixdlt.networks.Addressing;
+import java.util.Map;
+import org.junit.Test;
 
-public class VersionHandler extends SystemGetJsonHandler<VersionResponse> {
-  private final String version;
+public class NetworkConfigurationHandlerTest extends ApiTest {
+  @Inject private NetworkConfigurationHandler sut;
+  @Inject private Addressing addressing;
 
-  @Inject
-  public VersionHandler() {
-    super();
-    this.version =
-        (String)
-            RadixNodeApplication.systemVersionInfo()
-                .get(SYSTEM_VERSION_KEY)
-                .get(VERSION_STRING_KEY);
-  }
+  @Test
+  public void network_configuration_should_return_correct_data() throws Exception {
+    // Arrange
+    start();
 
-  @Override
-  public VersionResponse handleRequest() {
-    return new VersionResponse().version(version);
+    // Act
+    var response =
+        handleRequestWithExpectedResponse(sut, Map.of(), NetworkConfigurationResponse.class);
+
+    // Assert
+    var bech32 = response.getBech32HumanReadableParts();
+    assertThat(bech32.getAccountHrp()).isEqualTo(addressing.forAccounts().getHrp());
+    assertThat(bech32.getNodeHrp()).isEqualTo(addressing.forNodes().getHrp());
+    assertThat(bech32.getValidatorHrp()).isEqualTo(addressing.forValidators().getHrp());
+    assertThat(bech32.getResourceHrpSuffix()).isEqualTo(addressing.forResources().getHrpSuffix());
   }
 }

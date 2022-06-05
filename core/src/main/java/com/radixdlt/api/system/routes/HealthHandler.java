@@ -62,35 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.handlers;
-
-import static org.assertj.core.api.Assertions.assertThat;
+package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.core.generated.models.NetworkConfigurationResponse;
-import com.radixdlt.networks.Addressing;
-import java.util.Map;
-import org.junit.Test;
+import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.generated.models.HealthResponse;
+import com.radixdlt.api.system.health.HealthInfoService;
 
-public class NetworkConfigurationHandlerTest extends ApiTest {
-  @Inject private NetworkConfigurationHandler sut;
-  @Inject private Addressing addressing;
+public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
+  private final HealthInfoService healthInfoService;
 
-  @Test
-  public void network_configuration_should_return_correct_data() throws Exception {
-    // Arrange
-    start();
+  @Inject
+  HealthHandler(HealthInfoService healthInfoService) {
+    super();
+    this.healthInfoService = healthInfoService;
+  }
 
-    // Act
-    var response =
-        handleRequestWithExpectedResponse(sut, Map.of(), NetworkConfigurationResponse.class);
+  @Override
+  public HealthResponse handleRequest() {
+    final var status =
+        switch (healthInfoService.nodeStatus()) {
+          case UP -> HealthResponse.StatusEnum.UP;
+          case BOOTING -> HealthResponse.StatusEnum.BOOTING;
+          case SYNCING -> HealthResponse.StatusEnum.SYNCING;
+          case STALLED -> HealthResponse.StatusEnum.STALLED;
+          case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
+        };
 
-    // Assert
-    var bech32 = response.getBech32HumanReadableParts();
-    assertThat(bech32.getAccountHrp()).isEqualTo(addressing.forAccounts().getHrp());
-    assertThat(bech32.getNodeHrp()).isEqualTo(addressing.forNodes().getHrp());
-    assertThat(bech32.getValidatorHrp()).isEqualTo(addressing.forValidators().getHrp());
-    assertThat(bech32.getResourceHrpSuffix()).isEqualTo(addressing.forResources().getHrpSuffix());
+    return new HealthResponse().status(status).currentForkName("SomeForkName");
   }
 }

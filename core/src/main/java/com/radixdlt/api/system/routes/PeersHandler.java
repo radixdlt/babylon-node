@@ -62,33 +62,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.handlers;
+package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.generated.models.HealthResponse;
-import com.radixdlt.api.system.health.HealthInfoService;
+import com.radixdlt.api.system.SystemModelMapper;
+import com.radixdlt.api.system.generated.models.SystemPeersResponse;
+import com.radixdlt.network.p2p.PeersView;
 
-public final class HealthHandler extends SystemGetJsonHandler<HealthResponse> {
-  private final HealthInfoService healthInfoService;
+public final class PeersHandler extends SystemGetJsonHandler<SystemPeersResponse> {
+
+  private final SystemModelMapper systemModelMapper;
+  private final PeersView peersView;
 
   @Inject
-  HealthHandler(HealthInfoService healthInfoService) {
+  PeersHandler(SystemModelMapper systemModelMapper, PeersView peersView) {
     super();
-    this.healthInfoService = healthInfoService;
+    this.systemModelMapper = systemModelMapper;
+    this.peersView = peersView;
   }
 
   @Override
-  public HealthResponse handleRequest() {
-    final var status =
-        switch (healthInfoService.nodeStatus()) {
-          case UP -> HealthResponse.StatusEnum.UP;
-          case BOOTING -> HealthResponse.StatusEnum.BOOTING;
-          case SYNCING -> HealthResponse.StatusEnum.SYNCING;
-          case STALLED -> HealthResponse.StatusEnum.STALLED;
-          case OUT_OF_SYNC -> HealthResponse.StatusEnum.OUT_OF_SYNC;
-        };
-
-    return new HealthResponse().status(status).currentForkName("SomeForkName");
+  public SystemPeersResponse handleRequest() {
+    var response = new SystemPeersResponse();
+    peersView.peers().map(systemModelMapper::peer).forEach(response::addPeersItem);
+    return response;
   }
 }
