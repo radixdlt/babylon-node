@@ -64,19 +64,54 @@
 
 package com.radixdlt.mempool;
 
-/**
- * Exception thrown when an attempt to add new items would exceed the mempool's maximum capacity.
- */
-public class MempoolFullException extends MempoolRejectedException {
-  private final int maxSize;
 
-  public MempoolFullException(int curSize, int maxSize) {
-    super(String.format("Mempool full: %s of %s items", curSize, maxSize));
-    this.maxSize = maxSize;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.interop.sbor.codec.Codec;
+import com.radixdlt.interop.sbor.codec.CodecMap;
+import com.radixdlt.interop.sbor.utils.DecodeResult;
+import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Unit;
+import com.radixdlt.statemanager.StateManager.RustState;
+import com.radixdlt.statemanager.StateManagerError;
+import com.radixdlt.transactions.Transaction;
+import java.util.Objects;
+import java.util.Optional;
+
+public class RustMempool {
+  private final RustState rustState;
+  private Codec codec =
+      new Codec(
+          new CodecMap()
+              .register(Transaction.class, new Transaction.TransactionCodec())
+              .register(AID.class, new AID.AIDCodec())
+              .register(StateManagerError.class, new StateManagerError.StateManagerErrorCodec()));
+
+  public RustMempool(RustState rustState) {
+    this.rustState = Objects.requireNonNull(rustState);
   }
 
-  public MempoolFullException(String message) {
-    super(message);
-    this.maxSize = 0;
+  public Transaction add(Transaction transaction)
+      throws MempoolFullException, MempoolDuplicateException {
+    var encoded = this.codec.encode(transaction).unwrap();
+    var ret_sbor = add(this.rustState, encoded);
+    var result = new DecodeResult(this.codec, Unit.class, StateManagerError.class).decode(ret_sbor);
+
+    // Handle Errors.
+    Option<StateManagerError> optErr = result.toOptionErr();
+    if (optErr.isPresent()) {
+      var err = optErr.unwrap();
+      switch (err.getErrorCode()) {
+        case STATE_MANAGER_ERROR_CODE_MEMPOOL_FULL:
+          throw new MempoolFullException(err.message());
+        case STATE_MANAGER_ERROR_CODE_MEMPOOL_DUPLICATE:
+          throw new MempoolDuplicateException(err.message());
+        default:
+          throw new IllegalStateException("Unexpected StateManagerError: " + err.toString());
+      }
+    }
+
+    return transaction;
   }
+
+  private static native byte[] add(RustState rustState, byte[] transaction);
 }

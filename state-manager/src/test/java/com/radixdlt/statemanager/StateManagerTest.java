@@ -69,6 +69,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.transactions.Transaction;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import org.junit.Test;
@@ -76,7 +78,7 @@ import org.junit.Test;
 public final class StateManagerTest {
 
   @Test
-  public void test_rust_interop() throws InterruptedException {
+  public void test_rust_interop() throws Exception {
 
     final var mempoolSize = 100;
     final var stateManagerNode1 = StateManager.create(mempoolSize);
@@ -104,6 +106,13 @@ public final class StateManagerTest {
     stateManagerNode1.vertexStore().insertVertex(vertex);
     assertTrue(stateManagerNode1.vertexStore().containsVertex(vertex));
     assertFalse(stateManagerNode2.vertexStore().containsVertex(vertex));
+
+    final var payload = new byte[] {1, 2, 3, 4, 5};
+    final var transaction = Transaction.create(payload);
+    stateManagerNode1.mempool().add(transaction);
+    try {
+        stateManagerNode1.mempool().add(transaction);
+    } catch(Exception MempoolDuplicateException) {}
 
     cdl.await();
     stateManagerNode1.shutdown();

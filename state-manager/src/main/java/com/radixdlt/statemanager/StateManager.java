@@ -64,6 +64,7 @@
 
 package com.radixdlt.statemanager;
 
+import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStore;
 import com.radixdlt.vertexstore.RustVertexStore;
@@ -100,10 +101,13 @@ public final class StateManager {
 
   private final TransactionStore transactionStore;
 
+  private final RustMempool mempool;
+
   private StateManager(RustState rustState) {
     this.rustState = Objects.requireNonNull(rustState);
     this.vertexStore = new RustVertexStore(rustState);
     this.transactionStore = new RustTransactionStore(rustState);
+    this.mempool = new RustMempool(rustState);
   }
 
   public VertexStore vertexStore() {
@@ -112,6 +116,10 @@ public final class StateManager {
 
   public TransactionStore transactionStore() {
     return this.transactionStore;
+  }
+
+  public RustMempool mempool() {
+    return this.mempool;
   }
 
   public void shutdown() {
