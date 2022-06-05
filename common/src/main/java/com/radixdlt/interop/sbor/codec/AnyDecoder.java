@@ -69,9 +69,9 @@ import static com.radixdlt.interop.sbor.api.DecodingError.INVALID_OPTION;
 import static com.radixdlt.interop.sbor.api.DecodingError.INVALID_RESULT;
 import static com.radixdlt.interop.sbor.api.DecodingError.TYPE_MISMATCH;
 import static com.radixdlt.interop.sbor.api.DecodingError.UNSUPPORTED_TYPE;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_ARRAY;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_OPTION;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_RESULT;
+import static com.radixdlt.interop.sbor.api.TypeId.TYPE_VEC;
 import static com.radixdlt.lang.Result.success;
 
 import com.radixdlt.interop.sbor.api.DecoderApi;
@@ -127,7 +127,7 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
 
   @Override
   public Result<Integer> decodeArrayHeader(TypeId expectedId) {
-    return expectType(TYPE_ARRAY).flatMap(() -> expectType(expectedId)).flatMap(this::readInt);
+    return expectType(TYPE_VEC).flatMap(() -> expectType(expectedId)).flatMap(this::readInt);
   }
 
   @Override

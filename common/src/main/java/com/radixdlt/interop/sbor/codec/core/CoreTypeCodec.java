@@ -69,8 +69,8 @@ import static com.radixdlt.interop.sbor.api.TypeId.TYPE_BOOL;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_I16;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_I32;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_I64;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_I8;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_STRING;
+import static com.radixdlt.interop.sbor.api.TypeId.TYPE_U8;
 import static com.radixdlt.interop.sbor.api.TypeId.TYPE_UNIT;
 import static com.radixdlt.lang.Result.success;
 
@@ -165,12 +165,12 @@ public abstract sealed class CoreTypeCodec<T> implements ClassCodec<T> {
   public static final class ByteCodec extends CoreTypeCodec<Byte> {
     @Override
     public Result<Unit> encode(EncoderApi encoder, Byte value) {
-      return encodePlainType(encoder, TYPE_I8, value, encoder::writeByte);
+      return encodePlainType(encoder, TYPE_U8, value, encoder::writeByte);
     }
 
     @Override
     public Result<Byte> decode(DecoderApi decoder) {
-      return decoder.expectType(TYPE_I8).flatMap(decoder::readByte);
+      return decoder.expectType(TYPE_U8).flatMap(decoder::readByte);
     }
   }
 
@@ -213,7 +213,7 @@ public abstract sealed class CoreTypeCodec<T> implements ClassCodec<T> {
   public static final class ByteArrayCodec extends CoreTypeCodec<byte[]> {
     @Override
     public Result<Unit> encode(EncoderApi encoder, byte[] value) {
-      encoder.encodeArrayHeader(TYPE_I8, value.length);
+      encoder.encodeArrayHeader(TYPE_U8, value.length);
       encoder.writeBytes(value);
 
       return Unit.unitResult();
@@ -221,7 +221,7 @@ public abstract sealed class CoreTypeCodec<T> implements ClassCodec<T> {
 
     @Override
     public Result<byte[]> decode(DecoderApi decoder) {
-      return decoder.decodeArrayHeader(TYPE_I8).flatMap(decoder::readBytes);
+      return decoder.decodeArrayHeader(TYPE_U8).flatMap(decoder::readBytes);
     }
   }
 

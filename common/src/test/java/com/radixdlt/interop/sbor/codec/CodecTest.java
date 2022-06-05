@@ -114,7 +114,7 @@ public class CodecTest {
     var r0 = codec.encode((byte) 0x5A).unwrap();
 
     assertEquals(2, r0.length);
-    assertEquals(2, r0[0]); // Type == 0x02 - i8
+    assertEquals(7, r0[0]); // Type == 0x07 - u8
     assertEquals(0x5A, r0[1]); // Value == 0x5A
 
     var r1 = codec.decode(r0, byte.class).unwrap();
@@ -215,8 +215,8 @@ public class CodecTest {
     var r0 = codec.encode(testVector).unwrap();
 
     assertEquals(11, r0.length);
-    assertEquals(0x22, r0[0]); // Type == 0x0C - Array
-    assertEquals(0x02, r0[1]); // Type == 0x02 - i8
+    assertEquals(0x30, r0[0]); // Type == 0x30 - Vector
+    assertEquals(0x07, r0[1]); // Type == 0x07 - u8
     assertEquals(5, r0[2]); // Array length 0
     assertEquals(0, r0[3]); // Array length 1
     assertEquals(0, r0[4]); // Array length 2
@@ -240,7 +240,7 @@ public class CodecTest {
     var r0 = codec.encode(testVector).unwrap();
 
     assertEquals(10, r0.length);
-    assertEquals(0x22, r0[0]); // Type == 0x0C - Array
+    assertEquals(0x30, r0[0]); // Type == 0x30 - Vector
     assertEquals(0x03, r0[1]); // Type == 0x03 - i16
     assertEquals(2, r0[2]); // Array length 0
     assertEquals(0, r0[3]); // Array length 1
@@ -264,7 +264,7 @@ public class CodecTest {
     var r0 = codec.encode(testVector).unwrap();
 
     assertEquals(18, r0.length);
-    assertEquals(0x22, r0[0]); // Type == 0x0C - Array
+    assertEquals(0x30, r0[0]); // Type == 0x30 - Vector
     assertEquals(0x04, r0[1]); // Type == 0x04 - i32
     assertEquals(3, r0[2]); // Array length 0
     assertEquals(0, r0[3]); // Array length 1
@@ -296,7 +296,7 @@ public class CodecTest {
     var r0 = codec.encode(testVector).unwrap();
 
     assertEquals(22, r0.length);
-    assertEquals(0x22, r0[0]); // Type == 0x0C - Array
+    assertEquals(0x30, r0[0]); // Type == 0x30 - Vector
     assertEquals(0x05, r0[1]); // Type == 0x05 - i64
     assertEquals(2, r0[2]); // Array length 0
     assertEquals(0, r0[3]); // Array length 1
