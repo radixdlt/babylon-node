@@ -272,11 +272,15 @@ public sealed interface Result<T> permits Success, Failure {
   }
 
   /**
-   * Convert instance into {@link Option} of the same value type. Successful instance is converted into empty {@link Option} and successful into empty {@link Option}.
+   * Convert instance into {@link Option} of the same value type. Successful instance is converted
+   * into empty {@link Option} and successful into empty {@link Option}.
    *
-   * @return {@link Option} instance which is present in case of failure and empty in case of success.
+   * @return {@link Option} instance which is present in case of failure and empty in case of
+   *     success.
    */
-  default Option<Cause> toOptionErr() { return fold(Option::option, t1 -> Option.empty()); }
+  default Option<Cause> toOptionErr() {
+    return fold(Option::option, t1 -> Option.empty());
+  }
 
   /**
    * Convert instance into {@link Optional} of the same value type. Successful instance is converted

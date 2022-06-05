@@ -69,7 +69,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.transactions.Transaction;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -111,8 +110,9 @@ public final class StateManagerTest {
     final var transaction = Transaction.create(payload);
     stateManagerNode1.mempool().add(transaction);
     try {
-        stateManagerNode1.mempool().add(transaction);
-    } catch(Exception MempoolDuplicateException) {}
+      stateManagerNode1.mempool().add(transaction);
+    } catch (Exception MempoolDuplicateException) {
+    }
 
     cdl.await();
     stateManagerNode1.shutdown();

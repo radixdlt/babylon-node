@@ -64,7 +64,6 @@
 
 package com.radixdlt.mempool;
 
-
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.interop.sbor.codec.Codec;
 import com.radixdlt.interop.sbor.codec.CodecMap;
@@ -75,7 +74,6 @@ import com.radixdlt.statemanager.StateManager.RustState;
 import com.radixdlt.statemanager.StateManagerError;
 import com.radixdlt.transactions.Transaction;
 import java.util.Objects;
-import java.util.Optional;
 
 public class RustMempool {
   private final RustState rustState;
