@@ -1,0 +1,9 @@
+package com.radixdlt.statemanager;
+
+public enum StateManagerErrorCode {
+    STATE_MANAGER_ERROR_CODE_JNI_ERROR,
+    STATE_MANAGER_ERROR_CODE_SBOR_ERROR,
+
+    STATE_MANAGER_ERROR_CODE_MEMPOOL_FULL,
+    STATE_MANAGER_ERROR_CODE_MEMPOOL_DUPLICATE,
+}
