@@ -62,36 +62,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.core.routes.transaction;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.common.HandlerRoute;
-import com.radixdlt.api.core.routes.status.NetworkConfigurationHandler;
-import com.radixdlt.api.core.routes.status.NetworkSyncStatusHandler;
-import com.radixdlt.api.core.routes.transaction.TransactionSubmitHandler;
-import io.undertow.server.HttpHandler;
+import com.google.inject.Inject;
+import com.radixdlt.api.core.CoreApiCommon;
+import com.radixdlt.api.core.CoreJsonRpcHandler;
+import com.radixdlt.api.core.exceptions.CoreApiException;
+import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.transactions.Transaction;
 
-public class CoreApiModule extends AbstractModule {
-  private final boolean transactionsEnable;
-  private final boolean signEnable;
+public final class TransactionSubmitHandler
+    extends CoreJsonRpcHandler<TransactionSubmitRequest, TransactionSubmitResponse> {
+  private final CoreApiCommon coreApiCommon;
+  private final Mempool<Transaction> mempool;
 
-  public CoreApiModule(boolean transactionsEnable, boolean signEnable) {
-    this.transactionsEnable = transactionsEnable;
-    this.signEnable = signEnable;
+  @Inject
+  TransactionSubmitHandler(CoreApiCommon coreApiCommon, Mempool<Transaction> mempool) {
+    super(TransactionSubmitRequest.class);
+    this.coreApiCommon = coreApiCommon;
+    this.mempool = mempool;
   }
 
   @Override
-  protected void configure() {
-    var routeBinder = MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class);
-    addRoute(routeBinder, "/status/network-configuration", NetworkConfigurationHandler.class);
-    addRoute(routeBinder, "/status/network-sync", NetworkSyncStatusHandler.class);
-    addRoute(routeBinder, "/transaction/submit", TransactionSubmitHandler.class);
-  }
+  public TransactionSubmitResponse handleRequest(TransactionSubmitRequest request)
+      throws CoreApiException {
+    coreApiCommon.verifyNetwork(request.getNetworkIdentifier());
 
-  private void addRoute(
-      MapBinder<HandlerRoute, HttpHandler> routeBinder, String path, Class handler) {
-    var coreApiRootPath = "/core";
-    routeBinder.addBinding(HandlerRoute.post(coreApiRootPath + path)).to(handler);
+    var transaction = Transaction.create(coreApiCommon.fromHex(request.getNotarizedTransaction()));
+
+    // BAB-TODO: This will need to pass more information from the mempool when it's available
+    try {
+      mempool.add(transaction);
+      return new TransactionSubmitResponse()
+          .duplicate(false);
+    } catch (MempoolDuplicateException e) {
+      return new TransactionSubmitResponse()
+          .duplicate(true);
+    } catch (MempoolFullException e) {
+      throw CoreApiException.unavailable(
+          new MempoolFullError()
+              .mempoolTransactionCount(e.getMaxSize())
+              .type(MempoolFullError.class.getSimpleName())
+      );
+    } catch (MempoolRejectedException e) {
+      throw CoreApiException.badRequest(
+          new InvalidTransactionError()
+              .message(e.getMessage())
+              .type(InvalidTransactionError.class.getSimpleName())
+      );
+    }
   }
 }

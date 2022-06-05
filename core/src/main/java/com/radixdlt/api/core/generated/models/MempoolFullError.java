@@ -26,11 +26,11 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.CoreErrorDetails;
 import com.radixdlt.api.core.generated.models.InternalServerError;
-import com.radixdlt.api.core.generated.models.InternalServerErrorAllOf;
 import com.radixdlt.api.core.generated.models.InvalidHexError;
 import com.radixdlt.api.core.generated.models.InvalidJsonError;
 import com.radixdlt.api.core.generated.models.InvalidTransactionError;
 import com.radixdlt.api.core.generated.models.MempoolFullError;
+import com.radixdlt.api.core.generated.models.MempoolFullErrorAllOf;
 import com.radixdlt.api.core.generated.models.NetworkNotSupportedError;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -39,11 +39,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.common.JSON;
 /**
- * InternalServerError
+ * MempoolFullError
  */
 @JsonPropertyOrder({
-  InternalServerError.JSON_PROPERTY_EXCEPTION,
-  InternalServerError.JSON_PROPERTY_CAUSE
+  MempoolFullError.JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
@@ -56,68 +55,39 @@ import com.radixdlt.api.common.JSON;
   @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
 })
 
-public class InternalServerError extends CoreErrorDetails {
-  public static final String JSON_PROPERTY_EXCEPTION = "exception";
-  private String exception;
-
-  public static final String JSON_PROPERTY_CAUSE = "cause";
-  private String cause;
+public class MempoolFullError extends CoreErrorDetails {
+  public static final String JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT = "mempool_transaction_count";
+  private Integer mempoolTransactionCount;
 
 
-  public InternalServerError exception(String exception) {
-    this.exception = exception;
+  public MempoolFullError mempoolTransactionCount(Integer mempoolTransactionCount) {
+    this.mempoolTransactionCount = mempoolTransactionCount;
     return this;
   }
 
    /**
-   * Get exception
-   * @return exception
+   * Get mempoolTransactionCount
+   * @return mempoolTransactionCount
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_EXCEPTION)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getException() {
-    return exception;
+  public Integer getMempoolTransactionCount() {
+    return mempoolTransactionCount;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_EXCEPTION)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setException(String exception) {
-    this.exception = exception;
-  }
-
-
-  public InternalServerError cause(String cause) {
-    this.cause = cause;
-    return this;
-  }
-
-   /**
-   * Get cause
-   * @return cause
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_CAUSE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public String getCause() {
-    return cause;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_CAUSE)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setCause(String cause) {
-    this.cause = cause;
+  @JsonProperty(JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setMempoolTransactionCount(Integer mempoolTransactionCount) {
+    this.mempoolTransactionCount = mempoolTransactionCount;
   }
 
 
   /**
-   * Return true if this InternalServerError object is equal to o.
+   * Return true if this MempoolFullError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -127,24 +97,22 @@ public class InternalServerError extends CoreErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InternalServerError internalServerError = (InternalServerError) o;
-    return Objects.equals(this.exception, internalServerError.exception) &&
-        Objects.equals(this.cause, internalServerError.cause) &&
+    MempoolFullError mempoolFullError = (MempoolFullError) o;
+    return Objects.equals(this.mempoolTransactionCount, mempoolFullError.mempoolTransactionCount) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(exception, cause, super.hashCode());
+    return Objects.hash(mempoolTransactionCount, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InternalServerError {\n");
+    sb.append("class MempoolFullError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    exception: ").append(toIndentedString(exception)).append("\n");
-    sb.append("    cause: ").append(toIndentedString(cause)).append("\n");
+    sb.append("    mempoolTransactionCount: ").append(toIndentedString(mempoolTransactionCount)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -169,8 +137,8 @@ static {
   mappings.put("InvalidTransactionError", InvalidTransactionError.class);
   mappings.put("MempoolFullError", MempoolFullError.class);
   mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
-  mappings.put("InternalServerError", InternalServerError.class);
-  JSON.registerDiscriminator(InternalServerError.class, "type", mappings);
+  mappings.put("MempoolFullError", MempoolFullError.class);
+  JSON.registerDiscriminator(MempoolFullError.class, "type", mappings);
 }
 }
 

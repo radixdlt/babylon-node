@@ -26,8 +26,11 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.CoreErrorDetails;
 import com.radixdlt.api.core.generated.models.InternalServerError;
+import com.radixdlt.api.core.generated.models.InvalidHexError;
 import com.radixdlt.api.core.generated.models.InvalidJsonError;
 import com.radixdlt.api.core.generated.models.InvalidJsonErrorAllOf;
+import com.radixdlt.api.core.generated.models.InvalidTransactionError;
+import com.radixdlt.api.core.generated.models.MempoolFullError;
 import com.radixdlt.api.core.generated.models.NetworkNotSupportedError;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -45,7 +48,10 @@ import com.radixdlt.api.common.JSON;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
+  @JsonSubTypes.Type(value = InvalidHexError.class, name = "InvalidHexError"),
   @JsonSubTypes.Type(value = InvalidJsonError.class, name = "InvalidJsonError"),
+  @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
+  @JsonSubTypes.Type(value = MempoolFullError.class, name = "MempoolFullError"),
   @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
 })
 
@@ -126,7 +132,10 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("InternalServerError", InternalServerError.class);
+  mappings.put("InvalidHexError", InvalidHexError.class);
   mappings.put("InvalidJsonError", InvalidJsonError.class);
+  mappings.put("InvalidTransactionError", InvalidTransactionError.class);
+  mappings.put("MempoolFullError", MempoolFullError.class);
   mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
   mappings.put("InvalidJsonError", InvalidJsonError.class);
   JSON.registerDiscriminator(InvalidJsonError.class, "type", mappings);

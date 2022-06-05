@@ -11,6 +11,9 @@ tags:
   - name: Status
     x-displayName: Status Endpoints
     description: To query information about the Node / Ledger status.
+  - name: Transaction
+    x-displayName: Transaction Submission Endpoints
+    description: To submit transactions to the network.
   - name: Mempool
     x-displayName: Mempool Endpoints
     description: To query mempool status.
@@ -44,7 +47,7 @@ paths:
               schema:
                 "$ref": "#/components/schemas/NetworkConfigurationResponse"
         '500':
-          description: An unexpected error
+          description: An error occurred
           content:
             application/json:
               schema:
@@ -69,7 +72,32 @@ paths:
               schema:
                 "$ref": "#/components/schemas/NetworkSyncStatusResponse"
         '500':
-          description: An Unexpected Error
+          description: An error occurred
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/transaction/submit":
+    post:
+      summary: Submit transaction to the network
+      description: Returns whether the transaction submission was accepted.
+      tags:
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/TransactionSubmitRequest"
+      responses:
+        '200':
+          description: Transaction Submit Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/TransactionSubmitResponse"
+        '500':
+          description: An error occurred
           content:
             application/json:
               schema:
@@ -119,6 +147,9 @@ components:
           NetworkNotSupportedError: "#/components/schemas/NetworkNotSupportedError"
           InternalServerError: "#/components/schemas/InternalServerError"
           InvalidJsonError: "#/components/schemas/InvalidJsonError"
+          InvalidHexError: "#/components/schemas/InvalidHexError"
+          MempoolFullError: "#/components/schemas/MempoolFullError"
+          InvalidTransactionError: "#/components/schemas/InvalidTransactionError"
     NetworkNotSupportedError:
       allOf:
         - $ref: "#/components/schemas/CoreErrorDetails"
@@ -145,6 +176,15 @@ components:
         - type: object
           properties:
             cause:
+              type: string
+    InvalidHexError:
+      allOf:
+        - $ref: "#/components/schemas/CoreErrorDetails"
+        - type: object
+          required:
+            - invalid_hex
+          properties:
+            invalid_hex:
               type: string
 ##########################################
 # REQUEST: /status/network-configuration #
@@ -239,3 +279,44 @@ components:
       properties:
         peer_id:
           type: string
+################################
+# REQUEST: /transaction/submit #
+################################
+    TransactionSubmitRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+        notarized_transaction:
+          description: A notarized transaction encoded in the Radix transaction format, and then hex encoded.
+          type: string
+    TransactionSubmitResponse:
+      type: object
+      required:
+        - duplicate
+      properties:
+        duplicate:
+          description: Is true if the transaction is a duplicate of an existing transaction
+            in the mempool.
+          type: boolean
+    MempoolFullError:
+      allOf:
+        - $ref: "#/components/schemas/CoreErrorDetails"
+        - type: object
+          required:
+            - mempool_transaction_count
+          properties:
+            mempool_transaction_count:
+              type: integer
+    InvalidTransactionError:
+      allOf:
+        - $ref: "#/components/schemas/CoreErrorDetails"
+        - type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string

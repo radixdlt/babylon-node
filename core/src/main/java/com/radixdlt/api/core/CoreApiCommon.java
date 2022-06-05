@@ -66,10 +66,12 @@ package com.radixdlt.api.core;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.core.exceptions.CoreApiException;
+import com.radixdlt.api.core.generated.models.InvalidHexError;
 import com.radixdlt.api.core.generated.models.NetworkIdentifier;
 import com.radixdlt.api.core.generated.models.NetworkNotSupportedError;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.utils.Bytes;
 
 public class CoreApiCommon {
   private final Network network;
@@ -86,6 +88,15 @@ public class CoreApiCommon {
               .addSupportedNetworksItem(
                   new NetworkIdentifier().network(this.network.name().toLowerCase()))
               .type(NetworkNotSupportedError.class.getSimpleName()));
+    }
+  }
+
+  public byte[] fromHex(String hexString) throws CoreApiException {
+    try {
+      return Bytes.fromHexString(hexString);
+    } catch (IllegalArgumentException e) {
+      throw CoreApiException.badRequest(
+          new InvalidHexError().invalidHex(hexString).type(InvalidHexError.class.getSimpleName()));
     }
   }
 }
