@@ -67,8 +67,8 @@ package com.radixdlt.api;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.api.common.UnhandledExceptionHandler;
+import com.radixdlt.api.common.HandlerRoute;
+import com.radixdlt.api.core.CoreApiModule;
 import com.radixdlt.api.system.SystemApiModule;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
@@ -85,48 +85,48 @@ public final class ApiModule extends AbstractModule {
 
   private final int port;
   private final String bindAddress;
+  private final boolean enableTransactions;
+  private final boolean enableSign;
 
-  public ApiModule(String bindAddress, int port) {
+  public ApiModule(String bindAddress, int port, boolean enableTransactions, boolean enableSign) {
     this.bindAddress = bindAddress;
     this.port = port;
+    this.enableTransactions = enableTransactions;
+    this.enableSign = enableSign;
   }
 
   @Override
   public void configure() {
-    MapBinder.newMapBinder(binder(), String.class, HttpHandler.class);
     install(new SystemApiModule());
+    install(new CoreApiModule(enableTransactions, enableSign));
   }
 
   private static void fallbackHandler(HttpServerExchange exchange) {
     exchange.setStatusCode(StatusCodes.NOT_FOUND);
-    exchange
-        .getResponseSender()
-        .send(
-            "No matching path found for "
-                + exchange.getRequestMethod()
-                + " "
-                + exchange.getRequestPath());
+    exchange.getResponseSender().send("No API route found at this path");
   }
 
   private static void invalidMethodHandler(HttpServerExchange exchange) {
     exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
     exchange
         .getResponseSender()
-        .send(
-            "Invalid method, path exists for "
-                + exchange.getRequestMethod()
-                + " "
-                + exchange.getRequestPath());
+        .send("Invalid method " + exchange.getRequestMethod() + " for the route at this path");
   }
 
-  private HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> handlers) {
-    var handler = Handlers.routing(true); // add path params to query params with this flag
-    handlers.forEach((r, h) -> handler.add(r.method(), r.path(), h));
-    handler.setFallbackHandler(ApiModule::fallbackHandler);
-    handler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
-    var exceptionHandler = Handlers.exceptionHandler(handler);
-    exceptionHandler.addExceptionHandler(Exception.class, new UnhandledExceptionHandler());
-    return exceptionHandler;
+  private HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> allRouteHandlers) {
+    // The true flag enables query parameters to be rewriting to path parameters
+    var combinedApiHandler = Handlers.routing(true);
+    allRouteHandlers.forEach((route, h) -> combinedApiHandler.add(route.method(), route.path(), h));
+    combinedApiHandler.setFallbackHandler(ApiModule::fallbackHandler);
+    combinedApiHandler.setInvalidMethodHandler(ApiModule::invalidMethodHandler);
+
+    // NB - the Core API and System API have already caught/handled exceptions in the
+    //      CoreJsonRpcHandler, and SystemGetJsonHandler, so we don't need to override a default
+    // error handler here.
+    //      The default undertow handler should be sufficient in any edge cases:
+    //
+    // https://github.com/undertow-io/undertow-docs/blob/master/src/main/asciidoc/error-handling.asciidoc
+    return combinedApiHandler;
   }
 
   @Provides

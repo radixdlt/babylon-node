@@ -68,7 +68,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.openapitools.model.VersionResponse;
+import com.radixdlt.api.system.generated.models.VersionResponse;
+import com.radixdlt.api.system.routes.VersionHandler;
 import org.junit.Test;
 
 public class VersionHandlerTest extends ApiTest {

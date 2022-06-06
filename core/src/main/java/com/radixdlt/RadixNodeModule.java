@@ -211,6 +211,8 @@ public final class RadixNodeModule extends AbstractModule {
     // API
     var bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);
     var port = properties.get("api.port", DEFAULT_CORE_PORT);
-    install(new ApiModule(bindAddress, port));
+    var enableTransactions = properties.get("api.transactions.enable", false);
+    var enableSign = properties.get("api.sign.enable", false);
+    install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
   }
 }

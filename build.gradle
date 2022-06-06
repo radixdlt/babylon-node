@@ -139,7 +139,7 @@ sonarqube {
         property 'sonar.host.url', 'https://sonarcloud.io'
         property 'sonar.organization', 'radixdlt-github'
         property 'sonar.login', System.env.SONAR_TOKEN
-        property 'sonar.exclusions', '**/openapitools/**/*'
+        property 'sonar.exclusions', '**/openapitools/**/*,**/generated/**/*'
     }
 }
 
@@ -196,7 +196,7 @@ subprojects {
         }
         java {
             // don't need to set target, it is inferred from java
-            targetExclude('**/openapitools/**/*.java')
+            targetExclude('**/openapitools/**/*.java', '**/generated/**/*.java')
             // apply a specific flavor of google-java-format
             googleJavaFormat('1.13.0').reflowLongStrings()
 

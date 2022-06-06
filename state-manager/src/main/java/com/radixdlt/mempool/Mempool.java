@@ -72,7 +72,7 @@ import java.util.function.Predicate;
 /**
  * Basic mempool functionality.
  *
- * <p>Note that conceptually, a mempoolcan be thought of as a list indexable by hash.
+ * <p>Note that conceptually, a mempool can be thought of as a list indexable by hash.
  */
 public interface Mempool<T> {
   /** Add a transaction to the local mempool. */

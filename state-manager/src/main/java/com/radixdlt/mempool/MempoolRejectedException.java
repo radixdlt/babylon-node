@@ -64,7 +64,7 @@
 
 package com.radixdlt.mempool;
 
-/** Exception thrown when mempool rejects an atom. */
+/** Exception thrown when mempool rejects a transaction. */
 public class MempoolRejectedException extends Exception {
 
   public MempoolRejectedException(String message) {
