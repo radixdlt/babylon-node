@@ -22,6 +22,8 @@ reporoot="${scriptdir}/../.."
 eval $(${reporoot}/gradlew -q -P "validators=${validators}" ":cli-tools:generateDevUniverse")
 
 # Launch
-${reporoot}/gradlew -p "${reporoot}" deb4docker && \
+rm docker/distrib/*.deb || true
+
+docker build -f ${scriptdir}/../Dockerfile.deb4docker -o docker/distrib . &&
   (docker kill $(docker ps -q) || true) 2>/dev/null && \
   docker-compose -f "${dockerfile}" up --build | tee docker.log

@@ -33,7 +33,7 @@ ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_NETWORK_ID=99
 
 # install the radixdlt package
-COPY *.deb /tmp/
+COPY distrib/*.deb /tmp/
 RUN dpkg -i /tmp/*.deb
 
 # create configuration automatically when starting
