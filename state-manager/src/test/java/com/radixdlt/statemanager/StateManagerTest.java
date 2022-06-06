@@ -80,8 +80,8 @@ public final class StateManagerTest {
   public void test_rust_interop() throws Exception {
 
     final var mempoolSize = 100;
-    final var stateManagerNode1 = StateManager.create(mempoolSize);
-    final var stateManagerNode2 = StateManager.create(mempoolSize);
+    final var stateManagerNode1 = StateManager.createAndInitialize(mempoolSize);
+    final var stateManagerNode2 = StateManager.createAndInitialize(mempoolSize);
 
     // Just to check that concurrent access is possible
     var rand = new Random();

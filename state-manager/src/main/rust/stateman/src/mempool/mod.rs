@@ -34,7 +34,7 @@ impl ToStateManagerError for MempoolError {
 
 pub trait Mempool {
     fn add(&mut self, transaction: Transaction) -> Result<(), MempoolError>;
-    fn committed(&mut self, txns: &HashSet<Transaction>);
+    fn committed(&mut self, transactions: &HashSet<Transaction>);
     fn get_count(&self) -> usize;
     fn get_txns(&self, count: usize, seen: &HashSet<Transaction>) -> HashSet<Transaction>;
 }

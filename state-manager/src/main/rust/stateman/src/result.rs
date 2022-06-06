@@ -8,7 +8,7 @@ pub const ERRCODE_SBOR: i16 = 1;
 pub const ERRCODE_MEMPOOL_FULL: i16 = 0x10;
 pub const ERRCODE_MEMPOOL_DUPLICATE: i16 = 0x11;
 
-#[derive(TypeId, Encode, Decode)]
+#[derive(TypeId, Encode, Decode, Debug)]
 pub struct StateManagerError {
     error_code: i16,
     error_msg: String,

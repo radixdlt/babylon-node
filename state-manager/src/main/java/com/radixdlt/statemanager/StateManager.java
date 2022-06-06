@@ -84,15 +84,13 @@ public final class StateManager {
    */
   public static final class RustState {
     @SuppressWarnings("unused")
-    private final long stateManager = 0;
-
-    private RustState(long mempoolSize) {
-      init(this, mempoolSize);
-    }
+    private final long stateManagerPointer = 0;
   }
 
-  public static StateManager create(long mempoolSize) {
-    return new StateManager(new RustState(mempoolSize));
+  public static StateManager createAndInitialize(long mempoolSize) {
+    var rustState = new RustState();
+    init(rustState, mempoolSize);
+    return new StateManager(rustState);
   }
 
   private final RustState rustState;
