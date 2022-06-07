@@ -62,60 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.exceptions;
 
-import com.radixdlt.exceptions.SborException;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.codec.Codec;
-import com.radixdlt.interop.sbor.codec.CodecMap;
-import com.radixdlt.interop.sbor.utils.DecodeResult;
-import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Unit;
-import com.radixdlt.statemanager.StateManager.RustState;
-import com.radixdlt.statemanager.StateManagerError;
-import com.radixdlt.transactions.Transaction;
-import java.util.Objects;
-
-public class RustMempool {
-  private final RustState rustState;
-  private Codec codec =
-      new Codec(
-          new CodecMap()
-              .register(Transaction.class, new Transaction.TransactionCodec())
-              .register(AID.class, new AID.AIDCodec())
-              .register(StateManagerError.class, new StateManagerError.StateManagerErrorCodec()));
-
-  public RustMempool(RustState rustState) {
-    this.rustState = Objects.requireNonNull(rustState);
+public class SborException extends RuntimeException {
+  /**
+   * @param clazz - The class being encoded/decoded
+   * @param isJavaSide - If the error happened on java side or rust side
+   * @param isEncoding - If the error happened whilst encoding or decoding
+   * @param message - The message from the Cause
+   */
+  public SborException(Class clazz, boolean isJavaSide, boolean isEncoding, String message) {
+    super(message);
   }
-
-  public Transaction add(Transaction transaction)
-      throws MempoolFullException, MempoolDuplicateException {
-    var encodedRequest =
-        this.codec
-            .encode(transaction)
-            .unwrap(c -> new SborException(Transaction.class, true, true, c.message()));
-    var encodedResponse = add(this.rustState, encodedRequest);
-
-    var result =
-        new DecodeResult(this.codec, Unit.class, StateManagerError.class).decode(encodedResponse);
-
-    // Handle Errors.
-    Option<StateManagerError> optErr = result.toOptionErr();
-    if (optErr.isPresent()) {
-      var err = optErr.unwrap();
-      switch (err.getErrorCode()) {
-        case STATE_MANAGER_ERROR_CODE_MEMPOOL_FULL:
-          throw new MempoolFullException(err.message());
-        case STATE_MANAGER_ERROR_CODE_MEMPOOL_DUPLICATE:
-          throw new MempoolDuplicateException(err.message());
-        default:
-          throw new IllegalStateException("Unexpected StateManagerError: " + err.toString());
-      }
-    }
-
-    return transaction;
-  }
-
-  private static native byte[] add(RustState rustState, byte[] transaction);
 }
