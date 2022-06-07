@@ -77,14 +77,14 @@ import org.apache.logging.log4j.Logger;
 public final class VertexStoreBFTSyncRequestProcessor
     implements RemoteEventProcessor<GetVerticesRequest> {
   private static final Logger log = LogManager.getLogger();
-  private final BabylonVertexStoreAdapter vertexStore;
+  private final VertexStoreAdapter vertexStore;
   private final RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher;
   private final RemoteEventDispatcher<GetVerticesResponse> responseDispatcher;
   private final SystemCounters systemCounters;
 
   @Inject
   public VertexStoreBFTSyncRequestProcessor(
-      BabylonVertexStoreAdapter vertexStore,
+      VertexStoreAdapter vertexStore,
       RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher,
       RemoteEventDispatcher<GetVerticesResponse> responseDispatcher,
       SystemCounters systemCounters) {

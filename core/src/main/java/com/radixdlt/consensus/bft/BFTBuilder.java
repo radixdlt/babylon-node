@@ -70,7 +70,7 @@ import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
+import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -84,7 +84,7 @@ public final class BFTBuilder {
 
   // BFT Stateful objects
   private Pacemaker pacemaker;
-  private BabylonVertexStoreAdapter vertexStore;
+  private VertexStoreAdapter vertexStore;
   private BFTSyncer bftSyncer;
   private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher;
   private EventDispatcher<NoVote> noVoteEventDispatcher;
@@ -144,7 +144,7 @@ public final class BFTBuilder {
     return this;
   }
 
-  public BFTBuilder vertexStore(BabylonVertexStoreAdapter vertexStore) {
+  public BFTBuilder vertexStore(VertexStoreAdapter vertexStore) {
     this.vertexStore = vertexStore;
     return this;
   }

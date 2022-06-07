@@ -81,7 +81,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
+import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -106,7 +106,7 @@ public final class Pacemaker {
   private final BFTNode self;
   private final SystemCounters counters;
   private final BFTValidatorSet validatorSet;
-  private final BabylonVertexStoreAdapter vertexStore;
+  private final VertexStoreAdapter vertexStore;
   private final SafetyRules safetyRules;
   private final ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender;
   private final PacemakerTimeoutCalculator timeoutCalculator;
@@ -126,7 +126,7 @@ public final class Pacemaker {
       BFTNode self,
       SystemCounters counters,
       BFTValidatorSet validatorSet,
-      BabylonVertexStoreAdapter vertexStore,
+      VertexStoreAdapter vertexStore,
       SafetyRules safetyRules,
       EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
       ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,

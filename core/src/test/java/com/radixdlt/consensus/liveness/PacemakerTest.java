@@ -90,7 +90,7 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
+import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -111,7 +111,7 @@ public class PacemakerTest {
   private BFTNode self = mock(BFTNode.class);
   private SystemCounters counters = mock(SystemCounters.class);
   private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-  private BabylonVertexStoreAdapter vertexStore = mock(BabylonVertexStoreAdapter.class);
+  private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);
   private SafetyRules safetyRules = mock(SafetyRules.class);
   private PacemakerTimeoutCalculator timeoutCalculator = mock(PacemakerTimeoutCalculator.class);
   private NextTxnsGenerator nextTxnsGenerator = mock(NextTxnsGenerator.class);

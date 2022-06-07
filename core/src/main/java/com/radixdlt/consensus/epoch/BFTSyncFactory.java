@@ -68,13 +68,13 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
+import com.radixdlt.consensus.sync.VertexStoreAdapter;
 
 /** Creates a new bft sync given a vertex store and pacemaker */
 public interface BFTSyncFactory {
   BFTSync create(
       SafetyRules safetyRules,
-      BabylonVertexStoreAdapter vertexStore,
+      VertexStoreAdapter vertexStore,
       PacemakerState pacemakerState,
       BFTConfiguration configuration);
 }

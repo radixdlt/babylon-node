@@ -101,13 +101,13 @@ import com.radixdlt.consensus.liveness.PacemakerStateFactory;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
-import com.radixdlt.consensus.sync.BabylonVertexStoreJavaImpl;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
+import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
+import com.radixdlt.consensus.sync.VertexStoreJavaImpl;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -364,8 +364,8 @@ public class EpochsConsensusModule extends AbstractModule {
       Ledger ledger,
       Hasher hasher) {
     return vertexStoreState ->
-        new BabylonVertexStoreAdapter(
-            BabylonVertexStoreJavaImpl.create(vertexStoreState, ledger, hasher),
+        new VertexStoreAdapter(
+            VertexStoreJavaImpl.create(vertexStoreState, ledger, hasher),
             highQCUpdateEventDispatcher,
             updateSender,
             rebuildUpdateDispatcher,

@@ -64,11 +64,11 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.environment.RemoteEventProcessor;
 
 /** Creates new instances of sync request processors given a vertex store */
 public interface BFTSyncRequestProcessorFactory {
-  RemoteEventProcessor<GetVerticesRequest> create(BabylonVertexStoreAdapter vertexStore);
+  RemoteEventProcessor<GetVerticesRequest> create(VertexStoreAdapter vertexStore);
 }

@@ -159,7 +159,7 @@ public final class BFTSync implements BFTSyncer {
 
   private static final Logger log = LogManager.getLogger();
   private final BFTNode self;
-  private final BabylonVertexStoreAdapter vertexStore;
+  private final VertexStoreAdapter vertexStore;
   private final Hasher hasher;
   private final SafetyRules safetyRules;
   private final PacemakerReducer pacemakerReducer;
@@ -183,7 +183,7 @@ public final class BFTSync implements BFTSyncer {
   public BFTSync(
       @Self BFTNode self,
       RateLimiter syncRequestRateLimiter,
-      BabylonVertexStoreAdapter vertexStore,
+      VertexStoreAdapter vertexStore,
       Hasher hasher,
       SafetyRules safetyRules,
       PacemakerReducer pacemakerReducer,

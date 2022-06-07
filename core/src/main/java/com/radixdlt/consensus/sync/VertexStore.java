@@ -77,7 +77,7 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.lang.Option;
 import java.util.List;
 
-public interface BabylonVertexStore {
+public interface VertexStore {
   record CommittedUpdate(ImmutableList<PreparedVertex> committedVertices) {}
 
   sealed interface InsertQcResult {

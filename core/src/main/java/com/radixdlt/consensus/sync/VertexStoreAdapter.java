@@ -84,8 +84,8 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
 
-public final class BabylonVertexStoreAdapter {
-  private final BabylonVertexStore babylonVertexStore;
+public final class VertexStoreAdapter {
+  private final VertexStore vertexStore;
 
   private final EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher;
   private final EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher;
@@ -93,13 +93,13 @@ public final class BabylonVertexStoreAdapter {
   private final EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher;
 
   @Inject
-  public BabylonVertexStoreAdapter(
-      BabylonVertexStore babylonVertexStore,
+  public VertexStoreAdapter(
+      VertexStore vertexStore,
       EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
       EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
       EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
       EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher) {
-    this.babylonVertexStore = Objects.requireNonNull(babylonVertexStore);
+    this.vertexStore = Objects.requireNonNull(vertexStore);
     this.highQCUpdateDispatcher = Objects.requireNonNull(highQCUpdateDispatcher);
     this.bftUpdateDispatcher = Objects.requireNonNull(bftUpdateDispatcher);
     this.bftRebuildDispatcher = Objects.requireNonNull(bftRebuildDispatcher);
@@ -107,7 +107,7 @@ public final class BabylonVertexStoreAdapter {
   }
 
   public boolean tryRebuild(VerifiedVertexStoreState vertexStoreState) {
-    final var result = babylonVertexStore.tryRebuild(vertexStoreState);
+    final var result = vertexStore.tryRebuild(vertexStoreState);
 
     result.onPresent(
         newVertexStoreState ->
@@ -117,12 +117,12 @@ public final class BabylonVertexStoreAdapter {
   }
 
   public void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
-    babylonVertexStore.insertTimeoutCertificate(timeoutCertificate);
+    vertexStore.insertTimeoutCertificate(timeoutCertificate);
   }
 
   public boolean insertQc(QuorumCertificate qc) {
-    return switch (babylonVertexStore.insertQc(qc)) {
-      case BabylonVertexStore.InsertQcResult.Inserted inserted -> {
+    return switch (vertexStore.insertQc(qc)) {
+      case VertexStore.InsertQcResult.Inserted inserted -> {
         // TODO: why is this if statement needed?
         if (inserted.committedUpdate().isEmpty()) {
           this.highQCUpdateDispatcher.dispatch(
@@ -138,21 +138,21 @@ public final class BabylonVertexStoreAdapter {
                             inserted.verifiedVertexStoreState())));
         yield true;
       }
-      case BabylonVertexStore.InsertQcResult.Ignored ignored -> true;
-      case BabylonVertexStore.InsertQcResult.VertexIsMissing vertexIsMissing -> false;
+      case VertexStore.InsertQcResult.Ignored ignored -> true;
+      case VertexStore.InsertQcResult.VertexIsMissing vertexIsMissing -> false;
     };
   }
 
   public Optional<PreparedVertex> getPreparedVertex(HashCode id) {
-    return babylonVertexStore.getPreparedVertex(id).toOptional();
+    return vertexStore.getPreparedVertex(id).toOptional();
   }
 
   public List<PreparedVertex> getPathFromRoot(HashCode vertexId) {
-    return babylonVertexStore.getPathFromRoot(vertexId);
+    return vertexStore.getPathFromRoot(vertexId);
   }
 
   public void insertVertexChain(VerifiedVertexChain verifiedVertexChain) {
-    final var result = babylonVertexStore.insertVertexChain(verifiedVertexChain);
+    final var result = vertexStore.insertVertexChain(verifiedVertexChain);
     result
         .insertedQcs()
         .forEach(
@@ -172,32 +172,32 @@ public final class BabylonVertexStoreAdapter {
   }
 
   public Optional<ImmutableList<VerifiedVertex>> getVertices(HashCode vertexId, int count) {
-    return babylonVertexStore.getVertices(vertexId, count).toOptional();
+    return vertexStore.getVertices(vertexId, count).toOptional();
   }
 
   public void insertVertex(VerifiedVertex vertex) {
-    final var result = babylonVertexStore.insertVertex(vertex);
+    final var result = vertexStore.insertVertex(vertex);
     result.onPresent(bftUpdateDispatcher::dispatch);
   }
 
   public boolean containsVertex(HashCode vertexId) {
-    return babylonVertexStore.containsVertex(vertexId);
+    return vertexStore.containsVertex(vertexId);
   }
 
   public boolean hasCommittedVertexOrRootAtOrAboveView(BFTHeader committedHeader) {
-    if (babylonVertexStore.containsVertex(committedHeader.getVertexId())) {
+    if (vertexStore.containsVertex(committedHeader.getVertexId())) {
       return true;
     } else {
-      final var rootView = babylonVertexStore.getRoot().getView();
+      final var rootView = vertexStore.getRoot().getView();
       return rootView.gte(committedHeader.getView());
     }
   }
 
   public HighQC highQC() {
-    return babylonVertexStore.highQC();
+    return vertexStore.highQC();
   }
 
   public VerifiedVertex getRoot() {
-    return babylonVertexStore.getRoot();
+    return vertexStore.getRoot();
   }
 }

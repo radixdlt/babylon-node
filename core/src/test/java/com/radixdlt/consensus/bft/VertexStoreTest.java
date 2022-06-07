@@ -87,8 +87,8 @@ import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.sync.BabylonVertexStoreAdapter;
-import com.radixdlt.consensus.sync.BabylonVertexStoreJavaImpl;
+import com.radixdlt.consensus.sync.VertexStoreAdapter;
+import com.radixdlt.consensus.sync.VertexStoreJavaImpl;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -110,7 +110,7 @@ public class VertexStoreTest {
   private Function<Boolean, VerifiedVertex> nextSkippableVertex;
   private HashCode genesisHash;
   private QuorumCertificate rootQC;
-  private BabylonVertexStoreAdapter sut;
+  private VertexStoreAdapter sut;
   private Ledger ledger;
   private EventDispatcher<BFTInsertUpdate> bftUpdateSender;
   private EventDispatcher<BFTRebuildUpdate> rebuildUpdateEventDispatcher;
@@ -147,8 +147,8 @@ public class VertexStoreTest {
         new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
     this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
     this.sut =
-        new BabylonVertexStoreAdapter(
-            BabylonVertexStoreJavaImpl.create(
+        new VertexStoreAdapter(
+            VertexStoreJavaImpl.create(
                 VerifiedVertexStoreState.create(
                     HighQC.from(rootQC), genesisVertex, Optional.empty(), hasher),
                 ledger,

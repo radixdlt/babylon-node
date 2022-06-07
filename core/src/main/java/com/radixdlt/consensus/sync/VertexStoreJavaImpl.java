@@ -91,7 +91,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 
 /** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
 @NotThreadSafe
-public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
+public final class VertexStoreJavaImpl implements VertexStore {
   private final Hasher hasher;
   private final Ledger ledger;
 
@@ -104,7 +104,7 @@ public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
   private QuorumCertificate highestCommittedQC;
   private Optional<TimeoutCertificate> highestTC;
 
-  private BabylonVertexStoreJavaImpl(
+  private VertexStoreJavaImpl(
       Ledger ledger,
       Hasher hasher,
       VerifiedVertex rootVertex,
@@ -120,10 +120,10 @@ public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
     this.highestTC = Objects.requireNonNull(highestTC);
   }
 
-  public static BabylonVertexStoreJavaImpl create(
+  public static VertexStoreJavaImpl create(
       VerifiedVertexStoreState vertexStoreState, Ledger ledger, Hasher hasher) {
-    BabylonVertexStoreJavaImpl vertexStore =
-        new BabylonVertexStoreJavaImpl(
+    VertexStoreJavaImpl vertexStore =
+        new VertexStoreJavaImpl(
             ledger,
             hasher,
             vertexStoreState.getRoot(),
@@ -198,20 +198,20 @@ public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
 
   public InsertQcResult insertQc(QuorumCertificate qc) {
     if (!this.containsVertex(qc.getProposed().getVertexId())) {
-      return new BabylonVertexStore.InsertQcResult.VertexIsMissing(); // false
+      return new VertexStore.InsertQcResult.VertexIsMissing(); // false
     }
 
     final var hasAnyChildren = !vertexChildren.get(qc.getProposed().getVertexId()).isEmpty();
     if (hasAnyChildren) {
       // TODO: Check to see if qc's match in case there's a fault
-      return new BabylonVertexStore.InsertQcResult.Ignored();
+      return new VertexStore.InsertQcResult.Ignored();
     }
 
     // proposed vertex doesn't have any children
     boolean isHighQC = qc.getView().gt(highestQC.getView());
     boolean isAnythingCommitted = qc.getCommittedAndLedgerStateProof(hasher).isPresent();
     if (!isHighQC && !isAnythingCommitted) {
-      return new BabylonVertexStore.InsertQcResult.Ignored();
+      return new VertexStore.InsertQcResult.Ignored();
     }
 
     if (isHighQC) {
@@ -221,7 +221,7 @@ public final class BabylonVertexStoreJavaImpl implements BabylonVertexStore {
     final var committedUpdate =
         Option.from(qc.getCommitted().flatMap(header -> this.commit(header, qc)));
 
-    return new BabylonVertexStore.InsertQcResult.Inserted(highQC(), getState(), committedUpdate);
+    return new VertexStore.InsertQcResult.Inserted(highQC(), getState(), committedUpdate);
   }
 
   private void getChildrenVerticesList(
