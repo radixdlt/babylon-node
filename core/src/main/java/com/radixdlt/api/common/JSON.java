@@ -77,8 +77,7 @@ import java.util.Map;
 import java.util.Set;
 
 @javax.annotation.processing.Generated(
-    value = "org.openapitools.codegen.languages.JavaClientCodegen",
-    date = "2021-11-24T23:25:44.231186-06:00[America/Chicago]")
+    value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class JSON {
   private ObjectMapper mapper;
 

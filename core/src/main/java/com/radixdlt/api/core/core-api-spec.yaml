@@ -1,0 +1,322 @@
+openapi: 3.1.0
+info:
+  version: '0.1.0'
+  title: 'Babylon Core API'
+  license:
+    name: The Radix License, Version 1.0
+    url: https://www.radixfoundation.org/licenses/LICENSE-v1
+servers:
+  - url: 'localhost:3333/core'
+tags:
+  - name: Status
+    x-displayName: Status Endpoints
+    description: To query information about the Node / Ledger status.
+  - name: Transaction
+    x-displayName: Transaction Submission Endpoints
+    description: To submit transactions to the network.
+  - name: Mempool
+    x-displayName: Mempool Endpoints
+    description: To query mempool status.
+  - name: Ledger State
+    x-displayName: Ledger State Endpoints
+    description: To query the current ledger state.
+  - name: History Stream
+    x-displayName: History Stream Endpoints
+    description: To query the history of the ledger.
+  - name: Key
+    x-displayName: Key Endpoints
+    description: To sign certain transactions with the node's own key.
+paths:
+  "/status/network-configuration":
+    post:
+      summary: Get Network Configuration
+      description: Returns the network configuration of the network the node is connected to.
+      tags:
+        - Status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/NetworkConfigurationRequest"
+      responses:
+        '200':
+          description: Network Configuration
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NetworkConfigurationResponse"
+        '500':
+          description: An error occurred
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/status/network-sync":
+    post:
+      summary: Get Network Sync Status
+      description: Returns the current sync status of the node.
+      tags:
+        - Status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/NetworkSyncStatusRequest"
+      responses:
+        '200':
+          description: Network Status
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NetworkSyncStatusResponse"
+        '500':
+          description: An error occurred
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/transaction/submit":
+    post:
+      summary: Submit transaction to the network
+      description: Returns whether the transaction submission was accepted.
+      tags:
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/TransactionSubmitRequest"
+      responses:
+        '200':
+          description: Transaction Submit Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/TransactionSubmitResponse"
+        '500':
+          description: An error occurred
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+###########################
+# GENERAL / SHARED MODELS #
+###########################
+    NetworkIdentifier:
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          type: string
+      example:
+        network: mainnet
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          description: A numeric code corresponding to the given error type, roughly aligned with HTTP Status Code semantics (eg 400/404/500).
+          type: integer
+        message:
+          description: A human-readable error message.
+          type: string
+        details:
+          description: A structured/typed details object.
+          $ref: "#/components/schemas/CoreErrorDetails"
+        trace_id:
+          description: A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
+          type: string
+    CoreErrorDetails:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          NetworkNotSupportedError: "#/components/schemas/NetworkNotSupportedError"
+          InternalServerError: "#/components/schemas/InternalServerError"
+          InvalidJsonError: "#/components/schemas/InvalidJsonError"
+          InvalidHexError: "#/components/schemas/InvalidHexError"
+          MempoolFullError: "#/components/schemas/MempoolFullError"
+          InvalidTransactionError: "#/components/schemas/InvalidTransactionError"
+    NetworkNotSupportedError:
+      allOf:
+        - $ref: "#/components/schemas/CoreErrorDetails"
+        - type: object
+          required:
+            - supported_networks
+          properties:
+            supported_networks:
+              type: array
+              items:
+                $ref: "#/components/schemas/NetworkIdentifier"
+    InternalServerError:
+      allOf:
+        - $ref: "#/components/schemas/CoreErrorDetails"
+        - type: object
+          properties:
+            exception:
+              type: string
+            cause:
+              type: string
+    InvalidJsonError:
+      allOf:
+        - $ref: "#/components/schemas/CoreErrorDetails"
+        - type: object
+          properties:
+            cause:
+              type: string
+    InvalidHexError:
+      allOf:
+        - $ref: "#/components/schemas/CoreErrorDetails"
+        - type: object
+          required:
+            - invalid_hex
+          properties:
+            invalid_hex:
+              type: string
+##########################################
+# REQUEST: /status/network-configuration #
+##########################################
+    NetworkConfigurationRequest:
+      type: object
+      example: {}
+    NetworkConfigurationResponse:
+      type: object
+      required:
+        - version
+        - network_identifier
+        - bech32_human_readable_parts
+      properties:
+        version:
+          description: Different versions regarding the node, network and api.
+          type: object
+          required:
+            - core_version
+            - api_version
+          properties:
+            core_version:
+              type: string
+            api_version:
+              type: string
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+        bech32_human_readable_parts:
+          "$ref": "#/components/schemas/Bech32HRPs"
+          description: The unique bech32 hrps used for addressing.
+    Bech32HRPs:
+      type: object
+      required:
+        - account_hrp
+        - validator_hrp
+        - node_hrp
+        - resource_hrp_suffix
+      properties:
+        account_hrp:
+          type: string
+        validator_hrp:
+          type: string
+        node_hrp:
+          type: string
+        resource_hrp_suffix:
+          type: string
+#################################
+# REQUEST: /status/network-sync #
+#################################
+    NetworkSyncStatusRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+      example:
+        network_identifier:
+          network: mainnet
+    NetworkSyncStatusResponse:
+      type: object
+      required:
+        - sync_status
+        - peers
+      properties:
+        sync_status:
+          $ref: "#/components/schemas/SyncStatus"
+          description: Information on how synced the node is to the rest of the network.
+        peers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Peer"
+          description: List of peers of the node.
+    SyncStatus:
+      type: object
+      required:
+        - current_state_version
+        - target_state_version
+      properties:
+        current_state_version:
+          type: integer
+          format: int64
+        target_state_version:
+          type: integer
+          format: int64
+    Peer:
+      type: object
+      required:
+        - peer_id
+      properties:
+        peer_id:
+          type: string
+################################
+# REQUEST: /transaction/submit #
+################################
+    TransactionSubmitRequest:
+      type: object
+      required:
+        - network_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+        notarized_transaction:
+          description: A notarized transaction encoded in the Radix transaction format, and then hex encoded.
+          type: string
+    TransactionSubmitResponse:
+      type: object
+      required:
+        - duplicate
+      properties:
+        duplicate:
+          description: Is true if the transaction is a duplicate of an existing transaction
+            in the mempool.
+          type: boolean
+    MempoolFullError:
+      allOf:
+        - $ref: "#/components/schemas/CoreErrorDetails"
+        - type: object
+          required:
+            - mempool_transaction_count
+          properties:
+            mempool_transaction_count:
+              type: integer
+    InvalidTransactionError:
+      allOf:
+        - $ref: "#/components/schemas/CoreErrorDetails"
+        - type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string

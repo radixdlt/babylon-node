@@ -69,7 +69,6 @@ import com.radixdlt.lang.Option.None;
 import com.radixdlt.lang.Option.Some;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -368,13 +367,7 @@ public sealed interface Option<T> permits Some, None {
     return new Some<>(value);
   }
 
-  final class Some<T> implements Option<T> {
-    private final T value;
-
-    private Some(T value) {
-      this.value = value;
-    }
-
+  record Some<T>(T value) implements Option<T> {
     @Override
     public <R> R fold(
         Supplier<? extends R> emptyMapper, FN1<? extends R, ? super T> presentMapper) {
@@ -382,26 +375,12 @@ public sealed interface Option<T> permits Some, None {
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-
-      return o instanceof Some<?> some && value.equals(some.value);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(value);
-    }
-
-    @Override
     public String toString() {
-      return "Some(" + value.toString() + ")";
+      return "Some(" + value + ")";
     }
   }
 
-  final class None<T> implements Option<T> {
+  record None<T>() implements Option<T> {
     @Override
     public <R> R fold(
         Supplier<? extends R> emptyMapper, FN1<? extends R, ? super T> presentMapper) {

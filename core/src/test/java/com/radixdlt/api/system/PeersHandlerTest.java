@@ -68,7 +68,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.openapitools.model.SystemPeersResponse;
+import com.radixdlt.api.system.generated.models.SystemPeersResponse;
+import com.radixdlt.api.system.routes.PeersHandler;
 import org.junit.Test;
 
 public class PeersHandlerTest extends ApiTest {
