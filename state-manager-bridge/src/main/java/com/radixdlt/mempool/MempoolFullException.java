@@ -79,4 +79,8 @@ public class MempoolFullException extends MempoolRejectedException {
     super(message);
     this.maxSize = 0;
   }
+
+  public int getMaxSize() {
+    return maxSize;
+  }
 }
