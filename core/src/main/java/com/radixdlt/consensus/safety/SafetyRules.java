@@ -323,7 +323,7 @@ public final class SafetyRules {
 
   private boolean areAllQcTimestampedSignaturesValid(QuorumCertificate qc) {
     final var voteData = qc.getVoteData();
-    return qc.getTimestampedSignatures().getSignatures().entrySet().stream()
+    return qc.getTimestampedSignatures().getSignatures().entrySet().parallelStream()
         .allMatch(
             e -> {
               final var nodePublicKey = e.getKey().getKey();
@@ -353,7 +353,7 @@ public final class SafetyRules {
   private boolean areAllTcTimestampedSignaturesValid(TimeoutCertificate tc) {
     final var voteTimeout = new VoteTimeout(tc.getView(), tc.getEpoch());
     final var voteTimeoutHash = hasher.hash(voteTimeout);
-    return tc.getTimestampedSignatures().getSignatures().entrySet().stream()
+    return tc.getTimestampedSignatures().getSignatures().entrySet().parallelStream()
         .allMatch(
             e -> {
               final var nodePublicKey = e.getKey().getKey();
