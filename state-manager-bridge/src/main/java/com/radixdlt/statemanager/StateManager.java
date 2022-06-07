@@ -62,22 +62,69 @@
  * permissions under this License.
  */
 
-apply plugin: "com.diffplug.spotless"
+package com.radixdlt.statemanager;
 
-spotless {
-    format 'misc', {
-        // define the files to apply `misc` to
-        target '*.gradle', '*.md', '.gitignore'
+import com.radixdlt.mempool.RustMempool;
+import com.radixdlt.transaction.RustTransactionStore;
+import com.radixdlt.transaction.TransactionStore;
+import com.radixdlt.vertexstore.RustVertexStore;
+import com.radixdlt.vertexstore.VertexStore;
+import java.util.Objects;
 
-        // define the steps to apply to those files
-        trimTrailingWhitespace()
-        indentWithSpaces() // Takes an integer argument if you don't like 4
-        endWithNewline()
-    }
-}
+public final class StateManager {
 
-// TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
-task buildRustDebug(type:Exec) {
-    commandLine 'cargo', 'build'
+  static {
+    System.loadLibrary("statemanager");
+  }
+
+  /**
+   * Stores Rust state across JNI calls. Fields with "Ref" suffix are pointers to the Rust objects
+   * created and set on the Rust side via JNI env, and they should never be accessed in any other
+   * way. The remaining fields are read-only values (for now, but this might change) passed to Rust.
+   */
+  public static final class RustState {
+    @SuppressWarnings("unused")
+    private final long stateManagerPointer = 0;
+  }
+
+  public static StateManager createAndInitialize(long mempoolSize) {
+    var rustState = new RustState();
+    init(rustState, mempoolSize);
+    return new StateManager(rustState);
+  }
+
+  private final RustState rustState;
+
+  private final VertexStore vertexStore;
+
+  private final TransactionStore transactionStore;
+
+  private final RustMempool mempool;
+
+  private StateManager(RustState rustState) {
+    this.rustState = Objects.requireNonNull(rustState);
+    this.vertexStore = new RustVertexStore(rustState);
+    this.transactionStore = new RustTransactionStore(rustState);
+    this.mempool = new RustMempool(rustState);
+  }
+
+  public VertexStore vertexStore() {
+    return this.vertexStore;
+  }
+
+  public TransactionStore transactionStore() {
+    return this.transactionStore;
+  }
+
+  public RustMempool mempool() {
+    return this.mempool;
+  }
+
+  public void shutdown() {
+    cleanup(this.rustState);
+  }
+
+  private static native void init(RustState rustState, long mempoolSize);
+
+  private static native void cleanup(RustState rustState);
 }

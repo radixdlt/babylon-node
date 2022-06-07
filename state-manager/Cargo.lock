@@ -157,7 +157,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "stateman"
+name = "statemanager"
 version = "0.1.0"
 dependencies = [
  "jni",
