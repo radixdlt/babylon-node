@@ -71,10 +71,10 @@ import com.radixdlt.lang.Result;
 public class DecodeResult<T> {
 
   private Class<T> successClass;
-  private Class<Cause> failureClass;
+  private Class<? extends Cause> failureClass;
   private Codec codec;
 
-  public DecodeResult(Codec codec, Class<T> successClass, Class<Cause> failureClass) {
+  public DecodeResult(Codec codec, Class<T> successClass, Class<? extends Cause> failureClass) {
     this.successClass = successClass;
     this.failureClass = failureClass;
     this.codec = codec;

@@ -64,6 +64,7 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.exceptions.SborException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.interop.sbor.codec.Codec;
 import com.radixdlt.interop.sbor.codec.CodecMap;
@@ -90,9 +91,11 @@ public class RustMempool {
 
   public Transaction add(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
-    var encoded = this.codec.encode(transaction).unwrap();
-    var ret_sbor = add(this.rustState, encoded);
-    var result = new DecodeResult(this.codec, Unit.class, StateManagerError.class).decode(ret_sbor);
+    var encodedRequest = this.codec.encode(transaction)
+        .unwrapElse(c -> new SborException(Transaction.class, true, true, c.message()));
+    var encodedResponse = add(this.rustState, encodedRequest);
+
+    var result = new DecodeResult(this.codec, Unit.class, StateManagerError.class).decode(encodedResponse);
 
     // Handle Errors.
     Option<StateManagerError> optErr = result.toOptionErr();

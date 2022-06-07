@@ -77,10 +77,16 @@ public final class StateManager {
     System.loadLibrary("statemanager");
   }
 
+  private final RustState rustState;
+  private final VertexStore vertexStore;
+  private final TransactionStore transactionStore;
+  private final RustMempool mempool;
+
   /**
-   * Stores Rust state across JNI calls. Fields with "Ref" suffix are pointers to the Rust objects
-   * created and set on the Rust side via JNI env, and they should never be accessed in any other
-   * way. The remaining fields are read-only values (for now, but this might change) passed to Rust.
+   * Stores a pointer to the rust state manager across JNI calls.
+   * In the JNI model, this is equivalent to the Rust State "owning" the rust state manager memory.
+   * On each call into Rust, we map the stateManagerPointer onto a concrete implementation in Rust land,
+   *   and it uses that to access all state and make calls.
    */
   public static final class RustState {
     @SuppressWarnings("unused")
@@ -92,14 +98,6 @@ public final class StateManager {
     init(rustState, mempoolSize);
     return new StateManager(rustState);
   }
-
-  private final RustState rustState;
-
-  private final VertexStore vertexStore;
-
-  private final TransactionStore transactionStore;
-
-  private final RustMempool mempool;
 
   private StateManager(RustState rustState) {
     this.rustState = Objects.requireNonNull(rustState);

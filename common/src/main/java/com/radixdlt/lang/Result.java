@@ -73,6 +73,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -401,6 +402,21 @@ public sealed interface Result<T> permits Success, Failure {
     return fold(
         v -> {
           throw new IllegalStateException("Unwrap error: " + v.message());
+        },
+        Functions::id);
+  }
+
+  /**
+   * This method allows "unwrapping" the value stored inside the Result instance.
+   * If value is then the custom exception is thrown.
+   *
+   * @param mapToException a map from the cause to a RuntimeException
+   * @return value stored inside present instance.
+   */
+  default T unwrapElse(Function<? super Cause, RuntimeException> mapToException) {
+    return fold(
+        v -> {
+          throw mapToException.apply(v);
         },
         Functions::id);
   }
