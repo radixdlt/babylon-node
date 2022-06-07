@@ -69,7 +69,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.api.system.health.MovingAverage;
-import com.radixdlt.capability.Capabilities;
+import com.radixdlt.capability.v2.Capabilities;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.Message;

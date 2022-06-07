@@ -62,24 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.capability;
+package com.radixdlt.capability.v2;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import java.util.Set;
+import java.util.Map;
+import org.junit.Test;
 
-public class CapabilitiesModule extends AbstractModule {
-
-  private final Set<String> disabledCapabilitiesNames;
-
-  public CapabilitiesModule(Set<String> disabledCapabilitiesNames) {
-    this.disabledCapabilitiesNames = disabledCapabilitiesNames;
-  }
-
-  @Provides
-  @Singleton
-  Capabilities provideCapabilities() {
-    return new Capabilities(disabledCapabilitiesNames);
+public class CapabilitiesTest {
+  @Test
+  public void t() {
+    new RemotePeerCapability(
+        "test", Map.of("1", "1", "2", "2", "3", "3", "4", "4", "5", "5", "6", "6"));
   }
 }

@@ -69,7 +69,8 @@ import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.util.concurrent.RateLimiter;
-import com.radixdlt.capability.Capabilities;
+import com.radixdlt.capability.v2.Capabilities;
+import com.radixdlt.capability.v2.RemotePeerCapability;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Result;
@@ -145,7 +146,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
   private final RateCalculator outMessagesStats = new RateCalculator(Duration.ofSeconds(10), 128);
 
-  private Set<String> remotePeerCapabilitiesNames;
+  private Set<RemotePeerCapability> remotePeerCapabilities;
 
   public PeerChannel(
       P2PConfig config,
@@ -235,7 +236,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     this.remoteNodeId = successResult.remoteNodeId();
     this.frameCodec = new FrameCodec(successResult.secrets());
     this.remoteNewestForkName = successResult.newestForkName();
-    this.remotePeerCapabilitiesNames = successResult.remotePeerCapabilitiesNames();
+    this.remotePeerCapabilities = successResult.remotePeerCapabilities();
 
     this.state = ChannelState.ACTIVE;
 
@@ -372,8 +373,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     return remoteNewestForkName;
   }
 
-  public Set<String> getRemotePeerCapabilitiesNames() {
-    return remotePeerCapabilitiesNames;
+  public Set<RemotePeerCapability> getRemotePeerCapabilities() {
+    return remotePeerCapabilities;
   }
 
   @Override

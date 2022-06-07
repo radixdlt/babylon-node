@@ -66,7 +66,8 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.api.ApiModule;
-import com.radixdlt.capability.CapabilitiesModule;
+import com.radixdlt.capability.v2.CapabilitiesModule;
+import com.radixdlt.capability.v2.LedgerSyncCapability;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
@@ -94,7 +95,6 @@ import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.Optional;
-import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -215,7 +215,12 @@ public final class RadixNodeModule extends AbstractModule {
     var port = properties.get("api.port", DEFAULT_CORE_PORT);
     install(new ApiModule(bindAddress, port));
 
-    var disabledCapabilities = Set.of(properties.get("disabled_capabilities", "").split(","));
-    install(new CapabilitiesModule(disabledCapabilities));
+    var capabilitiesLedgerSyncEnabled =
+        Optional.ofNullable(properties.get("capabilities.ledger_sync.enabled"));
+    LedgerSyncCapability.Builder builder =
+        capabilitiesLedgerSyncEnabled
+            .map(it -> new LedgerSyncCapability.Builder(Boolean.parseBoolean(it)))
+            .orElse(LedgerSyncCapability.Builder.asDefault());
+    install(new CapabilitiesModule(builder.build()));
   }
 }

@@ -65,6 +65,7 @@
 package com.radixdlt.network.p2p;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.capability.v2.RemotePeerCapability;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 import java.util.Optional;
@@ -79,15 +80,15 @@ public interface PeersView {
     private String host;
     private int port;
     private boolean isOutbound;
-    private Set<String> capabilitiesNames;
+    private Set<RemotePeerCapability> capabilities;
 
     public static PeerChannelInfo create(
         Optional<RadixNodeUri> uri,
         String host,
         int port,
         boolean isOutbound,
-        Set<String> capabilitiesNames) {
-      return new PeerChannelInfo(uri, host, port, isOutbound, capabilitiesNames);
+        Set<RemotePeerCapability> capabilities) {
+      return new PeerChannelInfo(uri, host, port, isOutbound, capabilities);
     }
 
     private PeerChannelInfo(
@@ -95,12 +96,12 @@ public interface PeersView {
         String host,
         int port,
         boolean isOutbound,
-        Set<String> capabilitiesNames) {
+        Set<RemotePeerCapability> capabilities) {
       this.uri = uri;
       this.host = host;
       this.port = port;
       this.isOutbound = isOutbound;
-      this.capabilitiesNames = capabilitiesNames;
+      this.capabilities = capabilities;
     }
 
     public Optional<RadixNodeUri> getUri() {
@@ -119,8 +120,8 @@ public interface PeersView {
       return isOutbound;
     }
 
-    public Set<String> getCapabilitiesNames() {
-      return capabilitiesNames;
+    public Set<RemotePeerCapability> getCapabilities() {
+      return capabilities;
     }
 
     @Override
@@ -197,14 +198,6 @@ public interface PeersView {
   }
 
   Stream<PeerInfo> peers();
-
-  /**
-   * Returns the known peers which support the given capabilities.
-   *
-   * @param capabilitiesNames a set of capabilities names.
-   * @return a stream with the known peers which support the given capabilities.
-   */
-  Stream<PeerInfo> peers(Set<String> capabilitiesNames);
 
   default boolean hasPeer(BFTNode bftNode) {
     return peers().anyMatch(peer -> peer.nodeId.getPublicKey().equals(bftNode.getKey()));

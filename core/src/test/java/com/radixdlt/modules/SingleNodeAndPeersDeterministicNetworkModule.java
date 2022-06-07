@@ -77,7 +77,6 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.p2p.PeersView;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /** Module which injects a full one node network */
@@ -104,17 +103,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
             .limit(numPeers)
             .map(PeersView.PeerInfo::fromBftNode)
             .collect(ImmutableList.toImmutableList());
-    return new PeersView() {
-      @Override
-      public Stream<PeerInfo> peers() {
-        return peers.stream();
-      }
-
-      @Override
-      public Stream<PeerInfo> peers(Set<String> capabilitiesNames) {
-        return peers.stream().filter(it -> it.getChannels().contains(capabilitiesNames));
-      }
-    };
+    return peers::stream;
   }
 
   @Provides

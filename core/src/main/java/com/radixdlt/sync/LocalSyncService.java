@@ -64,11 +64,14 @@
 
 package com.radixdlt.sync;
 
+import static java.util.stream.Collectors.toSet;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.radixdlt.capability.CapabilityName;
+import com.radixdlt.capability.v2.Capabilities;
+import com.radixdlt.capability.v2.RemotePeerCapability;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
@@ -290,13 +293,22 @@ public final class LocalSyncService {
   }
 
   private ImmutableSet<BFTNode> choosePeersForSyncCheck() {
-    var ledgerSyncCapability = Set.of(CapabilityName.LEDGER_SYNC);
-    final var allPeers = this.peersView.peers(ledgerSyncCapability).collect(Collectors.toList());
+
+    final var allPeers =
+        this.peersView.peers().filter(this::filterByLedgerSync).collect(Collectors.toList());
     Collections.shuffle(allPeers);
     return allPeers.stream()
         .limit(this.syncConfig.syncCheckMaxPeers())
         .map(PeersView.PeerInfo::bftNode)
         .collect(ImmutableSet.toImmutableSet());
+  }
+
+  private boolean filterByLedgerSync(PeersView.PeerInfo peerInfo) {
+    return peerInfo.getChannels().stream()
+        .flatMap(peerChannelInfo -> peerChannelInfo.getCapabilities().stream())
+        .map(RemotePeerCapability::name)
+        .collect(toSet())
+        .contains(Capabilities.Name.LEDGER_SYNC.name());
   }
 
   private SyncState processStatusResponse(

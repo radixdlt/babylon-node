@@ -69,6 +69,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.inject.Provider;
+import com.radixdlt.capability.v2.Capabilities;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.Message;
 import com.radixdlt.network.messages.ConsensusEventMessage;
@@ -107,6 +108,8 @@ public class MessageCentralImplTest {
 
   @Mock private Provider<PeerControl> peerControl;
 
+  @Mock private Capabilities capabilities;
+
   @Test
   public void
       when_messagesOf_is_called__then_underlying_pipeline_should_run_on_rxjava_computation_pool()
@@ -131,6 +134,8 @@ public class MessageCentralImplTest {
     when(outboundEventQueueFactory.createEventQueue(anyInt(), any(Comparator.class)))
         .thenReturn(new SimplePriorityBlockingQueue<>(1, OutboundMessageEvent.comparator()));
 
+    when(capabilities.isMessageSupported(any())).thenReturn(true);
+
     MessageCentralImpl messageCentral =
         new MessageCentralImpl(
             messageCentralConfig,
@@ -141,7 +146,7 @@ public class MessageCentralImplTest {
             systemCounters,
             peerControl,
             Addressing.ofNetwork(Network.LOCALNET),
-            null);
+            capabilities);
 
     TestObserver<String> observer = TestObserver.create();
 

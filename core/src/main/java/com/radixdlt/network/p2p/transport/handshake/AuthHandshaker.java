@@ -67,11 +67,10 @@ package com.radixdlt.network.p2p.transport.handshake;
 import static com.radixdlt.crypto.HashUtils.kec256;
 import static com.radixdlt.utils.Bytes.bigIntegerToBytes;
 import static com.radixdlt.utils.Bytes.xor;
-import static java.util.stream.Collectors.*;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.capability.Capabilities;
-import com.radixdlt.capability.Capability;
+import com.radixdlt.capability.v2.Capabilities;
+import com.radixdlt.capability.v2.RemotePeerCapability;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECIESCoder;
 import com.radixdlt.crypto.ECKeyOps;
@@ -171,9 +170,7 @@ public final class AuthHandshaker {
         HashCode.fromBytes(nonce),
         networkId,
         Optional.of(newestForkName),
-        this.capabilities.getEnabledCapabilities().stream()
-            .map(Capability::capabilityName)
-            .collect(toSet()));
+        this.capabilities == null ? null : this.capabilities.toRemotePeerCapabilities());
   }
 
   public Pair<byte[], AuthHandshakeResult> handleInitialMessage(ByteBuf data) {
@@ -201,9 +198,7 @@ public final class AuthHandshaker {
               HashCode.fromBytes(ephemeralKey.getPublicKey().getBytes()),
               HashCode.fromBytes(nonce),
               Optional.of(newestForkName),
-              this.capabilities.getEnabledCapabilities().stream()
-                  .map(Capability::capabilityName)
-                  .collect(toSet()));
+              this.capabilities == null ? null : this.capabilities.toRemotePeerCapabilities());
       final var encodedResponse = serialization.toDson(response, DsonOutput.Output.WIRE);
 
       final var encryptedSize = encodedResponse.length + ECIESCoder.OVERHEAD_SIZE;
@@ -235,7 +230,7 @@ public final class AuthHandshaker {
               remoteEphemeralKey,
               message.getNonce(),
               message.getNewestForkName(),
-              message.getCapabilitiesNames());
+              message.getCapabilities());
       return Pair.of(packet, handshakeResult);
     } catch (PublicKeyException | InvalidCipherTextException | IOException ex) {
       return Pair.of(
@@ -268,7 +263,7 @@ public final class AuthHandshaker {
           remoteEphemeralKey,
           message.getNonce(),
           message.getNewestForkName(),
-          message.getCapabilitiesNames());
+          message.getCapabilities());
     } catch (PublicKeyException | InvalidCipherTextException ex) {
       return AuthHandshakeResult.error(
           String.format("Handshake decryption failed (%s)", ex.getMessage()), Optional.empty());
@@ -287,7 +282,7 @@ public final class AuthHandshaker {
       ECPublicKey remoteEphemeralKey,
       HashCode remoteNonce,
       Optional<String> remoteNewestForkName,
-      Set<String> remotePeerCapabilities) {
+      Set<RemotePeerCapability> remotePeerCapabilities) {
     final var initiatePacket = initiatePacketOpt.get();
     final var responsePacket = responsePacketOpt.get();
     final var remotePubKey = remotePubKeyOpt.get();

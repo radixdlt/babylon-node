@@ -79,6 +79,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.capability.v2.LedgerSyncCapability;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -92,6 +93,7 @@ import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.network.p2p.PeersView.PeerInfo;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
@@ -110,6 +112,8 @@ import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.transactions.Transaction;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
@@ -684,7 +688,17 @@ public class LocalSyncServiceTest {
   }
 
   private void setupPeersView(BFTNode... bftNodes) {
-    when(peersView.peers()).thenReturn(Stream.of(bftNodes).map(PeerInfo::fromBftNode));
+    var peerChannelInfo =
+        PeersView.PeerChannelInfo.create(
+            Optional.empty(),
+            "",
+            0,
+            true,
+            Set.of(LedgerSyncCapability.Builder.asDefault().build().toRemotePeerCapability()));
+    var channels = ImmutableList.of(peerChannelInfo);
+    var peerInfoStream =
+        Stream.of(bftNodes).map(it -> PeerInfo.create(NodeId.fromPublicKey(it.getKey()), channels));
+    when(peersView.peers()).thenReturn(peerInfoStream);
     Arrays.stream(bftNodes).forEach(peer -> when(peersView.hasPeer(peer)).thenReturn(true));
   }
 

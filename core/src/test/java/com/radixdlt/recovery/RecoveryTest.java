@@ -112,7 +112,6 @@ import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.CommittedReader;
 import io.reactivex.rxjava3.schedulers.Timed;
-
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -204,27 +203,13 @@ public class RecoveryTest {
         new AbstractModule() {
           @Override
           protected void configure() {
-            bind(PeersView.class).toInstance(emptyPeersView());
+            bind(PeersView.class).toInstance(Stream::of);
             bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
             bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(ImmutableList.of(self));
             bind(Environment.class).toInstance(network.createSender(BFTNode.create(self.getKey())));
             bindConstant()
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
-          }
-
-          private PeersView emptyPeersView() {
-            return new PeersView() {
-              @Override
-              public Stream<PeerInfo> peers() {
-                return Stream.empty();
-              }
-
-              @Override
-              public Stream<PeerInfo> peers(Set<String> capabilitiesNames) {
-                return Stream.empty();
-              }
-            };
           }
         },
         new PersistedNodeForTestingModule());

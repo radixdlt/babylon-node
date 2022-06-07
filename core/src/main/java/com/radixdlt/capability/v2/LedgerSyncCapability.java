@@ -62,52 +62,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package com.radixdlt.capability.v2;
 
-import static java.util.stream.Collectors.*;
-import static java.util.stream.Collectors.groupingBy;
-
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.network.p2p.transport.PeerChannel;
-import java.util.List;
+import com.radixdlt.network.Message;
+import com.radixdlt.network.messages.LedgerStatusUpdateMessage;
+import com.radixdlt.network.messages.StatusResponseMessage;
+import com.radixdlt.network.messages.SyncResponseMessage;
 import java.util.Map;
-import java.util.stream.Stream;
-import javax.inject.Inject;
+import java.util.Set;
 
-/** A Peers view using PeersManager */
-public final class PeerManagerPeersView implements PeersView {
-  private final PeerManager peerManager;
+public class LedgerSyncCapability {
+  private final Capabilities.Name name = Capabilities.Name.LEDGER_SYNC;
+  private boolean isEnabled;
+  // the subset of messages which should be discarded if received by other peers when the Capability
+  // is disabled.
+  private final Set<Class<? extends Message>> unsupportedMessagesWhenDisabled;
 
-  @Inject
-  public PeerManagerPeersView(PeerManager peerManager) {
-    this.peerManager = peerManager;
+  private LedgerSyncCapability(Builder builder) {
+    this.isEnabled = builder.isEnabled;
+    this.unsupportedMessagesWhenDisabled =
+        Set.of(
+            SyncResponseMessage.class,
+            StatusResponseMessage.class,
+            LedgerStatusUpdateMessage.class);
   }
 
-  @Override
-  public Stream<PeerInfo> peers() {
-    final var grouppedByNodeId =
-        this.peerManager.activeChannels().stream()
-            .collect(groupingBy(PeerChannel::getRemoteNodeId));
-
-    return getPeerInfo(grouppedByNodeId);
+  public String getName() {
+    return name.name();
   }
 
-  private Stream<PeerInfo> getPeerInfo(Map<NodeId, List<PeerChannel>> grouppedByNodeId) {
-    return grouppedByNodeId.entrySet().stream().map(this::toPeerInfo);
+  public boolean isEnabled() {
+    return isEnabled;
   }
 
-  private PeerInfo toPeerInfo(Map.Entry<NodeId, List<PeerChannel>> e) {
-    final var channelsInfo =
-        e.getValue().stream()
-            .map(
-                c ->
-                    PeerChannelInfo.create(
-                        c.getUri(),
-                        c.getHost(),
-                        c.getPort(),
-                        c.isOutbound(),
-                        c.getRemotePeerCapabilities()))
-            .collect(ImmutableList.toImmutableList());
-    return PeerInfo.create(e.getKey(), channelsInfo);
+  public boolean isMessageSupported(Message message) {
+    return !this.unsupportedMessagesWhenDisabled.contains(message);
+  }
+
+  public RemotePeerCapability toRemotePeerCapability() {
+    return new RemotePeerCapability(this.getName(), Map.of());
+  }
+
+  public static class Builder {
+    private final boolean isEnabled;
+
+    public static Builder asDefault() {
+      return new Builder(true);
+    }
+
+    public Builder(boolean isEnabled) {
+      this.isEnabled = isEnabled;
+    }
+
+    public LedgerSyncCapability build() {
+      return new LedgerSyncCapability(this);
+    }
   }
 }

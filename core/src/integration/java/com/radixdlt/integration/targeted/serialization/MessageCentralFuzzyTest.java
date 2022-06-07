@@ -134,7 +134,8 @@ public class MessageCentralFuzzyTest {
             queueFactory,
             new SystemCountersImpl(),
             () -> peerControl,
-            Addressing.ofNetwork(Network.LOCALNET), null);
+            Addressing.ofNetwork(Network.LOCALNET),
+            null);
 
     var counter = new AtomicLong(0);
 

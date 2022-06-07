@@ -117,7 +117,8 @@ public class Capabilities {
   /**
    * Returns {@code true} if the specified message is supported.
    *
-   * @param message @@return {@code true} if the specified message is supported.
+   * @param message a network {@link Message}
+   * @return {@code true} if the specified message is supported.
    */
   public boolean isMessageSupported(Message message) {
     return !this.unsupportedMessages.contains(message);

@@ -62,52 +62,26 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package com.radixdlt.capability.v2;
 
-import static java.util.stream.Collectors.*;
-import static java.util.stream.Collectors.groupingBy;
-
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.network.p2p.transport.PeerChannel;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
-import javax.inject.Inject;
+import java.util.Objects;
 
-/** A Peers view using PeersManager */
-public final class PeerManagerPeersView implements PeersView {
-  private final PeerManager peerManager;
-
-  @Inject
-  public PeerManagerPeersView(PeerManager peerManager) {
-    this.peerManager = peerManager;
-  }
-
-  @Override
-  public Stream<PeerInfo> peers() {
-    final var grouppedByNodeId =
-        this.peerManager.activeChannels().stream()
-            .collect(groupingBy(PeerChannel::getRemoteNodeId));
-
-    return getPeerInfo(grouppedByNodeId);
-  }
-
-  private Stream<PeerInfo> getPeerInfo(Map<NodeId, List<PeerChannel>> grouppedByNodeId) {
-    return grouppedByNodeId.entrySet().stream().map(this::toPeerInfo);
-  }
-
-  private PeerInfo toPeerInfo(Map.Entry<NodeId, List<PeerChannel>> e) {
-    final var channelsInfo =
-        e.getValue().stream()
-            .map(
-                c ->
-                    PeerChannelInfo.create(
-                        c.getUri(),
-                        c.getHost(),
-                        c.getPort(),
-                        c.isOutbound(),
-                        c.getRemotePeerCapabilities()))
-            .collect(ImmutableList.toImmutableList());
-    return PeerInfo.create(e.getKey(), channelsInfo);
+/**
+ * Represents a Capability supported by a remote peer. The rationale behind using String and Map is
+ * to be able to support capabilities not yet known by a node.
+ *
+ * @param name a Capability name
+ * @param configuration a map representing the name and value of each Capability configuration.
+ */
+public record RemotePeerCapability(String name, Map<String, String> configuration) {
+  public RemotePeerCapability {
+    Objects.requireNonNull(name);
+    Objects.requireNonNull(configuration);
+    int configMaxSize = 5;
+    if (configuration.size() > configMaxSize) {
+      throw new IllegalArgumentException(
+          String.format("Configuration map can't have more than %s entries.", configMaxSize));
+    }
   }
 }

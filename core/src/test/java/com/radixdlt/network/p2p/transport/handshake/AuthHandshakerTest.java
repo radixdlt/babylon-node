@@ -66,8 +66,8 @@ package com.radixdlt.network.p2p.transport.handshake;
 
 import static org.junit.Assert.*;
 
-import com.radixdlt.capability.Capabilities;
-import com.radixdlt.capability.Capability;
+import com.radixdlt.capability.v2.Capabilities;
+import com.radixdlt.capability.v2.LedgerSyncCapability;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeError;
@@ -76,15 +76,14 @@ import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import io.netty.buffer.Unpooled;
 import java.security.SecureRandom;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.Test;
 
 public final class AuthHandshakerTest {
   private final Serialization serialization = DefaultSerialization.getInstance();
   private final SecureRandom secureRandom = new SecureRandom();
 
-  private final Capabilities capabilities = new Capabilities(Set.of());
+  private final Capabilities capabilities =
+      new Capabilities(LedgerSyncCapability.Builder.asDefault().build());
 
   @Test
   public void test_auth_handshake() throws Exception {
@@ -150,10 +149,11 @@ public final class AuthHandshakerTest {
   }
 
   @Test
-  public void handle_auth_handshake_with_init_message_null_capabilities() throws Exception {
+  public void handle_auth_handshake_with_ledger_sync_disabled() throws Exception {
     final var nodeKey1 = ECKeyPair.generateNew();
     final var nodeKey2 = ECKeyPair.generateNew();
-    Capabilities peer1Capabilities = new Capabilities(Set.of("ledger-sync"));
+    Capabilities peer1Capabilities =
+        new Capabilities(new LedgerSyncCapability.Builder(false).build());
     final var handshaker1 =
         new AuthHandshaker(
             serialization,
@@ -186,9 +186,6 @@ public final class AuthHandshakerTest {
     assertArrayEquals(handshaker1Result.secrets().token, handshaker2Result.secrets().token);
 
     assertEquals(
-        peer1Capabilities.getEnabledCapabilities().stream()
-            .map(Capability::capabilityName)
-            .collect(Collectors.toSet()),
-        handshaker2Result.remotePeerCapabilitiesNames());
+        peer1Capabilities.toRemotePeerCapabilities(), handshaker2Result.remotePeerCapabilities());
   }
 }

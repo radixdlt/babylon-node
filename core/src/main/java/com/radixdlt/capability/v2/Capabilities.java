@@ -62,52 +62,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package com.radixdlt.capability.v2;
 
-import static java.util.stream.Collectors.*;
-import static java.util.stream.Collectors.groupingBy;
+import com.radixdlt.network.Message;
+import java.util.HashSet;
+import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.network.p2p.transport.PeerChannel;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-import javax.inject.Inject;
+public record Capabilities(LedgerSyncCapability ledgerSyncCapability) {
 
-/** A Peers view using PeersManager */
-public final class PeerManagerPeersView implements PeersView {
-  private final PeerManager peerManager;
-
-  @Inject
-  public PeerManagerPeersView(PeerManager peerManager) {
-    this.peerManager = peerManager;
+  /**
+   * Returns {@code true} if the Ledger Sync Capability is enabled.
+   *
+   * @return {@code true} if the Ledger Sync Capability is enabled.
+   */
+  public boolean isLedgerSyncEnabled() {
+    return this.ledgerSyncCapability.isEnabled();
   }
 
-  @Override
-  public Stream<PeerInfo> peers() {
-    final var grouppedByNodeId =
-        this.peerManager.activeChannels().stream()
-            .collect(groupingBy(PeerChannel::getRemoteNodeId));
-
-    return getPeerInfo(grouppedByNodeId);
+  /**
+   * Returns {@code true} if the specified message is supported.
+   *
+   * @param message a network {@link Message}
+   * @return {@code true} if the specified message is supported.
+   */
+  public boolean isMessageSupported(Message message) {
+    return ledgerSyncCapability.isEnabled() && ledgerSyncCapability.isMessageSupported(message);
   }
 
-  private Stream<PeerInfo> getPeerInfo(Map<NodeId, List<PeerChannel>> grouppedByNodeId) {
-    return grouppedByNodeId.entrySet().stream().map(this::toPeerInfo);
+  public Set<RemotePeerCapability> toRemotePeerCapabilities() {
+    var caps = new HashSet<RemotePeerCapability>();
+    if (isLedgerSyncEnabled()) {
+      caps.add(this.ledgerSyncCapability.toRemotePeerCapability());
+    }
+    return caps;
   }
 
-  private PeerInfo toPeerInfo(Map.Entry<NodeId, List<PeerChannel>> e) {
-    final var channelsInfo =
-        e.getValue().stream()
-            .map(
-                c ->
-                    PeerChannelInfo.create(
-                        c.getUri(),
-                        c.getHost(),
-                        c.getPort(),
-                        c.isOutbound(),
-                        c.getRemotePeerCapabilities()))
-            .collect(ImmutableList.toImmutableList());
-    return PeerInfo.create(e.getKey(), channelsInfo);
+  /** The names of the Capabilities defined in the system. */
+  public enum Name {
+    LEDGER_SYNC("ledger-sync");
+
+    private final String name;
+
+    Name(String name) {
+      this.name = name;
+    }
   }
 }

@@ -67,7 +67,8 @@ package com.radixdlt.network.p2p.transport.handshake;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
-import com.radixdlt.capability.CapabilityName;
+import com.radixdlt.capability.v2.LedgerSyncCapability;
+import com.radixdlt.capability.v2.RemotePeerCapability;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -95,18 +96,20 @@ public final class AuthResponseMessage {
 
   @JsonProperty("capabilities")
   @DsonOutput(DsonOutput.Output.ALL)
-  private final Set<String> capabilitiesNames;
+  private final Set<RemotePeerCapability> capabilities;
 
   @JsonCreator
   public static AuthResponseMessage deserialize(
       @JsonProperty(value = "ephemeralPublicKey", required = true) HashCode ephemeralPublicKey,
       @JsonProperty(value = "nonce", required = true) HashCode nonce,
       @JsonProperty("newestForkName") String rawNewestForkName,
-      @JsonProperty("capabilities") Set<String> nullableCapabilities) {
+      @JsonProperty("capabilities") Set<RemotePeerCapability> nullableCapabilities) {
     final var newestForkName =
         rawNewestForkName == null ? Optional.<String>empty() : Optional.of(rawNewestForkName);
     final var capabilities =
-        nullableCapabilities == null ? CapabilityName.values() : nullableCapabilities;
+        nullableCapabilities == null
+            ? Set.of(LedgerSyncCapability.Builder.asDefault().build().toRemotePeerCapability())
+            : nullableCapabilities;
 
     return new AuthResponseMessage(ephemeralPublicKey, nonce, newestForkName, capabilities);
   }
@@ -115,11 +118,11 @@ public final class AuthResponseMessage {
       HashCode ephemeralPublicKey,
       HashCode nonce,
       Optional<String> newestForkName,
-      Set<String> capabilitiesNames) {
+      Set<RemotePeerCapability> capabilities) {
     this.ephemeralPublicKey = ephemeralPublicKey;
     this.nonce = nonce;
     this.newestForkName = newestForkName;
-    this.capabilitiesNames = capabilitiesNames;
+    this.capabilities = capabilities;
   }
 
   public HashCode getEphemeralPublicKey() {
@@ -140,8 +143,8 @@ public final class AuthResponseMessage {
     return this.newestForkName.orElse(null);
   }
 
-  public Set<String> getCapabilitiesNames() {
-    return capabilitiesNames;
+  public Set<RemotePeerCapability> getCapabilities() {
+    return capabilities;
   }
 
   @Override
@@ -154,11 +157,11 @@ public final class AuthResponseMessage {
         && Objects.equals(ephemeralPublicKey, that.ephemeralPublicKey)
         && Objects.equals(nonce, that.nonce)
         && Objects.equals(newestForkName, that.newestForkName)
-        && Objects.equals(capabilitiesNames, that.capabilitiesNames);
+        && Objects.equals(capabilities, that.capabilities);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ephemeralPublicKey, nonce, newestForkName, capabilitiesNames);
+    return Objects.hash(ephemeralPublicKey, nonce, newestForkName, capabilities);
   }
 }

@@ -68,7 +68,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
-import com.radixdlt.capability.CapabilityName;
+import com.radixdlt.capability.v2.LedgerSyncCapability;
+import com.radixdlt.capability.v2.RemotePeerCapability;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -106,7 +107,7 @@ public final class AuthInitiateMessage {
   @JsonProperty("capabilities")
   @DsonOutput(DsonOutput.Output.ALL)
   @JsonInclude()
-  private final Set<String> capabilitiesNames;
+  private final Set<RemotePeerCapability> capabilities;
 
   @JsonCreator
   public static AuthInitiateMessage deserialize(
@@ -115,11 +116,13 @@ public final class AuthInitiateMessage {
       @JsonProperty(value = "nonce", required = true) HashCode nonce,
       @JsonProperty("networkId") int networkId,
       @JsonProperty("newestForkName") String rawNewestForkName,
-      @JsonProperty("capabilities") Set<String> nullableCapabilities) {
+      @JsonProperty("capabilities") Set<RemotePeerCapability> nullableCapabilities) {
     final var newestForkName =
         rawNewestForkName == null ? Optional.<String>empty() : Optional.of(rawNewestForkName);
     final var capabilities =
-        nullableCapabilities == null ? CapabilityName.values() : nullableCapabilities;
+        nullableCapabilities == null
+            ? Set.of(LedgerSyncCapability.Builder.asDefault().build().toRemotePeerCapability())
+            : nullableCapabilities;
     return new AuthInitiateMessage(
         signature, publicKey, nonce, networkId, newestForkName, capabilities);
   }
@@ -130,13 +133,13 @@ public final class AuthInitiateMessage {
       HashCode nonce,
       int networkId,
       Optional<String> newestForkName,
-      Set<String> capabilitiesNames) {
+      Set<RemotePeerCapability> capabilitiesNames) {
     this.signature = signature;
     this.publicKey = publicKey;
     this.nonce = nonce;
     this.networkId = networkId;
     this.newestForkName = newestForkName;
-    this.capabilitiesNames = capabilitiesNames;
+    this.capabilities = capabilitiesNames;
   }
 
   public ECDSASignature getSignature() {
@@ -165,8 +168,8 @@ public final class AuthInitiateMessage {
     return this.newestForkName.orElse(null);
   }
 
-  public Set<String> getCapabilitiesNames() {
-    return capabilitiesNames;
+  public Set<RemotePeerCapability> getCapabilities() {
+    return capabilities;
   }
 
   @Override
@@ -181,11 +184,11 @@ public final class AuthInitiateMessage {
         && Objects.equals(nonce, that.nonce)
         && networkId == that.networkId
         && Objects.equals(newestForkName, that.newestForkName)
-        && Objects.equals(capabilitiesNames, that.capabilitiesNames);
+        && Objects.equals(capabilities, that.capabilities);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(signature, publicKey, nonce, networkId, newestForkName, capabilitiesNames);
+    return Objects.hash(signature, publicKey, nonce, networkId, newestForkName, capabilities);
   }
 }

@@ -64,7 +64,7 @@
 
 package com.radixdlt.network.p2p.transport;
 
-import com.radixdlt.capability.Capabilities;
+import com.radixdlt.capability.v2.Capabilities;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;

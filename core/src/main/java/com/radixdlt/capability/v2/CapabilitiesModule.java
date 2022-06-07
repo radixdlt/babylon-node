@@ -62,52 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package com.radixdlt.capability.v2;
 
-import static java.util.stream.Collectors.*;
-import static java.util.stream.Collectors.groupingBy;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.network.p2p.transport.PeerChannel;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-import javax.inject.Inject;
+public class CapabilitiesModule extends AbstractModule {
 
-/** A Peers view using PeersManager */
-public final class PeerManagerPeersView implements PeersView {
-  private final PeerManager peerManager;
+  private final LedgerSyncCapability ledgerSyncCapability;
 
-  @Inject
-  public PeerManagerPeersView(PeerManager peerManager) {
-    this.peerManager = peerManager;
+  public CapabilitiesModule(LedgerSyncCapability ledgerSyncCapability) {
+    this.ledgerSyncCapability = ledgerSyncCapability;
   }
 
-  @Override
-  public Stream<PeerInfo> peers() {
-    final var grouppedByNodeId =
-        this.peerManager.activeChannels().stream()
-            .collect(groupingBy(PeerChannel::getRemoteNodeId));
-
-    return getPeerInfo(grouppedByNodeId);
-  }
-
-  private Stream<PeerInfo> getPeerInfo(Map<NodeId, List<PeerChannel>> grouppedByNodeId) {
-    return grouppedByNodeId.entrySet().stream().map(this::toPeerInfo);
-  }
-
-  private PeerInfo toPeerInfo(Map.Entry<NodeId, List<PeerChannel>> e) {
-    final var channelsInfo =
-        e.getValue().stream()
-            .map(
-                c ->
-                    PeerChannelInfo.create(
-                        c.getUri(),
-                        c.getHost(),
-                        c.getPort(),
-                        c.isOutbound(),
-                        c.getRemotePeerCapabilities()))
-            .collect(ImmutableList.toImmutableList());
-    return PeerInfo.create(e.getKey(), channelsInfo);
+  @Provides
+  @Singleton
+  Capabilities provideCapabilities() {
+    return new Capabilities(this.ledgerSyncCapability);
   }
 }
