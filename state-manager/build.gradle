@@ -84,14 +84,19 @@ spotless {
     }
 }
 
+spotlessRustApply.dependsOn("runRustClippy")
 spotlessRustApply.dependsOn("runRustFormat")
 
-task runRustFormat(type:Exec) {
+task runRustClippy(type: Exec) {
+    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
+}
+
+task runRustFormat(type: Exec) {
     commandLine 'cargo', 'fmt'
 }
 
 // TBC - We should consider using some kind of gradle rust build plug-in
 // TBC - We should work out how to build multi-target
-task buildRustDebug(type:Exec) {
+task buildRustDebug(type: Exec) {
     commandLine 'cargo', 'build'
 }

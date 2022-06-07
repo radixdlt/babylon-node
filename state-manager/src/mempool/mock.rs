@@ -178,7 +178,7 @@ mod tests {
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
-        let get = mp.get_txns(3, &HashSet::from([tv1.clone(), tv3.clone()]));
+        let get = mp.get_txns(3, &HashSet::from([tv1.clone(), tv3]));
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv2));
 
