@@ -11,7 +11,7 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_insertTran
     j_state_version: jlong,
     j_transaction_bytes: jbyteArray,
 ) {
-    let state_manager = JNIStateManager::get_state_manager(env, interop_state);
+    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
 
     let transaction_bytes: Vec<u8> = env
         .convert_byte_array(j_transaction_bytes)
@@ -32,7 +32,7 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
     interop_state: JObject,
     j_state_version: jlong,
 ) -> jbyteArray {
-    let state_manager = JNIStateManager::get_state_manager(env, interop_state);
+    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
 
     // Only get the lock for transaction store
     let transaction_store = state_manager.transaction_store.lock().unwrap();

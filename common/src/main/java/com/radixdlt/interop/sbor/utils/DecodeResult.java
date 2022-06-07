@@ -62,60 +62,26 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.interop.sbor.utils;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import com.radixdlt.interop.sbor.codec.Codec;
+import com.radixdlt.lang.Cause;
+import com.radixdlt.lang.Result;
 
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.transactions.Transaction;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import org.junit.Test;
+public class DecodeResult<T> {
 
-public final class StateManagerTest {
+  private Class<T> successClass;
+  private Class<Cause> failureClass;
+  private Codec codec;
 
-  @Test
-  public void test_rust_interop() throws Exception {
+  public DecodeResult(Codec codec, Class<T> successClass, Class<Cause> failureClass) {
+    this.successClass = successClass;
+    this.failureClass = failureClass;
+    this.codec = codec;
+  }
 
-    final var mempoolSize = 100;
-    final var stateManagerNode1 = StateManager.create(mempoolSize);
-    final var stateManagerNode2 = StateManager.create(mempoolSize);
-
-    // Just to check that concurrent access is possible
-    var rand = new Random();
-    var cdl = new CountDownLatch(1000);
-    for (int i = 0; i < 1000; i++) {
-      new Thread(
-              () -> {
-                var tx = HashUtils.random256();
-                var stateVer = rand.nextLong();
-                stateManagerNode1.transactionStore().insertTransaction(stateVer, tx.asBytes());
-                assertArrayEquals(
-                    tx.asBytes(),
-                    stateManagerNode1.transactionStore().getTransactionAtStateVersion(stateVer));
-                cdl.countDown();
-              })
-          .start();
-    }
-
-    final var vertex = new byte[] {3, 4, 5};
-    assertFalse(stateManagerNode1.vertexStore().containsVertex(vertex));
-    stateManagerNode1.vertexStore().insertVertex(vertex);
-    assertTrue(stateManagerNode1.vertexStore().containsVertex(vertex));
-    assertFalse(stateManagerNode2.vertexStore().containsVertex(vertex));
-
-    final var payload = new byte[] {1, 2, 3, 4, 5};
-    final var transaction = Transaction.create(payload);
-    stateManagerNode1.mempool().add(transaction);
-    try {
-      stateManagerNode1.mempool().add(transaction);
-    } catch (Exception MempoolDuplicateException) {
-    }
-
-    cdl.await();
-    stateManagerNode1.shutdown();
-    stateManagerNode2.shutdown();
+  public Result<T> decode(byte[] sbor) {
+    var either = codec.decodeEither(sbor, failureClass, successClass).unwrap();
+    return either.fold(Result::err, Result::ok);
   }
 }

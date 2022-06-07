@@ -64,58 +64,59 @@
 
 package com.radixdlt.statemanager;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static com.radixdlt.interop.sbor.codec.ClassField.plain;
+import static com.radixdlt.lang.Result.all;
 
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.transactions.Transaction;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import org.junit.Test;
+import com.radixdlt.interop.sbor.api.DecoderApi;
+import com.radixdlt.interop.sbor.codec.ClassCodec;
+import com.radixdlt.interop.sbor.codec.ClassField;
+import com.radixdlt.lang.Cause;
+import com.radixdlt.lang.Result;
+import java.util.List;
+import java.util.Map;
 
-public final class StateManagerTest {
+public class StateManagerError implements Cause {
 
-  @Test
-  public void test_rust_interop() throws Exception {
+  private static final Map<Short, StateManagerErrorCode> codeMap =
+      Map.of(
+          (short) 0, StateManagerErrorCode.STATE_MANAGER_ERROR_CODE_JNI_ERROR,
+          (short) 1, StateManagerErrorCode.STATE_MANAGER_ERROR_CODE_SBOR_ERROR,
+          (short) 0x10, StateManagerErrorCode.STATE_MANAGER_ERROR_CODE_MEMPOOL_FULL,
+          (short) 0x11, StateManagerErrorCode.STATE_MANAGER_ERROR_CODE_MEMPOOL_DUPLICATE);
+  private final short errorCode;
+  private final String message;
 
-    final var mempoolSize = 100;
-    final var stateManagerNode1 = StateManager.create(mempoolSize);
-    final var stateManagerNode2 = StateManager.create(mempoolSize);
+  public StateManagerError(short errorCode, String message) {
+    this.errorCode = errorCode;
+    this.message = message;
+  }
 
-    // Just to check that concurrent access is possible
-    var rand = new Random();
-    var cdl = new CountDownLatch(1000);
-    for (int i = 0; i < 1000; i++) {
-      new Thread(
-              () -> {
-                var tx = HashUtils.random256();
-                var stateVer = rand.nextLong();
-                stateManagerNode1.transactionStore().insertTransaction(stateVer, tx.asBytes());
-                assertArrayEquals(
-                    tx.asBytes(),
-                    stateManagerNode1.transactionStore().getTransactionAtStateVersion(stateVer));
-                cdl.countDown();
-              })
-          .start();
+  private short getRawErrorCode() {
+    return this.errorCode;
+  }
+
+  public StateManagerErrorCode getErrorCode() {
+    return StateManagerError.codeMap.get(this.errorCode);
+  }
+
+  @Override
+  public String message() {
+    return message;
+  }
+
+  /** SBOR decoding */
+  public static class StateManagerErrorCodec implements ClassCodec<StateManagerError> {
+    @Override
+    public List<ClassField<StateManagerError>> fields() {
+      return List.of(
+          plain(short.class, StateManagerError::getRawErrorCode),
+          plain(String.class, StateManagerError::message));
     }
 
-    final var vertex = new byte[] {3, 4, 5};
-    assertFalse(stateManagerNode1.vertexStore().containsVertex(vertex));
-    stateManagerNode1.vertexStore().insertVertex(vertex);
-    assertTrue(stateManagerNode1.vertexStore().containsVertex(vertex));
-    assertFalse(stateManagerNode2.vertexStore().containsVertex(vertex));
-
-    final var payload = new byte[] {1, 2, 3, 4, 5};
-    final var transaction = Transaction.create(payload);
-    stateManagerNode1.mempool().add(transaction);
-    try {
-      stateManagerNode1.mempool().add(transaction);
-    } catch (Exception MempoolDuplicateException) {
+    @Override
+    public Result<StateManagerError> decodeFields(DecoderApi decoder) {
+      return all(decoder.decode(short.class), decoder.decode(String.class))
+          .map(StateManagerError::new);
     }
-
-    cdl.await();
-    stateManagerNode1.shutdown();
-    stateManagerNode2.shutdown();
   }
 }

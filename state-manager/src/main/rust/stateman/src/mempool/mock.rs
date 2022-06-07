@@ -3,7 +3,7 @@ use std::collections::HashSet;
 
 pub struct MockMempool {
     max_size: usize,
-    data: HashSet<Vec<u8>>,
+    data: HashSet<Transaction>,
 }
 
 impl MockMempool {
@@ -16,21 +16,21 @@ impl MockMempool {
 }
 
 impl Mempool for MockMempool {
-    fn add(&mut self, transaction: Vec<u8>) -> Result<Vec<u8>, MempoolError> {
+    fn add(&mut self, transaction: Transaction) -> Result<(), MempoolError> {
         let len = self.data.len();
 
         if len >= self.max_size {
             return Err(MempoolError::Full(len, self.max_size));
         }
 
-        if !self.data.insert(transaction.clone()) {
+        if !self.data.insert(transaction) {
             return Err(MempoolError::Duplicate);
         }
 
-        Ok(transaction)
+        Ok(())
     }
 
-    fn committed(&mut self, txns: &HashSet<Vec<u8>>) {
+    fn committed(&mut self, txns: &HashSet<Transaction>) {
         for t in txns {
             self.data.remove(t);
         }
@@ -40,7 +40,7 @@ impl Mempool for MockMempool {
         self.data.len()
     }
 
-    fn get_txns(&self, count: usize, seen: &HashSet<Vec<u8>>) -> HashSet<Vec<u8>> {
+    fn get_txns(&self, count: usize, seen: &HashSet<Transaction>) -> HashSet<Transaction> {
         self.data.difference(seen).take(count).cloned().collect()
     }
 }
@@ -48,12 +48,26 @@ impl Mempool for MockMempool {
 #[cfg(test)]
 mod tests {
     use crate::mempool::mock::*;
+    use crate::types::*;
 
     #[test]
     fn mock_test() {
-        let tv1 = vec![1u8; 32];
-        let tv2 = vec![2u8; 32];
-        let tv3 = vec![3u8; 32];
+        let pl1 = vec![1u8; 32];
+        let pl2 = vec![2u8; 32];
+        let pl3 = vec![3u8; 32];
+
+        let tv1 = Transaction {
+            payload: pl1.clone(),
+            id: Aid { bytes: pl1 },
+        };
+        let tv2 = Transaction {
+            payload: pl2.clone(),
+            id: Aid { bytes: pl2 },
+        };
+        let tv3 = Transaction {
+            payload: pl3.clone(),
+            id: Aid { bytes: pl3 },
+        };
 
         let mut mp = MockMempool::new(2);
         assert_eq!(mp.max_size, 2);

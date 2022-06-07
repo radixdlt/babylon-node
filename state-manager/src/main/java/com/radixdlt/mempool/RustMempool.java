@@ -62,60 +62,54 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.mempool;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.interop.sbor.codec.Codec;
+import com.radixdlt.interop.sbor.codec.CodecMap;
+import com.radixdlt.interop.sbor.utils.DecodeResult;
+import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Unit;
+import com.radixdlt.statemanager.StateManager.RustState;
+import com.radixdlt.statemanager.StateManagerError;
 import com.radixdlt.transactions.Transaction;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import org.junit.Test;
+import java.util.Objects;
 
-public final class StateManagerTest {
+public class RustMempool {
+  private final RustState rustState;
+  private Codec codec =
+      new Codec(
+          new CodecMap()
+              .register(Transaction.class, new Transaction.TransactionCodec())
+              .register(AID.class, new AID.AIDCodec())
+              .register(StateManagerError.class, new StateManagerError.StateManagerErrorCodec()));
 
-  @Test
-  public void test_rust_interop() throws Exception {
-
-    final var mempoolSize = 100;
-    final var stateManagerNode1 = StateManager.create(mempoolSize);
-    final var stateManagerNode2 = StateManager.create(mempoolSize);
-
-    // Just to check that concurrent access is possible
-    var rand = new Random();
-    var cdl = new CountDownLatch(1000);
-    for (int i = 0; i < 1000; i++) {
-      new Thread(
-              () -> {
-                var tx = HashUtils.random256();
-                var stateVer = rand.nextLong();
-                stateManagerNode1.transactionStore().insertTransaction(stateVer, tx.asBytes());
-                assertArrayEquals(
-                    tx.asBytes(),
-                    stateManagerNode1.transactionStore().getTransactionAtStateVersion(stateVer));
-                cdl.countDown();
-              })
-          .start();
-    }
-
-    final var vertex = new byte[] {3, 4, 5};
-    assertFalse(stateManagerNode1.vertexStore().containsVertex(vertex));
-    stateManagerNode1.vertexStore().insertVertex(vertex);
-    assertTrue(stateManagerNode1.vertexStore().containsVertex(vertex));
-    assertFalse(stateManagerNode2.vertexStore().containsVertex(vertex));
-
-    final var payload = new byte[] {1, 2, 3, 4, 5};
-    final var transaction = Transaction.create(payload);
-    stateManagerNode1.mempool().add(transaction);
-    try {
-      stateManagerNode1.mempool().add(transaction);
-    } catch (Exception MempoolDuplicateException) {
-    }
-
-    cdl.await();
-    stateManagerNode1.shutdown();
-    stateManagerNode2.shutdown();
+  public RustMempool(RustState rustState) {
+    this.rustState = Objects.requireNonNull(rustState);
   }
+
+  public Transaction add(Transaction transaction)
+      throws MempoolFullException, MempoolDuplicateException {
+    var encoded = this.codec.encode(transaction).unwrap();
+    var ret_sbor = add(this.rustState, encoded);
+    var result = new DecodeResult(this.codec, Unit.class, StateManagerError.class).decode(ret_sbor);
+
+    // Handle Errors.
+    Option<StateManagerError> optErr = result.toOptionErr();
+    if (optErr.isPresent()) {
+      var err = optErr.unwrap();
+      switch (err.getErrorCode()) {
+        case STATE_MANAGER_ERROR_CODE_MEMPOOL_FULL:
+          throw new MempoolFullException(err.message());
+        case STATE_MANAGER_ERROR_CODE_MEMPOOL_DUPLICATE:
+          throw new MempoolDuplicateException(err.message());
+        default:
+          throw new IllegalStateException("Unexpected StateManagerError: " + err.toString());
+      }
+    }
+
+    return transaction;
+  }
+
+  private static native byte[] add(RustState rustState, byte[] transaction);
 }

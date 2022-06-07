@@ -13,7 +13,7 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_init(
     interop_state: JObject,
     j_mempool_size: jlong,
 ) {
-    JNIStateManager::init(env, interop_state, j_mempool_size);
+    JNIStateManager::init(&env, interop_state, j_mempool_size);
 }
 
 #[no_mangle]
@@ -22,7 +22,7 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
     _class: JClass,
     interop_state: JObject,
 ) {
-    JNIStateManager::cleanup(env, interop_state);
+    JNIStateManager::cleanup(&env, interop_state);
 }
 
 use crate::mempool::mock::MockMempool;
@@ -34,7 +34,7 @@ pub struct JNIStateManager {
 }
 
 impl JNIStateManager {
-    pub fn init(env: JNIEnv, interop_state: JObject, j_mempool_size: jlong) {
+    pub fn init(env: &JNIEnv, interop_state: JObject, j_mempool_size: jlong) {
         // Build the basic subcomponents.
         let mempool = MockMempool::new(j_mempool_size.try_into().unwrap()); // XXX: Very Wrong. Should return an error in case it's negative
         let vtxstore = VertexStore::new();
@@ -49,13 +49,13 @@ impl JNIStateManager {
             .unwrap();
     }
 
-    pub fn cleanup(env: JNIEnv, interop_state: JObject) {
+    pub fn cleanup(env: &JNIEnv, interop_state: JObject) {
         let nodesm: JNIStateManager = env.take_rust_field(interop_state, JNI_FIELD_NAME).unwrap();
         drop(nodesm);
     }
 
     pub fn get_state_manager(
-        env: JNIEnv,
+        env: &JNIEnv,
         interop_state: JObject,
     ) -> Arc<StateManager<MockMempool>> {
         let nodesm: &JNIStateManager = &env.get_rust_field(interop_state, JNI_FIELD_NAME).unwrap();
