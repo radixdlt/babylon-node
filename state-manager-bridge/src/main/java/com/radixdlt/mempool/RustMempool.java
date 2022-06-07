@@ -91,11 +91,14 @@ public class RustMempool {
 
   public Transaction add(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
-    var encodedRequest = this.codec.encode(transaction)
-        .unwrap(c -> new SborException(Transaction.class, true, true, c.message()));
+    var encodedRequest =
+        this.codec
+            .encode(transaction)
+            .unwrap(c -> new SborException(Transaction.class, true, true, c.message()));
     var encodedResponse = add(this.rustState, encodedRequest);
 
-    var result = new DecodeResult(this.codec, Unit.class, StateManagerError.class).decode(encodedResponse);
+    var result =
+        new DecodeResult(this.codec, Unit.class, StateManagerError.class).decode(encodedResponse);
 
     // Handle Errors.
     Option<StateManagerError> optErr = result.toOptionErr();

@@ -83,10 +83,10 @@ public final class StateManager {
   private final RustMempool mempool;
 
   /**
-   * Stores a pointer to the rust state manager across JNI calls.
-   * In the JNI model, this is equivalent to the Rust State "owning" the rust state manager memory.
-   * On each call into Rust, we map the stateManagerPointer onto a concrete implementation in Rust land,
-   *   and it uses that to access all state and make calls.
+   * Stores a pointer to the rust state manager across JNI calls. In the JNI model, this is
+   * equivalent to the Rust State "owning" the rust state manager memory. On each call into Rust, we
+   * map the stateManagerPointer onto a concrete implementation in Rust land, and it uses that to
+   * access all state and make calls.
    */
   public static final class RustState {
     @SuppressWarnings("unused")

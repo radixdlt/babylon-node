@@ -386,8 +386,8 @@ public sealed interface Result<T> permits Success, Failure {
   }
 
   /**
-   * This method allows "unwrapping" the value stored inside the Result instance.
-   * If the value is missing then an {@link IllegalStateException} is thrown.
+   * This method allows "unwrapping" the value stored inside the Result instance. If the value is
+   * missing then an {@link IllegalStateException} is thrown.
    *
    * @return value stored inside present instance.
    */
@@ -396,8 +396,8 @@ public sealed interface Result<T> permits Success, Failure {
   }
 
   /**
-   * This method allows "unwrapping" the value stored inside the Result instance.
-   * If the value is missing then an exception is created from the cause and thrown.
+   * This method allows "unwrapping" the value stored inside the Result instance. If the value is
+   * missing then an exception is created from the cause and thrown.
    *
    * @param mapToException a map from the cause to a RuntimeException
    * @return value stored inside present instance.
