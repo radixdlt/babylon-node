@@ -386,34 +386,23 @@ public sealed interface Result<T> permits Success, Failure {
   }
 
   /**
-   * This method allows "unwrapping" the value stored inside the Result instance. If value is
-   * missing then {@link IllegalStateException} is thrown.
-   *
-   * <p>WARNING!!!<br>
-   * This method should be avoided in the production code. It's main intended use case -
-   * simplification of the tests. For this reason method is marked as {@link Deprecated}. This
-   * generates warning at compile time.
+   * This method allows "unwrapping" the value stored inside the Result instance.
+   * If the value is missing then an {@link IllegalStateException} is thrown.
    *
    * @return value stored inside present instance.
-   * @deprecated to prevent unchecked use.
    */
-  @Deprecated
   default T unwrap() {
-    return fold(
-        v -> {
-          throw new IllegalStateException("Unwrap error: " + v.message());
-        },
-        Functions::id);
+    return unwrap(v -> new IllegalStateException("Unwrap error: " + v.message()));
   }
 
   /**
    * This method allows "unwrapping" the value stored inside the Result instance.
-   * If value is then the custom exception is thrown.
+   * If the value is missing then an exception is created from the cause and thrown.
    *
    * @param mapToException a map from the cause to a RuntimeException
    * @return value stored inside present instance.
    */
-  default T unwrapElse(Function<? super Cause, RuntimeException> mapToException) {
+  default T unwrap(Function<? super Cause, RuntimeException> mapToException) {
     return fold(
         v -> {
           throw mapToException.apply(v);
