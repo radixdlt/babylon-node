@@ -62,41 +62,28 @@
  * permissions under this License.
  */
 
-apply plugin: "com.diffplug.spotless"
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
 
-spotless {
-    format 'rust', {
-        // Files to apply the 'rust' format scheme to
-        target 'src/**/*.rs'
+use crate::result::{StateManagerError, StateManagerResult, ERRCODE_JNI};
 
-        // Steps to apply to the files
-        var firstNoneHeaderLineRegex = '^.[^*].*$'  // Is at least 2 characters, the second of which is not a *
-        licenseHeaderFile("${project.rootDir}/licence-header.txt", firstNoneHeaderLineRegex)
-    }
-    format 'misc', {
-        // Files to apply the `misc` format scheme to
-        target '*.gradle', '*.md', '.gitignore'
-
-        // Steps to apply to the files
-        trimTrailingWhitespace()
-        indentWithSpaces() // Takes an integer argument if you don't like 4
-        endWithNewline()
-    }
+pub fn jni_jbytearray_to_vector(
+    env: &JNIEnv,
+    jbytearray: jbyteArray,
+) -> StateManagerResult<Vec<u8>> {
+    env.convert_byte_array(jbytearray)
+        .map_err(|jerr| StateManagerError::create(ERRCODE_JNI, jerr.to_string()))
 }
 
-spotlessRustApply.dependsOn("runRustClippy")
-spotlessRustApply.dependsOn("runRustFormat")
-
-task runRustClippy(type: Exec) {
-    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
-}
-
-task runRustFormat(type: Exec) {
-    commandLine 'cargo', 'fmt'
-}
-
-// TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
-task buildRustDebug(type: Exec) {
-    commandLine 'cargo', 'build'
+pub fn jni_slice_to_jbytearray(env: &JNIEnv, slice: &[u8]) -> jbyteArray {
+    // Unwrap looks bad here, but:
+    //
+    // 1. by looking at the source code of the JNI, it seems this
+    // cannot really fail unless OOM.
+    //
+    // 2. in case this fails, we would still have to map the error
+    // code in a jbyteArray, so possibly the only way to solve this is
+    // by having a static bytearray to return in this extremely remote
+    // case.
+    env.byte_array_from_slice(slice).unwrap()
 }

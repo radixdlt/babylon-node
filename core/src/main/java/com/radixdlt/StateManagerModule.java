@@ -78,7 +78,7 @@ public final class StateManagerModule extends AbstractModule {
   @Provides
   @Singleton
   StateManager stateManager(@MempoolMaxSize int mempoolMaxSize) {
-    return StateManager.create(mempoolMaxSize);
+    return StateManager.createAndInitialize(mempoolMaxSize);
   }
 
   @ProvidesIntoMap

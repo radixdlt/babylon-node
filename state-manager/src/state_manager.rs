@@ -62,41 +62,31 @@
  * permissions under this License.
  */
 
-apply plugin: "com.diffplug.spotless"
+use crate::mempool::Mempool;
+use crate::transaction_store::TransactionStore;
+use crate::vertex_store::VertexStore;
+use std::sync::Arc;
+use std::sync::Mutex;
 
-spotless {
-    format 'rust', {
-        // Files to apply the 'rust' format scheme to
-        target 'src/**/*.rs'
+#[derive(Clone, Debug)]
+pub struct StateManager<M: Mempool> {
+    pub public_key: Vec<u8>,
+    pub mempool: Arc<Mutex<M>>,
+    pub vertex_store: Arc<Mutex<VertexStore>>,
+    pub transaction_store: Arc<Mutex<TransactionStore>>,
+}
 
-        // Steps to apply to the files
-        var firstNoneHeaderLineRegex = '^.[^*].*$'  // Is at least 2 characters, the second of which is not a *
-        licenseHeaderFile("${project.rootDir}/licence-header.txt", firstNoneHeaderLineRegex)
+impl<M: Mempool> StateManager<M> {
+    pub fn new(
+        mempool: M,
+        vertex_store: VertexStore,
+        transaction_store: TransactionStore,
+    ) -> StateManager<M> {
+        StateManager {
+            public_key: Vec::new(),
+            mempool: Arc::new(Mutex::new(mempool)),
+            vertex_store: Arc::new(Mutex::new(vertex_store)),
+            transaction_store: Arc::new(Mutex::new(transaction_store)),
+        }
     }
-    format 'misc', {
-        // Files to apply the `misc` format scheme to
-        target '*.gradle', '*.md', '.gitignore'
-
-        // Steps to apply to the files
-        trimTrailingWhitespace()
-        indentWithSpaces() // Takes an integer argument if you don't like 4
-        endWithNewline()
-    }
-}
-
-spotlessRustApply.dependsOn("runRustClippy")
-spotlessRustApply.dependsOn("runRustFormat")
-
-task runRustClippy(type: Exec) {
-    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
-}
-
-task runRustFormat(type: Exec) {
-    commandLine 'cargo', 'fmt'
-}
-
-// TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
-task buildRustDebug(type: Exec) {
-    commandLine 'cargo', 'build'
 }

@@ -62,41 +62,70 @@
  * permissions under this License.
  */
 
-apply plugin: "com.diffplug.spotless"
+use crate::mempool::mock::MockMempool;
+use crate::state_manager::StateManager;
+use crate::transaction_store::TransactionStore;
+use crate::vertex_store::VertexStore;
+use jni::objects::{JClass, JObject};
+use jni::sys::jlong;
+use jni::JNIEnv;
+use std::sync::Arc;
 
-spotless {
-    format 'rust', {
-        // Files to apply the 'rust' format scheme to
-        target 'src/**/*.rs'
+const POINTER_JNI_FIELD_NAME: &str = "stateManagerPointer";
 
-        // Steps to apply to the files
-        var firstNoneHeaderLineRegex = '^.[^*].*$'  // Is at least 2 characters, the second of which is not a *
-        licenseHeaderFile("${project.rootDir}/licence-header.txt", firstNoneHeaderLineRegex)
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statemanager_StateManager_init(
+    env: JNIEnv,
+    _class: JClass,
+    interop_state: JObject,
+    j_mempool_size: jlong,
+) {
+    JNIStateManager::init(&env, interop_state, j_mempool_size);
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
+    env: JNIEnv,
+    _class: JClass,
+    interop_state: JObject,
+) {
+    JNIStateManager::cleanup(&env, interop_state);
+}
+
+pub struct JNIStateManager {
+    state_manager: Arc<StateManager<MockMempool>>,
+}
+
+impl JNIStateManager {
+    pub fn init(env: &JNIEnv, interop_state: JObject, j_mempool_size: jlong) {
+        // Build the basic subcomponents.
+        let mempool = MockMempool::new(j_mempool_size.try_into().unwrap()); // XXX: Very Wrong. Should return an error in case it's negative
+        let vertex_store = VertexStore::new();
+        let transaction_store = TransactionStore::new();
+
+        // Build the state manager.
+        let state_manager = Arc::new(StateManager::new(mempool, vertex_store, transaction_store));
+
+        let jni_state_manager = JNIStateManager { state_manager };
+
+        env.set_rust_field(interop_state, POINTER_JNI_FIELD_NAME, jni_state_manager)
+            .unwrap();
     }
-    format 'misc', {
-        // Files to apply the `misc` format scheme to
-        target '*.gradle', '*.md', '.gitignore'
 
-        // Steps to apply to the files
-        trimTrailingWhitespace()
-        indentWithSpaces() // Takes an integer argument if you don't like 4
-        endWithNewline()
+    pub fn cleanup(env: &JNIEnv, interop_state: JObject) {
+        let jni_state_manager: JNIStateManager = env
+            .take_rust_field(interop_state, POINTER_JNI_FIELD_NAME)
+            .unwrap();
+        drop(jni_state_manager);
     }
-}
 
-spotlessRustApply.dependsOn("runRustClippy")
-spotlessRustApply.dependsOn("runRustFormat")
-
-task runRustClippy(type: Exec) {
-    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
-}
-
-task runRustFormat(type: Exec) {
-    commandLine 'cargo', 'fmt'
-}
-
-// TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
-task buildRustDebug(type: Exec) {
-    commandLine 'cargo', 'build'
+    pub fn get_state_manager(
+        env: &JNIEnv,
+        interop_state: JObject,
+    ) -> Arc<StateManager<MockMempool>> {
+        let jni_state_manager: &JNIStateManager = &env
+            .get_rust_field(interop_state, POINTER_JNI_FIELD_NAME)
+            .unwrap();
+        Arc::clone(&jni_state_manager.state_manager)
+    }
 }

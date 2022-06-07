@@ -62,41 +62,45 @@
  * permissions under this License.
  */
 
-apply plugin: "com.diffplug.spotless"
+pub use crate::result::ToStateManagerError;
 
-spotless {
-    format 'rust', {
-        // Files to apply the 'rust' format scheme to
-        target 'src/**/*.rs'
+use crate::result::{StateManagerError, ERRCODE_MEMPOOL_DUPLICATE, ERRCODE_MEMPOOL_FULL};
+use crate::types::Transaction;
+use std::collections::HashSet;
+use std::string::ToString;
 
-        // Steps to apply to the files
-        var firstNoneHeaderLineRegex = '^.[^*].*$'  // Is at least 2 characters, the second of which is not a *
-        licenseHeaderFile("${project.rootDir}/licence-header.txt", firstNoneHeaderLineRegex)
+#[derive(Debug, PartialEq)]
+pub enum MempoolError {
+    Full(usize, usize),
+    Duplicate,
+}
+
+impl ToString for MempoolError {
+    fn to_string(&self) -> String {
+        match self {
+            MempoolError::Full(a, b) => format!("Mempool Full [{} - {}]", a, b),
+            MempoolError::Duplicate => "Duplicate Entry".to_string(),
+        }
     }
-    format 'misc', {
-        // Files to apply the `misc` format scheme to
-        target '*.gradle', '*.md', '.gitignore'
+}
 
-        // Steps to apply to the files
-        trimTrailingWhitespace()
-        indentWithSpaces() // Takes an integer argument if you don't like 4
-        endWithNewline()
+impl ToStateManagerError for MempoolError {
+    fn to_state_manager_error(&self) -> StateManagerError {
+        let message = self.to_string();
+        match self {
+            MempoolError::Full(_, _) => StateManagerError::create(ERRCODE_MEMPOOL_FULL, message),
+            MempoolError::Duplicate => {
+                StateManagerError::create(ERRCODE_MEMPOOL_DUPLICATE, message)
+            }
+        }
     }
 }
 
-spotlessRustApply.dependsOn("runRustClippy")
-spotlessRustApply.dependsOn("runRustFormat")
-
-task runRustClippy(type: Exec) {
-    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
+pub trait Mempool {
+    fn add(&mut self, transaction: Transaction) -> Result<(), MempoolError>;
+    fn committed(&mut self, transactions: &HashSet<Transaction>);
+    fn get_count(&self) -> usize;
+    fn get_txns(&self, count: usize, seen: &HashSet<Transaction>) -> HashSet<Transaction>;
 }
 
-task runRustFormat(type: Exec) {
-    commandLine 'cargo', 'fmt'
-}
-
-// TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
-task buildRustDebug(type: Exec) {
-    commandLine 'cargo', 'build'
-}
+pub mod mock;

@@ -62,41 +62,38 @@
  * permissions under this License.
  */
 
-apply plugin: "com.diffplug.spotless"
+use std::collections::BTreeMap;
 
-spotless {
-    format 'rust', {
-        // Files to apply the 'rust' format scheme to
-        target 'src/**/*.rs'
+#[derive(Debug)]
+pub struct TransactionStore {
+    in_memory_store: BTreeMap<u64, Vec<u8>>,
+}
 
-        // Steps to apply to the files
-        var firstNoneHeaderLineRegex = '^.[^*].*$'  // Is at least 2 characters, the second of which is not a *
-        licenseHeaderFile("${project.rootDir}/licence-header.txt", firstNoneHeaderLineRegex)
+impl TransactionStore {
+    pub fn new() -> TransactionStore {
+        TransactionStore {
+            in_memory_store: BTreeMap::new(),
+        }
     }
-    format 'misc', {
-        // Files to apply the `misc` format scheme to
-        target '*.gradle', '*.md', '.gitignore'
 
-        // Steps to apply to the files
-        trimTrailingWhitespace()
-        indentWithSpaces() // Takes an integer argument if you don't like 4
-        endWithNewline()
+    pub fn insert_transaction(&mut self, state_version: u64, transaction_data: Vec<u8>) {
+        self.in_memory_store.insert(state_version, transaction_data);
     }
-}
 
-spotlessRustApply.dependsOn("runRustClippy")
-spotlessRustApply.dependsOn("runRustFormat")
+    pub fn get_transaction(&self, state_version: u64) -> &Vec<u8> {
+        self.get_transactions_in_range(state_version, state_version + 1)[0]
+    }
 
-task runRustClippy(type: Exec) {
-    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
-}
-
-task runRustFormat(type: Exec) {
-    commandLine 'cargo', 'fmt'
-}
-
-// TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
-task buildRustDebug(type: Exec) {
-    commandLine 'cargo', 'build'
+    pub fn get_transactions_in_range(
+        &self,
+        start_state_version: u64,
+        end_state_version: u64,
+    ) -> Vec<&Vec<u8>> {
+        let mut txs: Vec<&Vec<u8>> = Vec::new();
+        for state_version in start_state_version..end_state_version {
+            let tx_data = self.in_memory_store.get(&state_version).unwrap();
+            txs.push(tx_data);
+        }
+        txs
+    }
 }

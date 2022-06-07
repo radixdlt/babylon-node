@@ -62,41 +62,41 @@
  * permissions under this License.
  */
 
-apply plugin: "com.diffplug.spotless"
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
 
-spotless {
-    format 'rust', {
-        // Files to apply the 'rust' format scheme to
-        target 'src/**/*.rs'
+use crate::jni::state_manager::JNIStateManager;
+use crate::jni::utils::*;
+use crate::mempool::*;
+use crate::result::StateManagerResult;
+use crate::types::{JavaStructure, Transaction};
 
-        // Steps to apply to the files
-        var firstNoneHeaderLineRegex = '^.[^*].*$'  // Is at least 2 characters, the second of which is not a *
-        licenseHeaderFile("${project.rootDir}/licence-header.txt", firstNoneHeaderLineRegex)
-    }
-    format 'misc', {
-        // Files to apply the `misc` format scheme to
-        target '*.gradle', '*.md', '.gitignore'
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_txn: jbyteArray,
+) -> jbyteArray {
+    let ret = do_add(&env, j_state, j_txn).to_java();
 
-        // Steps to apply to the files
-        trimTrailingWhitespace()
-        indentWithSpaces() // Takes an integer argument if you don't like 4
-        endWithNewline()
-    }
+    jni_slice_to_jbytearray(&env, &ret)
 }
 
-spotlessRustApply.dependsOn("runRustClippy")
-spotlessRustApply.dependsOn("runRustFormat")
+fn do_add(env: &JNIEnv, j_state: JObject, j_txn: jbyteArray) -> StateManagerResult<()> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
 
-task runRustClippy(type: Exec) {
-    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
-}
+    let s_txn: Vec<u8> = jni_jbytearray_to_vector(env, j_txn)?;
 
-task runRustFormat(type: Exec) {
-    commandLine 'cargo', 'fmt'
-}
+    let txn = Transaction::from_java(&s_txn)?;
 
-// TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
-task buildRustDebug(type: Exec) {
-    commandLine 'cargo', 'build'
+    let ret = state_manager
+        .mempool
+        .lock()
+        .unwrap()
+        .add(txn)
+        .map_err(|e| e.to_state_manager_error());
+
+    ret
 }

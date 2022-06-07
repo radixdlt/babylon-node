@@ -62,41 +62,47 @@
  * permissions under this License.
  */
 
-apply plugin: "com.diffplug.spotless"
+use crate::jni::state_manager::JNIStateManager;
+use jni::objects::{JClass, JObject};
+use jni::sys::{jbyteArray, jlong};
+use jni::JNIEnv;
 
-spotless {
-    format 'rust', {
-        // Files to apply the 'rust' format scheme to
-        target 'src/**/*.rs'
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_insertTransaction(
+    env: JNIEnv,
+    _class: JClass,
+    interop_state: JObject,
+    j_state_version: jlong,
+    j_transaction_bytes: jbyteArray,
+) {
+    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
 
-        // Steps to apply to the files
-        var firstNoneHeaderLineRegex = '^.[^*].*$'  // Is at least 2 characters, the second of which is not a *
-        licenseHeaderFile("${project.rootDir}/licence-header.txt", firstNoneHeaderLineRegex)
-    }
-    format 'misc', {
-        // Files to apply the `misc` format scheme to
-        target '*.gradle', '*.md', '.gitignore'
+    let transaction_bytes: Vec<u8> = env
+        .convert_byte_array(j_transaction_bytes)
+        .expect("Can't convert transaction data byte array to vec");
 
-        // Steps to apply to the files
-        trimTrailingWhitespace()
-        indentWithSpaces() // Takes an integer argument if you don't like 4
-        endWithNewline()
-    }
+    // Only get the lock for transaction store
+    state_manager
+        .transaction_store
+        .lock()
+        .unwrap()
+        .insert_transaction(j_state_version as u64, transaction_bytes);
 }
 
-spotlessRustApply.dependsOn("runRustClippy")
-spotlessRustApply.dependsOn("runRustFormat")
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransactionAtStateVersion(
+    env: JNIEnv,
+    _class: JClass,
+    interop_state: JObject,
+    j_state_version: jlong,
+) -> jbyteArray {
+    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
 
-task runRustClippy(type: Exec) {
-    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
-}
+    // Only get the lock for transaction store
+    let transaction_store = state_manager.transaction_store.lock().unwrap();
 
-task runRustFormat(type: Exec) {
-    commandLine 'cargo', 'fmt'
-}
+    let transaction_data = transaction_store.get_transaction(j_state_version as u64);
 
-// TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
-task buildRustDebug(type: Exec) {
-    commandLine 'cargo', 'build'
+    env.byte_array_from_slice(transaction_data)
+        .expect("Can't create jbyteArray for transaction data")
 }

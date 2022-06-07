@@ -182,7 +182,7 @@ jacocoTestReport {
 dependencies {
     implementation project(':olympia-engine')
     implementation project(':common')
-    implementation project(':state-manager')
+    implementation project(':state-manager-bridge')
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     implementation 'io.swagger:swagger-annotations:1.5.0'
@@ -265,7 +265,7 @@ ospackage {
         into "/etc/systemd/system"
     }
     // XXX: This ought to be done somewhere else.
-    from("${project(':state-manager').projectDir}/src/main/rust/stateman/target/debug/libstateman.so") {
+    from("${project(':state-manager').projectDir}/target/debug/libstatemanager.so") {
        into "/usr/lib/jni/"
     }
 

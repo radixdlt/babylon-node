@@ -62,41 +62,69 @@
  * permissions under this License.
  */
 
-apply plugin: "com.diffplug.spotless"
+package com.radixdlt.statemanager;
 
-spotless {
-    format 'rust', {
-        // Files to apply the 'rust' format scheme to
-        target 'src/**/*.rs'
+import com.radixdlt.mempool.RustMempool;
+import com.radixdlt.transaction.RustTransactionStore;
+import com.radixdlt.transaction.TransactionStore;
+import com.radixdlt.vertexstore.RustVertexStore;
+import com.radixdlt.vertexstore.VertexStore;
+import java.util.Objects;
 
-        // Steps to apply to the files
-        var firstNoneHeaderLineRegex = '^.[^*].*$'  // Is at least 2 characters, the second of which is not a *
-        licenseHeaderFile("${project.rootDir}/licence-header.txt", firstNoneHeaderLineRegex)
-    }
-    format 'misc', {
-        // Files to apply the `misc` format scheme to
-        target '*.gradle', '*.md', '.gitignore'
+public final class StateManager {
 
-        // Steps to apply to the files
-        trimTrailingWhitespace()
-        indentWithSpaces() // Takes an integer argument if you don't like 4
-        endWithNewline()
-    }
-}
+  static {
+    System.loadLibrary("statemanager");
+  }
 
-spotlessRustApply.dependsOn("runRustClippy")
-spotlessRustApply.dependsOn("runRustFormat")
+  /**
+   * Stores Rust state across JNI calls. Fields with "Ref" suffix are pointers to the Rust objects
+   * created and set on the Rust side via JNI env, and they should never be accessed in any other
+   * way. The remaining fields are read-only values (for now, but this might change) passed to Rust.
+   */
+  public static final class RustState {
+    @SuppressWarnings("unused")
+    private final long stateManagerPointer = 0;
+  }
 
-task runRustClippy(type: Exec) {
-    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
-}
+  public static StateManager createAndInitialize(long mempoolSize) {
+    var rustState = new RustState();
+    init(rustState, mempoolSize);
+    return new StateManager(rustState);
+  }
 
-task runRustFormat(type: Exec) {
-    commandLine 'cargo', 'fmt'
-}
+  private final RustState rustState;
 
-// TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
-task buildRustDebug(type: Exec) {
-    commandLine 'cargo', 'build'
+  private final VertexStore vertexStore;
+
+  private final TransactionStore transactionStore;
+
+  private final RustMempool mempool;
+
+  private StateManager(RustState rustState) {
+    this.rustState = Objects.requireNonNull(rustState);
+    this.vertexStore = new RustVertexStore(rustState);
+    this.transactionStore = new RustTransactionStore(rustState);
+    this.mempool = new RustMempool(rustState);
+  }
+
+  public VertexStore vertexStore() {
+    return this.vertexStore;
+  }
+
+  public TransactionStore transactionStore() {
+    return this.transactionStore;
+  }
+
+  public RustMempool mempool() {
+    return this.mempool;
+  }
+
+  public void shutdown() {
+    cleanup(this.rustState);
+  }
+
+  private static native void init(RustState rustState, long mempoolSize);
+
+  private static native void cleanup(RustState rustState);
 }

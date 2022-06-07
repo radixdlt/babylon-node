@@ -62,41 +62,60 @@
  * permissions under this License.
  */
 
-apply plugin: "com.diffplug.spotless"
+package com.radixdlt.statemanager;
 
-spotless {
-    format 'rust', {
-        // Files to apply the 'rust' format scheme to
-        target 'src/**/*.rs'
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-        // Steps to apply to the files
-        var firstNoneHeaderLineRegex = '^.[^*].*$'  // Is at least 2 characters, the second of which is not a *
-        licenseHeaderFile("${project.rootDir}/licence-header.txt", firstNoneHeaderLineRegex)
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.transactions.Transaction;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import org.junit.Test;
+
+public final class StateManagerTest {
+
+  @Test
+  public void test_rust_interop() throws Exception {
+
+    final var mempoolSize = 100;
+    final var stateManagerNode1 = StateManager.createAndInitialize(mempoolSize);
+    final var stateManagerNode2 = StateManager.createAndInitialize(mempoolSize);
+
+    // Just to check that concurrent access is possible
+    var rand = new Random();
+    var cdl = new CountDownLatch(1000);
+    for (int i = 0; i < 1000; i++) {
+      new Thread(
+              () -> {
+                var tx = HashUtils.random256();
+                var stateVer = rand.nextLong();
+                stateManagerNode1.transactionStore().insertTransaction(stateVer, tx.asBytes());
+                assertArrayEquals(
+                    tx.asBytes(),
+                    stateManagerNode1.transactionStore().getTransactionAtStateVersion(stateVer));
+                cdl.countDown();
+              })
+          .start();
     }
-    format 'misc', {
-        // Files to apply the `misc` format scheme to
-        target '*.gradle', '*.md', '.gitignore'
 
-        // Steps to apply to the files
-        trimTrailingWhitespace()
-        indentWithSpaces() // Takes an integer argument if you don't like 4
-        endWithNewline()
+    final var vertex = new byte[] {3, 4, 5};
+    assertFalse(stateManagerNode1.vertexStore().containsVertex(vertex));
+    stateManagerNode1.vertexStore().insertVertex(vertex);
+    assertTrue(stateManagerNode1.vertexStore().containsVertex(vertex));
+    assertFalse(stateManagerNode2.vertexStore().containsVertex(vertex));
+
+    final var payload = new byte[] {1, 2, 3, 4, 5};
+    final var transaction = Transaction.create(payload);
+    stateManagerNode1.mempool().add(transaction);
+    try {
+      stateManagerNode1.mempool().add(transaction);
+    } catch (Exception MempoolDuplicateException) {
     }
-}
 
-spotlessRustApply.dependsOn("runRustClippy")
-spotlessRustApply.dependsOn("runRustFormat")
-
-task runRustClippy(type: Exec) {
-    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
-}
-
-task runRustFormat(type: Exec) {
-    commandLine 'cargo', 'fmt'
-}
-
-// TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
-task buildRustDebug(type: Exec) {
-    commandLine 'cargo', 'build'
+    cdl.await();
+    stateManagerNode1.shutdown();
+    stateManagerNode2.shutdown();
+  }
 }

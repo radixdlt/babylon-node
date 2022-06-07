@@ -62,41 +62,25 @@
  * permissions under this License.
  */
 
-apply plugin: "com.diffplug.spotless"
+package com.radixdlt.mempool;
 
-spotless {
-    format 'rust', {
-        // Files to apply the 'rust' format scheme to
-        target 'src/**/*.rs'
+/**
+ * Exception thrown when an attempt to add new items would exceed the mempool's maximum capacity.
+ */
+public class MempoolFullException extends MempoolRejectedException {
+  private final int maxSize;
 
-        // Steps to apply to the files
-        var firstNoneHeaderLineRegex = '^.[^*].*$'  // Is at least 2 characters, the second of which is not a *
-        licenseHeaderFile("${project.rootDir}/licence-header.txt", firstNoneHeaderLineRegex)
-    }
-    format 'misc', {
-        // Files to apply the `misc` format scheme to
-        target '*.gradle', '*.md', '.gitignore'
+  public MempoolFullException(int curSize, int maxSize) {
+    super(String.format("Mempool full: %s of %s items", curSize, maxSize));
+    this.maxSize = maxSize;
+  }
 
-        // Steps to apply to the files
-        trimTrailingWhitespace()
-        indentWithSpaces() // Takes an integer argument if you don't like 4
-        endWithNewline()
-    }
-}
+  public MempoolFullException(String message) {
+    super(message);
+    this.maxSize = 0;
+  }
 
-spotlessRustApply.dependsOn("runRustClippy")
-spotlessRustApply.dependsOn("runRustFormat")
-
-task runRustClippy(type: Exec) {
-    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
-}
-
-task runRustFormat(type: Exec) {
-    commandLine 'cargo', 'fmt'
-}
-
-// TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
-task buildRustDebug(type: Exec) {
-    commandLine 'cargo', 'build'
+  public int getMaxSize() {
+    return maxSize;
+  }
 }

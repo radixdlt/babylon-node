@@ -62,41 +62,35 @@
  * permissions under this License.
  */
 
-apply plugin: "com.diffplug.spotless"
+use crate::types::JavaStructure;
+use sbor::{Decode, Encode, TypeId};
 
-spotless {
-    format 'rust', {
-        // Files to apply the 'rust' format scheme to
-        target 'src/**/*.rs'
+// System Errors.
+pub const ERRCODE_JNI: i16 = 0;
+pub const ERRCODE_SBOR: i16 = 1;
+// Mempool Errors.
+pub const ERRCODE_MEMPOOL_FULL: i16 = 0x10;
+pub const ERRCODE_MEMPOOL_DUPLICATE: i16 = 0x11;
 
-        // Steps to apply to the files
-        var firstNoneHeaderLineRegex = '^.[^*].*$'  // Is at least 2 characters, the second of which is not a *
-        licenseHeaderFile("${project.rootDir}/licence-header.txt", firstNoneHeaderLineRegex)
+#[derive(TypeId, Encode, Decode, Debug)]
+pub struct StateManagerError {
+    error_code: i16,
+    error_msg: String,
+}
+
+impl StateManagerError {
+    pub fn create(error_code: i16, error_msg: String) -> StateManagerError {
+        StateManagerError {
+            error_code,
+            error_msg,
+        }
     }
-    format 'misc', {
-        // Files to apply the `misc` format scheme to
-        target '*.gradle', '*.md', '.gitignore'
-
-        // Steps to apply to the files
-        trimTrailingWhitespace()
-        indentWithSpaces() // Takes an integer argument if you don't like 4
-        endWithNewline()
-    }
 }
 
-spotlessRustApply.dependsOn("runRustClippy")
-spotlessRustApply.dependsOn("runRustFormat")
-
-task runRustClippy(type: Exec) {
-    commandLine 'cargo', 'clippy', '--fix', '--allow-dirty', '--allow-staged'
+pub trait ToStateManagerError {
+    fn to_state_manager_error(&self) -> StateManagerError;
 }
 
-task runRustFormat(type: Exec) {
-    commandLine 'cargo', 'fmt'
-}
+pub type StateManagerResult<T> = Result<T, StateManagerError>;
 
-// TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
-task buildRustDebug(type: Exec) {
-    commandLine 'cargo', 'build'
-}
+impl<T: Encode + Decode> JavaStructure for StateManagerResult<T> {}
