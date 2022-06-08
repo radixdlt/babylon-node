@@ -110,7 +110,6 @@ import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewUpdate;
@@ -125,6 +124,7 @@ import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
+import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
@@ -151,7 +151,7 @@ import org.junit.Test;
 public class ConsensusModuleTest {
   @Inject private BFTSync bftSync;
 
-  @Inject private VertexStore vertexStore;
+  @Inject private VertexStoreAdapter vertexStore;
 
   private Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 

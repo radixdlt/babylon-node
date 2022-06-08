@@ -83,7 +83,6 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.BFTSyncFactory;
 import com.radixdlt.consensus.epoch.BFTSyncRequestProcessorFactory;
@@ -106,7 +105,9 @@ import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
+import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
+import com.radixdlt.consensus.sync.VertexStoreJavaImpl;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -363,13 +364,11 @@ public class EpochsConsensusModule extends AbstractModule {
       Ledger ledger,
       Hasher hasher) {
     return vertexStoreState ->
-        VertexStore.create(
-            vertexStoreState,
-            ledger,
-            hasher,
+        new VertexStoreAdapter(
+            VertexStoreJavaImpl.create(vertexStoreState, ledger, hasher),
+            highQCUpdateEventDispatcher,
             updateSender,
             rebuildUpdateDispatcher,
-            highQCUpdateEventDispatcher,
             committedDispatcher);
   }
 }

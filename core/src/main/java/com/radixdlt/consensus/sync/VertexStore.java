@@ -64,52 +64,57 @@
 
 package com.radixdlt.consensus.sync;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.monitoring.SystemCounters;
-import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimeoutCertificate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexChain;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.lang.Option;
+import java.util.List;
 
-/** Processor of sync requests and responds with info from a VertexStore */
-public final class VertexStoreBFTSyncRequestProcessor
-    implements RemoteEventProcessor<GetVerticesRequest> {
-  private static final Logger log = LogManager.getLogger();
-  private final VertexStoreAdapter vertexStore;
-  private final RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher;
-  private final RemoteEventDispatcher<GetVerticesResponse> responseDispatcher;
-  private final SystemCounters systemCounters;
+public interface VertexStore {
+  record CommittedUpdate(ImmutableList<PreparedVertex> committedVertices) {}
 
-  @Inject
-  public VertexStoreBFTSyncRequestProcessor(
-      VertexStoreAdapter vertexStore,
-      RemoteEventDispatcher<GetVerticesErrorResponse> errorResponseDispatcher,
-      RemoteEventDispatcher<GetVerticesResponse> responseDispatcher,
-      SystemCounters systemCounters) {
-    this.vertexStore = Objects.requireNonNull(vertexStore);
-    this.errorResponseDispatcher = Objects.requireNonNull(errorResponseDispatcher);
-    this.responseDispatcher = Objects.requireNonNull(responseDispatcher);
-    this.systemCounters = systemCounters;
+  sealed interface InsertQcResult {
+    record Inserted(
+        HighQC newHighQc,
+        // TODO: remove me once vertex store persistence and commit on the java side are gone
+        VerifiedVertexStoreState verifiedVertexStoreState,
+        Option<CommittedUpdate> committedUpdate)
+        implements InsertQcResult {}
+
+    record Ignored() implements InsertQcResult {}
+
+    record VertexIsMissing() implements InsertQcResult {}
   }
 
-  @Override
-  public void process(BFTNode sender, GetVerticesRequest request) {
-    // TODO: Handle nodes trying to DDOS this endpoint
-    systemCounters.increment(SystemCounters.CounterType.BFT_SYNC_REQUESTS_RECEIVED);
+  record InsertVertexChainResult(
+      List<InsertQcResult.Inserted> insertedQcs, List<BFTInsertUpdate> insertUpdates) {}
 
-    log.debug("SYNC_VERTICES: Received GetVerticesRequest {}", request);
-    var verticesMaybe = vertexStore.getVertices(request.getVertexId(), request.getCount());
-    verticesMaybe.ifPresentOrElse(
-        fetched -> {
-          log.debug("SYNC_VERTICES: Sending Response {}", fetched);
-          this.responseDispatcher.dispatch(sender, new GetVerticesResponse(fetched));
-        },
-        () -> {
-          log.debug("SYNC_VERTICES: Sending error response {}", vertexStore.highQC());
-          this.errorResponseDispatcher.dispatch(
-              sender, new GetVerticesErrorResponse(vertexStore.highQC(), request));
-        });
-  }
+  InsertQcResult insertQc(QuorumCertificate qc);
+
+  void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
+
+  Option<BFTInsertUpdate> insertVertex(VerifiedVertex vertex);
+
+  InsertVertexChainResult insertVertexChain(VerifiedVertexChain verifiedVertexChain);
+
+  Option<VerifiedVertexStoreState> tryRebuild(VerifiedVertexStoreState vertexStoreState);
+
+  boolean containsVertex(HashCode vertexId);
+
+  HighQC highQC();
+
+  VerifiedVertex getRoot();
+
+  List<PreparedVertex> getPathFromRoot(HashCode vertexId);
+
+  Option<PreparedVertex> getPreparedVertex(HashCode id);
+
+  Option<ImmutableList<VerifiedVertex>> getVertices(HashCode vertexId, int count);
 }

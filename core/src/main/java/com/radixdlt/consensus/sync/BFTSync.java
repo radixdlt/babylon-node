@@ -159,7 +159,7 @@ public final class BFTSync implements BFTSyncer {
 
   private static final Logger log = LogManager.getLogger();
   private final BFTNode self;
-  private final VertexStore vertexStore;
+  private final VertexStoreAdapter vertexStore;
   private final Hasher hasher;
   private final SafetyRules safetyRules;
   private final PacemakerReducer pacemakerReducer;
@@ -183,7 +183,7 @@ public final class BFTSync implements BFTSyncer {
   public BFTSync(
       @Self BFTNode self,
       RateLimiter syncRequestRateLimiter,
-      VertexStore vertexStore,
+      VertexStoreAdapter vertexStore,
       Hasher hasher,
       SafetyRules safetyRules,
       PacemakerReducer pacemakerReducer,
@@ -220,7 +220,7 @@ public final class BFTSync implements BFTSyncer {
             case FormedQC formedQc -> HighQC.from(
                 ((FormedQC) viewQuorumReached.votingResult()).getQC(),
                 this.vertexStore.highQC().highestCommittedQC(),
-                this.vertexStore.getHighestTimeoutCertificate());
+                this.vertexStore.highQC().highestTC());
             case FormedTC formedTc -> HighQC.from(
                 this.vertexStore.highQC().highestQC(),
                 this.vertexStore.highQC().highestCommittedQC(),
@@ -236,17 +236,17 @@ public final class BFTSync implements BFTSyncer {
     this.runOnThreads.add(Thread.currentThread().getName());
     final var qc = highQC.highestQC();
 
-    if (qc.getProposed().getView().compareTo(vertexStore.getRoot().getView()) < 0) {
+    if (qc.getProposed().getView().lt(vertexStore.getRoot().getView())) {
       return SyncResult.INVALID;
     }
 
-    if (qc.getProposed().getView().compareTo(this.currentLedgerHeader.getView()) < 0) {
+    if (qc.getProposed().getView().lt(this.currentLedgerHeader.getView())) {
       return SyncResult.INVALID;
     }
 
     highQC.highestTC().ifPresent(vertexStore::insertTimeoutCertificate);
 
-    if (vertexStore.addQC(qc)) {
+    if (vertexStore.insertQc(qc)) {
       // TODO: check if already sent highest
       // TODO: Move pacemaker outside of sync
       this.pacemakerReducer.processQC(vertexStore.highQC());
@@ -276,14 +276,7 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private boolean requiresLedgerSync(SyncState syncState) {
-    final var committedHeader = syncState.committedHeader;
-
-    if (!vertexStore.containsVertex(committedHeader.getVertexId())) {
-      var rootView = vertexStore.getRoot().getView();
-      return rootView.compareTo(committedHeader.getView()) < 0;
-    }
-
-    return false;
+    return !vertexStore.hasCommittedVertexOrRootAtOrAboveView(syncState.committedHeader);
   }
 
   private void startSync(HighQC highQC, BFTNode author) {
@@ -440,7 +433,7 @@ public final class BFTSync implements BFTSyncer {
               HighQC.from(syncState.highQC().highestCommittedQC()),
               syncState.fetched.get(0),
               nonRootVertices,
-              vertexStore.getHighestTimeoutCertificate(),
+              vertexStore.highQC().highestTC(),
               hasher);
       if (vertexStore.tryRebuild(vertexStoreState)) {
         // TODO: Move pacemaker outside of sync

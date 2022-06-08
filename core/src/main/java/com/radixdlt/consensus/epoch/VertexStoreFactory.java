@@ -65,7 +65,7 @@
 package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.sync.VertexStoreAdapter;
 
 /** A Vertex Store factory */
 public interface VertexStoreFactory {
@@ -76,5 +76,5 @@ public interface VertexStoreFactory {
    * @param vertexStoreState the initial vertex store state
    * @return a new VertexStore
    */
-  VertexStore create(VerifiedVertexStoreState vertexStoreState);
+  VertexStoreAdapter create(VerifiedVertexStoreState vertexStoreState);
 }
