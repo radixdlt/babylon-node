@@ -70,6 +70,8 @@ import static com.radixdlt.lang.Option.none;
 import static com.radixdlt.lang.Option.some;
 import static org.junit.Assert.*;
 
+import com.google.inject.TypeLiteral;
+import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.dto.SimpleRecord;
@@ -337,6 +339,34 @@ public class SborCoderTest {
     var r1 = codec.decodeOption(r0, String.class).unwrap();
 
     assertEquals(some("Test value"), r1);
+  }
+
+  @Test
+  public void eitherCanBeEncodedAndDecoded() {
+    var codec = new SborCoder(new CodecMap());
+
+    var leftValue = Either.left("Some value");
+    var leftEncoded = codec.encode(leftValue).unwrap();
+
+    assertEquals(17, leftEncoded.length);
+    assertEquals(0x24, leftEncoded[0]); // Type == 0x24 - Either
+    assertEquals(0x01, leftEncoded[1]); // Value - left
+    assertEquals(0x0C, leftEncoded[2]); // Value type - String
+
+    var rightValue = Either.right(123L);
+    var rightEncoded = codec.encode(rightValue).unwrap();
+    assertEquals(11, rightEncoded.length);
+    assertEquals(0x24, rightEncoded[0]); // Type == 0x24 - Either
+    assertEquals(0x00, rightEncoded[1]); // Value - right
+    assertEquals(0x05, rightEncoded[2]); // Value type - i64
+
+    var eitherTypeLiteral = new TypeLiteral<Either<String, Long>>() {};
+
+    var leftOut = codec.decode(leftEncoded, eitherTypeLiteral).unwrap();
+    var rightOut = codec.decode(rightEncoded, eitherTypeLiteral).unwrap();
+
+    assertEquals(leftValue, leftOut);
+    assertEquals(rightValue, rightOut);
   }
 
   @Test

@@ -66,6 +66,7 @@ package com.radixdlt.lang;
 
 import com.radixdlt.lang.Functions.FN1;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /** The type which can hold one of two values of different types. */
 // TODO: extend API
@@ -98,6 +99,62 @@ public interface Either<L, R> {
           rightConsumer.accept(right);
           return null;
         });
+  }
+
+  /**
+   * This method allows "unwrapping" the left value stored inside the Either instance. If the value
+   * is a right then an {@link IllegalStateException} is thrown.
+   *
+   * @return value stored inside present instance.
+   */
+  default L unwrapLeft() {
+    return unwrapLeft(
+        r ->
+            new IllegalStateException(
+                "Unwrap error (not a left) - the Either was a right, containing " + r.toString()));
+  }
+
+  /**
+   * This method allows "unwrapping" the left value stored inside the Either instance. If the value
+   * is a right then an exception is created from the right value and thrown.
+   *
+   * @param mapToException a map from the cause to a RuntimeException
+   * @return value stored inside present instance.
+   */
+  default L unwrapLeft(Function<? super R, RuntimeException> mapToException) {
+    return fold(
+        Functions::id,
+        r -> {
+          throw mapToException.apply(r);
+        });
+  }
+
+  /**
+   * This method allows "unwrapping" the right value stored inside the Either instance. If the value
+   * is a left then an {@link IllegalStateException} is thrown.
+   *
+   * @return value stored inside present instance.
+   */
+  default R unwrapRight() {
+    return unwrapRight(
+        l ->
+            new IllegalStateException(
+                "Unwrap error (not a right) - the Either was a left, containing " + l.toString()));
+  }
+
+  /**
+   * This method allows "unwrapping" the right value stored inside the Either instance. If the value
+   * is a left then an exception is created from the left value and thrown.
+   *
+   * @param mapToException a map from the cause to a RuntimeException
+   * @return value stored inside present instance.
+   */
+  default R unwrapRight(Function<? super L, RuntimeException> mapToException) {
+    return fold(
+        l -> {
+          throw mapToException.apply(l);
+        },
+        Functions::id);
   }
 
   /**

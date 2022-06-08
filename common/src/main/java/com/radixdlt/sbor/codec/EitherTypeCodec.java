@@ -62,41 +62,52 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor.coding;
+package com.radixdlt.sbor.codec;
 
 import com.google.inject.TypeLiteral;
 import com.radixdlt.lang.Either;
-import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.constants.ResultTypeId;
 import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.DecodingError;
+import com.radixdlt.sbor.coding.EncoderApi;
 
-public interface DecoderApi {
-  <T> Result<T> decode(Class<T> type);
+public record EitherTypeCodec<L, R>(TypeLiteral<L> leftType, TypeLiteral<R> rightType)
+    implements Codec<Either<L, R>> {
 
-  <T> Result<T> decode(TypeLiteral<T> type);
+  @Override
+  public Result<Unit> encode(EncoderApi encoder, Either<L, R> either) {
+    encoder.encodeTypeId(TypeId.TYPE_RESULT);
 
-  Result<Unit> expectType(TypeId typeId);
+    either.apply(
+        left -> {
+          encoder.writeByte(ResultTypeId.RESULT_TYPE_ERR.typeId());
+          encoder.encode(left);
+        },
+        right -> {
+          encoder.writeByte(ResultTypeId.RESULT_TYPE_OK.typeId());
+          encoder.encode(right);
+        });
 
-  Result<Integer> decodeArrayHeader(TypeId expectedId);
+    return Unit.unitResult();
+  }
 
-  Result<Byte> readByte();
-
-  Result<Short> readShort();
-
-  Result<Integer> readInt();
-
-  Result<Long> readLong();
-
-  Result<byte[]> readBytes(int length);
-
-  Result<short[]> readShorts(int length);
-
-  Result<int[]> readIntegers(int length);
-
-  Result<long[]> readLongs(int length);
-
-  <T> Result<Option<T>> decodeOption(Class<T> valueType);
-
-  <L, R> Result<Either<L, R>> decodeEither(Class<L> leftValueType, Class<R> rightValueType);
+  @Override
+  public Result<Either<L, R>> decode(DecoderApi decoder) {
+    return decoder
+        .expectType(TypeId.TYPE_RESULT)
+        .flatMap(decoder::readByte)
+        .map(ResultTypeId::forId)
+        .flatMap(
+            option ->
+                option.fold(
+                    DecodingError.INVALID_RESULT::result,
+                    resultType ->
+                        switch (resultType) {
+                          case RESULT_TYPE_OK -> decoder.decode(rightType).map(Either::right);
+                          case RESULT_TYPE_ERR -> decoder.decode(leftType).map(Either::left);
+                        }));
+  }
 }

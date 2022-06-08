@@ -64,6 +64,7 @@
 
 package com.radixdlt.sbor;
 
+import com.google.inject.TypeLiteral;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
@@ -94,6 +95,10 @@ public record SborCoder(CodecMap codecs) {
 
   public <T> Result<T> decode(byte[] input, Class<T> clazz) {
     return new Decoder(new ByteArrayInputStream(input), codecs).decode(clazz);
+  }
+
+  public <T> Result<T> decode(byte[] input, TypeLiteral<T> typeLiteral) {
+    return new Decoder(new ByteArrayInputStream(input), codecs).decode(typeLiteral);
   }
 
   public <T> Result<Option<T>> decodeOption(byte[] input, Class<T> clazz) {

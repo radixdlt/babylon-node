@@ -66,6 +66,7 @@ package com.radixdlt.sbor.coding;
 
 import static com.radixdlt.lang.Result.success;
 
+import com.google.inject.TypeLiteral;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.lang.Option;
@@ -90,6 +91,13 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
   public <T> Result<T> decode(Class<T> clazz) {
     return codecMap
         .get(clazz)
+        .fold(DecodingError.UNSUPPORTED_TYPE::result, codec -> codec.decode(this));
+  }
+
+  @Override
+  public <T> Result<T> decode(TypeLiteral<T> type) {
+    return codecMap
+        .get(type)
         .fold(DecodingError.UNSUPPORTED_TYPE::result, codec -> codec.decode(this));
   }
 

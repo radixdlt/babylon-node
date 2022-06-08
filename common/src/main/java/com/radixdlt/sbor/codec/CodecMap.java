@@ -66,48 +66,143 @@ package com.radixdlt.sbor.codec;
 
 import static com.radixdlt.lang.Option.option;
 
+import com.google.inject.TypeLiteral;
+import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Unit;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 /** Container for mapping between codec and class. */
+@SuppressWarnings({
+  "rawtypes",
+  "unchecked"
+}) // This class is required to play fast and loose with generics
 public final class CodecMap {
-  @SuppressWarnings("rawtypes")
+
   private final Map<Class, Codec> classEncodingMap = new HashMap<>();
 
+  private final Map<TypeLiteral, Codec> explicitTypeEncodingMap = new HashMap<>();
+
+  private final Map<Class, Function<TypeLiteral, Codec>> codecCreatorMap = new HashMap<>();
+
+  // QQ: Make this all static
   public CodecMap() {
-    classEncodingMap.put(Unit.class, new CoreTypeCodec.UnitCodec());
-    classEncodingMap.put(String.class, new CoreTypeCodec.StringCodec());
+    addCoreCodec(Unit.class, new CoreTypeCodec.UnitCodec());
+    addCoreCodec(String.class, new CoreTypeCodec.StringCodec());
 
-    classEncodingMap.put(Boolean.class, new CoreTypeCodec.BooleanCodec());
-    classEncodingMap.put(boolean.class, new CoreTypeCodec.BooleanCodec());
+    addCoreCodec(Boolean.class, new CoreTypeCodec.BooleanCodec());
+    addCoreCodec(boolean.class, new CoreTypeCodec.BooleanCodec());
 
-    classEncodingMap.put(Byte.class, new CoreTypeCodec.ByteCodec());
-    classEncodingMap.put(byte.class, new CoreTypeCodec.ByteCodec());
+    addCoreCodec(Byte.class, new CoreTypeCodec.ByteCodec());
+    addCoreCodec(byte.class, new CoreTypeCodec.ByteCodec());
 
-    classEncodingMap.put(Short.class, new CoreTypeCodec.ShortCodec());
-    classEncodingMap.put(short.class, new CoreTypeCodec.ShortCodec());
+    addCoreCodec(Short.class, new CoreTypeCodec.ShortCodec());
+    addCoreCodec(short.class, new CoreTypeCodec.ShortCodec());
 
-    classEncodingMap.put(Integer.class, new CoreTypeCodec.IntegerCodec());
-    classEncodingMap.put(int.class, new CoreTypeCodec.IntegerCodec());
+    addCoreCodec(Integer.class, new CoreTypeCodec.IntegerCodec());
+    addCoreCodec(int.class, new CoreTypeCodec.IntegerCodec());
 
-    classEncodingMap.put(Long.class, new CoreTypeCodec.LongCodec());
-    classEncodingMap.put(long.class, new CoreTypeCodec.LongCodec());
+    addCoreCodec(Long.class, new CoreTypeCodec.LongCodec());
+    addCoreCodec(long.class, new CoreTypeCodec.LongCodec());
 
-    classEncodingMap.put(byte[].class, new CoreTypeCodec.ByteArrayCodec());
-    classEncodingMap.put(short[].class, new CoreTypeCodec.ShortArrayCodec());
-    classEncodingMap.put(int[].class, new CoreTypeCodec.IntegerArrayCodec());
-    classEncodingMap.put(long[].class, new CoreTypeCodec.LongArrayCodec());
+    addCoreCodec(byte[].class, new CoreTypeCodec.ByteArrayCodec());
+    addCoreCodec(short[].class, new CoreTypeCodec.ShortArrayCodec());
+    addCoreCodec(int[].class, new CoreTypeCodec.IntegerArrayCodec());
+    addCoreCodec(long[].class, new CoreTypeCodec.LongArrayCodec());
+
+    registerGenericCodecCreator(
+        Either.class,
+        eitherTypeLiteral -> {
+          try {
+            var leftType = eitherTypeLiteral.getReturnType(Either.class.getMethod("unwrapLeft"));
+            var rightType = eitherTypeLiteral.getReturnType(Either.class.getMethod("unwrapRight"));
+            return new EitherTypeCodec(leftType, rightType);
+          } catch (Exception ex) {
+            throw new RuntimeException(ex);
+          }
+        });
   }
 
-  @SuppressWarnings("unchecked")
+  private <T> void addCoreCodec(Class<T> clazz, Codec<T> codec) {
+    classEncodingMap.put(clazz, codec);
+    explicitTypeEncodingMap.put(TypeLiteral.get(clazz), codec);
+  }
+
+  public <T> Option<Codec<T>> get(TypeLiteral<T> typeLiteral) {
+    // First - let's try to find a pre-registered codec for this explicit type literal
+    var codec = explicitTypeEncodingMap.get(typeLiteral);
+    if (codec != null) {
+      return option(codec);
+    }
+
+    // Failing that - let's see if we can create one with a codec creator
+    var codecCreator = codecCreatorMap.get(typeLiteral.getRawType());
+    if (codecCreator != null) {
+      var newCodec = codecCreator.apply(typeLiteral);
+
+      // We cache the codec for future use
+      registerExplicitGeneric(typeLiteral, newCodec);
+      return option(newCodec);
+    }
+
+    // QQ: Replace with an Exception - as this is exceptional
+    return Option.empty();
+  }
+
   public <T> Option<Codec<T>> get(Class<T> clazz) {
-    return option(classEncodingMap.get(clazz));
+    var codec = classEncodingMap.get(clazz);
+
+    if (codec != null) {
+      return Option.present(codec);
+    }
+
+    // We are in a failure case here - so let's try to be helpful
+    var codecCreator = codecCreatorMap.get(clazz);
+    if (codecCreator != null) {
+      // QQ: Add a better exception
+      throw new RuntimeException(
+          String.format(
+              "The class object %s itself has no registered SBOR codec, BUT a codec creator is"
+                  + " registered. You should use an explicit TypeLiteral<X<Y,Z>> instead of a class"
+                  + " object,so that type information can be used to create the correct Codec.",
+              clazz));
+    }
+
+    // QQ: Replace with an Exception - as this is exceptional
+    return Option.empty();
   }
 
   public <T> CodecMap register(Class<T> clazz, Codec<T> codec) {
-    classEncodingMap.put(clazz, codec);
+    synchronized (classEncodingMap) {
+      classEncodingMap.put(clazz, codec);
+    }
+    return this;
+  }
+
+  public <T> CodecMap registerGenericCodecCreator(
+      Class<T> clazz, Function<TypeLiteral<T>, Codec> createCodec) {
+    synchronized (codecCreatorMap) {
+      codecCreatorMap.put(clazz, createCodec::apply);
+    }
+    return this;
+  }
+
+  /**
+   * This is mostly intended for internal use - for registering a codec for a concrete generic.
+   * Externally, it's recommended to register via a register (for non-generic types) or
+   * registerGenericCodecCreator (for generic types).
+   *
+   * @param typeLiteral An explicit type to register a codec for
+   * @param codec The codec to register
+   * @return the CodecMap
+   * @param <T> The (generic) type the codec is being registered for
+   */
+  public <T> CodecMap registerExplicitGeneric(TypeLiteral<T> typeLiteral, Codec<T> codec) {
+    synchronized (explicitTypeEncodingMap) {
+      explicitTypeEncodingMap.put(typeLiteral, codec);
+    }
     return this;
   }
 }
