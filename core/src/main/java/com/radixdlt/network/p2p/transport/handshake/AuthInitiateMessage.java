@@ -65,10 +65,8 @@
 package com.radixdlt.network.p2p.transport.handshake;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
-import com.radixdlt.capability.v2.LedgerSyncCapability;
 import com.radixdlt.capability.v2.RemotePeerCapability;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.serialization.DsonOutput;
@@ -76,11 +74,10 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 @SerializerId2("message.handshake.auth_initiate")
-public final class AuthInitiateMessage {
+public final class AuthInitiateMessage extends BaseHandshakeMessage {
 
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)
   @DsonOutput(DsonOutput.Output.ALL)
@@ -102,13 +99,6 @@ public final class AuthInitiateMessage {
   @DsonOutput(DsonOutput.Output.ALL)
   private final int networkId;
 
-  private final Optional<String> newestForkName;
-
-  @JsonProperty("capabilities")
-  @DsonOutput(DsonOutput.Output.ALL)
-  @JsonInclude()
-  private final Set<RemotePeerCapability> capabilities;
-
   @JsonCreator
   public static AuthInitiateMessage deserialize(
       @JsonProperty(value = "signature", required = true) ECDSASignature signature,
@@ -117,14 +107,8 @@ public final class AuthInitiateMessage {
       @JsonProperty("networkId") int networkId,
       @JsonProperty("newestForkName") String rawNewestForkName,
       @JsonProperty("capabilities") Set<RemotePeerCapability> nullableCapabilities) {
-    final var newestForkName =
-        rawNewestForkName == null ? Optional.<String>empty() : Optional.of(rawNewestForkName);
-    final var capabilities =
-        nullableCapabilities == null
-            ? Set.of(LedgerSyncCapability.Builder.asDefault().build().toRemotePeerCapability())
-            : nullableCapabilities;
     return new AuthInitiateMessage(
-        signature, publicKey, nonce, networkId, newestForkName, capabilities);
+        signature, publicKey, nonce, networkId, rawNewestForkName, nullableCapabilities);
   }
 
   public AuthInitiateMessage(
@@ -132,14 +116,13 @@ public final class AuthInitiateMessage {
       HashCode publicKey,
       HashCode nonce,
       int networkId,
-      Optional<String> newestForkName,
-      Set<RemotePeerCapability> capabilitiesNames) {
+      String rawNewestForkName,
+      Set<RemotePeerCapability> nullableCapabilities) {
+    super(rawNewestForkName, nullableCapabilities);
     this.signature = signature;
     this.publicKey = publicKey;
     this.nonce = nonce;
     this.networkId = networkId;
-    this.newestForkName = newestForkName;
-    this.capabilities = capabilitiesNames;
   }
 
   public ECDSASignature getSignature() {
@@ -156,20 +139,6 @@ public final class AuthInitiateMessage {
 
   public int getNetworkId() {
     return networkId;
-  }
-
-  public Optional<String> getNewestForkName() {
-    return newestForkName;
-  }
-
-  @JsonProperty("newestForkName")
-  @DsonOutput(DsonOutput.Output.ALL)
-  public String rawNewestForkName() {
-    return this.newestForkName.orElse(null);
-  }
-
-  public Set<RemotePeerCapability> getCapabilities() {
-    return capabilities;
   }
 
   @Override

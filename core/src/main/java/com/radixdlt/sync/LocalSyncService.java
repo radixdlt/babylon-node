@@ -70,7 +70,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.radixdlt.capability.v2.Capabilities;
+import com.radixdlt.capability.v2.LedgerSyncCapability;
 import com.radixdlt.capability.v2.RemotePeerCapability;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -306,9 +306,9 @@ public final class LocalSyncService {
   private boolean filterByLedgerSync(PeersView.PeerInfo peerInfo) {
     return peerInfo.getChannels().stream()
         .flatMap(peerChannelInfo -> peerChannelInfo.getCapabilities().stream())
-        .map(RemotePeerCapability::name)
+        .map(RemotePeerCapability::getName)
         .collect(toSet())
-        .contains(Capabilities.Name.LEDGER_SYNC.name());
+        .contains(LedgerSyncCapability.NAME);
   }
 
   private SyncState processStatusResponse(

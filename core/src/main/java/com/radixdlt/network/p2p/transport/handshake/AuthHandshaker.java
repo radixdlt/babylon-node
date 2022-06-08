@@ -169,7 +169,7 @@ public final class AuthHandshaker {
         HashCode.fromBytes(ecKeyOps.nodePubKey().getBytes()),
         HashCode.fromBytes(nonce),
         networkId,
-        Optional.of(newestForkName),
+        newestForkName,
         this.capabilities == null ? null : this.capabilities.toRemotePeerCapabilities());
   }
 
@@ -197,7 +197,7 @@ public final class AuthHandshaker {
           new AuthResponseMessage(
               HashCode.fromBytes(ephemeralKey.getPublicKey().getBytes()),
               HashCode.fromBytes(nonce),
-              Optional.of(newestForkName),
+              newestForkName,
               this.capabilities == null ? null : this.capabilities.toRemotePeerCapabilities());
       final var encodedResponse = serialization.toDson(response, DsonOutput.Output.WIRE);
 

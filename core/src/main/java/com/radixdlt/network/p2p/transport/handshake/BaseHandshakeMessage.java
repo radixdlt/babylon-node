@@ -62,40 +62,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.capability.v2;
+package com.radixdlt.network.p2p.transport.handshake;
 
-import com.radixdlt.network.Message;
-import java.util.HashSet;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.capability.v2.Capabilities;
+import com.radixdlt.capability.v2.LedgerSyncCapability;
+import com.radixdlt.capability.v2.RemotePeerCapability;
+import com.radixdlt.serialization.DsonOutput;
+import java.util.Optional;
 import java.util.Set;
 
-public record Capabilities(LedgerSyncCapability ledgerSyncCapability) {
+public abstract class BaseHandshakeMessage {
 
-  public static final int MAX_NUMBER_OF_CAPABILITIES_ACCEPTED = 5;
+  protected final Optional<String> newestForkName;
 
-  /**
-   * Returns {@code true} if the Ledger Sync Capability is enabled.
-   *
-   * @return {@code true} if the Ledger Sync Capability is enabled.
-   */
-  public boolean isLedgerSyncEnabled() {
-    return this.ledgerSyncCapability.isEnabled();
+  @JsonProperty("capabilities")
+  @DsonOutput(DsonOutput.Output.ALL)
+  @JsonInclude()
+  protected final Set<RemotePeerCapability> capabilities;
+
+  public BaseHandshakeMessage(
+      String rawNewestForkName, Set<RemotePeerCapability> nullableCapabilities) {
+    final var newestForkName =
+        rawNewestForkName == null ? Optional.<String>empty() : Optional.of(rawNewestForkName);
+
+    final var capabilities =
+        nullableCapabilities == null
+            ? Set.of(LedgerSyncCapability.Builder.asDefault().build().toRemotePeerCapability())
+            : validateNumberOfCapabilitiesReceived(nullableCapabilities);
+    this.newestForkName = newestForkName;
+    this.capabilities = capabilities;
   }
 
-  /**
-   * Returns {@code true} if the specified message is supported.
-   *
-   * @param message a network {@link Message}
-   * @return {@code true} if the specified message is supported.
-   */
-  public boolean isMessageSupported(Message message) {
-    return ledgerSyncCapability.isEnabled() && ledgerSyncCapability.isMessageSupported(message);
-  }
-
-  public Set<RemotePeerCapability> toRemotePeerCapabilities() {
-    var caps = new HashSet<RemotePeerCapability>();
-    if (isLedgerSyncEnabled()) {
-      caps.add(this.ledgerSyncCapability.toRemotePeerCapability());
+  private static Set<RemotePeerCapability> validateNumberOfCapabilitiesReceived(
+      Set<RemotePeerCapability> capabilities) {
+    if (capabilities.size() > Capabilities.MAX_NUMBER_OF_CAPABILITIES_ACCEPTED) {
+      throw new InvalidHandshakeMessageException(
+          String.format(
+              "Invalid handshake message. The remote peer sent us %s capabilities, but we accept at"
+                  + " most %s.",
+              capabilities.size(), Capabilities.MAX_NUMBER_OF_CAPABILITIES_ACCEPTED));
     }
-    return caps;
+    try {
+      capabilities.forEach(RemotePeerCapability::valitate);
+    } catch (IllegalArgumentException e) {
+      throw new InvalidHandshakeMessageException("Invalid handshake message", e);
+    }
+    return capabilities;
+  }
+
+  public Optional<String> getNewestForkName() {
+    return newestForkName;
+  }
+
+  @JsonProperty("newestForkName")
+  @DsonOutput(DsonOutput.Output.ALL)
+  public String rawNewestForkName() {
+    return this.newestForkName.orElse(null);
+  }
+
+  public Set<RemotePeerCapability> getCapabilities() {
+    return capabilities;
   }
 }

@@ -64,24 +64,78 @@
 
 package com.radixdlt.capability.v2;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 import java.util.Map;
-import java.util.Objects;
 
-/**
- * Represents a Capability supported by a remote peer. The rationale behind using String and Map is
- * to be able to support capabilities not yet known by a node.
- *
- * @param name a Capability name
- * @param configuration a map representing the name and value of each Capability configuration.
- */
-public record RemotePeerCapability(String name, Map<String, String> configuration) {
-  public RemotePeerCapability {
-    Objects.requireNonNull(name);
-    Objects.requireNonNull(configuration);
-    int configMaxSize = 5;
-    if (configuration.size() > configMaxSize) {
+@SerializerId2("message.handshake.auth_initiate.cap")
+public class RemotePeerCapability {
+
+  public static final int CONFIG_MAP_MAX_SIZE = 5;
+  public static final int CONFIG_MAX_NAME_SIZE = 32;
+  public static final int CONFIG_MAX_VALUE_SIZE = 32;
+
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(DsonOutput.Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+  @JsonProperty("name")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private String name;
+
+  @JsonProperty("config")
+  @DsonOutput(DsonOutput.Output.ALL)
+  @JsonInclude()
+  private Map<String, String> configuration;
+
+  /**
+   * Represents a Capability supported by a remote peer. The rationale behind using String and Map
+   * is to be able to support capabilities not yet known by a node.
+   *
+   * @param name a Capability name
+   * @param configuration a map representing the name and value of each Capability configuration.
+   */
+  @JsonCreator
+  public RemotePeerCapability(
+      @JsonProperty("name") String name,
+      @JsonProperty("config") Map<String, String> configuration) {
+    this.name = name;
+    this.configuration = configuration;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public Map<String, String> getConfiguration() {
+    return configuration;
+  }
+
+  public void valitate() {
+    if (this.configuration.size() > CONFIG_MAP_MAX_SIZE) {
       throw new IllegalArgumentException(
-          String.format("Configuration map can't have more than %s entries.", configMaxSize));
+          String.format(
+              "Configuration map cannot have more than %s entries.", CONFIG_MAP_MAX_SIZE));
     }
+    this.configuration.forEach(
+        (configName, configValue) -> {
+          if (configName.length() > CONFIG_MAX_NAME_SIZE) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "Configuration %s cannot have name length bigger than %s.",
+                    CONFIG_MAX_NAME_SIZE));
+          }
+          if (configValue.length() > CONFIG_MAX_VALUE_SIZE) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "Configuration %s cannot have value length bigger than %s.",
+                    CONFIG_MAX_VALUE_SIZE));
+          }
+        });
   }
 }

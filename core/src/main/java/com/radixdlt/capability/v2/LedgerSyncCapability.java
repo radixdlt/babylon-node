@@ -72,7 +72,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class LedgerSyncCapability {
-  private final Capabilities.Name name = Capabilities.Name.LEDGER_SYNC;
+  public static final String NAME = "ledger-sync";
   private boolean isEnabled;
   // the subset of messages which should be discarded if received by other peers when the Capability
   // is disabled.
@@ -88,7 +88,7 @@ public class LedgerSyncCapability {
   }
 
   public String getName() {
-    return name.name();
+    return NAME;
   }
 
   public boolean isEnabled() {

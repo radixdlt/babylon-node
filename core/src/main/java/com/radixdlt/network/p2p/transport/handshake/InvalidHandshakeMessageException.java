@@ -62,40 +62,25 @@
  * permissions under this License.
  */
 
-package com.radixdlt.capability.v2;
+package com.radixdlt.network.p2p.transport.handshake;
 
-import com.radixdlt.network.Message;
-import java.util.HashSet;
-import java.util.Set;
+public class InvalidHandshakeMessageException extends RuntimeException {
+  public InvalidHandshakeMessageException() {}
 
-public record Capabilities(LedgerSyncCapability ledgerSyncCapability) {
-
-  public static final int MAX_NUMBER_OF_CAPABILITIES_ACCEPTED = 5;
-
-  /**
-   * Returns {@code true} if the Ledger Sync Capability is enabled.
-   *
-   * @return {@code true} if the Ledger Sync Capability is enabled.
-   */
-  public boolean isLedgerSyncEnabled() {
-    return this.ledgerSyncCapability.isEnabled();
+  public InvalidHandshakeMessageException(String message) {
+    super(message);
   }
 
-  /**
-   * Returns {@code true} if the specified message is supported.
-   *
-   * @param message a network {@link Message}
-   * @return {@code true} if the specified message is supported.
-   */
-  public boolean isMessageSupported(Message message) {
-    return ledgerSyncCapability.isEnabled() && ledgerSyncCapability.isMessageSupported(message);
+  public InvalidHandshakeMessageException(String message, Throwable cause) {
+    super(message, cause);
   }
 
-  public Set<RemotePeerCapability> toRemotePeerCapabilities() {
-    var caps = new HashSet<RemotePeerCapability>();
-    if (isLedgerSyncEnabled()) {
-      caps.add(this.ledgerSyncCapability.toRemotePeerCapability());
-    }
-    return caps;
+  public InvalidHandshakeMessageException(Throwable cause) {
+    super(cause);
+  }
+
+  public InvalidHandshakeMessageException(
+      String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    super(message, cause, enableSuppression, writableStackTrace);
   }
 }
