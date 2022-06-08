@@ -17,12 +17,15 @@ jobs:
           access_token: ${{ github.token }}
   build:
     name: Unit tests and sonarqube
-    runs-on: ubuntu-20.04
+    runs-on: babylon-runner
     steps:
       - uses: actions/checkout@v2
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
       - name: Set up JDK 17
         uses: actions/setup-java@v2
         with:
@@ -51,12 +54,15 @@ jobs:
         run: ./gradlew sonarqube
   steadystate-integration:
     name: Steady state integration tests
-    runs-on: ubuntu-20.04
+    runs-on: babylon-runner
     steps:
       - uses: actions/checkout@v2
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
       - name: Set up JDK 17
         uses: actions/setup-java@v2
         with:
@@ -77,12 +83,15 @@ jobs:
         run: ./gradlew runSteadyStateIntegrationTests --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
-    runs-on: ubuntu-20.04
+    runs-on: babylon-runner
     steps:
       - uses: actions/checkout@v2
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
       - name: Set up JDK 17
         uses: actions/setup-java@v2
         with:
