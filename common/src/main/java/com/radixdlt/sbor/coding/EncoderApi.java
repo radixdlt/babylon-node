@@ -62,24 +62,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.codec;
+package com.radixdlt.sbor.coding;
 
 import com.radixdlt.lang.Either;
-import com.radixdlt.lang.Functions.FN1;
 import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.constants.TypeId;
 
-public record ClassField<T>(
-    Class<?> baseType, Class<?> firstArg, Class<?> secondArg, FN1<?, T> getter) {
-  public static <T> ClassField<T> plain(Class<?> baseType, FN1<?, T> getter) {
-    return new ClassField<>(baseType, null, null, getter);
-  }
+public interface EncoderApi {
+  Result<Unit> encode(Object value);
 
-  public static <V, T> ClassField<T> forOption(Class<V> firstArg, FN1<Option<V>, T> getter) {
-    return new ClassField<>(Option.class, firstArg, null, getter);
-  }
+  Result<Unit> encodeTypeId(TypeId typeId);
 
-  public static <L, R, T> ClassField<T> forEither(
-      Class<L> leftType, Class<R> rightType, FN1<Either<L, R>, T> getter) {
-    return new ClassField<>(Either.class, leftType, rightType, getter);
-  }
+  void encodeArrayHeader(TypeId typeId, int length);
+
+  void writeByte(byte value);
+
+  void writeBytes(byte[] value);
+
+  void writeShort(short value);
+
+  void writeInt(int value);
+
+  void writeLong(long value);
+
+  Result<Unit> encodeOption(Option<?> option);
+
+  Result<Unit> encodeEither(Either<?, ?> either);
 }

@@ -62,124 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.codec;
+package com.radixdlt.sbor.codec.constants;
 
-import static com.radixdlt.interop.sbor.api.EncodingError.UNSUPPORTED_TYPE;
-import static com.radixdlt.interop.sbor.api.OptionTypeId.OPTION_TYPE_NONE;
-import static com.radixdlt.interop.sbor.api.OptionTypeId.OPTION_TYPE_SOME;
-import static com.radixdlt.interop.sbor.api.ResultTypeId.RESULT_TYPE_ERR;
-import static com.radixdlt.interop.sbor.api.ResultTypeId.RESULT_TYPE_OK;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_OPTION;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_RESULT;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_VEC;
-
-import com.radixdlt.interop.sbor.api.EncoderApi;
-import com.radixdlt.interop.sbor.api.TypeId;
-import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
-import java.io.ByteArrayOutputStream;
 
-record AnyEncoder(ByteArrayOutputStream output, CodecMap codecMap) implements EncoderApi {
-  @SuppressWarnings("unchecked")
-  @Override
-  public Result<Unit> encode(Object value) {
-    if (value instanceof Option<?> option) {
-      return encodeOption(option);
-    }
+public enum ResultTypeId {
+  RESULT_TYPE_OK(0x00),
+  RESULT_TYPE_ERR(0x01);
 
-    if (value instanceof Either<?, ?> either) {
-      return encodeEither(either);
-    }
+  private final byte typeId;
 
-    return codecMap
-        .get(value.getClass())
-        .fold(
-            UNSUPPORTED_TYPE::result,
-            codec ->
-                ((com.radixdlt.interop.sbor.codec.core.Codec<Object>) codec).encode(this, value));
+  ResultTypeId(int typeId) {
+    this.typeId = (byte) typeId;
   }
 
-  @Override
-  public Result<Unit> encodeTypeId(TypeId typeId) {
-    writeByte(typeId.typeId());
-    return Unit.unitResult();
+  public byte typeId() {
+    return typeId;
   }
 
-  @Override
-  public Result<Unit> encodeOption(Option<?> option) {
-    encodeTypeId(TYPE_OPTION);
-
-    option.apply(
-        () -> writeByte(OPTION_TYPE_NONE.typeId()),
-        v -> {
-          writeByte(OPTION_TYPE_SOME.typeId());
-          encode(v);
-        });
-
-    return Unit.unitResult();
-  }
-
-  @Override
-  public Result<Unit> encodeEither(Either<?, ?> either) {
-    encodeTypeId(TYPE_RESULT);
-
-    either.apply(
-        left -> {
-          writeByte(RESULT_TYPE_ERR.typeId());
-          encode(left);
-        },
-        right -> {
-          writeByte(RESULT_TYPE_OK.typeId());
-          encode(right);
-        });
-
-    return Unit.unitResult();
-  }
-
-  @Override
-  public void encodeArrayHeader(TypeId typeId, int length) {
-    encodeTypeId(TYPE_VEC);
-    encodeTypeId(typeId);
-    writeInt(length);
-  }
-
-  @Override
-  public void writeByte(byte value) {
-    output.write(value);
-  }
-
-  @Override
-  public void writeBytes(byte[] value) {
-    if (value.length > 0) {
-      output.writeBytes(value);
-    }
-  }
-
-  @Override
-  public void writeShort(short value) {
-    writeByte((byte) (value & 0xFF));
-    writeByte((byte) ((value >> 8) & 0xFF));
-  }
-
-  @Override
-  public void writeInt(int value) {
-    writeByte((byte) (value & 0xFF));
-    writeByte((byte) ((value >> 8) & 0xFF));
-    writeByte((byte) ((value >> 16) & 0xFF));
-    writeByte((byte) ((value >> 24) & 0xFF));
-  }
-
-  @Override
-  public void writeLong(long value) {
-    writeByte((byte) (value & 0xFF));
-    writeByte((byte) ((value >> 8) & 0xFF));
-    writeByte((byte) ((value >> 16) & 0xFF));
-    writeByte((byte) ((value >> 24) & 0xFF));
-    writeByte((byte) ((value >> 32) & 0xFF));
-    writeByte((byte) ((value >> 40) & 0xFF));
-    writeByte((byte) ((value >> 48) & 0xFF));
-    writeByte((byte) ((value >> 56) & 0xFF));
+  public static Option<ResultTypeId> forId(byte id) {
+    return switch (id) {
+      case 0x00 -> Option.option(RESULT_TYPE_OK);
+      case 0x01 -> Option.option(RESULT_TYPE_ERR);
+      default -> Option.empty();
+    };
   }
 }

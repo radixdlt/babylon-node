@@ -62,46 +62,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.codec;
+package com.radixdlt.sbor.coding;
 
-import static com.radixdlt.interop.sbor.api.DecodingError.EOF;
-import static com.radixdlt.interop.sbor.api.DecodingError.INVALID_OPTION;
-import static com.radixdlt.interop.sbor.api.DecodingError.INVALID_RESULT;
-import static com.radixdlt.interop.sbor.api.DecodingError.TYPE_MISMATCH;
-import static com.radixdlt.interop.sbor.api.DecodingError.UNSUPPORTED_TYPE;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_OPTION;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_RESULT;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_VEC;
 import static com.radixdlt.lang.Result.success;
 
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.api.OptionTypeId;
-import com.radixdlt.interop.sbor.api.ResultTypeId;
-import com.radixdlt.interop.sbor.api.TypeId;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.constants.OptionTypeId;
+import com.radixdlt.sbor.codec.constants.ResultTypeId;
+import com.radixdlt.sbor.codec.constants.TypeId;
 import java.io.ByteArrayInputStream;
 
-record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements DecoderApi {
+/**
+ * Performs the role of an AnyDecoder in the Rust SBOR implementation
+ *
+ * @param output
+ * @param codecMap
+ */
+public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements DecoderApi {
   private static final int EOF_RC = -1;
 
   @Override
   public <T> Result<T> decode(Class<T> clazz) {
-    return codecMap.get(clazz).fold(UNSUPPORTED_TYPE::result, codec -> codec.decode(this));
+    return codecMap
+        .get(clazz)
+        .fold(DecodingError.UNSUPPORTED_TYPE::result, codec -> codec.decode(this));
   }
 
   @Override
   public <T> Result<Option<T>> decodeOption(Class<T> valueClass) {
-    return expectType(TYPE_OPTION)
+    return expectType(TypeId.TYPE_OPTION)
         .flatMap(this::readByte)
         .map(OptionTypeId::forId)
         .flatMap(
             option ->
                 option.fold(
-                    INVALID_OPTION::result,
+                    DecodingError.INVALID_OPTION::result,
                     optionType ->
                         switch (optionType) {
                           case OPTION_TYPE_NONE -> success(Option.empty());
@@ -111,13 +111,13 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
 
   @Override
   public <L, R> Result<Either<L, R>> decodeEither(Class<L> leftClass, Class<R> rightClass) {
-    return expectType(TYPE_RESULT)
+    return expectType(TypeId.TYPE_RESULT)
         .flatMap(this::readByte)
         .map(ResultTypeId::forId)
         .flatMap(
             option ->
                 option.fold(
-                    INVALID_RESULT::result,
+                    DecodingError.INVALID_RESULT::result,
                     resultType ->
                         switch (resultType) {
                           case RESULT_TYPE_OK -> decode(rightClass).map(Either::right);
@@ -127,13 +127,13 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
 
   @Override
   public Result<Integer> decodeArrayHeader(TypeId expectedId) {
-    return expectType(TYPE_VEC).flatMap(() -> expectType(expectedId)).flatMap(this::readInt);
+    return expectType(TypeId.TYPE_VEC).flatMap(() -> expectType(expectedId)).flatMap(this::readInt);
   }
 
   @Override
   public Result<Unit> expectType(TypeId typeId) {
     return readByte()
-        .filter(TYPE_MISMATCH, typeByte -> typeByte == typeId.typeId())
+        .filter(DecodingError.TYPE_MISMATCH, typeByte -> typeByte == typeId.typeId())
         .map(Unit::unit);
   }
 
@@ -141,7 +141,7 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
   public Result<Byte> readByte() {
     var value = input.read();
 
-    return value == EOF_RC ? EOF.result() : success((byte) value);
+    return value == EOF_RC ? DecodingError.EOF.result() : success((byte) value);
   }
 
   @Override
@@ -150,7 +150,7 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
     var v1 = input.read();
 
     if (v0 == EOF_RC || v1 == EOF_RC) {
-      return EOF.result();
+      return DecodingError.EOF.result();
     }
 
     short value = (short) (v0 & 0xFF);
@@ -167,7 +167,7 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
     var v3 = input.read();
 
     if (v0 == EOF_RC || v1 == EOF_RC || v2 == EOF_RC || v3 == EOF_RC) {
-      return EOF.result();
+      return DecodingError.EOF.result();
     }
 
     int value = v0 & 0xFF;
@@ -197,7 +197,7 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
         || v5 == EOF_RC
         || v6 == EOF_RC
         || v7 == EOF_RC) {
-      return EOF.result();
+      return DecodingError.EOF.result();
     }
 
     long value = v0 & 0xFF;
@@ -216,8 +216,8 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
   public Result<byte[]> readBytes(int length) {
     var bytes = new byte[length];
 
-    return Result.lift(unused -> EOF, () -> input.read(bytes))
-        .filter(EOF, readLen -> readLen == length)
+    return Result.lift(unused -> DecodingError.EOF, () -> input.read(bytes))
+        .filter(DecodingError.EOF, readLen -> readLen == length)
         .map(() -> bytes);
   }
 
@@ -230,7 +230,7 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
       var result = readShort();
 
       if (result.isFailure()) {
-        return EOF.result();
+        return DecodingError.EOF.result();
       }
 
       result.apply(Functions::unitFn, value -> output[index[0]] = value);
@@ -248,7 +248,7 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
       var result = readInt();
 
       if (result.isFailure()) {
-        return EOF.result();
+        return DecodingError.EOF.result();
       }
 
       result.apply(Functions::unitFn, value -> output[index[0]] = value);
@@ -266,7 +266,7 @@ record AnyDecoder(ByteArrayInputStream input, CodecMap codecMap) implements Deco
       var result = readLong();
 
       if (result.isFailure()) {
-        return EOF.result();
+        return DecodingError.EOF.result();
       }
 
       result.apply(Functions::unitFn, value -> output[index[0]] = value);

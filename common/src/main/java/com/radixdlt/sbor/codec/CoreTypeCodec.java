@@ -62,17 +62,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.codec.core;
+package com.radixdlt.sbor.codec;
 
-import static com.radixdlt.interop.sbor.api.DecodingError.INVALID_BOOLEAN;
-import static com.radixdlt.interop.sbor.api.TypeId.*;
 import static com.radixdlt.lang.Result.success;
+import static com.radixdlt.sbor.codec.constants.TypeId.*;
+import static com.radixdlt.sbor.coding.DecodingError.INVALID_BOOLEAN;
 
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.api.EncoderApi;
-import com.radixdlt.interop.sbor.api.TypeId;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.EncoderApi;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 

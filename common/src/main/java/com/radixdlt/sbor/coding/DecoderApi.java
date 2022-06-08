@@ -62,31 +62,38 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.api;
+package com.radixdlt.sbor.coding;
 
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.constants.TypeId;
 
-public interface EncoderApi {
-  Result<Unit> encode(Object value);
+public interface DecoderApi {
+  <T> Result<T> decode(Class<T> type);
 
-  Result<Unit> encodeTypeId(TypeId typeId);
+  Result<Unit> expectType(TypeId typeId);
 
-  void encodeArrayHeader(TypeId typeId, int length);
+  Result<Integer> decodeArrayHeader(TypeId expectedId);
 
-  void writeByte(byte value);
+  Result<Byte> readByte();
 
-  void writeBytes(byte[] value);
+  Result<Short> readShort();
 
-  void writeShort(short value);
+  Result<Integer> readInt();
 
-  void writeInt(int value);
+  Result<Long> readLong();
 
-  void writeLong(long value);
+  Result<byte[]> readBytes(int length);
 
-  Result<Unit> encodeOption(Option<?> option);
+  Result<short[]> readShorts(int length);
 
-  Result<Unit> encodeEither(Either<?, ?> either);
+  Result<int[]> readIntegers(int length);
+
+  Result<long[]> readLongs(int length);
+
+  <T> Result<Option<T>> decodeOption(Class<T> valueType);
+
+  <L, R> Result<Either<L, R>> decodeEither(Class<L> leftValueType, Class<R> rightValueType);
 }

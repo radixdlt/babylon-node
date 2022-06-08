@@ -62,25 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.codec;
+package com.radixdlt.sbor;
 
 import static com.radixdlt.lang.Either.left;
 import static com.radixdlt.lang.Either.right;
 import static com.radixdlt.lang.Option.none;
 import static com.radixdlt.lang.Option.some;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
-import com.radixdlt.interop.sbor.codec.dto.SimpleRecord;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.dto.SimpleRecord;
 import org.junit.Test;
 
 @SuppressWarnings("deprecation")
-public class CodecTest {
+public class SborCoderTest {
   @Test
   public void unitCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
 
     var r0 = codec.encode(Unit.unit()).unwrap();
 
@@ -94,7 +93,7 @@ public class CodecTest {
 
   @Test
   public void booleanCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
 
     var r0 = codec.encode(true).unwrap();
 
@@ -109,7 +108,7 @@ public class CodecTest {
 
   @Test
   public void byteCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
 
     var r0 = codec.encode((byte) 0x5A).unwrap();
 
@@ -124,7 +123,7 @@ public class CodecTest {
 
   @Test
   public void shortCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
 
     var r0 = codec.encode((short) 0x1234).unwrap();
 
@@ -140,7 +139,7 @@ public class CodecTest {
 
   @Test
   public void intCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
 
     var r0 = codec.encode(0x12345678).unwrap();
 
@@ -158,7 +157,7 @@ public class CodecTest {
 
   @Test
   public void longCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
 
     var r0 = codec.encode(0x0123_4567_89AB_CDEFL).unwrap();
 
@@ -180,7 +179,7 @@ public class CodecTest {
 
   @Test
   public void stringCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
 
     var r0 = codec.encode("Test string").unwrap();
 
@@ -209,7 +208,7 @@ public class CodecTest {
 
   @Test
   public void byteArrayCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
     var testVector = new byte[] {0x01, 0x02, 0x03, 0x04, 0x05};
 
     var r0 = codec.encode(testVector).unwrap();
@@ -234,7 +233,7 @@ public class CodecTest {
 
   @Test
   public void shortArrayCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
     var testVector = new short[] {0x0102, 0x0304};
 
     var r0 = codec.encode(testVector).unwrap();
@@ -258,7 +257,7 @@ public class CodecTest {
 
   @Test
   public void intArrayCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
     var testVector = new int[] {0x01020304, 0x05060708, 0x090A0B0C};
 
     var r0 = codec.encode(testVector).unwrap();
@@ -290,7 +289,7 @@ public class CodecTest {
 
   @Test
   public void longArrayCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
     var testVector = new long[] {0x0102030405060708L, 0x090A0B0C11121314L};
 
     var r0 = codec.encode(testVector).unwrap();
@@ -326,7 +325,7 @@ public class CodecTest {
 
   @Test
   public void someOptionCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
 
     var r0 = codec.encodeOption(some("Test value")).unwrap();
 
@@ -342,7 +341,7 @@ public class CodecTest {
 
   @Test
   public void noneOptionCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
 
     var r0 = codec.encodeOption(none()).unwrap();
 
@@ -357,7 +356,7 @@ public class CodecTest {
 
   @Test
   public void leftEitherCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
 
     var r0 = codec.encodeEither(left("Some value")).unwrap();
 
@@ -373,7 +372,7 @@ public class CodecTest {
 
   @Test
   public void rightEitherCanBeEncodedAndDecoded() {
-    var codec = new Codec(new CodecMap());
+    var codec = new SborCoder(new CodecMap());
 
     var r0 = codec.encodeEither(right(123L)).unwrap();
 
@@ -390,7 +389,7 @@ public class CodecTest {
   @Test
   public void objectTreeCanBeEncodedAndDecoded() {
     var codec =
-        new Codec(
+        new SborCoder(
             new CodecMap().register(SimpleRecord.class, new SimpleRecord.SimpleRecordCodec()));
 
     var testValue = new SimpleRecord(1234567, "Some string", left(4567L), some(false));

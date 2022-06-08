@@ -62,30 +62,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.api;
+package com.radixdlt.sbor;
 
-import com.radixdlt.lang.Cause;
+import com.radixdlt.lang.Either;
+import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.coding.Decoder;
+import com.radixdlt.sbor.coding.Encoder;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 
-public enum EncodingError implements Cause {
-  UNSUPPORTED_TYPE("Unsupported type");
+public record SborCoder(CodecMap codecs) {
+  public Result<byte[]> encode(Object value) {
+    var outputStream = new ByteArrayOutputStream();
 
-  private String message;
-  private Result<?> result;
-
-  EncodingError(String message) {
-    this.message = message;
-    this.result = Result.failure(this);
+    return new Encoder(outputStream, codecs).encode(value).map(outputStream::toByteArray);
   }
 
-  @Override
-  public String message() {
-    return message;
+  public <T> Result<byte[]> encodeOption(Option<T> value) {
+    var outputStream = new ByteArrayOutputStream();
+
+    return new Encoder(outputStream, codecs).encodeOption(value).map(outputStream::toByteArray);
   }
 
-  @SuppressWarnings("unchecked")
-  @Override
-  public <T> Result<T> result() {
-    return (Result<T>) result;
+  public <L, R> Result<byte[]> encodeEither(Either<L, R> value) {
+    var outputStream = new ByteArrayOutputStream();
+
+    return new Encoder(outputStream, codecs).encodeEither(value).map(outputStream::toByteArray);
+  }
+
+  public <T> Result<T> decode(byte[] input, Class<T> clazz) {
+    return new Decoder(new ByteArrayInputStream(input), codecs).decode(clazz);
+  }
+
+  public <T> Result<Option<T>> decodeOption(byte[] input, Class<T> clazz) {
+    return new Decoder(new ByteArrayInputStream(input), codecs).decodeOption(clazz);
+  }
+
+  public <L, R> Result<Either<L, R>> decodeEither(
+      byte[] input, Class<L> leftClass, Class<R> rightClass) {
+    return new Decoder(new ByteArrayInputStream(input), codecs).decodeEither(leftClass, rightClass);
   }
 }

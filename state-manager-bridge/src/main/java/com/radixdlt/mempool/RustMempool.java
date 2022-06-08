@@ -66,11 +66,11 @@ package com.radixdlt.mempool;
 
 import com.radixdlt.exceptions.SborException;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.codec.Codec;
-import com.radixdlt.interop.sbor.codec.CodecMap;
-import com.radixdlt.interop.sbor.utils.DecodeResult;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.SborCoder;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.utils.DecodeResult;
 import com.radixdlt.statemanager.StateManager.RustState;
 import com.radixdlt.statemanager.StateManagerError;
 import com.radixdlt.transactions.Transaction;
@@ -78,8 +78,8 @@ import java.util.Objects;
 
 public class RustMempool {
   private final RustState rustState;
-  private Codec codec =
-      new Codec(
+  private SborCoder sborCoder =
+      new SborCoder(
           new CodecMap()
               .register(Transaction.class, new Transaction.TransactionCodec())
               .register(AID.class, new AID.AIDCodec())
@@ -92,13 +92,14 @@ public class RustMempool {
   public Transaction add(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
     var encodedRequest =
-        this.codec
+        this.sborCoder
             .encode(transaction)
             .unwrap(c -> new SborException(Transaction.class, true, true, c.message()));
     var encodedResponse = add(this.rustState, encodedRequest);
 
     var result =
-        new DecodeResult(this.codec, Unit.class, StateManagerError.class).decode(encodedResponse);
+        new DecodeResult(this.sborCoder, Unit.class, StateManagerError.class)
+            .decode(encodedResponse);
 
     // Handle Errors.
     Option<StateManagerError> optErr = result.toOptionErr();

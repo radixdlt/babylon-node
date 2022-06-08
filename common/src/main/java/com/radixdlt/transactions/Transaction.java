@@ -64,17 +64,17 @@
 
 package com.radixdlt.transactions;
 
-import static com.radixdlt.interop.sbor.codec.ClassField.plain;
 import static com.radixdlt.lang.Result.all;
+import static com.radixdlt.sbor.codec.ClassField.plain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
 import com.radixdlt.lang.Result;
+import com.radixdlt.sbor.codec.ClassCodec;
+import com.radixdlt.sbor.codec.ClassField;
+import com.radixdlt.sbor.coding.DecoderApi;
 import java.util.List;
 import java.util.Objects;
 

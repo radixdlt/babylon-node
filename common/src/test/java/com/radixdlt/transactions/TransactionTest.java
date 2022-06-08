@@ -67,8 +67,8 @@ package com.radixdlt.transactions;
 import static org.junit.Assert.assertEquals;
 
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.codec.Codec;
-import com.radixdlt.interop.sbor.codec.CodecMap;
+import com.radixdlt.sbor.SborCoder;
+import com.radixdlt.sbor.codec.CodecMap;
 import org.junit.Test;
 
 public class TransactionTest {
@@ -79,7 +79,7 @@ public class TransactionTest {
     Transaction t0 = Transaction.create(payload);
 
     var codec =
-        new Codec(
+        new SborCoder(
             new CodecMap()
                 .register(Transaction.class, new Transaction.TransactionCodec())
                 .register(AID.class, new AID.AIDCodec()));

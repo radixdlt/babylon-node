@@ -62,54 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.codec;
+package com.radixdlt.sbor.codec.constants;
 
-import static com.radixdlt.lang.Option.option;
-
-import com.radixdlt.interop.sbor.codec.core.Codec;
-import com.radixdlt.interop.sbor.codec.core.CoreTypeCodec;
 import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Unit;
-import java.util.HashMap;
-import java.util.Map;
 
-/** Container for mapping between codec and class. */
-public final class CodecMap {
-  @SuppressWarnings("rawtypes")
-  private final Map<Class, Codec> classEncodingMap = new HashMap<>();
+public enum FieldsTypeId {
+  FIELDS_TYPE_NAMED(0x12),
+  FIELDS_TYPE_UNNAMED(0x13),
+  FIELDS_TYPE_UNIT(0x14);
 
-  public CodecMap() {
-    classEncodingMap.put(Unit.class, new CoreTypeCodec.UnitCodec());
-    classEncodingMap.put(String.class, new CoreTypeCodec.StringCodec());
+  private final byte typeId;
 
-    classEncodingMap.put(Boolean.class, new CoreTypeCodec.BooleanCodec());
-    classEncodingMap.put(boolean.class, new CoreTypeCodec.BooleanCodec());
-
-    classEncodingMap.put(Byte.class, new CoreTypeCodec.ByteCodec());
-    classEncodingMap.put(byte.class, new CoreTypeCodec.ByteCodec());
-
-    classEncodingMap.put(Short.class, new CoreTypeCodec.ShortCodec());
-    classEncodingMap.put(short.class, new CoreTypeCodec.ShortCodec());
-
-    classEncodingMap.put(Integer.class, new CoreTypeCodec.IntegerCodec());
-    classEncodingMap.put(int.class, new CoreTypeCodec.IntegerCodec());
-
-    classEncodingMap.put(Long.class, new CoreTypeCodec.LongCodec());
-    classEncodingMap.put(long.class, new CoreTypeCodec.LongCodec());
-
-    classEncodingMap.put(byte[].class, new CoreTypeCodec.ByteArrayCodec());
-    classEncodingMap.put(short[].class, new CoreTypeCodec.ShortArrayCodec());
-    classEncodingMap.put(int[].class, new CoreTypeCodec.IntegerArrayCodec());
-    classEncodingMap.put(long[].class, new CoreTypeCodec.LongArrayCodec());
+  FieldsTypeId(int typeId) {
+    this.typeId = (byte) typeId;
   }
 
-  @SuppressWarnings("unchecked")
-  public <T> Option<Codec<T>> get(Class<T> clazz) {
-    return option(classEncodingMap.get(clazz));
+  public byte typeId() {
+    return typeId;
   }
 
-  public <T> CodecMap register(Class<T> clazz, Codec<T> codec) {
-    classEncodingMap.put(clazz, codec);
-    return this;
+  public Option<FieldsTypeId> forId(byte id) {
+    return switch (id) {
+      case 0x12 -> Option.option(FIELDS_TYPE_NAMED);
+      case 0x13 -> Option.option(FIELDS_TYPE_UNNAMED);
+      case 0x14 -> Option.option(FIELDS_TYPE_UNIT);
+      default -> Option.empty();
+    };
   }
 }

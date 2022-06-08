@@ -62,42 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.codec.dto;
+package com.radixdlt.sbor.utils;
 
-import static com.radixdlt.interop.sbor.codec.ClassField.forEither;
-import static com.radixdlt.interop.sbor.codec.ClassField.forOption;
-import static com.radixdlt.interop.sbor.codec.ClassField.plain;
-import static com.radixdlt.lang.Result.all;
-
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
-import com.radixdlt.lang.Either;
-import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
-import java.util.List;
+import com.radixdlt.sbor.SborCoder;
 
-public record SimpleRecord(
-    int first, String second, Either<Long, String> third, Option<Boolean> fourth) {
+public class DecodeResult<T> {
 
-  public static class SimpleRecordCodec implements ClassCodec<SimpleRecord> {
-    @Override
-    public List<ClassField<SimpleRecord>> fields() {
-      return List.of(
-          plain(int.class, SimpleRecord::first),
-          plain(String.class, SimpleRecord::second),
-          forEither(Long.class, String.class, SimpleRecord::third),
-          forOption(Boolean.class, SimpleRecord::fourth));
-    }
+  private Class<T> successClass;
+  private Class<? extends Cause> failureClass;
+  private SborCoder sborCoder;
 
-    @Override
-    public Result<SimpleRecord> decodeFields(DecoderApi decoder) {
-      return all(
-              decoder.decode(int.class),
-              decoder.decode(String.class),
-              decoder.decodeEither(Long.class, String.class),
-              decoder.decodeOption(Boolean.class))
-          .map(SimpleRecord::new);
-    }
+  public DecodeResult(
+      SborCoder sborCoder, Class<T> successClass, Class<? extends Cause> failureClass) {
+    this.successClass = successClass;
+    this.failureClass = failureClass;
+    this.sborCoder = sborCoder;
+  }
+
+  public Result<T> decode(byte[] sbor) {
+    var either = sborCoder.decodeEither(sbor, failureClass, successClass).unwrap();
+    return either.fold(Result::err, Result::ok);
   }
 }

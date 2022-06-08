@@ -62,26 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.utils;
+package com.radixdlt.sbor.codec;
 
-import com.radixdlt.interop.sbor.codec.Codec;
-import com.radixdlt.lang.Cause;
-import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Either;
+import com.radixdlt.lang.Functions.FN1;
+import com.radixdlt.lang.Option;
 
-public class DecodeResult<T> {
-
-  private Class<T> successClass;
-  private Class<? extends Cause> failureClass;
-  private Codec codec;
-
-  public DecodeResult(Codec codec, Class<T> successClass, Class<? extends Cause> failureClass) {
-    this.successClass = successClass;
-    this.failureClass = failureClass;
-    this.codec = codec;
+public record ClassField<T>(
+    Class<?> baseType, Class<?> firstArg, Class<?> secondArg, FN1<?, T> getter) {
+  public static <T> ClassField<T> plain(Class<?> baseType, FN1<?, T> getter) {
+    return new ClassField<>(baseType, null, null, getter);
   }
 
-  public Result<T> decode(byte[] sbor) {
-    var either = codec.decodeEither(sbor, failureClass, successClass).unwrap();
-    return either.fold(Result::err, Result::ok);
+  public static <V, T> ClassField<T> forOption(Class<V> firstArg, FN1<Option<V>, T> getter) {
+    return new ClassField<>(Option.class, firstArg, null, getter);
+  }
+
+  public static <L, R, T> ClassField<T> forEither(
+      Class<L> leftType, Class<R> rightType, FN1<Either<L, R>, T> getter) {
+    return new ClassField<>(Either.class, leftType, rightType, getter);
   }
 }

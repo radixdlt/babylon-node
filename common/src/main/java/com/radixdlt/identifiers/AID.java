@@ -64,16 +64,16 @@
 
 package com.radixdlt.identifiers;
 
-import static com.radixdlt.interop.sbor.codec.ClassField.plain;
 import static com.radixdlt.lang.Result.all;
+import static com.radixdlt.sbor.codec.ClassField.plain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
+import com.radixdlt.sbor.codec.ClassCodec;
+import com.radixdlt.sbor.codec.ClassField;
+import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
 import java.util.Comparator;

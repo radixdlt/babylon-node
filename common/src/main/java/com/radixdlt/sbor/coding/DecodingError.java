@@ -62,43 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.codec;
+package com.radixdlt.sbor.coding;
 
-import static com.radixdlt.interop.sbor.api.DecodingError.INVALID_FIELD_COUNT;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_STRUCT;
-
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.api.EncoderApi;
-import com.radixdlt.interop.sbor.codec.core.Codec;
+import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
-import java.util.List;
 
-public interface ClassCodec<T> extends Codec<T> {
-  List<ClassField<T>> fields();
+public enum DecodingError implements Cause {
+  EOF("Unexpected end of input"),
+  TYPE_MISMATCH("Type ID does not match expected value"),
+  INVALID_BOOLEAN("Unknown value used to encode boolean"),
+  INVALID_OPTION("Unknown value used to encode option"),
+  INVALID_RESULT("Unknown value used to encode result"),
+  INVALID_FIELD_COUNT("Class field count does not match expectation"),
+  UNSUPPORTED_TYPE("Unsupported type");
 
-  default Result<Unit> encode(EncoderApi encoder, T value) {
-    encoder.encodeTypeId(TYPE_STRUCT);
+  private String message;
+  private Result<?> result;
 
-    var values = fields().stream().map(field -> field.getter().apply(value)).toList();
-
-    encoder.writeInt(values.size());
-
-    return values.stream()
-        .map(encoder::encode)
-        .filter(Result::isFailure)
-        .findAny()
-        .orElseGet(Unit::unitResult);
+  DecodingError(String message) {
+    this.message = message;
+    this.result = Result.failure(this);
   }
 
-  default Result<T> decode(DecoderApi decoder) {
-    return decoder
-        .expectType(TYPE_STRUCT)
-        .flatMap(decoder::readInt)
-        .filter(INVALID_FIELD_COUNT, value -> value == fields().size())
-        .map(() -> decoder)
-        .flatMap(this::decodeFields);
+  @Override
+  public String message() {
+    return message;
   }
 
-  Result<T> decodeFields(DecoderApi anyDecoder);
+  @SuppressWarnings("unchecked")
+  @Override
+  public <T> Result<T> result() {
+    return (Result<T>) result;
+  }
 }

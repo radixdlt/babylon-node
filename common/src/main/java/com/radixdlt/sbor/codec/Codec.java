@@ -62,31 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.api;
+package com.radixdlt.sbor.codec;
 
-import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.EncoderApi;
 
-public enum FieldsTypeId {
-  FIELDS_TYPE_NAMED(0x12),
-  FIELDS_TYPE_UNNAMED(0x13),
-  FIELDS_TYPE_UNIT(0x14);
+public interface Codec<T> {
+  Result<Unit> encode(EncoderApi encoder, T value);
 
-  private final byte typeId;
-
-  FieldsTypeId(int typeId) {
-    this.typeId = (byte) typeId;
-  }
-
-  public byte typeId() {
-    return typeId;
-  }
-
-  public Option<FieldsTypeId> forId(byte id) {
-    return switch (id) {
-      case 0x12 -> Option.option(FIELDS_TYPE_NAMED);
-      case 0x13 -> Option.option(FIELDS_TYPE_UNNAMED);
-      case 0x14 -> Option.option(FIELDS_TYPE_UNIT);
-      default -> Option.empty();
-    };
-  }
+  Result<T> decode(DecoderApi decoder);
 }

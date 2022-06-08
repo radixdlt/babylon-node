@@ -62,36 +62,39 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.api;
+package com.radixdlt.sbor.dto;
 
-import com.radixdlt.lang.Cause;
+import static com.radixdlt.lang.Result.all;
+
+import com.radixdlt.lang.Either;
+import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
+import com.radixdlt.sbor.codec.ClassCodec;
+import com.radixdlt.sbor.codec.ClassField;
+import com.radixdlt.sbor.coding.DecoderApi;
+import java.util.List;
 
-public enum DecodingError implements Cause {
-  EOF("Unexpected end of input"),
-  TYPE_MISMATCH("Type ID does not match expected value"),
-  INVALID_BOOLEAN("Unknown value used to encode boolean"),
-  INVALID_OPTION("Unknown value used to encode option"),
-  INVALID_RESULT("Unknown value used to encode result"),
-  INVALID_FIELD_COUNT("Class field count does not match expectation"),
-  UNSUPPORTED_TYPE("Unsupported type");
+public record SimpleRecord(
+    int first, String second, Either<Long, String> third, Option<Boolean> fourth) {
 
-  private String message;
-  private Result<?> result;
+  public static class SimpleRecordCodec implements ClassCodec<SimpleRecord> {
+    @Override
+    public List<ClassField<SimpleRecord>> fields() {
+      return List.of(
+          ClassField.plain(int.class, SimpleRecord::first),
+          ClassField.plain(String.class, SimpleRecord::second),
+          ClassField.forEither(Long.class, String.class, SimpleRecord::third),
+          ClassField.forOption(Boolean.class, SimpleRecord::fourth));
+    }
 
-  DecodingError(String message) {
-    this.message = message;
-    this.result = Result.failure(this);
-  }
-
-  @Override
-  public String message() {
-    return message;
-  }
-
-  @SuppressWarnings("unchecked")
-  @Override
-  public <T> Result<T> result() {
-    return (Result<T>) result;
+    @Override
+    public Result<SimpleRecord> decodeFields(DecoderApi decoder) {
+      return all(
+              decoder.decode(int.class),
+              decoder.decode(String.class),
+              decoder.decodeEither(Long.class, String.class),
+              decoder.decodeOption(Boolean.class))
+          .map(SimpleRecord::new);
+    }
   }
 }

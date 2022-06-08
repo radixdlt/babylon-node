@@ -62,43 +62,41 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.api;
+package com.radixdlt.sbor.codec;
 
-public enum TypeId {
-  TYPE_UNIT(0x00),
-  TYPE_BOOL(0x01),
-  TYPE_I8(0x02),
-  TYPE_I16(0x03),
-  TYPE_I32(0x04),
-  TYPE_I64(0x05),
-  TYPE_I128(0x06),
-  TYPE_U8(0x07),
-  TYPE_U16(0x08),
-  TYPE_U32(0x09),
-  TYPE_U64(0x0a),
-  TYPE_U128(0x0b),
-  TYPE_STRING(0x0c),
-  TYPE_STRUCT(0x10), // enum and struct
-  TYPE_ENUM(0x11),
-  TYPE_OPTION(0x20), // composite types
-  TYPE_BOX(0x21),
-  TYPE_ARRAY(0x22),
-  TYPE_TUPLE(0x23),
-  TYPE_RESULT(0x24),
-  TYPE_VEC(0x30), // collections
-  TYPE_TREE_SET(0x31),
-  TYPE_TREE_MAP(0x32),
-  TYPE_HASH_SET(0x33),
-  TYPE_HASH_MAP(0x34),
-  TYPE_CUSTOM_START(0x80); // custom types start from 0x80 and values are encoded as `len + data`
+import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.DecodingError;
+import com.radixdlt.sbor.coding.EncoderApi;
+import java.util.List;
 
-  private final byte id;
+public interface ClassCodec<T> extends Codec<T> {
+  List<ClassField<T>> fields();
 
-  TypeId(int id) {
-    this.id = (byte) id;
+  default Result<Unit> encode(EncoderApi encoder, T value) {
+    encoder.encodeTypeId(TypeId.TYPE_STRUCT);
+
+    var values = fields().stream().map(field -> field.getter().apply(value)).toList();
+
+    encoder.writeInt(values.size());
+
+    return values.stream()
+        .map(encoder::encode)
+        .filter(Result::isFailure)
+        .findAny()
+        .orElseGet(Unit::unitResult);
   }
 
-  public byte typeId() {
-    return id;
+  default Result<T> decode(DecoderApi decoder) {
+    return decoder
+        .expectType(TypeId.TYPE_STRUCT)
+        .flatMap(decoder::readInt)
+        .filter(DecodingError.INVALID_FIELD_COUNT, value -> value == fields().size())
+        .map(() -> decoder)
+        .flatMap(this::decodeFields);
   }
+
+  Result<T> decodeFields(DecoderApi anyDecoder);
 }

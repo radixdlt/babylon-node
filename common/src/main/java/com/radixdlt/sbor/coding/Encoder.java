@@ -62,15 +62,123 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.codec.core;
+package com.radixdlt.sbor.coding;
 
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.api.EncoderApi;
+import com.radixdlt.lang.Either;
+import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.Codec;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.constants.OptionTypeId;
+import com.radixdlt.sbor.codec.constants.ResultTypeId;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import java.io.ByteArrayOutputStream;
 
-public interface Codec<T> {
-  Result<Unit> encode(EncoderApi encoder, T value);
+/**
+ * Performs the role of an AnyEncoder in the Rust SBOR implementation
+ *
+ * @param output
+ * @param codecMap
+ */
+public record Encoder(ByteArrayOutputStream output, CodecMap codecMap) implements EncoderApi {
+  @SuppressWarnings("unchecked")
+  @Override
+  public Result<Unit> encode(Object value) {
+    if (value instanceof Option<?> option) {
+      return encodeOption(option);
+    }
 
-  Result<T> decode(DecoderApi decoder);
+    if (value instanceof Either<?, ?> either) {
+      return encodeEither(either);
+    }
+
+    return codecMap
+        .get(value.getClass())
+        .fold(
+            EncodingError.UNSUPPORTED_TYPE::result,
+            codec -> ((Codec<Object>) codec).encode(this, value));
+  }
+
+  @Override
+  public Result<Unit> encodeTypeId(TypeId typeId) {
+    writeByte(typeId.typeId());
+    return Unit.unitResult();
+  }
+
+  @Override
+  public Result<Unit> encodeOption(Option<?> option) {
+    encodeTypeId(TypeId.TYPE_OPTION);
+
+    option.apply(
+        () -> writeByte(OptionTypeId.OPTION_TYPE_NONE.typeId()),
+        v -> {
+          writeByte(OptionTypeId.OPTION_TYPE_SOME.typeId());
+          encode(v);
+        });
+
+    return Unit.unitResult();
+  }
+
+  @Override
+  public Result<Unit> encodeEither(Either<?, ?> either) {
+    encodeTypeId(TypeId.TYPE_RESULT);
+
+    either.apply(
+        left -> {
+          writeByte(ResultTypeId.RESULT_TYPE_ERR.typeId());
+          encode(left);
+        },
+        right -> {
+          writeByte(ResultTypeId.RESULT_TYPE_OK.typeId());
+          encode(right);
+        });
+
+    return Unit.unitResult();
+  }
+
+  @Override
+  public void encodeArrayHeader(TypeId typeId, int length) {
+    encodeTypeId(TypeId.TYPE_VEC);
+    encodeTypeId(typeId);
+    writeInt(length);
+  }
+
+  @Override
+  public void writeByte(byte value) {
+    output.write(value);
+  }
+
+  @Override
+  public void writeBytes(byte[] value) {
+    if (value.length > 0) {
+      output.writeBytes(value);
+    }
+  }
+
+  @Override
+  public void writeShort(short value) {
+    writeByte((byte) (value & 0xFF));
+    writeByte((byte) ((value >> 8) & 0xFF));
+  }
+
+  @Override
+  public void writeInt(int value) {
+    writeByte((byte) (value & 0xFF));
+    writeByte((byte) ((value >> 8) & 0xFF));
+    writeByte((byte) ((value >> 16) & 0xFF));
+    writeByte((byte) ((value >> 24) & 0xFF));
+  }
+
+  @Override
+  public void writeLong(long value) {
+    writeByte((byte) (value & 0xFF));
+    writeByte((byte) ((value >> 8) & 0xFF));
+    writeByte((byte) ((value >> 16) & 0xFF));
+    writeByte((byte) ((value >> 24) & 0xFF));
+    writeByte((byte) ((value >> 32) & 0xFF));
+    writeByte((byte) ((value >> 40) & 0xFF));
+    writeByte((byte) ((value >> 48) & 0xFF));
+    writeByte((byte) ((value >> 56) & 0xFF));
+  }
 }

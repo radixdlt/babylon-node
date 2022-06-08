@@ -62,37 +62,52 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.api;
+package com.radixdlt.sbor.codec;
 
-import com.radixdlt.lang.Either;
+import static com.radixdlt.lang.Option.option;
+
 import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
+import java.util.HashMap;
+import java.util.Map;
 
-public interface DecoderApi {
-  <T> Result<T> decode(Class<T> type);
+/** Container for mapping between codec and class. */
+public final class CodecMap {
+  @SuppressWarnings("rawtypes")
+  private final Map<Class, Codec> classEncodingMap = new HashMap<>();
 
-  Result<Unit> expectType(TypeId typeId);
+  public CodecMap() {
+    classEncodingMap.put(Unit.class, new CoreTypeCodec.UnitCodec());
+    classEncodingMap.put(String.class, new CoreTypeCodec.StringCodec());
 
-  Result<Integer> decodeArrayHeader(TypeId expectedId);
+    classEncodingMap.put(Boolean.class, new CoreTypeCodec.BooleanCodec());
+    classEncodingMap.put(boolean.class, new CoreTypeCodec.BooleanCodec());
 
-  Result<Byte> readByte();
+    classEncodingMap.put(Byte.class, new CoreTypeCodec.ByteCodec());
+    classEncodingMap.put(byte.class, new CoreTypeCodec.ByteCodec());
 
-  Result<Short> readShort();
+    classEncodingMap.put(Short.class, new CoreTypeCodec.ShortCodec());
+    classEncodingMap.put(short.class, new CoreTypeCodec.ShortCodec());
 
-  Result<Integer> readInt();
+    classEncodingMap.put(Integer.class, new CoreTypeCodec.IntegerCodec());
+    classEncodingMap.put(int.class, new CoreTypeCodec.IntegerCodec());
 
-  Result<Long> readLong();
+    classEncodingMap.put(Long.class, new CoreTypeCodec.LongCodec());
+    classEncodingMap.put(long.class, new CoreTypeCodec.LongCodec());
 
-  Result<byte[]> readBytes(int length);
+    classEncodingMap.put(byte[].class, new CoreTypeCodec.ByteArrayCodec());
+    classEncodingMap.put(short[].class, new CoreTypeCodec.ShortArrayCodec());
+    classEncodingMap.put(int[].class, new CoreTypeCodec.IntegerArrayCodec());
+    classEncodingMap.put(long[].class, new CoreTypeCodec.LongArrayCodec());
+  }
 
-  Result<short[]> readShorts(int length);
+  @SuppressWarnings("unchecked")
+  public <T> Option<Codec<T>> get(Class<T> clazz) {
+    return option(classEncodingMap.get(clazz));
+  }
 
-  Result<int[]> readIntegers(int length);
-
-  Result<long[]> readLongs(int length);
-
-  <T> Result<Option<T>> decodeOption(Class<T> valueType);
-
-  <L, R> Result<Either<L, R>> decodeEither(Class<L> leftValueType, Class<R> rightValueType);
+  public <T> CodecMap register(Class<T> clazz, Codec<T> codec) {
+    classEncodingMap.put(clazz, codec);
+    return this;
+  }
 }

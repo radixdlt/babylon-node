@@ -62,17 +62,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.api;
+package com.radixdlt.sbor.codec.constants;
 
 import com.radixdlt.lang.Option;
 
-public enum ResultTypeId {
-  RESULT_TYPE_OK(0x00),
-  RESULT_TYPE_ERR(0x01);
+public enum OptionTypeId {
+  OPTION_TYPE_NONE(0x00),
+  OPTION_TYPE_SOME(0x01);
 
   private final byte typeId;
 
-  ResultTypeId(int typeId) {
+  OptionTypeId(int typeId) {
     this.typeId = (byte) typeId;
   }
 
@@ -80,10 +80,10 @@ public enum ResultTypeId {
     return typeId;
   }
 
-  public static Option<ResultTypeId> forId(byte id) {
+  public static Option<OptionTypeId> forId(byte id) {
     return switch (id) {
-      case 0x00 -> Option.option(RESULT_TYPE_OK);
-      case 0x01 -> Option.option(RESULT_TYPE_ERR);
+      case 0x00 -> Option.option(OPTION_TYPE_NONE);
+      case 0x01 -> Option.option(OPTION_TYPE_SOME);
       default -> Option.empty();
     };
   }

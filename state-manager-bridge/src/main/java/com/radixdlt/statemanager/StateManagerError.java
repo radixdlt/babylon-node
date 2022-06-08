@@ -64,14 +64,14 @@
 
 package com.radixdlt.statemanager;
 
-import static com.radixdlt.interop.sbor.codec.ClassField.plain;
 import static com.radixdlt.lang.Result.all;
+import static com.radixdlt.sbor.codec.ClassField.plain;
 
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
 import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
+import com.radixdlt.sbor.codec.ClassCodec;
+import com.radixdlt.sbor.codec.ClassField;
+import com.radixdlt.sbor.coding.DecoderApi;
 import java.util.List;
 import java.util.Map;
 
