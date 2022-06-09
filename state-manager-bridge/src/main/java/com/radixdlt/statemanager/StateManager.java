@@ -79,11 +79,6 @@ public final class StateManager implements AutoCloseable {
     StateManagerCodecRegistration.registerCodecsWithDefault();
   }
 
-  private final RustState rustState;
-  private final VertexStore vertexStore;
-  private final TransactionStore transactionStore;
-  private final RustMempool mempool;
-
   /**
    * Stores a pointer to the rust state manager across JNI calls. In the JNI model, this is
    * equivalent to the Rust State "owning" the rust state manager memory. On each call into Rust, we
@@ -95,21 +90,20 @@ public final class StateManager implements AutoCloseable {
     private final long stateManagerPointer = 0;
   }
 
+  private final RustState rustState;
+  private final TransactionStore transactionStore;
+  private final RustMempool mempool;
+
   public static StateManager createAndInitialize(long mempoolSize) {
-    var rustState = new RustState();
+    final var rustState = new RustState();
     init(rustState, mempoolSize);
     return new StateManager(rustState);
   }
 
   private StateManager(RustState rustState) {
     this.rustState = Objects.requireNonNull(rustState);
-    this.vertexStore = new RustVertexStore(rustState);
     this.transactionStore = new RustTransactionStore(rustState);
     this.mempool = new RustMempool(rustState);
-  }
-
-  public VertexStore vertexStore() {
-    return this.vertexStore;
   }
 
   public TransactionStore transactionStore() {

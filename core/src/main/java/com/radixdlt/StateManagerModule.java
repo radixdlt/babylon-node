@@ -75,6 +75,11 @@ import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.statemanager.StateManager;
 
 public final class StateManagerModule extends AbstractModule {
+
+  public StateManagerModule() {
+
+  }
+
   @Provides
   @Singleton
   StateManager stateManager(@MempoolMaxSize int mempoolMaxSize) {

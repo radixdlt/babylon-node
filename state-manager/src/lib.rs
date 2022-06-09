@@ -68,4 +68,3 @@ mod result;
 mod state_manager;
 mod transaction_store;
 mod types;
-mod vertex_store;

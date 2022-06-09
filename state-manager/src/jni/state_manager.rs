@@ -65,7 +65,6 @@
 use crate::mempool::mock::MockMempool;
 use crate::state_manager::StateManager;
 use crate::transaction_store::TransactionStore;
-use crate::vertex_store::VertexStore;
 use jni::objects::{JClass, JObject};
 use jni::sys::jlong;
 use jni::JNIEnv;
@@ -100,11 +99,10 @@ impl JNIStateManager {
     pub fn init(env: &JNIEnv, interop_state: JObject, j_mempool_size: jlong) {
         // Build the basic subcomponents.
         let mempool = MockMempool::new(j_mempool_size.try_into().unwrap()); // XXX: Very Wrong. Should return an error in case it's negative
-        let vertex_store = VertexStore::new();
         let transaction_store = TransactionStore::new();
 
         // Build the state manager.
-        let state_manager = Arc::new(StateManager::new(mempool, vertex_store, transaction_store));
+        let state_manager = Arc::new(StateManager::new(mempool, transaction_store));
 
         let jni_state_manager = JNIStateManager { state_manager };
 
