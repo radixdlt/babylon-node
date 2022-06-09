@@ -62,19 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor.codec;
+package com.radixdlt.lang;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Either;
+import com.radixdlt.sbor.codec.Codec;
+import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.constants.ResultTypeId;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
+import com.radixdlt.sbor.exceptions.SborCodecException;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
 
 public record EitherTypeCodec<L, R>(TypeToken<L> leftType, TypeToken<R> rightType)
     implements Codec<Either<L, R>> {
-
   @Override
   public void encode(EncoderApi encoder, Either<L, R> either) {
     encoder.encodeTypeId(TypeId.TYPE_RESULT);
@@ -101,5 +102,23 @@ public record EitherTypeCodec<L, R>(TypeToken<L> leftType, TypeToken<R> rightTyp
       default -> throw new SborDecodeException(
           String.format("Unknown result type id %s", typeByte));
     };
+  }
+
+  @SuppressWarnings({"UnstableApiUsage", "rawtypes", "unchecked"})
+  public static int registerWith(CodecMap codecMap) {
+    codecMap.registerCreatorForSealedClassAndSubclasses(
+        Either.class,
+        eitherType -> {
+          try {
+            var leftType = eitherType.method(Either.class.getMethod("unwrapLeft")).getReturnType();
+            var rightType =
+                eitherType.method(Either.class.getMethod("unwrapRight")).getReturnType();
+            return new EitherTypeCodec(leftType, rightType);
+          } catch (Exception ex) {
+            throw new SborCodecException(
+                String.format("Exception creating Either type codec for %s", eitherType), ex);
+          }
+        });
+    return 0;
   }
 }

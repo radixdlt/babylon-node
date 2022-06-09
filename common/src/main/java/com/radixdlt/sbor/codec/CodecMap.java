@@ -65,19 +65,48 @@
 package com.radixdlt.sbor.codec;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Either;
-import com.radixdlt.lang.Option;
+import com.radixdlt.lang.EitherTypeCodec;
+import com.radixdlt.lang.OptionTypeCodec;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.exceptions.SborCodecException;
-import java.util.*;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
-/** Container for mapping between codec and class. */
+/**
+ * The CodecMap registers default strategies to encode/decode a type.
+ *
+ * <p>You can register codecs for:
+ *
+ * <ul>
+ *   <li>A class object - this captures types without their generic parameters
+ *   <li>A concrete TypeToken - this is specific to all the given generic parameters
+ * </ul>
+ *
+ * <p>If multiple codecs are registered against the same object/TypeToken, the latest to be registered is used.
+ *
+ * <p>You can also register a codec creator, which allows automatic creation of codecs for explicit
+ * type parameters of a given class. This works well with types such as Option&lt;T&rt;, where you
+ * may wish to decode into an Option&lt;String&rt; without registering a codec for
+ * Option&lt;String&rt; explicitly. The generated codecs are cached against their explicit
+ * TypeToken.
+ *
+ * <p>Finally, you can also register a class object codec and codec creators for a sealed class and
+ * all its subclasses in one go - this is to provide easy support for ADTs (abstract data types).
+ */
 @SuppressWarnings({
-  "rawtypes",
-  "unchecked"
-}) // This class is required to play fast and loose with generics
+    "rawtypes",
+    "unchecked"
+    , "UnusedReturnValue", "unused"}) // This class is required to play fast and loose with generics
 public final class CodecMap {
+  /**
+   * Codecs can be registered on the static CodecMap.DEFAULT which is used by SborCoder.DEFAULT.
+   * It is recommended to do this in the static constructor of a class being encoded/decoded.
+   * It is safe to register twice - the latest registration will apply.
+   **/
+  public static final CodecMap DEFAULT = new CodecMap();
 
   private final Map<Class, Codec> classEncodingMap = new HashMap<>();
 
@@ -85,62 +114,32 @@ public final class CodecMap {
 
   private final Map<Class, Function<TypeToken, Codec>> codecCreatorMap = new HashMap<>();
 
-  // QQ: Make this all static
-  @SuppressWarnings("UnstableApiUsage")
   public CodecMap() {
-    addCoreCodec(Unit.class, new CoreTypeCodec.UnitCodec());
-    addCoreCodec(String.class, new CoreTypeCodec.StringCodec());
+    register(Unit.class, new CoreTypeCodec.UnitCodec());
+    register(String.class, new CoreTypeCodec.StringCodec());
 
-    addCoreCodec(Boolean.class, new CoreTypeCodec.BooleanCodec());
-    addCoreCodec(boolean.class, new CoreTypeCodec.BooleanCodec());
+    register(Boolean.class, new CoreTypeCodec.BooleanCodec());
+    register(boolean.class, new CoreTypeCodec.BooleanCodec());
 
-    addCoreCodec(Byte.class, new CoreTypeCodec.ByteCodec());
-    addCoreCodec(byte.class, new CoreTypeCodec.ByteCodec());
+    register(Byte.class, new CoreTypeCodec.ByteCodec());
+    register(byte.class, new CoreTypeCodec.ByteCodec());
 
-    addCoreCodec(Short.class, new CoreTypeCodec.ShortCodec());
-    addCoreCodec(short.class, new CoreTypeCodec.ShortCodec());
+    register(Short.class, new CoreTypeCodec.ShortCodec());
+    register(short.class, new CoreTypeCodec.ShortCodec());
 
-    addCoreCodec(Integer.class, new CoreTypeCodec.IntegerCodec());
-    addCoreCodec(int.class, new CoreTypeCodec.IntegerCodec());
+    register(Integer.class, new CoreTypeCodec.IntegerCodec());
+    register(int.class, new CoreTypeCodec.IntegerCodec());
 
-    addCoreCodec(Long.class, new CoreTypeCodec.LongCodec());
-    addCoreCodec(long.class, new CoreTypeCodec.LongCodec());
+    register(Long.class, new CoreTypeCodec.LongCodec());
+    register(long.class, new CoreTypeCodec.LongCodec());
 
-    addCoreCodec(byte[].class, new CoreTypeCodec.ByteArrayCodec());
-    addCoreCodec(short[].class, new CoreTypeCodec.ShortArrayCodec());
-    addCoreCodec(int[].class, new CoreTypeCodec.IntegerArrayCodec());
-    addCoreCodec(long[].class, new CoreTypeCodec.LongArrayCodec());
+    register(byte[].class, new CoreTypeCodec.ByteArrayCodec());
+    register(short[].class, new CoreTypeCodec.ShortArrayCodec());
+    register(int[].class, new CoreTypeCodec.IntegerArrayCodec());
+    register(long[].class, new CoreTypeCodec.LongArrayCodec());
 
-    registerCodecCreatorForSealedClassAndSubclasses(
-        Either.class,
-        eitherType -> {
-          try {
-            var leftType = eitherType.method(Either.class.getMethod("unwrapLeft")).getReturnType();
-            var rightType =
-                eitherType.method(Either.class.getMethod("unwrapRight")).getReturnType();
-            return new EitherTypeCodec(leftType, rightType);
-          } catch (Exception ex) {
-            throw new SborCodecException(
-                String.format("Exception creating Either type codec for %s", eitherType), ex);
-          }
-        });
-
-    registerCodecCreatorForSealedClassAndSubclasses(
-        Option.class,
-        optionType -> {
-          try {
-            var innerType = optionType.method(Option.class.getMethod("unwrap")).getReturnType();
-            return new OptionTypeCodec(innerType);
-          } catch (Exception ex) {
-            throw new SborCodecException(
-                String.format("Exception creating Option type codec for %s", optionType), ex);
-          }
-        });
-  }
-
-  private <T> void addCoreCodec(Class<T> clazz, Codec<T> codec) {
-    classEncodingMap.put(clazz, codec);
-    explicitTypeEncodingMap.put(TypeToken.of(clazz), codec);
+    OptionTypeCodec.registerWith(this);
+    EitherTypeCodec.registerWith(this);
   }
 
   public <T> Codec<T> get(TypeToken<T> type) {
@@ -156,8 +155,8 @@ public final class CodecMap {
     if (codecCreator != null) {
       var newCodec = codecCreator.apply(type);
 
-      // We cache the codec for future use
-      registerExplicitGeneric(type, newCodec);
+      // Let's cache the codec for future use
+      register(type, newCodec);
       return newCodec;
     }
 
@@ -195,6 +194,7 @@ public final class CodecMap {
   public <T> CodecMap register(Class<T> clazz, Codec<T> codec) {
     synchronized (classEncodingMap) {
       classEncodingMap.put(clazz, codec);
+      explicitTypeEncodingMap.put(TypeToken.of(clazz), codec);
     }
     return this;
   }
@@ -221,21 +221,20 @@ public final class CodecMap {
     return this;
   }
 
-  public <T> CodecMap registerCodecCreator(
-      Class<T> clazz, Function<TypeToken<T>, Codec> createCodec) {
+  public <T> CodecMap registerCreator(Class<T> clazz, Function<TypeToken<T>, Codec> createCodec) {
     synchronized (codecCreatorMap) {
       codecCreatorMap.put(clazz, createCodec::apply);
     }
     return this;
   }
 
-  public <T> CodecMap registerCodecCreatorForSealedClassAndSubclasses(
+  public <T> CodecMap registerCreatorForSealedClassAndSubclasses(
       Class<T> clazz, Function<TypeToken<T>, Codec> createCodec) {
     if (!clazz.isSealed()) {
       throw new SborCodecException(
           String.format(
               "The class object %s is not sealed, so cannot be passed into "
-                  + "registerCodecCreatorForSubclassesOfSealed.",
+                  + "registerCreatorForSealedClassAndSubclasses.",
               clazz));
     }
 
@@ -251,17 +250,7 @@ public final class CodecMap {
     return this;
   }
 
-  /**
-   * This is mostly intended for internal use - for registering a codec for a concrete generic.
-   * Externally, it's recommended to register via a register (for non-generic types) or
-   * registerGenericCodecCreator (for generic types).
-   *
-   * @param type An explicit type to register a codec for
-   * @param codec The codec to register
-   * @return the CodecMap
-   * @param <T> The (generic) type the codec is being registered for
-   */
-  public <T> CodecMap registerExplicitGeneric(TypeToken<T> type, Codec<T> codec) {
+  public <T> CodecMap register(TypeToken<T> type, Codec<T> codec) {
     synchronized (explicitTypeEncodingMap) {
       explicitTypeEncodingMap.put(type, codec);
     }

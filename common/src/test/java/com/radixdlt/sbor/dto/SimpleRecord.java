@@ -68,6 +68,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.ClassCodec;
+import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.coding.DecoderApi;
 import java.util.List;
@@ -75,8 +76,11 @@ import java.util.List;
 public record SimpleRecord(
     int first, String second, Either<Long, String> third, Option<Boolean> fourth) {
 
-  public static class SimpleRecordCodec implements ClassCodec<SimpleRecord> {
+  static {
+    CodecMap.DEFAULT.register(SimpleRecord.class, new Codec());
+  }
 
+  public static class Codec implements ClassCodec<SimpleRecord> {
     static TypeToken<Either<Long, String>> eitherType = new TypeToken<>() {};
     static TypeToken<Option<Boolean>> optionType = new TypeToken<>() {};
 

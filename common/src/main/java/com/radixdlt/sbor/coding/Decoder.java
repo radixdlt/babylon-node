@@ -157,7 +157,7 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
     var value = input.read();
 
     if (value == EOF_RC) {
-      throw new SborDecodeException(String.format("End of file when reading byte"));
+      throw new SborDecodeException("End of file when reading byte");
     }
 
     return (byte) value;
@@ -169,7 +169,7 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
     var v1 = input.read();
 
     if (v0 == EOF_RC || v1 == EOF_RC) {
-      throw new SborDecodeException(String.format("End of file when reading short"));
+      throw new SborDecodeException("End of file when reading short");
     }
 
     short value = (short) (v0 & 0xFF);
@@ -186,7 +186,7 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
     var v3 = input.read();
 
     if (v0 == EOF_RC || v1 == EOF_RC || v2 == EOF_RC || v3 == EOF_RC) {
-      throw new SborDecodeException(String.format("End of file when reading int"));
+      throw new SborDecodeException("End of file when reading int");
     }
 
     int value = v0 & 0xFF;
@@ -216,7 +216,7 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
         || v5 == EOF_RC
         || v6 == EOF_RC
         || v7 == EOF_RC) {
-      throw new SborDecodeException(String.format("End of file when reading long"));
+      throw new SborDecodeException("End of file when reading long");
     }
 
     long value = v0 & 0xFF;
@@ -245,8 +245,7 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
       }
       return bytes;
     } catch (IOException exception) {
-      throw new SborDecodeException(
-          String.format("IO error occurred reading byte array", exception));
+      throw new SborDecodeException("IO error occurred reading byte array", exception);
     }
   }
 

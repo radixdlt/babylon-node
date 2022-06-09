@@ -62,18 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor.codec;
+package com.radixdlt.lang;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Option;
+import com.radixdlt.sbor.codec.Codec;
+import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.constants.OptionTypeId;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
+import com.radixdlt.sbor.exceptions.SborCodecException;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
 
 public record OptionTypeCodec<T>(TypeToken<T> innerType) implements Codec<Option<T>> {
-
   @Override
   public void encode(EncoderApi encoder, Option<T> option) {
     encoder.encodeTypeId(TypeId.TYPE_OPTION);
@@ -97,5 +98,20 @@ public record OptionTypeCodec<T>(TypeToken<T> innerType) implements Codec<Option
       default -> throw new SborDecodeException(
           String.format("Unknown option type id %s", typeByte));
     };
+  }
+
+  @SuppressWarnings({"UnstableApiUsage", "rawtypes", "unchecked"})
+  public static void registerWith(CodecMap codecMap) {
+    codecMap.registerCreatorForSealedClassAndSubclasses(
+        Option.class,
+        optionType -> {
+          try {
+            var innerType = optionType.method(Option.class.getMethod("unwrap")).getReturnType();
+            return new OptionTypeCodec(innerType);
+          } catch (Exception ex) {
+            throw new SborCodecException(
+                String.format("Exception creating Option type codec for %s", optionType), ex);
+          }
+        });
   }
 }

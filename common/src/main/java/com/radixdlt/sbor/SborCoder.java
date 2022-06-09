@@ -73,6 +73,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 public record SborCoder(CodecMap codecs) {
+
+  static SborCoder DEFAULT = new SborCoder(CodecMap.DEFAULT);
+
   @SuppressWarnings("unchecked")
   public <T> byte[] encode(T value) {
     return encode(value, (Class<? super T>) value.getClass());

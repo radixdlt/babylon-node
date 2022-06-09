@@ -64,6 +64,7 @@
 
 package com.radixdlt.sbor.codec;
 
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
 
@@ -71,4 +72,12 @@ public interface Codec<T> {
   void encode(EncoderApi encoder, T value);
 
   T decode(DecoderApi decoder);
+
+  default void registerFor(CodecMap codecMap, Class<T> clazz) {
+    codecMap.register(clazz, this);
+  }
+
+  default void registerFor(CodecMap codecMap, TypeToken<T> type) {
+    codecMap.register(type, this);
+  }
 }

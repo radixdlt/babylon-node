@@ -65,6 +65,8 @@
 package com.radixdlt.lang;
 
 import com.radixdlt.lang.Functions.FN1;
+import com.radixdlt.sbor.codec.CodecMap;
+
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -166,6 +168,10 @@ public sealed interface Either<L, R> {
   }
 
   record left<L, R>(L value) implements Either<L, R> {
+    static {
+      EitherTypeCodec.registerWith(CodecMap.DEFAULT);
+    }
+
     @Override
     public <T> T fold(
         FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
@@ -183,6 +189,10 @@ public sealed interface Either<L, R> {
   }
 
   record right<L, R>(R value) implements Either<L, R> {
+    static {
+      EitherTypeCodec.registerWith(CodecMap.DEFAULT);
+    }
+
     @Override
     public <T> T fold(
         FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
