@@ -188,38 +188,32 @@ public final class SimulationTest {
 
   public static class Builder {
     private enum LedgerType {
-      MOCKED_LEDGER(false, true, false, false, false, false, false),
-      LEDGER(false, true, true, false, false, false, false),
-      LEDGER_AND_SYNC(false, true, true, false, false, false, true),
-      LEDGER_AND_LOCALMEMPOOL(false, true, true, true, false, false, false),
-      LEDGER_AND_EPOCHS(false, true, true, false, false, true, false),
-      LEDGER_AND_EPOCHS_AND_SYNC(false, true, true, false, false, true, true),
-      LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(true, true, true, true, true, true, false),
-      FULL_FUNCTION(true, true, true, true, true, true, true);
+      MOCKED_LEDGER(false, false, false, false, false, false),
+      LEDGER(true, false, false, false, false, false),
+      LEDGER_AND_SYNC(true, false, false, false, false, true),
+      LEDGER_AND_LOCALMEMPOOL(true, true, false, false, false, false),
+      LEDGER_AND_EPOCHS(true, false, false, false, true, false),
+      LEDGER_AND_EPOCHS_AND_SYNC(true, false, false, false, true, true),
+      LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(true, true, true, true, true, false),
+      FULL_FUNCTION(true, true, true, true, true, true);
 
-      private final boolean hasSharedMempool;
-      private final boolean hasConsensus;
-      private final boolean hasSync;
-
-      // State manager
       private final boolean hasLedger;
       private final boolean hasMempool;
+      private final boolean hasSharedMempool;
       private final boolean hasRadixEngine;
-
       private final boolean hasEpochs;
+      private final boolean hasSync;
 
-      LedgerType(
-          boolean hasSharedMempool,
-          boolean hasConsensus,
+    LedgerType(
           boolean hasLedger,
           boolean hasMempool,
+          boolean hasSharedMempool,
           boolean hasRadixEngine,
           boolean hasEpochs,
           boolean hasSync) {
-        this.hasSharedMempool = hasSharedMempool;
-        this.hasConsensus = hasConsensus;
         this.hasLedger = hasLedger;
         this.hasMempool = hasMempool;
+        this.hasSharedMempool = hasSharedMempool;
         this.hasRadixEngine = hasRadixEngine;
         this.hasEpochs = hasEpochs;
         this.hasSync = hasSync;
@@ -541,7 +535,6 @@ public final class SimulationTest {
       // Functional
       modules.add(
           new FunctionalRadixNodeModule(
-              ledgerType.hasConsensus,
               ledgerType.hasLedger,
               ledgerType.hasMempool,
               ledgerType.hasSharedMempool,

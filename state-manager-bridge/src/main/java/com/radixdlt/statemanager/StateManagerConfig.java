@@ -62,47 +62,6 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.statemanager;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
-
-public final class StateManagerModule extends AbstractModule {
-
-  @Provides
-  @Singleton
-  StateManagerConfig stateManagerConfig(@MempoolMaxSize int mempoolMaxSize) {
-    return new StateManagerConfig(mempoolMaxSize);
-  }
-
-  @Provides
-  @Singleton
-  StateManager stateManager(StateManagerConfig config) {
-    return StateManager.createAndInitialize(config);
-  }
-
-  @ProvidesIntoMap
-  @StringMapKey(Runners.STATE_MANAGER)
-  @Singleton
-  ModuleRunner stateManagerModuleRunner(StateManager stateManager) {
-    return new ModuleRunner() {
-      @Override
-      public void start() {
-        // no-op
-      }
-
-      @Override
-      public void stop() {
-        stateManager.shutdown();
-      }
-    };
-  }
-}
+public record StateManagerConfig(long mempoolSize) {}

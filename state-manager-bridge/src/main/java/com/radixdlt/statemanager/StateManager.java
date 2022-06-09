@@ -68,8 +68,6 @@ import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.sbor.StateManagerCodecRegistration;
 import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStore;
-import com.radixdlt.vertexstore.RustVertexStore;
-import com.radixdlt.vertexstore.VertexStore;
 import java.util.Objects;
 
 public final class StateManager implements AutoCloseable {
@@ -94,9 +92,9 @@ public final class StateManager implements AutoCloseable {
   private final TransactionStore transactionStore;
   private final RustMempool mempool;
 
-  public static StateManager createAndInitialize(long mempoolSize) {
+  public static StateManager createAndInitialize(StateManagerConfig config) {
     final var rustState = new RustState();
-    init(rustState, mempoolSize);
+    init(rustState, config.mempoolSize()); // TODO: pass the whole config obj, sbor-ed
     return new StateManager(rustState);
   }
 

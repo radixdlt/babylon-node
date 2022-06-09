@@ -83,7 +83,6 @@ import com.radixdlt.rev2.modules.MockedSyncServiceModule;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
-  private final boolean hasConsensus;
   private final boolean hasSync;
 
   // State manager
@@ -99,18 +98,16 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
 
   public FunctionalRadixNodeModule() {
-    this(true, true, true, true, true, true, true);
+    this(true, true, true, true, true, true);
   }
 
   public FunctionalRadixNodeModule(
-      boolean hasConsensus,
       boolean hasLedger,
       boolean hasMempool,
       boolean hasMempoolRelayer,
       boolean hasRadixEngine,
       boolean hasEpochs,
       boolean hasSync) {
-    this.hasConsensus = hasConsensus;
     this.hasLedger = hasLedger;
     this.hasMempool = hasMempool;
     this.hasMempoolRelayer = hasMempoolRelayer;
@@ -126,13 +123,11 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     install(new ReV1DispatcherModule());
 
     // Consensus
-    if (hasConsensus) {
-      install(new ConsensusModule());
-      if (hasEpochs) {
-        install(new EpochsConsensusModule());
-      } else {
-        install(new NoEpochsConsensusModule());
-      }
+    install(new ConsensusModule());
+    if (hasEpochs) {
+      install(new EpochsConsensusModule());
+    } else {
+      install(new NoEpochsConsensusModule());
     }
 
     // Sync

@@ -75,10 +75,7 @@ pub struct StateManager<M: Mempool> {
 }
 
 impl<M: Mempool> StateManager<M> {
-    pub fn new(
-        mempool: M,
-        transaction_store: TransactionStore,
-    ) -> StateManager<M> {
+    pub fn new(mempool: M, transaction_store: TransactionStore) -> StateManager<M> {
         StateManager {
             public_key: Vec::new(),
             mempool: Arc::new(Mutex::new(mempool)),
