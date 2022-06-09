@@ -70,7 +70,6 @@ import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.coding.Decoder;
 import com.radixdlt.sbor.coding.Encoder;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 

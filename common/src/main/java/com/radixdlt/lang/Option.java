@@ -409,7 +409,6 @@ public sealed interface Option<T> permits Some, None {
    * @deprecated to prevent unchecked use.
    */
   @Deprecated
-
   default T unwrap() {
     return fold(
         () -> {

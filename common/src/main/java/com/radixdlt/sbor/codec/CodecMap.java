@@ -68,7 +68,6 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Unit;
-
 import java.util.*;
 import java.util.function.Function;
 
@@ -115,7 +114,8 @@ public final class CodecMap {
         eitherType -> {
           try {
             var leftType = eitherType.method(Either.class.getMethod("unwrapLeft")).getReturnType();
-            var rightType = eitherType.method(Either.class.getMethod("unwrapRight")).getReturnType();
+            var rightType =
+                eitherType.method(Either.class.getMethod("unwrapRight")).getReturnType();
             return new EitherTypeCodec(leftType, rightType);
           } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -159,7 +159,8 @@ public final class CodecMap {
 
     throw new RuntimeException(
         String.format(
-            "The type token %s itself has no SBOR codec, and its raw type class %s has no codec creator registered.",
+            "The type token %s itself has no SBOR codec, and its raw type class %s has no codec"
+                + " creator registered.",
             type, rawType));
   }
 
@@ -183,7 +184,8 @@ public final class CodecMap {
 
     throw new RuntimeException(
         String.format(
-            "The class object %s itself has no registered SBOR codec, nor has codec creator registered.",
+            "The class object %s itself has no registered SBOR codec, nor has codec creator"
+                + " registered.",
             clazz));
   }
 
@@ -194,22 +196,25 @@ public final class CodecMap {
     return this;
   }
 
-  public <T> CodecMap registerForSealedClassAndSubclasses(Class<T> clazz, Codec<? extends T> codec) {
+  public <T> CodecMap registerForSealedClassAndSubclasses(
+      Class<T> clazz, Codec<? extends T> codec) {
     if (!clazz.isSealed()) {
-      throw new RuntimeException(String.format(
-          "The class object %s is not sealed, so cannot be passed into " +
-              "registerForSubclassesOfSealed.",
-          clazz));
+      throw new RuntimeException(
+          String.format(
+              "The class object %s is not sealed, so cannot be passed into "
+                  + "registerForSubclassesOfSealed.",
+              clazz));
     }
 
     classEncodingMap.put(clazz, codec);
     var implementers = clazz.getPermittedSubclasses();
     Arrays.stream(implementers)
-        .forEach(subClass -> {
-          synchronized (classEncodingMap) {
-            classEncodingMap.put(subClass, codec);
-          }
-        });
+        .forEach(
+            subClass -> {
+              synchronized (classEncodingMap) {
+                classEncodingMap.put(subClass, codec);
+              }
+            });
     return this;
   }
 
@@ -224,20 +229,22 @@ public final class CodecMap {
   public <T> CodecMap registerCodecCreatorForSealedClassAndSubclasses(
       Class<T> clazz, Function<TypeToken<T>, Codec> createCodec) {
     if (!clazz.isSealed()) {
-      throw new RuntimeException(String.format(
-          "The class object %s is not sealed, so cannot be passed into " +
-              "registerCodecCreatorForSubclassesOfSealed.",
-          clazz));
+      throw new RuntimeException(
+          String.format(
+              "The class object %s is not sealed, so cannot be passed into "
+                  + "registerCodecCreatorForSubclassesOfSealed.",
+              clazz));
     }
 
     codecCreatorMap.put(clazz, createCodec::apply);
     var implementers = clazz.getPermittedSubclasses();
     Arrays.stream(implementers)
-        .forEach(subClass -> {
+        .forEach(
+            subClass -> {
               synchronized (explicitTypeEncodingMap) {
                 codecCreatorMap.put(subClass, createCodec::apply);
               }
-        });
+            });
     return this;
   }
 

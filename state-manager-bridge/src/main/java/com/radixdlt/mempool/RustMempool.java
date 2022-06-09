@@ -65,12 +65,9 @@
 package com.radixdlt.mempool;
 
 import com.google.common.reflect.TypeToken;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.exceptions.SborException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.lang.Either;
-import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.SborCoder;
 import com.radixdlt.sbor.codec.CodecMap;

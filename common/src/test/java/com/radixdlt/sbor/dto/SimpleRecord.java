@@ -83,7 +83,6 @@ public record SimpleRecord(
     static TypeToken<Either<Long, String>> eitherType = new TypeToken<>() {};
     static TypeToken<Option<Boolean>> optionType = new TypeToken<>() {};
 
-
     @Override
     public List<Field<SimpleRecord, ?>> fields() {
       return List.of(

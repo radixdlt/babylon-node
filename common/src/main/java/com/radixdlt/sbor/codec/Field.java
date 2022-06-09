@@ -68,7 +68,6 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.coding.EncoderApi;
-
 import java.util.function.Function;
 
 public record Field<C, F>(
@@ -78,7 +77,7 @@ public record Field<C, F>(
   }
 
   public static <C, F> Field<C, F> withType(TypeToken<F> type, Function<C, F> getter) {
-    return new Field<>(null, type,null, getter);
+    return new Field<>(null, type, null, getter);
   }
 
   public static <C, F> Field<C, F> withCodec(Codec<F> codec, Function<C, F> getter) {
@@ -88,8 +87,8 @@ public record Field<C, F>(
   public Result<Unit> encode(EncoderApi encoder, C classObject) {
     var fieldValue = this.getter.apply(classObject);
 
-    return codec != null ? encoder.encode(fieldValue, codec)
-        : type != null ? encoder.encode(fieldValue, type)
-        : encoder.encode(fieldValue, clazz);
+    return codec != null
+        ? encoder.encode(fieldValue, codec)
+        : type != null ? encoder.encode(fieldValue, type) : encoder.encode(fieldValue, clazz);
   }
 }

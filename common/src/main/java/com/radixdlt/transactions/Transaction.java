@@ -135,7 +135,8 @@ public final class Transaction {
     @Override
     public List<Field<Transaction, ?>> fields() {
       return List.of(
-          withClass(byte[].class, Transaction::getPayload), withClass(AID.class, Transaction::getId));
+          withClass(byte[].class, Transaction::getPayload),
+          withClass(AID.class, Transaction::getId));
     }
 
     @Override

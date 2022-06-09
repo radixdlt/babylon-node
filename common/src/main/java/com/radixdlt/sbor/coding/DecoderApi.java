@@ -77,9 +77,9 @@ public interface DecoderApi {
 
   Result<Unit> expectType(TypeId typeId);
 
-    <T> Result<T> decode(Codec<T> codec);
+  <T> Result<T> decode(Codec<T> codec);
 
-    Result<Integer> decodeArrayHeader(TypeId expectedId);
+  Result<Integer> decodeArrayHeader(TypeId expectedId);
 
   Result<Byte> readByte();
 

@@ -102,15 +102,11 @@ public sealed interface Either<L, R> {
   }
 
   default boolean isLeft() {
-    return fold(
-        left -> true,
-        right -> false);
+    return fold(left -> true, right -> false);
   }
 
   default boolean isRight() {
-    return fold(
-        left -> false,
-        right -> true);
+    return fold(left -> false, right -> true);
   }
 
   /**

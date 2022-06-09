@@ -69,7 +69,6 @@ import static com.radixdlt.lang.Option.some;
 import static org.junit.Assert.*;
 
 import com.google.common.reflect.TypeToken;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Unit;
