@@ -64,14 +64,13 @@
 
 package com.radixdlt.sbor;
 
-import static com.radixdlt.lang.Either.left;
-import static com.radixdlt.lang.Either.right;
 import static com.radixdlt.lang.Option.none;
 import static com.radixdlt.lang.Option.some;
 import static org.junit.Assert.*;
 
 import com.google.inject.TypeLiteral;
 import com.radixdlt.lang.Either;
+import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.dto.SimpleRecord;
@@ -83,7 +82,7 @@ public class SborCoderTest {
   public void unitCanBeEncodedAndDecoded() {
     var codec = new SborCoder(new CodecMap());
 
-    var r0 = codec.encode(Unit.unit()).unwrap();
+    var r0 = codec.encode(Unit.unit(), Unit.class).unwrap();
 
     assertEquals(1, r0.length);
     assertEquals(0, r0[0]); // Type == 0x00 - Unit
@@ -97,7 +96,7 @@ public class SborCoderTest {
   public void booleanCanBeEncodedAndDecoded() {
     var codec = new SborCoder(new CodecMap());
 
-    var r0 = codec.encode(true).unwrap();
+    var r0 = codec.encode(true, boolean.class).unwrap();
 
     assertEquals(2, r0.length);
     assertEquals(1, r0[0]); // Type == 0x01 - Boolean
@@ -112,7 +111,7 @@ public class SborCoderTest {
   public void byteCanBeEncodedAndDecoded() {
     var codec = new SborCoder(new CodecMap());
 
-    var r0 = codec.encode((byte) 0x5A).unwrap();
+    var r0 = codec.encode((byte) 0x5A, byte.class).unwrap();
 
     assertEquals(2, r0.length);
     assertEquals(7, r0[0]); // Type == 0x07 - u8
@@ -127,7 +126,7 @@ public class SborCoderTest {
   public void shortCanBeEncodedAndDecoded() {
     var codec = new SborCoder(new CodecMap());
 
-    var r0 = codec.encode((short) 0x1234).unwrap();
+    var r0 = codec.encode((short) 0x1234, short.class).unwrap();
 
     assertEquals(3, r0.length);
     assertEquals(3, r0[0]); // Type == 0x03 - i16
@@ -143,7 +142,7 @@ public class SborCoderTest {
   public void intCanBeEncodedAndDecoded() {
     var codec = new SborCoder(new CodecMap());
 
-    var r0 = codec.encode(0x12345678).unwrap();
+    var r0 = codec.encode(0x12345678, int.class).unwrap();
 
     assertEquals(5, r0.length);
     assertEquals(4, r0[0]); // Type == 0x04 - i32
@@ -161,7 +160,7 @@ public class SborCoderTest {
   public void longCanBeEncodedAndDecoded() {
     var codec = new SborCoder(new CodecMap());
 
-    var r0 = codec.encode(0x0123_4567_89AB_CDEFL).unwrap();
+    var r0 = codec.encode(0x0123_4567_89AB_CDEFL, long.class).unwrap();
 
     assertEquals(9, r0.length);
     assertEquals(5, r0[0]); // Type == 0x05 - i64
@@ -183,7 +182,7 @@ public class SborCoderTest {
   public void stringCanBeEncodedAndDecoded() {
     var codec = new SborCoder(new CodecMap());
 
-    var r0 = codec.encode("Test string").unwrap();
+    var r0 = codec.encode("Test string", String.class).unwrap();
 
     assertEquals(16, r0.length);
     assertEquals(0x0C, r0[0]); // Type == 0x0C - String
@@ -213,7 +212,7 @@ public class SborCoderTest {
     var codec = new SborCoder(new CodecMap());
     var testVector = new byte[] {0x01, 0x02, 0x03, 0x04, 0x05};
 
-    var r0 = codec.encode(testVector).unwrap();
+    var r0 = codec.encode(testVector, byte[].class).unwrap();
 
     assertEquals(11, r0.length);
     assertEquals(0x30, r0[0]); // Type == 0x30 - Vector
@@ -238,7 +237,7 @@ public class SborCoderTest {
     var codec = new SborCoder(new CodecMap());
     var testVector = new short[] {0x0102, 0x0304};
 
-    var r0 = codec.encode(testVector).unwrap();
+    var r0 = codec.encode(testVector, short[].class).unwrap();
 
     assertEquals(10, r0.length);
     assertEquals(0x30, r0[0]); // Type == 0x30 - Vector
@@ -262,7 +261,7 @@ public class SborCoderTest {
     var codec = new SborCoder(new CodecMap());
     var testVector = new int[] {0x01020304, 0x05060708, 0x090A0B0C};
 
-    var r0 = codec.encode(testVector).unwrap();
+    var r0 = codec.encode(testVector, int[].class).unwrap();
 
     assertEquals(18, r0.length);
     assertEquals(0x30, r0[0]); // Type == 0x30 - Vector
@@ -329,38 +328,54 @@ public class SborCoderTest {
   public void someOptionCanBeEncodedAndDecoded() {
     var codec = new SborCoder(new CodecMap());
 
-    var r0 = codec.encodeOption(some("Test value")).unwrap();
+    var optionTypeLiteral = new TypeLiteral<Option<String>>() {};
+    var r0 = codec.encode(some("Test value"), optionTypeLiteral).unwrap();
 
     assertEquals(17, r0.length);
     assertEquals(0x20, r0[0]); // Type == 0x20 - Option
     assertEquals(0x01, r0[1]); // Value - present
     assertEquals(0x0C, r0[2]); // Stored type - 0x0C - String
 
-    var r1 = codec.decodeOption(r0, String.class).unwrap();
+    var r1 = codec.decode(r0, optionTypeLiteral).unwrap();
 
     assertEquals(some("Test value"), r1);
   }
 
   @Test
-  public void eitherCanBeEncodedAndDecoded() {
+  public void noneOptionCanBeEncodedAndDecoded() {
     var codec = new SborCoder(new CodecMap());
 
-    var leftValue = Either.left("Some value");
-    var leftEncoded = codec.encode(leftValue).unwrap();
+    var optionTypeLiteral = new TypeLiteral<Option<String>>() {};
+    var r0 = codec.encode(none(), optionTypeLiteral).unwrap();
+
+    assertEquals(2, r0.length);
+    assertEquals(0x20, r0[0]); // Type == 0x20 - Option
+    assertEquals(0x00, r0[1]); // Value - missing
+
+    var r1 = codec.decode(r0, optionTypeLiteral).unwrap();
+
+    assertEquals(none(), r1);
+  }
+
+  @Test
+  public void eitherCanBeEncodedAndDecoded() {
+    var codec = new SborCoder(new CodecMap());
+    var eitherTypeLiteral = new TypeLiteral<Either<String, Long>>() {};
+
+    var leftValue = Either.<String, Long>left("Some value");
+    var leftEncoded = codec.encode(leftValue, eitherTypeLiteral).unwrap();
 
     assertEquals(17, leftEncoded.length);
     assertEquals(0x24, leftEncoded[0]); // Type == 0x24 - Either
     assertEquals(0x01, leftEncoded[1]); // Value - left
     assertEquals(0x0C, leftEncoded[2]); // Value type - String
 
-    var rightValue = Either.right(123L);
-    var rightEncoded = codec.encode(rightValue).unwrap();
+    var rightValue = Either.<String, Long>right(123L);
+    var rightEncoded = codec.encode(rightValue, eitherTypeLiteral).unwrap();
     assertEquals(11, rightEncoded.length);
     assertEquals(0x24, rightEncoded[0]); // Type == 0x24 - Either
     assertEquals(0x00, rightEncoded[1]); // Value - right
     assertEquals(0x05, rightEncoded[2]); // Value type - i64
-
-    var eitherTypeLiteral = new TypeLiteral<Either<String, Long>>() {};
 
     var leftOut = codec.decode(leftEncoded, eitherTypeLiteral).unwrap();
     var rightOut = codec.decode(rightEncoded, eitherTypeLiteral).unwrap();
@@ -370,61 +385,14 @@ public class SborCoderTest {
   }
 
   @Test
-  public void noneOptionCanBeEncodedAndDecoded() {
-    var codec = new SborCoder(new CodecMap());
-
-    var r0 = codec.encodeOption(none()).unwrap();
-
-    assertEquals(2, r0.length);
-    assertEquals(0x20, r0[0]); // Type == 0x20 - Option
-    assertEquals(0x00, r0[1]); // Value - missing
-
-    var r1 = codec.decodeOption(r0, String.class).unwrap();
-
-    assertEquals(none(), r1);
-  }
-
-  @Test
-  public void leftEitherCanBeEncodedAndDecoded() {
-    var codec = new SborCoder(new CodecMap());
-
-    var r0 = codec.encodeEither(left("Some value")).unwrap();
-
-    assertEquals(17, r0.length);
-    assertEquals(0x24, r0[0]); // Type == 0x24 - Either
-    assertEquals(0x01, r0[1]); // Value - left
-    assertEquals(0x0C, r0[2]); // Value type - String
-
-    var r1 = codec.decodeEither(r0, String.class, Long.class).unwrap();
-
-    assertEquals(left("Some value"), r1);
-  }
-
-  @Test
-  public void rightEitherCanBeEncodedAndDecoded() {
-    var codec = new SborCoder(new CodecMap());
-
-    var r0 = codec.encodeEither(right(123L)).unwrap();
-
-    assertEquals(11, r0.length);
-    assertEquals(0x24, r0[0]); // Type == 0x24 - Either
-    assertEquals(0x00, r0[1]); // Value - right
-    assertEquals(0x05, r0[2]); // Value type - i64
-
-    var r1 = codec.decodeEither(r0, String.class, Long.class).unwrap();
-
-    assertEquals(right(123L), r1);
-  }
-
-  @Test
   public void objectTreeCanBeEncodedAndDecoded() {
     var codec =
         new SborCoder(
             new CodecMap().register(SimpleRecord.class, new SimpleRecord.SimpleRecordCodec()));
 
-    var testValue = new SimpleRecord(1234567, "Some string", left(4567L), some(false));
+    var testValue = new SimpleRecord(1234567, "Some string", Either.left(4567L), some(false));
 
-    var r0 = codec.encode(testValue).unwrap();
+    var r0 = codec.encode(testValue, SimpleRecord.class).unwrap();
 
     assertEquals(41, r0.length);
     assertEquals(0x10, r0[0]); // Type == 0x10 - Struct

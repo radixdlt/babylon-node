@@ -64,22 +64,32 @@
 
 package com.radixdlt.sbor.codec;
 
-import com.radixdlt.lang.Either;
-import com.radixdlt.lang.Functions.FN1;
-import com.radixdlt.lang.Option;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.coding.EncoderApi;
 
-public record ClassField<T>(
-    Class<?> baseType, Class<?> firstArg, Class<?> secondArg, FN1<?, T> getter) {
-  public static <T> ClassField<T> plain(Class<?> baseType, FN1<?, T> getter) {
-    return new ClassField<>(baseType, null, null, getter);
+import java.util.function.Function;
+
+public record Field<C, F>(
+    Class<F> clazz, TypeLiteral<F> typeLiteral, Codec<F> codec, Function<C, F> getter) {
+  public static <C, F> Field<C, F> withClass(Class<F> clazz, Function<C, F> getter) {
+    return new Field<>(clazz, null, null, getter);
   }
 
-  public static <V, T> ClassField<T> forOption(Class<V> firstArg, FN1<Option<V>, T> getter) {
-    return new ClassField<>(Option.class, firstArg, null, getter);
+  public static <C, F> Field<C, F> withType(TypeLiteral<F> typeLiteral, Function<C, F> getter) {
+    return new Field<>(null, typeLiteral,null, getter);
   }
 
-  public static <L, R, T> ClassField<T> forEither(
-      Class<L> leftType, Class<R> rightType, FN1<Either<L, R>, T> getter) {
-    return new ClassField<>(Either.class, leftType, rightType, getter);
+  public static <C, F> Field<C, F> withCodec(Codec<F> codec, Function<C, F> getter) {
+    return new Field<>(null, null, codec, getter);
+  }
+
+  public Result<Unit> encode(EncoderApi encoder, C classObject) {
+    var fieldValue = this.getter.apply(classObject);
+
+    return codec != null ? encoder.encode(fieldValue, codec)
+        : typeLiteral != null ? encoder.encode(fieldValue, typeLiteral)
+        : encoder.encode(fieldValue, clazz);
   }
 }

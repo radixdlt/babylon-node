@@ -69,6 +69,7 @@ import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 
 public interface DecoderApi {
@@ -78,7 +79,9 @@ public interface DecoderApi {
 
   Result<Unit> expectType(TypeId typeId);
 
-  Result<Integer> decodeArrayHeader(TypeId expectedId);
+    <T> Result<T> decode(Codec<T> codec);
+
+    Result<Integer> decodeArrayHeader(TypeId expectedId);
 
   Result<Byte> readByte();
 
@@ -95,8 +98,4 @@ public interface DecoderApi {
   Result<int[]> readIntegers(int length);
 
   Result<long[]> readLongs(int length);
-
-  <T> Result<Option<T>> decodeOption(Class<T> valueType);
-
-  <L, R> Result<Either<L, R>> decodeEither(Class<L> leftValueType, Class<R> rightValueType);
 }

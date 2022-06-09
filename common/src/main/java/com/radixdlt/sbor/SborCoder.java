@@ -65,32 +65,37 @@
 package com.radixdlt.sbor;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.lang.Either;
-import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
+import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.coding.Decoder;
 import com.radixdlt.sbor.coding.Encoder;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 public record SborCoder(CodecMap codecs) {
-  public Result<byte[]> encode(Object value) {
-    var outputStream = new ByteArrayOutputStream();
-
-    return new Encoder(outputStream, codecs).encode(value).map(outputStream::toByteArray);
+  @SuppressWarnings("unchecked")
+  public <T> Result<byte[]> encode(T value) {
+    return encode(value, (Class<? super T>) value.getClass());
   }
 
-  public <T> Result<byte[]> encodeOption(Option<T> value) {
+  public <T> Result<byte[]> encode(T value, Class<T> clazz) {
     var outputStream = new ByteArrayOutputStream();
 
-    return new Encoder(outputStream, codecs).encodeOption(value).map(outputStream::toByteArray);
+    return new Encoder(outputStream, codecs).encode(value, clazz).map(outputStream::toByteArray);
   }
 
-  public <L, R> Result<byte[]> encodeEither(Either<L, R> value) {
+  public <T> Result<byte[]> encode(T value, TypeLiteral<T> typeLiteral) {
     var outputStream = new ByteArrayOutputStream();
 
-    return new Encoder(outputStream, codecs).encodeEither(value).map(outputStream::toByteArray);
+    return new Encoder(outputStream, codecs).encode(value, typeLiteral).map(outputStream::toByteArray);
+  }
+
+  public <T> Result<byte[]> encode(T value, Codec<T> codec) {
+    var outputStream = new ByteArrayOutputStream();
+
+    return new Encoder(outputStream, codecs).encode(value, codec).map(outputStream::toByteArray);
   }
 
   public <T> Result<T> decode(byte[] input, Class<T> clazz) {
@@ -101,12 +106,7 @@ public record SborCoder(CodecMap codecs) {
     return new Decoder(new ByteArrayInputStream(input), codecs).decode(typeLiteral);
   }
 
-  public <T> Result<Option<T>> decodeOption(byte[] input, Class<T> clazz) {
-    return new Decoder(new ByteArrayInputStream(input), codecs).decodeOption(clazz);
-  }
-
-  public <L, R> Result<Either<L, R>> decodeEither(
-      byte[] input, Class<L> leftClass, Class<R> rightClass) {
-    return new Decoder(new ByteArrayInputStream(input), codecs).decodeEither(leftClass, rightClass);
+  public <T> Result<T> decode(byte[] input, Codec<T> codec) {
+    return new Decoder(new ByteArrayInputStream(input), codecs).decode(codec);
   }
 }

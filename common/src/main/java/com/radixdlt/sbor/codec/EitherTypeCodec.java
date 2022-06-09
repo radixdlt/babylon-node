@@ -84,11 +84,11 @@ public record EitherTypeCodec<L, R>(TypeLiteral<L> leftType, TypeLiteral<R> righ
     either.apply(
         left -> {
           encoder.writeByte(ResultTypeId.RESULT_TYPE_ERR.typeId());
-          encoder.encode(left);
+          encoder.encode(left, leftType);
         },
         right -> {
           encoder.writeByte(ResultTypeId.RESULT_TYPE_OK.typeId());
-          encoder.encode(right);
+          encoder.encode(right, rightType);
         });
 
     return Unit.unitResult();

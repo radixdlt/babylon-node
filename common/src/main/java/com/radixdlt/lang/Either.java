@@ -70,7 +70,7 @@ import java.util.function.Function;
 
 /** The type which can hold one of two values of different types. */
 // TODO: extend API
-public interface Either<L, R> {
+public sealed interface Either<L, R> {
   /**
    * Handle both possible states (left/right) and produce single value from it. Depending on which
    * (left or right) value is stored in particular instance, respective mapping function is invoked.
@@ -99,6 +99,18 @@ public interface Either<L, R> {
           rightConsumer.accept(right);
           return null;
         });
+  }
+
+  default boolean isLeft() {
+    return fold(
+        left -> true,
+        right -> false);
+  }
+
+  default boolean isRight() {
+    return fold(
+        left -> false,
+        right -> true);
   }
 
   /**
@@ -157,21 +169,29 @@ public interface Either<L, R> {
         Functions::id);
   }
 
+  record left<L, R>(L value) implements Either<L, R> {
+    @Override
+    public <T> T fold(
+        FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
+      return leftMapper.apply(value());
+    }
+  }
+
   /**
    * Create instance which contains left value.
    *
    * @return created instance.
    */
   static <L, R> Either<L, R> left(L left) {
-    record left<L, R>(L value) implements Either<L, R> {
-      @Override
-      public <T> T fold(
-          FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
-        return leftMapper.apply(value());
-      }
-    }
-
     return new left<>(left);
+  }
+
+  record right<L, R>(R value) implements Either<L, R> {
+    @Override
+    public <T> T fold(
+        FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
+      return rightMapper.apply(value());
+    }
   }
 
   /**
@@ -180,14 +200,6 @@ public interface Either<L, R> {
    * @return created instance.
    */
   static <L, R> Either<L, R> right(R right) {
-    record right<L, R>(R value) implements Either<L, R> {
-      @Override
-      public <T> T fold(
-          FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
-        return rightMapper.apply(value());
-      }
-    }
-
     return new right<>(right);
   }
 }

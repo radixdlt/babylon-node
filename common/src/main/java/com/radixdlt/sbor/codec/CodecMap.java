@@ -70,8 +70,8 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Unit;
-import java.util.HashMap;
-import java.util.Map;
+
+import java.util.*;
 import java.util.function.Function;
 
 /** Container for mapping between codec and class. */
@@ -112,13 +112,24 @@ public final class CodecMap {
     addCoreCodec(int[].class, new CoreTypeCodec.IntegerArrayCodec());
     addCoreCodec(long[].class, new CoreTypeCodec.LongArrayCodec());
 
-    registerGenericCodecCreator(
+    registerCodecCreatorForSealedClassAndSubclasses(
         Either.class,
         eitherTypeLiteral -> {
           try {
             var leftType = eitherTypeLiteral.getReturnType(Either.class.getMethod("unwrapLeft"));
             var rightType = eitherTypeLiteral.getReturnType(Either.class.getMethod("unwrapRight"));
             return new EitherTypeCodec(leftType, rightType);
+          } catch (Exception ex) {
+            throw new RuntimeException(ex);
+          }
+        });
+
+    registerCodecCreatorForSealedClassAndSubclasses(
+        Option.class,
+        optionTypeLiteral -> {
+          try {
+            var innerType = optionTypeLiteral.getReturnType(Option.class.getMethod("unwrap"));
+            return new OptionTypeCodec(innerType);
           } catch (Exception ex) {
             throw new RuntimeException(ex);
           }
@@ -138,7 +149,8 @@ public final class CodecMap {
     }
 
     // Failing that - let's see if we can create one with a codec creator
-    var codecCreator = codecCreatorMap.get(typeLiteral.getRawType());
+    var rawType = typeLiteral.getRawType();
+    var codecCreator = codecCreatorMap.get(rawType);
     if (codecCreator != null) {
       var newCodec = codecCreator.apply(typeLiteral);
 
@@ -147,8 +159,10 @@ public final class CodecMap {
       return option(newCodec);
     }
 
-    // QQ: Replace with an Exception - as this is exceptional
-    return Option.empty();
+    throw new RuntimeException(
+        String.format(
+            "The type literal %s itself has no SBOR codec, and its raw type class %s has no codec creator registered.",
+            typeLiteral, rawType));
   }
 
   public <T> Option<Codec<T>> get(Class<T> clazz) {
@@ -165,13 +179,14 @@ public final class CodecMap {
       throw new RuntimeException(
           String.format(
               "The class object %s itself has no registered SBOR codec, BUT a codec creator is"
-                  + " registered. You should use an explicit TypeLiteral<X<Y,Z>> instead of a class"
-                  + " object,so that type information can be used to create the correct Codec.",
+                  + " registered. You should use an explicit TypeLiteral<X<Y,Z>>.",
               clazz));
     }
 
-    // QQ: Replace with an Exception - as this is exceptional
-    return Option.empty();
+    throw new RuntimeException(
+        String.format(
+            "The class object %s itself has no registered SBOR codec, nor has codec creator registered.",
+            clazz));
   }
 
   public <T> CodecMap register(Class<T> clazz, Codec<T> codec) {
@@ -181,11 +196,50 @@ public final class CodecMap {
     return this;
   }
 
-  public <T> CodecMap registerGenericCodecCreator(
+  public <T> CodecMap registerForSealedClassAndSubclasses(Class<T> clazz, Codec<? extends T> codec) {
+    if (!clazz.isSealed()) {
+      throw new RuntimeException(String.format(
+          "The class object %s is not sealed, so cannot be passed into " +
+              "registerForSubclassesOfSealed.",
+          clazz));
+    }
+
+    classEncodingMap.put(clazz, codec);
+    var implementers = clazz.getPermittedSubclasses();
+    Arrays.stream(implementers)
+        .forEach(subClass -> {
+          synchronized (classEncodingMap) {
+            classEncodingMap.put(subClass, codec);
+          }
+        });
+    return this;
+  }
+
+  public <T> CodecMap registerCodecCreator(
       Class<T> clazz, Function<TypeLiteral<T>, Codec> createCodec) {
     synchronized (codecCreatorMap) {
       codecCreatorMap.put(clazz, createCodec::apply);
     }
+    return this;
+  }
+
+  public <T> CodecMap registerCodecCreatorForSealedClassAndSubclasses(
+      Class<T> clazz, Function<TypeLiteral<T>, Codec> createCodec) {
+    if (!clazz.isSealed()) {
+      throw new RuntimeException(String.format(
+          "The class object %s is not sealed, so cannot be passed into " +
+              "registerCodecCreatorForSubclassesOfSealed.",
+          clazz));
+    }
+
+    codecCreatorMap.put(clazz, createCodec::apply);
+    var implementers = clazz.getPermittedSubclasses();
+    Arrays.stream(implementers)
+        .forEach(subClass -> {
+              synchronized (explicitTypeEncodingMap) {
+                codecCreatorMap.put(subClass, createCodec::apply);
+              }
+        });
     return this;
   }
 

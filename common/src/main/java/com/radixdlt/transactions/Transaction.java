@@ -65,7 +65,7 @@
 package com.radixdlt.transactions;
 
 import static com.radixdlt.lang.Result.all;
-import static com.radixdlt.sbor.codec.ClassField.plain;
+import static com.radixdlt.sbor.codec.Field.withClass;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -73,7 +73,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.lang.Result;
 import com.radixdlt.sbor.codec.ClassCodec;
-import com.radixdlt.sbor.codec.ClassField;
+import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.coding.DecoderApi;
 import java.util.List;
 import java.util.Objects;
@@ -133,9 +133,9 @@ public final class Transaction {
   /** SBOR decoding */
   public static class TransactionCodec implements ClassCodec<Transaction> {
     @Override
-    public List<ClassField<Transaction>> fields() {
+    public List<Field<Transaction, ?>> fields() {
       return List.of(
-          plain(byte[].class, Transaction::getPayload), plain(AID.class, Transaction::getId));
+          withClass(byte[].class, Transaction::getPayload), withClass(AID.class, Transaction::getId));
     }
 
     @Override

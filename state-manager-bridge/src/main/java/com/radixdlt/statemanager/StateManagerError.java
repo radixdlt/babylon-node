@@ -65,12 +65,12 @@
 package com.radixdlt.statemanager;
 
 import static com.radixdlt.lang.Result.all;
-import static com.radixdlt.sbor.codec.ClassField.plain;
+import static com.radixdlt.sbor.codec.Field.withClass;
 
 import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.sbor.codec.ClassCodec;
-import com.radixdlt.sbor.codec.ClassField;
+import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.coding.DecoderApi;
 import java.util.List;
 import java.util.Map;
@@ -107,10 +107,10 @@ public class StateManagerError implements Cause {
   /** SBOR decoding */
   public static class StateManagerErrorCodec implements ClassCodec<StateManagerError> {
     @Override
-    public List<ClassField<StateManagerError>> fields() {
+    public List<Field<StateManagerError, ?>> fields() {
       return List.of(
-          plain(short.class, StateManagerError::getRawErrorCode),
-          plain(String.class, StateManagerError::message));
+          withClass(short.class, StateManagerError::getRawErrorCode),
+          withClass(String.class, StateManagerError::message));
     }
 
     @Override

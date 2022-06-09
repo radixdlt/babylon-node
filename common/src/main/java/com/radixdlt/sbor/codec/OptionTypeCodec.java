@@ -62,27 +62,52 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor.utils;
+package com.radixdlt.sbor.codec;
 
-import com.radixdlt.lang.Cause;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.lang.Either;
+import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
-import com.radixdlt.sbor.SborCoder;
+import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.constants.OptionTypeId;
+import com.radixdlt.sbor.codec.constants.ResultTypeId;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.DecodingError;
+import com.radixdlt.sbor.coding.EncoderApi;
 
-public class DecodeResult<T> {
+import static com.radixdlt.lang.Result.success;
 
-  private Class<T> successClass;
-  private Class<? extends Cause> failureClass;
-  private SborCoder sborCoder;
+public record OptionTypeCodec<T>(TypeLiteral<T> innerType)
+    implements Codec<Option<T>> {
 
-  public DecodeResult(
-      SborCoder sborCoder, Class<T> successClass, Class<? extends Cause> failureClass) {
-    this.successClass = successClass;
-    this.failureClass = failureClass;
-    this.sborCoder = sborCoder;
-  }
+    @Override
+    public Result<Unit> encode(EncoderApi encoder, Option<T> option) {
+        encoder.encodeTypeId(TypeId.TYPE_OPTION);
 
-  public Result<T> decode(byte[] sbor) {
-    var either = sborCoder.decodeEither(sbor, failureClass, successClass).unwrap();
-    return either.fold(Result::err, Result::ok);
-  }
+        option.apply(
+            () -> encoder.writeByte(OptionTypeId.OPTION_TYPE_NONE.typeId()),
+            v -> {
+                encoder.writeByte(OptionTypeId.OPTION_TYPE_SOME.typeId());
+                encoder.encode(v, innerType);
+            });
+
+        return Unit.unitResult();
+    }
+
+    @Override
+    public Result<Option<T>> decode(DecoderApi decoder) {
+        return decoder.expectType(TypeId.TYPE_OPTION)
+            .flatMap(decoder::readByte)
+            .map(OptionTypeId::forId)
+            .flatMap(
+                option ->
+                    option.fold(
+                        DecodingError.INVALID_OPTION::result,
+                        optionType ->
+                            switch (optionType) {
+                                case OPTION_TYPE_NONE -> success(Option.empty());
+                                case OPTION_TYPE_SOME -> decoder.decode(innerType).map(Option::option);
+                            }));
+    }
 }

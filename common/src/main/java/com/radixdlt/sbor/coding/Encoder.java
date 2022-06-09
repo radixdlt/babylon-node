@@ -64,15 +64,13 @@
 
 package com.radixdlt.sbor.coding;
 
-import com.radixdlt.lang.Either;
-import com.radixdlt.lang.Option;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.constants.OptionTypeId;
-import com.radixdlt.sbor.codec.constants.ResultTypeId;
 import com.radixdlt.sbor.codec.constants.TypeId;
+
 import java.io.ByteArrayOutputStream;
 
 /**
@@ -82,58 +80,32 @@ import java.io.ByteArrayOutputStream;
  * @param codecMap
  */
 public record Encoder(ByteArrayOutputStream output, CodecMap codecMap) implements EncoderApi {
-  @SuppressWarnings("unchecked")
   @Override
-  public Result<Unit> encode(Object value) {
-    if (value instanceof Option<?> option) {
-      return encodeOption(option);
-    }
-
-    if (value instanceof Either<?, ?> either) {
-      return encodeEither(either);
-    }
-
+  public <T> Result<Unit> encode(T value, Class<T> clazz) {
     return codecMap
-        .get(value.getClass())
+        .get(clazz)
         .fold(
             EncodingError.UNSUPPORTED_TYPE::result,
-            codec -> ((Codec<Object>) codec).encode(this, value));
+            codec -> codec.encode(this, value));
+  }
+
+  @Override
+  public <T> Result<Unit> encode(T value, TypeLiteral<T> typeLiteral) {
+    return codecMap
+        .get(typeLiteral)
+        .fold(
+            EncodingError.UNSUPPORTED_TYPE::result,
+            codec -> codec.encode(this, value));
+  }
+
+  @Override
+  public <T> Result<Unit> encode(T value, Codec<T> codec) {
+    return codec.encode(this, value);
   }
 
   @Override
   public Result<Unit> encodeTypeId(TypeId typeId) {
     writeByte(typeId.typeId());
-    return Unit.unitResult();
-  }
-
-  @Override
-  public Result<Unit> encodeOption(Option<?> option) {
-    encodeTypeId(TypeId.TYPE_OPTION);
-
-    option.apply(
-        () -> writeByte(OptionTypeId.OPTION_TYPE_NONE.typeId()),
-        v -> {
-          writeByte(OptionTypeId.OPTION_TYPE_SOME.typeId());
-          encode(v);
-        });
-
-    return Unit.unitResult();
-  }
-
-  @Override
-  public Result<Unit> encodeEither(Either<?, ?> either) {
-    encodeTypeId(TypeId.TYPE_RESULT);
-
-    either.apply(
-        left -> {
-          writeByte(ResultTypeId.RESULT_TYPE_ERR.typeId());
-          encode(left);
-        },
-        right -> {
-          writeByte(ResultTypeId.RESULT_TYPE_OK.typeId());
-          encode(right);
-        });
-
     return Unit.unitResult();
   }
 

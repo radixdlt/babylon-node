@@ -64,14 +64,20 @@
 
 package com.radixdlt.sbor.coding;
 
+import com.google.inject.TypeLiteral;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 
 public interface EncoderApi {
-  Result<Unit> encode(Object value);
+  <T> Result<Unit> encode(T value, Class<T> clazz);
+
+  <T> Result<Unit> encode(T value, TypeLiteral<T> typeLiteral);
+
+  <T> Result<Unit> encode(T value, Codec<T> codec);
 
   Result<Unit> encodeTypeId(TypeId typeId);
 
@@ -86,8 +92,4 @@ public interface EncoderApi {
   void writeInt(int value);
 
   void writeLong(long value);
-
-  Result<Unit> encodeOption(Option<?> option);
-
-  Result<Unit> encodeEither(Either<?, ?> either);
 }

@@ -65,14 +65,14 @@
 package com.radixdlt.identifiers;
 
 import static com.radixdlt.lang.Result.all;
-import static com.radixdlt.sbor.codec.ClassField.plain;
+import static com.radixdlt.sbor.codec.Field.withClass;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.sbor.codec.ClassCodec;
-import com.radixdlt.sbor.codec.ClassField;
+import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
@@ -218,9 +218,11 @@ public final class AID implements Comparable<AID> {
 
   /** SBOR Codec */
   public static class AIDCodec implements ClassCodec<AID> {
+    static List<Field<AID, ?>> fields = List.of(withClass(byte[].class, AID::getBytes));
+
     @Override
-    public List<ClassField<AID>> fields() {
-      return List.of(plain(byte[].class, AID::getBytes));
+    public List<Field<AID, ?>> fields() {
+      return fields;
     }
 
     @Override

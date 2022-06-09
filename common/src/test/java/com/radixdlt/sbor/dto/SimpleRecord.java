@@ -66,11 +66,12 @@ package com.radixdlt.sbor.dto;
 
 import static com.radixdlt.lang.Result.all;
 
+import com.google.inject.TypeLiteral;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.sbor.codec.ClassCodec;
-import com.radixdlt.sbor.codec.ClassField;
+import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.coding.DecoderApi;
 import java.util.List;
 
@@ -78,13 +79,18 @@ public record SimpleRecord(
     int first, String second, Either<Long, String> third, Option<Boolean> fourth) {
 
   public static class SimpleRecordCodec implements ClassCodec<SimpleRecord> {
+
+    static TypeLiteral<Either<Long, String>> eitherTypeLiteral1 = new TypeLiteral<>() {};
+    static TypeLiteral<Option<Boolean>> optionLiteral1 = new TypeLiteral<>() {};
+
+
     @Override
-    public List<ClassField<SimpleRecord>> fields() {
+    public List<Field<SimpleRecord, ?>> fields() {
       return List.of(
-          ClassField.plain(int.class, SimpleRecord::first),
-          ClassField.plain(String.class, SimpleRecord::second),
-          ClassField.forEither(Long.class, String.class, SimpleRecord::third),
-          ClassField.forOption(Boolean.class, SimpleRecord::fourth));
+          Field.withClass(int.class, SimpleRecord::first),
+          Field.withClass(String.class, SimpleRecord::second),
+          Field.withType(eitherTypeLiteral1, SimpleRecord::third),
+          Field.withType(optionLiteral1, SimpleRecord::fourth));
     }
 
     @Override
@@ -92,8 +98,8 @@ public record SimpleRecord(
       return all(
               decoder.decode(int.class),
               decoder.decode(String.class),
-              decoder.decodeEither(Long.class, String.class),
-              decoder.decodeOption(Boolean.class))
+              decoder.decode(eitherTypeLiteral1),
+              decoder.decode(optionLiteral1))
           .map(SimpleRecord::new);
     }
   }

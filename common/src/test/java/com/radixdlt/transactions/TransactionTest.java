@@ -83,7 +83,7 @@ public class TransactionTest {
             new CodecMap()
                 .register(Transaction.class, new Transaction.TransactionCodec())
                 .register(AID.class, new AID.AIDCodec()));
-    var r0 = codec.encode(t0).unwrap();
+    var r0 = codec.encode(t0, Transaction.class).unwrap();
     var t1 = codec.decode(r0, Transaction.class).unwrap();
 
     assertEquals(t0, t1);

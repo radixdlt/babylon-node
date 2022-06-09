@@ -64,13 +64,15 @@
 
 package com.radixdlt.mempool;
 
+import com.google.inject.TypeLiteral;
 import com.radixdlt.exceptions.SborException;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.SborCoder;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.utils.DecodeResult;
 import com.radixdlt.statemanager.StateManager.RustState;
 import com.radixdlt.statemanager.StateManagerError;
 import com.radixdlt.transactions.Transaction;
@@ -93,18 +95,16 @@ public class RustMempool {
       throws MempoolFullException, MempoolDuplicateException {
     var encodedRequest =
         this.sborCoder
-            .encode(transaction)
+            .encode(transaction, Transaction.class)
             .unwrap(c -> new SborException(Transaction.class, true, true, c.message()));
     var encodedResponse = add(this.rustState, encodedRequest);
 
-    var result =
-        new DecodeResult(this.sborCoder, Unit.class, StateManagerError.class)
-            .decode(encodedResponse);
+    var decodeClass = new TypeLiteral<Either<StateManagerError, Unit>>() {};
+    var result = this.sborCoder.decode(encodedResponse, decodeClass).unwrap();
 
     // Handle Errors.
-    Option<StateManagerError> optErr = result.toOptionErr();
-    if (optErr.isPresent()) {
-      var err = optErr.unwrap();
+    if (result.isLeft()) {
+      var err = result.unwrapLeft();
       switch (err.getErrorCode()) {
         case STATE_MANAGER_ERROR_CODE_MEMPOOL_FULL:
           throw new MempoolFullException(err.message());

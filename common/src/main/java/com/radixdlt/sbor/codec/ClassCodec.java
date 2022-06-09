@@ -73,17 +73,17 @@ import com.radixdlt.sbor.coding.EncoderApi;
 import java.util.List;
 
 public interface ClassCodec<T> extends Codec<T> {
-  List<ClassField<T>> fields();
+  List<Field<T, ?>> fields();
 
   default Result<Unit> encode(EncoderApi encoder, T value) {
     encoder.encodeTypeId(TypeId.TYPE_STRUCT);
 
-    var values = fields().stream().map(field -> field.getter().apply(value)).toList();
+    var fields = fields();
 
-    encoder.writeInt(values.size());
+    encoder.writeInt(fields.size());
 
-    return values.stream()
-        .map(encoder::encode)
+    return fields.stream()
+        .map(f -> f.encode(encoder, value))
         .filter(Result::isFailure)
         .findAny()
         .orElseGet(Unit::unitResult);

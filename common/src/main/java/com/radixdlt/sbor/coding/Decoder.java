@@ -67,21 +67,18 @@ package com.radixdlt.sbor.coding;
 import static com.radixdlt.lang.Result.success;
 
 import com.google.inject.TypeLiteral;
-import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Functions;
-import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.constants.OptionTypeId;
-import com.radixdlt.sbor.codec.constants.ResultTypeId;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import java.io.ByteArrayInputStream;
 
 /**
  * Performs the role of an AnyDecoder in the Rust SBOR implementation
  *
- * @param output
+ * @param input
  * @param codecMap
  */
 public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements DecoderApi {
@@ -102,35 +99,8 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
   }
 
   @Override
-  public <T> Result<Option<T>> decodeOption(Class<T> valueClass) {
-    return expectType(TypeId.TYPE_OPTION)
-        .flatMap(this::readByte)
-        .map(OptionTypeId::forId)
-        .flatMap(
-            option ->
-                option.fold(
-                    DecodingError.INVALID_OPTION::result,
-                    optionType ->
-                        switch (optionType) {
-                          case OPTION_TYPE_NONE -> success(Option.empty());
-                          case OPTION_TYPE_SOME -> decode(valueClass).map(Option::option);
-                        }));
-  }
-
-  @Override
-  public <L, R> Result<Either<L, R>> decodeEither(Class<L> leftClass, Class<R> rightClass) {
-    return expectType(TypeId.TYPE_RESULT)
-        .flatMap(this::readByte)
-        .map(ResultTypeId::forId)
-        .flatMap(
-            option ->
-                option.fold(
-                    DecodingError.INVALID_RESULT::result,
-                    resultType ->
-                        switch (resultType) {
-                          case RESULT_TYPE_OK -> decode(rightClass).map(Either::right);
-                          case RESULT_TYPE_ERR -> decode(leftClass).map(Either::left);
-                        }));
+  public <T> Result<T> decode(Codec<T> codec) {
+    return codec.decode(this);
   }
 
   @Override

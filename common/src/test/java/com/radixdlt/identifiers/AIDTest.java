@@ -131,7 +131,7 @@ public class AIDTest {
     AID aid0 = AID.from(bytes, 0);
 
     var codec = new SborCoder(new CodecMap().register(AID.class, new AID.AIDCodec()));
-    var r0 = codec.encode(aid0).unwrap();
+    var r0 = codec.encode(aid0, AID.class).unwrap();
     var aid1 = codec.decode(r0, AID.class).unwrap();
 
     assertEquals(aid0, aid1);
