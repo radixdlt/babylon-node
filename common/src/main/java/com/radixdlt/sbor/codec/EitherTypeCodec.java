@@ -64,7 +64,7 @@
 
 package com.radixdlt.sbor.codec;
 
-import com.google.inject.TypeLiteral;
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
@@ -74,7 +74,7 @@ import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.DecodingError;
 import com.radixdlt.sbor.coding.EncoderApi;
 
-public record EitherTypeCodec<L, R>(TypeLiteral<L> leftType, TypeLiteral<R> rightType)
+public record EitherTypeCodec<L, R>(TypeToken<L> leftType, TypeToken<R> rightType)
     implements Codec<Either<L, R>> {
 
   @Override

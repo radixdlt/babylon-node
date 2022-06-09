@@ -64,7 +64,7 @@
 
 package com.radixdlt.sbor.codec;
 
-import com.google.inject.TypeLiteral;
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.coding.EncoderApi;
@@ -72,13 +72,13 @@ import com.radixdlt.sbor.coding.EncoderApi;
 import java.util.function.Function;
 
 public record Field<C, F>(
-    Class<F> clazz, TypeLiteral<F> typeLiteral, Codec<F> codec, Function<C, F> getter) {
+    Class<F> clazz, TypeToken<F> type, Codec<F> codec, Function<C, F> getter) {
   public static <C, F> Field<C, F> withClass(Class<F> clazz, Function<C, F> getter) {
     return new Field<>(clazz, null, null, getter);
   }
 
-  public static <C, F> Field<C, F> withType(TypeLiteral<F> typeLiteral, Function<C, F> getter) {
-    return new Field<>(null, typeLiteral,null, getter);
+  public static <C, F> Field<C, F> withType(TypeToken<F> type, Function<C, F> getter) {
+    return new Field<>(null, type,null, getter);
   }
 
   public static <C, F> Field<C, F> withCodec(Codec<F> codec, Function<C, F> getter) {
@@ -89,7 +89,7 @@ public record Field<C, F>(
     var fieldValue = this.getter.apply(classObject);
 
     return codec != null ? encoder.encode(fieldValue, codec)
-        : typeLiteral != null ? encoder.encode(fieldValue, typeLiteral)
+        : type != null ? encoder.encode(fieldValue, type)
         : encoder.encode(fieldValue, clazz);
   }
 }

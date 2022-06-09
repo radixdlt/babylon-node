@@ -64,9 +64,7 @@
 
 package com.radixdlt.sbor.coding;
 
-import com.google.inject.TypeLiteral;
-import com.radixdlt.lang.Either;
-import com.radixdlt.lang.Option;
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.Codec;
@@ -75,7 +73,7 @@ import com.radixdlt.sbor.codec.constants.TypeId;
 public interface DecoderApi {
   <T> Result<T> decode(Class<T> type);
 
-  <T> Result<T> decode(TypeLiteral<T> type);
+  <T> Result<T> decode(TypeToken<T> type);
 
   Result<Unit> expectType(TypeId typeId);
 

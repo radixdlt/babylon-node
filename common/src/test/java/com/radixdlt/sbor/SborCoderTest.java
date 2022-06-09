@@ -68,6 +68,7 @@ import static com.radixdlt.lang.Option.none;
 import static com.radixdlt.lang.Option.some;
 import static org.junit.Assert.*;
 
+import com.google.common.reflect.TypeToken;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
@@ -76,7 +77,6 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.dto.SimpleRecord;
 import org.junit.Test;
 
-@SuppressWarnings("deprecation")
 public class SborCoderTest {
   @Test
   public void unitCanBeEncodedAndDecoded() {
@@ -328,7 +328,7 @@ public class SborCoderTest {
   public void someOptionCanBeEncodedAndDecoded() {
     var codec = new SborCoder(new CodecMap());
 
-    var optionTypeLiteral = new TypeLiteral<Option<String>>() {};
+    var optionTypeLiteral = new TypeToken<Option<String>>() {};
     var r0 = codec.encode(some("Test value"), optionTypeLiteral).unwrap();
 
     assertEquals(17, r0.length);
@@ -345,7 +345,7 @@ public class SborCoderTest {
   public void noneOptionCanBeEncodedAndDecoded() {
     var codec = new SborCoder(new CodecMap());
 
-    var optionTypeLiteral = new TypeLiteral<Option<String>>() {};
+    var optionTypeLiteral = new TypeToken<Option<String>>() {};
     var r0 = codec.encode(none(), optionTypeLiteral).unwrap();
 
     assertEquals(2, r0.length);
@@ -360,7 +360,7 @@ public class SborCoderTest {
   @Test
   public void eitherCanBeEncodedAndDecoded() {
     var codec = new SborCoder(new CodecMap());
-    var eitherTypeLiteral = new TypeLiteral<Either<String, Long>>() {};
+    var eitherTypeLiteral = new TypeToken<Either<String, Long>>() {};
 
     var leftValue = Either.<String, Long>left("Some value");
     var leftEncoded = codec.encode(leftValue, eitherTypeLiteral).unwrap();

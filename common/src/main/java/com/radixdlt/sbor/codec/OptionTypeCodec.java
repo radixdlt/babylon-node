@@ -64,13 +64,11 @@
 
 package com.radixdlt.sbor.codec;
 
-import com.google.inject.TypeLiteral;
-import com.radixdlt.lang.Either;
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.constants.OptionTypeId;
-import com.radixdlt.sbor.codec.constants.ResultTypeId;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.DecodingError;
@@ -78,7 +76,7 @@ import com.radixdlt.sbor.coding.EncoderApi;
 
 import static com.radixdlt.lang.Result.success;
 
-public record OptionTypeCodec<T>(TypeLiteral<T> innerType)
+public record OptionTypeCodec<T>(TypeToken<T> innerType)
     implements Codec<Option<T>> {
 
     @Override

@@ -64,6 +64,7 @@
 
 package com.radixdlt.mempool;
 
+import com.google.common.reflect.TypeToken;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.exceptions.SborException;
 import com.radixdlt.identifiers.AID;
@@ -99,7 +100,7 @@ public class RustMempool {
             .unwrap(c -> new SborException(Transaction.class, true, true, c.message()));
     var encodedResponse = add(this.rustState, encodedRequest);
 
-    var decodeClass = new TypeLiteral<Either<StateManagerError, Unit>>() {};
+    var decodeClass = new TypeToken<Either<StateManagerError, Unit>>() {};
     var result = this.sborCoder.decode(encodedResponse, decodeClass).unwrap();
 
     // Handle Errors.

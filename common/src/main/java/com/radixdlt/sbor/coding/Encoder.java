@@ -64,7 +64,7 @@
 
 package com.radixdlt.sbor.coding;
 
-import com.google.inject.TypeLiteral;
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.Codec;
@@ -82,20 +82,12 @@ import java.io.ByteArrayOutputStream;
 public record Encoder(ByteArrayOutputStream output, CodecMap codecMap) implements EncoderApi {
   @Override
   public <T> Result<Unit> encode(T value, Class<T> clazz) {
-    return codecMap
-        .get(clazz)
-        .fold(
-            EncodingError.UNSUPPORTED_TYPE::result,
-            codec -> codec.encode(this, value));
+    return codecMap.get(clazz).encode(this, value);
   }
 
   @Override
-  public <T> Result<Unit> encode(T value, TypeLiteral<T> typeLiteral) {
-    return codecMap
-        .get(typeLiteral)
-        .fold(
-            EncodingError.UNSUPPORTED_TYPE::result,
-            codec -> codec.encode(this, value));
+  public <T> Result<Unit> encode(T value, TypeToken<T> type) {
+    return codecMap.get(type).encode(this, value);
   }
 
   @Override

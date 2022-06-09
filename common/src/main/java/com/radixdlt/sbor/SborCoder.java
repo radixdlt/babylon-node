@@ -64,7 +64,7 @@
 
 package com.radixdlt.sbor;
 
-import com.google.inject.TypeLiteral;
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
@@ -86,10 +86,10 @@ public record SborCoder(CodecMap codecs) {
     return new Encoder(outputStream, codecs).encode(value, clazz).map(outputStream::toByteArray);
   }
 
-  public <T> Result<byte[]> encode(T value, TypeLiteral<T> typeLiteral) {
+  public <T> Result<byte[]> encode(T value, TypeToken<T> type) {
     var outputStream = new ByteArrayOutputStream();
 
-    return new Encoder(outputStream, codecs).encode(value, typeLiteral).map(outputStream::toByteArray);
+    return new Encoder(outputStream, codecs).encode(value, type).map(outputStream::toByteArray);
   }
 
   public <T> Result<byte[]> encode(T value, Codec<T> codec) {
@@ -102,8 +102,8 @@ public record SborCoder(CodecMap codecs) {
     return new Decoder(new ByteArrayInputStream(input), codecs).decode(clazz);
   }
 
-  public <T> Result<T> decode(byte[] input, TypeLiteral<T> typeLiteral) {
-    return new Decoder(new ByteArrayInputStream(input), codecs).decode(typeLiteral);
+  public <T> Result<T> decode(byte[] input, TypeToken<T> type) {
+    return new Decoder(new ByteArrayInputStream(input), codecs).decode(type);
   }
 
   public <T> Result<T> decode(byte[] input, Codec<T> codec) {

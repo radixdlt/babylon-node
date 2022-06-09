@@ -66,7 +66,7 @@ package com.radixdlt.sbor.coding;
 
 import static com.radixdlt.lang.Result.success;
 
-import com.google.inject.TypeLiteral;
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
@@ -86,16 +86,12 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
 
   @Override
   public <T> Result<T> decode(Class<T> clazz) {
-    return codecMap
-        .get(clazz)
-        .fold(DecodingError.UNSUPPORTED_TYPE::result, codec -> codec.decode(this));
+    return codecMap.get(clazz).decode(this);
   }
 
   @Override
-  public <T> Result<T> decode(TypeLiteral<T> type) {
-    return codecMap
-        .get(type)
-        .fold(DecodingError.UNSUPPORTED_TYPE::result, codec -> codec.decode(this));
+  public <T> Result<T> decode(TypeToken<T> type) {
+    return codecMap.get(type).decode(this);
   }
 
   @Override

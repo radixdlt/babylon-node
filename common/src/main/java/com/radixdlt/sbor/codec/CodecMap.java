@@ -64,9 +64,7 @@
 
 package com.radixdlt.sbor.codec;
 
-import static com.radixdlt.lang.Option.option;
-
-import com.google.inject.TypeLiteral;
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Unit;
@@ -83,9 +81,9 @@ public final class CodecMap {
 
   private final Map<Class, Codec> classEncodingMap = new HashMap<>();
 
-  private final Map<TypeLiteral, Codec> explicitTypeEncodingMap = new HashMap<>();
+  private final Map<TypeToken, Codec> explicitTypeEncodingMap = new HashMap<>();
 
-  private final Map<Class, Function<TypeLiteral, Codec>> codecCreatorMap = new HashMap<>();
+  private final Map<Class, Function<TypeToken, Codec>> codecCreatorMap = new HashMap<>();
 
   // QQ: Make this all static
   public CodecMap() {
@@ -114,10 +112,10 @@ public final class CodecMap {
 
     registerCodecCreatorForSealedClassAndSubclasses(
         Either.class,
-        eitherTypeLiteral -> {
+        eitherType -> {
           try {
-            var leftType = eitherTypeLiteral.getReturnType(Either.class.getMethod("unwrapLeft"));
-            var rightType = eitherTypeLiteral.getReturnType(Either.class.getMethod("unwrapRight"));
+            var leftType = eitherType.method(Either.class.getMethod("unwrapLeft")).getReturnType();
+            var rightType = eitherType.method(Either.class.getMethod("unwrapRight")).getReturnType();
             return new EitherTypeCodec(leftType, rightType);
           } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -126,9 +124,9 @@ public final class CodecMap {
 
     registerCodecCreatorForSealedClassAndSubclasses(
         Option.class,
-        optionTypeLiteral -> {
+        optionType -> {
           try {
-            var innerType = optionTypeLiteral.getReturnType(Option.class.getMethod("unwrap"));
+            var innerType = optionType.method(Option.class.getMethod("unwrap")).getReturnType();
             return new OptionTypeCodec(innerType);
           } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -138,38 +136,38 @@ public final class CodecMap {
 
   private <T> void addCoreCodec(Class<T> clazz, Codec<T> codec) {
     classEncodingMap.put(clazz, codec);
-    explicitTypeEncodingMap.put(TypeLiteral.get(clazz), codec);
+    explicitTypeEncodingMap.put(TypeToken.of(clazz), codec);
   }
 
-  public <T> Option<Codec<T>> get(TypeLiteral<T> typeLiteral) {
+  public <T> Codec<T> get(TypeToken<T> type) {
     // First - let's try to find a pre-registered codec for this explicit type literal
-    var codec = explicitTypeEncodingMap.get(typeLiteral);
+    var codec = explicitTypeEncodingMap.get(type);
     if (codec != null) {
-      return option(codec);
+      return codec;
     }
 
     // Failing that - let's see if we can create one with a codec creator
-    var rawType = typeLiteral.getRawType();
+    var rawType = type.getRawType();
     var codecCreator = codecCreatorMap.get(rawType);
     if (codecCreator != null) {
-      var newCodec = codecCreator.apply(typeLiteral);
+      var newCodec = codecCreator.apply(type);
 
       // We cache the codec for future use
-      registerExplicitGeneric(typeLiteral, newCodec);
-      return option(newCodec);
+      registerExplicitGeneric(type, newCodec);
+      return newCodec;
     }
 
     throw new RuntimeException(
         String.format(
-            "The type literal %s itself has no SBOR codec, and its raw type class %s has no codec creator registered.",
-            typeLiteral, rawType));
+            "The type token %s itself has no SBOR codec, and its raw type class %s has no codec creator registered.",
+            type, rawType));
   }
 
-  public <T> Option<Codec<T>> get(Class<T> clazz) {
+  public <T> Codec<T> get(Class<T> clazz) {
     var codec = classEncodingMap.get(clazz);
 
     if (codec != null) {
-      return Option.present(codec);
+      return codec;
     }
 
     // We are in a failure case here - so let's try to be helpful
@@ -179,7 +177,7 @@ public final class CodecMap {
       throw new RuntimeException(
           String.format(
               "The class object %s itself has no registered SBOR codec, BUT a codec creator is"
-                  + " registered. You should use an explicit TypeLiteral<X<Y,Z>>.",
+                  + " registered. You should use an explicit TypeToken<X<Y,Z>>.",
               clazz));
     }
 
@@ -216,7 +214,7 @@ public final class CodecMap {
   }
 
   public <T> CodecMap registerCodecCreator(
-      Class<T> clazz, Function<TypeLiteral<T>, Codec> createCodec) {
+      Class<T> clazz, Function<TypeToken<T>, Codec> createCodec) {
     synchronized (codecCreatorMap) {
       codecCreatorMap.put(clazz, createCodec::apply);
     }
@@ -224,7 +222,7 @@ public final class CodecMap {
   }
 
   public <T> CodecMap registerCodecCreatorForSealedClassAndSubclasses(
-      Class<T> clazz, Function<TypeLiteral<T>, Codec> createCodec) {
+      Class<T> clazz, Function<TypeToken<T>, Codec> createCodec) {
     if (!clazz.isSealed()) {
       throw new RuntimeException(String.format(
           "The class object %s is not sealed, so cannot be passed into " +
@@ -248,14 +246,14 @@ public final class CodecMap {
    * Externally, it's recommended to register via a register (for non-generic types) or
    * registerGenericCodecCreator (for generic types).
    *
-   * @param typeLiteral An explicit type to register a codec for
+   * @param type An explicit type to register a codec for
    * @param codec The codec to register
    * @return the CodecMap
    * @param <T> The (generic) type the codec is being registered for
    */
-  public <T> CodecMap registerExplicitGeneric(TypeLiteral<T> typeLiteral, Codec<T> codec) {
+  public <T> CodecMap registerExplicitGeneric(TypeToken<T> type, Codec<T> codec) {
     synchronized (explicitTypeEncodingMap) {
-      explicitTypeEncodingMap.put(typeLiteral, codec);
+      explicitTypeEncodingMap.put(type, codec);
     }
     return this;
   }
