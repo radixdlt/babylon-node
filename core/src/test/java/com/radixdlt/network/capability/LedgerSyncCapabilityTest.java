@@ -64,31 +64,28 @@
 
 package com.radixdlt.network.capability;
 
-import com.radixdlt.network.Message;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-public record Capabilities(LedgerSyncCapability ledgerSyncCapability) {
+import org.junit.Test;
 
-  /*
-   * This is used to mitigate malicious messages during capabilities exchange.
-   * */
-  public static final int MAX_NUMBER_OF_CAPABILITIES_ACCEPTED = 5;
+public class LedgerSyncCapabilityTest {
 
-  /**
-   * Returns {@code true} if the Ledger Sync Capability is enabled.
-   *
-   * @return {@code true} if the Ledger Sync Capability is enabled.
-   */
-  public boolean isLedgerSyncEnabled() {
-    return this.ledgerSyncCapability.isEnabled();
+  @Test
+  public void unsupported_messages_are_unsupported_when_disabled() {
+    LedgerSyncCapability ledgerSyncCapability = new LedgerSyncCapability.Builder(false).build();
+
+    ledgerSyncCapability
+        .getUnsupportedMessagesWhenDisabled()
+        .forEach(message -> assertTrue(ledgerSyncCapability.isMessageUnsupported(message)));
   }
 
-  /**
-   * Returns {@code true} if the specified message is unsupported.
-   *
-   * @param messageClazz a class of a network message which extends {@link Message}
-   * @return {@code true} if the specified message is unsupported.
-   */
-  public boolean isMessageUnsupported(Class<? extends Message> messageClazz) {
-    return ledgerSyncCapability.isMessageUnsupported(messageClazz);
+  @Test
+  public void unsupported_messages_are_supported_when_enabled() {
+    LedgerSyncCapability ledgerSyncCapability = new LedgerSyncCapability.Builder(true).build();
+
+    ledgerSyncCapability
+        .getUnsupportedMessagesWhenDisabled()
+        .forEach(message -> assertFalse(ledgerSyncCapability.isMessageUnsupported(message)));
   }
 }

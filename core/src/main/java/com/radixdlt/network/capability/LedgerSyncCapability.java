@@ -65,9 +65,7 @@
 package com.radixdlt.network.capability;
 
 import com.radixdlt.network.Message;
-import com.radixdlt.network.messages.LedgerStatusUpdateMessage;
-import com.radixdlt.network.messages.StatusResponseMessage;
-import com.radixdlt.network.messages.SyncResponseMessage;
+import com.radixdlt.network.messages.*;
 import java.util.Set;
 
 public class LedgerSyncCapability {
@@ -82,9 +80,7 @@ public class LedgerSyncCapability {
     this.isEnabled = builder.isEnabled;
     this.unsupportedMessagesWhenDisabled =
         Set.of(
-            SyncResponseMessage.class,
-            StatusResponseMessage.class,
-            LedgerStatusUpdateMessage.class);
+            SyncRequestMessage.class, StatusRequestMessage.class, LedgerStatusUpdateMessage.class);
   }
 
   public String getName() {
@@ -95,8 +91,12 @@ public class LedgerSyncCapability {
     return isEnabled;
   }
 
-  public boolean isMessageSupported(Message message) {
-    return !this.unsupportedMessagesWhenDisabled.contains(message);
+  public Set<Class<? extends Message>> getUnsupportedMessagesWhenDisabled() {
+    return unsupportedMessagesWhenDisabled;
+  }
+
+  public boolean isMessageUnsupported(Class<? extends Message> messageClazz) {
+    return !this.isEnabled() && this.unsupportedMessagesWhenDisabled.contains(messageClazz);
   }
 
   public static class Builder {
