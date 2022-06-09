@@ -62,43 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.interop.sbor.codec;
-
-import static com.radixdlt.interop.sbor.api.DecodingError.INVALID_FIELD_COUNT;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_STRUCT;
+package com.radixdlt.interop.sbor.codec.core;
 
 import com.radixdlt.interop.sbor.api.DecoderApi;
 import com.radixdlt.interop.sbor.api.EncoderApi;
-import com.radixdlt.interop.sbor.codec.core.Codec;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
-import java.util.List;
 
-public interface ClassCodec<T> extends Codec<T> {
-  List<ClassField<T>> fields();
+public interface Codec<T> {
+  Result<Unit> encode(EncoderApi encoder, T value);
 
-  default Result<Unit> encode(EncoderApi encoder, T value) {
-    encoder.encodeTypeId(TYPE_STRUCT);
-
-    var values = fields().stream().map(field -> field.getter().apply(value)).toList();
-
-    encoder.writeInt(values.size());
-
-    return values.stream()
-        .map(encoder::encode)
-        .filter(Result::isFailure)
-        .findAny()
-        .orElseGet(Unit::unitResult);
-  }
-
-  default Result<T> decode(DecoderApi decoder) {
-    return decoder
-        .expectType(TYPE_STRUCT)
-        .flatMap(decoder::readInt)
-        .filter(INVALID_FIELD_COUNT, value -> value == fields().size())
-        .map(() -> decoder)
-        .flatMap(this::decodeFields);
-  }
-
-  Result<T> decodeFields(DecoderApi anyDecoder);
+  Result<T> decode(DecoderApi decoder);
 }

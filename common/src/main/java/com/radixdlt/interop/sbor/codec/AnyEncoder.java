@@ -95,7 +95,10 @@ record AnyEncoder(ByteArrayOutputStream output, CodecMap codecMap) implements En
 
     return codecMap
         .get(value.getClass())
-        .fold(UNSUPPORTED_TYPE::result, codec -> ((ClassCodec<Object>) codec).encode(this, value));
+        .fold(
+            UNSUPPORTED_TYPE::result,
+            codec ->
+                ((com.radixdlt.interop.sbor.codec.core.Codec<Object>) codec).encode(this, value));
   }
 
   @Override

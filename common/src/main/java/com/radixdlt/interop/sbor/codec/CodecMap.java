@@ -66,6 +66,7 @@ package com.radixdlt.interop.sbor.codec;
 
 import static com.radixdlt.lang.Option.option;
 
+import com.radixdlt.interop.sbor.codec.core.Codec;
 import com.radixdlt.interop.sbor.codec.core.CoreTypeCodec;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Unit;
@@ -75,7 +76,7 @@ import java.util.Map;
 /** Container for mapping between codec and class. */
 public final class CodecMap {
   @SuppressWarnings("rawtypes")
-  private final Map<Class, ClassCodec> classEncodingMap = new HashMap<>();
+  private final Map<Class, Codec> classEncodingMap = new HashMap<>();
 
   public CodecMap() {
     classEncodingMap.put(Unit.class, new CoreTypeCodec.UnitCodec());
@@ -103,11 +104,11 @@ public final class CodecMap {
   }
 
   @SuppressWarnings("unchecked")
-  public <T> Option<ClassCodec<T>> get(Class<T> clazz) {
+  public <T> Option<Codec<T>> get(Class<T> clazz) {
     return option(classEncodingMap.get(clazz));
   }
 
-  public <T> CodecMap register(Class<T> clazz, ClassCodec<T> codec) {
+  public <T> CodecMap register(Class<T> clazz, Codec<T> codec) {
     classEncodingMap.put(clazz, codec);
     return this;
   }

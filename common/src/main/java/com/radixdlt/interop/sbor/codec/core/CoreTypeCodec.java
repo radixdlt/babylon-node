@@ -65,37 +65,18 @@
 package com.radixdlt.interop.sbor.codec.core;
 
 import static com.radixdlt.interop.sbor.api.DecodingError.INVALID_BOOLEAN;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_BOOL;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_I16;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_I32;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_I64;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_STRING;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_U8;
-import static com.radixdlt.interop.sbor.api.TypeId.TYPE_UNIT;
+import static com.radixdlt.interop.sbor.api.TypeId.*;
 import static com.radixdlt.lang.Result.success;
 
 import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.api.DecodingError;
 import com.radixdlt.interop.sbor.api.EncoderApi;
 import com.radixdlt.interop.sbor.api.TypeId;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.function.Consumer;
 
-public abstract sealed class CoreTypeCodec<T> implements ClassCodec<T> {
-  @Override
-  public List<ClassField<T>> fields() {
-    return List.of();
-  }
-
-  @Override
-  public Result<T> decodeFields(DecoderApi anyDecoder) {
-    return Result.failure(DecodingError.UNSUPPORTED_TYPE);
-  }
+public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
 
   protected <V> Result<Unit> encodePlainType(
       EncoderApi encoder, TypeId typeId, V value, Consumer<V> typeEncoder) {
