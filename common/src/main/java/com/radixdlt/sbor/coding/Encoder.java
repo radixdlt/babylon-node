@@ -65,8 +65,6 @@
 package com.radixdlt.sbor.coding;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -80,24 +78,23 @@ import java.io.ByteArrayOutputStream;
  */
 public record Encoder(ByteArrayOutputStream output, CodecMap codecMap) implements EncoderApi {
   @Override
-  public <T> Result<Unit> encode(T value, Class<T> clazz) {
-    return codecMap.get(clazz).encode(this, value);
+  public <T> void encode(T value, Class<T> clazz) {
+    codecMap.get(clazz).encode(this, value);
   }
 
   @Override
-  public <T> Result<Unit> encode(T value, TypeToken<T> type) {
-    return codecMap.get(type).encode(this, value);
+  public <T> void encode(T value, TypeToken<T> type) {
+    codecMap.get(type).encode(this, value);
   }
 
   @Override
-  public <T> Result<Unit> encode(T value, Codec<T> codec) {
-    return codec.encode(this, value);
+  public <T> void encode(T value, Codec<T> codec) {
+    codec.encode(this, value);
   }
 
   @Override
-  public Result<Unit> encodeTypeId(TypeId typeId) {
+  public void encodeTypeId(TypeId typeId) {
     writeByte(typeId.typeId());
-    return Unit.unitResult();
   }
 
   @Override

@@ -66,48 +66,40 @@ package com.radixdlt.sbor.codec;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.constants.ResultTypeId;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
-import com.radixdlt.sbor.coding.DecodingError;
 import com.radixdlt.sbor.coding.EncoderApi;
+import com.radixdlt.sbor.exceptions.SborDecodeException;
 
 public record EitherTypeCodec<L, R>(TypeToken<L> leftType, TypeToken<R> rightType)
     implements Codec<Either<L, R>> {
 
   @Override
-  public Result<Unit> encode(EncoderApi encoder, Either<L, R> either) {
+  public void encode(EncoderApi encoder, Either<L, R> either) {
     encoder.encodeTypeId(TypeId.TYPE_RESULT);
 
     either.apply(
         left -> {
-          encoder.writeByte(ResultTypeId.RESULT_TYPE_ERR.typeId());
+          encoder.writeByte(ResultTypeId.ERR);
           encoder.encode(left, leftType);
         },
         right -> {
-          encoder.writeByte(ResultTypeId.RESULT_TYPE_OK.typeId());
+          encoder.writeByte(ResultTypeId.OK);
           encoder.encode(right, rightType);
         });
-
-    return Unit.unitResult();
   }
 
   @Override
-  public Result<Either<L, R>> decode(DecoderApi decoder) {
-    return decoder
-        .expectType(TypeId.TYPE_RESULT)
-        .flatMap(decoder::readByte)
-        .map(ResultTypeId::forId)
-        .flatMap(
-            option ->
-                option.fold(
-                    DecodingError.INVALID_RESULT::result,
-                    resultType ->
-                        switch (resultType) {
-                          case RESULT_TYPE_OK -> decoder.decode(rightType).map(Either::right);
-                          case RESULT_TYPE_ERR -> decoder.decode(leftType).map(Either::left);
-                        }));
+  public Either<L, R> decode(DecoderApi decoder) {
+    decoder.expectType(TypeId.TYPE_RESULT);
+    var typeByte = decoder.readByte();
+
+    return switch (typeByte) {
+      case ResultTypeId.OK -> Either.right(decoder.decode(rightType));
+      case ResultTypeId.ERR -> Either.left(decoder.decode(leftType));
+      default -> throw new SborDecodeException(
+          String.format("Unknown result type id %s", typeByte));
+    };
   }
 }

@@ -64,27 +64,7 @@
 
 package com.radixdlt.sbor.codec.constants;
 
-import com.radixdlt.lang.Option;
-
-public enum OptionTypeId {
-  OPTION_TYPE_NONE(0x00),
-  OPTION_TYPE_SOME(0x01);
-
-  private final byte typeId;
-
-  OptionTypeId(int typeId) {
-    this.typeId = (byte) typeId;
-  }
-
-  public byte typeId() {
-    return typeId;
-  }
-
-  public static Option<OptionTypeId> forId(byte id) {
-    return switch (id) {
-      case 0x00 -> Option.option(OPTION_TYPE_NONE);
-      case 0x01 -> Option.option(OPTION_TYPE_SOME);
-      default -> Option.empty();
-    };
-  }
+public class OptionTypeId {
+  public static final byte NONE = 0x00;
+  public static final byte SOME = 0x01;
 }

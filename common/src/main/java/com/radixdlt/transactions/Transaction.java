@@ -64,14 +64,12 @@
 
 package com.radixdlt.transactions;
 
-import static com.radixdlt.lang.Result.all;
 import static com.radixdlt.sbor.codec.Field.withClass;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.lang.Result;
 import com.radixdlt.sbor.codec.ClassCodec;
 import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.coding.DecoderApi;
@@ -140,8 +138,8 @@ public final class Transaction {
     }
 
     @Override
-    public Result<Transaction> decodeFields(DecoderApi decoder) {
-      return all(decoder.decode(byte[].class), decoder.decode(AID.class)).map(Transaction::new);
+    public Transaction decodeFields(DecoderApi decoder) {
+      return new Transaction(decoder.decode(byte[].class), decoder.decode(AID.class));
     }
   }
 }

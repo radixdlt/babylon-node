@@ -64,16 +64,15 @@
 
 package com.radixdlt.sbor.coding;
 
-import static com.radixdlt.lang.Result.success;
+import static com.radixdlt.sbor.codec.constants.TypeId.*;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Functions;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.exceptions.SborDecodeException;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 /**
  * Performs the role of an AnyDecoder in the Rust SBOR implementation
@@ -85,63 +84,109 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
   private static final int EOF_RC = -1;
 
   @Override
-  public <T> Result<T> decode(Class<T> clazz) {
+  public <T> T decode(Class<T> clazz) {
     return codecMap.get(clazz).decode(this);
   }
 
   @Override
-  public <T> Result<T> decode(TypeToken<T> type) {
+  public <T> T decode(TypeToken<T> type) {
     return codecMap.get(type).decode(this);
   }
 
   @Override
-  public <T> Result<T> decode(Codec<T> codec) {
+  public <T> T decode(Codec<T> codec) {
     return codec.decode(this);
   }
 
   @Override
-  public Result<Integer> decodeArrayHeader(TypeId expectedId) {
-    return expectType(TypeId.TYPE_VEC).flatMap(() -> expectType(expectedId)).flatMap(this::readInt);
+  public int decodeArrayHeaderAndGetArrayLength(TypeId expectedId) {
+    expectType(TypeId.TYPE_VEC);
+    expectType(expectedId);
+    return readInt();
   }
 
   @Override
-  public Result<Unit> expectType(TypeId typeId) {
-    return readByte()
-        .filter(DecodingError.TYPE_MISMATCH, typeByte -> typeByte == typeId.typeId())
-        .map(Unit::unit);
+  public boolean decodeBoolean() {
+    expectType(TYPE_BOOL);
+    var value = readByte();
+    return switch (value) {
+      case 0 -> false;
+      case 1 -> true;
+      default -> throw new SborDecodeException(
+          String.format("Unknown value %s used to encode boolean", value));
+    };
   }
 
   @Override
-  public Result<Byte> readByte() {
+  public byte decodeByte() {
+    expectType(TYPE_U8);
+    return readByte();
+  }
+
+  @Override
+  public short decodeShort() {
+    expectType(TYPE_I16);
+    return readShort();
+  }
+
+  @Override
+  public int decodeInt() {
+    expectType(TYPE_I32);
+    return readInt();
+  }
+
+  @Override
+  public long decodeLong() {
+    expectType(TYPE_I64);
+    return readLong();
+  }
+
+  @Override
+  public void expectType(TypeId typeId) {
+    var typeByte = readByte();
+
+    if (typeByte != typeId.typeId()) {
+      throw new SborDecodeException(
+          String.format(
+              "Type ID byte %s does not match expected value %s", typeByte, typeId.typeId()));
+    }
+  }
+
+  @Override
+  public byte readByte() {
     var value = input.read();
 
-    return value == EOF_RC ? DecodingError.EOF.result() : success((byte) value);
+    if (value == EOF_RC) {
+      throw new SborDecodeException(String.format("End of file when reading byte"));
+    }
+
+    return (byte) value;
   }
 
   @Override
-  public Result<Short> readShort() {
+  public short readShort() {
     var v0 = input.read();
     var v1 = input.read();
 
     if (v0 == EOF_RC || v1 == EOF_RC) {
-      return DecodingError.EOF.result();
+      throw new SborDecodeException(String.format("End of file when reading short"));
     }
 
     short value = (short) (v0 & 0xFF);
     value |= (short) ((v1 & 0xFF) << 8);
 
-    return success(value);
+    return value;
   }
 
   @Override
-  public Result<Integer> readInt() {
+  public int readInt() {
     var v0 = input.read();
     var v1 = input.read();
     var v2 = input.read();
     var v3 = input.read();
 
     if (v0 == EOF_RC || v1 == EOF_RC || v2 == EOF_RC || v3 == EOF_RC) {
-      return DecodingError.EOF.result();
+      throw new SborDecodeException(String.format("End of file when reading int"));
     }
 
     int value = v0 & 0xFF;
@@ -149,11 +194,11 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
     value |= ((v2 & 0xFF) << 16);
     value |= ((v3 & 0xFF) << 24);
 
-    return success(value);
+    return value;
   }
 
   @Override
-  public Result<Long> readLong() {
+  public long readLong() {
     var v0 = input.read();
     var v1 = input.read();
     var v2 = input.read();
@@ -171,7 +216,7 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
         || v5 == EOF_RC
         || v6 == EOF_RC
         || v7 == EOF_RC) {
-      return DecodingError.EOF.result();
+      throw new SborDecodeException(String.format("End of file when reading long"));
     }
 
     long value = v0 & 0xFF;
@@ -183,69 +228,58 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
     value |= (((long) v6 & 0xFF) << 48);
     value |= (((long) v7 & 0xFF) << 56);
 
-    return success(value);
+    return value;
   }
 
   @Override
-  public Result<byte[]> readBytes(int length) {
+  public byte[] readBytes(int length) {
     var bytes = new byte[length];
 
-    return Result.lift(unused -> DecodingError.EOF, () -> input.read(bytes))
-        .filter(DecodingError.EOF, readLen -> readLen == length)
-        .map(() -> bytes);
+    try {
+      var readLength = input.read(bytes);
+      if (readLength != length) {
+        throw new SborDecodeException(
+            String.format(
+                "End of file when reading byte array. Expected length %s, was %s",
+                length, readLength));
+      }
+      return bytes;
+    } catch (IOException exception) {
+      throw new SborDecodeException(
+          String.format("IO error occurred reading byte array", exception));
+    }
   }
 
   @Override
-  public Result<short[]> readShorts(int length) {
+  public short[] readShorts(int length) {
     var output = new short[length];
-    var index = new int[] {0};
 
-    for (index[0] = 0; index[0] < length; index[0] += 1) {
-      var result = readShort();
-
-      if (result.isFailure()) {
-        return DecodingError.EOF.result();
-      }
-
-      result.apply(Functions::unitFn, value -> output[index[0]] = value);
+    for (var index = 0; index < length; index += 1) {
+      output[index] = readShort();
     }
 
-    return success(output);
+    return output;
   }
 
   @Override
-  public Result<int[]> readIntegers(int length) {
+  public int[] readIntegers(int length) {
     var output = new int[length];
-    var index = new int[] {0};
 
-    for (index[0] = 0; index[0] < length; index[0] += 1) {
-      var result = readInt();
-
-      if (result.isFailure()) {
-        return DecodingError.EOF.result();
-      }
-
-      result.apply(Functions::unitFn, value -> output[index[0]] = value);
+    for (var index = 0; index < length; index += 1) {
+      output[index] = readInt();
     }
 
-    return success(output);
+    return output;
   }
 
   @Override
-  public Result<long[]> readLongs(int length) {
+  public long[] readLongs(int length) {
     var output = new long[length];
-    var index = new int[] {0};
 
-    for (index[0] = 0; index[0] < length; index[0] += 1) {
-      var result = readLong();
-
-      if (result.isFailure()) {
-        return DecodingError.EOF.result();
-      }
-
-      result.apply(Functions::unitFn, value -> output[index[0]] = value);
+    for (var index = 0; index < length; index += 1) {
+      output[index] = readLong();
     }
 
-    return success(output);
+    return output;
   }
 }

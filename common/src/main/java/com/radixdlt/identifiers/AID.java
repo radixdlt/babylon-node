@@ -64,7 +64,6 @@
 
 package com.radixdlt.identifiers;
 
-import static com.radixdlt.lang.Result.all;
 import static com.radixdlt.sbor.codec.Field.withClass;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -226,8 +225,8 @@ public final class AID implements Comparable<AID> {
     }
 
     @Override
-    public com.radixdlt.lang.Result<AID> decodeFields(DecoderApi decoder) {
-      return all(decoder.decode(byte[].class)).map(AID::new);
+    public AID decodeFields(DecoderApi decoder) {
+      return new AID(decoder.decode(byte[].class));
     }
   }
 }

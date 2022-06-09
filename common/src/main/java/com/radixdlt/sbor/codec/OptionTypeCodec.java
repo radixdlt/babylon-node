@@ -64,48 +64,38 @@
 
 package com.radixdlt.sbor.codec;
 
-import static com.radixdlt.lang.Result.success;
-
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.constants.OptionTypeId;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
-import com.radixdlt.sbor.coding.DecodingError;
 import com.radixdlt.sbor.coding.EncoderApi;
+import com.radixdlt.sbor.exceptions.SborDecodeException;
 
 public record OptionTypeCodec<T>(TypeToken<T> innerType) implements Codec<Option<T>> {
 
   @Override
-  public Result<Unit> encode(EncoderApi encoder, Option<T> option) {
+  public void encode(EncoderApi encoder, Option<T> option) {
     encoder.encodeTypeId(TypeId.TYPE_OPTION);
 
     option.apply(
-        () -> encoder.writeByte(OptionTypeId.OPTION_TYPE_NONE.typeId()),
+        () -> encoder.writeByte(OptionTypeId.NONE),
         v -> {
-          encoder.writeByte(OptionTypeId.OPTION_TYPE_SOME.typeId());
+          encoder.writeByte(OptionTypeId.SOME);
           encoder.encode(v, innerType);
         });
-
-    return Unit.unitResult();
   }
 
   @Override
-  public Result<Option<T>> decode(DecoderApi decoder) {
-    return decoder
-        .expectType(TypeId.TYPE_OPTION)
-        .flatMap(decoder::readByte)
-        .map(OptionTypeId::forId)
-        .flatMap(
-            option ->
-                option.fold(
-                    DecodingError.INVALID_OPTION::result,
-                    optionType ->
-                        switch (optionType) {
-                          case OPTION_TYPE_NONE -> success(Option.empty());
-                          case OPTION_TYPE_SOME -> decoder.decode(innerType).map(Option::option);
-                        }));
+  public Option<T> decode(DecoderApi decoder) {
+    decoder.expectType(TypeId.TYPE_OPTION);
+    var typeByte = decoder.readByte();
+
+    return switch (typeByte) {
+      case OptionTypeId.NONE -> Option.NONE;
+      case OptionTypeId.SOME -> Option.some(decoder.decode(innerType));
+      default -> throw new SborDecodeException(
+          String.format("Unknown option type id %s", typeByte));
+    };
   }
 }

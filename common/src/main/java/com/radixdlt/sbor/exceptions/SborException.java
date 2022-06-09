@@ -62,9 +62,14 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor.codec.constants;
+package com.radixdlt.sbor.exceptions;
 
-public class ResultTypeId {
-  public static final byte OK = 0x00;
-  public static final byte ERR = 0x01;
+public abstract class SborException extends RuntimeException {
+  public SborException(String message) {
+    super(message);
+  }
+
+  public SborException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

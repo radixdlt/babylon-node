@@ -64,39 +64,43 @@
 
 package com.radixdlt.sbor.codec;
 
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
-import com.radixdlt.sbor.coding.DecodingError;
 import com.radixdlt.sbor.coding.EncoderApi;
+import com.radixdlt.sbor.exceptions.SborDecodeException;
 import java.util.List;
 
 public interface ClassCodec<T> extends Codec<T> {
   List<Field<T, ?>> fields();
 
-  default Result<Unit> encode(EncoderApi encoder, T value) {
+  default void encode(EncoderApi encoder, T value) {
     encoder.encodeTypeId(TypeId.TYPE_STRUCT);
 
     var fields = fields();
 
     encoder.writeInt(fields.size());
 
-    return fields.stream()
-        .map(f -> f.encode(encoder, value))
-        .filter(Result::isFailure)
-        .findAny()
-        .orElseGet(Unit::unitResult);
+    for (var field : fields) {
+      field.encode(encoder, value);
+    }
   }
 
-  default Result<T> decode(DecoderApi decoder) {
-    return decoder
-        .expectType(TypeId.TYPE_STRUCT)
-        .flatMap(decoder::readInt)
-        .filter(DecodingError.INVALID_FIELD_COUNT, value -> value == fields().size())
-        .map(() -> decoder)
-        .flatMap(this::decodeFields);
+  default T decode(DecoderApi decoder) {
+    decoder.expectType(TypeId.TYPE_STRUCT);
+    var decodedFieldsLength = decoder.readInt();
+
+    var fields = fields();
+
+    if (decodedFieldsLength != fields.size()) {
+      throw new SborDecodeException(
+          String.format(
+              "Incorrect number of fields detected. Expected field count was %s, but encoded was"
+                  + " %s",
+              fields.size(), decodedFieldsLength));
+    }
+
+    return this.decodeFields(decoder);
   }
 
-  Result<T> decodeFields(DecoderApi anyDecoder);
+  T decodeFields(DecoderApi anyDecoder);
 }

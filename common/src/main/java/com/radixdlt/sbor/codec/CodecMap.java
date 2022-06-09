@@ -68,6 +68,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.exceptions.SborCodecException;
 import java.util.*;
 import java.util.function.Function;
 
@@ -85,6 +86,7 @@ public final class CodecMap {
   private final Map<Class, Function<TypeToken, Codec>> codecCreatorMap = new HashMap<>();
 
   // QQ: Make this all static
+  @SuppressWarnings("UnstableApiUsage")
   public CodecMap() {
     addCoreCodec(Unit.class, new CoreTypeCodec.UnitCodec());
     addCoreCodec(String.class, new CoreTypeCodec.StringCodec());
@@ -118,7 +120,8 @@ public final class CodecMap {
                 eitherType.method(Either.class.getMethod("unwrapRight")).getReturnType();
             return new EitherTypeCodec(leftType, rightType);
           } catch (Exception ex) {
-            throw new RuntimeException(ex);
+            throw new SborCodecException(
+                String.format("Exception creating Either type codec for %s", eitherType), ex);
           }
         });
 
@@ -129,7 +132,8 @@ public final class CodecMap {
             var innerType = optionType.method(Option.class.getMethod("unwrap")).getReturnType();
             return new OptionTypeCodec(innerType);
           } catch (Exception ex) {
-            throw new RuntimeException(ex);
+            throw new SborCodecException(
+                String.format("Exception creating Option type codec for %s", optionType), ex);
           }
         });
   }
@@ -157,7 +161,7 @@ public final class CodecMap {
       return newCodec;
     }
 
-    throw new RuntimeException(
+    throw new SborCodecException(
         String.format(
             "The type token %s itself has no SBOR codec, and its raw type class %s has no codec"
                 + " creator registered.",
@@ -174,15 +178,14 @@ public final class CodecMap {
     // We are in a failure case here - so let's try to be helpful
     var codecCreator = codecCreatorMap.get(clazz);
     if (codecCreator != null) {
-      // QQ: Add a better exception
-      throw new RuntimeException(
+      throw new SborCodecException(
           String.format(
               "The class object %s itself has no registered SBOR codec, BUT a codec creator is"
                   + " registered. You should use an explicit TypeToken<X<Y,Z>>.",
               clazz));
     }
 
-    throw new RuntimeException(
+    throw new SborCodecException(
         String.format(
             "The class object %s itself has no registered SBOR codec, nor has codec creator"
                 + " registered.",
@@ -199,7 +202,7 @@ public final class CodecMap {
   public <T> CodecMap registerForSealedClassAndSubclasses(
       Class<T> clazz, Codec<? extends T> codec) {
     if (!clazz.isSealed()) {
-      throw new RuntimeException(
+      throw new SborCodecException(
           String.format(
               "The class object %s is not sealed, so cannot be passed into "
                   + "registerForSubclassesOfSealed.",
@@ -229,7 +232,7 @@ public final class CodecMap {
   public <T> CodecMap registerCodecCreatorForSealedClassAndSubclasses(
       Class<T> clazz, Function<TypeToken<T>, Codec> createCodec) {
     if (!clazz.isSealed()) {
-      throw new RuntimeException(
+      throw new SborCodecException(
           String.format(
               "The class object %s is not sealed, so cannot be passed into "
                   + "registerCodecCreatorForSubclassesOfSealed.",

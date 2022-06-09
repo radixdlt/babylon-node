@@ -65,35 +65,43 @@
 package com.radixdlt.sbor.coding;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 
 public interface DecoderApi {
-  <T> Result<T> decode(Class<T> type);
+  <T> T decode(Class<T> type);
 
-  <T> Result<T> decode(TypeToken<T> type);
+  <T> T decode(TypeToken<T> type);
 
-  Result<Unit> expectType(TypeId typeId);
+  void expectType(TypeId typeId);
 
-  <T> Result<T> decode(Codec<T> codec);
+  <T> T decode(Codec<T> codec);
 
-  Result<Integer> decodeArrayHeader(TypeId expectedId);
+  int decodeArrayHeaderAndGetArrayLength(TypeId expectedId);
 
-  Result<Byte> readByte();
+  boolean decodeBoolean();
 
-  Result<Short> readShort();
+  byte decodeByte();
 
-  Result<Integer> readInt();
+  short decodeShort();
 
-  Result<Long> readLong();
+  int decodeInt();
 
-  Result<byte[]> readBytes(int length);
+  long decodeLong();
 
-  Result<short[]> readShorts(int length);
+  byte readByte();
 
-  Result<int[]> readIntegers(int length);
+  short readShort();
 
-  Result<long[]> readLongs(int length);
+  int readInt();
+
+  long readLong();
+
+  byte[] readBytes(int length);
+
+  short[] readShorts(int length);
+
+  int[] readIntegers(int length);
+
+  long[] readLongs(int length);
 }

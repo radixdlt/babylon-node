@@ -64,11 +64,9 @@
 
 package com.radixdlt.statemanager;
 
-import static com.radixdlt.lang.Result.all;
 import static com.radixdlt.sbor.codec.Field.withClass;
 
 import com.radixdlt.lang.Cause;
-import com.radixdlt.lang.Result;
 import com.radixdlt.sbor.codec.ClassCodec;
 import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.coding.DecoderApi;
@@ -114,9 +112,8 @@ public class StateManagerError implements Cause {
     }
 
     @Override
-    public Result<StateManagerError> decodeFields(DecoderApi decoder) {
-      return all(decoder.decode(short.class), decoder.decode(String.class))
-          .map(StateManagerError::new);
+    public StateManagerError decodeFields(DecoderApi decoder) {
+      return new StateManagerError(decoder.decode(short.class), decoder.decode(String.class));
     }
   }
 }

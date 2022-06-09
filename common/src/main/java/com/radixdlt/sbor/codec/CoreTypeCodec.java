@@ -64,11 +64,8 @@
 
 package com.radixdlt.sbor.codec;
 
-import static com.radixdlt.lang.Result.success;
 import static com.radixdlt.sbor.codec.constants.TypeId.*;
-import static com.radixdlt.sbor.coding.DecodingError.INVALID_BOOLEAN;
 
-import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
@@ -78,51 +75,41 @@ import java.util.function.Consumer;
 
 public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
 
-  protected <V> Result<Unit> encodePlainType(
+  protected <V> void encodePlainType(
       EncoderApi encoder, TypeId typeId, V value, Consumer<V> typeEncoder) {
     encoder.encodeTypeId(typeId);
     typeEncoder.accept(value);
-
-    return Unit.unitResult();
   }
 
   public static final class UnitCodec extends CoreTypeCodec<Unit> {
     @Override
-    public Result<Unit> encode(EncoderApi encoder, Unit value) {
-      return encoder.encodeTypeId(TYPE_UNIT);
+    public void encode(EncoderApi encoder, Unit value) {
+      encoder.encodeTypeId(TYPE_UNIT);
     }
 
     @Override
-    public Result<Unit> decode(DecoderApi decoder) {
-      return decoder.expectType(TYPE_UNIT);
+    public Unit decode(DecoderApi decoder) {
+      decoder.expectType(TYPE_UNIT);
+      return Unit.unit();
     }
   }
 
   public static final class BooleanCodec extends CoreTypeCodec<Boolean> {
     @Override
-    public Result<Unit> encode(EncoderApi encoder, Boolean value) {
-      return encodePlainType(encoder, TYPE_BOOL, (byte) (value ? 1 : 0), encoder::writeByte);
+    public void encode(EncoderApi encoder, Boolean value) {
+      encodePlainType(encoder, TYPE_BOOL, (byte) (value ? 1 : 0), encoder::writeByte);
     }
 
     @Override
-    public Result<Boolean> decode(DecoderApi decoder) {
-      return decoder
-          .expectType(TYPE_BOOL)
-          .flatMap(decoder::readByte)
-          .flatMap(
-              value ->
-                  switch (value) {
-                    case 0 -> success(false);
-                    case 1 -> success(true);
-                    default -> INVALID_BOOLEAN.result();
-                  });
+    public Boolean decode(DecoderApi decoder) {
+      return decoder.decodeBoolean();
     }
   }
 
   public static final class StringCodec extends CoreTypeCodec<String> {
     @Override
-    public Result<Unit> encode(EncoderApi encoder, String string) {
-      return encodePlainType(
+    public void encode(EncoderApi encoder, String string) {
+      encodePlainType(
           encoder,
           TYPE_STRING,
           string,
@@ -134,129 +121,124 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
     }
 
     @Override
-    public Result<String> decode(DecoderApi decoder) {
-      return decoder
-          .expectType(TYPE_STRING)
-          .flatMap(decoder::readInt)
-          .flatMap(decoder::readBytes)
-          .map(bytes -> new String(bytes, StandardCharsets.UTF_8));
+    public String decode(DecoderApi decoder) {
+      decoder.expectType(TYPE_STRING);
+      var length = decoder.readInt();
+      var bytes = decoder.readBytes(length);
+      return new String(bytes, StandardCharsets.UTF_8);
     }
   }
 
   public static final class ByteCodec extends CoreTypeCodec<Byte> {
     @Override
-    public Result<Unit> encode(EncoderApi encoder, Byte value) {
-      return encodePlainType(encoder, TYPE_U8, value, encoder::writeByte);
+    public void encode(EncoderApi encoder, Byte value) {
+      encodePlainType(encoder, TYPE_U8, value, encoder::writeByte);
     }
 
     @Override
-    public Result<Byte> decode(DecoderApi decoder) {
-      return decoder.expectType(TYPE_U8).flatMap(decoder::readByte);
+    public Byte decode(DecoderApi decoder) {
+      return decoder.decodeByte();
     }
   }
 
   public static final class ShortCodec extends CoreTypeCodec<Short> {
     @Override
-    public Result<Unit> encode(EncoderApi encoder, Short value) {
-      return encodePlainType(encoder, TYPE_I16, value, encoder::writeShort);
+    public void encode(EncoderApi encoder, Short value) {
+      encodePlainType(encoder, TYPE_I16, value, encoder::writeShort);
     }
 
     @Override
-    public Result<Short> decode(DecoderApi decoder) {
-      return decoder.expectType(TYPE_I16).flatMap(decoder::readShort);
+    public Short decode(DecoderApi decoder) {
+      return decoder.decodeShort();
     }
   }
 
   public static final class IntegerCodec extends CoreTypeCodec<Integer> {
     @Override
-    public Result<Unit> encode(EncoderApi encoder, Integer value) {
-      return encodePlainType(encoder, TYPE_I32, value, encoder::writeInt);
+    public void encode(EncoderApi encoder, Integer value) {
+      encodePlainType(encoder, TYPE_I32, value, encoder::writeInt);
     }
 
     @Override
-    public Result<Integer> decode(DecoderApi decoder) {
-      return decoder.expectType(TYPE_I32).flatMap(decoder::readInt);
+    public Integer decode(DecoderApi decoder) {
+      return decoder.decodeInt();
     }
   }
 
   public static final class LongCodec extends CoreTypeCodec<Long> {
     @Override
-    public Result<Unit> encode(EncoderApi encoder, Long value) {
-      return encodePlainType(encoder, TYPE_I64, value, encoder::writeLong);
+    public void encode(EncoderApi encoder, Long value) {
+      encodePlainType(encoder, TYPE_I64, value, encoder::writeLong);
     }
 
     @Override
-    public Result<Long> decode(DecoderApi decoder) {
-      return decoder.expectType(TYPE_I64).flatMap(decoder::readLong);
+    public Long decode(DecoderApi decoder) {
+      return decoder.decodeLong();
     }
   }
 
   public static final class ByteArrayCodec extends CoreTypeCodec<byte[]> {
     @Override
-    public Result<Unit> encode(EncoderApi encoder, byte[] value) {
+    public void encode(EncoderApi encoder, byte[] value) {
       encoder.encodeArrayHeader(TYPE_U8, value.length);
       encoder.writeBytes(value);
-
-      return Unit.unitResult();
     }
 
     @Override
-    public Result<byte[]> decode(DecoderApi decoder) {
-      return decoder.decodeArrayHeader(TYPE_U8).flatMap(decoder::readBytes);
+    public byte[] decode(DecoderApi decoder) {
+      var length = decoder.decodeArrayHeaderAndGetArrayLength(TYPE_U8);
+      return decoder.readBytes(length);
     }
   }
 
   public static final class ShortArrayCodec extends CoreTypeCodec<short[]> {
     @Override
-    public Result<Unit> encode(EncoderApi encoder, short[] value) {
+    public void encode(EncoderApi encoder, short[] value) {
       encoder.encodeArrayHeader(TYPE_I16, value.length);
 
       for (var singleValue : value) {
         encoder.writeShort(singleValue);
       }
-
-      return Unit.unitResult();
     }
 
     @Override
-    public Result<short[]> decode(DecoderApi decoder) {
-      return decoder.decodeArrayHeader(TYPE_I16).flatMap(decoder::readShorts);
+    public short[] decode(DecoderApi decoder) {
+      var length = decoder.decodeArrayHeaderAndGetArrayLength(TYPE_I16);
+      return decoder.readShorts(length);
     }
   }
 
   public static final class IntegerArrayCodec extends CoreTypeCodec<int[]> {
     @Override
-    public Result<Unit> encode(EncoderApi encoder, int[] value) {
+    public void encode(EncoderApi encoder, int[] value) {
       encoder.encodeArrayHeader(TYPE_I32, value.length);
 
       for (var singleValue : value) {
         encoder.writeInt(singleValue);
       }
-
-      return Unit.unitResult();
     }
 
     @Override
-    public Result<int[]> decode(DecoderApi decoder) {
-      return decoder.decodeArrayHeader(TYPE_I32).flatMap(decoder::readIntegers);
+    public int[] decode(DecoderApi decoder) {
+      var length = decoder.decodeArrayHeaderAndGetArrayLength(TYPE_I32);
+      return decoder.readIntegers(length);
     }
   }
 
   public static final class LongArrayCodec extends CoreTypeCodec<long[]> {
     @Override
-    public Result<Unit> encode(EncoderApi encoder, long[] value) {
+    public void encode(EncoderApi encoder, long[] value) {
       encoder.encodeArrayHeader(TYPE_I64, value.length);
 
       for (var singleValue : value) {
         encoder.writeLong(singleValue);
       }
-
-      return Unit.unitResult();
     }
 
     @Override
-    public Result<long[]> decode(DecoderApi decoder) {
-      return decoder.decodeArrayHeader(TYPE_I64).flatMap(decoder::readLongs);
+    public long[] decode(DecoderApi decoder) {
+      var length = decoder.decodeArrayHeaderAndGetArrayLength(TYPE_I64);
+      return decoder.readLongs(length);
     }
   }
 }

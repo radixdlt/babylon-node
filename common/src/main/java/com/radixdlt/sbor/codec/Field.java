@@ -65,8 +65,6 @@
 package com.radixdlt.sbor.codec;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.coding.EncoderApi;
 import java.util.function.Function;
 
@@ -84,11 +82,15 @@ public record Field<C, F>(
     return new Field<>(null, null, codec, getter);
   }
 
-  public Result<Unit> encode(EncoderApi encoder, C classObject) {
+  public void encode(EncoderApi encoder, C classObject) {
     var fieldValue = this.getter.apply(classObject);
 
-    return codec != null
-        ? encoder.encode(fieldValue, codec)
-        : type != null ? encoder.encode(fieldValue, type) : encoder.encode(fieldValue, clazz);
+    if (codec != null) {
+      encoder.encode(fieldValue, codec);
+    } else if (type != null) {
+      encoder.encode(fieldValue, type);
+    } else if (clazz != null) {
+      encoder.encode(fieldValue, clazz);
+    }
   }
 }

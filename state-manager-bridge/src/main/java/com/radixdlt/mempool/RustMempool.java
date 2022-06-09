@@ -65,7 +65,6 @@
 package com.radixdlt.mempool;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.exceptions.SborException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Unit;
@@ -91,14 +90,11 @@ public class RustMempool {
 
   public Transaction add(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
-    var encodedRequest =
-        this.sborCoder
-            .encode(transaction, Transaction.class)
-            .unwrap(c -> new SborException(Transaction.class, true, true, c.message()));
+    var encodedRequest = this.sborCoder.encode(transaction, Transaction.class);
     var encodedResponse = add(this.rustState, encodedRequest);
 
     var decodeClass = new TypeToken<Either<StateManagerError, Unit>>() {};
-    var result = this.sborCoder.decode(encodedResponse, decodeClass).unwrap();
+    var result = this.sborCoder.decode(encodedResponse, decodeClass);
 
     // Handle Errors.
     if (result.isLeft()) {

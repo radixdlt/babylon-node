@@ -64,13 +64,11 @@
 
 package com.radixdlt.sbor.codec;
 
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
 
 public interface Codec<T> {
-  Result<Unit> encode(EncoderApi encoder, T value);
+  void encode(EncoderApi encoder, T value);
 
-  Result<T> decode(DecoderApi decoder);
+  T decode(DecoderApi decoder);
 }

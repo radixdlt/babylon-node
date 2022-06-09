@@ -65,7 +65,6 @@
 package com.radixdlt.sbor;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Result;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.coding.Decoder;
@@ -75,37 +74,37 @@ import java.io.ByteArrayOutputStream;
 
 public record SborCoder(CodecMap codecs) {
   @SuppressWarnings("unchecked")
-  public <T> Result<byte[]> encode(T value) {
+  public <T> byte[] encode(T value) {
     return encode(value, (Class<? super T>) value.getClass());
   }
 
-  public <T> Result<byte[]> encode(T value, Class<T> clazz) {
+  public <T> byte[] encode(T value, Class<T> clazz) {
     var outputStream = new ByteArrayOutputStream();
-
-    return new Encoder(outputStream, codecs).encode(value, clazz).map(outputStream::toByteArray);
+    new Encoder(outputStream, codecs).encode(value, clazz);
+    return outputStream.toByteArray();
   }
 
-  public <T> Result<byte[]> encode(T value, TypeToken<T> type) {
+  public <T> byte[] encode(T value, TypeToken<T> type) {
     var outputStream = new ByteArrayOutputStream();
-
-    return new Encoder(outputStream, codecs).encode(value, type).map(outputStream::toByteArray);
+    new Encoder(outputStream, codecs).encode(value, type);
+    return outputStream.toByteArray();
   }
 
-  public <T> Result<byte[]> encode(T value, Codec<T> codec) {
+  public <T> byte[] encode(T value, Codec<T> codec) {
     var outputStream = new ByteArrayOutputStream();
-
-    return new Encoder(outputStream, codecs).encode(value, codec).map(outputStream::toByteArray);
+    new Encoder(outputStream, codecs).encode(value, codec);
+    return outputStream.toByteArray();
   }
 
-  public <T> Result<T> decode(byte[] input, Class<T> clazz) {
+  public <T> T decode(byte[] input, Class<T> clazz) {
     return new Decoder(new ByteArrayInputStream(input), codecs).decode(clazz);
   }
 
-  public <T> Result<T> decode(byte[] input, TypeToken<T> type) {
+  public <T> T decode(byte[] input, TypeToken<T> type) {
     return new Decoder(new ByteArrayInputStream(input), codecs).decode(type);
   }
 
-  public <T> Result<T> decode(byte[] input, Codec<T> codec) {
+  public <T> T decode(byte[] input, Codec<T> codec) {
     return new Decoder(new ByteArrayInputStream(input), codecs).decode(codec);
   }
 }

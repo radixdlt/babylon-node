@@ -64,12 +64,9 @@
 
 package com.radixdlt.sbor.dto;
 
-import static com.radixdlt.lang.Result.all;
-
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Result;
 import com.radixdlt.sbor.codec.ClassCodec;
 import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.coding.DecoderApi;
@@ -93,13 +90,12 @@ public record SimpleRecord(
     }
 
     @Override
-    public Result<SimpleRecord> decodeFields(DecoderApi decoder) {
-      return all(
-              decoder.decode(int.class),
-              decoder.decode(String.class),
-              decoder.decode(eitherType),
-              decoder.decode(optionType))
-          .map(SimpleRecord::new);
+    public SimpleRecord decodeFields(DecoderApi decoder) {
+      return new SimpleRecord(
+          decoder.decode(int.class),
+          decoder.decode(String.class),
+          decoder.decode(eitherType),
+          decoder.decode(optionType));
     }
   }
 }
