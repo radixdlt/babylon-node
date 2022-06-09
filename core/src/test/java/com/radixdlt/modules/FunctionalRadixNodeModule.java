@@ -76,7 +76,6 @@ import com.radixdlt.rev1.MockedMempoolStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
 import com.radixdlt.rev1.ReV1DispatcherModule;
-import com.radixdlt.rev1.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
 import com.radixdlt.rev2.modules.MockedSyncServiceModule;
@@ -170,7 +169,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         } else {
           install(new RadixEngineStateComputerModule());
           install(new RadixEngineModule());
-          install(new RadixEngineCheckpointModule());
         }
       }
     }

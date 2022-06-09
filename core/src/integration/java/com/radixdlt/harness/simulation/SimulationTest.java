@@ -204,7 +204,7 @@ public final class SimulationTest {
       private final boolean hasEpochs;
       private final boolean hasSync;
 
-    LedgerType(
+      LedgerType(
           boolean hasLedger,
           boolean hasMempool,
           boolean hasSharedMempool,

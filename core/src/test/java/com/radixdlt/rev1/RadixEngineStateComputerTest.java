@@ -123,7 +123,6 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
-import com.radixdlt.rev1.checkpoint.RadixEngineCheckpointModule;
 import com.radixdlt.rev1.forks.CurrentForkView;
 import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -256,7 +255,6 @@ public class RadixEngineStateComputerTest {
   public void setup() throws RadixEngineException {
     this.engineStore = new InMemoryEngineStore<>();
     Guice.createInjector(
-            new RadixEngineCheckpointModule(),
             new RadixEngineStateComputerModule(),
             new RadixEngineModule(),
             new MockedGenesisModule(
