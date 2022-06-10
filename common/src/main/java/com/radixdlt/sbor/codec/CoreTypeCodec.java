@@ -70,7 +70,6 @@ import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
-import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
@@ -97,7 +96,7 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
   public static final class BooleanCodec extends CoreTypeCodec<Boolean> {
     @Override
     public void encode(EncoderApi encoder, Boolean value) {
-      encodePlainType(encoder, TYPE_BOOL, (byte) (value ? 1 : 0), encoder::writeByte);
+      encodePlainType(encoder, TYPE_BOOL, value, encoder::writeBoolean);
     }
 
     @Override
@@ -109,23 +108,12 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
   public static final class StringCodec extends CoreTypeCodec<String> {
     @Override
     public void encode(EncoderApi encoder, String string) {
-      encodePlainType(
-          encoder,
-          TYPE_STRING,
-          string,
-          stringValue -> {
-            var stringBytes = stringValue.getBytes(StandardCharsets.UTF_8);
-            encoder.writeInt(stringBytes.length);
-            encoder.writeBytes(stringBytes);
-          });
+      encodePlainType(encoder, TYPE_STRING, string, encoder::writeString);
     }
 
     @Override
     public String decode(DecoderApi decoder) {
-      decoder.expectType(TYPE_STRING);
-      var length = decoder.readInt();
-      var bytes = decoder.readBytes(length);
-      return new String(bytes, StandardCharsets.UTF_8);
+      return decoder.decodeString();
     }
   }
 

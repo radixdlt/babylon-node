@@ -73,6 +73,7 @@ import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Performs the role of an AnyDecoder in the Rust SBOR implementation
@@ -108,13 +109,7 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
   @Override
   public boolean decodeBoolean() {
     expectType(TYPE_BOOL);
-    var value = readByte();
-    return switch (value) {
-      case 0 -> false;
-      case 1 -> true;
-      default -> throw new SborDecodeException(
-          String.format("Unknown value %s used to encode boolean", value));
-    };
+    return readBoolean();
   }
 
   @Override
@@ -142,6 +137,12 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
   }
 
   @Override
+  public String decodeString() {
+    expectType(TYPE_STRING);
+    return readString();
+  }
+
+  @Override
   public void expectType(TypeId typeId) {
     var typeByte = readByte();
 
@@ -150,6 +151,17 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
           String.format(
               "Type ID byte %s does not match expected value %s", typeByte, typeId.typeId()));
     }
+  }
+
+  @Override
+  public boolean readBoolean() {
+    var value = readByte();
+    return switch (value) {
+      case 0 -> false;
+      case 1 -> true;
+      default -> throw new SborDecodeException(
+          String.format("Unknown value %s used to encode boolean", value));
+    };
   }
 
   @Override
@@ -229,6 +241,13 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
     value |= (((long) v7 & 0xFF) << 56);
 
     return value;
+  }
+
+  @Override
+  public String readString() {
+    var length = readInt();
+    var bytes = readBytes(length);
+    return new String(bytes, StandardCharsets.UTF_8);
   }
 
   @Override

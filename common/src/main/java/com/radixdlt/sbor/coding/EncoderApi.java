@@ -79,6 +79,8 @@ public interface EncoderApi {
 
   void encodeArrayHeader(TypeId typeId, int length);
 
+  void writeBoolean(boolean value);
+
   void writeByte(byte value);
 
   void writeBytes(byte[] value);
@@ -88,4 +90,6 @@ public interface EncoderApi {
   void writeInt(int value);
 
   void writeLong(long value);
+
+  void writeString(String value);
 }

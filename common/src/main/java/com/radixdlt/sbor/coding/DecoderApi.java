@@ -89,6 +89,10 @@ public interface DecoderApi {
 
   long decodeLong();
 
+  String decodeString();
+
+  boolean readBoolean();
+
   byte readByte();
 
   short readShort();
@@ -96,6 +100,8 @@ public interface DecoderApi {
   int readInt();
 
   long readLong();
+
+  String readString();
 
   byte[] readBytes(int length);
 

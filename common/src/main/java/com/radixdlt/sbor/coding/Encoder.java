@@ -69,6 +69,7 @@ import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Performs the role of an AnyEncoder in the Rust SBOR implementation
@@ -102,6 +103,11 @@ public record Encoder(ByteArrayOutputStream output, CodecMap codecMap) implement
     encodeTypeId(TypeId.TYPE_VEC);
     encodeTypeId(typeId);
     writeInt(length);
+  }
+
+  @Override
+  public void writeBoolean(boolean value) {
+    writeByte((byte) (value ? 1 : 0));
   }
 
   @Override
@@ -140,5 +146,12 @@ public record Encoder(ByteArrayOutputStream output, CodecMap codecMap) implement
     writeByte((byte) ((value >> 40) & 0xFF));
     writeByte((byte) ((value >> 48) & 0xFF));
     writeByte((byte) ((value >> 56) & 0xFF));
+  }
+
+  @Override
+  public void writeString(String value) {
+    var stringBytes = value.getBytes(StandardCharsets.UTF_8);
+    writeInt(stringBytes.length);
+    writeBytes(stringBytes);
   }
 }
