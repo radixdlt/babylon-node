@@ -109,7 +109,7 @@ public final class CodecMap {
    * is recommended to do this in the static constructor of a class being encoded/decoded. It is
    * safe to register twice - the latest registration will apply.
    */
-  private static final CodecMap DEFAULT = new CodecMap().registerCoreCodecs();
+  private static final CodecMap DEFAULT = new CodecMap().addCoreSchemaCodecs();
 
   public static final CodecResolver DEFAULT_RESOLVER = DEFAULT.resolver;
 
@@ -127,7 +127,7 @@ public final class CodecMap {
 
   private TypeId sborTypeIdForArrayType = TypeId.TYPE_ARRAY;
 
-  public CodecMap registerCoreCodecs() {
+  public CodecMap addCoreSchemaCodecs() {
     storeCreated(Unit.class, new CoreTypeCodec.UnitCodec());
     storeCreated(String.class, new CoreTypeCodec.StringCodec());
 
@@ -341,7 +341,7 @@ public final class CodecMap {
       var componentCodec = of(componentType);
 
       return CollectionCodec.forArray(
-          (Class) componentClass, (Codec) componentCodec, sborTypeIdForArrayType);
+          (Class) componentClass, componentCodec, sborTypeIdForArrayType);
     }
 
     // NB - Arrays have to be handled separately because they're special types in Java
@@ -351,7 +351,7 @@ public final class CodecMap {
       var componentCodec = of(componentType);
 
       return CollectionCodec.forArray(
-          (Class) componentClass, (Codec) componentCodec, sborTypeIdForArrayType);
+          (Class) componentClass, componentCodec, sborTypeIdForArrayType);
     }
   }
 }

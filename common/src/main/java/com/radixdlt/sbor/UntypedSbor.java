@@ -67,32 +67,35 @@ package com.radixdlt.sbor;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.Codec;
 
-public abstract class Sbor {
+@SuppressWarnings("unused")
+public abstract class UntypedSbor {
+  private static final SchemaCoder Coder = SchemaCoder.DEFAULT_WITHOUT_TYPES;
+  
   public static <T> byte[] encode(T value) {
-    return SborCoder.DEFAULT.encode(value);
+    return Coder.encode(value);
   }
 
   public static <T> byte[] encode(T value, Class<T> clazz) {
-    return SborCoder.DEFAULT.encode(value, clazz);
+    return Coder.encode(value, clazz);
   }
 
   public static <T> byte[] encode(T value, TypeToken<T> type) {
-    return SborCoder.DEFAULT.encode(value, type);
+    return Coder.encode(value, type);
   }
 
   public static <T> byte[] encode(T value, Codec<T> codec) {
-    return SborCoder.DEFAULT.encode(value, codec);
+    return Coder.encode(value, codec);
   }
 
   public static <T> T decode(byte[] input, Class<T> clazz) {
-    return SborCoder.DEFAULT.decode(input, clazz);
+    return Coder.decode(input, clazz);
   }
 
   public static <T> T decode(byte[] input, TypeToken<T> type) {
-    return SborCoder.DEFAULT.decode(input, type);
+    return Coder.decode(input, type);
   }
 
   public static <T> T decode(byte[] input, Codec<T> codec) {
-    return SborCoder.DEFAULT.decode(input, codec);
+    return Coder.decode(input, codec);
   }
 }

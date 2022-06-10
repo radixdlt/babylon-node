@@ -66,7 +66,7 @@ package com.radixdlt.transactions;
 
 import static org.junit.Assert.assertEquals;
 
-import com.radixdlt.sbor.Sbor;
+import com.radixdlt.sbor.TypedSbor;
 import org.junit.Test;
 
 public class TransactionTest {
@@ -76,8 +76,8 @@ public class TransactionTest {
     byte[] payload = new byte[10];
     Transaction t0 = Transaction.create(payload);
 
-    var r0 = Sbor.encode(t0, Transaction.class);
-    var t1 = Sbor.decode(r0, Transaction.class);
+    var r0 = TypedSbor.encode(t0, Transaction.class);
+    var t1 = TypedSbor.decode(r0, Transaction.class);
 
     assertEquals(t0, t1);
   }

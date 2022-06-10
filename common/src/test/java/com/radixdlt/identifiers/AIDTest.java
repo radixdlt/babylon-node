@@ -69,7 +69,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-import com.radixdlt.sbor.Sbor;
+import com.radixdlt.sbor.TypedSbor;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -129,8 +129,8 @@ public class AIDTest {
     byte[] bytes = new byte[AID.BYTES * 2];
     AID aid0 = AID.from(bytes, 0);
 
-    var r0 = Sbor.encode(aid0, AID.class);
-    var aid1 = Sbor.decode(r0, AID.class);
+    var r0 = TypedSbor.encode(aid0, AID.class);
+    var aid1 = TypedSbor.decode(r0, AID.class);
 
     assertEquals(aid0, aid1);
   }

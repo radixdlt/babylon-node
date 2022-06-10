@@ -78,8 +78,16 @@ import java.nio.charset.StandardCharsets;
  *
  * @param input
  */
-public record Decoder(ByteArrayInputStream input) implements DecoderApi {
+public record Decoder(ByteArrayInputStream input, boolean decodeTypeIds) implements DecoderApi {
   private static final int EOF_RC = -1;
+
+  public <T> T decodeFromAllOfStream(Codec<T> codec) {
+    var output = decode(codec);
+    if (input.read() != EOF_RC) {
+      throw new SborDecodeException("There were bytes remaining after finishing decoding the given codec");
+    }
+    return output;
+  }
 
   @Override
   public <T> T decode(Codec<T> codec) {
@@ -131,6 +139,10 @@ public record Decoder(ByteArrayInputStream input) implements DecoderApi {
 
   @Override
   public void expectType(TypeId typeId) {
+    if (!decodeTypeIds) {
+      return;
+    }
+
     var typeByte = readByte();
 
     if (typeByte != typeId.id()) {

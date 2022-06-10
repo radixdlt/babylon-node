@@ -72,8 +72,9 @@ import com.radixdlt.sbor.coding.Encoder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-public record SborCoder(CodecMap.CodecResolver codecResolver) {
-  public static final SborCoder DEFAULT = new SborCoder(CodecMap.DEFAULT_RESOLVER);
+public record SchemaCoder(CodecMap.CodecResolver codecResolver, boolean withTypes) {
+  public static final SchemaCoder DEFAULT_WITH_TYPES = new SchemaCoder(CodecMap.DEFAULT_RESOLVER, true);
+  public static final SchemaCoder DEFAULT_WITHOUT_TYPES = new SchemaCoder(CodecMap.DEFAULT_RESOLVER, false);
 
   @SuppressWarnings("unchecked")
   public <T> byte[] encode(T value) {
@@ -90,7 +91,7 @@ public record SborCoder(CodecMap.CodecResolver codecResolver) {
 
   public <T> byte[] encode(T value, Codec<T> codec) {
     var outputStream = new ByteArrayOutputStream();
-    new Encoder(outputStream).encode(value, codec);
+    new Encoder(outputStream, withTypes).encode(value, codec);
     return outputStream.toByteArray();
   }
 
@@ -103,6 +104,6 @@ public record SborCoder(CodecMap.CodecResolver codecResolver) {
   }
 
   public <T> T decode(byte[] input, Codec<T> codec) {
-    return new Decoder(new ByteArrayInputStream(input)).decode(codec);
+    return new Decoder(new ByteArrayInputStream(input), withTypes).decodeFromAllOfStream(codec);
   }
 }

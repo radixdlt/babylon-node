@@ -62,85 +62,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor.coding;
+package com.radixdlt.sbor;
 
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.Codec;
-import com.radixdlt.sbor.codec.constants.TypeId;
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
 
-/**
- * Performs the role of an AnyEncoder in the Rust SBOR implementation
- *
- * @param output
- */
-public record Encoder(ByteArrayOutputStream output, boolean encodeTypeIds) implements EncoderApi {
-  @Override
-  public <T> void encode(T value, Codec<T> codec) {
-    codec.encode(this, value);
+@SuppressWarnings("unused")
+public abstract class TypedSbor {
+  private static final SchemaCoder Coder = SchemaCoder.DEFAULT_WITH_TYPES;
+
+  public static <T> byte[] encode(T value) {
+    return Coder.encode(value);
   }
 
-  @Override
-  public void encodeTypeId(TypeId typeId) {
-    if (encodeTypeIds) {
-      writeByte(typeId.id());
-    }
+  public static <T> byte[] encode(T value, Class<T> clazz) {
+    return Coder.encode(value, clazz);
   }
 
-  @Override
-  public void encodeArrayHeader(TypeId typeId, int length) {
-    encodeTypeId(TypeId.TYPE_VEC);
-    encodeTypeId(typeId);
-    writeInt(length);
+  public static <T> byte[] encode(T value, TypeToken<T> type) {
+    return Coder.encode(value, type);
   }
 
-  @Override
-  public void writeBoolean(boolean value) {
-    writeByte((byte) (value ? 1 : 0));
+  public static <T> byte[] encode(T value, Codec<T> codec) {
+    return Coder.encode(value, codec);
   }
 
-  @Override
-  public void writeByte(byte value) {
-    output.write(value);
+  public static <T> T decode(byte[] input, Class<T> clazz) {
+    return Coder.decode(input, clazz);
   }
 
-  @Override
-  public void writeBytes(byte[] value) {
-    if (value.length > 0) {
-      output.writeBytes(value);
-    }
+  public static <T> T decode(byte[] input, TypeToken<T> type) {
+    return Coder.decode(input, type);
   }
 
-  @Override
-  public void writeShort(short value) {
-    writeByte((byte) (value & 0xFF));
-    writeByte((byte) ((value >> 8) & 0xFF));
-  }
-
-  @Override
-  public void writeInt(int value) {
-    writeByte((byte) (value & 0xFF));
-    writeByte((byte) ((value >> 8) & 0xFF));
-    writeByte((byte) ((value >> 16) & 0xFF));
-    writeByte((byte) ((value >> 24) & 0xFF));
-  }
-
-  @Override
-  public void writeLong(long value) {
-    writeByte((byte) (value & 0xFF));
-    writeByte((byte) ((value >> 8) & 0xFF));
-    writeByte((byte) ((value >> 16) & 0xFF));
-    writeByte((byte) ((value >> 24) & 0xFF));
-    writeByte((byte) ((value >> 32) & 0xFF));
-    writeByte((byte) ((value >> 40) & 0xFF));
-    writeByte((byte) ((value >> 48) & 0xFF));
-    writeByte((byte) ((value >> 56) & 0xFF));
-  }
-
-  @Override
-  public void writeString(String value) {
-    var stringBytes = value.getBytes(StandardCharsets.UTF_8);
-    writeInt(stringBytes.length);
-    writeBytes(stringBytes);
+  public static <T> T decode(byte[] input, Codec<T> codec) {
+    return Coder.decode(input, codec);
   }
 }
