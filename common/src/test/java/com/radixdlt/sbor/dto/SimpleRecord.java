@@ -75,6 +75,7 @@ public record SimpleRecord(
     int first, String second, Either<Long, String> third, Option<Boolean> fourth) {
 
   static {
+    // The noinspection relates to TypeToken<> causing a compiler NullPointerException
     //noinspection Convert2Diamond
     CodecMap.DEFAULT.register(
         FieldsCodec.of(

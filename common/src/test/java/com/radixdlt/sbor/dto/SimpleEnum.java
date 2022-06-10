@@ -72,17 +72,19 @@ import com.radixdlt.sbor.codec.*;
 public sealed interface SimpleEnum {
 
   /**
-   * NB - we have to use @SuppressWarnings("Convert2Diamond") here. You cannot use <> in the
-   * TypeToken, even though the IDE wants you to. Doing so causes a java.lang.NullPointerException
-   * in the java compiler (likely related to https://bugs.openjdk.org/browse/JDK-8262095) "An
-   * exception has occurred in the compiler (17). Please file a bug against the Java compiler via
-   * the Java bug reporting page (http://bugreport.java.com) after checking the Bug Database
-   * (http://bugs.java.com) for duplicates. Include your program, the following diagnostic, and the
-   * parameters passed to the Java compiler in your report. Thank you." Sometimes the exception
-   * appears to be accompanied by "Cannot invoke getThrownTypes because tree.meth.type is null"
+   * NB The Compiler NPE detailed below is likely related to
+   * https://bugs.openjdk.org/browse/JDK-8262095 In order to aid people grepping the codebase for
+   * this; its error message is something like: "An exception has occurred in the compiler (17).
+   * Please file a bug against the Java compiler via the Java bug reporting page
+   * (http://bugreport.java.com) after checking the Bug Database (http://bugs.java.com) for
+   * duplicates. Include your program, the following diagnostic, and the parameters passed to the
+   * Java compiler in your report. Thank you." Sometimes the exception appears to be accompanied by
+   * "Cannot invoke getThrownTypes because tree.meth.type is null"
    */
   @SuppressWarnings("Convert2Diamond")
   static void registerInterfaceCodec() {
+    // The noinspection relates to TypeToken<> causing a compiler NullPointerException
+    //noinspection Convert2Diamond
     Codec<SimpleEnum> codec =
         EnumCodec.fromEntries(
             FieldsCodec.of(
