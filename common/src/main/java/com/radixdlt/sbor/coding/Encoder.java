@@ -95,7 +95,7 @@ public record Encoder(ByteArrayOutputStream output, CodecMap codecMap) implement
 
   @Override
   public void encodeTypeId(TypeId typeId) {
-    writeByte(typeId.typeId());
+    writeByte(typeId.id());
   }
 
   @Override

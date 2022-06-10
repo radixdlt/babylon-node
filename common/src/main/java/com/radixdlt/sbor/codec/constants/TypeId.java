@@ -65,6 +65,7 @@
 package com.radixdlt.sbor.codec.constants;
 
 public enum TypeId {
+  // Primitive Types
   TYPE_UNIT(0x00),
   TYPE_BOOL(0x01),
   TYPE_I8(0x02),
@@ -78,18 +79,26 @@ public enum TypeId {
   TYPE_U64(0x0a),
   TYPE_U128(0x0b),
   TYPE_STRING(0x0c),
-  TYPE_STRUCT(0x10), // enum and struct
+
+  // Enum and struct
+  TYPE_STRUCT(0x10),
   TYPE_ENUM(0x11),
-  TYPE_OPTION(0x20), // composite types
-  TYPE_BOX(0x21),
+
+  // Composite types
+  TYPE_OPTION(0x20),
+  TYPE_BOX(0x21), // Unused
   TYPE_ARRAY(0x22),
   TYPE_TUPLE(0x23),
   TYPE_RESULT(0x24),
-  TYPE_VEC(0x30), // collections
+
+  // Collections
+  TYPE_VEC(0x30),
   TYPE_TREE_SET(0x31),
   TYPE_TREE_MAP(0x32),
   TYPE_HASH_SET(0x33),
   TYPE_HASH_MAP(0x34),
+
+  // Custom Start
   TYPE_CUSTOM_START(0x80); // custom types start from 0x80 and values are encoded as `len + data`
 
   private final byte id;
@@ -98,7 +107,7 @@ public enum TypeId {
     this.id = (byte) id;
   }
 
-  public byte typeId() {
+  public byte id() {
     return id;
   }
 }

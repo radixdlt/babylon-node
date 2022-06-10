@@ -108,7 +108,7 @@ public final class CodecMap {
    * is recommended to do this in the static constructor of a class being encoded/decoded. It is
    * safe to register twice - the latest registration will apply.
    */
-  public static final CodecMap DEFAULT = new CodecMap();
+  public static final CodecMap DEFAULT = new CodecMap().installCoreCodecs();
 
   private final Map<Class, Codec> classEncodingMap = new HashMap<>();
 
@@ -116,7 +116,7 @@ public final class CodecMap {
 
   private final Map<Class, Function<TypeToken, Codec>> codecCreatorMap = new HashMap<>();
 
-  public CodecMap() {
+  public CodecMap installCoreCodecs() {
     register(Unit.class, new CoreTypeCodec.UnitCodec());
     register(String.class, new CoreTypeCodec.StringCodec());
 
@@ -142,6 +142,8 @@ public final class CodecMap {
 
     OptionTypeCodec.registerWith(this);
     EitherTypeCodec.registerWith(this);
+
+    return this;
   }
 
   public <T> Codec<T> get(TypeToken<T> type) {

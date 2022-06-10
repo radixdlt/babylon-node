@@ -146,10 +146,10 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
   public void expectType(TypeId typeId) {
     var typeByte = readByte();
 
-    if (typeByte != typeId.typeId()) {
+    if (typeByte != typeId.id()) {
       throw new SborDecodeException(
           String.format(
-              "Type ID byte %s does not match expected value %s", typeByte, typeId.typeId()));
+              "Type ID byte %s does not match expected value %s", typeByte, typeId.id()));
     }
   }
 

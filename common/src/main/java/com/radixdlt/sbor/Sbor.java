@@ -68,8 +68,6 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.Codec;
 
 public abstract class Sbor {
-
-  @SuppressWarnings("unchecked")
   public static <T> byte[] encode(T value) {
     return SborCoder.DEFAULT.encode(value);
   }
