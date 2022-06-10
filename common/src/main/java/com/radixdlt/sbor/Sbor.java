@@ -66,47 +66,35 @@ package com.radixdlt.sbor;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.Codec;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.coding.Decoder;
-import com.radixdlt.sbor.coding.Encoder;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 
-public record SborCoder(CodecMap codecs) {
-  static SborCoder DEFAULT = new SborCoder(CodecMap.DEFAULT);
+public abstract class Sbor {
 
   @SuppressWarnings("unchecked")
-  public <T> byte[] encode(T value) {
-    return encode(value, (Class<? super T>) value.getClass());
+  public static <T> byte[] encode(T value) {
+    return SborCoder.DEFAULT.encode(value);
   }
 
-  public <T> byte[] encode(T value, Class<T> clazz) {
-    var outputStream = new ByteArrayOutputStream();
-    new Encoder(outputStream, codecs).encode(value, clazz);
-    return outputStream.toByteArray();
+  public static <T> byte[] encode(T value, Class<T> clazz) {
+    return SborCoder.DEFAULT.encode(value, clazz);
   }
 
-  public <T> byte[] encode(T value, TypeToken<T> type) {
-    var outputStream = new ByteArrayOutputStream();
-    new Encoder(outputStream, codecs).encode(value, type);
-    return outputStream.toByteArray();
+  public static <T> byte[] encode(T value, TypeToken<T> type) {
+    return SborCoder.DEFAULT.encode(value, type);
   }
 
-  public <T> byte[] encode(T value, Codec<T> codec) {
-    var outputStream = new ByteArrayOutputStream();
-    new Encoder(outputStream, codecs).encode(value, codec);
-    return outputStream.toByteArray();
+  public static <T> byte[] encode(T value, Codec<T> codec) {
+    return SborCoder.DEFAULT.encode(value, codec);
   }
 
-  public <T> T decode(byte[] input, Class<T> clazz) {
-    return new Decoder(new ByteArrayInputStream(input), codecs).decode(clazz);
+  public static <T> T decode(byte[] input, Class<T> clazz) {
+    return SborCoder.DEFAULT.decode(input, clazz);
   }
 
-  public <T> T decode(byte[] input, TypeToken<T> type) {
-    return new Decoder(new ByteArrayInputStream(input), codecs).decode(type);
+  public static <T> T decode(byte[] input, TypeToken<T> type) {
+    return SborCoder.DEFAULT.decode(input, type);
   }
 
-  public <T> T decode(byte[] input, Codec<T> codec) {
-    return new Decoder(new ByteArrayInputStream(input), codecs).decode(codec);
+  public static <T> T decode(byte[] input, Codec<T> codec) {
+    return SborCoder.DEFAULT.decode(input, codec);
   }
 }
