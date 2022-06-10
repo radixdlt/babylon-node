@@ -80,7 +80,7 @@ public interface Tuple {
   }
 
   interface Tuple1<T1> extends Tuple {
-    <T> T map(FN1<T, T1> mapper);
+    <T> T map(Func1<T1, T> mapper);
 
     default int size() {
       return 1;
@@ -88,7 +88,7 @@ public interface Tuple {
   }
 
   interface Tuple2<T1, T2> extends Tuple {
-    <T> T map(FN2<T, T1, T2> mapper);
+    <T> T map(Func2<T1, T2, T> mapper);
 
     default int size() {
       return 2;
@@ -100,7 +100,7 @@ public interface Tuple {
   }
 
   interface Tuple3<T1, T2, T3> extends Tuple {
-    <T> T map(FN3<T, T1, T2, T3> mapper);
+    <T> T map(Func3<T1, T2, T3, T> mapper);
 
     default int size() {
       return 3;
@@ -108,7 +108,7 @@ public interface Tuple {
   }
 
   interface Tuple4<T1, T2, T3, T4> extends Tuple {
-    <T> T map(FN4<T, T1, T2, T3, T4> mapper);
+    <T> T map(Func4<T1, T2, T3, T4, T> mapper);
 
     default int size() {
       return 4;
@@ -116,7 +116,7 @@ public interface Tuple {
   }
 
   interface Tuple5<T1, T2, T3, T4, T5> extends Tuple {
-    <T> T map(FN5<T, T1, T2, T3, T4, T5> mapper);
+    <T> T map(Func5<T1, T2, T3, T4, T5, T> mapper);
 
     default int size() {
       return 5;
@@ -124,7 +124,7 @@ public interface Tuple {
   }
 
   interface Tuple6<T1, T2, T3, T4, T5, T6> extends Tuple {
-    <T> T map(FN6<T, T1, T2, T3, T4, T5, T6> mapper);
+    <T> T map(Func6<T1, T2, T3, T4, T5, T6, T> mapper);
 
     default int size() {
       return 6;
@@ -132,7 +132,7 @@ public interface Tuple {
   }
 
   interface Tuple7<T1, T2, T3, T4, T5, T6, T7> extends Tuple {
-    <T> T map(FN7<T, T1, T2, T3, T4, T5, T6, T7> mapper);
+    <T> T map(Func7<T1, T2, T3, T4, T5, T6, T7, T> mapper);
 
     default int size() {
       return 7;
@@ -140,7 +140,7 @@ public interface Tuple {
   }
 
   interface Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends Tuple {
-    <T> T map(FN8<T, T1, T2, T3, T4, T5, T6, T7, T8> mapper);
+    <T> T map(Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> mapper);
 
     default int size() {
       return 8;
@@ -148,7 +148,7 @@ public interface Tuple {
   }
 
   interface Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9> extends Tuple {
-    <T> T map(FN9<T, T1, T2, T3, T4, T5, T6, T7, T8, T9> mapper);
+    <T> T map(Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> mapper);
 
     default int size() {
       return 9;
@@ -156,7 +156,7 @@ public interface Tuple {
   }
 
   interface Tuple10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> extends Tuple {
-    <T> T map(FN10<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> mapper);
+    <T> T map(Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> mapper);
 
     default int size() {
       return 10;
@@ -164,7 +164,7 @@ public interface Tuple {
   }
 
   interface Tuple11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> extends Tuple {
-    <T> T map(FN11<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> mapper);
+    <T> T map(Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> mapper);
 
     default int size() {
       return 11;
@@ -172,7 +172,7 @@ public interface Tuple {
   }
 
   interface Tuple12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> extends Tuple {
-    <T> T map(FN12<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> mapper);
+    <T> T map(Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> mapper);
 
     default int size() {
       return 11;
@@ -186,7 +186,7 @@ public interface Tuple {
   static <T1> Tuple1<T1> tuple(T1 param1) {
     record tuple1<T1>(T1 param1) implements Tuple1<T1> {
       @Override
-      public <T> T map(FN1<T, T1> mapper) {
+      public <T> T map(Func1<T1, T> mapper) {
         return mapper.apply(param1());
       }
     }
@@ -197,7 +197,7 @@ public interface Tuple {
   static <T1, T2> Tuple2<T1, T2> tuple(T1 param1, T2 param2) {
     record tuple2<T1, T2>(T1 param1, T2 param2) implements Tuple2<T1, T2> {
       @Override
-      public <T> T map(FN2<T, T1, T2> mapper) {
+      public <T> T map(Func2<T1, T2, T> mapper) {
         return mapper.apply(param1(), param2());
       }
 
@@ -218,7 +218,7 @@ public interface Tuple {
   static <T1, T2, T3> Tuple3<T1, T2, T3> tuple(T1 param1, T2 param2, T3 param3) {
     record tuple3<T1, T2, T3>(T1 param1, T2 param2, T3 param3) implements Tuple3<T1, T2, T3> {
       @Override
-      public <T> T map(FN3<T, T1, T2, T3> mapper) {
+      public <T> T map(Func3<T1, T2, T3, T> mapper) {
         return mapper.apply(param1(), param2(), param3());
       }
     }
@@ -230,7 +230,7 @@ public interface Tuple {
     record tuple4<T1, T2, T3, T4>(T1 param1, T2 param2, T3 param3, T4 param4)
         implements Tuple4<T1, T2, T3, T4> {
       @Override
-      public <T> T map(FN4<T, T1, T2, T3, T4> mapper) {
+      public <T> T map(Func4<T1, T2, T3, T4, T> mapper) {
         return mapper.apply(param1(), param2(), param3(), param4());
       }
     }
@@ -243,7 +243,7 @@ public interface Tuple {
     record tuple5<T1, T2, T3, T4, T5>(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5)
         implements Tuple5<T1, T2, T3, T4, T5> {
       @Override
-      public <T> T map(FN5<T, T1, T2, T3, T4, T5> mapper) {
+      public <T> T map(Func5<T1, T2, T3, T4, T5, T> mapper) {
         return mapper.apply(param1(), param2(), param3(), param4(), param5());
       }
     }
@@ -257,7 +257,7 @@ public interface Tuple {
         T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6)
         implements Tuple6<T1, T2, T3, T4, T5, T6> {
       @Override
-      public <T> T map(FN6<T, T1, T2, T3, T4, T5, T6> mapper) {
+      public <T> T map(Func6<T1, T2, T3, T4, T5, T6, T> mapper) {
         return mapper.apply(param1(), param2(), param3(), param4(), param5(), param6());
       }
     }
@@ -271,7 +271,7 @@ public interface Tuple {
         T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7)
         implements Tuple7<T1, T2, T3, T4, T5, T6, T7> {
       @Override
-      public <T> T map(FN7<T, T1, T2, T3, T4, T5, T6, T7> mapper) {
+      public <T> T map(Func7<T1, T2, T3, T4, T5, T6, T7, T> mapper) {
         return mapper.apply(param1(), param2(), param3(), param4(), param5(), param6(), param7());
       }
     }
@@ -285,7 +285,7 @@ public interface Tuple {
         T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8)
         implements Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> {
       @Override
-      public <T> T map(FN8<T, T1, T2, T3, T4, T5, T6, T7, T8> mapper) {
+      public <T> T map(Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> mapper) {
         return mapper.apply(
             param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8());
       }
@@ -316,7 +316,7 @@ public interface Tuple {
         T9 param9)
         implements Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9> {
       @Override
-      public <T> T map(FN9<T, T1, T2, T3, T4, T5, T6, T7, T8, T9> mapper) {
+      public <T> T map(Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> mapper) {
         return mapper.apply(
             param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8(),
             param9());
@@ -351,7 +351,7 @@ public interface Tuple {
         T10 param10)
         implements Tuple10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> {
       @Override
-      public <T> T map(FN10<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> mapper) {
+      public <T> T map(Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> mapper) {
         return mapper.apply(
             param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8(),
             param9(), param10());
@@ -389,7 +389,7 @@ public interface Tuple {
         T11 param11)
         implements Tuple11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> {
       @Override
-      public <T> T map(FN11<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> mapper) {
+      public <T> T map(Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> mapper) {
         return mapper.apply(
             param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8(),
             param9(), param10(), param11());
@@ -429,7 +429,7 @@ public interface Tuple {
         T12 param12)
         implements Tuple12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> {
       @Override
-      public <T> T map(FN12<T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> mapper) {
+      public <T> T map(Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> mapper) {
         return mapper.apply(
             param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8(),
             param9(), param10(), param11(), param12());

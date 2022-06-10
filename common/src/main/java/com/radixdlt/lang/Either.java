@@ -64,14 +64,13 @@
 
 package com.radixdlt.lang;
 
-import com.radixdlt.lang.Functions.FN1;
+import com.radixdlt.lang.Functions.Func1;
 import com.radixdlt.sbor.codec.CodecMap;
-
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /** The type which can hold one of two values of different types. */
 // TODO: extend API
+@SuppressWarnings("unused")
 public sealed interface Either<L, R> {
   /**
    * Handle both possible states (left/right) and produce single value from it. Depending on which
@@ -81,7 +80,7 @@ public sealed interface Either<L, R> {
    * @param rightMapper function to transform right value into output value
    * @return result of application of one of the mappers.
    */
-  <T> T fold(FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper);
+  <T> T fold(Func1<? super L, ? extends T> leftMapper, Func1<? super R, ? extends T> rightMapper);
 
   /**
    * Invoke side-effect-producing consumer to the Either container. Depending on which (left or
@@ -89,7 +88,6 @@ public sealed interface Either<L, R> {
    *
    * @param leftConsumer function to process left value
    * @param rightConsumer function to process right value
-   * @return result of application of one of the mappers.
    */
   default void apply(Consumer<? super L> leftConsumer, Consumer<? super R> rightConsumer) {
     fold(
@@ -131,7 +129,7 @@ public sealed interface Either<L, R> {
    * @param mapToException a map from the cause to a RuntimeException
    * @return value stored inside present instance.
    */
-  default L unwrapLeft(Function<? super R, RuntimeException> mapToException) {
+  default L unwrapLeft(Functions.Func1<? super R, RuntimeException> mapToException) {
     return fold(
         Functions::id,
         r -> {
@@ -159,7 +157,7 @@ public sealed interface Either<L, R> {
    * @param mapToException a map from the cause to a RuntimeException
    * @return value stored inside present instance.
    */
-  default R unwrapRight(Function<? super L, RuntimeException> mapToException) {
+  default R unwrapRight(Functions.Func1<? super L, RuntimeException> mapToException) {
     return fold(
         l -> {
           throw mapToException.apply(l);
@@ -174,7 +172,7 @@ public sealed interface Either<L, R> {
 
     @Override
     public <T> T fold(
-        FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
+        Func1<? super L, ? extends T> leftMapper, Func1<? super R, ? extends T> rightMapper) {
       return leftMapper.apply(value());
     }
   }
@@ -195,7 +193,7 @@ public sealed interface Either<L, R> {
 
     @Override
     public <T> T fold(
-        FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
+        Func1<? super L, ? extends T> leftMapper, Func1<? super R, ? extends T> rightMapper) {
       return rightMapper.apply(value());
     }
   }

@@ -64,13 +64,14 @@
 
 package com.radixdlt.lang;
 
-import com.radixdlt.lang.Functions.FN1;
+import com.radixdlt.lang.Functions.Func1;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.MessageFormat;
 import java.util.function.Predicate;
 
 /** Frequently used variants of {@link Cause}. */
+@SuppressWarnings("unused")
 public final class Causes {
   public static final Cause IRRELEVANT = new SimpleCause("irrelevant");
 
@@ -104,7 +105,7 @@ public final class Causes {
 
   /**
    * Create a mapper which will map a value into a formatted message. Main use case for this
-   * function - creation of mappers for {@link Result#filter(FN1, Predicate)}:
+   * function - creation of mappers for {@link Result#filter(Func1, Predicate)}:
    *
    * <blockquote>
    *
@@ -117,7 +118,7 @@ public final class Causes {
    * @param template the message template prepared for {@link MessageFormat}
    * @return created mapping function
    */
-  public static <T> FN1<Cause, T> with1(String template) {
+  public static <T> Func1<T, Cause> with1(String template) {
     return (T input) -> cause(MessageFormat.format(template, input));
   }
 }
