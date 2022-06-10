@@ -90,23 +90,35 @@ public class BooleanUtilsTest {
     assertFalse(BooleanUtils.parseBoolean("False"));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void when_string_is_null_exception_is_thrown() {
-    assertTrue(BooleanUtils.parseBoolean(null));
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> BooleanUtils.parseBoolean(null));
+    assertEquals(
+        "It was not possible to parte the string 'null' as a boolean.", exception.getMessage());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void when_string_is_empty_exception_is_thrown() {
-    assertFalse(BooleanUtils.parseBoolean(""));
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> BooleanUtils.parseBoolean(""));
+    assertEquals(
+        "It was not possible to parte the string '' as a boolean.", exception.getMessage());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void when_string_is_yes_exception_is_thrown() {
-    assertTrue(BooleanUtils.parseBoolean("yes"));
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> BooleanUtils.parseBoolean("yes"));
+    assertEquals(
+        "It was not possible to parte the string 'yes' as a boolean.", exception.getMessage());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void when_string_is_no_exception_is_thrown() {
-    assertFalse(BooleanUtils.parseBoolean("no"));
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> BooleanUtils.parseBoolean("no"));
+    assertEquals(
+        "It was not possible to parte the string 'no' as a boolean.", exception.getMessage());
   }
 }

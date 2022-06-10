@@ -66,6 +66,10 @@ package com.radixdlt.utils;
 
 public class BooleanUtils {
 
+  private BooleanUtils() {
+    throw new IllegalStateException("Utility class");
+  }
+
   /**
    * Parses the string argument as a boolean. The {@code boolean} returned represents the value
    * {@code true} if the string argument is not {@code null} and is equal, ignoring case, to the

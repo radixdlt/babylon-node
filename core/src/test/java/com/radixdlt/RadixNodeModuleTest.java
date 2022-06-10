@@ -64,6 +64,7 @@
 
 package com.radixdlt;
 
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -97,22 +98,31 @@ public class RadixNodeModuleTest {
     Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
   }
 
-  @Test(expected = Exception.class)
+  @Test
   public void when_capabilities_ledger_sync_enabled_value_is_invalid_exception_is_thrown() {
     final var properties = createDefaultProperties();
-    when(properties.get(eq("network.id"))).thenReturn("99");
-    when(properties.get(eq("network.genesis_txn"))).thenReturn("00");
-    when(properties.get(eq("capabilities.ledger_sync.enabled"))).thenReturn("yes");
+    when(properties.get("network.id")).thenReturn("99");
+    when(properties.get("network.genesis_txn")).thenReturn("00");
+    when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("yes");
 
-    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
+    Exception exception =
+        assertThrows(
+            com.google.inject.CreationException.class,
+            () -> Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this));
+
+    assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    assertEquals(
+        "It was not possible to parse the value of the configuration"
+            + " 'capabilities.ledger_sync.enabled'. Please use true or false.",
+        exception.getCause().getMessage());
   }
 
   @Test
   public void when_capabilities_ledger_sync_enabled_value_is_valid_no_exception_is_thrown() {
     final var properties = createDefaultProperties();
-    when(properties.get(eq("network.id"))).thenReturn("99");
-    when(properties.get(eq("network.genesis_txn"))).thenReturn("00");
-    when(properties.get(eq("capabilities.ledger_sync.enabled"))).thenReturn("true");
+    when(properties.get("network.id")).thenReturn("99");
+    when(properties.get("network.genesis_txn")).thenReturn("00");
+    when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("true");
 
     Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
   }

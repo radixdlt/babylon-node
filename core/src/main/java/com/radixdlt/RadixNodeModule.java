@@ -227,9 +227,9 @@ public final class RadixNodeModule extends AbstractModule {
     install(new CapabilitiesModule(builder.build()));
   }
 
-  private boolean parseLedgerSyncEnabled(String it) {
+  private boolean parseLedgerSyncEnabled(String isLedgerSyncEnabled) {
     try {
-      return BooleanUtils.parseBoolean(it);
+      return BooleanUtils.parseBoolean(isLedgerSyncEnabled);
     } catch (Exception e) {
       throw new IllegalArgumentException(
           "It was not possible to parse the value of the configuration"
