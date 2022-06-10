@@ -276,12 +276,13 @@ public final class VertexStoreJavaImpl implements VertexStore {
       final var insertQcResult = insertQc(v.getQC());
 
       switch (insertQcResult) {
-        case InsertQcResult.VertexIsMissing missing:
+        case InsertQcResult.VertexIsMissing missing -> {
           return new InsertVertexChainResult(insertedQcs, bftInsertUpdates);
-        case InsertQcResult.Ignored ignored:
-          break; // no-op, but continue processing remaining vertices
-        case InsertQcResult.Inserted inserted:
-          insertedQcs.add(inserted);
+        }
+        case InsertQcResult.Inserted inserted -> insertedQcs.add(inserted);
+        case InsertQcResult.Ignored ignored -> {
+          // no-op, but continue processing remaining vertices
+        }
       }
 
       insertVertex(v).onPresent(bftInsertUpdates::add);
