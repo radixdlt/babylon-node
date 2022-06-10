@@ -62,77 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.utils;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+public class BooleanUtils {
 
-import com.google.inject.Guice;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.RadixKeyStore;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.serialization.TestSetupUtils;
-import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.File;
-import org.assertj.core.util.Files;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-public class RadixNodeModuleTest {
-  @NetworkId private int networkId;
-
-  @BeforeClass
-  public static void beforeClass() {
-    TestSetupUtils.installBouncyCastleProvider();
-  }
-
-  @Test
-  public void testInjectorNotNullToken() {
-    final var properties = createDefaultProperties();
-    when(properties.get(eq("network.id"))).thenReturn("99");
-    when(properties.get(eq("network.genesis_txn"))).thenReturn("00");
-    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
-  }
-
-  @Test(expected = Exception.class)
-  public void when_capabilities_ledger_sync_enabled_value_is_invalid_exception_is_thrown() {
-    final var properties = createDefaultProperties();
-    when(properties.get(eq("network.id"))).thenReturn("99");
-    when(properties.get(eq("network.genesis_txn"))).thenReturn("00");
-    when(properties.get(eq("capabilities.ledger_sync.enabled"))).thenReturn("yes");
-
-    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
-  }
-
-  @Test
-  public void when_capabilities_ledger_sync_enabled_value_is_valid_no_exception_is_thrown() {
-    final var properties = createDefaultProperties();
-    when(properties.get(eq("network.id"))).thenReturn("99");
-    when(properties.get(eq("network.genesis_txn"))).thenReturn("00");
-    when(properties.get(eq("capabilities.ledger_sync.enabled"))).thenReturn("true");
-
-    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
-  }
-
-  private RuntimeProperties createDefaultProperties() {
-    final var properties = mock(RuntimeProperties.class);
-    doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
-    var keyStore = new File("nonesuch.ks");
-    Files.delete(keyStore);
-    generateKeystore(keyStore);
-
-    when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");
-    return properties;
-  }
-
-  private void generateKeystore(File keyStore) {
-    try {
-      RadixKeyStore.fromFile(keyStore, null, true).writeKeyPair("node", ECKeyPair.generateNew());
-    } catch (Exception e) {
-      throw new IllegalStateException("Unable to create keystore");
+  /**
+   * Parses the string argument as a boolean. The {@code boolean} returned represents the value
+   * {@code true} if the string argument is not {@code null} and is equal, ignoring case, to the
+   * string {@code "true"}. It returns the value {@code false} if the string argument is not {@code
+   * null} and is equal, ignoring case, to the string {@code "false"}.
+   *
+   * <p>Example: {@code Boolean.parseBoolean("True")} returns {@code true}.<br>
+   * Boolean.parseBoolean("false")} returns {@code false}.<br>
+   * Example: {@code Boolean.parseBoolean("yes")} throws {@code IllegalArgumentException}.
+   *
+   * @param s the {@code String} containing the boolean representation to be parsed
+   * @return the boolean represented by the string argument
+   * @throws IllegalArgumentException if {@code s} is not equal to "true" or "false"
+   *     case-insensitive.
+   */
+  public static boolean parseBoolean(String s) {
+    if ("true".equalsIgnoreCase(s)) {
+      return Boolean.TRUE;
+    } else if ("false".equalsIgnoreCase(s)) {
+      return Boolean.FALSE;
+    } else {
+      throw new IllegalArgumentException(
+          String.format("It was not possible to parte the string '%s' as a boolean.", s));
     }
   }
 }

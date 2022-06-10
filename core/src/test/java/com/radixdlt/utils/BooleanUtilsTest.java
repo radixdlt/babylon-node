@@ -62,77 +62,51 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.utils;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
 
-import com.google.inject.Guice;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.RadixKeyStore;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.serialization.TestSetupUtils;
-import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.File;
-import org.assertj.core.util.Files;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class RadixNodeModuleTest {
-  @NetworkId private int networkId;
+public class BooleanUtilsTest {
 
-  @BeforeClass
-  public static void beforeClass() {
-    TestSetupUtils.installBouncyCastleProvider();
+  @Test
+  public void when_string_is_true_it_is_parsed_correctly() {
+    assertTrue(BooleanUtils.parseBoolean("true"));
   }
 
   @Test
-  public void testInjectorNotNullToken() {
-    final var properties = createDefaultProperties();
-    when(properties.get(eq("network.id"))).thenReturn("99");
-    when(properties.get(eq("network.genesis_txn"))).thenReturn("00");
-    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
-  }
-
-  @Test(expected = Exception.class)
-  public void when_capabilities_ledger_sync_enabled_value_is_invalid_exception_is_thrown() {
-    final var properties = createDefaultProperties();
-    when(properties.get(eq("network.id"))).thenReturn("99");
-    when(properties.get(eq("network.genesis_txn"))).thenReturn("00");
-    when(properties.get(eq("capabilities.ledger_sync.enabled"))).thenReturn("yes");
-
-    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
+  public void when_string_is_false_it_is_parsed_correctly() {
+    assertFalse(BooleanUtils.parseBoolean("false"));
   }
 
   @Test
-  public void when_capabilities_ledger_sync_enabled_value_is_valid_no_exception_is_thrown() {
-    final var properties = createDefaultProperties();
-    when(properties.get(eq("network.id"))).thenReturn("99");
-    when(properties.get(eq("network.genesis_txn"))).thenReturn("00");
-    when(properties.get(eq("capabilities.ledger_sync.enabled"))).thenReturn("true");
-
-    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
+  public void when_string_is_True_it_is_parsed_correctly() {
+    assertTrue(BooleanUtils.parseBoolean("True"));
   }
 
-  private RuntimeProperties createDefaultProperties() {
-    final var properties = mock(RuntimeProperties.class);
-    doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
-    var keyStore = new File("nonesuch.ks");
-    Files.delete(keyStore);
-    generateKeystore(keyStore);
-
-    when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");
-    return properties;
+  @Test
+  public void when_string_is_False_it_is_parsed_correctly() {
+    assertFalse(BooleanUtils.parseBoolean("False"));
   }
 
-  private void generateKeystore(File keyStore) {
-    try {
-      RadixKeyStore.fromFile(keyStore, null, true).writeKeyPair("node", ECKeyPair.generateNew());
-    } catch (Exception e) {
-      throw new IllegalStateException("Unable to create keystore");
-    }
+  @Test(expected = IllegalArgumentException.class)
+  public void when_string_is_null_exception_is_thrown() {
+    assertTrue(BooleanUtils.parseBoolean(null));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void when_string_is_empty_exception_is_thrown() {
+    assertFalse(BooleanUtils.parseBoolean(""));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void when_string_is_yes_exception_is_thrown() {
+    assertTrue(BooleanUtils.parseBoolean("yes"));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void when_string_is_no_exception_is_thrown() {
+    assertFalse(BooleanUtils.parseBoolean("no"));
   }
 }

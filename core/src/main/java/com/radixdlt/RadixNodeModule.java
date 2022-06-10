@@ -75,6 +75,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.*;
+import com.radixdlt.network.capability.LedgerSyncCapability;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.network.messaging.MessagingModule;
@@ -89,6 +90,7 @@ import com.radixdlt.rev2.modules.MockedRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -214,5 +216,25 @@ public final class RadixNodeModule extends AbstractModule {
     var enableTransactions = properties.get("api.transactions.enable", false);
     var enableSign = properties.get("api.sign.enable", false);
     install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
+
+    // Capabilities
+    var capabilitiesLedgerSyncEnabled =
+        Optional.ofNullable(properties.get("capabilities.ledger_sync.enabled"));
+    LedgerSyncCapability.Builder builder =
+        capabilitiesLedgerSyncEnabled
+            .map(it -> new LedgerSyncCapability.Builder(parseLedgerSyncEnabled(it)))
+            .orElse(LedgerSyncCapability.Builder.asDefault());
+    install(new CapabilitiesModule(builder.build()));
+  }
+
+  private boolean parseLedgerSyncEnabled(String it) {
+    try {
+      return BooleanUtils.parseBoolean(it);
+    } catch (Exception e) {
+      throw new IllegalArgumentException(
+          "It was not possible to parse the value of the configuration"
+              + " 'capabilities.ledger_sync.enabled'. Please use true or false.",
+          e);
+    }
   }
 }
