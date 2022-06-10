@@ -105,20 +105,19 @@ public record EitherTypeCodec<L, R>(Codec<L> leftType, Codec<R> rightType)
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
-  public static int registerWith(CodecMap codecMap) {
-    codecMap.registerCreatorForSealedClassAndSubclasses(
+  public static void registerWith(CodecMap codecMap) {
+    codecMap.registerForGenericSealedClassAndSubclasses(
         Either.class,
-        eitherType -> {
+        (codecs, eitherType) -> {
           try {
             var leftType = TypeTokenUtils.getGenericTypeParameter(eitherType, 0);
             var rightType = TypeTokenUtils.getGenericTypeParameter(eitherType, 1);
 
-            return new EitherTypeCodec(codecMap.get(leftType), codecMap.get(rightType));
+            return new EitherTypeCodec(codecs.of(leftType), codecs.of(rightType));
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating Either type codec for %s", eitherType), ex);
           }
         });
-    return 0;
   }
 }

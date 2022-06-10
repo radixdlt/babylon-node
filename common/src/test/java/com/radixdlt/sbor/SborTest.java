@@ -76,7 +76,7 @@ import com.radixdlt.sbor.dto.SimpleEnum;
 import com.radixdlt.sbor.dto.SimpleRecord;
 import org.junit.Test;
 
-public class SborCoderTest {
+public class SborTest {
   @Test
   public void unitCanBeEncodedAndDecoded() {
 

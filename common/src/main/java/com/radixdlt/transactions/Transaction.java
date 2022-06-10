@@ -79,12 +79,17 @@ import java.util.Objects;
  */
 public final class Transaction {
   static {
-    CodecMap.DEFAULT.register(
-        StructCodec.of(
-            Transaction.class,
-            Field.of(Transaction::getPayload, byte[].class),
-            Field.of(Transaction::getId, AID.class),
-            Transaction::new));
+    CodecMap.withDefault(Transaction::registerCodec);
+  }
+
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        Transaction.class,
+        codecs ->
+            StructCodec.of(
+                Field.of(Transaction::getPayload, codecs.of(byte[].class)),
+                Field.of(Transaction::getId, codecs.of(AID.class)),
+                Transaction::new));
   }
 
   private final byte[] payload;

@@ -74,11 +74,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EnumCodec<T> implements Codec<T> {
-  private final Map<String, FieldsCodec<?>> entries;
+  private final Map<String, TypeFields<?>> entries;
   private final Functions.Func1<T, String> mapEnumValueToKey;
 
   public EnumCodec(
-      Map<String, FieldsCodec<?>> entries, Functions.Func1<T, String> mapEnumValueToKey) {
+      Map<String, TypeFields<?>> entries, Functions.Func1<T, String> mapEnumValueToKey) {
     this.entries = entries;
     this.mapEnumValueToKey = mapEnumValueToKey;
   }
@@ -97,7 +97,7 @@ public class EnumCodec<T> implements Codec<T> {
     }
 
     encoder.writeString(enumKey);
-    ((FieldsCodec<T>) enumEntry).encode(encoder, value);
+    ((TypeFields<T>) enumEntry).encode(encoder, value);
   }
 
   @SuppressWarnings("unchecked")
@@ -112,7 +112,7 @@ public class EnumCodec<T> implements Codec<T> {
           String.format("Enum entry enumKey %s not found in entries map", enumKey));
     }
 
-    return ((FieldsCodec<T>) enumEntry).decode(decoder);
+    return ((TypeFields<T>) enumEntry).decode(decoder);
   }
 
   /**
@@ -122,30 +122,30 @@ public class EnumCodec<T> implements Codec<T> {
    *
    * @param <T> The interface type, of which each FieldsCodec is a subclass
    */
-  public static <T> EnumCodec<T> fromEntries(FieldsCodec<?>... enumEntries) {
-    var fieldsCodecMap = new HashMap<String, FieldsCodec<?>>();
+  public static <T> EnumCodec<T> fromEntries(TypeFields<?>... enumEntries) {
+    var enumEntryCodecMap = new HashMap<String, TypeFields<?>>();
     var inverseClassMap = new HashMap<Class<?>, String>();
     for (var fieldsCodec : enumEntries) {
       var baseClass = fieldsCodec.getBaseClass();
       var enumKey = baseClass.getSimpleName();
-      fieldsCodecMap.put(enumKey, fieldsCodec);
+      enumEntryCodecMap.put(enumKey, fieldsCodec);
       inverseClassMap.put(baseClass, enumKey);
     }
 
     if (inverseClassMap.size() < enumEntries.length) {
       throw new SborCodecException(
-          "Some field codecs are for the same class - this isn't supported with the fromEntries"
+          "Some field codecsMap are for the same class - this isn't supported with the fromEntries"
               + " builder");
     }
 
-    if (fieldsCodecMap.size() < enumEntries.length) {
+    if (enumEntryCodecMap.size() < enumEntries.length) {
       throw new SborCodecException(
-          "Some field codecs are for classes which have the same simple name - this isn't supported"
-              + " with the fromEntries builder");
+          "Some field codecsMap are for classes which have the same simple name - this isn't"
+              + " supported with the fromEntries builder");
     }
 
     return new EnumCodec<>(
-        fieldsCodecMap,
+        enumEntryCodecMap,
         enumEntry -> {
           var key = inverseClassMap.get(enumEntry.getClass());
           if (key == null) {

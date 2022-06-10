@@ -72,8 +72,8 @@ import com.radixdlt.sbor.coding.Encoder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-public record SborCoder(CodecMap codecs) {
-  static SborCoder DEFAULT = new SborCoder(CodecMap.DEFAULT);
+public record SborCoder(CodecMap.CodecResolver codecResolver) {
+  public static final SborCoder DEFAULT = new SborCoder(CodecMap.DEFAULT_RESOLVER);
 
   @SuppressWarnings("unchecked")
   public <T> byte[] encode(T value) {
@@ -81,32 +81,28 @@ public record SborCoder(CodecMap codecs) {
   }
 
   public <T> byte[] encode(T value, Class<T> clazz) {
-    var outputStream = new ByteArrayOutputStream();
-    new Encoder(outputStream, codecs).encode(value, clazz);
-    return outputStream.toByteArray();
+    return encode(value, codecResolver.of(clazz));
   }
 
   public <T> byte[] encode(T value, TypeToken<T> type) {
-    var outputStream = new ByteArrayOutputStream();
-    new Encoder(outputStream, codecs).encode(value, type);
-    return outputStream.toByteArray();
+    return encode(value, codecResolver.of(type));
   }
 
   public <T> byte[] encode(T value, Codec<T> codec) {
     var outputStream = new ByteArrayOutputStream();
-    new Encoder(outputStream, codecs).encode(value, codec);
+    new Encoder(outputStream).encode(value, codec);
     return outputStream.toByteArray();
   }
 
   public <T> T decode(byte[] input, Class<T> clazz) {
-    return new Decoder(new ByteArrayInputStream(input), codecs).decode(clazz);
+    return decode(input, codecResolver.of(clazz));
   }
 
   public <T> T decode(byte[] input, TypeToken<T> type) {
-    return new Decoder(new ByteArrayInputStream(input), codecs).decode(type);
+    return decode(input, codecResolver.of(type));
   }
 
   public <T> T decode(byte[] input, Codec<T> codec) {
-    return new Decoder(new ByteArrayInputStream(input), codecs).decode(codec);
+    return new Decoder(new ByteArrayInputStream(input)).decode(codec);
   }
 }

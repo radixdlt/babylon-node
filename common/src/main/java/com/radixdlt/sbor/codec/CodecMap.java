@@ -73,25 +73,25 @@ import com.radixdlt.sbor.exceptions.SborCodecException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 /**
  * The CodecMap registers default strategies to encode/decode a type.
  *
- * <p>You can register codecs for:
+ * <p>You can register codecsMap for:
  *
  * <ul>
  *   <li>A class object - this captures types without their generic parameters
  *   <li>A concrete TypeToken - this is specific to all the given generic parameters
  * </ul>
  *
- * <p>If multiple codecs are registered against the same object/TypeToken, the latest to be
+ * <p>If multiple codecsMap are registered against the same object/TypeToken, the latest to be
  * registered is used.
  *
- * <p>You can also register a codec creator, which allows automatic creation of codecs for explicit
- * type parameters of a given class. This works well with types such as Option&lt;T&rt;, where you
- * may wish to decode into an Option&lt;String&rt; without registering a codec for
- * Option&lt;String&rt; explicitly. The generated codecs are cached against their explicit
+ * <p>You can also register a codec creator, which allows automatic creation of codecsMap for
+ * explicit type parameters of a given class. This works well with types such as Option&lt;T&rt;,
+ * where you may wish to decode into an Option&lt;String&rt; without registering a codec for
+ * Option&lt;String&rt; explicitly. The generated codecsMap are cached against their explicit
  * TypeToken.
  *
  * <p>Finally, you can also register a class object codec and codec creators for a sealed class and
@@ -109,39 +109,47 @@ public final class CodecMap {
    * is recommended to do this in the static constructor of a class being encoded/decoded. It is
    * safe to register twice - the latest registration will apply.
    */
-  public static final CodecMap DEFAULT = new CodecMap().registerCoreCodecs();
+  private static final CodecMap DEFAULT = new CodecMap().registerCoreCodecs();
 
-  private final Map<Class, Codec> classEncodingMap = new HashMap<>();
+  public static final CodecResolver DEFAULT_RESOLVER = DEFAULT.resolver;
 
-  private final Map<TypeToken, Codec> explicitTypeEncodingMap = new HashMap<>();
+  public static void withDefault(Consumer<CodecMap> registerCodec) {
+    registerCodec.accept(DEFAULT);
+  }
 
-  private final Map<Class, Function<TypeToken, Codec>> codecCreatorMap = new HashMap<>();
+  public final CodecResolver resolver = new CodecResolver();
+
+  private final Map<Class, Codec> ClassCodecCache = new HashMap<>();
+  private final Map<TypeToken, Codec> typedCodecCache = new HashMap<>();
+
+  private final Map<Class, ClassCodecCreator> classCodecCreators = new HashMap<>();
+  private final Map<Class, TypedCodecCreator> typedCodecCreators = new HashMap<>();
 
   private TypeId sborTypeIdForArrayType = TypeId.TYPE_ARRAY;
 
   public CodecMap registerCoreCodecs() {
-    register(Unit.class, new CoreTypeCodec.UnitCodec());
-    register(String.class, new CoreTypeCodec.StringCodec());
+    storeCreated(Unit.class, new CoreTypeCodec.UnitCodec());
+    storeCreated(String.class, new CoreTypeCodec.StringCodec());
 
-    register(Boolean.class, new CoreTypeCodec.BooleanCodec());
-    register(boolean.class, new CoreTypeCodec.BooleanCodec());
+    storeCreated(Boolean.class, new CoreTypeCodec.BooleanCodec());
+    storeCreated(boolean.class, new CoreTypeCodec.BooleanCodec());
 
-    register(Byte.class, new CoreTypeCodec.ByteCodec());
-    register(byte.class, new CoreTypeCodec.ByteCodec());
+    storeCreated(Byte.class, new CoreTypeCodec.ByteCodec());
+    storeCreated(byte.class, new CoreTypeCodec.ByteCodec());
 
-    register(Short.class, new CoreTypeCodec.ShortCodec());
-    register(short.class, new CoreTypeCodec.ShortCodec());
+    storeCreated(Short.class, new CoreTypeCodec.ShortCodec());
+    storeCreated(short.class, new CoreTypeCodec.ShortCodec());
 
-    register(Integer.class, new CoreTypeCodec.IntegerCodec());
-    register(int.class, new CoreTypeCodec.IntegerCodec());
+    storeCreated(Integer.class, new CoreTypeCodec.IntegerCodec());
+    storeCreated(int.class, new CoreTypeCodec.IntegerCodec());
 
-    register(Long.class, new CoreTypeCodec.LongCodec());
-    register(long.class, new CoreTypeCodec.LongCodec());
+    storeCreated(Long.class, new CoreTypeCodec.LongCodec());
+    storeCreated(long.class, new CoreTypeCodec.LongCodec());
 
-    register(byte[].class, new CoreTypeCodec.ByteArrayCodec());
-    register(short[].class, new CoreTypeCodec.ShortArrayCodec());
-    register(int[].class, new CoreTypeCodec.IntegerArrayCodec());
-    register(long[].class, new CoreTypeCodec.LongArrayCodec());
+    storeCreated(byte[].class, new CoreTypeCodec.ByteArrayCodec());
+    storeCreated(short[].class, new CoreTypeCodec.ShortArrayCodec());
+    storeCreated(int[].class, new CoreTypeCodec.IntegerArrayCodec());
+    storeCreated(long[].class, new CoreTypeCodec.LongArrayCodec());
 
     OptionTypeCodec.registerWith(this);
     EitherTypeCodec.registerWith(this);
@@ -156,153 +164,194 @@ public final class CodecMap {
     return this;
   }
 
-  public <T> Codec<T> get(TypeToken<T> type) {
-    // First - let's try to find a pre-registered codec for this explicit type literal
-    var codec = explicitTypeEncodingMap.get(type);
-    if (codec != null) {
-      return codec;
-    }
-
-    // Next - if it's an array, we need special handling...
-    if (type.isArray()) {
-      var newCodec = (Codec) createArrayCodec(type);
-      register(type, newCodec); // Cache the codec for future use
-      return newCodec;
-    }
-
-    // Failing that - let's see if we can create one with a codec creator
-    var rawType = type.getRawType();
-    var codecCreator = codecCreatorMap.get(rawType);
-    if (codecCreator != null) {
-      var newCodec = codecCreator.apply(type);
-      register(type, newCodec); // Cache the codec for future use
-      return newCodec;
-    }
-
-    throw new SborCodecException(
-        String.format(
-            "The type token %s itself has no SBOR codec, and its raw type class %s has no codec"
-                + " creator registered.",
-            type, rawType));
-  }
-
-  public <T> Codec<T> get(Class<T> clazz) {
-    var codec = classEncodingMap.get(clazz);
-
-    if (codec != null) {
-      return codec;
-    }
-
-    if (clazz.isArray()) {
-      var newCodec = (Codec) createArrayCodec(clazz);
-      register(clazz, newCodec);
-      return newCodec;
-    }
-
-    // We are in a failure case here - so let's try to be helpful
-    var codecCreator = codecCreatorMap.get(clazz);
-    if (codecCreator != null) {
-      throw new SborCodecException(
-          String.format(
-              "The class object %s itself has no registered SBOR codec, BUT a codec creator is"
-                  + " registered. You should use an explicit TypeToken<X<Y,Z>>.",
-              clazz));
-    }
-
-    throw new SborCodecException(
-        String.format(
-            "The class object %s itself has no registered SBOR codec, nor has codec creator"
-                + " registered.",
-            clazz));
-  }
-
-  private <T> Codec<T> createArrayCodec(TypeToken<T> arrayType) {
-    var componentType = arrayType.getComponentType();
-    assert componentType != null; // Because we're being passed an array type
-    var componentClass = componentType.getRawType();
-    var componentCodec = get(componentType);
-
-    return CollectionCodec.forArray(
-        (Class) componentClass, (Codec) componentCodec, sborTypeIdForArrayType);
-  }
-
-  private <T> Codec<T> createArrayCodec(Class<T> arrayClass) {
-    var componentClass = arrayClass.getComponentType();
-    var componentType = TypeToken.of(componentClass);
-    var componentCodec = get(componentType);
-
-    return CollectionCodec.forArray(
-        (Class) componentClass, (Codec) componentCodec, sborTypeIdForArrayType);
-  }
-
-  public <T> CodecMap register(StructCodec<T> codec) {
-    register(codec.fieldsCodec().getBaseClass(), codec);
-    return this;
-  }
-
-  public <T> CodecMap register(Class<T> clazz, Codec<T> codec) {
-    synchronized (classEncodingMap) {
-      classEncodingMap.put(clazz, codec);
-      explicitTypeEncodingMap.put(TypeToken.of(clazz), codec);
+  public <T> CodecMap register(Class<T> clazz, ClassCodecCreator codecCreator) {
+    synchronized (classCodecCreators) {
+      classCodecCreators.put(clazz, codecCreator);
     }
     return this;
   }
 
   public <T> CodecMap registerForSealedClassAndSubclasses(
-      Class<T> clazz, Codec<? extends T> codec) {
+      Class<T> clazz, ClassCodecCreator codecCreator) {
     if (!clazz.isSealed()) {
       throw new SborCodecException(
           String.format(
               "The class object %s is not sealed, so cannot be passed into "
-                  + "registerForSubclassesOfSealed.",
+                  + "registerForSealedClassAndSubclasses.",
               clazz));
     }
 
-    classEncodingMap.put(clazz, codec);
+    classCodecCreators.put(clazz, codecCreator);
     var implementers = clazz.getPermittedSubclasses();
     Arrays.stream(implementers)
         .forEach(
             subClass -> {
-              synchronized (classEncodingMap) {
-                classEncodingMap.put(subClass, codec);
+              synchronized (classCodecCreators) {
+                classCodecCreators.put(subClass, codecCreator);
               }
             });
     return this;
   }
 
-  public <T> CodecMap registerCreator(Class<T> clazz, Function<TypeToken<T>, Codec> createCodec) {
-    synchronized (codecCreatorMap) {
-      codecCreatorMap.put(clazz, createCodec::apply);
+  public <T> CodecMap registerForGeneric(Class<T> clazz, TypedCodecCreator codecCreator) {
+    synchronized (typedCodecCreators) {
+      typedCodecCreators.put(clazz, codecCreator);
     }
     return this;
   }
 
-  public <T> CodecMap registerCreatorForSealedClassAndSubclasses(
-      Class<T> clazz, Function<TypeToken<T>, Codec> createCodec) {
+  public <T> CodecMap registerForGenericSealedClassAndSubclasses(
+      Class<T> clazz, TypedCodecCreator codecCreator) {
     if (!clazz.isSealed()) {
       throw new SborCodecException(
           String.format(
               "The class object %s is not sealed, so cannot be passed into "
-                  + "registerCreatorForSealedClassAndSubclasses.",
+                  + "registerForGenericSealedClassAndSubclasses.",
               clazz));
     }
 
-    codecCreatorMap.put(clazz, createCodec::apply);
+    synchronized (typedCodecCreators) {
+      typedCodecCreators.put(clazz, codecCreator);
+    }
+
     var implementers = clazz.getPermittedSubclasses();
     Arrays.stream(implementers)
         .forEach(
             subClass -> {
-              synchronized (explicitTypeEncodingMap) {
-                codecCreatorMap.put(subClass, createCodec::apply);
+              synchronized (typedCodecCreators) {
+                typedCodecCreators.put(subClass, codecCreator);
               }
             });
     return this;
   }
 
-  public <T> CodecMap register(TypeToken<T> type, Codec<T> codec) {
-    synchronized (explicitTypeEncodingMap) {
-      explicitTypeEncodingMap.put(type, codec);
+  private <T> CodecMap storeCreated(Class<T> clazz, Codec<T> codec) {
+    synchronized (ClassCodecCache) {
+      ClassCodecCache.put(clazz, codec);
+      typedCodecCache.put(TypeToken.of(clazz), codec);
     }
     return this;
+  }
+
+  private <T> CodecMap storeCreated(TypeToken<T> type, Codec<T> codec) {
+    synchronized (typedCodecCache) {
+      typedCodecCache.put(type, codec);
+    }
+    return this;
+  }
+
+  @FunctionalInterface
+  public interface ClassCodecCreator<T> {
+    Codec<T> create(CodecResolver codecs);
+  }
+
+  @FunctionalInterface
+  public interface TypedCodecCreator<T> {
+    Codec<T> create(CodecResolver codecs, TypeToken<? extends T> type);
+  }
+
+  public class CodecResolver {
+    /*
+     * NB - NOT a JavaDoc on purpose, just a comment.
+     * The parameter type below should really be TypeToken<? extends T> or TypeToken<T>,
+     * but we explicitly don't put this. That would allow TypeToken<> to be valid for
+     * callers, but that causes a Compiler Null Pointer Exception, detailed below.
+     * It is likely related to https://bugs.openjdk.org/browse/JDK-8262095
+     * The error message is copied out below to assist anyone who hits this error
+     * and greps the codebase for it looking for help:
+     * "An exception has occurred in the compiler (17).
+     * Please file a bug against the Java compiler via the Java bug reporting page
+     * (http://bugreport.java.com) after checking the Bug Database (http://bugs.java.com) for
+     * duplicates. Include your program, the following diagnostic, and the parameters passed to the
+     * Java compiler in your report. Thank you."
+     * Sometimes the exception appears to be accompanied by
+     * "Cannot invoke getThrownTypes because tree.meth.type is null"
+     */
+    public <T> Codec<T> of(TypeToken<?> type) {
+      // First - let's try to find a pre-registered codec for this explicit type literal
+      var codec = typedCodecCache.get(type);
+      if (codec != null) {
+        return codec;
+      }
+
+      // Next - if it's an array, we need special handling...
+      if (type.isArray()) {
+        var newCodec = (Codec) createArrayCodec(type);
+        storeCreated(type, newCodec); // Cache the codec for future use
+        return newCodec;
+      }
+
+      // Failing that - let's see if we can create one with a codec creator
+      var rawType = type.getRawType();
+      var codecCreator = typedCodecCreators.get(rawType);
+      if (codecCreator != null) {
+        var newCodec = codecCreator.create(this, type);
+        storeCreated(type, newCodec); // Cache the codec for future use
+        return newCodec;
+      }
+
+      throw new SborCodecException(
+          String.format(
+              "The type token %s itself has no SBOR codec, and its raw type class %s has no codec"
+                  + " creator registered.",
+              type, rawType));
+    }
+
+    public <T> Codec<T> of(Class<T> clazz) {
+      var codec = ClassCodecCache.get(clazz);
+
+      if (codec != null) {
+        return codec;
+      }
+
+      if (clazz.isArray()) {
+        var newCodec = (Codec) createArrayCodec(clazz);
+        storeCreated(clazz, newCodec);
+        return newCodec;
+      }
+
+      var classCodecCreator = classCodecCreators.get(clazz);
+      if (classCodecCreator != null) {
+        var newCodec = classCodecCreator.create(this);
+        storeCreated(clazz, newCodec);
+        return newCodec;
+      }
+
+      // We are in a fatal failure case here - so let's try to be helpful
+      var typedCodecCreator = typedCodecCreators.get(clazz);
+      if (typedCodecCreator != null) {
+        throw new SborCodecException(
+            String.format(
+                "The class %s has no registered class codec creator, BUT it does have a registered"
+                    + " generic codec creator. You should pass an explicit generic type, new"
+                    + " TypeToken<X<Y,Z>>() {} instead.",
+                clazz));
+      }
+
+      throw new SborCodecException(
+          String.format(
+              "The class %s has no registered class or generic typed codec creator.", clazz));
+    }
+
+    // NB - Arrays have to be handled separately because they're special types in Java
+    private <T> Codec<T> createArrayCodec(TypeToken<T> arrayType) {
+      var componentType = arrayType.getComponentType();
+      assert componentType != null; // Because we're being passed an array type
+      var componentClass = componentType.getRawType();
+      var componentCodec = of(componentType);
+
+      return CollectionCodec.forArray(
+          (Class) componentClass, (Codec) componentCodec, sborTypeIdForArrayType);
+    }
+
+    // NB - Arrays have to be handled separately because they're special types in Java
+    private <T> Codec<T> createArrayCodec(Class<T> arrayClass) {
+      var componentClass = arrayClass.getComponentType();
+      var componentType = TypeToken.of(componentClass);
+      var componentCodec = of(componentType);
+
+      return CollectionCodec.forArray(
+          (Class) componentClass, (Codec) componentCodec, sborTypeIdForArrayType);
+    }
   }
 }

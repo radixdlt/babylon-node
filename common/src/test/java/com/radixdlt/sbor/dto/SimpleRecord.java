@@ -67,24 +67,24 @@ package com.radixdlt.sbor.dto;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.Field;
-import com.radixdlt.sbor.codec.FieldsCodec;
+import com.radixdlt.sbor.codec.*;
 
 public record SimpleRecord(
     int first, String second, Either<Long, String> third, Option<Boolean> fourth) {
 
   static {
-    // The noinspection relates to TypeToken<> causing a compiler NullPointerException
-    //noinspection Convert2Diamond
-    CodecMap.DEFAULT.register(
-        FieldsCodec.of(
-                SimpleRecord.class,
-                Field.of(SimpleRecord::first, int.class),
-                Field.of(SimpleRecord::second, String.class),
-                Field.of(SimpleRecord::third, new TypeToken<Either<Long, String>>() {}),
-                Field.of(SimpleRecord::fourth, new TypeToken<Option<Boolean>>() {}),
-                SimpleRecord::new)
-            .forStruct());
+    CodecMap.withDefault(SimpleRecord::registerCodec);
+  }
+
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        SimpleRecord.class,
+        (codecs) ->
+            StructCodec.of(
+                Field.of(SimpleRecord::first, codecs.of(int.class)),
+                Field.of(SimpleRecord::second, codecs.of(String.class)),
+                Field.of(SimpleRecord::third, codecs.of(new TypeToken<Either<Long, String>>() {})),
+                Field.of(SimpleRecord::fourth, codecs.of(new TypeToken<Option<Boolean>>() {})),
+                SimpleRecord::new));
   }
 }

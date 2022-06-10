@@ -65,7 +65,6 @@
 package com.radixdlt.lang;
 
 import com.radixdlt.lang.Functions.Func1;
-import com.radixdlt.sbor.codec.CodecMap;
 import java.util.function.Consumer;
 
 /** The type which can hold one of two values of different types. */
@@ -166,10 +165,6 @@ public sealed interface Either<L, R> {
   }
 
   record left<L, R>(L value) implements Either<L, R> {
-    static {
-      EitherTypeCodec.registerWith(CodecMap.DEFAULT);
-    }
-
     @Override
     public <T> T fold(
         Func1<? super L, ? extends T> leftMapper, Func1<? super R, ? extends T> rightMapper) {
@@ -187,10 +182,6 @@ public sealed interface Either<L, R> {
   }
 
   record right<L, R>(R value) implements Either<L, R> {
-    static {
-      EitherTypeCodec.registerWith(CodecMap.DEFAULT);
-    }
-
     @Override
     public <T> T fold(
         Func1<? super L, ? extends T> leftMapper, Func1<? super R, ? extends T> rightMapper) {

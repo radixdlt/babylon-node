@@ -82,8 +82,8 @@ public record OptionTypeCodec<T>(Codec<T> innerTypeCodec) implements Codec<Optio
     option.apply(
         () -> encoder.writeByte(OptionTypeId.NONE),
         value -> {
-            encoder.writeByte(OptionTypeId.SOME);
-            encoder.encode(value, innerTypeCodec);
+          encoder.writeByte(OptionTypeId.SOME);
+          encoder.encode(value, innerTypeCodec);
         });
   }
 
@@ -102,12 +102,12 @@ public record OptionTypeCodec<T>(Codec<T> innerTypeCodec) implements Codec<Optio
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   public static void registerWith(CodecMap codecMap) {
-    codecMap.registerCreatorForSealedClassAndSubclasses(
+    codecMap.registerForGenericSealedClassAndSubclasses(
         Option.class,
-        optionType -> {
+        (codecs, optionType) -> {
           try {
             var innerType = TypeTokenUtils.getGenericTypeParameter(optionType, 0);
-            return new OptionTypeCodec(codecMap.get(innerType));
+            return new OptionTypeCodec(codecs.of(innerType));
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating Option type codec for %s", optionType), ex);

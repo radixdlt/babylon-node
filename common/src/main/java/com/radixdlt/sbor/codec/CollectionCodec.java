@@ -227,12 +227,12 @@ interface CollectionCodec {
   }
 
   static void registerSetToMapTo(CodecMap codecMap, TypeId collectionTypeId) {
-    codecMap.registerCreator(
+    codecMap.registerForGeneric(
         Set.class,
-        collectionType -> {
+        (codecs, collectionType) -> {
           try {
             var itemType = TypeTokenUtils.getGenericTypeParameter(collectionType, 0);
-            return forSet(codecMap.get(itemType), collectionTypeId);
+            return forSet(codecs.of(itemType), collectionTypeId);
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating Set type codec for %s", collectionType), ex);
@@ -241,12 +241,12 @@ interface CollectionCodec {
   }
 
   static void registerHashSetToMapTo(CodecMap codecMap, TypeId collectionTypeId) {
-    codecMap.registerCreator(
+    codecMap.registerForGeneric(
         HashSet.class,
-        collectionType -> {
+        (codecs, collectionType) -> {
           try {
             var itemType = TypeTokenUtils.getGenericTypeParameter(collectionType, 0);
-            return forHashSet(codecMap.get(itemType), collectionTypeId);
+            return forHashSet(codecs.of(itemType), collectionTypeId);
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating HashSet type codec for %s", collectionType), ex);
@@ -255,12 +255,12 @@ interface CollectionCodec {
   }
 
   static void registerTreeSetToMapTo(CodecMap codecMap, TypeId collectionTypeId) {
-    codecMap.registerCreator(
+    codecMap.registerForGeneric(
         TreeSet.class,
-        collectionType -> {
+        (codecs, collectionType) -> {
           try {
             var itemType = TypeTokenUtils.getGenericTypeParameter(collectionType, 0);
-            return forTreeSet(codecMap.get(itemType), collectionTypeId);
+            return forTreeSet(codecs.of(itemType), collectionTypeId);
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating TreeSet type codec for %s", collectionType), ex);
@@ -269,12 +269,12 @@ interface CollectionCodec {
   }
 
   static void registerListToMapTo(CodecMap codecMap, TypeId collectionTypeId) {
-    codecMap.registerCreator(
+    codecMap.registerForGeneric(
         List.class,
-        collectionType -> {
+        (codecs, collectionType) -> {
           try {
             var itemType = TypeTokenUtils.getGenericTypeParameter(collectionType, 0);
-            return forList(codecMap.get(itemType), collectionTypeId);
+            return forList(codecs.of(itemType), collectionTypeId);
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating List type codec for %s", collectionType), ex);
@@ -283,12 +283,12 @@ interface CollectionCodec {
   }
 
   static void registerArrayListToMapTo(CodecMap codecMap, TypeId collectionTypeId) {
-    codecMap.registerCreator(
+    codecMap.registerForGeneric(
         ArrayList.class,
-        collectionType -> {
+        (codecs, collectionType) -> {
           try {
             var itemType = TypeTokenUtils.getGenericTypeParameter(collectionType, 0);
-            return forArrayList(codecMap.get(itemType), collectionTypeId);
+            return forArrayList(codecs.of(itemType), collectionTypeId);
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating ArrayList type codec for %s", collectionType),

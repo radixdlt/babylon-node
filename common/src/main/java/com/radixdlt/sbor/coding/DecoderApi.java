@@ -64,15 +64,10 @@
 
 package com.radixdlt.sbor.coding;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 
 public interface DecoderApi {
-  <T> T decode(Class<T> type);
-
-  <T> T decode(TypeToken<T> type);
-
   void expectType(TypeId typeId);
 
   <T> T decode(Codec<T> codec);

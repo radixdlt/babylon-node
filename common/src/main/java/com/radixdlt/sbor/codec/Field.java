@@ -64,7 +64,6 @@
 
 package com.radixdlt.sbor.codec;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
 import java.util.function.Function;
@@ -78,14 +77,6 @@ public record Field<C, F>(Function<C, F> getter, Codec<F> codec) {
 
   public F decode(DecoderApi decoder) {
     return decoder.decode(codec);
-  }
-
-  public static <C1, F1> Field<C1, F1> of(Function<C1, F1> getter, Class<F1> fieldClazz) {
-    return new Field<>(getter, Codec.forClass(fieldClazz));
-  }
-
-  public static <C1, F1> Field<C1, F1> of(Function<C1, F1> getter, TypeToken<F1> type) {
-    return new Field<>(getter, Codec.forType(type));
   }
 
   public static <C1, F1> Field<C1, F1> of(Function<C1, F1> getter, Codec<F1> codec) {

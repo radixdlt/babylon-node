@@ -72,12 +72,17 @@ import java.util.Map;
 
 public class StateManagerError implements Cause {
   static {
-    CodecMap.DEFAULT.register(
-        StructCodec.of(
-            StateManagerError.class,
-            Field.of(StateManagerError::getRawErrorCode, short.class),
-            Field.of(StateManagerError::message, String.class),
-            StateManagerError::new));
+    CodecMap.withDefault(StateManagerError::registerCodec);
+  }
+
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        StateManagerError.class,
+        codecs ->
+            StructCodec.of(
+                Field.of(StateManagerError::getRawErrorCode, codecs.of(short.class)),
+                Field.of(StateManagerError::message, codecs.of(String.class)),
+                StateManagerError::new));
   }
 
   private static final Map<Short, StateManagerErrorCode> codeMap =

@@ -64,15 +64,10 @@
 
 package com.radixdlt.sbor.coding;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 
 public interface EncoderApi {
-  <T> void encode(T value, Class<T> clazz);
-
-  <T> void encode(T value, TypeToken<T> type);
-
   <T> void encode(T value, Codec<T> codec);
 
   void encodeTypeId(TypeId typeId);

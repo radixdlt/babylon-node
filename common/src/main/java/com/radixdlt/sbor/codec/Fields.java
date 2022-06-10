@@ -71,11 +71,10 @@ import com.radixdlt.sbor.exceptions.SborDecodeException;
 import java.util.List;
 
 @SuppressWarnings("unused")
-public interface FieldsCodec<T> {
+public interface Fields<T> extends Codec<T> {
   List<Field<T, ?>> of();
 
-  Class<T> getBaseClass();
-
+  @Override
   default void encode(EncoderApi encoder, T value) {
     var fields = of();
 
@@ -86,6 +85,7 @@ public interface FieldsCodec<T> {
     }
   }
 
+  @Override
   default T decode(DecoderApi decoder) {
     var decodedFieldsLength = decoder.readInt();
 
@@ -108,14 +108,11 @@ public interface FieldsCodec<T> {
 
   T decodeFields(DecoderApi decoder);
 
-  class FieldsCodecImpl<T> implements FieldsCodec<T> {
-    private final Class<T> clazz;
+  class FieldsImpl<T> implements Fields<T> {
     private final List<Field<T, ?>> fields;
     private final Functions.Func1<DecoderApi, T> decodeFields;
 
-    public FieldsCodecImpl(
-        Class<T> baseClass, List<Field<T, ?>> fields, Functions.Func1<DecoderApi, T> decodeFields) {
-      this.clazz = baseClass;
+    public FieldsImpl(List<Field<T, ?>> fields, Functions.Func1<DecoderApi, T> decodeFields) {
       this.fields = fields; // Avoid allocation on each call of fields()
       this.decodeFields = decodeFields;
     }
@@ -126,59 +123,44 @@ public interface FieldsCodec<T> {
     }
 
     @Override
-    public Class<T> getBaseClass() {
-      return clazz;
-    }
-
-    @Override
     public T decodeFields(DecoderApi decoder) {
       return decodeFields.apply(decoder);
     }
   }
 
-  static <T> FieldsCodec<T> noFields(Class<T> baseClass, Functions.Func0<T> creator) {
-    return new FieldsCodecImpl<>(baseClass, List.of(), decoder -> creator.apply());
+  static <T> Fields<T> noFields(Functions.Func0<T> creator) {
+    return new FieldsImpl<>(List.of(), decoder -> creator.apply());
   }
 
-  static <T, T1> FieldsCodec<T> of(
-      Class<T> baseClass, Field<T, T1> field1, Functions.Func1<T1, T> creator) {
-    return new FieldsCodecImpl<>(
-        baseClass, List.of(field1), decoder -> creator.apply(field1.decode(decoder)));
+  static <T, T1> Fields<T> of(Field<T, T1> field1, Functions.Func1<T1, T> creator) {
+    return new FieldsImpl<>(List.of(field1), decoder -> creator.apply(field1.decode(decoder)));
   }
 
-  static <T, T1, T2> FieldsCodec<T> of(
-      Class<T> baseClass,
-      Field<T, T1> field1,
-      Field<T, T2> field2,
-      Functions.Func2<T1, T2, T> creator) {
-    return new FieldsCodecImpl<>(
-        baseClass,
+  static <T, T1, T2> Fields<T> of(
+      Field<T, T1> field1, Field<T, T2> field2, Functions.Func2<T1, T2, T> creator) {
+    return new FieldsImpl<>(
         List.of(field1, field2),
         decoder -> creator.apply(field1.decode(decoder), field2.decode(decoder)));
   }
 
-  static <T, T1, T2, T3> FieldsCodec<T> of(
-      Class<T> baseClass,
+  static <T, T1, T2, T3> Fields<T> of(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
       Functions.Func3<T1, T2, T3, T> creator) {
-    return new FieldsCodecImpl<>(
-        baseClass,
+    return new FieldsImpl<>(
         List.of(field1, field2, field3),
         decoder ->
             creator.apply(field1.decode(decoder), field2.decode(decoder), field3.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4> FieldsCodec<T> of(
-      Class<T> baseClass,
+  static <T, T1, T2, T3, T4> Fields<T> of(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
       Field<T, T4> field4,
       Functions.Func4<T1, T2, T3, T4, T> creator) {
-    return new FieldsCodecImpl<>(
-        baseClass,
+    return new FieldsImpl<>(
         List.of(field1, field2, field3, field4),
         decoder ->
             creator.apply(
@@ -188,16 +170,14 @@ public interface FieldsCodec<T> {
                 field4.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5> FieldsCodec<T> of(
-      Class<T> baseClass,
+  static <T, T1, T2, T3, T4, T5> Fields<T> of(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
       Field<T, T4> field4,
       Field<T, T5> field5,
       Functions.Func5<T1, T2, T3, T4, T5, T> creator) {
-    return new FieldsCodecImpl<>(
-        baseClass,
+    return new FieldsImpl<>(
         List.of(field1, field2, field3, field4, field5),
         decoder ->
             creator.apply(
@@ -208,8 +188,7 @@ public interface FieldsCodec<T> {
                 field5.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6> FieldsCodec<T> of(
-      Class<T> baseClass,
+  static <T, T1, T2, T3, T4, T5, T6> Fields<T> of(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -217,8 +196,7 @@ public interface FieldsCodec<T> {
       Field<T, T5> field5,
       Field<T, T6> field6,
       Functions.Func6<T1, T2, T3, T4, T5, T6, T> creator) {
-    return new FieldsCodecImpl<>(
-        baseClass,
+    return new FieldsImpl<>(
         List.of(field1, field2, field3, field4, field5, field6),
         decoder ->
             creator.apply(
@@ -230,8 +208,7 @@ public interface FieldsCodec<T> {
                 field6.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7> FieldsCodec<T> of(
-      Class<T> baseClass,
+  static <T, T1, T2, T3, T4, T5, T6, T7> Fields<T> of(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -240,8 +217,7 @@ public interface FieldsCodec<T> {
       Field<T, T6> field6,
       Field<T, T7> field7,
       Functions.Func7<T1, T2, T3, T4, T5, T6, T7, T> creator) {
-    return new FieldsCodecImpl<>(
-        baseClass,
+    return new FieldsImpl<>(
         List.of(field1, field2, field3, field4, field5, field6, field7),
         decoder ->
             creator.apply(
@@ -254,8 +230,7 @@ public interface FieldsCodec<T> {
                 field7.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8> FieldsCodec<T> of(
-      Class<T> baseClass,
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8> Fields<T> of(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -265,8 +240,7 @@ public interface FieldsCodec<T> {
       Field<T, T7> field7,
       Field<T, T8> field8,
       Functions.Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> creator) {
-    return new FieldsCodecImpl<>(
-        baseClass,
+    return new FieldsImpl<>(
         List.of(field1, field2, field3, field4, field5, field6, field7, field8),
         decoder ->
             creator.apply(
@@ -280,8 +254,7 @@ public interface FieldsCodec<T> {
                 field8.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9> FieldsCodec<T> of(
-      Class<T> baseClass,
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9> Fields<T> of(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -292,8 +265,7 @@ public interface FieldsCodec<T> {
       Field<T, T8> field8,
       Field<T, T9> field9,
       Functions.Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> creator) {
-    return new FieldsCodecImpl<>(
-        baseClass,
+    return new FieldsImpl<>(
         List.of(field1, field2, field3, field4, field5, field6, field7, field8, field9),
         decoder ->
             creator.apply(
@@ -308,8 +280,7 @@ public interface FieldsCodec<T> {
                 field9.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> FieldsCodec<T> of(
-      Class<T> baseClass,
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> Fields<T> of(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -321,8 +292,7 @@ public interface FieldsCodec<T> {
       Field<T, T9> field9,
       Field<T, T10> field10,
       Functions.Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> creator) {
-    return new FieldsCodecImpl<>(
-        baseClass,
+    return new FieldsImpl<>(
         List.of(field1, field2, field3, field4, field5, field6, field7, field8, field9, field10),
         decoder ->
             creator.apply(
@@ -338,8 +308,7 @@ public interface FieldsCodec<T> {
                 field10.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> FieldsCodec<T> of(
-      Class<T> baseClass,
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> Fields<T> of(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -352,8 +321,7 @@ public interface FieldsCodec<T> {
       Field<T, T10> field10,
       Field<T, T11> field11,
       Functions.Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> creator) {
-    return new FieldsCodecImpl<>(
-        baseClass,
+    return new FieldsImpl<>(
         List.of(
             field1, field2, field3, field4, field5, field6, field7, field8, field9, field10,
             field11),
@@ -372,8 +340,7 @@ public interface FieldsCodec<T> {
                 field11.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> FieldsCodec<T> of(
-      Class<T> baseClass,
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> Fields<T> of(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -387,8 +354,7 @@ public interface FieldsCodec<T> {
       Field<T, T11> field11,
       Field<T, T12> field12,
       Functions.Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> creator) {
-    return new FieldsCodecImpl<>(
-        baseClass,
+    return new FieldsImpl<>(
         List.of(
             field1, field2, field3, field4, field5, field6, field7, field8, field9, field10,
             field11, field12),

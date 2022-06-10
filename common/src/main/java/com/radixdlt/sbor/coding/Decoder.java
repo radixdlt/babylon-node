@@ -66,9 +66,7 @@ package com.radixdlt.sbor.coding;
 
 import static com.radixdlt.sbor.codec.constants.TypeId.*;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.Codec;
-import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
 import java.io.ByteArrayInputStream;
@@ -79,20 +77,9 @@ import java.nio.charset.StandardCharsets;
  * Performs the role of an AnyDecoder in the Rust SBOR implementation
  *
  * @param input
- * @param codecMap
  */
-public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements DecoderApi {
+public record Decoder(ByteArrayInputStream input) implements DecoderApi {
   private static final int EOF_RC = -1;
-
-  @Override
-  public <T> T decode(Class<T> clazz) {
-    return codecMap.get(clazz).decode(this);
-  }
-
-  @Override
-  public <T> T decode(TypeToken<T> type) {
-    return codecMap.get(type).decode(this);
-  }
 
   @Override
   public <T> T decode(Codec<T> codec) {

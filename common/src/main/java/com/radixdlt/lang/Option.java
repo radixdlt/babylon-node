@@ -67,7 +67,6 @@ package com.radixdlt.lang;
 import com.radixdlt.lang.Functions.*;
 import com.radixdlt.lang.Option.None;
 import com.radixdlt.lang.Option.Some;
-import com.radixdlt.sbor.codec.CodecMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -384,7 +383,7 @@ public sealed interface Option<T> permits Some, None {
 
   record None<T>() implements Option<T> {
     static {
-      OptionTypeCodec.registerWith(CodecMap.DEFAULT);
+      // OptionTypeCodec.registerWith(CodecMap.DEFAULT);
     }
 
     @Override

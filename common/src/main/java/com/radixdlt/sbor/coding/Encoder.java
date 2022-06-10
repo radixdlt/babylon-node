@@ -64,9 +64,7 @@
 
 package com.radixdlt.sbor.coding;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.Codec;
-import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -75,19 +73,8 @@ import java.nio.charset.StandardCharsets;
  * Performs the role of an AnyEncoder in the Rust SBOR implementation
  *
  * @param output
- * @param codecMap
  */
-public record Encoder(ByteArrayOutputStream output, CodecMap codecMap) implements EncoderApi {
-  @Override
-  public <T> void encode(T value, Class<T> clazz) {
-    codecMap.get(clazz).encode(this, value);
-  }
-
-  @Override
-  public <T> void encode(T value, TypeToken<T> type) {
-    codecMap.get(type).encode(this, value);
-  }
-
+public record Encoder(ByteArrayOutputStream output) implements EncoderApi {
   @Override
   public <T> void encode(T value, Codec<T> codec) {
     codec.encode(this, value);

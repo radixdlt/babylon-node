@@ -64,7 +64,6 @@
 
 package com.radixdlt.sbor.codec;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
 
@@ -72,46 +71,4 @@ public interface Codec<T> {
   void encode(EncoderApi encoder, T value);
 
   T decode(DecoderApi decoder);
-
-  default void registerFor(CodecMap codecMap, Class<T> clazz) {
-    codecMap.register(clazz, this);
-  }
-
-  default void registerFor(CodecMap codecMap, TypeToken<T> type) {
-    codecMap.register(type, this);
-  }
-
-  static <T1> Codec<T1> forClass(Class<T1> clazz) {
-    return new ForClass<>(clazz);
-  }
-
-  static <T1> Codec<T1> forType(TypeToken<T1> type) {
-    return new ForType<>(type);
-  }
-
-  /** Uses the Codec for the explicit class from the CodecMap */
-  record ForClass<T>(Class<T> clazz) implements Codec<T> {
-    @Override
-    public void encode(EncoderApi encoder, T object) {
-      encoder.encode(object, clazz);
-    }
-
-    @Override
-    public T decode(DecoderApi decoder) {
-      return decoder.decode(clazz);
-    }
-  }
-
-  /** Uses the Codec for the explicit type from the CodecMap */
-  record ForType<T>(TypeToken<T> type) implements Codec<T> {
-    @Override
-    public void encode(EncoderApi encoder, T object) {
-      encoder.encode(object, type);
-    }
-
-    @Override
-    public T decode(DecoderApi decoder) {
-      return decoder.decode(type);
-    }
-  }
 }
