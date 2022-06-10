@@ -223,7 +223,7 @@ public final class CodecMap {
     var componentCodec = get(componentType);
 
     return CollectionCodec.forArray(
-        sborTypeIdForArrayType, (Codec) componentCodec, (Class) componentClass);
+        (Class) componentClass, (Codec) componentCodec, sborTypeIdForArrayType);
   }
 
   private <T> Codec<T> createArrayCodec(Class<T> arrayClass) {
@@ -232,7 +232,7 @@ public final class CodecMap {
     var componentCodec = get(componentType);
 
     return CollectionCodec.forArray(
-        sborTypeIdForArrayType, (Codec) componentCodec, (Class) componentClass);
+        (Class) componentClass, (Codec) componentCodec, sborTypeIdForArrayType);
   }
 
   public <T> CodecMap register(StructCodec<T> codec) {

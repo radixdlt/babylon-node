@@ -88,9 +88,9 @@ public sealed interface SimpleEnum {
     Codec<SimpleEnum> codec =
         EnumCodec.fromEntries(
             FieldsCodec.of(
-                A.class, Field.of(int.class, A::first), Field.of(String.class, A::second), A::new),
+                A.class, Field.of(A::first, int.class), Field.of(A::second, String.class), A::new),
             FieldsCodec.of(
-                B.class, Field.of(new TypeToken<Either<Long, String>>() {}, B::param1), B::new));
+                B.class, Field.of(B::param1, new TypeToken<Either<Long, String>>() {}), B::new));
 
     CodecMap.DEFAULT.registerForSealedClassAndSubclasses(SimpleEnum.class, codec);
   }

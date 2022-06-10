@@ -69,7 +69,7 @@ import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
 import java.util.function.Function;
 
-public record Field<C, F>(Codec<F> codec, Function<C, F> getter) {
+public record Field<C, F>(Function<C, F> getter, Codec<F> codec) {
 
   public void encode(EncoderApi encoder, C classObject) {
     var fieldValue = this.getter.apply(classObject);
@@ -80,15 +80,15 @@ public record Field<C, F>(Codec<F> codec, Function<C, F> getter) {
     return decoder.decode(codec);
   }
 
-  public static <C1, F1> Field<C1, F1> of(Class<F1> fieldClazz, Function<C1, F1> getter) {
-    return new Field<>(Codec.forClass(fieldClazz), getter);
+  public static <C1, F1> Field<C1, F1> of(Function<C1, F1> getter, Class<F1> fieldClazz) {
+    return new Field<>(getter, Codec.forClass(fieldClazz));
   }
 
-  public static <C1, F1> Field<C1, F1> of(TypeToken<F1> type, Function<C1, F1> getter) {
-    return new Field<>(Codec.forType(type), getter);
+  public static <C1, F1> Field<C1, F1> of(Function<C1, F1> getter, TypeToken<F1> type) {
+    return new Field<>(getter, Codec.forType(type));
   }
 
-  public static <C1, F1> Field<C1, F1> of(Codec<F1> codec, Function<C1, F1> getter) {
-    return new Field<>(codec, getter);
+  public static <C1, F1> Field<C1, F1> of(Function<C1, F1> getter, Codec<F1> codec) {
+    return new Field<>(getter, codec);
   }
 }

@@ -152,7 +152,7 @@ interface CollectionCodec {
     }
   }
 
-  static <T> Codec<Set<T>> forSet(TypeId collectionTypeId, Codec<T> itemCodec) {
+  static <T> Codec<Set<T>> forSet(Codec<T> itemCodec, TypeId collectionTypeId) {
     CollectionCodecViaArrayList.assertCollectionType(collectionTypeId);
     return new CollectionCodecViaArrayList<>(
         collectionTypeId,
@@ -171,7 +171,7 @@ interface CollectionCodec {
         });
   }
 
-  static <T> Codec<HashSet<T>> forHashSet(TypeId collectionTypeId, Codec<T> itemCodec) {
+  static <T> Codec<HashSet<T>> forHashSet(Codec<T> itemCodec, TypeId collectionTypeId) {
     CollectionCodecViaArrayList.assertCollectionType(collectionTypeId);
     return new CollectionCodecViaArrayList<>(
         collectionTypeId,
@@ -190,7 +190,7 @@ interface CollectionCodec {
         });
   }
 
-  static <T> Codec<TreeSet<T>> forTreeSet(TypeId collectionTypeId, Codec<T> itemCodec) {
+  static <T> Codec<TreeSet<T>> forTreeSet(Codec<T> itemCodec, TypeId collectionTypeId) {
     CollectionCodecViaArrayList.assertCollectionType(collectionTypeId);
     return new CollectionCodecViaArrayList<>(
         collectionTypeId,
@@ -209,19 +209,19 @@ interface CollectionCodec {
         });
   }
 
-  static <T> Codec<List<T>> forList(TypeId collectionTypeId, Codec<T> itemCodec) {
+  static <T> Codec<List<T>> forList(Codec<T> itemCodec, TypeId collectionTypeId) {
     CollectionCodecViaArrayList.assertCollectionType(collectionTypeId);
     return new CollectionCodecViaArrayList<>(
         collectionTypeId, itemCodec, List::size, list -> list, list -> list);
   }
 
-  static <T> Codec<ArrayList<T>> forArrayList(TypeId collectionTypeId, Codec<T> itemCodec) {
+  static <T> Codec<ArrayList<T>> forArrayList(Codec<T> itemCodec, TypeId collectionTypeId) {
     CollectionCodecViaArrayList.assertCollectionType(collectionTypeId);
     return new CollectionCodecViaArrayList<>(
         collectionTypeId, itemCodec, List::size, list -> list, list -> list);
   }
 
-  static <T> Codec<T[]> forArray(TypeId collectionTypeId, Codec<T> itemCodec, Class<T> itemClazz) {
+  static <T> Codec<T[]> forArray(Class<T> itemClazz, Codec<T> itemCodec, TypeId collectionTypeId) {
     CollectionCodecViaArrayList.assertCollectionType(collectionTypeId);
     return new CollectionCodecViaArray<>(collectionTypeId, itemCodec, itemClazz);
   }
@@ -232,7 +232,7 @@ interface CollectionCodec {
         collectionType -> {
           try {
             var itemType = TypeTokenUtils.getGenericTypeParameter(collectionType, 0);
-            return forSet(collectionTypeId, codecMap.get(itemType));
+            return forSet(codecMap.get(itemType), collectionTypeId);
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating Set type codec for %s", collectionType), ex);
@@ -246,7 +246,7 @@ interface CollectionCodec {
         collectionType -> {
           try {
             var itemType = TypeTokenUtils.getGenericTypeParameter(collectionType, 0);
-            return forHashSet(collectionTypeId, codecMap.get(itemType));
+            return forHashSet(codecMap.get(itemType), collectionTypeId);
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating HashSet type codec for %s", collectionType), ex);
@@ -260,7 +260,7 @@ interface CollectionCodec {
         collectionType -> {
           try {
             var itemType = TypeTokenUtils.getGenericTypeParameter(collectionType, 0);
-            return forTreeSet(collectionTypeId, codecMap.get(itemType));
+            return forTreeSet(codecMap.get(itemType), collectionTypeId);
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating TreeSet type codec for %s", collectionType), ex);
@@ -274,7 +274,7 @@ interface CollectionCodec {
         collectionType -> {
           try {
             var itemType = TypeTokenUtils.getGenericTypeParameter(collectionType, 0);
-            return forList(collectionTypeId, codecMap.get(itemType));
+            return forList(codecMap.get(itemType), collectionTypeId);
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating List type codec for %s", collectionType), ex);
@@ -288,7 +288,7 @@ interface CollectionCodec {
         collectionType -> {
           try {
             var itemType = TypeTokenUtils.getGenericTypeParameter(collectionType, 0);
-            return forArrayList(collectionTypeId, codecMap.get(itemType));
+            return forArrayList(codecMap.get(itemType), collectionTypeId);
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating ArrayList type codec for %s", collectionType),

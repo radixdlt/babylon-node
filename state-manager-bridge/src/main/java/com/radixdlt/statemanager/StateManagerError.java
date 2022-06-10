@@ -75,8 +75,8 @@ public class StateManagerError implements Cause {
     CodecMap.DEFAULT.register(
         StructCodec.of(
             StateManagerError.class,
-            Field.of(short.class, StateManagerError::getRawErrorCode),
-            Field.of(String.class, StateManagerError::message),
+            Field.of(StateManagerError::getRawErrorCode, short.class),
+            Field.of(StateManagerError::message, String.class),
             StateManagerError::new));
   }
 

@@ -83,7 +83,7 @@ import java.util.Objects;
 public final class AID implements Comparable<AID> {
   static {
     CodecMap.DEFAULT.register(
-        StructCodec.of(AID.class, Field.of(byte[].class, AID::getBytes), AID::new));
+        StructCodec.of(AID.class, Field.of(AID::getBytes, byte[].class), AID::new));
   }
 
   static final int HASH_BYTES = 32;
