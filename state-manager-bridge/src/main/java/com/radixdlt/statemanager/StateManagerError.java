@@ -64,22 +64,20 @@
 
 package com.radixdlt.statemanager;
 
-import static com.radixdlt.sbor.codec.Field.withClass;
-
 import com.radixdlt.lang.Cause;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.FieldsCodec;
+import com.radixdlt.sbor.codec.Field;
+import com.radixdlt.sbor.codec.StructCodec;
 import java.util.Map;
 
 public class StateManagerError implements Cause {
   static {
     CodecMap.DEFAULT.register(
-        FieldsCodec.of(
-                StateManagerError.class,
-                withClass(short.class, StateManagerError::getRawErrorCode),
-                withClass(String.class, StateManagerError::message),
-                StateManagerError::new)
-            .forStruct());
+        StructCodec.of(
+            StateManagerError.class,
+            Field.of(short.class, StateManagerError::getRawErrorCode),
+            Field.of(String.class, StateManagerError::message),
+            StateManagerError::new));
   }
 
   private static final Map<Short, StateManagerErrorCode> codeMap =

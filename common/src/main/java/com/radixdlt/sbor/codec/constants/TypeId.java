@@ -64,6 +64,9 @@
 
 package com.radixdlt.sbor.codec.constants;
 
+import com.google.common.collect.ImmutableSet;
+import java.util.Set;
+
 public enum TypeId {
   // Primitive Types
   TYPE_UNIT(0x00),
@@ -91,7 +94,7 @@ public enum TypeId {
   TYPE_TUPLE(0x23),
   TYPE_RESULT(0x24),
 
-  // Collections
+  // Collections + Maps
   TYPE_VEC(0x30),
   TYPE_TREE_SET(0x31),
   TYPE_TREE_MAP(0x32),
@@ -109,5 +112,17 @@ public enum TypeId {
 
   public byte id() {
     return id;
+  }
+
+  public static final Set<TypeId> collectionTypes =
+      ImmutableSet.of(TYPE_VEC, TYPE_ARRAY, TYPE_TREE_SET, TYPE_HASH_SET);
+  public static final Set<TypeId> mapTypes = ImmutableSet.of(TYPE_TREE_MAP, TYPE_HASH_MAP);
+
+  public boolean isCollectionType() {
+    return collectionTypes.contains(this);
+  }
+
+  public boolean isMapType() {
+    return mapTypes.contains(this);
   }
 }

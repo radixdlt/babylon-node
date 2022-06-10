@@ -148,8 +148,7 @@ public record Decoder(ByteArrayInputStream input, CodecMap codecMap) implements 
 
     if (typeByte != typeId.id()) {
       throw new SborDecodeException(
-          String.format(
-              "Type ID byte %s does not match expected value %s", typeByte, typeId.id()));
+          String.format("Type ID byte %s does not match expected value %s", typeByte, typeId.id()));
     }
   }
 

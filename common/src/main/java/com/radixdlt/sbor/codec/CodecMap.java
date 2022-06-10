@@ -68,6 +68,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.EitherTypeCodec;
 import com.radixdlt.lang.OptionTypeCodec;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.exceptions.SborCodecException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -108,7 +109,7 @@ public final class CodecMap {
    * is recommended to do this in the static constructor of a class being encoded/decoded. It is
    * safe to register twice - the latest registration will apply.
    */
-  public static final CodecMap DEFAULT = new CodecMap().installCoreCodecs();
+  public static final CodecMap DEFAULT = new CodecMap().registerCoreCodecs();
 
   private final Map<Class, Codec> classEncodingMap = new HashMap<>();
 
@@ -116,7 +117,9 @@ public final class CodecMap {
 
   private final Map<Class, Function<TypeToken, Codec>> codecCreatorMap = new HashMap<>();
 
-  public CodecMap installCoreCodecs() {
+  private TypeId sborTypeIdForArrayType = TypeId.TYPE_ARRAY;
+
+  public CodecMap registerCoreCodecs() {
     register(Unit.class, new CoreTypeCodec.UnitCodec());
     register(String.class, new CoreTypeCodec.StringCodec());
 
@@ -143,6 +146,13 @@ public final class CodecMap {
     OptionTypeCodec.registerWith(this);
     EitherTypeCodec.registerWith(this);
 
+    sborTypeIdForArrayType = TypeId.TYPE_ARRAY; // Used for auto-array codec creation
+    CollectionCodec.registerListToMapTo(this, TypeId.TYPE_VEC);
+    CollectionCodec.registerArrayListToMapTo(this, TypeId.TYPE_VEC);
+    CollectionCodec.registerSetToMapTo(this, TypeId.TYPE_HASH_SET);
+    CollectionCodec.registerHashSetToMapTo(this, TypeId.TYPE_HASH_SET);
+    CollectionCodec.registerTreeSetToMapTo(this, TypeId.TYPE_TREE_SET);
+
     return this;
   }
 
@@ -153,14 +163,19 @@ public final class CodecMap {
       return codec;
     }
 
+    // Next - if it's an array, we need special handling...
+    if (type.isArray()) {
+      var newCodec = (Codec) createArrayCodec(type);
+      register(type, newCodec); // Cache the codec for future use
+      return newCodec;
+    }
+
     // Failing that - let's see if we can create one with a codec creator
     var rawType = type.getRawType();
     var codecCreator = codecCreatorMap.get(rawType);
     if (codecCreator != null) {
       var newCodec = codecCreator.apply(type);
-
-      // Let's cache the codec for future use
-      register(type, newCodec);
+      register(type, newCodec); // Cache the codec for future use
       return newCodec;
     }
 
@@ -178,6 +193,12 @@ public final class CodecMap {
       return codec;
     }
 
+    if (clazz.isArray()) {
+      var newCodec = (Codec) createArrayCodec(clazz);
+      register(clazz, newCodec);
+      return newCodec;
+    }
+
     // We are in a failure case here - so let's try to be helpful
     var codecCreator = codecCreatorMap.get(clazz);
     if (codecCreator != null) {
@@ -193,6 +214,25 @@ public final class CodecMap {
             "The class object %s itself has no registered SBOR codec, nor has codec creator"
                 + " registered.",
             clazz));
+  }
+
+  private <T> Codec<T> createArrayCodec(TypeToken<T> arrayType) {
+    var componentType = arrayType.getComponentType();
+    assert componentType != null; // Because we're being passed an array type
+    var componentClass = componentType.getRawType();
+    var componentCodec = get(componentType);
+
+    return CollectionCodec.forArray(
+        sborTypeIdForArrayType, (Codec) componentCodec, (Class) componentClass);
+  }
+
+  private <T> Codec<T> createArrayCodec(Class<T> arrayClass) {
+    var componentClass = arrayClass.getComponentType();
+    var componentType = TypeToken.of(componentClass);
+    var componentCodec = get(componentType);
+
+    return CollectionCodec.forArray(
+        sborTypeIdForArrayType, (Codec) componentCodec, (Class) componentClass);
   }
 
   public <T> CodecMap register(StructCodec<T> codec) {

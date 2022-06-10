@@ -64,13 +64,13 @@
 
 package com.radixdlt.identifiers;
 
-import static com.radixdlt.sbor.codec.Field.withClass;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.sbor.codec.*;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.Field;
+import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -83,7 +83,7 @@ import java.util.Objects;
 public final class AID implements Comparable<AID> {
   static {
     CodecMap.DEFAULT.register(
-        FieldsCodec.of(AID.class, withClass(byte[].class, AID::getBytes), AID::new).forStruct());
+        StructCodec.of(AID.class, Field.of(byte[].class, AID::getBytes), AID::new));
   }
 
   static final int HASH_BYTES = 32;

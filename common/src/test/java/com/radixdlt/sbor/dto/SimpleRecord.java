@@ -80,10 +80,10 @@ public record SimpleRecord(
     CodecMap.DEFAULT.register(
         FieldsCodec.of(
                 SimpleRecord.class,
-                Field.withClass(int.class, SimpleRecord::first),
-                Field.withClass(String.class, SimpleRecord::second),
-                Field.withType(new TypeToken<Either<Long, String>>() {}, SimpleRecord::third),
-                Field.withType(new TypeToken<Option<Boolean>>() {}, SimpleRecord::fourth),
+                Field.of(int.class, SimpleRecord::first),
+                Field.of(String.class, SimpleRecord::second),
+                Field.of(new TypeToken<Either<Long, String>>() {}, SimpleRecord::third),
+                Field.of(new TypeToken<Option<Boolean>>() {}, SimpleRecord::fourth),
                 SimpleRecord::new)
             .forStruct());
   }

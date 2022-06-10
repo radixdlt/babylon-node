@@ -62,64 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.lang;
+package com.radixdlt.sbor.codec;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.sbor.codec.Codec;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.TypeTokenUtils;
-import com.radixdlt.sbor.codec.constants.ResultTypeId;
-import com.radixdlt.sbor.codec.constants.TypeId;
-import com.radixdlt.sbor.coding.DecoderApi;
-import com.radixdlt.sbor.coding.EncoderApi;
 import com.radixdlt.sbor.exceptions.SborCodecException;
-import com.radixdlt.sbor.exceptions.SborDecodeException;
+import java.lang.reflect.ParameterizedType;
 
-public record EitherTypeCodec<L, R>(TypeToken<L> leftType, TypeToken<R> rightType)
-    implements Codec<Either<L, R>> {
-  @Override
-  public void encode(EncoderApi encoder, Either<L, R> either) {
-    encoder.encodeTypeId(TypeId.TYPE_RESULT);
-
-    either.apply(
-        left -> {
-          encoder.writeByte(ResultTypeId.ERR);
-          encoder.encode(left, leftType);
-        },
-        right -> {
-          encoder.writeByte(ResultTypeId.OK);
-          encoder.encode(right, rightType);
-        });
-  }
-
-  @Override
-  public Either<L, R> decode(DecoderApi decoder) {
-    decoder.expectType(TypeId.TYPE_RESULT);
-    var typeByte = decoder.readByte();
-
-    return switch (typeByte) {
-      case ResultTypeId.OK -> Either.right(decoder.decode(rightType));
-      case ResultTypeId.ERR -> Either.left(decoder.decode(leftType));
-      default -> throw new SborDecodeException(
-          String.format("Unknown result type id %s", typeByte));
-    };
-  }
-
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  public static int registerWith(CodecMap codecMap) {
-    codecMap.registerCreatorForSealedClassAndSubclasses(
-        Either.class,
-        eitherType -> {
-          try {
-            var leftType = TypeTokenUtils.getGenericTypeParameter(eitherType, 0);
-            var rightType = TypeTokenUtils.getGenericTypeParameter(eitherType, 1);
-
-            return new EitherTypeCodec(leftType, rightType);
-          } catch (Exception ex) {
-            throw new SborCodecException(
-                String.format("Exception creating Either type codec for %s", eitherType), ex);
-          }
-        });
-    return 0;
+public abstract class TypeTokenUtils {
+  public static TypeToken<?> getGenericTypeParameter(TypeToken<?> genericType, int index) {
+    var type = genericType.getType();
+    if (!(type instanceof ParameterizedType)) {
+      throw new SborCodecException(
+          String.format(
+              "Type %s is not parametrized, so cannot extract type parameter with index %s",
+              genericType, index));
+    }
+    var parameterTypes = ((ParameterizedType) genericType.getType()).getActualTypeArguments();
+    if (index >= parameterTypes.length) {
+      throw new SborCodecException(
+          String.format(
+              "Type %s only has %s type parameters, so cannot extract type parameter with index %s",
+              genericType, parameterTypes.length, index));
+    }
+    return TypeToken.of(parameterTypes[index]);
   }
 }

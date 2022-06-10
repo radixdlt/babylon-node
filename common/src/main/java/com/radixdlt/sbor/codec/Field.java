@@ -67,46 +67,28 @@ package com.radixdlt.sbor.codec;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
-import com.radixdlt.sbor.exceptions.SborCodecException;
 import java.util.function.Function;
 
-public record Field<C, F>(
-    Class<F> clazz, TypeToken<F> type, Codec<F> codec, Function<C, F> getter) {
-  public static <C, F> Field<C, F> withClass(Class<F> clazz, Function<C, F> getter) {
-    return new Field<>(clazz, null, null, getter);
-  }
-
-  public static <C, F> Field<C, F> withType(TypeToken<F> type, Function<C, F> getter) {
-    return new Field<>(null, type, null, getter);
-  }
-
-  public static <C, F> Field<C, F> withCodec(Codec<F> codec, Function<C, F> getter) {
-    return new Field<>(null, null, codec, getter);
-  }
+public record Field<C, F>(Codec<F> codec, Function<C, F> getter) {
 
   public void encode(EncoderApi encoder, C classObject) {
     var fieldValue = this.getter.apply(classObject);
-
-    if (codec != null) {
-      encoder.encode(fieldValue, codec);
-    } else if (type != null) {
-      encoder.encode(fieldValue, type);
-    } else if (clazz != null) {
-      encoder.encode(fieldValue, clazz);
-    } else {
-      throw new SborCodecException("Invariant failure in Field encode");
-    }
+    codec.encode(encoder, fieldValue);
   }
 
   public F decode(DecoderApi decoder) {
-    if (codec != null) {
-      return decoder.decode(codec);
-    } else if (type != null) {
-      return decoder.decode(type);
-    } else if (clazz != null) {
-      return decoder.decode(clazz);
-    } else {
-      throw new SborCodecException("Invariant failure in Field decode");
-    }
+    return decoder.decode(codec);
+  }
+
+  public static <C1, F1> Field<C1, F1> of(Class<F1> fieldClazz, Function<C1, F1> getter) {
+    return new Field<>(Codec.forClass(fieldClazz), getter);
+  }
+
+  public static <C1, F1> Field<C1, F1> of(TypeToken<F1> type, Function<C1, F1> getter) {
+    return new Field<>(Codec.forType(type), getter);
+  }
+
+  public static <C1, F1> Field<C1, F1> of(Codec<F1> codec, Function<C1, F1> getter) {
+    return new Field<>(codec, getter);
   }
 }

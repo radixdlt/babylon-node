@@ -67,6 +67,7 @@ package com.radixdlt.lang;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.TypeTokenUtils;
 import com.radixdlt.sbor.codec.constants.OptionTypeId;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
@@ -100,14 +101,13 @@ public record OptionTypeCodec<T>(TypeToken<T> innerType) implements Codec<Option
     };
   }
 
-  @SuppressWarnings({"UnstableApiUsage", "rawtypes", "unchecked"})
+  @SuppressWarnings({"rawtypes", "unchecked"})
   public static void registerWith(CodecMap codecMap) {
     codecMap.registerCreatorForSealedClassAndSubclasses(
         Option.class,
         optionType -> {
           try {
-            var innerType = optionType.method(Option.class.getMethod("unwrap")).getReturnType();
-            return new OptionTypeCodec(innerType);
+            return new OptionTypeCodec(TypeTokenUtils.getGenericTypeParameter(optionType, 0));
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating Option type codec for %s", optionType), ex);

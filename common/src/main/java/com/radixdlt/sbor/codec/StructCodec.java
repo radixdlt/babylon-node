@@ -64,6 +64,7 @@
 
 package com.radixdlt.sbor.codec;
 
+import com.radixdlt.lang.Functions;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
@@ -85,5 +86,170 @@ public interface StructCodec<T> extends Codec<T> {
 
   static <T> StructCodec<T> from(FieldsCodec<T> fieldsCodec) {
     return new StructCodecImpl<>(fieldsCodec);
+  }
+
+  static <T, T1> StructCodec<T> of(
+      Class<T> baseClass, Field<T, T1> field1, Functions.Func1<T1, T> creator) {
+    return FieldsCodec.of(baseClass, field1, creator).forStruct();
+  }
+
+  static <T, T1, T2> StructCodec<T> of(
+      Class<T> baseClass,
+      Field<T, T1> field1,
+      Field<T, T2> field2,
+      Functions.Func2<T1, T2, T> creator) {
+    return FieldsCodec.of(baseClass, field1, field2, creator).forStruct();
+  }
+
+  static <T, T1, T2, T3> StructCodec<T> of(
+      Class<T> baseClass,
+      Field<T, T1> field1,
+      Field<T, T2> field2,
+      Field<T, T3> field3,
+      Functions.Func3<T1, T2, T3, T> creator) {
+    return FieldsCodec.of(baseClass, field1, field2, field3, creator).forStruct();
+  }
+
+  static <T, T1, T2, T3, T4> StructCodec<T> of(
+      Class<T> baseClass,
+      Field<T, T1> field1,
+      Field<T, T2> field2,
+      Field<T, T3> field3,
+      Field<T, T4> field4,
+      Functions.Func4<T1, T2, T3, T4, T> creator) {
+    return FieldsCodec.of(baseClass, field1, field2, field3, field4, creator).forStruct();
+  }
+
+  static <T, T1, T2, T3, T4, T5> StructCodec<T> of(
+      Class<T> baseClass,
+      Field<T, T1> field1,
+      Field<T, T2> field2,
+      Field<T, T3> field3,
+      Field<T, T4> field4,
+      Field<T, T5> field5,
+      Functions.Func5<T1, T2, T3, T4, T5, T> creator) {
+    return FieldsCodec.of(baseClass, field1, field2, field3, field4, field5, creator).forStruct();
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6> StructCodec<T> of(
+      Class<T> baseClass,
+      Field<T, T1> field1,
+      Field<T, T2> field2,
+      Field<T, T3> field3,
+      Field<T, T4> field4,
+      Field<T, T5> field5,
+      Field<T, T6> field6,
+      Functions.Func6<T1, T2, T3, T4, T5, T6, T> creator) {
+    return FieldsCodec.of(baseClass, field1, field2, field3, field4, field5, field6, creator)
+        .forStruct();
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7> StructCodec<T> of(
+      Class<T> baseClass,
+      Field<T, T1> field1,
+      Field<T, T2> field2,
+      Field<T, T3> field3,
+      Field<T, T4> field4,
+      Field<T, T5> field5,
+      Field<T, T6> field6,
+      Field<T, T7> field7,
+      Functions.Func7<T1, T2, T3, T4, T5, T6, T7, T> creator) {
+    return FieldsCodec.of(
+            baseClass, field1, field2, field3, field4, field5, field6, field7, creator)
+        .forStruct();
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8> StructCodec<T> of(
+      Class<T> baseClass,
+      Field<T, T1> field1,
+      Field<T, T2> field2,
+      Field<T, T3> field3,
+      Field<T, T4> field4,
+      Field<T, T5> field5,
+      Field<T, T6> field6,
+      Field<T, T7> field7,
+      Field<T, T8> field8,
+      Functions.Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> creator) {
+    return FieldsCodec.of(
+            baseClass, field1, field2, field3, field4, field5, field6, field7, field8, creator)
+        .forStruct();
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9> StructCodec<T> of(
+      Class<T> baseClass,
+      Field<T, T1> field1,
+      Field<T, T2> field2,
+      Field<T, T3> field3,
+      Field<T, T4> field4,
+      Field<T, T5> field5,
+      Field<T, T6> field6,
+      Field<T, T7> field7,
+      Field<T, T8> field8,
+      Field<T, T9> field9,
+      Functions.Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> creator) {
+    return FieldsCodec.of(
+            baseClass, field1, field2, field3, field4, field5, field6, field7, field8, field9,
+            creator)
+        .forStruct();
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> StructCodec<T> of(
+      Class<T> baseClass,
+      Field<T, T1> field1,
+      Field<T, T2> field2,
+      Field<T, T3> field3,
+      Field<T, T4> field4,
+      Field<T, T5> field5,
+      Field<T, T6> field6,
+      Field<T, T7> field7,
+      Field<T, T8> field8,
+      Field<T, T9> field9,
+      Field<T, T10> field10,
+      Functions.Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> creator) {
+    return FieldsCodec.of(
+            baseClass, field1, field2, field3, field4, field5, field6, field7, field8, field9,
+            field10, creator)
+        .forStruct();
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> StructCodec<T> of(
+      Class<T> baseClass,
+      Field<T, T1> field1,
+      Field<T, T2> field2,
+      Field<T, T3> field3,
+      Field<T, T4> field4,
+      Field<T, T5> field5,
+      Field<T, T6> field6,
+      Field<T, T7> field7,
+      Field<T, T8> field8,
+      Field<T, T9> field9,
+      Field<T, T10> field10,
+      Field<T, T11> field11,
+      Functions.Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> creator) {
+    return FieldsCodec.of(
+            baseClass, field1, field2, field3, field4, field5, field6, field7, field8, field9,
+            field10, field11, creator)
+        .forStruct();
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> StructCodec<T> of(
+      Class<T> baseClass,
+      Field<T, T1> field1,
+      Field<T, T2> field2,
+      Field<T, T3> field3,
+      Field<T, T4> field4,
+      Field<T, T5> field5,
+      Field<T, T6> field6,
+      Field<T, T7> field7,
+      Field<T, T8> field8,
+      Field<T, T9> field9,
+      Field<T, T10> field10,
+      Field<T, T11> field11,
+      Field<T, T12> field12,
+      Functions.Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> creator) {
+    return FieldsCodec.of(
+            baseClass, field1, field2, field3, field4, field5, field6, field7, field8, field9,
+            field10, field11, field12, creator)
+        .forStruct();
   }
 }

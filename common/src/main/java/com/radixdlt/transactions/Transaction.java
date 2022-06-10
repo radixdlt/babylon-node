@@ -64,14 +64,13 @@
 
 package com.radixdlt.transactions;
 
-import static com.radixdlt.sbor.codec.Field.withClass;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.FieldsCodec;
+import com.radixdlt.sbor.codec.Field;
+import com.radixdlt.sbor.codec.StructCodec;
 import java.util.Objects;
 
 /**
@@ -81,12 +80,11 @@ import java.util.Objects;
 public final class Transaction {
   static {
     CodecMap.DEFAULT.register(
-        FieldsCodec.of(
-                Transaction.class,
-                withClass(byte[].class, Transaction::getPayload),
-                withClass(AID.class, Transaction::getId),
-                Transaction::new)
-            .forStruct());
+        StructCodec.of(
+            Transaction.class,
+            Field.of(byte[].class, Transaction::getPayload),
+            Field.of(AID.class, Transaction::getId),
+            Transaction::new));
   }
 
   private final byte[] payload;
