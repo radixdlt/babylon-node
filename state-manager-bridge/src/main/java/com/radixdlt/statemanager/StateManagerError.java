@@ -67,13 +67,20 @@ package com.radixdlt.statemanager;
 import static com.radixdlt.sbor.codec.Field.withClass;
 
 import com.radixdlt.lang.Cause;
-import com.radixdlt.sbor.codec.ClassCodec;
-import com.radixdlt.sbor.codec.Field;
-import com.radixdlt.sbor.coding.DecoderApi;
-import java.util.List;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.FieldsCodec;
 import java.util.Map;
 
 public class StateManagerError implements Cause {
+  static {
+    CodecMap.DEFAULT.register(
+        FieldsCodec.of(
+                StateManagerError.class,
+                withClass(short.class, StateManagerError::getRawErrorCode),
+                withClass(String.class, StateManagerError::message),
+                StateManagerError::new)
+            .forStruct());
+  }
 
   private static final Map<Short, StateManagerErrorCode> codeMap =
       Map.of(
@@ -100,20 +107,5 @@ public class StateManagerError implements Cause {
   @Override
   public String message() {
     return message;
-  }
-
-  /** SBOR decoding */
-  public static class StateManagerErrorCodec implements ClassCodec<StateManagerError> {
-    @Override
-    public List<Field<StateManagerError, ?>> fields() {
-      return List.of(
-          withClass(short.class, StateManagerError::getRawErrorCode),
-          withClass(String.class, StateManagerError::message));
-    }
-
-    @Override
-    public StateManagerError decodeFields(DecoderApi decoder) {
-      return new StateManagerError(decoder.decode(short.class), decoder.decode(String.class));
-    }
   }
 }

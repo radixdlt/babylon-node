@@ -65,11 +65,9 @@
 package com.radixdlt.mempool;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Unit;
-import com.radixdlt.sbor.SborCoder;
-import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.Sbor;
 import com.radixdlt.statemanager.StateManager.RustState;
 import com.radixdlt.statemanager.StateManagerError;
 import com.radixdlt.transactions.Transaction;
@@ -77,12 +75,6 @@ import java.util.Objects;
 
 public class RustMempool {
   private final RustState rustState;
-  private SborCoder sborCoder =
-      new SborCoder(
-          new CodecMap()
-              .register(Transaction.class, new Transaction.TransactionCodec())
-              .register(AID.class, new AID.AIDCodec())
-              .register(StateManagerError.class, new StateManagerError.StateManagerErrorCodec()));
 
   public RustMempool(RustState rustState) {
     this.rustState = Objects.requireNonNull(rustState);
@@ -90,11 +82,11 @@ public class RustMempool {
 
   public Transaction add(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
-    var encodedRequest = this.sborCoder.encode(transaction, Transaction.class);
+    var encodedRequest = Sbor.encode(transaction, Transaction.class);
     var encodedResponse = add(this.rustState, encodedRequest);
 
     var decodeClass = new TypeToken<Either<StateManagerError, Unit>>() {};
-    var result = this.sborCoder.decode(encodedResponse, decodeClass);
+    var result = Sbor.decode(encodedResponse, decodeClass);
 
     // Handle Errors.
     if (result.isLeft()) {
@@ -105,7 +97,7 @@ public class RustMempool {
         case STATE_MANAGER_ERROR_CODE_MEMPOOL_DUPLICATE:
           throw new MempoolDuplicateException(err.message());
         default:
-          throw new IllegalStateException("Unexpected StateManagerError: " + err.toString());
+          throw new IllegalStateException("Unexpected StateManagerError: " + err);
       }
     }
 

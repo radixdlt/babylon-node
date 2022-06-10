@@ -67,40 +67,23 @@ package com.radixdlt.sbor.codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
-import com.radixdlt.sbor.exceptions.SborDecodeException;
-import java.util.List;
 
-public interface ClassCodec<T> extends Codec<T> {
-  List<Field<T, ?>> fields();
+public interface StructCodec<T> extends Codec<T> {
+  FieldsCodec<T> fieldsCodec();
 
   default void encode(EncoderApi encoder, T value) {
     encoder.encodeTypeId(TypeId.TYPE_STRUCT);
-
-    var fields = fields();
-
-    encoder.writeInt(fields.size());
-
-    for (var field : fields) {
-      field.encode(encoder, value);
-    }
+    fieldsCodec().encode(encoder, value);
   }
 
   default T decode(DecoderApi decoder) {
     decoder.expectType(TypeId.TYPE_STRUCT);
-    var decodedFieldsLength = decoder.readInt();
-
-    var fields = fields();
-
-    if (decodedFieldsLength != fields.size()) {
-      throw new SborDecodeException(
-          String.format(
-              "Incorrect number of fields detected. Expected field count was %s, but encoded was"
-                  + " %s",
-              fields.size(), decodedFieldsLength));
-    }
-
-    return this.decodeFields(decoder);
+    return fieldsCodec().decode(decoder);
   }
 
-  T decodeFields(DecoderApi anyDecoder);
+  record StructCodecImpl<T>(FieldsCodec<T> fieldsCodec) implements StructCodec<T> {}
+
+  static <T> StructCodec<T> from(FieldsCodec<T> fieldsCodec) {
+    return new StructCodecImpl<>(fieldsCodec);
+  }
 }

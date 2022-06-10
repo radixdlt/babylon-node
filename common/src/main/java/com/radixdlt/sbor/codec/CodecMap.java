@@ -69,7 +69,6 @@ import com.radixdlt.lang.EitherTypeCodec;
 import com.radixdlt.lang.OptionTypeCodec;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.exceptions.SborCodecException;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -85,7 +84,8 @@ import java.util.function.Function;
  *   <li>A concrete TypeToken - this is specific to all the given generic parameters
  * </ul>
  *
- * <p>If multiple codecs are registered against the same object/TypeToken, the latest to be registered is used.
+ * <p>If multiple codecs are registered against the same object/TypeToken, the latest to be
+ * registered is used.
  *
  * <p>You can also register a codec creator, which allows automatic creation of codecs for explicit
  * type parameters of a given class. This works well with types such as Option&lt;T&rt;, where you
@@ -97,15 +97,17 @@ import java.util.function.Function;
  * all its subclasses in one go - this is to provide easy support for ADTs (abstract data types).
  */
 @SuppressWarnings({
-    "rawtypes",
-    "unchecked"
-    , "UnusedReturnValue", "unused"}) // This class is required to play fast and loose with generics
+  "rawtypes",
+  "unchecked",
+  "UnusedReturnValue",
+  "unused"
+}) // This class is required to play fast and loose with generics
 public final class CodecMap {
   /**
-   * Codecs can be registered on the static CodecMap.DEFAULT which is used by SborCoder.DEFAULT.
-   * It is recommended to do this in the static constructor of a class being encoded/decoded.
-   * It is safe to register twice - the latest registration will apply.
-   **/
+   * Codecs can be registered on the static CodecMap.DEFAULT which is used by SborCoder.DEFAULT. It
+   * is recommended to do this in the static constructor of a class being encoded/decoded. It is
+   * safe to register twice - the latest registration will apply.
+   */
   public static final CodecMap DEFAULT = new CodecMap();
 
   private final Map<Class, Codec> classEncodingMap = new HashMap<>();
@@ -189,6 +191,11 @@ public final class CodecMap {
             "The class object %s itself has no registered SBOR codec, nor has codec creator"
                 + " registered.",
             clazz));
+  }
+
+  public <T> CodecMap register(StructCodec<T> codec) {
+    register(codec.fieldsCodec().getBaseClass(), codec);
+    return this;
   }
 
   public <T> CodecMap register(Class<T> clazz, Codec<T> codec) {

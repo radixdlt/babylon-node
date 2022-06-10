@@ -70,13 +70,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.sbor.codec.ClassCodec;
-import com.radixdlt.sbor.codec.Field;
-import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.codec.*;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -84,6 +81,11 @@ import java.util.Objects;
  * just their hid.
  */
 public final class AID implements Comparable<AID> {
+  static {
+    CodecMap.DEFAULT.register(
+        FieldsCodec.of(AID.class, withClass(byte[].class, AID::getBytes), AID::new).forStruct());
+  }
+
   static final int HASH_BYTES = 32;
   public static final int BYTES = HASH_BYTES;
 
@@ -213,20 +215,5 @@ public final class AID implements Comparable<AID> {
   /** Get a lexical comparator for this type. */
   public static Comparator<AID> lexicalComparator() {
     return LexicalComparatorHolder.INSTANCE;
-  }
-
-  /** SBOR Codec */
-  public static class AIDCodec implements ClassCodec<AID> {
-    static List<Field<AID, ?>> fields = List.of(withClass(byte[].class, AID::getBytes));
-
-    @Override
-    public List<Field<AID, ?>> fields() {
-      return fields;
-    }
-
-    @Override
-    public AID decodeFields(DecoderApi decoder) {
-      return new AID(decoder.decode(byte[].class));
-    }
   }
 }

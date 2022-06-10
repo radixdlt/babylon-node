@@ -70,10 +70,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.sbor.codec.ClassCodec;
-import com.radixdlt.sbor.codec.Field;
-import com.radixdlt.sbor.coding.DecoderApi;
-import java.util.List;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.FieldsCodec;
 import java.util.Objects;
 
 /**
@@ -81,6 +79,16 @@ import java.util.Objects;
  * and may be invalid.
  */
 public final class Transaction {
+  static {
+    CodecMap.DEFAULT.register(
+        FieldsCodec.of(
+                Transaction.class,
+                withClass(byte[].class, Transaction::getPayload),
+                withClass(AID.class, Transaction::getId),
+                Transaction::new)
+            .forStruct());
+  }
+
   private final byte[] payload;
   private final AID id;
 
@@ -126,20 +134,5 @@ public final class Transaction {
   @Override
   public String toString() {
     return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
-  }
-
-  /** SBOR decoding */
-  public static class TransactionCodec implements ClassCodec<Transaction> {
-    @Override
-    public List<Field<Transaction, ?>> fields() {
-      return List.of(
-          withClass(byte[].class, Transaction::getPayload),
-          withClass(AID.class, Transaction::getId));
-    }
-
-    @Override
-    public Transaction decodeFields(DecoderApi decoder) {
-      return new Transaction(decoder.decode(byte[].class), decoder.decode(AID.class));
-    }
   }
 }

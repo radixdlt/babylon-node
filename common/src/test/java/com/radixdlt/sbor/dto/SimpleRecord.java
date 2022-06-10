@@ -67,39 +67,23 @@ package com.radixdlt.sbor.dto;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
-import com.radixdlt.sbor.codec.ClassCodec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.Field;
-import com.radixdlt.sbor.coding.DecoderApi;
-import java.util.List;
+import com.radixdlt.sbor.codec.FieldsCodec;
 
 public record SimpleRecord(
     int first, String second, Either<Long, String> third, Option<Boolean> fourth) {
 
   static {
-    CodecMap.DEFAULT.register(SimpleRecord.class, new Codec());
-  }
-
-  public static class Codec implements ClassCodec<SimpleRecord> {
-    static TypeToken<Either<Long, String>> eitherType = new TypeToken<>() {};
-    static TypeToken<Option<Boolean>> optionType = new TypeToken<>() {};
-
-    @Override
-    public List<Field<SimpleRecord, ?>> fields() {
-      return List.of(
-          Field.withClass(int.class, SimpleRecord::first),
-          Field.withClass(String.class, SimpleRecord::second),
-          Field.withType(eitherType, SimpleRecord::third),
-          Field.withType(optionType, SimpleRecord::fourth));
-    }
-
-    @Override
-    public SimpleRecord decodeFields(DecoderApi decoder) {
-      return new SimpleRecord(
-          decoder.decode(int.class),
-          decoder.decode(String.class),
-          decoder.decode(eitherType),
-          decoder.decode(optionType));
-    }
+    //noinspection Convert2Diamond
+    CodecMap.DEFAULT.register(
+        FieldsCodec.of(
+                SimpleRecord.class,
+                Field.withClass(int.class, SimpleRecord::first),
+                Field.withClass(String.class, SimpleRecord::second),
+                Field.withType(new TypeToken<Either<Long, String>>() {}, SimpleRecord::third),
+                Field.withType(new TypeToken<Option<Boolean>>() {}, SimpleRecord::fourth),
+                SimpleRecord::new)
+            .forStruct());
   }
 }

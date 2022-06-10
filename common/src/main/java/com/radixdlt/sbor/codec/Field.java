@@ -65,7 +65,9 @@
 package com.radixdlt.sbor.codec;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
+import com.radixdlt.sbor.exceptions.SborCodecException;
 import java.util.function.Function;
 
 public record Field<C, F>(
@@ -91,6 +93,20 @@ public record Field<C, F>(
       encoder.encode(fieldValue, type);
     } else if (clazz != null) {
       encoder.encode(fieldValue, clazz);
+    } else {
+      throw new SborCodecException("Invariant failure in Field encode");
+    }
+  }
+
+  public F decode(DecoderApi decoder) {
+    if (codec != null) {
+      return decoder.decode(codec);
+    } else if (type != null) {
+      return decoder.decode(type);
+    } else if (clazz != null) {
+      return decoder.decode(clazz);
+    } else {
+      throw new SborCodecException("Invariant failure in Field decode");
     }
   }
 }
