@@ -64,7 +64,6 @@
 
 package com.radixdlt.lang;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.TypeTokenUtils;
@@ -75,7 +74,7 @@ import com.radixdlt.sbor.coding.EncoderApi;
 import com.radixdlt.sbor.exceptions.SborCodecException;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
 
-public record EitherTypeCodec<L, R>(TypeToken<L> leftType, TypeToken<R> rightType)
+public record EitherTypeCodec<L, R>(Codec<L> leftType, Codec<R> rightType)
     implements Codec<Either<L, R>> {
   @Override
   public void encode(EncoderApi encoder, Either<L, R> either) {
@@ -114,7 +113,7 @@ public record EitherTypeCodec<L, R>(TypeToken<L> leftType, TypeToken<R> rightTyp
             var leftType = TypeTokenUtils.getGenericTypeParameter(eitherType, 0);
             var rightType = TypeTokenUtils.getGenericTypeParameter(eitherType, 1);
 
-            return new EitherTypeCodec(leftType, rightType);
+            return new EitherTypeCodec(codecMap.get(leftType), codecMap.get(rightType));
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating Either type codec for %s", eitherType), ex);

@@ -64,7 +64,6 @@
 
 package com.radixdlt.lang;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.TypeTokenUtils;
@@ -75,16 +74,16 @@ import com.radixdlt.sbor.coding.EncoderApi;
 import com.radixdlt.sbor.exceptions.SborCodecException;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
 
-public record OptionTypeCodec<T>(TypeToken<T> innerType) implements Codec<Option<T>> {
+public record OptionTypeCodec<T>(Codec<T> innerTypeCodec) implements Codec<Option<T>> {
   @Override
   public void encode(EncoderApi encoder, Option<T> option) {
     encoder.encodeTypeId(TypeId.TYPE_OPTION);
 
     option.apply(
         () -> encoder.writeByte(OptionTypeId.NONE),
-        v -> {
-          encoder.writeByte(OptionTypeId.SOME);
-          encoder.encode(v, innerType);
+        value -> {
+            encoder.writeByte(OptionTypeId.SOME);
+            encoder.encode(value, innerTypeCodec);
         });
   }
 
@@ -95,7 +94,7 @@ public record OptionTypeCodec<T>(TypeToken<T> innerType) implements Codec<Option
 
     return switch (typeByte) {
       case OptionTypeId.NONE -> Option.NONE;
-      case OptionTypeId.SOME -> Option.some(decoder.decode(innerType));
+      case OptionTypeId.SOME -> Option.some(decoder.decode(innerTypeCodec));
       default -> throw new SborDecodeException(
           String.format("Unknown option type id %s", typeByte));
     };
@@ -107,7 +106,8 @@ public record OptionTypeCodec<T>(TypeToken<T> innerType) implements Codec<Option
         Option.class,
         optionType -> {
           try {
-            return new OptionTypeCodec(TypeTokenUtils.getGenericTypeParameter(optionType, 0));
+            var innerType = TypeTokenUtils.getGenericTypeParameter(optionType, 0);
+            return new OptionTypeCodec(codecMap.get(innerType));
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating Option type codec for %s", optionType), ex);
