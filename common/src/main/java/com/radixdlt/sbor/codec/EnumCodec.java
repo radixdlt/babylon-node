@@ -83,10 +83,13 @@ public class EnumCodec<T> implements Codec<T> {
     this.mapEnumValueToKey = mapEnumValueToKey;
   }
 
-  @SuppressWarnings("unchecked")
-  public void encode(EncoderApi encoder, T value) {
-    encoder.encodeTypeId(TypeId.TYPE_ENUM);
+  @Override
+  public TypeId getTypeId() {
+    return TypeId.TYPE_ENUM;
+  }
 
+  @SuppressWarnings("unchecked")
+  public void encodeWithoutTypeId(EncoderApi encoder, T value) {
     var enumKey = mapEnumValueToKey.apply(value);
 
     var enumEntry = entries.get(enumKey);
@@ -97,12 +100,11 @@ public class EnumCodec<T> implements Codec<T> {
     }
 
     encoder.writeString(enumKey);
-    ((TypeFields<T>) enumEntry).encode(encoder, value);
+    ((TypeFields<T>) enumEntry).encodeWithoutTypeId(encoder, value);
   }
 
   @SuppressWarnings("unchecked")
-  public T decode(DecoderApi decoder) {
-    decoder.expectType(TypeId.TYPE_ENUM);
+  public T decodeWithoutTypeId(DecoderApi decoder) {
     var enumKey = decoder.readString();
 
     var enumEntry = entries.get(enumKey);
@@ -112,7 +114,7 @@ public class EnumCodec<T> implements Codec<T> {
           String.format("Enum entry enumKey %s not found in entries map", enumKey));
     }
 
-    return ((TypeFields<T>) enumEntry).decode(decoder);
+    return ((TypeFields<T>) enumEntry).decodeWithoutTypeId(decoder);
   }
 
   /**

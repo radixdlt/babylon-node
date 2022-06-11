@@ -65,6 +65,7 @@
 package com.radixdlt.sbor.codec.constants;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.sbor.exceptions.SborCodecException;
 import java.util.Set;
 
 public enum TypeId {
@@ -122,7 +123,19 @@ public enum TypeId {
     return collectionTypes.contains(this);
   }
 
+  public void assertCollectionType() {
+    if (!isCollectionType()) {
+      throw new SborCodecException(String.format("Type id %s is not a collection type id", this));
+    }
+  }
+
   public boolean isMapType() {
     return mapTypes.contains(this);
+  }
+
+  public void assertMapType() {
+    if (!isMapType()) {
+      throw new SborCodecException(String.format("Type id %s is not a map type id", this));
+    }
   }
 }

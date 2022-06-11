@@ -72,11 +72,11 @@ public record Field<C, F>(Function<C, F> getter, Codec<F> codec) {
 
   public void encode(EncoderApi encoder, C classObject) {
     var fieldValue = this.getter.apply(classObject);
-    codec.encode(encoder, fieldValue);
+    encoder.encodeWithTypeId(fieldValue, codec);
   }
 
   public F decode(DecoderApi decoder) {
-    return decoder.decode(codec);
+    return decoder.decodeWithTypeId(codec);
   }
 
   public static <C1, F1> Field<C1, F1> of(Function<C1, F1> getter, Codec<F1> codec) {

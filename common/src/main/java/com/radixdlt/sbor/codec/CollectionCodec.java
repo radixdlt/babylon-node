@@ -83,42 +83,39 @@ interface CollectionCodec {
       Functions.Func1<ArrayList<TItem>, TCollection> mapFromList)
       implements Codec<TCollection> {
 
+    @Override
+    public TypeId getTypeId() {
+      return collectionTypeId;
+    }
+
     public void encodeFromIterable(EncoderApi encoder, int size, Iterable<TItem> iterable) {
-      encoder.encodeTypeId(collectionTypeId);
+      encoder.encodeTypeId(itemCodec.getTypeId());
       encoder.writeInt(size);
 
       for (var item : iterable) {
-        itemCodec.encode(encoder, item);
+        itemCodec.encodeWithoutTypeId(encoder, item);
       }
     }
 
     public ArrayList<TItem> decodeToList(DecoderApi decoder) {
-      decoder.expectType(collectionTypeId);
+      decoder.expectType(itemCodec.getTypeId());
       var length = decoder.readInt();
       var list = new ArrayList<TItem>(length);
 
       for (var i = 0; i < length; i++) {
-        list.add(itemCodec.decode(decoder));
+        list.add(itemCodec.decodeWithoutTypeId(decoder));
       }
 
       return list;
     }
 
-    public static void assertCollectionType(TypeId collectionTypeId) {
-      if (!collectionTypeId.isCollectionType()) {
-        throw new SborCodecException(
-            String.format(
-                "Type id passed was %s which is not a collection type id", collectionTypeId));
-      }
-    }
-
     @Override
-    public void encode(EncoderApi encoder, TCollection collection) {
+    public void encodeWithoutTypeId(EncoderApi encoder, TCollection collection) {
       encodeFromIterable(encoder, getSize.apply(collection), getIterable.apply(collection));
     }
 
     @Override
-    public TCollection decode(DecoderApi decoder) {
+    public TCollection decodeWithoutTypeId(DecoderApi decoder) {
       return mapFromList.apply(decodeToList(decoder));
     }
   }
@@ -128,24 +125,29 @@ interface CollectionCodec {
       implements Codec<TItem[]> {
 
     @Override
-    public void encode(EncoderApi encoder, TItem[] array) {
-      encoder.encodeTypeId(collectionTypeId);
+    public TypeId getTypeId() {
+      return collectionTypeId;
+    }
+
+    @Override
+    public void encodeWithoutTypeId(EncoderApi encoder, TItem[] array) {
+      encoder.encodeTypeId(itemCodec.getTypeId());
       encoder.writeInt(array.length);
 
       for (var item : array) {
-        itemCodec.encode(encoder, item);
+        itemCodec.encodeWithoutTypeId(encoder, item);
       }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public TItem[] decode(DecoderApi decoder) {
-      decoder.expectType(collectionTypeId);
+    @SuppressWarnings("unchecked")
+    public TItem[] decodeWithoutTypeId(DecoderApi decoder) {
+      decoder.expectType(itemCodec.getTypeId());
       var length = decoder.readInt();
       var array = (TItem[]) Array.newInstance(itemClazz, length);
 
       for (var i = 0; i < length; i++) {
-        array[i] = itemCodec.decode(decoder);
+        array[i] = itemCodec.decodeWithoutTypeId(decoder);
       }
 
       return array;
@@ -153,7 +155,7 @@ interface CollectionCodec {
   }
 
   static <T> Codec<Set<T>> forSet(Codec<T> itemCodec, TypeId collectionTypeId) {
-    CollectionCodecViaArrayList.assertCollectionType(collectionTypeId);
+    collectionTypeId.assertCollectionType();
     return new CollectionCodecViaArrayList<>(
         collectionTypeId,
         itemCodec,
@@ -172,7 +174,7 @@ interface CollectionCodec {
   }
 
   static <T> Codec<HashSet<T>> forHashSet(Codec<T> itemCodec, TypeId collectionTypeId) {
-    CollectionCodecViaArrayList.assertCollectionType(collectionTypeId);
+    collectionTypeId.assertCollectionType();
     return new CollectionCodecViaArrayList<>(
         collectionTypeId,
         itemCodec,
@@ -191,7 +193,7 @@ interface CollectionCodec {
   }
 
   static <T> Codec<TreeSet<T>> forTreeSet(Codec<T> itemCodec, TypeId collectionTypeId) {
-    CollectionCodecViaArrayList.assertCollectionType(collectionTypeId);
+    collectionTypeId.assertCollectionType();
     return new CollectionCodecViaArrayList<>(
         collectionTypeId,
         itemCodec,
@@ -210,19 +212,19 @@ interface CollectionCodec {
   }
 
   static <T> Codec<List<T>> forList(Codec<T> itemCodec, TypeId collectionTypeId) {
-    CollectionCodecViaArrayList.assertCollectionType(collectionTypeId);
+    collectionTypeId.assertCollectionType();
     return new CollectionCodecViaArrayList<>(
         collectionTypeId, itemCodec, List::size, list -> list, list -> list);
   }
 
   static <T> Codec<ArrayList<T>> forArrayList(Codec<T> itemCodec, TypeId collectionTypeId) {
-    CollectionCodecViaArrayList.assertCollectionType(collectionTypeId);
+    collectionTypeId.assertCollectionType();
     return new CollectionCodecViaArrayList<>(
         collectionTypeId, itemCodec, List::size, list -> list, list -> list);
   }
 
   static <T> Codec<T[]> forArray(Class<T> itemClazz, Codec<T> itemCodec, TypeId collectionTypeId) {
-    CollectionCodecViaArrayList.assertCollectionType(collectionTypeId);
+    collectionTypeId.assertCollectionType();
     return new CollectionCodecViaArray<>(collectionTypeId, itemCodec, itemClazz);
   }
 

@@ -72,17 +72,22 @@ import com.radixdlt.sbor.coding.EncoderApi;
 public interface StructCodec<T> extends Codec<T> {
   Fields<T> fields();
 
-  default void encode(EncoderApi encoder, T value) {
-    encoder.encodeTypeId(TypeId.TYPE_STRUCT);
-    fields().encode(encoder, value);
+  @Override
+  default TypeId getTypeId() {
+    return TypeId.TYPE_STRUCT;
   }
 
-  default T decode(DecoderApi decoder) {
-    decoder.expectType(TypeId.TYPE_STRUCT);
-    return fields().decode(decoder);
-  }
+  record StructCodecImpl<T>(Fields<T> fields) implements StructCodec<T> {
+    @Override
+    public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+      fields.encodeWithoutTypeId(encoder, value);
+    }
 
-  record StructCodecImpl<T>(Fields<T> fields) implements StructCodec<T> {}
+    @Override
+    public T decodeWithoutTypeId(DecoderApi decoder) {
+      return fields.decodeWithoutTypeId(decoder);
+    }
+  }
 
   static <T> StructCodec<T> from(Fields<T> fields) {
     return new StructCodecImpl<>(fields);

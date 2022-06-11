@@ -70,7 +70,7 @@ import com.radixdlt.sbor.codec.Codec;
 @SuppressWarnings("unused")
 public abstract class UntypedSbor {
   private static final SchemaCoder Coder = SchemaCoder.DEFAULT_WITHOUT_TYPES;
-  
+
   public static <T> byte[] encode(T value) {
     return Coder.encode(value);
   }

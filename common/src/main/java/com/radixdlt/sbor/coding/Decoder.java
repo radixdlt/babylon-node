@@ -64,8 +64,6 @@
 
 package com.radixdlt.sbor.coding;
 
-import static com.radixdlt.sbor.codec.constants.TypeId.*;
-
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
@@ -82,59 +80,17 @@ public record Decoder(ByteArrayInputStream input, boolean decodeTypeIds) impleme
   private static final int EOF_RC = -1;
 
   public <T> T decodeFromAllOfStream(Codec<T> codec) {
-    var output = decode(codec);
+    var output = decodeWithTypeId(codec);
     if (input.read() != EOF_RC) {
-      throw new SborDecodeException("There were bytes remaining after finishing decoding the given codec");
+      throw new SborDecodeException(
+          "There were bytes remaining after finishing decoding the given codec");
     }
     return output;
   }
 
   @Override
-  public <T> T decode(Codec<T> codec) {
-    return codec.decode(this);
-  }
-
-  @Override
-  public int decodeArrayHeaderAndGetArrayLength(TypeId expectedId) {
-    expectType(TypeId.TYPE_VEC);
-    expectType(expectedId);
-    return readInt();
-  }
-
-  @Override
-  public boolean decodeBoolean() {
-    expectType(TYPE_BOOL);
-    return readBoolean();
-  }
-
-  @Override
-  public byte decodeByte() {
-    expectType(TYPE_U8);
-    return readByte();
-  }
-
-  @Override
-  public short decodeShort() {
-    expectType(TYPE_I16);
-    return readShort();
-  }
-
-  @Override
-  public int decodeInt() {
-    expectType(TYPE_I32);
-    return readInt();
-  }
-
-  @Override
-  public long decodeLong() {
-    expectType(TYPE_I64);
-    return readLong();
-  }
-
-  @Override
-  public String decodeString() {
-    expectType(TYPE_STRING);
-    return readString();
+  public <T> T decodeWithTypeId(Codec<T> codec) {
+    return codec.decodeWithTypeId(this);
   }
 
   @Override

@@ -62,27 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor.coding;
+package com.radixdlt.sbor.codec;
 
-import com.radixdlt.sbor.codec.Codec;
-import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.EncoderApi;
 
-public interface EncoderApi {
-  <T> void encodeWithTypeId(T value, Codec<T> codec);
+public interface UntypedCodec<T> {
+  void encodeWithoutTypeId(EncoderApi encoder, T value);
 
-  void encodeTypeId(TypeId typeId);
-
-  void writeBoolean(boolean value);
-
-  void writeByte(byte value);
-
-  void writeBytes(byte[] value);
-
-  void writeShort(short value);
-
-  void writeInt(int value);
-
-  void writeLong(long value);
-
-  void writeString(String value);
+  T decodeWithoutTypeId(DecoderApi decoder);
 }

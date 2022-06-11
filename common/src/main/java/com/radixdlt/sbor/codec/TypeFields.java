@@ -71,13 +71,13 @@ import com.radixdlt.sbor.exceptions.SborDecodeException;
 import java.util.List;
 
 @SuppressWarnings("unused")
-public interface TypeFields<T> extends Codec<T> {
+public interface TypeFields<T> extends UntypedCodec<T> {
   List<Field<T, ?>> of();
 
   Class<T> getBaseClass();
 
   @Override
-  default void encode(EncoderApi encoder, T value) {
+  default void encodeWithoutTypeId(EncoderApi encoder, T value) {
     var fields = of();
 
     encoder.writeInt(fields.size());
@@ -88,7 +88,7 @@ public interface TypeFields<T> extends Codec<T> {
   }
 
   @Override
-  default T decode(DecoderApi decoder) {
+  default T decodeWithoutTypeId(DecoderApi decoder) {
     var decodedFieldsLength = decoder.readInt();
 
     var fields = of();

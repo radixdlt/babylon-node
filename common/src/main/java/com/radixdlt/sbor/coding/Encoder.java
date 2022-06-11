@@ -76,8 +76,8 @@ import java.nio.charset.StandardCharsets;
  */
 public record Encoder(ByteArrayOutputStream output, boolean encodeTypeIds) implements EncoderApi {
   @Override
-  public <T> void encode(T value, Codec<T> codec) {
-    codec.encode(this, value);
+  public <T> void encodeWithTypeId(T value, Codec<T> codec) {
+    codec.encodeWithTypeId(this, value);
   }
 
   @Override
@@ -85,13 +85,6 @@ public record Encoder(ByteArrayOutputStream output, boolean encodeTypeIds) imple
     if (encodeTypeIds) {
       writeByte(typeId.id());
     }
-  }
-
-  @Override
-  public void encodeArrayHeader(TypeId typeId, int length) {
-    encodeTypeId(TypeId.TYPE_VEC);
-    encodeTypeId(typeId);
-    writeInt(length);
   }
 
   @Override

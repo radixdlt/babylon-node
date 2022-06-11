@@ -70,119 +70,181 @@ import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
-import java.util.function.Consumer;
 
 public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
 
-  protected <V> void encodePlainType(
-      EncoderApi encoder, TypeId typeId, V value, Consumer<V> typeEncoder) {
-    encoder.encodeTypeId(typeId);
-    typeEncoder.accept(value);
-  }
-
   public static final class UnitCodec extends CoreTypeCodec<Unit> {
     @Override
-    public void encode(EncoderApi encoder, Unit value) {
-      encoder.encodeTypeId(TYPE_UNIT);
+    public TypeId getTypeId() {
+      return TYPE_UNIT;
     }
 
     @Override
-    public Unit decode(DecoderApi decoder) {
-      decoder.expectType(TYPE_UNIT);
+    public void encodeWithoutTypeId(EncoderApi encoder, Unit value) {
+      // NO-OP
+    }
+
+    @Override
+    public Unit decodeWithoutTypeId(DecoderApi decoder) {
       return Unit.unit();
     }
   }
 
   public static final class BooleanCodec extends CoreTypeCodec<Boolean> {
     @Override
-    public void encode(EncoderApi encoder, Boolean value) {
-      encodePlainType(encoder, TYPE_BOOL, value, encoder::writeBoolean);
+    public TypeId getTypeId() {
+      return TYPE_BOOL;
     }
 
     @Override
-    public Boolean decode(DecoderApi decoder) {
-      return decoder.decodeBoolean();
+    public void encodeWithoutTypeId(EncoderApi encoder, Boolean value) {
+      encoder.writeBoolean(value);
+    }
+
+    @Override
+    public Boolean decodeWithoutTypeId(DecoderApi decoder) {
+      return decoder.readBoolean();
     }
   }
 
   public static final class StringCodec extends CoreTypeCodec<String> {
     @Override
-    public void encode(EncoderApi encoder, String string) {
-      encodePlainType(encoder, TYPE_STRING, string, encoder::writeString);
+    public TypeId getTypeId() {
+      return TYPE_STRING;
     }
 
     @Override
-    public String decode(DecoderApi decoder) {
-      return decoder.decodeString();
+    public void encodeWithoutTypeId(EncoderApi encoder, String value) {
+      encoder.writeString(value);
+    }
+
+    @Override
+    public String decodeWithoutTypeId(DecoderApi decoder) {
+      return decoder.readString();
     }
   }
 
   public static final class ByteCodec extends CoreTypeCodec<Byte> {
     @Override
-    public void encode(EncoderApi encoder, Byte value) {
-      encodePlainType(encoder, TYPE_U8, value, encoder::writeByte);
+    public TypeId getTypeId() {
+      return TYPE_U8;
     }
 
     @Override
-    public Byte decode(DecoderApi decoder) {
-      return decoder.decodeByte();
+    public void encodeWithoutTypeId(EncoderApi encoder, Byte value) {
+      encoder.writeByte(value);
+    }
+
+    @Override
+    public Byte decodeWithoutTypeId(DecoderApi decoder) {
+      return decoder.readByte();
     }
   }
 
   public static final class ShortCodec extends CoreTypeCodec<Short> {
     @Override
-    public void encode(EncoderApi encoder, Short value) {
-      encodePlainType(encoder, TYPE_I16, value, encoder::writeShort);
+    public TypeId getTypeId() {
+      return TYPE_I16;
     }
 
     @Override
-    public Short decode(DecoderApi decoder) {
-      return decoder.decodeShort();
+    public void encodeWithoutTypeId(EncoderApi encoder, Short value) {
+      encoder.writeShort(value);
+    }
+
+    @Override
+    public Short decodeWithoutTypeId(DecoderApi decoder) {
+      return decoder.readShort();
     }
   }
 
   public static final class IntegerCodec extends CoreTypeCodec<Integer> {
     @Override
-    public void encode(EncoderApi encoder, Integer value) {
-      encodePlainType(encoder, TYPE_I32, value, encoder::writeInt);
+    public TypeId getTypeId() {
+      return TYPE_I32;
     }
 
     @Override
-    public Integer decode(DecoderApi decoder) {
-      return decoder.decodeInt();
+    public void encodeWithoutTypeId(EncoderApi encoder, Integer value) {
+      encoder.writeInt(value);
+    }
+
+    @Override
+    public Integer decodeWithoutTypeId(DecoderApi decoder) {
+      return decoder.readInt();
     }
   }
 
   public static final class LongCodec extends CoreTypeCodec<Long> {
     @Override
-    public void encode(EncoderApi encoder, Long value) {
-      encodePlainType(encoder, TYPE_I64, value, encoder::writeLong);
+    public TypeId getTypeId() {
+      return TYPE_I64;
     }
 
     @Override
-    public Long decode(DecoderApi decoder) {
-      return decoder.decodeLong();
+    public void encodeWithoutTypeId(EncoderApi encoder, Long value) {
+      encoder.writeLong(value);
+    }
+
+    @Override
+    public Long decodeWithoutTypeId(DecoderApi decoder) {
+      return decoder.readLong();
     }
   }
 
   public static final class ByteArrayCodec extends CoreTypeCodec<byte[]> {
+    private final TypeId collectionTypeId;
+
+    public ByteArrayCodec(TypeId collectionTypeId) {
+      collectionTypeId.assertCollectionType();
+      this.collectionTypeId = collectionTypeId;
+    }
+
+    public ByteArrayCodec() {
+      this(TYPE_VEC);
+    }
+
     @Override
-    public void encode(EncoderApi encoder, byte[] value) {
-      encoder.encodeArrayHeader(TYPE_U8, value.length);
+    public TypeId getTypeId() {
+      return collectionTypeId;
+    }
+
+    @Override
+    public void encodeWithoutTypeId(EncoderApi encoder, byte[] value) {
+      encoder.encodeTypeId(TYPE_U8);
+      encoder.writeInt(value.length);
       encoder.writeBytes(value);
     }
 
     @Override
-    public byte[] decode(DecoderApi decoder) {
-      var length = decoder.decodeArrayHeaderAndGetArrayLength(TYPE_U8);
+    public byte[] decodeWithoutTypeId(DecoderApi decoder) {
+      decoder.expectType(TYPE_U8);
+      var length = decoder.readInt();
       return decoder.readBytes(length);
     }
   }
 
   public static final class ShortArrayCodec extends CoreTypeCodec<short[]> {
+    private final TypeId collectionTypeId;
+
+    public ShortArrayCodec(TypeId collectionTypeId) {
+      collectionTypeId.assertCollectionType();
+      this.collectionTypeId = collectionTypeId;
+    }
+
+    public ShortArrayCodec() {
+      this(TYPE_VEC);
+    }
+
     @Override
-    public void encode(EncoderApi encoder, short[] value) {
-      encoder.encodeArrayHeader(TYPE_I16, value.length);
+    public TypeId getTypeId() {
+      return collectionTypeId;
+    }
+
+    @Override
+    public void encodeWithoutTypeId(EncoderApi encoder, short[] value) {
+      encoder.encodeTypeId(TYPE_I16);
+      encoder.writeInt(value.length);
 
       for (var singleValue : value) {
         encoder.writeShort(singleValue);
@@ -190,16 +252,34 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
     }
 
     @Override
-    public short[] decode(DecoderApi decoder) {
-      var length = decoder.decodeArrayHeaderAndGetArrayLength(TYPE_I16);
+    public short[] decodeWithoutTypeId(DecoderApi decoder) {
+      decoder.expectType(TYPE_I16);
+      var length = decoder.readInt();
       return decoder.readShorts(length);
     }
   }
 
   public static final class IntegerArrayCodec extends CoreTypeCodec<int[]> {
+    private final TypeId collectionTypeId;
+
+    public IntegerArrayCodec(TypeId collectionTypeId) {
+      collectionTypeId.assertCollectionType();
+      this.collectionTypeId = collectionTypeId;
+    }
+
+    public IntegerArrayCodec() {
+      this(TYPE_VEC);
+    }
+
     @Override
-    public void encode(EncoderApi encoder, int[] value) {
-      encoder.encodeArrayHeader(TYPE_I32, value.length);
+    public TypeId getTypeId() {
+      return collectionTypeId;
+    }
+
+    @Override
+    public void encodeWithoutTypeId(EncoderApi encoder, int[] value) {
+      encoder.encodeTypeId(TYPE_I32);
+      encoder.writeInt(value.length);
 
       for (var singleValue : value) {
         encoder.writeInt(singleValue);
@@ -207,16 +287,34 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
     }
 
     @Override
-    public int[] decode(DecoderApi decoder) {
-      var length = decoder.decodeArrayHeaderAndGetArrayLength(TYPE_I32);
+    public int[] decodeWithoutTypeId(DecoderApi decoder) {
+      decoder.expectType(TYPE_I32);
+      var length = decoder.readInt();
       return decoder.readIntegers(length);
     }
   }
 
   public static final class LongArrayCodec extends CoreTypeCodec<long[]> {
+    private final TypeId collectionTypeId;
+
+    public LongArrayCodec(TypeId collectionTypeId) {
+      collectionTypeId.assertCollectionType();
+      this.collectionTypeId = collectionTypeId;
+    }
+
+    public LongArrayCodec() {
+      this(TYPE_VEC);
+    }
+
     @Override
-    public void encode(EncoderApi encoder, long[] value) {
-      encoder.encodeArrayHeader(TYPE_I64, value.length);
+    public TypeId getTypeId() {
+      return collectionTypeId;
+    }
+
+    @Override
+    public void encodeWithoutTypeId(EncoderApi encoder, long[] value) {
+      encoder.encodeTypeId(TYPE_I64);
+      encoder.writeInt(value.length);
 
       for (var singleValue : value) {
         encoder.writeLong(singleValue);
@@ -224,8 +322,9 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
     }
 
     @Override
-    public long[] decode(DecoderApi decoder) {
-      var length = decoder.decodeArrayHeaderAndGetArrayLength(TYPE_I64);
+    public long[] decodeWithoutTypeId(DecoderApi decoder) {
+      decoder.expectType(TYPE_I64);
+      var length = decoder.readInt();
       return decoder.readLongs(length);
     }
   }

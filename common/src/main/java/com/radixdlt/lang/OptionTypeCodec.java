@@ -76,25 +76,27 @@ import com.radixdlt.sbor.exceptions.SborDecodeException;
 
 public record OptionTypeCodec<T>(Codec<T> innerTypeCodec) implements Codec<Option<T>> {
   @Override
-  public void encode(EncoderApi encoder, Option<T> option) {
-    encoder.encodeTypeId(TypeId.TYPE_OPTION);
+  public TypeId getTypeId() {
+    return TypeId.TYPE_OPTION;
+  }
 
+  @Override
+  public void encodeWithoutTypeId(EncoderApi encoder, Option<T> option) {
     option.apply(
         () -> encoder.writeByte(OptionTypeId.NONE),
         value -> {
           encoder.writeByte(OptionTypeId.SOME);
-          encoder.encode(value, innerTypeCodec);
+          encoder.encodeWithTypeId(value, innerTypeCodec);
         });
   }
 
   @Override
-  public Option<T> decode(DecoderApi decoder) {
-    decoder.expectType(TypeId.TYPE_OPTION);
+  public Option<T> decodeWithoutTypeId(DecoderApi decoder) {
     var typeByte = decoder.readByte();
 
     return switch (typeByte) {
       case OptionTypeId.NONE -> Option.NONE;
-      case OptionTypeId.SOME -> Option.some(decoder.decode(innerTypeCodec));
+      case OptionTypeId.SOME -> Option.some(decoder.decodeWithTypeId(innerTypeCodec));
       default -> throw new SborDecodeException(
           String.format("Unknown option type id %s", typeByte));
     };

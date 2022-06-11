@@ -73,8 +73,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 public record SchemaCoder(CodecMap.CodecResolver codecResolver, boolean withTypes) {
-  public static final SchemaCoder DEFAULT_WITH_TYPES = new SchemaCoder(CodecMap.DEFAULT_RESOLVER, true);
-  public static final SchemaCoder DEFAULT_WITHOUT_TYPES = new SchemaCoder(CodecMap.DEFAULT_RESOLVER, false);
+  public static final SchemaCoder DEFAULT_WITH_TYPES =
+      new SchemaCoder(CodecMap.DEFAULT_RESOLVER, true);
+  public static final SchemaCoder DEFAULT_WITHOUT_TYPES =
+      new SchemaCoder(CodecMap.DEFAULT_RESOLVER, false);
 
   @SuppressWarnings("unchecked")
   public <T> byte[] encode(T value) {
@@ -91,7 +93,7 @@ public record SchemaCoder(CodecMap.CodecResolver codecResolver, boolean withType
 
   public <T> byte[] encode(T value, Codec<T> codec) {
     var outputStream = new ByteArrayOutputStream();
-    new Encoder(outputStream, withTypes).encode(value, codec);
+    new Encoder(outputStream, withTypes).encodeWithTypeId(value, codec);
     return outputStream.toByteArray();
   }
 

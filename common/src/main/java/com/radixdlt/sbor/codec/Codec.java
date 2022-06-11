@@ -64,11 +64,25 @@
 
 package com.radixdlt.sbor.codec;
 
+import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
 
-public interface Codec<T> {
-  void encode(EncoderApi encoder, T value);
+/**
+ * Represents an encoding of a SBOR TypeId and serialization
+ *
+ * @param <T>
+ */
+public interface Codec<T> extends UntypedCodec<T> {
+  TypeId getTypeId();
 
-  T decode(DecoderApi decoder);
+  default void encodeWithTypeId(EncoderApi encoder, T value) {
+    encoder.encodeTypeId(getTypeId());
+    encodeWithoutTypeId(encoder, value);
+  }
+
+  default T decodeWithTypeId(DecoderApi decoder) {
+    decoder.expectType(getTypeId());
+    return decodeWithoutTypeId(decoder);
+  }
 }

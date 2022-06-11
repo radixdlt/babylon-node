@@ -70,21 +70,7 @@ import com.radixdlt.sbor.codec.constants.TypeId;
 public interface DecoderApi {
   void expectType(TypeId typeId);
 
-  <T> T decode(Codec<T> codec);
-
-  int decodeArrayHeaderAndGetArrayLength(TypeId expectedId);
-
-  boolean decodeBoolean();
-
-  byte decodeByte();
-
-  short decodeShort();
-
-  int decodeInt();
-
-  long decodeLong();
-
-  String decodeString();
+  <T> T decodeWithTypeId(Codec<T> codec);
 
   boolean readBoolean();
 

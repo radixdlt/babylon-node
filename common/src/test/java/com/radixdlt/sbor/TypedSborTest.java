@@ -72,6 +72,8 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.dto.SimpleEnum;
 import com.radixdlt.sbor.dto.SimpleRecord;
 import org.junit.Test;
@@ -197,10 +199,13 @@ public class TypedSborTest {
   public void byteArrayCanBeEncodedAndDecoded() {
     var testVector = new byte[] {0x01, 0x02, 0x03, 0x04, 0x05};
 
-    var r0 = TypedSbor.encode(testVector, byte[].class);
+    // Define Java arrays to map to SBOR Arrays, instead of the default, Vec
+    var sbor =
+        new SchemaCoder(new CodecMap().addCoreSchemaCodecs(TypeId.TYPE_ARRAY).resolver, true);
+    var r0 = sbor.encode(testVector, byte[].class);
 
     assertEquals(11, r0.length);
-    assertEquals(0x30, r0[0]); // Type == 0x30 - Vector
+    assertEquals(0x22, r0[0]); // Type == 0x22 - Array
     assertEquals(0x07, r0[1]); // Type == 0x07 - u8
     assertEquals(5, r0[2]); // Array length 0
     assertEquals(0, r0[3]); // Array length 1
@@ -212,7 +217,7 @@ public class TypedSborTest {
     assertEquals(0x04, r0[9]);
     assertEquals(0x05, r0[10]);
 
-    var r1 = TypedSbor.decode(r0, byte[].class);
+    var r1 = sbor.decode(r0, byte[].class);
 
     assertArrayEquals(testVector, r1);
   }

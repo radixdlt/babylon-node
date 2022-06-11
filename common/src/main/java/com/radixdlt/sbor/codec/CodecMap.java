@@ -125,36 +125,41 @@ public final class CodecMap {
   private final Map<Class, ClassCodecCreator> classCodecCreators = new HashMap<>();
   private final Map<Class, TypedCodecCreator> typedCodecCreators = new HashMap<>();
 
-  private TypeId sborTypeIdForArrayType = TypeId.TYPE_ARRAY;
+  private TypeId sborTypeIdForArrayType = TypeId.TYPE_VEC;
 
   public CodecMap addCoreSchemaCodecs() {
-    storeCreated(Unit.class, new CoreTypeCodec.UnitCodec());
-    storeCreated(String.class, new CoreTypeCodec.StringCodec());
+    return addCoreSchemaCodecs(sborTypeIdForArrayType);
+  }
 
-    storeCreated(Boolean.class, new CoreTypeCodec.BooleanCodec());
-    storeCreated(boolean.class, new CoreTypeCodec.BooleanCodec());
+  public CodecMap addCoreSchemaCodecs(TypeId sborTypeIdForArrayType) {
+    this.sborTypeIdForArrayType = sborTypeIdForArrayType; // Used for auto-array codec creation
 
-    storeCreated(Byte.class, new CoreTypeCodec.ByteCodec());
-    storeCreated(byte.class, new CoreTypeCodec.ByteCodec());
+    storeCodec(Unit.class, new CoreTypeCodec.UnitCodec());
+    storeCodec(String.class, new CoreTypeCodec.StringCodec());
 
-    storeCreated(Short.class, new CoreTypeCodec.ShortCodec());
-    storeCreated(short.class, new CoreTypeCodec.ShortCodec());
+    storeCodec(Boolean.class, new CoreTypeCodec.BooleanCodec());
+    storeCodec(boolean.class, new CoreTypeCodec.BooleanCodec());
 
-    storeCreated(Integer.class, new CoreTypeCodec.IntegerCodec());
-    storeCreated(int.class, new CoreTypeCodec.IntegerCodec());
+    storeCodec(Byte.class, new CoreTypeCodec.ByteCodec());
+    storeCodec(byte.class, new CoreTypeCodec.ByteCodec());
 
-    storeCreated(Long.class, new CoreTypeCodec.LongCodec());
-    storeCreated(long.class, new CoreTypeCodec.LongCodec());
+    storeCodec(Short.class, new CoreTypeCodec.ShortCodec());
+    storeCodec(short.class, new CoreTypeCodec.ShortCodec());
 
-    storeCreated(byte[].class, new CoreTypeCodec.ByteArrayCodec());
-    storeCreated(short[].class, new CoreTypeCodec.ShortArrayCodec());
-    storeCreated(int[].class, new CoreTypeCodec.IntegerArrayCodec());
-    storeCreated(long[].class, new CoreTypeCodec.LongArrayCodec());
+    storeCodec(Integer.class, new CoreTypeCodec.IntegerCodec());
+    storeCodec(int.class, new CoreTypeCodec.IntegerCodec());
+
+    storeCodec(Long.class, new CoreTypeCodec.LongCodec());
+    storeCodec(long.class, new CoreTypeCodec.LongCodec());
+
+    storeCodec(byte[].class, new CoreTypeCodec.ByteArrayCodec(sborTypeIdForArrayType));
+    storeCodec(short[].class, new CoreTypeCodec.ShortArrayCodec(sborTypeIdForArrayType));
+    storeCodec(int[].class, new CoreTypeCodec.IntegerArrayCodec(sborTypeIdForArrayType));
+    storeCodec(long[].class, new CoreTypeCodec.LongArrayCodec(sborTypeIdForArrayType));
 
     OptionTypeCodec.registerWith(this);
     EitherTypeCodec.registerWith(this);
 
-    sborTypeIdForArrayType = TypeId.TYPE_ARRAY; // Used for auto-array codec creation
     CollectionCodec.registerListToMapTo(this, TypeId.TYPE_VEC);
     CollectionCodec.registerArrayListToMapTo(this, TypeId.TYPE_VEC);
     CollectionCodec.registerSetToMapTo(this, TypeId.TYPE_HASH_SET);
@@ -225,7 +230,7 @@ public final class CodecMap {
     return this;
   }
 
-  private <T> CodecMap storeCreated(Class<T> clazz, Codec<T> codec) {
+  private <T> CodecMap storeCodec(Class<T> clazz, Codec<T> codec) {
     synchronized (ClassCodecCache) {
       ClassCodecCache.put(clazz, codec);
       typedCodecCache.put(TypeToken.of(clazz), codec);
@@ -233,7 +238,7 @@ public final class CodecMap {
     return this;
   }
 
-  private <T> CodecMap storeCreated(TypeToken<T> type, Codec<T> codec) {
+  private <T> CodecMap storeCodec(TypeToken<T> type, Codec<T> codec) {
     synchronized (typedCodecCache) {
       typedCodecCache.put(type, codec);
     }
@@ -277,7 +282,7 @@ public final class CodecMap {
       // Next - if it's an array, we need special handling...
       if (type.isArray()) {
         var newCodec = (Codec) createArrayCodec(type);
-        storeCreated(type, newCodec); // Cache the codec for future use
+        storeCodec(type, newCodec); // Cache the codec for future use
         return newCodec;
       }
 
@@ -286,7 +291,7 @@ public final class CodecMap {
       var codecCreator = typedCodecCreators.get(rawType);
       if (codecCreator != null) {
         var newCodec = codecCreator.create(this, type);
-        storeCreated(type, newCodec); // Cache the codec for future use
+        storeCodec(type, newCodec); // Cache the codec for future use
         return newCodec;
       }
 
@@ -306,14 +311,14 @@ public final class CodecMap {
 
       if (clazz.isArray()) {
         var newCodec = (Codec) createArrayCodec(clazz);
-        storeCreated(clazz, newCodec);
+        storeCodec(clazz, newCodec);
         return newCodec;
       }
 
       var classCodecCreator = classCodecCreators.get(clazz);
       if (classCodecCreator != null) {
         var newCodec = classCodecCreator.create(this);
-        storeCreated(clazz, newCodec);
+        storeCodec(clazz, newCodec);
         return newCodec;
       }
 

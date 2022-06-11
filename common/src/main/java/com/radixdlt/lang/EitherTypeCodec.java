@@ -77,28 +77,30 @@ import com.radixdlt.sbor.exceptions.SborDecodeException;
 public record EitherTypeCodec<L, R>(Codec<L> leftType, Codec<R> rightType)
     implements Codec<Either<L, R>> {
   @Override
-  public void encode(EncoderApi encoder, Either<L, R> either) {
-    encoder.encodeTypeId(TypeId.TYPE_RESULT);
+  public TypeId getTypeId() {
+    return TypeId.TYPE_RESULT;
+  }
 
+  @Override
+  public void encodeWithoutTypeId(EncoderApi encoder, Either<L, R> either) {
     either.apply(
         left -> {
           encoder.writeByte(ResultTypeId.ERR);
-          encoder.encode(left, leftType);
+          encoder.encodeWithTypeId(left, leftType);
         },
         right -> {
           encoder.writeByte(ResultTypeId.OK);
-          encoder.encode(right, rightType);
+          encoder.encodeWithTypeId(right, rightType);
         });
   }
 
   @Override
-  public Either<L, R> decode(DecoderApi decoder) {
-    decoder.expectType(TypeId.TYPE_RESULT);
+  public Either<L, R> decodeWithoutTypeId(DecoderApi decoder) {
     var typeByte = decoder.readByte();
 
     return switch (typeByte) {
-      case ResultTypeId.OK -> Either.right(decoder.decode(rightType));
-      case ResultTypeId.ERR -> Either.left(decoder.decode(leftType));
+      case ResultTypeId.OK -> Either.right(decoder.decodeWithTypeId(rightType));
+      case ResultTypeId.ERR -> Either.left(decoder.decodeWithTypeId(leftType));
       default -> throw new SborDecodeException(
           String.format("Unknown result type id %s", typeByte));
     };
