@@ -166,6 +166,10 @@ public final class CodecMap {
     CollectionCodec.registerHashSetToMapTo(this, TypeId.TYPE_HASH_SET);
     CollectionCodec.registerTreeSetToMapTo(this, TypeId.TYPE_TREE_SET);
 
+    MapCodec.registerMapToMapTo(this, TypeId.TYPE_HASH_MAP);
+    MapCodec.registerHashMapToMapTo(this, TypeId.TYPE_HASH_MAP);
+    MapCodec.registerTreeMapToMapTo(this, TypeId.TYPE_TREE_MAP);
+
     return this;
   }
 

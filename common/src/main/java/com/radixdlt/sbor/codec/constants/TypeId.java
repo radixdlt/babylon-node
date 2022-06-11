@@ -90,7 +90,6 @@ public enum TypeId {
 
   // Composite types
   TYPE_OPTION(0x20),
-  TYPE_BOX(0x21), // Unused
   TYPE_ARRAY(0x22),
   TYPE_TUPLE(0x23),
   TYPE_RESULT(0x24),

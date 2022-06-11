@@ -154,6 +154,15 @@ interface CollectionCodec {
     }
   }
 
+  private static <T> void assertNoDuplicates(Set<T> set, List<T> list) {
+    if (set.size() != list.size()) {
+      throw new SborDecodeException(
+          String.format(
+              "Duplicate elements in set. Expected size %s, de-duplicated size %s",
+              list.size(), set.size()));
+    }
+  }
+
   static <T> Codec<Set<T>> forSet(Codec<T> itemCodec, TypeId collectionTypeId) {
     collectionTypeId.assertCollectionType();
     return new CollectionCodecViaArrayList<>(
@@ -163,12 +172,7 @@ interface CollectionCodec {
         set -> set,
         list -> {
           var set = new HashSet<>(list);
-          if (set.size() != list.size()) {
-            throw new SborDecodeException(
-                String.format(
-                    "Duplicate elements in set. Expected size %s, de-duplicated size %s",
-                    list.size(), set.size()));
-          }
+          assertNoDuplicates(set, list);
           return set;
         });
   }
@@ -182,12 +186,7 @@ interface CollectionCodec {
         set -> set,
         list -> {
           var set = new HashSet<>(list);
-          if (set.size() != list.size()) {
-            throw new SborDecodeException(
-                String.format(
-                    "Duplicate elements in set. Expected size %s, de-duplicated size %s",
-                    list.size(), set.size()));
-          }
+          assertNoDuplicates(set, list);
           return set;
         });
   }
@@ -201,12 +200,7 @@ interface CollectionCodec {
         set -> set,
         list -> {
           var set = new TreeSet<>(list);
-          if (set.size() != list.size()) {
-            throw new SborDecodeException(
-                String.format(
-                    "Duplicate elements in set. Expected size %s, de-duplicated size %s",
-                    list.size(), set.size()));
-          }
+          assertNoDuplicates(set, list);
           return set;
         });
   }
