@@ -74,7 +74,7 @@ import com.radixdlt.sbor.coding.EncoderApi;
 import com.radixdlt.sbor.exceptions.SborCodecException;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
 
-public record OptionTypeCodec<T>(Codec<T> innerTypeCodec) implements Codec<Option<T>> {
+public record OptionCodec<T>(Codec<T> innerTypeCodec) implements Codec<Option<T>> {
   @Override
   public TypeId getTypeId() {
     return TypeId.TYPE_OPTION;
@@ -102,14 +102,13 @@ public record OptionTypeCodec<T>(Codec<T> innerTypeCodec) implements Codec<Optio
     };
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
   public static void registerWith(CodecMap codecMap) {
     codecMap.registerForGenericSealedClassAndSubclasses(
         Option.class,
         (codecs, optionType) -> {
           try {
             var innerType = TypeTokenUtils.getGenericTypeParameter(optionType, 0);
-            return new OptionTypeCodec(codecs.of(innerType));
+            return new OptionCodec<>(codecs.of(innerType));
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating Option type codec for %s", optionType), ex);

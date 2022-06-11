@@ -80,11 +80,12 @@ public record SimpleRecord(
     codecMap.register(
         SimpleRecord.class,
         (codecs) ->
-            StructCodec.of(
-                Field.of(SimpleRecord::first, codecs.of(int.class)),
-                Field.of(SimpleRecord::second, codecs.of(String.class)),
-                Field.of(SimpleRecord::third, codecs.of(new TypeToken<Either<Long, String>>() {})),
-                Field.of(SimpleRecord::fourth, codecs.of(new TypeToken<Option<Boolean>>() {})),
+            StructCodec.with(
+                (r, s) -> s.accept(r.first, r.second, r.third, r.fourth),
+                codecs.of(int.class),
+                codecs.of(String.class),
+                codecs.of(new TypeToken<Either<Long, String>>() {}),
+                codecs.of(new TypeToken<Option<Boolean>>() {}),
                 SimpleRecord::new));
   }
 }

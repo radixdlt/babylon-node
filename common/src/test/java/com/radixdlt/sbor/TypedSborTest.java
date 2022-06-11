@@ -73,6 +73,8 @@ import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.Field;
+import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.dto.SimpleEnum;
 import com.radixdlt.sbor.dto.SimpleRecord;
@@ -367,10 +369,22 @@ public class TypedSborTest {
   }
 
   @Test
-  public void objectTreeCanBeEncodedAndDecoded() {
+  public void objectTreeCanBeEncodedAndDecodedWithEitherStructCodec() {
     var testValue = new SimpleRecord(1234567, "Some string", Either.left(4567L), some(false));
 
-    var r0 = TypedSbor.encode(testValue, SimpleRecord.class);
+    // Encode with DEFAULT codec map (ie using StructCodec.with)
+    var structCodecWithCoder = new SchemaCoder(new CodecMap().addCoreSchemaCodecs().register(
+        SimpleRecord.class,
+        (codecs) ->
+            StructCodec.with(
+                (r, s) -> s.accept(r.first(), r.second(), r.third(), r.fourth()),
+                codecs.of(int.class),
+                codecs.of(String.class),
+                codecs.of(new TypeToken<Either<Long, String>>() {}),
+                codecs.of(new TypeToken<Option<Boolean>>() {}),
+                SimpleRecord::new)).resolver, true);
+
+    var r0 = structCodecWithCoder.encode(testValue, SimpleRecord.class);
 
     assertEquals(41, r0.length);
     assertEquals(0x10, r0[0]); // Type == 0x10 - Struct
@@ -379,9 +393,29 @@ public class TypedSborTest {
     assertEquals(0x00, r0[3]); //
     assertEquals(0x00, r0[4]); //
 
-    var r1 = TypedSbor.decode(r0, SimpleRecord.class);
+    var r1 = structCodecWithCoder.decode(r0, SimpleRecord.class);
 
     assertEquals(testValue, r1);
+
+    // Encode with codec map using StructField.fromFields
+
+    var structCodecFromFieldsCoder = new SchemaCoder(new CodecMap().addCoreSchemaCodecs().register(
+        SimpleRecord.class,
+        (codecs) ->
+            StructCodec.fromFields(
+                Field.of(SimpleRecord::first, codecs.of(int.class)),
+                Field.of(SimpleRecord::second, codecs.of(String.class)),
+                Field.of(SimpleRecord::third, codecs.of(new TypeToken<Either<Long, String>>() {})),
+                Field.of(SimpleRecord::fourth, codecs.of(new TypeToken<Option<Boolean>>() {})),
+                SimpleRecord::new)).resolver, true);
+
+    var r2 = structCodecFromFieldsCoder.encode(testValue, SimpleRecord.class);
+
+    assertArrayEquals(r0, r2);
+
+    var r3 = structCodecFromFieldsCoder.decode(r2, SimpleRecord.class);
+
+    assertEquals(testValue, r3);
   }
 
   @Test

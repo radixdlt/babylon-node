@@ -73,6 +73,7 @@ import com.radixdlt.sbor.coding.EncoderApi;
  *
  * @param <T>
  */
+@SuppressWarnings("unused")
 public interface Codec<T> extends UntypedCodec<T> {
   TypeId getTypeId();
 
@@ -84,5 +85,43 @@ public interface Codec<T> extends UntypedCodec<T> {
   default T decodeWithTypeId(DecoderApi decoder) {
     decoder.expectType(getTypeId());
     return decodeWithoutTypeId(decoder);
+  }
+
+  static <T> Codec<T> of(
+      TypeId typeId, EncoderWithoutTypeId<T> valueEncoder, DecoderWithoutTypeId<T> valueDecoder) {
+    return new CompositeCodec<>(typeId, valueEncoder, valueDecoder);
+  }
+
+  static <T> Codec<T> from(TypeId typeId, UntypedCodec<T> untypedCodec) {
+    return of(typeId, untypedCodec::encodeWithoutTypeId, untypedCodec::decodeWithoutTypeId);
+  }
+
+  @FunctionalInterface
+  interface EncoderWithTypeId<T> {
+    void encodeWithTypeId(EncoderApi encoder, T value);
+  }
+
+  @FunctionalInterface
+  interface DecoderWithTypeId<T> {
+    T decodeWithTypeId(DecoderApi decoder);
+  }
+
+  record CompositeCodec<T>(
+      TypeId typeId, EncoderWithoutTypeId<T> valueEncoder, DecoderWithoutTypeId<T> valueDecoder)
+      implements Codec<T> {
+    @Override
+    public TypeId getTypeId() {
+      return typeId;
+    }
+
+    @Override
+    public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+      valueEncoder.encodeWithoutTypeId(encoder, value);
+    }
+
+    @Override
+    public T decodeWithoutTypeId(DecoderApi decoder) {
+      return valueDecoder.decodeWithoutTypeId(decoder);
+    }
   }
 }

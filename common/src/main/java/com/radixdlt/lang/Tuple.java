@@ -77,21 +77,37 @@ public interface Tuple {
     default int size() {
       return 0;
     }
+
+    static Tuple0 of() {
+      return tuple();
+    }
   }
 
   interface Tuple1<T1> extends Tuple {
     <T> T map(Func1<T1, T> mapper);
 
+    void accept(Action1<T1> consumer);
+
     default int size() {
       return 1;
+    }
+
+    static <P1> Tuple1<P1> of(P1 param1) {
+      return tuple(param1);
     }
   }
 
   interface Tuple2<T1, T2> extends Tuple {
     <T> T map(Func2<T1, T2, T> mapper);
 
+    void accept(Action2<T1, T2> consumer);
+
     default int size() {
       return 2;
+    }
+
+    static <P1, P2> Tuple2<P1, P2> of(P1 param1, P2 param2) {
+      return tuple(param1, param2);
     }
 
     T1 first();
@@ -102,80 +118,192 @@ public interface Tuple {
   interface Tuple3<T1, T2, T3> extends Tuple {
     <T> T map(Func3<T1, T2, T3, T> mapper);
 
+    void accept(Action3<T1, T2, T3> consumer);
+
     default int size() {
       return 3;
+    }
+
+    static <P1, P2, P3> Tuple3<P1, P2, P3> of(P1 param1, P2 param2, P3 param3) {
+      return tuple(param1, param2, param3);
     }
   }
 
   interface Tuple4<T1, T2, T3, T4> extends Tuple {
     <T> T map(Func4<T1, T2, T3, T4, T> mapper);
 
+    void accept(Action4<T1, T2, T3, T4> consumer);
+
     default int size() {
       return 4;
+    }
+
+    static <P1, P2, P3, P4> Tuple4<P1, P2, P3, P4> of(P1 param1, P2 param2, P3 param3, P4 param4) {
+      return tuple(param1, param2, param3, param4);
     }
   }
 
   interface Tuple5<T1, T2, T3, T4, T5> extends Tuple {
     <T> T map(Func5<T1, T2, T3, T4, T5, T> mapper);
 
+    void accept(Action5<T1, T2, T3, T4, T5> consumer);
+
     default int size() {
       return 5;
+    }
+
+    static <P1, P2, P3, P4, P5> Tuple5<P1, P2, P3, P4, P5> of(
+        P1 param1, P2 param2, P3 param3, P4 param4, P5 param5) {
+      return tuple(param1, param2, param3, param4, param5);
     }
   }
 
   interface Tuple6<T1, T2, T3, T4, T5, T6> extends Tuple {
     <T> T map(Func6<T1, T2, T3, T4, T5, T6, T> mapper);
 
+    void accept(Action6<T1, T2, T3, T4, T5, T6> consumer);
+
     default int size() {
       return 6;
+    }
+
+    static <P1, P2, P3, P4, P5, P6> Tuple6<P1, P2, P3, P4, P5, P6> of(
+        P1 param1, P2 param2, P3 param3, P4 param4, P5 param5, P6 param6) {
+      return tuple(param1, param2, param3, param4, param5, param6);
     }
   }
 
   interface Tuple7<T1, T2, T3, T4, T5, T6, T7> extends Tuple {
     <T> T map(Func7<T1, T2, T3, T4, T5, T6, T7, T> mapper);
 
+    void accept(Action7<T1, T2, T3, T4, T5, T6, T7> consumer);
+
     default int size() {
       return 7;
+    }
+
+    static <P1, P2, P3, P4, P5, P6, P7> Tuple7<P1, P2, P3, P4, P5, P6, P7> of(
+        P1 param1, P2 param2, P3 param3, P4 param4, P5 param5, P6 param6, P7 param7) {
+      return tuple(param1, param2, param3, param4, param5, param6, param7);
     }
   }
 
   interface Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends Tuple {
     <T> T map(Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> mapper);
 
+    void accept(Action8<T1, T2, T3, T4, T5, T6, T7, T8> consumer);
+
     default int size() {
       return 8;
+    }
+
+    static <P1, P2, P3, P4, P5, P6, P7, P8> Tuple8<P1, P2, P3, P4, P5, P6, P7, P8> of(
+        P1 param1, P2 param2, P3 param3, P4 param4, P5 param5, P6 param6, P7 param7, P8 param8) {
+      return tuple(param1, param2, param3, param4, param5, param6, param7, param8);
     }
   }
 
   interface Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9> extends Tuple {
     <T> T map(Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> mapper);
 
+    void accept(Action9<T1, T2, T3, T4, T5, T6, T7, T8, T9> consumer);
+
     default int size() {
       return 9;
+    }
+
+    static <P1, P2, P3, P4, P5, P6, P7, P8, P9> Tuple9<P1, P2, P3, P4, P5, P6, P7, P8, P9> of(
+        P1 param1,
+        P2 param2,
+        P3 param3,
+        P4 param4,
+        P5 param5,
+        P6 param6,
+        P7 param7,
+        P8 param8,
+        P9 param9) {
+      return tuple(param1, param2, param3, param4, param5, param6, param7, param8, param9);
     }
   }
 
   interface Tuple10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> extends Tuple {
     <T> T map(Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> mapper);
 
+    void accept(Action10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> consumer);
+
     default int size() {
       return 10;
+    }
+
+    static <P1, P2, P3, P4, P5, P6, P7, P8, P9, P10>
+        Tuple10<P1, P2, P3, P4, P5, P6, P7, P8, P9, P10> of(
+            P1 param1,
+            P2 param2,
+            P3 param3,
+            P4 param4,
+            P5 param5,
+            P6 param6,
+            P7 param7,
+            P8 param8,
+            P9 param9,
+            P10 param10) {
+      return tuple(param1, param2, param3, param4, param5, param6, param7, param8, param9, param10);
     }
   }
 
   interface Tuple11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> extends Tuple {
     <T> T map(Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> mapper);
 
+    void accept(Action11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> consumer);
+
     default int size() {
       return 11;
+    }
+
+    static <P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11>
+        Tuple11<P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11> of(
+            P1 param1,
+            P2 param2,
+            P3 param3,
+            P4 param4,
+            P5 param5,
+            P6 param6,
+            P7 param7,
+            P8 param8,
+            P9 param9,
+            P10 param10,
+            P11 param11) {
+      return tuple(
+          param1, param2, param3, param4, param5, param6, param7, param8, param9, param10, param11);
     }
   }
 
   interface Tuple12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> extends Tuple {
     <T> T map(Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> mapper);
 
+    void accept(Action12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> consumer);
+
     default int size() {
-      return 11;
+      return 12;
+    }
+
+    static <P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12>
+        Tuple12<P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12> of(
+            P1 param1,
+            P2 param2,
+            P3 param3,
+            P4 param4,
+            P5 param5,
+            P6 param6,
+            P7 param7,
+            P8 param8,
+            P9 param9,
+            P10 param10,
+            P11 param11,
+            P12 param12) {
+      return tuple(
+          param1, param2, param3, param4, param5, param6, param7, param8, param9, param10, param11,
+          param12);
     }
   }
 
@@ -189,6 +317,11 @@ public interface Tuple {
       public <T> T map(Func1<T1, T> mapper) {
         return mapper.apply(param1());
       }
+
+      @Override
+      public void accept(Action1<T1> consumer) {
+        consumer.accept(param1());
+      }
     }
 
     return new tuple1<>(param1);
@@ -199,6 +332,11 @@ public interface Tuple {
       @Override
       public <T> T map(Func2<T1, T2, T> mapper) {
         return mapper.apply(param1(), param2());
+      }
+
+      @Override
+      public void accept(Action2<T1, T2> consumer) {
+        consumer.accept(param1(), param2());
       }
 
       @Override
@@ -221,6 +359,11 @@ public interface Tuple {
       public <T> T map(Func3<T1, T2, T3, T> mapper) {
         return mapper.apply(param1(), param2(), param3());
       }
+
+      @Override
+      public void accept(Action3<T1, T2, T3> consumer) {
+        consumer.accept(param1(), param2(), param3());
+      }
     }
 
     return new tuple3<>(param1, param2, param3);
@@ -232,6 +375,11 @@ public interface Tuple {
       @Override
       public <T> T map(Func4<T1, T2, T3, T4, T> mapper) {
         return mapper.apply(param1(), param2(), param3(), param4());
+      }
+
+      @Override
+      public void accept(Action4<T1, T2, T3, T4> consumer) {
+        consumer.accept(param1(), param2(), param3(), param4());
       }
     }
 
@@ -245,6 +393,11 @@ public interface Tuple {
       @Override
       public <T> T map(Func5<T1, T2, T3, T4, T5, T> mapper) {
         return mapper.apply(param1(), param2(), param3(), param4(), param5());
+      }
+
+      @Override
+      public void accept(Action5<T1, T2, T3, T4, T5> consumer) {
+        consumer.accept(param1(), param2(), param3(), param4(), param5());
       }
     }
 
@@ -260,6 +413,11 @@ public interface Tuple {
       public <T> T map(Func6<T1, T2, T3, T4, T5, T6, T> mapper) {
         return mapper.apply(param1(), param2(), param3(), param4(), param5(), param6());
       }
+
+      @Override
+      public void accept(Action6<T1, T2, T3, T4, T5, T6> consumer) {
+        consumer.accept(param1(), param2(), param3(), param4(), param5(), param6());
+      }
     }
 
     return new tuple6<>(param1, param2, param3, param4, param5, param6);
@@ -274,6 +432,11 @@ public interface Tuple {
       public <T> T map(Func7<T1, T2, T3, T4, T5, T6, T7, T> mapper) {
         return mapper.apply(param1(), param2(), param3(), param4(), param5(), param6(), param7());
       }
+
+      @Override
+      public void accept(Action7<T1, T2, T3, T4, T5, T6, T7> consumer) {
+        consumer.accept(param1(), param2(), param3(), param4(), param5(), param6(), param7());
+      }
     }
 
     return new tuple7<>(param1, param2, param3, param4, param5, param6, param7);
@@ -287,6 +450,12 @@ public interface Tuple {
       @Override
       public <T> T map(Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> mapper) {
         return mapper.apply(
+            param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8());
+      }
+
+      @Override
+      public void accept(Action8<T1, T2, T3, T4, T5, T6, T7, T8> consumer) {
+        consumer.accept(
             param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8());
       }
     }
@@ -318,6 +487,13 @@ public interface Tuple {
       @Override
       public <T> T map(Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> mapper) {
         return mapper.apply(
+            param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8(),
+            param9());
+      }
+
+      @Override
+      public void accept(Action9<T1, T2, T3, T4, T5, T6, T7, T8, T9> consumer) {
+        consumer.accept(
             param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8(),
             param9());
       }
@@ -353,6 +529,13 @@ public interface Tuple {
       @Override
       public <T> T map(Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> mapper) {
         return mapper.apply(
+            param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8(),
+            param9(), param10());
+      }
+
+      @Override
+      public void accept(Action10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> consumer) {
+        consumer.accept(
             param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8(),
             param9(), param10());
       }
@@ -394,6 +577,13 @@ public interface Tuple {
             param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8(),
             param9(), param10(), param11());
       }
+
+      @Override
+      public void accept(Action11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> consumer) {
+        consumer.accept(
+            param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8(),
+            param9(), param10(), param11());
+      }
     }
 
     return new tuple11<>(
@@ -431,6 +621,13 @@ public interface Tuple {
       @Override
       public <T> T map(Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> mapper) {
         return mapper.apply(
+            param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8(),
+            param9(), param10(), param11(), param12());
+      }
+
+      @Override
+      public void accept(Action12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> consumer) {
+        consumer.accept(
             param1(), param2(), param3(), param4(), param5(), param6(), param7(), param8(),
             param9(), param10(), param11(), param12());
       }

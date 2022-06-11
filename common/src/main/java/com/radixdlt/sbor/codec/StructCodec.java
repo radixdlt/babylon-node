@@ -69,15 +69,14 @@ import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
 
+@SuppressWarnings("unused")
 public interface StructCodec<T> extends Codec<T> {
-  Fields<T> fields();
-
   @Override
   default TypeId getTypeId() {
     return TypeId.TYPE_STRUCT;
   }
 
-  record StructCodecImpl<T>(Fields<T> fields) implements StructCodec<T> {
+  record StructFieldsCodec<T>(UntypedCodec<T> fields) implements StructCodec<T> {
     @Override
     public void encodeWithoutTypeId(EncoderApi encoder, T value) {
       fields.encodeWithoutTypeId(encoder, value);
@@ -89,47 +88,61 @@ public interface StructCodec<T> extends Codec<T> {
     }
   }
 
-  static <T> StructCodec<T> from(Fields<T> fields) {
-    return new StructCodecImpl<>(fields);
+  static <T> StructCodec<T> with(Fields<T> fields) {
+    return new StructFieldsCodec<>(fields);
   }
 
-  static <T, T1> StructCodec<T> of(Field<T, T1> field1, Functions.Func1<T1, T> creator) {
-    return Fields.of(field1, creator).forStruct();
+  // Version 1 - Uses Fields
+  // EXAMPLE
+  /*
+     codecMap.register(
+       SimpleRecord.class,
+       (codecs) ->
+           StructCodec.fromFields(
+               Field.of(SimpleRecord::first, codecs.of(int.class)),
+               Field.of(SimpleRecord::second, codecs.of(String.class)),
+               Field.of(SimpleRecord::third, codecs.of(new TypeToken<Either<Long, String>>() {})),
+               Field.of(SimpleRecord::fourth, codecs.of(new TypeToken<Option<Boolean>>() {})),
+               SimpleRecord::new));
+  */
+
+  static <T, T1> StructCodec<T> fromFields(Field<T, T1> field1, Functions.Func1<T1, T> creator) {
+    return with(Fields.of(field1, creator));
   }
 
-  static <T, T1, T2> StructCodec<T> of(
+  static <T, T1, T2> StructCodec<T> fromFields(
       Field<T, T1> field1, Field<T, T2> field2, Functions.Func2<T1, T2, T> creator) {
-    return Fields.of(field1, field2, creator).forStruct();
+    return with(Fields.of(field1, field2, creator));
   }
 
-  static <T, T1, T2, T3> StructCodec<T> of(
+  static <T, T1, T2, T3> StructCodec<T> fromFields(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
       Functions.Func3<T1, T2, T3, T> creator) {
-    return Fields.of(field1, field2, field3, creator).forStruct();
+    return with(Fields.of(field1, field2, field3, creator));
   }
 
-  static <T, T1, T2, T3, T4> StructCodec<T> of(
+  static <T, T1, T2, T3, T4> StructCodec<T> fromFields(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
       Field<T, T4> field4,
       Functions.Func4<T1, T2, T3, T4, T> creator) {
-    return Fields.of(field1, field2, field3, field4, creator).forStruct();
+    return with(Fields.of(field1, field2, field3, field4, creator));
   }
 
-  static <T, T1, T2, T3, T4, T5> StructCodec<T> of(
+  static <T, T1, T2, T3, T4, T5> StructCodec<T> fromFields(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
       Field<T, T4> field4,
       Field<T, T5> field5,
       Functions.Func5<T1, T2, T3, T4, T5, T> creator) {
-    return Fields.of(field1, field2, field3, field4, field5, creator).forStruct();
+    return with(Fields.of(field1, field2, field3, field4, field5, creator));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6> StructCodec<T> of(
+  static <T, T1, T2, T3, T4, T5, T6> StructCodec<T> fromFields(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -137,10 +150,10 @@ public interface StructCodec<T> extends Codec<T> {
       Field<T, T5> field5,
       Field<T, T6> field6,
       Functions.Func6<T1, T2, T3, T4, T5, T6, T> creator) {
-    return Fields.of(field1, field2, field3, field4, field5, field6, creator).forStruct();
+    return with(Fields.of(field1, field2, field3, field4, field5, field6, creator));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7> StructCodec<T> of(
+  static <T, T1, T2, T3, T4, T5, T6, T7> StructCodec<T> fromFields(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -149,10 +162,10 @@ public interface StructCodec<T> extends Codec<T> {
       Field<T, T6> field6,
       Field<T, T7> field7,
       Functions.Func7<T1, T2, T3, T4, T5, T6, T7, T> creator) {
-    return Fields.of(field1, field2, field3, field4, field5, field6, field7, creator).forStruct();
+    return with(Fields.of(field1, field2, field3, field4, field5, field6, field7, creator));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8> StructCodec<T> of(
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8> StructCodec<T> fromFields(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -162,11 +175,10 @@ public interface StructCodec<T> extends Codec<T> {
       Field<T, T7> field7,
       Field<T, T8> field8,
       Functions.Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> creator) {
-    return Fields.of(field1, field2, field3, field4, field5, field6, field7, field8, creator)
-        .forStruct();
+    return with(Fields.of(field1, field2, field3, field4, field5, field6, field7, field8, creator));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9> StructCodec<T> of(
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9> StructCodec<T> fromFields(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -177,12 +189,11 @@ public interface StructCodec<T> extends Codec<T> {
       Field<T, T8> field8,
       Field<T, T9> field9,
       Functions.Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> creator) {
-    return Fields.of(
-            field1, field2, field3, field4, field5, field6, field7, field8, field9, creator)
-        .forStruct();
+    return with(
+        Fields.of(field1, field2, field3, field4, field5, field6, field7, field8, field9, creator));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> StructCodec<T> of(
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> StructCodec<T> fromFields(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -194,13 +205,13 @@ public interface StructCodec<T> extends Codec<T> {
       Field<T, T9> field9,
       Field<T, T10> field10,
       Functions.Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> creator) {
-    return Fields.of(
+    return with(
+        Fields.of(
             field1, field2, field3, field4, field5, field6, field7, field8, field9, field10,
-            creator)
-        .forStruct();
+            creator));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> StructCodec<T> of(
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> StructCodec<T> fromFields(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -213,13 +224,13 @@ public interface StructCodec<T> extends Codec<T> {
       Field<T, T10> field10,
       Field<T, T11> field11,
       Functions.Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> creator) {
-    return Fields.of(
+    return with(
+        Fields.of(
             field1, field2, field3, field4, field5, field6, field7, field8, field9, field10,
-            field11, creator)
-        .forStruct();
+            field11, creator));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> StructCodec<T> of(
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> StructCodec<T> fromFields(
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -233,9 +244,206 @@ public interface StructCodec<T> extends Codec<T> {
       Field<T, T11> field11,
       Field<T, T12> field12,
       Functions.Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> creator) {
-    return Fields.of(
+    return with(
+        Fields.of(
             field1, field2, field3, field4, field5, field6, field7, field8, field9, field10,
-            field11, field12, creator)
-        .forStruct();
+            field11, field12, creator));
+  }
+
+  // Option 2 "with" - Uses separation / reunification tactic
+  // EXAMPLE:
+  /*
+     codecMap.register(
+       SimpleRecord.class,
+       (codecs) ->
+           StructCodec.with(
+               (r, s) -> s.accept(r.first, r.second, r.third, r.fourth),
+               codecs.of(int.class),
+               codecs.of(String.class),
+               codecs.of(new TypeToken<Either<Long, String>>() {}),
+               codecs.of(new TypeToken<Option<Boolean>>() {}),
+               SimpleRecord::new));
+  */
+
+  static <T> StructCodec<T> with(UntypedCodec<T> untypedCodec) {
+    return new StructFieldsCodec<>(untypedCodec);
+  }
+
+  static <T> StructCodec<T> empty(Functions.Func0<T> creator) {
+    return new StructFieldsCodec<>(UntypedCodec.empty(creator));
+  }
+
+  static <T, T1> StructCodec<T> single(
+      Functions.Func1<T, T1> getter, Codec<T1> codec1, Functions.Func1<T1, T> creator) {
+    return with(UntypedCodec.wrapWithoutLength(getter, codec1, creator));
+  }
+
+  static <T, T1> StructCodec<T> with(
+      Functions.Action2<T, Functions.Action1<T1>> splitter,
+      Codec<T1> codec1,
+      Functions.Func1<T1, T> creator) {
+    return with(UntypedCodec.fromWithLength(splitter, codec1, creator));
+  }
+
+  static <T, T1, T2> StructCodec<T> with(
+      Functions.Action2<T, Functions.Action2<T1, T2>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Functions.Func2<T1, T2, T> creator) {
+    return with(UntypedCodec.fromWithLength(splitter, codec1, codec2, creator));
+  }
+
+  static <T, T1, T2, T3> StructCodec<T> with(
+      Functions.Action2<T, Functions.Action3<T1, T2, T3>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Functions.Func3<T1, T2, T3, T> creator) {
+    return with(UntypedCodec.fromWithLength(splitter, codec1, codec2, codec3, creator));
+  }
+
+  static <T, T1, T2, T3, T4> StructCodec<T> with(
+      Functions.Action2<T, Functions.Action4<T1, T2, T3, T4>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Functions.Func4<T1, T2, T3, T4, T> creator) {
+    return with(UntypedCodec.fromWithLength(splitter, codec1, codec2, codec3, codec4, creator));
+  }
+
+  static <T, T1, T2, T3, T4, T5> StructCodec<T> with(
+      Functions.Action2<T, Functions.Action5<T1, T2, T3, T4, T5>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Functions.Func5<T1, T2, T3, T4, T5, T> creator) {
+    return with(UntypedCodec.fromWithLength(splitter, codec1, codec2, codec3, codec4, codec5, creator));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6> StructCodec<T> with(
+      Functions.Action2<T, Functions.Action6<T1, T2, T3, T4, T5, T6>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Functions.Func6<T1, T2, T3, T4, T5, T6, T> creator) {
+    return with(
+        UntypedCodec.fromWithLength(splitter, codec1, codec2, codec3, codec4, codec5, codec6, creator));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7> StructCodec<T> with(
+      Functions.Action2<T, Functions.Action7<T1, T2, T3, T4, T5, T6, T7>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Functions.Func7<T1, T2, T3, T4, T5, T6, T7, T> creator) {
+    return with(
+        UntypedCodec.fromWithLength(
+            splitter, codec1, codec2, codec3, codec4, codec5, codec6, codec7, creator));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8> StructCodec<T> with(
+      Functions.Action2<T, Functions.Action8<T1, T2, T3, T4, T5, T6, T7, T8>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Functions.Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> creator) {
+    return with(
+        UntypedCodec.fromWithLength(
+            splitter, codec1, codec2, codec3, codec4, codec5, codec6, codec7, codec8, creator));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9> StructCodec<T> with(
+      Functions.Action2<T, Functions.Action9<T1, T2, T3, T4, T5, T6, T7, T8, T9>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Codec<T9> codec9,
+      Functions.Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> creator) {
+    return with(
+        UntypedCodec.fromWithLength(
+            splitter, codec1, codec2, codec3, codec4, codec5, codec6, codec7, codec8, codec9,
+            creator));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> StructCodec<T> with(
+      Functions.Action2<T, Functions.Action10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Codec<T9> codec9,
+      Codec<T10> codec10,
+      Functions.Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> creator) {
+    return with(
+        UntypedCodec.fromWithLength(
+            splitter, codec1, codec2, codec3, codec4, codec5, codec6, codec7, codec8, codec9,
+            codec10, creator));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> StructCodec<T> with(
+      Functions.Action2<T, Functions.Action11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>>
+          splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Codec<T9> codec9,
+      Codec<T10> codec10,
+      Codec<T11> codec11,
+      Functions.Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> creator) {
+    return with(
+        UntypedCodec.fromWithLength(
+            splitter, codec1, codec2, codec3, codec4, codec5, codec6, codec7, codec8, codec9,
+            codec10, codec11, creator));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> StructCodec<T> with(
+      Functions.Action2<T, Functions.Action12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>>
+          splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Codec<T9> codec9,
+      Codec<T10> codec10,
+      Codec<T11> codec11,
+      Codec<T12> codec12,
+      Functions.Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> creator) {
+    return with(
+        UntypedCodec.fromWithLength(
+            splitter, codec1, codec2, codec3, codec4, codec5, codec6, codec7, codec8, codec9,
+            codec10, codec11, codec12, creator));
   }
 }

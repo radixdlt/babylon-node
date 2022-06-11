@@ -86,7 +86,7 @@ public final class Transaction {
     codecMap.register(
         Transaction.class,
         codecs ->
-            StructCodec.of(
+            StructCodec.fromFields(
                 Field.of(Transaction::getPayload, codecs.of(byte[].class)),
                 Field.of(Transaction::getId, codecs.of(AID.class)),
                 Transaction::new));

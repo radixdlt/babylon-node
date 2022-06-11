@@ -88,7 +88,8 @@ public final class AID implements Comparable<AID> {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         AID.class,
-        codecs -> StructCodec.of(Field.of(AID::getBytes, codecs.of(byte[].class)), AID::new));
+        codecs ->
+            StructCodec.fromFields(Field.of(AID::getBytes, codecs.of(byte[].class)), AID::new));
   }
 
   static final int HASH_BYTES = 32;

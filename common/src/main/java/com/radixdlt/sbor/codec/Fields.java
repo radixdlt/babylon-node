@@ -102,10 +102,6 @@ public interface Fields<T> extends UntypedCodec<T> {
     return this.decodeFields(decoder);
   }
 
-  default StructCodec<T> forStruct() {
-    return StructCodec.from(this);
-  }
-
   T decodeFields(DecoderApi decoder);
 
   class FieldsImpl<T> implements Fields<T> {

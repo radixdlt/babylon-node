@@ -64,11 +64,1000 @@
 
 package com.radixdlt.sbor.codec;
 
+import com.radixdlt.lang.Functions;
+import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
+import com.radixdlt.sbor.exceptions.SborDecodeException;
 
+@SuppressWarnings("unused")
 public interface UntypedCodec<T> {
   void encodeWithoutTypeId(EncoderApi encoder, T value);
 
   T decodeWithoutTypeId(DecoderApi decoder);
+
+  default Codec<T> addType(TypeId typeId) {
+    return Codec.from(typeId, this);
+  }
+
+  static <T> UntypedCodec<T> of(
+      EncoderWithoutTypeId<T> valueEncoder, DecoderWithoutTypeId<T> valueDecoder) {
+    return new CompositeUntypedCodec<>(valueEncoder, valueDecoder);
+  }
+
+  static <T> UntypedCodec<T> empty(Functions.Func0<T> creator) {
+    return new EmptyUntypedCodec<>(creator);
+  }
+
+  record EmptyUntypedCodec<T>(Functions.Func0<T> creator) implements UntypedCodec<T> {
+    @Override
+    public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+      // No-op
+    }
+
+    @Override
+    public T decodeWithoutTypeId(DecoderApi decoder) {
+      return creator.apply();
+    }
+  }
+
+  @FunctionalInterface
+  interface EncoderWithoutTypeId<T> {
+    void encodeWithoutTypeId(EncoderApi encoder, T value);
+  }
+
+  @FunctionalInterface
+  interface DecoderWithoutTypeId<T> {
+    T decodeWithoutTypeId(DecoderApi decoder);
+  }
+
+  record CompositeUntypedCodec<T>(
+      EncoderWithoutTypeId<T> valueEncoder, DecoderWithoutTypeId<T> valueDecoder)
+      implements UntypedCodec<T> {
+    @Override
+    public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+      valueEncoder.encodeWithoutTypeId(encoder, value);
+    }
+
+    @Override
+    public T decodeWithoutTypeId(DecoderApi decoder) {
+      return valueDecoder.decodeWithoutTypeId(decoder);
+    }
+  }
+
+
+    static <T> UntypedCodec<T> emptyWithLength(
+        Functions.Func0<T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                encoder.writeInt(0),
+            decoder -> {
+                expectFieldCount(decoder, 0);
+                return creator.apply();
+            });
+    }
+
+    static <T> UntypedCodec<T> fromWithLength(
+        Functions.Action2<T, Functions.Action0> splitter,
+        Functions.Func0<T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                splitter.accept(value, () -> encoder.writeInt(0)),
+            decoder -> {
+                expectFieldCount(decoder, 0);
+                return creator.apply();
+            });
+    }
+
+
+    static <T, T1> UntypedCodec<T> wrapWithLength(
+        Functions.Func1<T, T1> getter, Codec<T1> codec1, Functions.Func1<T1, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) -> {
+                encoder.writeInt(1);
+                codec1.encodeWithTypeId(encoder, getter.apply(value));
+            },
+            decoder -> {
+                expectFieldCount(decoder, 1);
+                return creator.apply(codec1.decodeWithTypeId(decoder));
+            });
+    }
+
+    static <T, T1> UntypedCodec<T> fromWithLength(
+        Functions.Action2<T, Functions.Action1<T1>> splitter,
+        Codec<T1> codec1,
+        Functions.Func1<T1, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                splitter.accept(value, (param1) -> {
+                    encoder.writeInt(1);
+                    codec1.encodeWithTypeId(encoder, param1);
+                }),
+            decoder -> {
+                expectFieldCount(decoder, 1);
+                return
+                    creator.apply(
+                        codec1.decodeWithTypeId(decoder));
+            });
+    }
+
+    static <T, T1, T2> UntypedCodec<T> fromWithLength(
+        Functions.Action2<T, Functions.Action2<T1, T2>> splitter,
+        Codec<T1> codec1,
+        Codec<T2> codec2,
+        Functions.Func2<T1, T2, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                splitter.accept(
+                    value,
+                    (param1, param2) -> {
+                        encoder.writeInt(2);
+                        codec1.encodeWithTypeId(encoder, param1);
+                        codec2.encodeWithTypeId(encoder, param2);
+                    }),
+            decoder -> {
+                expectFieldCount(decoder, 2);
+                return
+                    creator.apply(
+                        codec1.decodeWithTypeId(decoder),
+                        codec2.decodeWithTypeId(decoder));
+            });
+    }
+
+    static <T, T1, T2, T3> UntypedCodec<T> fromWithLength(
+        Functions.Action2<T, Functions.Action3<T1, T2, T3>> splitter,
+        Codec<T1> codec1,
+        Codec<T2> codec2,
+        Codec<T3> codec3,
+        Functions.Func3<T1, T2, T3, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                splitter.accept(
+                    value,
+                    (param1, param2, param3) -> {
+                        encoder.writeInt(3);
+                        codec1.encodeWithTypeId(encoder, param1);
+                        codec2.encodeWithTypeId(encoder, param2);
+                        codec3.encodeWithTypeId(encoder, param3);
+                    }),
+            decoder -> {
+                expectFieldCount(decoder, 3);
+                return
+                    creator.apply(
+                        codec1.decodeWithTypeId(decoder),
+                        codec2.decodeWithTypeId(decoder),
+                        codec3.decodeWithTypeId(decoder));
+            });
+    }
+
+    static <T, T1, T2, T3, T4> UntypedCodec<T> fromWithLength(
+        Functions.Action2<T, Functions.Action4<T1, T2, T3, T4>> splitter,
+        Codec<T1> codec1,
+        Codec<T2> codec2,
+        Codec<T3> codec3,
+        Codec<T4> codec4,
+        Functions.Func4<T1, T2, T3, T4, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                splitter.accept(
+                    value,
+                    (param1, param2, param3, param4) -> {
+                        encoder.writeInt(4);
+                        codec1.encodeWithTypeId(encoder, param1);
+                        codec2.encodeWithTypeId(encoder, param2);
+                        codec3.encodeWithTypeId(encoder, param3);
+                        codec4.encodeWithTypeId(encoder, param4);
+                    }),
+            decoder -> {
+                expectFieldCount(decoder, 4);
+                return
+                    creator.apply(
+                        codec1.decodeWithTypeId(decoder),
+                        codec2.decodeWithTypeId(decoder),
+                        codec3.decodeWithTypeId(decoder),
+                        codec4.decodeWithTypeId(decoder));
+            });
+    }
+
+    static <T, T1, T2, T3, T4, T5> UntypedCodec<T> fromWithLength(
+        Functions.Action2<T, Functions.Action5<T1, T2, T3, T4, T5>> splitter,
+        Codec<T1> codec1,
+        Codec<T2> codec2,
+        Codec<T3> codec3,
+        Codec<T4> codec4,
+        Codec<T5> codec5,
+        Functions.Func5<T1, T2, T3, T4, T5, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                splitter.accept(
+                    value,
+                    (param1, param2, param3, param4, param5) -> {
+                        encoder.writeInt(5);
+                        codec1.encodeWithTypeId(encoder, param1);
+                        codec2.encodeWithTypeId(encoder, param2);
+                        codec3.encodeWithTypeId(encoder, param3);
+                        codec4.encodeWithTypeId(encoder, param4);
+                        codec5.encodeWithTypeId(encoder, param5);
+                    }),
+            decoder -> {
+                expectFieldCount(decoder, 5);
+                return
+                    creator.apply(
+                        codec1.decodeWithTypeId(decoder),
+                        codec2.decodeWithTypeId(decoder),
+                        codec3.decodeWithTypeId(decoder),
+                        codec4.decodeWithTypeId(decoder),
+                        codec5.decodeWithTypeId(decoder));
+            });
+    }
+
+    static <T, T1, T2, T3, T4, T5, T6> UntypedCodec<T> fromWithLength(
+        Functions.Action2<T, Functions.Action6<T1, T2, T3, T4, T5, T6>> splitter,
+        Codec<T1> codec1,
+        Codec<T2> codec2,
+        Codec<T3> codec3,
+        Codec<T4> codec4,
+        Codec<T5> codec5,
+        Codec<T6> codec6,
+        Functions.Func6<T1, T2, T3, T4, T5, T6, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                splitter.accept(
+                    value,
+                    (param1, param2, param3, param4, param5, param6) -> {
+                        encoder.writeInt(6);
+                        codec1.encodeWithTypeId(encoder, param1);
+                        codec2.encodeWithTypeId(encoder, param2);
+                        codec3.encodeWithTypeId(encoder, param3);
+                        codec4.encodeWithTypeId(encoder, param4);
+                        codec5.encodeWithTypeId(encoder, param5);
+                        codec6.encodeWithTypeId(encoder, param6);
+                    }),
+            decoder -> {
+                expectFieldCount(decoder, 6);
+                return
+                    creator.apply(
+                        codec1.decodeWithTypeId(decoder),
+                        codec2.decodeWithTypeId(decoder),
+                        codec3.decodeWithTypeId(decoder),
+                        codec4.decodeWithTypeId(decoder),
+                        codec5.decodeWithTypeId(decoder),
+                        codec6.decodeWithTypeId(decoder));
+            });
+    }
+
+    static <T, T1, T2, T3, T4, T5, T6, T7> UntypedCodec<T> fromWithLength(
+        Functions.Action2<T, Functions.Action7<T1, T2, T3, T4, T5, T6, T7>> splitter,
+        Codec<T1> codec1,
+        Codec<T2> codec2,
+        Codec<T3> codec3,
+        Codec<T4> codec4,
+        Codec<T5> codec5,
+        Codec<T6> codec6,
+        Codec<T7> codec7,
+        Functions.Func7<T1, T2, T3, T4, T5, T6, T7, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                splitter.accept(
+                    value,
+                    (param1, param2, param3, param4, param5, param6, param7) -> {
+                        encoder.writeInt(7);
+                        codec1.encodeWithTypeId(encoder, param1);
+                        codec2.encodeWithTypeId(encoder, param2);
+                        codec3.encodeWithTypeId(encoder, param3);
+                        codec4.encodeWithTypeId(encoder, param4);
+                        codec5.encodeWithTypeId(encoder, param5);
+                        codec6.encodeWithTypeId(encoder, param6);
+                        codec7.encodeWithTypeId(encoder, param7);
+                    }),
+            decoder -> {
+                expectFieldCount(decoder, 7);
+                return
+                    creator.apply(
+                        codec1.decodeWithTypeId(decoder),
+                        codec2.decodeWithTypeId(decoder),
+                        codec3.decodeWithTypeId(decoder),
+                        codec4.decodeWithTypeId(decoder),
+                        codec5.decodeWithTypeId(decoder),
+                        codec6.decodeWithTypeId(decoder),
+                        codec7.decodeWithTypeId(decoder));
+            });
+    }
+
+    static <T, T1, T2, T3, T4, T5, T6, T7, T8> UntypedCodec<T> fromWithLength(
+        Functions.Action2<T, Functions.Action8<T1, T2, T3, T4, T5, T6, T7, T8>> splitter,
+        Codec<T1> codec1,
+        Codec<T2> codec2,
+        Codec<T3> codec3,
+        Codec<T4> codec4,
+        Codec<T5> codec5,
+        Codec<T6> codec6,
+        Codec<T7> codec7,
+        Codec<T8> codec8,
+        Functions.Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                splitter.accept(
+                    value,
+                    (param1, param2, param3, param4, param5, param6, param7, param8) -> {
+                        encoder.writeInt(8);
+                        codec1.encodeWithTypeId(encoder, param1);
+                        codec2.encodeWithTypeId(encoder, param2);
+                        codec3.encodeWithTypeId(encoder, param3);
+                        codec4.encodeWithTypeId(encoder, param4);
+                        codec5.encodeWithTypeId(encoder, param5);
+                        codec6.encodeWithTypeId(encoder, param6);
+                        codec7.encodeWithTypeId(encoder, param7);
+                        codec8.encodeWithTypeId(encoder, param8);
+                    }),
+            decoder -> {
+                expectFieldCount(decoder, 8);
+                return
+                    creator.apply(
+                        codec1.decodeWithTypeId(decoder),
+                        codec2.decodeWithTypeId(decoder),
+                        codec3.decodeWithTypeId(decoder),
+                        codec4.decodeWithTypeId(decoder),
+                        codec5.decodeWithTypeId(decoder),
+                        codec6.decodeWithTypeId(decoder),
+                        codec7.decodeWithTypeId(decoder),
+                        codec8.decodeWithTypeId(decoder));
+            });
+    }
+
+    static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9> UntypedCodec<T> fromWithLength(
+        Functions.Action2<T, Functions.Action9<T1, T2, T3, T4, T5, T6, T7, T8, T9>> splitter,
+        Codec<T1> codec1,
+        Codec<T2> codec2,
+        Codec<T3> codec3,
+        Codec<T4> codec4,
+        Codec<T5> codec5,
+        Codec<T6> codec6,
+        Codec<T7> codec7,
+        Codec<T8> codec8,
+        Codec<T9> codec9,
+        Functions.Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                splitter.accept(
+                    value,
+                    (param1, param2, param3, param4, param5, param6, param7, param8, param9) -> {
+                        encoder.writeInt(9);
+                        codec1.encodeWithTypeId(encoder, param1);
+                        codec2.encodeWithTypeId(encoder, param2);
+                        codec3.encodeWithTypeId(encoder, param3);
+                        codec4.encodeWithTypeId(encoder, param4);
+                        codec5.encodeWithTypeId(encoder, param5);
+                        codec6.encodeWithTypeId(encoder, param6);
+                        codec7.encodeWithTypeId(encoder, param7);
+                        codec8.encodeWithTypeId(encoder, param8);
+                        codec9.encodeWithTypeId(encoder, param9);
+                    }),
+            decoder -> {
+                expectFieldCount(decoder, 9);
+                return
+                    creator.apply(
+                        codec1.decodeWithTypeId(decoder),
+                        codec2.decodeWithTypeId(decoder),
+                        codec3.decodeWithTypeId(decoder),
+                        codec4.decodeWithTypeId(decoder),
+                        codec5.decodeWithTypeId(decoder),
+                        codec6.decodeWithTypeId(decoder),
+                        codec7.decodeWithTypeId(decoder),
+                        codec8.decodeWithTypeId(decoder),
+                        codec9.decodeWithTypeId(decoder));
+            });
+    }
+
+    static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> UntypedCodec<T> fromWithLength(
+        Functions.Action2<T, Functions.Action10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>> splitter,
+        Codec<T1> codec1,
+        Codec<T2> codec2,
+        Codec<T3> codec3,
+        Codec<T4> codec4,
+        Codec<T5> codec5,
+        Codec<T6> codec6,
+        Codec<T7> codec7,
+        Codec<T8> codec8,
+        Codec<T9> codec9,
+        Codec<T10> codec10,
+        Functions.Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                splitter.accept(
+                    value,
+                    (param1,
+                     param2,
+                     param3,
+                     param4,
+                     param5,
+                     param6,
+                     param7,
+                     param8,
+                     param9,
+                     param10) -> {
+                        encoder.writeInt(10);
+                        codec1.encodeWithTypeId(encoder, param1);
+                        codec2.encodeWithTypeId(encoder, param2);
+                        codec3.encodeWithTypeId(encoder, param3);
+                        codec4.encodeWithTypeId(encoder, param4);
+                        codec5.encodeWithTypeId(encoder, param5);
+                        codec6.encodeWithTypeId(encoder, param6);
+                        codec7.encodeWithTypeId(encoder, param7);
+                        codec8.encodeWithTypeId(encoder, param8);
+                        codec9.encodeWithTypeId(encoder, param9);
+                        codec10.encodeWithTypeId(encoder, param10);
+                    }),
+            decoder -> {
+                expectFieldCount(decoder, 10);
+                return
+                    creator.apply(
+                        codec1.decodeWithTypeId(decoder),
+                        codec2.decodeWithTypeId(decoder),
+                        codec3.decodeWithTypeId(decoder),
+                        codec4.decodeWithTypeId(decoder),
+                        codec5.decodeWithTypeId(decoder),
+                        codec6.decodeWithTypeId(decoder),
+                        codec7.decodeWithTypeId(decoder),
+                        codec8.decodeWithTypeId(decoder),
+                        codec9.decodeWithTypeId(decoder),
+                        codec10.decodeWithTypeId(decoder));
+            });
+    }
+
+    static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> UntypedCodec<T> fromWithLength(
+        Functions.Action2<T, Functions.Action11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>>
+            splitter,
+        Codec<T1> codec1,
+        Codec<T2> codec2,
+        Codec<T3> codec3,
+        Codec<T4> codec4,
+        Codec<T5> codec5,
+        Codec<T6> codec6,
+        Codec<T7> codec7,
+        Codec<T8> codec8,
+        Codec<T9> codec9,
+        Codec<T10> codec10,
+        Codec<T11> codec11,
+        Functions.Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                splitter.accept(
+                    value,
+                    (param1,
+                     param2,
+                     param3,
+                     param4,
+                     param5,
+                     param6,
+                     param7,
+                     param8,
+                     param9,
+                     param10,
+                     param11) -> {
+                        encoder.writeInt(11);
+                        codec1.encodeWithTypeId(encoder, param1);
+                        codec2.encodeWithTypeId(encoder, param2);
+                        codec3.encodeWithTypeId(encoder, param3);
+                        codec4.encodeWithTypeId(encoder, param4);
+                        codec5.encodeWithTypeId(encoder, param5);
+                        codec6.encodeWithTypeId(encoder, param6);
+                        codec7.encodeWithTypeId(encoder, param7);
+                        codec8.encodeWithTypeId(encoder, param8);
+                        codec9.encodeWithTypeId(encoder, param9);
+                        codec10.encodeWithTypeId(encoder, param10);
+                        codec11.encodeWithTypeId(encoder, param11);
+                    }),
+            decoder -> {
+                expectFieldCount(decoder, 11);
+                return
+                    creator.apply(
+                        codec1.decodeWithTypeId(decoder),
+                        codec2.decodeWithTypeId(decoder),
+                        codec3.decodeWithTypeId(decoder),
+                        codec4.decodeWithTypeId(decoder),
+                        codec5.decodeWithTypeId(decoder),
+                        codec6.decodeWithTypeId(decoder),
+                        codec7.decodeWithTypeId(decoder),
+                        codec8.decodeWithTypeId(decoder),
+                        codec9.decodeWithTypeId(decoder),
+                        codec10.decodeWithTypeId(decoder),
+                        codec11.decodeWithTypeId(decoder));
+            });
+    }
+
+    static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> UntypedCodec<T> fromWithLength(
+        Functions.Action2<T, Functions.Action12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>>
+            splitter,
+        Codec<T1> codec1,
+        Codec<T2> codec2,
+        Codec<T3> codec3,
+        Codec<T4> codec4,
+        Codec<T5> codec5,
+        Codec<T6> codec6,
+        Codec<T7> codec7,
+        Codec<T8> codec8,
+        Codec<T9> codec9,
+        Codec<T10> codec10,
+        Codec<T11> codec11,
+        Codec<T12> codec12,
+        Functions.Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) ->
+                splitter.accept(
+                    value,
+                    (param1,
+                     param2,
+                     param3,
+                     param4,
+                     param5,
+                     param6,
+                     param7,
+                     param8,
+                     param9,
+                     param10,
+                     param11,
+                     param12) -> {
+                        encoder.writeInt(12);
+                        codec1.encodeWithTypeId(encoder, param1);
+                        codec2.encodeWithTypeId(encoder, param2);
+                        codec3.encodeWithTypeId(encoder, param3);
+                        codec4.encodeWithTypeId(encoder, param4);
+                        codec5.encodeWithTypeId(encoder, param5);
+                        codec6.encodeWithTypeId(encoder, param6);
+                        codec7.encodeWithTypeId(encoder, param7);
+                        codec8.encodeWithTypeId(encoder, param8);
+                        codec9.encodeWithTypeId(encoder, param9);
+                        codec10.encodeWithTypeId(encoder, param10);
+                        codec11.encodeWithTypeId(encoder, param11);
+                        codec12.encodeWithTypeId(encoder, param12);
+                    }),
+            decoder -> {
+                expectFieldCount(decoder, 12);
+                return
+                    creator.apply(
+                        codec1.decodeWithTypeId(decoder),
+                        codec2.decodeWithTypeId(decoder),
+                        codec3.decodeWithTypeId(decoder),
+                        codec4.decodeWithTypeId(decoder),
+                        codec5.decodeWithTypeId(decoder),
+                        codec6.decodeWithTypeId(decoder),
+                        codec7.decodeWithTypeId(decoder),
+                        codec8.decodeWithTypeId(decoder),
+                        codec9.decodeWithTypeId(decoder),
+                        codec10.decodeWithTypeId(decoder),
+                        codec11.decodeWithTypeId(decoder),
+                        codec12.decodeWithTypeId(decoder));
+            });
+    }
+
+  private static void expectFieldCount(DecoderApi decoder, int expected) {
+      var actual = decoder.readInt();
+      if (expected != actual) {
+          throw new SborDecodeException(String.format("Expected to have %s fields, but there were %s", expected, actual));
+      }
+  }
+
+
+
+    static <T, T1> UntypedCodec<T> wrapWithoutLength(
+        Functions.Func1<T, T1> getter, Codec<T1> codec1, Functions.Func1<T1, T> creator) {
+        return UntypedCodec.of(
+            (encoder, value) -> codec1.encodeWithTypeId(encoder, getter.apply(value)),
+            decoder -> creator.apply(codec1.decodeWithTypeId(decoder)));
+    }
+
+  static <T, T1> UntypedCodec<T> fromWithoutLength(
+      Functions.Action2<T, Functions.Action1<T1>> splitter,
+      Codec<T1> codec1,
+      Functions.Func1<T1, T> creator) {
+    return UntypedCodec.of(
+        (encoder, value) ->
+            splitter.accept(value, (param1) -> codec1.encodeWithTypeId(encoder, param1)),
+        decoder -> creator.apply(codec1.decodeWithTypeId(decoder)));
+  }
+
+  static <T, T1, T2> UntypedCodec<T> fromWithoutLength(
+      Functions.Action2<T, Functions.Action2<T1, T2>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Functions.Func2<T1, T2, T> creator) {
+    return UntypedCodec.of(
+        (encoder, value) ->
+            splitter.accept(
+                value,
+                (param1, param2) -> {
+                  codec1.encodeWithTypeId(encoder, param1);
+                  codec2.encodeWithTypeId(encoder, param2);
+                }),
+        decoder ->
+            creator.apply(codec1.decodeWithTypeId(decoder), codec2.decodeWithTypeId(decoder)));
+  }
+
+  static <T, T1, T2, T3> UntypedCodec<T> fromWithoutLength(
+      Functions.Action2<T, Functions.Action3<T1, T2, T3>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Functions.Func3<T1, T2, T3, T> creator) {
+    return UntypedCodec.of(
+        (encoder, value) ->
+            splitter.accept(
+                value,
+                (param1, param2, param3) -> {
+                  codec1.encodeWithTypeId(encoder, param1);
+                  codec2.encodeWithTypeId(encoder, param2);
+                  codec3.encodeWithTypeId(encoder, param3);
+                }),
+        decoder ->
+            creator.apply(
+                codec1.decodeWithTypeId(decoder),
+                codec2.decodeWithTypeId(decoder),
+                codec3.decodeWithTypeId(decoder)));
+  }
+
+  static <T, T1, T2, T3, T4> UntypedCodec<T> fromWithoutLength(
+      Functions.Action2<T, Functions.Action4<T1, T2, T3, T4>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Functions.Func4<T1, T2, T3, T4, T> creator) {
+    return UntypedCodec.of(
+        (encoder, value) ->
+            splitter.accept(
+                value,
+                (param1, param2, param3, param4) -> {
+                  codec1.encodeWithTypeId(encoder, param1);
+                  codec2.encodeWithTypeId(encoder, param2);
+                  codec3.encodeWithTypeId(encoder, param3);
+                  codec4.encodeWithTypeId(encoder, param4);
+                }),
+        decoder ->
+            creator.apply(
+                codec1.decodeWithTypeId(decoder),
+                codec2.decodeWithTypeId(decoder),
+                codec3.decodeWithTypeId(decoder),
+                codec4.decodeWithTypeId(decoder)));
+  }
+
+  static <T, T1, T2, T3, T4, T5> UntypedCodec<T> fromWithoutLength(
+      Functions.Action2<T, Functions.Action5<T1, T2, T3, T4, T5>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Functions.Func5<T1, T2, T3, T4, T5, T> creator) {
+    return UntypedCodec.of(
+        (encoder, value) ->
+            splitter.accept(
+                value,
+                (param1, param2, param3, param4, param5) -> {
+                  codec1.encodeWithTypeId(encoder, param1);
+                  codec2.encodeWithTypeId(encoder, param2);
+                  codec3.encodeWithTypeId(encoder, param3);
+                  codec4.encodeWithTypeId(encoder, param4);
+                  codec5.encodeWithTypeId(encoder, param5);
+                }),
+        decoder ->
+            creator.apply(
+                codec1.decodeWithTypeId(decoder),
+                codec2.decodeWithTypeId(decoder),
+                codec3.decodeWithTypeId(decoder),
+                codec4.decodeWithTypeId(decoder),
+                codec5.decodeWithTypeId(decoder)));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6> UntypedCodec<T> fromWithoutLength(
+      Functions.Action2<T, Functions.Action6<T1, T2, T3, T4, T5, T6>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Functions.Func6<T1, T2, T3, T4, T5, T6, T> creator) {
+    return UntypedCodec.of(
+        (encoder, value) ->
+            splitter.accept(
+                value,
+                (param1, param2, param3, param4, param5, param6) -> {
+                  codec1.encodeWithTypeId(encoder, param1);
+                  codec2.encodeWithTypeId(encoder, param2);
+                  codec3.encodeWithTypeId(encoder, param3);
+                  codec4.encodeWithTypeId(encoder, param4);
+                  codec5.encodeWithTypeId(encoder, param5);
+                  codec6.encodeWithTypeId(encoder, param6);
+                }),
+        decoder ->
+            creator.apply(
+                codec1.decodeWithTypeId(decoder),
+                codec2.decodeWithTypeId(decoder),
+                codec3.decodeWithTypeId(decoder),
+                codec4.decodeWithTypeId(decoder),
+                codec5.decodeWithTypeId(decoder),
+                codec6.decodeWithTypeId(decoder)));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7> UntypedCodec<T> fromWithoutLength(
+      Functions.Action2<T, Functions.Action7<T1, T2, T3, T4, T5, T6, T7>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Functions.Func7<T1, T2, T3, T4, T5, T6, T7, T> creator) {
+    return UntypedCodec.of(
+        (encoder, value) ->
+            splitter.accept(
+                value,
+                (param1, param2, param3, param4, param5, param6, param7) -> {
+                  codec1.encodeWithTypeId(encoder, param1);
+                  codec2.encodeWithTypeId(encoder, param2);
+                  codec3.encodeWithTypeId(encoder, param3);
+                  codec4.encodeWithTypeId(encoder, param4);
+                  codec5.encodeWithTypeId(encoder, param5);
+                  codec6.encodeWithTypeId(encoder, param6);
+                  codec7.encodeWithTypeId(encoder, param7);
+                }),
+        decoder ->
+            creator.apply(
+                codec1.decodeWithTypeId(decoder),
+                codec2.decodeWithTypeId(decoder),
+                codec3.decodeWithTypeId(decoder),
+                codec4.decodeWithTypeId(decoder),
+                codec5.decodeWithTypeId(decoder),
+                codec6.decodeWithTypeId(decoder),
+                codec7.decodeWithTypeId(decoder)));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8> UntypedCodec<T> fromWithoutLength(
+      Functions.Action2<T, Functions.Action8<T1, T2, T3, T4, T5, T6, T7, T8>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Functions.Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> creator) {
+    return UntypedCodec.of(
+        (encoder, value) ->
+            splitter.accept(
+                value,
+                (param1, param2, param3, param4, param5, param6, param7, param8) -> {
+                  codec1.encodeWithTypeId(encoder, param1);
+                  codec2.encodeWithTypeId(encoder, param2);
+                  codec3.encodeWithTypeId(encoder, param3);
+                  codec4.encodeWithTypeId(encoder, param4);
+                  codec5.encodeWithTypeId(encoder, param5);
+                  codec6.encodeWithTypeId(encoder, param6);
+                  codec7.encodeWithTypeId(encoder, param7);
+                  codec8.encodeWithTypeId(encoder, param8);
+                }),
+        decoder ->
+            creator.apply(
+                codec1.decodeWithTypeId(decoder),
+                codec2.decodeWithTypeId(decoder),
+                codec3.decodeWithTypeId(decoder),
+                codec4.decodeWithTypeId(decoder),
+                codec5.decodeWithTypeId(decoder),
+                codec6.decodeWithTypeId(decoder),
+                codec7.decodeWithTypeId(decoder),
+                codec8.decodeWithTypeId(decoder)));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9> UntypedCodec<T> fromWithoutLength(
+      Functions.Action2<T, Functions.Action9<T1, T2, T3, T4, T5, T6, T7, T8, T9>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Codec<T9> codec9,
+      Functions.Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> creator) {
+    return UntypedCodec.of(
+        (encoder, value) ->
+            splitter.accept(
+                value,
+                (param1, param2, param3, param4, param5, param6, param7, param8, param9) -> {
+                  codec1.encodeWithTypeId(encoder, param1);
+                  codec2.encodeWithTypeId(encoder, param2);
+                  codec3.encodeWithTypeId(encoder, param3);
+                  codec4.encodeWithTypeId(encoder, param4);
+                  codec5.encodeWithTypeId(encoder, param5);
+                  codec6.encodeWithTypeId(encoder, param6);
+                  codec7.encodeWithTypeId(encoder, param7);
+                  codec8.encodeWithTypeId(encoder, param8);
+                  codec9.encodeWithTypeId(encoder, param9);
+                }),
+        decoder ->
+            creator.apply(
+                codec1.decodeWithTypeId(decoder),
+                codec2.decodeWithTypeId(decoder),
+                codec3.decodeWithTypeId(decoder),
+                codec4.decodeWithTypeId(decoder),
+                codec5.decodeWithTypeId(decoder),
+                codec6.decodeWithTypeId(decoder),
+                codec7.decodeWithTypeId(decoder),
+                codec8.decodeWithTypeId(decoder),
+                codec9.decodeWithTypeId(decoder)));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> UntypedCodec<T> fromWithoutLength(
+      Functions.Action2<T, Functions.Action10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>> splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Codec<T9> codec9,
+      Codec<T10> codec10,
+      Functions.Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> creator) {
+    return UntypedCodec.of(
+        (encoder, value) ->
+            splitter.accept(
+                value,
+                (param1,
+                    param2,
+                    param3,
+                    param4,
+                    param5,
+                    param6,
+                    param7,
+                    param8,
+                    param9,
+                    param10) -> {
+                  codec1.encodeWithTypeId(encoder, param1);
+                  codec2.encodeWithTypeId(encoder, param2);
+                  codec3.encodeWithTypeId(encoder, param3);
+                  codec4.encodeWithTypeId(encoder, param4);
+                  codec5.encodeWithTypeId(encoder, param5);
+                  codec6.encodeWithTypeId(encoder, param6);
+                  codec7.encodeWithTypeId(encoder, param7);
+                  codec8.encodeWithTypeId(encoder, param8);
+                  codec9.encodeWithTypeId(encoder, param9);
+                  codec10.encodeWithTypeId(encoder, param10);
+                }),
+        decoder ->
+            creator.apply(
+                codec1.decodeWithTypeId(decoder),
+                codec2.decodeWithTypeId(decoder),
+                codec3.decodeWithTypeId(decoder),
+                codec4.decodeWithTypeId(decoder),
+                codec5.decodeWithTypeId(decoder),
+                codec6.decodeWithTypeId(decoder),
+                codec7.decodeWithTypeId(decoder),
+                codec8.decodeWithTypeId(decoder),
+                codec9.decodeWithTypeId(decoder),
+                codec10.decodeWithTypeId(decoder)));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> UntypedCodec<T> fromWithoutLength(
+      Functions.Action2<T, Functions.Action11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>>
+          splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Codec<T9> codec9,
+      Codec<T10> codec10,
+      Codec<T11> codec11,
+      Functions.Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> creator) {
+    return UntypedCodec.of(
+        (encoder, value) ->
+            splitter.accept(
+                value,
+                (param1,
+                    param2,
+                    param3,
+                    param4,
+                    param5,
+                    param6,
+                    param7,
+                    param8,
+                    param9,
+                    param10,
+                    param11) -> {
+                  codec1.encodeWithTypeId(encoder, param1);
+                  codec2.encodeWithTypeId(encoder, param2);
+                  codec3.encodeWithTypeId(encoder, param3);
+                  codec4.encodeWithTypeId(encoder, param4);
+                  codec5.encodeWithTypeId(encoder, param5);
+                  codec6.encodeWithTypeId(encoder, param6);
+                  codec7.encodeWithTypeId(encoder, param7);
+                  codec8.encodeWithTypeId(encoder, param8);
+                  codec9.encodeWithTypeId(encoder, param9);
+                  codec10.encodeWithTypeId(encoder, param10);
+                  codec11.encodeWithTypeId(encoder, param11);
+                }),
+        decoder ->
+            creator.apply(
+                codec1.decodeWithTypeId(decoder),
+                codec2.decodeWithTypeId(decoder),
+                codec3.decodeWithTypeId(decoder),
+                codec4.decodeWithTypeId(decoder),
+                codec5.decodeWithTypeId(decoder),
+                codec6.decodeWithTypeId(decoder),
+                codec7.decodeWithTypeId(decoder),
+                codec8.decodeWithTypeId(decoder),
+                codec9.decodeWithTypeId(decoder),
+                codec10.decodeWithTypeId(decoder),
+                codec11.decodeWithTypeId(decoder)));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> UntypedCodec<T> fromWithoutLength(
+      Functions.Action2<T, Functions.Action12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>>
+          splitter,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Codec<T9> codec9,
+      Codec<T10> codec10,
+      Codec<T11> codec11,
+      Codec<T12> codec12,
+      Functions.Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> creator) {
+    return UntypedCodec.of(
+        (encoder, value) ->
+            splitter.accept(
+                value,
+                (param1,
+                    param2,
+                    param3,
+                    param4,
+                    param5,
+                    param6,
+                    param7,
+                    param8,
+                    param9,
+                    param10,
+                    param11,
+                    param12) -> {
+                  codec1.encodeWithTypeId(encoder, param1);
+                  codec2.encodeWithTypeId(encoder, param2);
+                  codec3.encodeWithTypeId(encoder, param3);
+                  codec4.encodeWithTypeId(encoder, param4);
+                  codec5.encodeWithTypeId(encoder, param5);
+                  codec6.encodeWithTypeId(encoder, param6);
+                  codec7.encodeWithTypeId(encoder, param7);
+                  codec8.encodeWithTypeId(encoder, param8);
+                  codec9.encodeWithTypeId(encoder, param9);
+                  codec10.encodeWithTypeId(encoder, param10);
+                  codec11.encodeWithTypeId(encoder, param11);
+                  codec12.encodeWithTypeId(encoder, param12);
+                }),
+        decoder ->
+            creator.apply(
+                codec1.decodeWithTypeId(decoder),
+                codec2.decodeWithTypeId(decoder),
+                codec3.decodeWithTypeId(decoder),
+                codec4.decodeWithTypeId(decoder),
+                codec5.decodeWithTypeId(decoder),
+                codec6.decodeWithTypeId(decoder),
+                codec7.decodeWithTypeId(decoder),
+                codec8.decodeWithTypeId(decoder),
+                codec9.decodeWithTypeId(decoder),
+                codec10.decodeWithTypeId(decoder),
+                codec11.decodeWithTypeId(decoder),
+                codec12.decodeWithTypeId(decoder)));
+  }
 }

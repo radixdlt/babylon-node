@@ -74,7 +74,7 @@ import com.radixdlt.sbor.coding.EncoderApi;
 import com.radixdlt.sbor.exceptions.SborCodecException;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
 
-public record EitherTypeCodec<L, R>(Codec<L> leftType, Codec<R> rightType)
+public record EitherCodec<L, R>(Codec<L> leftType, Codec<R> rightType)
     implements Codec<Either<L, R>> {
   @Override
   public TypeId getTypeId() {
@@ -106,7 +106,6 @@ public record EitherTypeCodec<L, R>(Codec<L> leftType, Codec<R> rightType)
     };
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
   public static void registerWith(CodecMap codecMap) {
     codecMap.registerForGenericSealedClassAndSubclasses(
         Either.class,
@@ -115,7 +114,7 @@ public record EitherTypeCodec<L, R>(Codec<L> leftType, Codec<R> rightType)
             var leftType = TypeTokenUtils.getGenericTypeParameter(eitherType, 0);
             var rightType = TypeTokenUtils.getGenericTypeParameter(eitherType, 1);
 
-            return new EitherTypeCodec(codecs.of(leftType), codecs.of(rightType));
+            return new EitherCodec<>(codecs.of(leftType), codecs.of(rightType));
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating Either type codec for %s", eitherType), ex);
