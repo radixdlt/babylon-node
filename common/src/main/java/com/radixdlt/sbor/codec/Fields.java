@@ -72,54 +72,30 @@ import java.util.List;
 
 @SuppressWarnings("unused")
 public interface Fields<T> extends UntypedCodec<T> {
-  List<Field<T, ?>> of();
 
-  @Override
-  default void encodeWithoutTypeId(EncoderApi encoder, T value) {
-    var fields = of();
+  record FieldsImpl<T>(List<Field<T, ?>> fields, Functions.Func1<DecoderApi, T> decodeFields)
+      implements Fields<T> {
+    @Override
+    public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+      encoder.writeInt(fields.size());
 
-    encoder.writeInt(fields.size());
-
-    for (var field : fields) {
-      field.encode(encoder, value);
-    }
-  }
-
-  @Override
-  default T decodeWithoutTypeId(DecoderApi decoder) {
-    var decodedFieldsLength = decoder.readInt();
-
-    var fields = of();
-
-    if (decodedFieldsLength != fields.size()) {
-      throw new SborDecodeException(
-          String.format(
-              "Incorrect number of fields detected. Expected field count was %s, but encoded was"
-                  + " %s",
-              fields.size(), decodedFieldsLength));
-    }
-
-    return this.decodeFields(decoder);
-  }
-
-  T decodeFields(DecoderApi decoder);
-
-  class FieldsImpl<T> implements Fields<T> {
-    private final List<Field<T, ?>> fields;
-    private final Functions.Func1<DecoderApi, T> decodeFields;
-
-    public FieldsImpl(List<Field<T, ?>> fields, Functions.Func1<DecoderApi, T> decodeFields) {
-      this.fields = fields; // Avoid allocation on each call of fields()
-      this.decodeFields = decodeFields;
+      for (var field : fields) {
+        field.encode(encoder, value);
+      }
     }
 
     @Override
-    public List<Field<T, ?>> of() {
-      return fields;
-    }
+    public T decodeWithoutTypeId(DecoderApi decoder) {
+      var decodedFieldsLength = decoder.readInt();
 
-    @Override
-    public T decodeFields(DecoderApi decoder) {
+      if (decodedFieldsLength != fields.size()) {
+        throw new SborDecodeException(
+            String.format(
+                "Incorrect number of fields detected. Expected field count was %s, but encoded was"
+                    + " %s",
+                fields.size(), decodedFieldsLength));
+      }
+
       return decodeFields.apply(decoder);
     }
   }
@@ -128,22 +104,22 @@ public interface Fields<T> extends UntypedCodec<T> {
     return new FieldsImpl<>(List.of(), decoder -> creator.apply());
   }
 
-  static <T, T1> Fields<T> of(Field<T, T1> field1, Functions.Func1<T1, T> creator) {
+  static <T, T1> Fields<T> of(Functions.Func1<T1, T> creator, Field<T, T1> field1) {
     return new FieldsImpl<>(List.of(field1), decoder -> creator.apply(field1.decode(decoder)));
   }
 
   static <T, T1, T2> Fields<T> of(
-      Field<T, T1> field1, Field<T, T2> field2, Functions.Func2<T1, T2, T> creator) {
+      Functions.Func2<T1, T2, T> creator, Field<T, T1> field1, Field<T, T2> field2) {
     return new FieldsImpl<>(
         List.of(field1, field2),
         decoder -> creator.apply(field1.decode(decoder), field2.decode(decoder)));
   }
 
   static <T, T1, T2, T3> Fields<T> of(
+      Functions.Func3<T1, T2, T3, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
-      Field<T, T3> field3,
-      Functions.Func3<T1, T2, T3, T> creator) {
+      Field<T, T3> field3) {
     return new FieldsImpl<>(
         List.of(field1, field2, field3),
         decoder ->
@@ -151,11 +127,11 @@ public interface Fields<T> extends UntypedCodec<T> {
   }
 
   static <T, T1, T2, T3, T4> Fields<T> of(
+      Functions.Func4<T1, T2, T3, T4, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
-      Field<T, T4> field4,
-      Functions.Func4<T1, T2, T3, T4, T> creator) {
+      Field<T, T4> field4) {
     return new FieldsImpl<>(
         List.of(field1, field2, field3, field4),
         decoder ->
@@ -167,12 +143,12 @@ public interface Fields<T> extends UntypedCodec<T> {
   }
 
   static <T, T1, T2, T3, T4, T5> Fields<T> of(
+      Functions.Func5<T1, T2, T3, T4, T5, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
       Field<T, T4> field4,
-      Field<T, T5> field5,
-      Functions.Func5<T1, T2, T3, T4, T5, T> creator) {
+      Field<T, T5> field5) {
     return new FieldsImpl<>(
         List.of(field1, field2, field3, field4, field5),
         decoder ->
@@ -185,13 +161,13 @@ public interface Fields<T> extends UntypedCodec<T> {
   }
 
   static <T, T1, T2, T3, T4, T5, T6> Fields<T> of(
+      Functions.Func6<T1, T2, T3, T4, T5, T6, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
       Field<T, T4> field4,
       Field<T, T5> field5,
-      Field<T, T6> field6,
-      Functions.Func6<T1, T2, T3, T4, T5, T6, T> creator) {
+      Field<T, T6> field6) {
     return new FieldsImpl<>(
         List.of(field1, field2, field3, field4, field5, field6),
         decoder ->
@@ -205,14 +181,14 @@ public interface Fields<T> extends UntypedCodec<T> {
   }
 
   static <T, T1, T2, T3, T4, T5, T6, T7> Fields<T> of(
+      Functions.Func7<T1, T2, T3, T4, T5, T6, T7, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
       Field<T, T4> field4,
       Field<T, T5> field5,
       Field<T, T6> field6,
-      Field<T, T7> field7,
-      Functions.Func7<T1, T2, T3, T4, T5, T6, T7, T> creator) {
+      Field<T, T7> field7) {
     return new FieldsImpl<>(
         List.of(field1, field2, field3, field4, field5, field6, field7),
         decoder ->
@@ -227,6 +203,7 @@ public interface Fields<T> extends UntypedCodec<T> {
   }
 
   static <T, T1, T2, T3, T4, T5, T6, T7, T8> Fields<T> of(
+      Functions.Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -234,8 +211,7 @@ public interface Fields<T> extends UntypedCodec<T> {
       Field<T, T5> field5,
       Field<T, T6> field6,
       Field<T, T7> field7,
-      Field<T, T8> field8,
-      Functions.Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> creator) {
+      Field<T, T8> field8) {
     return new FieldsImpl<>(
         List.of(field1, field2, field3, field4, field5, field6, field7, field8),
         decoder ->
@@ -251,6 +227,7 @@ public interface Fields<T> extends UntypedCodec<T> {
   }
 
   static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9> Fields<T> of(
+      Functions.Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -259,8 +236,7 @@ public interface Fields<T> extends UntypedCodec<T> {
       Field<T, T6> field6,
       Field<T, T7> field7,
       Field<T, T8> field8,
-      Field<T, T9> field9,
-      Functions.Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> creator) {
+      Field<T, T9> field9) {
     return new FieldsImpl<>(
         List.of(field1, field2, field3, field4, field5, field6, field7, field8, field9),
         decoder ->
@@ -277,6 +253,7 @@ public interface Fields<T> extends UntypedCodec<T> {
   }
 
   static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> Fields<T> of(
+      Functions.Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -286,8 +263,7 @@ public interface Fields<T> extends UntypedCodec<T> {
       Field<T, T7> field7,
       Field<T, T8> field8,
       Field<T, T9> field9,
-      Field<T, T10> field10,
-      Functions.Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> creator) {
+      Field<T, T10> field10) {
     return new FieldsImpl<>(
         List.of(field1, field2, field3, field4, field5, field6, field7, field8, field9, field10),
         decoder ->
@@ -305,6 +281,7 @@ public interface Fields<T> extends UntypedCodec<T> {
   }
 
   static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> Fields<T> of(
+      Functions.Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -315,8 +292,7 @@ public interface Fields<T> extends UntypedCodec<T> {
       Field<T, T8> field8,
       Field<T, T9> field9,
       Field<T, T10> field10,
-      Field<T, T11> field11,
-      Functions.Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> creator) {
+      Field<T, T11> field11) {
     return new FieldsImpl<>(
         List.of(
             field1, field2, field3, field4, field5, field6, field7, field8, field9, field10,
@@ -337,6 +313,7 @@ public interface Fields<T> extends UntypedCodec<T> {
   }
 
   static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> Fields<T> of(
+      Functions.Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -348,8 +325,7 @@ public interface Fields<T> extends UntypedCodec<T> {
       Field<T, T9> field9,
       Field<T, T10> field10,
       Field<T, T11> field11,
-      Field<T, T12> field12,
-      Functions.Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> creator) {
+      Field<T, T12> field12) {
     return new FieldsImpl<>(
         List.of(
             field1, field2, field3, field4, field5, field6, field7, field8, field9, field10,

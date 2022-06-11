@@ -74,11 +74,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EnumCodec<T> implements Codec<T> {
-  private final Map<String, TypeFields<?>> entries;
+  private final Map<String, EnumEntry<?>> entries;
   private final Functions.Func1<T, String> mapEnumValueToKey;
 
   public EnumCodec(
-      Map<String, TypeFields<?>> entries, Functions.Func1<T, String> mapEnumValueToKey) {
+      Map<String, EnumEntry<?>> entries, Functions.Func1<T, String> mapEnumValueToKey) {
     this.entries = entries;
     this.mapEnumValueToKey = mapEnumValueToKey;
   }
@@ -100,7 +100,7 @@ public class EnumCodec<T> implements Codec<T> {
     }
 
     encoder.writeString(enumKey);
-    ((TypeFields<T>) enumEntry).encodeWithoutTypeId(encoder, value);
+    ((EnumEntry<T>) enumEntry).encodeWithoutTypeId(encoder, value);
   }
 
   @SuppressWarnings("unchecked")
@@ -114,7 +114,7 @@ public class EnumCodec<T> implements Codec<T> {
           String.format("Enum entry enumKey %s not found in entries map", enumKey));
     }
 
-    return ((TypeFields<T>) enumEntry).decodeWithoutTypeId(decoder);
+    return ((EnumEntry<T>) enumEntry).decodeWithoutTypeId(decoder);
   }
 
   /**
@@ -124,13 +124,13 @@ public class EnumCodec<T> implements Codec<T> {
    *
    * @param <T> The interface type, of which each FieldsCodec is a subclass
    */
-  public static <T> EnumCodec<T> fromEntries(TypeFields<?>... enumEntries) {
-    var enumEntryCodecMap = new HashMap<String, TypeFields<?>>();
+  public static <T> EnumCodec<T> fromEntries(EnumEntry<?>... enumEntries) {
+    var enumEntryCodecMap = new HashMap<String, EnumEntry<?>>();
     var inverseClassMap = new HashMap<Class<?>, String>();
-    for (var fieldsCodec : enumEntries) {
-      var baseClass = fieldsCodec.getBaseClass();
+    for (var enumEntry : enumEntries) {
+      var baseClass = enumEntry.getBaseClass();
       var enumKey = baseClass.getSimpleName();
-      enumEntryCodecMap.put(enumKey, fieldsCodec);
+      enumEntryCodecMap.put(enumKey, enumEntry);
       inverseClassMap.put(baseClass, enumKey);
     }
 

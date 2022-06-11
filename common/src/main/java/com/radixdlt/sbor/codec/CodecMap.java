@@ -110,7 +110,7 @@ public final class CodecMap {
    * is recommended to do this in the static constructor of a class being encoded/decoded. It is
    * safe to register twice - the latest registration will apply.
    */
-  private static final CodecMap DEFAULT = new CodecMap().addCoreSchemaCodecs();
+  private static final CodecMap DEFAULT = new CodecMap();
 
   public static final CodecResolver DEFAULT_RESOLVER = DEFAULT.resolver;
 
@@ -126,15 +126,20 @@ public final class CodecMap {
   private final Map<Class, ClassCodecCreator> classCodecCreators = new HashMap<>();
   private final Map<Class, TypedCodecCreator> typedCodecCreators = new HashMap<>();
 
-  private TypeId sborTypeIdForArrayType = TypeId.TYPE_VEC;
+  private final TypeId sborTypeIdForArrayType;
 
-  public CodecMap addCoreSchemaCodecs() {
-    return addCoreSchemaCodecs(sborTypeIdForArrayType);
+  public CodecMap() {
+    this(true, TypeId.TYPE_VEC);
   }
 
-  public CodecMap addCoreSchemaCodecs(TypeId sborTypeIdForArrayType) {
-    this.sborTypeIdForArrayType = sborTypeIdForArrayType; // Used for auto-array codec creation
+  public CodecMap(boolean includeCoreCodecs, TypeId sborTypeIdForArrayType) {
+    this.sborTypeIdForArrayType = sborTypeIdForArrayType;
+    if (includeCoreCodecs) {
+      addCoreSchemaCodecs();
+    }
+  }
 
+  public CodecMap addCoreSchemaCodecs() {
     storeCodec(Unit.class, new CoreTypeCodec.UnitCodec());
     storeCodec(String.class, new CoreTypeCodec.StringCodec());
 
@@ -172,6 +177,11 @@ public final class CodecMap {
     MapCodec.registerHashMapToMapTo(this, TypeId.TYPE_HASH_MAP);
     MapCodec.registerTreeMapToMapTo(this, TypeId.TYPE_TREE_MAP);
 
+    return this;
+  }
+
+  public CodecMap register(Consumer<CodecMap> registerCodec) {
+    registerCodec.accept(this);
     return this;
   }
 

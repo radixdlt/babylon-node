@@ -65,62 +65,247 @@
 package com.radixdlt.sbor.codec;
 
 import com.radixdlt.lang.Functions;
+import com.radixdlt.sbor.codec.FieldsEncoders.*;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
 import java.util.List;
 
 @SuppressWarnings("unused")
-public interface TypeFields<T> extends UntypedCodec<T> {
-  List<Field<T, ?>> fields();
+public interface EnumEntry<T> extends UntypedCodec<T> {
 
   Class<T> getBaseClass();
 
-  @Override
-  default void encodeWithoutTypeId(EncoderApi encoder, T value) {
-    var fields = fields();
+  record EnumEntryImpl<T>(Class<T> baseClass, UntypedCodec<T> fieldsCodec) implements EnumEntry<T> {
+    @Override
+    public Class<T> getBaseClass() {
+      return baseClass;
+    }
 
-    encoder.writeInt(fields.size());
+    @Override
+    public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+      fieldsCodec.encodeWithoutTypeId(encoder, value);
+    }
 
-    for (var field : fields) {
-      field.encode(encoder, value);
+    @Override
+    public T decodeWithoutTypeId(DecoderApi decoder) {
+      return fieldsCodec.decodeWithoutTypeId(decoder);
     }
   }
 
-  @Override
-  default T decodeWithoutTypeId(DecoderApi decoder) {
-    var decodedFieldsLength = decoder.readInt();
-
-    var fields = fields();
-
-    if (decodedFieldsLength != fields.size()) {
-      throw new SborDecodeException(
-          String.format(
-              "Incorrect number of fields detected. Expected field count was %s, but encoded was"
-                  + " %s",
-              fields.size(), decodedFieldsLength));
-    }
-
-    return this.decodeFields(decoder);
+  static <T> EnumEntry<T> of(Class<T> baseClass, UntypedCodec<T> fieldsCodec) {
+    return new EnumEntryImpl<>(baseClass, fieldsCodec);
   }
 
-  T decodeFields(DecoderApi decoder);
+  static <T> EnumEntry<T> with(Class<T> baseClass, Functions.Func0<T> creator) {
+    return of(baseClass, UntypedCodec.emptyWithLength(creator));
+  }
 
-  class FieldsCodecImpl<T> implements TypeFields<T> {
+  static <T> EnumEntry<T> with(
+      Class<T> baseClass, Functions.Func0<T> creator, Separator<T, FieldsEncoder0> splitter) {
+    return of(baseClass, UntypedCodec.fromWithLength(creator, splitter));
+  }
+
+  static <T, T1> EnumEntry<T> with(
+      Class<T> baseClass,
+      Functions.Func1<T1, T> creator,
+      Codec<T1> codec1,
+      Separator<T, FieldsEncoder1<T1>> splitter) {
+    return of(baseClass, UntypedCodec.fromWithLength(creator, codec1, splitter));
+  }
+
+  static <T, T1, T2> EnumEntry<T> with(
+      Class<T> baseClass,
+      Functions.Func2<T1, T2, T> creator,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Separator<T, FieldsEncoder2<T1, T2>> splitter) {
+    return of(baseClass, UntypedCodec.fromWithLength(creator, codec1, codec2, splitter));
+  }
+
+  static <T, T1, T2, T3> EnumEntry<T> with(
+      Class<T> baseClass,
+      Functions.Func3<T1, T2, T3, T> creator,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Separator<T, FieldsEncoder3<T1, T2, T3>> splitter) {
+    return of(baseClass, UntypedCodec.fromWithLength(creator, codec1, codec2, codec3, splitter));
+  }
+
+  static <T, T1, T2, T3, T4> EnumEntry<T> with(
+      Class<T> baseClass,
+      Functions.Func4<T1, T2, T3, T4, T> creator,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Separator<T, FieldsEncoder4<T1, T2, T3, T4>> splitter) {
+    return of(
+        baseClass, UntypedCodec.fromWithLength(creator, codec1, codec2, codec3, codec4, splitter));
+  }
+
+  static <T, T1, T2, T3, T4, T5> EnumEntry<T> with(
+      Class<T> baseClass,
+      Functions.Func5<T1, T2, T3, T4, T5, T> creator,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Separator<T, FieldsEncoder5<T1, T2, T3, T4, T5>> splitter) {
+    return of(
+        baseClass,
+        UntypedCodec.fromWithLength(creator, codec1, codec2, codec3, codec4, codec5, splitter));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6> EnumEntry<T> with(
+      Class<T> baseClass,
+      Functions.Func6<T1, T2, T3, T4, T5, T6, T> creator,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Separator<T, FieldsEncoder6<T1, T2, T3, T4, T5, T6>> splitter) {
+    return of(
+        baseClass,
+        UntypedCodec.fromWithLength(
+            creator, codec1, codec2, codec3, codec4, codec5, codec6, splitter));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7> EnumEntry<T> with(
+      Class<T> baseClass,
+      Functions.Func7<T1, T2, T3, T4, T5, T6, T7, T> creator,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Separator<T, FieldsEncoder7<T1, T2, T3, T4, T5, T6, T7>> splitter) {
+    return of(
+        baseClass,
+        UntypedCodec.fromWithLength(
+            creator, codec1, codec2, codec3, codec4, codec5, codec6, codec7, splitter));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8> EnumEntry<T> with(
+      Class<T> baseClass,
+      Functions.Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> creator,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Separator<T, FieldsEncoder8<T1, T2, T3, T4, T5, T6, T7, T8>> splitter) {
+    return of(
+        baseClass,
+        UntypedCodec.fromWithLength(
+            creator, codec1, codec2, codec3, codec4, codec5, codec6, codec7, codec8, splitter));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9> EnumEntry<T> with(
+      Class<T> baseClass,
+      Functions.Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> creator,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Codec<T9> codec9,
+      Separator<T, FieldsEncoder9<T1, T2, T3, T4, T5, T6, T7, T8, T9>> splitter) {
+    return of(
+        baseClass,
+        UntypedCodec.fromWithLength(
+            creator, codec1, codec2, codec3, codec4, codec5, codec6, codec7, codec8, codec9,
+            splitter));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> EnumEntry<T> with(
+      Class<T> baseClass,
+      Functions.Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> creator,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Codec<T9> codec9,
+      Codec<T10> codec10,
+      Separator<T, FieldsEncoder10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>> splitter) {
+    return of(
+        baseClass,
+        UntypedCodec.fromWithLength(
+            creator, codec1, codec2, codec3, codec4, codec5, codec6, codec7, codec8, codec9,
+            codec10, splitter));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> EnumEntry<T> with(
+      Class<T> baseClass,
+      Functions.Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> creator,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Codec<T9> codec9,
+      Codec<T10> codec10,
+      Codec<T11> codec11,
+      Separator<T, FieldsEncoder11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>> splitter) {
+    return of(
+        baseClass,
+        UntypedCodec.fromWithLength(
+            creator, codec1, codec2, codec3, codec4, codec5, codec6, codec7, codec8, codec9,
+            codec10, codec11, splitter));
+  }
+
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> EnumEntry<T> with(
+      Class<T> baseClass,
+      Functions.Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> creator,
+      Codec<T1> codec1,
+      Codec<T2> codec2,
+      Codec<T3> codec3,
+      Codec<T4> codec4,
+      Codec<T5> codec5,
+      Codec<T6> codec6,
+      Codec<T7> codec7,
+      Codec<T8> codec8,
+      Codec<T9> codec9,
+      Codec<T10> codec10,
+      Codec<T11> codec11,
+      Codec<T12> codec12,
+      Separator<T, FieldsEncoder12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>> splitter) {
+    return of(
+        baseClass,
+        UntypedCodec.fromWithLength(
+            creator, codec1, codec2, codec3, codec4, codec5, codec6, codec7, codec8, codec9,
+            codec10, codec11, codec12, splitter));
+  }
+
+  class EnumEntryFromFields<T> implements EnumEntry<T> {
     private final Class<T> clazz;
     private final List<Field<T, ?>> fields;
     private final Functions.Func1<DecoderApi, T> decodeFields;
 
-    public FieldsCodecImpl(
+    public EnumEntryFromFields(
         Class<T> baseClass, List<Field<T, ?>> fields, Functions.Func1<DecoderApi, T> decodeFields) {
       this.clazz = baseClass;
       this.fields = fields; // Avoid allocation on each call of fields()
       this.decodeFields = decodeFields;
-    }
-
-    @Override
-    public List<Field<T, ?>> fields() {
-      return fields;
     }
 
     @Override
@@ -129,53 +314,72 @@ public interface TypeFields<T> extends UntypedCodec<T> {
     }
 
     @Override
-    public T decodeFields(DecoderApi decoder) {
+    public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+      encoder.writeInt(fields.size());
+
+      for (var field : fields) {
+        field.encode(encoder, value);
+      }
+    }
+
+    @Override
+    public T decodeWithoutTypeId(DecoderApi decoder) {
+      var decodedFieldsLength = decoder.readInt();
+
+      if (decodedFieldsLength != fields.size()) {
+        throw new SborDecodeException(
+            String.format(
+                "Incorrect number of fields detected. Expected field count was %s, but encoded was"
+                    + " %s",
+                fields.size(), decodedFieldsLength));
+      }
+
       return decodeFields.apply(decoder);
     }
   }
 
-  static <T> TypeFields<T> noFields(Class<T> baseClass, Functions.Func0<T> creator) {
-    return new FieldsCodecImpl<>(baseClass, List.of(), decoder -> creator.apply());
+  static <T> EnumEntry<T> noFields(Class<T> baseClass, Functions.Func0<T> creator) {
+    return new EnumEntryFromFields<>(baseClass, List.of(), decoder -> creator.apply());
   }
 
-  static <T, T1> TypeFields<T> of(
-      Class<T> baseClass, Field<T, T1> field1, Functions.Func1<T1, T> creator) {
-    return new FieldsCodecImpl<>(
+  static <T, T1> EnumEntry<T> fromFields(
+      Class<T> baseClass, Functions.Func1<T1, T> creator, Field<T, T1> field1) {
+    return new EnumEntryFromFields<>(
         baseClass, List.of(field1), decoder -> creator.apply(field1.decode(decoder)));
   }
 
-  static <T, T1, T2> TypeFields<T> of(
+  static <T, T1, T2> EnumEntry<T> fromFields(
       Class<T> baseClass,
+      Functions.Func2<T1, T2, T> creator,
       Field<T, T1> field1,
-      Field<T, T2> field2,
-      Functions.Func2<T1, T2, T> creator) {
-    return new FieldsCodecImpl<>(
+      Field<T, T2> field2) {
+    return new EnumEntryFromFields<>(
         baseClass,
         List.of(field1, field2),
         decoder -> creator.apply(field1.decode(decoder), field2.decode(decoder)));
   }
 
-  static <T, T1, T2, T3> TypeFields<T> of(
+  static <T, T1, T2, T3> EnumEntry<T> fromFields(
       Class<T> baseClass,
+      Functions.Func3<T1, T2, T3, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
-      Field<T, T3> field3,
-      Functions.Func3<T1, T2, T3, T> creator) {
-    return new FieldsCodecImpl<>(
+      Field<T, T3> field3) {
+    return new EnumEntryFromFields<>(
         baseClass,
         List.of(field1, field2, field3),
         decoder ->
             creator.apply(field1.decode(decoder), field2.decode(decoder), field3.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4> TypeFields<T> of(
+  static <T, T1, T2, T3, T4> EnumEntry<T> fromFields(
       Class<T> baseClass,
+      Functions.Func4<T1, T2, T3, T4, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
-      Field<T, T4> field4,
-      Functions.Func4<T1, T2, T3, T4, T> creator) {
-    return new FieldsCodecImpl<>(
+      Field<T, T4> field4) {
+    return new EnumEntryFromFields<>(
         baseClass,
         List.of(field1, field2, field3, field4),
         decoder ->
@@ -186,15 +390,15 @@ public interface TypeFields<T> extends UntypedCodec<T> {
                 field4.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5> TypeFields<T> of(
+  static <T, T1, T2, T3, T4, T5> EnumEntry<T> fromFields(
       Class<T> baseClass,
+      Functions.Func5<T1, T2, T3, T4, T5, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
       Field<T, T4> field4,
-      Field<T, T5> field5,
-      Functions.Func5<T1, T2, T3, T4, T5, T> creator) {
-    return new FieldsCodecImpl<>(
+      Field<T, T5> field5) {
+    return new EnumEntryFromFields<>(
         baseClass,
         List.of(field1, field2, field3, field4, field5),
         decoder ->
@@ -206,16 +410,16 @@ public interface TypeFields<T> extends UntypedCodec<T> {
                 field5.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6> TypeFields<T> of(
+  static <T, T1, T2, T3, T4, T5, T6> EnumEntry<T> fromFields(
       Class<T> baseClass,
+      Functions.Func6<T1, T2, T3, T4, T5, T6, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
       Field<T, T4> field4,
       Field<T, T5> field5,
-      Field<T, T6> field6,
-      Functions.Func6<T1, T2, T3, T4, T5, T6, T> creator) {
-    return new FieldsCodecImpl<>(
+      Field<T, T6> field6) {
+    return new EnumEntryFromFields<>(
         baseClass,
         List.of(field1, field2, field3, field4, field5, field6),
         decoder ->
@@ -228,17 +432,17 @@ public interface TypeFields<T> extends UntypedCodec<T> {
                 field6.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7> TypeFields<T> of(
+  static <T, T1, T2, T3, T4, T5, T6, T7> EnumEntry<T> fromFields(
       Class<T> baseClass,
+      Functions.Func7<T1, T2, T3, T4, T5, T6, T7, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
       Field<T, T4> field4,
       Field<T, T5> field5,
       Field<T, T6> field6,
-      Field<T, T7> field7,
-      Functions.Func7<T1, T2, T3, T4, T5, T6, T7, T> creator) {
-    return new FieldsCodecImpl<>(
+      Field<T, T7> field7) {
+    return new EnumEntryFromFields<>(
         baseClass,
         List.of(field1, field2, field3, field4, field5, field6, field7),
         decoder ->
@@ -252,8 +456,9 @@ public interface TypeFields<T> extends UntypedCodec<T> {
                 field7.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8> TypeFields<T> of(
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8> EnumEntry<T> fromFields(
       Class<T> baseClass,
+      Functions.Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -261,9 +466,8 @@ public interface TypeFields<T> extends UntypedCodec<T> {
       Field<T, T5> field5,
       Field<T, T6> field6,
       Field<T, T7> field7,
-      Field<T, T8> field8,
-      Functions.Func8<T1, T2, T3, T4, T5, T6, T7, T8, T> creator) {
-    return new FieldsCodecImpl<>(
+      Field<T, T8> field8) {
+    return new EnumEntryFromFields<>(
         baseClass,
         List.of(field1, field2, field3, field4, field5, field6, field7, field8),
         decoder ->
@@ -278,8 +482,9 @@ public interface TypeFields<T> extends UntypedCodec<T> {
                 field8.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9> TypeFields<T> of(
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9> EnumEntry<T> fromFields(
       Class<T> baseClass,
+      Functions.Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -288,9 +493,8 @@ public interface TypeFields<T> extends UntypedCodec<T> {
       Field<T, T6> field6,
       Field<T, T7> field7,
       Field<T, T8> field8,
-      Field<T, T9> field9,
-      Functions.Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, T> creator) {
-    return new FieldsCodecImpl<>(
+      Field<T, T9> field9) {
+    return new EnumEntryFromFields<>(
         baseClass,
         List.of(field1, field2, field3, field4, field5, field6, field7, field8, field9),
         decoder ->
@@ -306,8 +510,9 @@ public interface TypeFields<T> extends UntypedCodec<T> {
                 field9.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> TypeFields<T> of(
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> EnumEntry<T> fromFields(
       Class<T> baseClass,
+      Functions.Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -317,9 +522,8 @@ public interface TypeFields<T> extends UntypedCodec<T> {
       Field<T, T7> field7,
       Field<T, T8> field8,
       Field<T, T9> field9,
-      Field<T, T10> field10,
-      Functions.Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T> creator) {
-    return new FieldsCodecImpl<>(
+      Field<T, T10> field10) {
+    return new EnumEntryFromFields<>(
         baseClass,
         List.of(field1, field2, field3, field4, field5, field6, field7, field8, field9, field10),
         decoder ->
@@ -336,8 +540,9 @@ public interface TypeFields<T> extends UntypedCodec<T> {
                 field10.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> TypeFields<T> of(
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> EnumEntry<T> fromFields(
       Class<T> baseClass,
+      Functions.Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -348,9 +553,8 @@ public interface TypeFields<T> extends UntypedCodec<T> {
       Field<T, T8> field8,
       Field<T, T9> field9,
       Field<T, T10> field10,
-      Field<T, T11> field11,
-      Functions.Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T> creator) {
-    return new FieldsCodecImpl<>(
+      Field<T, T11> field11) {
+    return new EnumEntryFromFields<>(
         baseClass,
         List.of(
             field1, field2, field3, field4, field5, field6, field7, field8, field9, field10,
@@ -370,8 +574,9 @@ public interface TypeFields<T> extends UntypedCodec<T> {
                 field11.decode(decoder)));
   }
 
-  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> TypeFields<T> of(
+  static <T, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> EnumEntry<T> fromFields(
       Class<T> baseClass,
+      Functions.Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> creator,
       Field<T, T1> field1,
       Field<T, T2> field2,
       Field<T, T3> field3,
@@ -383,9 +588,8 @@ public interface TypeFields<T> extends UntypedCodec<T> {
       Field<T, T9> field9,
       Field<T, T10> field10,
       Field<T, T11> field11,
-      Field<T, T12> field12,
-      Functions.Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T> creator) {
-    return new FieldsCodecImpl<>(
+      Field<T, T12> field12) {
+    return new EnumEntryFromFields<>(
         baseClass,
         List.of(
             field1, field2, field3, field4, field5, field6, field7, field8, field9, field10,

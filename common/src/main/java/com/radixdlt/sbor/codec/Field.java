@@ -69,7 +69,6 @@ import com.radixdlt.sbor.coding.EncoderApi;
 import java.util.function.Function;
 
 public record Field<C, F>(Function<C, F> getter, Codec<F> codec) {
-
   public void encode(EncoderApi encoder, C classObject) {
     var fieldValue = this.getter.apply(classObject);
     encoder.encodeWithTypeId(fieldValue, codec);

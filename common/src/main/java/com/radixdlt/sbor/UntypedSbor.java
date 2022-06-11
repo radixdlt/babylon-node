@@ -66,6 +66,8 @@ package com.radixdlt.sbor;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.Codec;
+import com.radixdlt.sbor.codec.CodecMap;
+import java.util.function.Consumer;
 
 @SuppressWarnings("unused")
 public abstract class UntypedSbor {
@@ -97,5 +99,15 @@ public abstract class UntypedSbor {
 
   public static <T> T decode(byte[] input, Codec<T> codec) {
     return Coder.decode(input, codec);
+  }
+
+  @SafeVarargs
+  public static SchemaCoder with(Consumer<CodecMap>... registrations) {
+    var codecMap = new CodecMap();
+    for (var registration : registrations) {
+      codecMap.register(registration);
+    }
+
+    return new SchemaCoder(codecMap.resolver, false);
   }
 }

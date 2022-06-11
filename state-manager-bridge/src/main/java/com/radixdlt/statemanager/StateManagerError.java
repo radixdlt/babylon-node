@@ -80,9 +80,9 @@ public class StateManagerError implements Cause {
         StateManagerError.class,
         codecs ->
             StructCodec.fromFields(
+                StateManagerError::new,
                 Field.of(StateManagerError::getRawErrorCode, codecs.of(short.class)),
-                Field.of(StateManagerError::message, codecs.of(String.class)),
-                StateManagerError::new));
+                Field.of(StateManagerError::message, codecs.of(String.class))));
   }
 
   private static final Map<Short, StateManagerErrorCode> codeMap =

@@ -73,14 +73,19 @@ import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.Field;
-import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.dto.SimpleEnum;
 import com.radixdlt.sbor.dto.SimpleRecord;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TypedSborTest {
+  @BeforeClass
+  public static void preparation() {
+    CodecMap.withDefault(SimpleRecord::registerCodec);
+    CodecMap.withDefault(SimpleEnum::registerCodec);
+  }
+
   @Test
   public void unitCanBeEncodedAndDecoded() {
 
@@ -202,8 +207,7 @@ public class TypedSborTest {
     var testVector = new byte[] {0x01, 0x02, 0x03, 0x04, 0x05};
 
     // Define Java arrays to map to SBOR Arrays, instead of the default, Vec
-    var sbor =
-        new SchemaCoder(new CodecMap().addCoreSchemaCodecs(TypeId.TYPE_ARRAY).resolver, true);
+    var sbor = new SchemaCoder(new CodecMap(true, TypeId.TYPE_ARRAY).resolver, true);
     var r0 = sbor.encode(testVector, byte[].class);
 
     assertEquals(11, r0.length);
@@ -372,58 +376,45 @@ public class TypedSborTest {
   public void objectTreeCanBeEncodedAndDecodedWithEitherStructCodec() {
     var testValue = new SimpleRecord(1234567, "Some string", Either.left(4567L), some(false));
 
-    // Encode with DEFAULT codec map (ie using StructCodec.with)
-    var structCodecWithCoder = new SchemaCoder(new CodecMap().addCoreSchemaCodecs().register(
-        SimpleRecord.class,
-        (codecs) ->
-            StructCodec.with(
-                (r, s) -> s.accept(r.first(), r.second(), r.third(), r.fourth()),
-                codecs.of(int.class),
-                codecs.of(String.class),
-                codecs.of(new TypeToken<Either<Long, String>>() {}),
-                codecs.of(new TypeToken<Option<Boolean>>() {}),
-                SimpleRecord::new)).resolver, true);
+    // PART 1 - We use codec variant 1 (StructCodec.with)
+    var coderUsingWith = TypedSbor.with(SimpleRecord::registerCodecUsingStructCodecWith);
 
-    var r0 = structCodecWithCoder.encode(testValue, SimpleRecord.class);
+    var encoded1 = coderUsingWith.encode(testValue, SimpleRecord.class);
 
-    assertEquals(41, r0.length);
-    assertEquals(0x10, r0[0]); // Type == 0x10 - Struct
-    assertEquals(0x04, r0[1]); // Field count - 4
-    assertEquals(0x00, r0[2]); //
-    assertEquals(0x00, r0[3]); //
-    assertEquals(0x00, r0[4]); //
+    assertEquals(41, encoded1.length);
+    assertEquals(0x10, encoded1[0]); // Type == 0x10 - Struct
+    assertEquals(0x04, encoded1[1]); // Field count - 4
+    assertEquals(0x00, encoded1[2]); //
+    assertEquals(0x00, encoded1[3]); //
+    assertEquals(0x00, encoded1[4]); //
 
-    var r1 = structCodecWithCoder.decode(r0, SimpleRecord.class);
+    var decoded1 = coderUsingWith.decode(encoded1, SimpleRecord.class);
 
-    assertEquals(testValue, r1);
+    assertEquals(testValue, decoded1);
 
-    // Encode with codec map using StructField.fromFields
+    // PART 2 - We use codec variant 2 (StructCodec.fromEntries), and check they match
+    var coderUsingFromFields =
+        TypedSbor.with(SimpleRecord::registerCodecUsingStructCodecFromEntries);
 
-    var structCodecFromFieldsCoder = new SchemaCoder(new CodecMap().addCoreSchemaCodecs().register(
-        SimpleRecord.class,
-        (codecs) ->
-            StructCodec.fromFields(
-                Field.of(SimpleRecord::first, codecs.of(int.class)),
-                Field.of(SimpleRecord::second, codecs.of(String.class)),
-                Field.of(SimpleRecord::third, codecs.of(new TypeToken<Either<Long, String>>() {})),
-                Field.of(SimpleRecord::fourth, codecs.of(new TypeToken<Option<Boolean>>() {})),
-                SimpleRecord::new)).resolver, true);
+    var encoded2 = coderUsingFromFields.encode(testValue, SimpleRecord.class);
 
-    var r2 = structCodecFromFieldsCoder.encode(testValue, SimpleRecord.class);
+    assertArrayEquals(encoded1, encoded2);
 
-    assertArrayEquals(r0, r2);
+    var decoded2 = coderUsingFromFields.decode(encoded2, SimpleRecord.class);
 
-    var r3 = structCodecFromFieldsCoder.decode(r2, SimpleRecord.class);
-
-    assertEquals(testValue, r3);
+    assertEquals(testValue, decoded2);
   }
 
   @Test
   public void enumCanBeEncodedAndDecoded() {
     var enumOne = new SimpleEnum.A(4, "C");
+    var enumTwo = new SimpleEnum.B(Either.left(5L));
 
-    var encodedEnumOne = TypedSbor.encode(enumOne, SimpleEnum.class);
+    // PART 1 - We use codec variant 1 (EnumEntry.with)
+    var coderUsingWith = TypedSbor.with(SimpleEnum::registerCodecUsingWith);
 
+    // Enum one
+    var encodedEnumOne = coderUsingWith.encode(enumOne, SimpleEnum.class);
     assertArrayEquals(
         new byte[] {
           17, // Enum Type
@@ -437,14 +428,11 @@ public class TypedSborTest {
           67, // "C"
         },
         encodedEnumOne);
-
-    var decodedEnumOne = TypedSbor.decode(encodedEnumOne, SimpleEnum.class);
-
+    var decodedEnumOne = coderUsingWith.decode(encodedEnumOne, SimpleEnum.class);
     assertEquals(enumOne, decodedEnumOne);
 
-    var enumTwo = new SimpleEnum.B(Either.left(5L));
-    var encodedEnumTwo = TypedSbor.encode(enumTwo, SimpleEnum.class);
-
+    // Enum two
+    var encodedEnumTwo = coderUsingWith.encode(enumTwo, SimpleEnum.class);
     assertArrayEquals(
         new byte[] {
           17, // Enum Type
@@ -470,9 +458,22 @@ public class TypedSborTest {
           0 // Field 1 - long value
         },
         encodedEnumTwo);
-
-    var decodedEnumTwo = TypedSbor.decode(encodedEnumTwo, SimpleEnum.class);
-
+    var decodedEnumTwo = coderUsingWith.decode(encodedEnumTwo, SimpleEnum.class);
     assertEquals(enumTwo, decodedEnumTwo);
+
+    // PART 2 - We use codec variant 2 (EnumEntry.fromEntries)
+    var coderUsingFromEntries = TypedSbor.with(SimpleEnum::registerCodecUsingFromEntries);
+
+    // Check Enum 1
+    var encodedEnumOneV2 = coderUsingFromEntries.encode(enumOne, SimpleEnum.class);
+    assertArrayEquals(encodedEnumOne, encodedEnumOneV2);
+    var decodedEnumOneV2 = coderUsingFromEntries.decode(encodedEnumOne, SimpleEnum.class);
+    assertEquals(decodedEnumOneV2, decodedEnumOne);
+
+    // Check Enum 2
+    var encodedEnumTwoV2 = coderUsingFromEntries.encode(enumTwo, SimpleEnum.class);
+    assertArrayEquals(encodedEnumTwo, encodedEnumTwoV2);
+    var decodedEnumTwoV2 = coderUsingFromEntries.decode(encodedEnumTwo, SimpleEnum.class);
+    assertEquals(decodedEnumTwoV2, decodedEnumTwo);
   }
 }

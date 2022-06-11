@@ -62,52 +62,129 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.sbor.codec;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.sbor.codec.Codec;
-import com.radixdlt.sbor.codec.CodecMap;
-import java.util.function.Consumer;
-
+/** Generic function interfaces for the encoding of various sequential fields */
 @SuppressWarnings("unused")
-public abstract class TypedSbor {
-  private static final SchemaCoder Coder = SchemaCoder.DEFAULT_WITH_TYPES;
-
-  public static <T> byte[] encode(T value) {
-    return Coder.encode(value);
+public interface FieldsEncoders {
+  /** FieldsEncoder with no fields. */
+  @FunctionalInterface
+  interface FieldsEncoder0 {
+    void encode();
   }
 
-  public static <T> byte[] encode(T value, Class<T> clazz) {
-    return Coder.encode(value, clazz);
+  /** FieldsEncoder with one field. */
+  @FunctionalInterface
+  interface FieldsEncoder1<T1> {
+    void encode(T1 field1);
   }
 
-  public static <T> byte[] encode(T value, TypeToken<T> type) {
-    return Coder.encode(value, type);
+  /** FieldsEncoder with two fields. */
+  @FunctionalInterface
+  interface FieldsEncoder2<T1, T2> {
+    void encode(T1 field1, T2 field2);
   }
 
-  public static <T> byte[] encode(T value, Codec<T> codec) {
-    return Coder.encode(value, codec);
+  /** FieldsEncoder with three fields. */
+  @FunctionalInterface
+  interface FieldsEncoder3<T1, T2, T3> {
+    void encode(T1 field1, T2 field2, T3 field3);
   }
 
-  public static <T> T decode(byte[] input, Class<T> clazz) {
-    return Coder.decode(input, clazz);
+  /** FieldsEncoder with four fields. */
+  @FunctionalInterface
+  interface FieldsEncoder4<T1, T2, T3, T4> {
+    void encode(T1 field1, T2 field2, T3 field3, T4 field4);
   }
 
-  public static <T> T decode(byte[] input, TypeToken<T> type) {
-    return Coder.decode(input, type);
+  /** FieldsEncoder with five fields. */
+  @FunctionalInterface
+  interface FieldsEncoder5<T1, T2, T3, T4, T5> {
+    void encode(T1 field1, T2 field2, T3 field3, T4 field4, T5 field5);
   }
 
-  public static <T> T decode(byte[] input, Codec<T> codec) {
-    return Coder.decode(input, codec);
+  /** FieldsEncoder with six fields. */
+  @FunctionalInterface
+  interface FieldsEncoder6<T1, T2, T3, T4, T5, T6> {
+    void encode(T1 field1, T2 field2, T3 field3, T4 field4, T5 field5, T6 field6);
   }
 
-  @SafeVarargs
-  public static SchemaCoder with(Consumer<CodecMap>... registrations) {
-    var codecMap = new CodecMap();
-    for (var registration : registrations) {
-      codecMap.register(registration);
-    }
+  /** FieldsEncoder with seven fields. */
+  @FunctionalInterface
+  interface FieldsEncoder7<T1, T2, T3, T4, T5, T6, T7> {
+    void encode(T1 field1, T2 field2, T3 field3, T4 field4, T5 field5, T6 field6, T7 field7);
+  }
 
-    return new SchemaCoder(codecMap.resolver, true);
+  /** FieldsEncoder with eight fields. */
+  @FunctionalInterface
+  interface FieldsEncoder8<T1, T2, T3, T4, T5, T6, T7, T8> {
+    void encode(
+        T1 field1, T2 field2, T3 field3, T4 field4, T5 field5, T6 field6, T7 field7, T8 field8);
+  }
+
+  /** FieldsEncoder with nine fields. */
+  @FunctionalInterface
+  interface FieldsEncoder9<T1, T2, T3, T4, T5, T6, T7, T8, T9> {
+    void encode(
+        T1 field1,
+        T2 field2,
+        T3 field3,
+        T4 field4,
+        T5 field5,
+        T6 field6,
+        T7 field7,
+        T8 field8,
+        T9 field9);
+  }
+
+  /** FieldsEncoder with ten fields. */
+  @FunctionalInterface
+  interface FieldsEncoder10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> {
+    void encode(
+        T1 field1,
+        T2 field2,
+        T3 field3,
+        T4 field4,
+        T5 field5,
+        T6 field6,
+        T7 field7,
+        T8 field8,
+        T9 field9,
+        T10 field10);
+  }
+
+  /** FieldsEncoder with eleven fields. */
+  @FunctionalInterface
+  interface FieldsEncoder11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> {
+    void encode(
+        T1 field1,
+        T2 field2,
+        T3 field3,
+        T4 field4,
+        T5 field5,
+        T6 field6,
+        T7 field7,
+        T8 field8,
+        T9 field9,
+        T10 field10,
+        T11 field11);
+  }
+
+  /** FieldsEncoder with twelve fields. */
+  @FunctionalInterface
+  interface FieldsEncoder12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> {
+    void encode(
+        T1 field1,
+        T2 field2,
+        T3 field3,
+        T4 field4,
+        T5 field5,
+        T6 field6,
+        T7 field7,
+        T8 field8,
+        T9 field9,
+        T10 field10,
+        T11 field11,
+        T12 field12);
   }
 }

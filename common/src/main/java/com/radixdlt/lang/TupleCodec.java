@@ -81,31 +81,37 @@ public interface TupleCodec {
   }
 
   static Codec<Tuple0> ofEmpty() {
-    return from(UntypedCodec.empty(Tuple0::of));
+    return from(UntypedCodec.emptyWithLength(Tuple0::of));
   }
 
   static <T1> Codec<Tuple1<T1>> of(Codec<T1> codec1) {
-    return from(UntypedCodec.fromWithoutLength(Tuple1::accept, codec1, Tuple1::of));
+    return from(UntypedCodec.fromWithLength(Tuple1::of, codec1, (t, s) -> t.accept(s::encode)));
   }
 
   static <T1, T2> Codec<Tuple2<T1, T2>> of(Codec<T1> codec1, Codec<T2> codec2) {
-    return from(UntypedCodec.fromWithoutLength(Tuple2::accept, codec1, codec2, Tuple2::of));
+    return from(
+        UntypedCodec.fromWithLength(Tuple2::of, codec1, codec2, (t, s) -> t.accept(s::encode)));
   }
 
   static <T1, T2, T3> Codec<Tuple3<T1, T2, T3>> of(
       Codec<T1> codec1, Codec<T2> codec2, Codec<T3> codec3) {
-    return from(UntypedCodec.fromWithoutLength(Tuple3::accept, codec1, codec2, codec3, Tuple3::of));
+    return from(
+        UntypedCodec.fromWithLength(
+            Tuple3::of, codec1, codec2, codec3, (t, s) -> t.accept(s::encode)));
   }
 
   static <T1, T2, T3, T4> Codec<Tuple4<T1, T2, T3, T4>> of(
       Codec<T1> codec1, Codec<T2> codec2, Codec<T3> codec3, Codec<T4> codec4) {
-    return from(UntypedCodec.fromWithoutLength(Tuple4::accept, codec1, codec2, codec3, codec4, Tuple4::of));
+    return from(
+        UntypedCodec.fromWithLength(
+            Tuple4::of, codec1, codec2, codec3, codec4, (t, s) -> t.accept(s::encode)));
   }
 
   static <T1, T2, T3, T4, T5> Codec<Tuple5<T1, T2, T3, T4, T5>> of(
       Codec<T1> codec1, Codec<T2> codec2, Codec<T3> codec3, Codec<T4> codec4, Codec<T5> codec5) {
     return from(
-        UntypedCodec.fromWithoutLength(Tuple5::accept, codec1, codec2, codec3, codec4, codec5, Tuple5::of));
+        UntypedCodec.fromWithLength(
+            Tuple5::of, codec1, codec2, codec3, codec4, codec5, (t, s) -> t.accept(s::encode)));
   }
 
   static <T1, T2, T3, T4, T5, T6> Codec<Tuple6<T1, T2, T3, T4, T5, T6>> of(
@@ -116,8 +122,15 @@ public interface TupleCodec {
       Codec<T5> codec5,
       Codec<T6> codec6) {
     return from(
-        UntypedCodec.fromWithoutLength(
-            Tuple6::accept, codec1, codec2, codec3, codec4, codec5, codec6, Tuple6::of));
+        UntypedCodec.fromWithLength(
+            Tuple6::of,
+            codec1,
+            codec2,
+            codec3,
+            codec4,
+            codec5,
+            codec6,
+            (t, s) -> t.accept(s::encode)));
   }
 
   static <T1, T2, T3, T4, T5, T6, T7> Codec<Tuple7<T1, T2, T3, T4, T5, T6, T7>> of(
@@ -129,8 +142,16 @@ public interface TupleCodec {
       Codec<T6> codec6,
       Codec<T7> codec7) {
     return from(
-        UntypedCodec.fromWithoutLength(
-            Tuple7::accept, codec1, codec2, codec3, codec4, codec5, codec6, codec7, Tuple7::of));
+        UntypedCodec.fromWithLength(
+            Tuple7::of,
+            codec1,
+            codec2,
+            codec3,
+            codec4,
+            codec5,
+            codec6,
+            codec7,
+            (t, s) -> t.accept(s::encode)));
   }
 
   static <T1, T2, T3, T4, T5, T6, T7, T8> Codec<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> of(
@@ -143,8 +164,8 @@ public interface TupleCodec {
       Codec<T7> codec7,
       Codec<T8> codec8) {
     return from(
-        UntypedCodec.fromWithoutLength(
-            Tuple8::accept,
+        UntypedCodec.fromWithLength(
+            Tuple8::of,
             codec1,
             codec2,
             codec3,
@@ -153,7 +174,7 @@ public interface TupleCodec {
             codec6,
             codec7,
             codec8,
-            Tuple8::of));
+            (t, s) -> t.accept(s::encode)));
   }
 
   static <T1, T2, T3, T4, T5, T6, T7, T8, T9> Codec<Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9>> of(
@@ -167,8 +188,8 @@ public interface TupleCodec {
       Codec<T8> codec8,
       Codec<T9> codec9) {
     return from(
-        UntypedCodec.fromWithoutLength(
-            Tuple9::accept,
+        UntypedCodec.fromWithLength(
+            Tuple9::of,
             codec1,
             codec2,
             codec3,
@@ -178,7 +199,7 @@ public interface TupleCodec {
             codec7,
             codec8,
             codec9,
-            Tuple9::of));
+            (t, s) -> t.accept(s::encode)));
   }
 
   static <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
@@ -194,8 +215,8 @@ public interface TupleCodec {
           Codec<T9> codec9,
           Codec<T10> codec10) {
     return from(
-        UntypedCodec.fromWithoutLength(
-            Tuple10::accept,
+        UntypedCodec.fromWithLength(
+            Tuple10::of,
             codec1,
             codec2,
             codec3,
@@ -206,7 +227,7 @@ public interface TupleCodec {
             codec8,
             codec9,
             codec10,
-            Tuple10::of));
+            (t, s) -> t.accept(s::encode)));
   }
 
   static <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
@@ -223,8 +244,8 @@ public interface TupleCodec {
           Codec<T10> codec10,
           Codec<T11> codec11) {
     return from(
-        UntypedCodec.fromWithoutLength(
-            Tuple11::accept,
+        UntypedCodec.fromWithLength(
+            Tuple11::of,
             codec1,
             codec2,
             codec3,
@@ -236,7 +257,7 @@ public interface TupleCodec {
             codec9,
             codec10,
             codec11,
-            Tuple11::of));
+            (t, s) -> t.accept(s::encode)));
   }
 
   static <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
@@ -254,8 +275,8 @@ public interface TupleCodec {
           Codec<T11> codec11,
           Codec<T12> codec12) {
     return from(
-        UntypedCodec.fromWithoutLength(
-            Tuple12::accept,
+        UntypedCodec.fromWithLength(
+            Tuple12::of,
             codec1,
             codec2,
             codec3,
@@ -268,7 +289,7 @@ public interface TupleCodec {
             codec10,
             codec11,
             codec12,
-            Tuple12::of));
+            (t, s) -> t.accept(s::encode)));
   }
 
   static void registerAllWith(CodecMap codecMap) {

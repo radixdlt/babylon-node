@@ -69,31 +69,51 @@ import com.radixdlt.lang.Either;
 import com.radixdlt.sbor.codec.*;
 
 public sealed interface SimpleEnum {
+
+  // It's recommended to run all custom codec registration methods from one file on app boot-up
+  // CodecMap.withDefault(SimpleEnum::registerCodec);
+
   static void registerCodec(CodecMap codecMap) {
+    // Arbitrarily chose the With variant - as it's David favourite
+    // In normal use, they'd only be one codec, and you'd put it here
+    registerCodecUsingWith(codecMap);
+  }
+
+  static void registerCodecUsingWith(CodecMap codecMap) {
     codecMap.registerForSealedClassAndSubclasses(
         SimpleEnum.class,
         (codecs) ->
             EnumCodec.fromEntries(
-                TypeFields.of(
+                EnumEntry.with(
                     A.class,
-                    Field.of(A::first, codecs.of(int.class)),
-                    Field.of(A::second, codecs.of(String.class)),
-                    A::new),
-                TypeFields.of(
+                    A::new,
+                    codecs.of(int.class),
+                    codecs.of(String.class),
+                    (t, encoder) -> encoder.encode(t.first, t.second)),
+                EnumEntry.with(
                     B.class,
-                    Field.of(B::param1, codecs.of(new TypeToken<Either<Long, String>>() {})),
-                    B::new)));
+                    B::new,
+                    codecs.of(new TypeToken<Either<Long, String>>() {}),
+                    (t, encoder) -> encoder.encode(t.param1))));
   }
 
-  record A(int first, String second) implements SimpleEnum {
-    static {
-      CodecMap.withDefault(SimpleEnum::registerCodec);
-    }
+  static void registerCodecUsingFromEntries(CodecMap codecMap) {
+    codecMap.registerForSealedClassAndSubclasses(
+        SimpleEnum.class,
+        (codecs) ->
+            EnumCodec.fromEntries(
+                EnumEntry.fromFields(
+                    A.class,
+                    A::new,
+                    Field.of(A::first, codecs.of(int.class)),
+                    Field.of(A::second, codecs.of(String.class))),
+                EnumEntry.fromFields(
+                    B.class,
+                    B::new,
+                    Field.of(B::param1, codecs.of(new TypeToken<Either<Long, String>>() {})))));
   }
 
-  record B(Either<Long, String> param1) implements SimpleEnum {
-    static {
-      CodecMap.withDefault(SimpleEnum::registerCodec);
-    }
-  }
+  record A(int first, String second) implements SimpleEnum {}
+
+  record B(Either<Long, String> param1) implements SimpleEnum {}
 }

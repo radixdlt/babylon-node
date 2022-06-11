@@ -72,20 +72,38 @@ import com.radixdlt.sbor.codec.*;
 public record SimpleRecord(
     int first, String second, Either<Long, String> third, Option<Boolean> fourth) {
 
-  static {
-    CodecMap.withDefault(SimpleRecord::registerCodec);
+  // It's recommended to run all custom codec registrations from one file on app boot-up:
+  // CodecMap.withDefault(SimpleEnum::registerCodec);
+  // NB: For a one-off, you can also use a static initializer in the class to register it, ie:
+  // static { CodecMap.withDefault(SimpleRecord::registerCodec); }
+  public static void registerCodec(CodecMap codecMap) {
+    // Arbitrarily chose the With variant - as it's David favourite
+    // In normal use, they'd only be one codec, and you'd put it here
+    registerCodecUsingStructCodecWith(codecMap);
   }
 
-  public static void registerCodec(CodecMap codecMap) {
+  public static void registerCodecUsingStructCodecWith(CodecMap codecMap) {
     codecMap.register(
         SimpleRecord.class,
         (codecs) ->
             StructCodec.with(
-                (r, s) -> s.accept(r.first, r.second, r.third, r.fourth),
+                SimpleRecord::new,
                 codecs.of(int.class),
                 codecs.of(String.class),
                 codecs.of(new TypeToken<Either<Long, String>>() {}),
                 codecs.of(new TypeToken<Option<Boolean>>() {}),
-                SimpleRecord::new));
+                (r, encoder) -> encoder.encode(r.first, r.second, r.third, r.fourth)));
+  }
+
+  public static void registerCodecUsingStructCodecFromEntries(CodecMap codecMap) {
+    codecMap.register(
+        SimpleRecord.class,
+        (codecs) ->
+            StructCodec.fromFields(
+                SimpleRecord::new,
+                Field.of(SimpleRecord::first, codecs.of(int.class)),
+                Field.of(SimpleRecord::second, codecs.of(String.class)),
+                Field.of(SimpleRecord::third, codecs.of(new TypeToken<Either<Long, String>>() {})),
+                Field.of(SimpleRecord::fourth, codecs.of(new TypeToken<Option<Boolean>>() {}))));
   }
 }

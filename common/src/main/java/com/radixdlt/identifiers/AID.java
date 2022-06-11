@@ -89,7 +89,7 @@ public final class AID implements Comparable<AID> {
     codecMap.register(
         AID.class,
         codecs ->
-            StructCodec.fromFields(Field.of(AID::getBytes, codecs.of(byte[].class)), AID::new));
+            StructCodec.fromFields(AID::new, Field.of(AID::getBytes, codecs.of(byte[].class))));
   }
 
   static final int HASH_BYTES = 32;

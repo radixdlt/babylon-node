@@ -87,9 +87,9 @@ public final class Transaction {
         Transaction.class,
         codecs ->
             StructCodec.fromFields(
+                Transaction::new,
                 Field.of(Transaction::getPayload, codecs.of(byte[].class)),
-                Field.of(Transaction::getId, codecs.of(AID.class)),
-                Transaction::new));
+                Field.of(Transaction::getId, codecs.of(AID.class))));
   }
 
   private final byte[] payload;
