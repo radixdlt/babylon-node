@@ -120,8 +120,8 @@ final class MessagePreprocessor {
             .flatMap(message -> processMessage(inboundMessage.source(), message));
     this.counters.increment(CounterType.MESSAGES_INBOUND_RECEIVED);
     result.fold(
-        unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED), unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_DISCARDED)
-    );
+        unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED),
+        unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_DISCARDED));
     return result;
   }
 

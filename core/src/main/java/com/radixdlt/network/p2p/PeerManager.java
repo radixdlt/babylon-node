@@ -149,8 +149,8 @@ public final class PeerManager {
     synchronized (lock) {
       final var checkResult = this.canConnectTo(nodeId);
       return checkResult.fold(
-          unused -> this.findOrCreateChannelInternal(nodeId), error -> CompletableFuture.failedFuture(new RuntimeException(error.message()))
-      );
+          unused -> this.findOrCreateChannelInternal(nodeId),
+          error -> CompletableFuture.failedFuture(new RuntimeException(error.message())));
     }
   }
 

@@ -191,11 +191,11 @@ public sealed interface Option<T> permits Some, None {
         t2 -> {
           nonEmptyValConsumer.accept(t2);
           return null;
-        }, () -> {
+        },
+        () -> {
           emptyValConsumer.run();
           return null;
-        }
-    );
+        });
     return this;
   }
 
@@ -300,7 +300,7 @@ public sealed interface Option<T> permits Some, None {
    * Handle both possible states (empty/present) and produce single result from it.
    *
    * @param presentMapper function to transform present value into output value
-   * @param emptyMapper   function to produce value in case of empty instance
+   * @param emptyMapper function to produce value in case of empty instance
    * @return result of application of one of the mappers.
    */
   <R> R fold(Func1<? super T, ? extends R> presentMapper, Supplier<? extends R> emptyMapper);
@@ -415,10 +415,10 @@ public sealed interface Option<T> permits Some, None {
    */
   default T unwrap(Functions.Func0<RuntimeException> createException) {
     return fold(
-        Functions::id, () -> {
+        Functions::id,
+        () -> {
           throw createException.apply();
-        }
-    );
+        });
   }
 
   /**
@@ -446,7 +446,8 @@ public sealed interface Option<T> permits Some, None {
   @SafeVarargs
   static <T> Option<T> any(Option<T> op, Supplier<Option<T>>... ops) {
     return op.fold(
-        unused -> op, () -> {
+        unused -> op,
+        () -> {
           for (var option : ops) {
             var result = option.get();
             if (result.isPresent()) {
@@ -454,8 +455,7 @@ public sealed interface Option<T> permits Some, None {
             }
           }
           return op;
-        }
-    );
+        });
   }
 
   /**

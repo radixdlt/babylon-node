@@ -147,7 +147,8 @@ class MessageDispatcher {
     return channel.send(bytes);
   }
 
-  private Result<Unit, Cause> completionException(Throwable cause, NodeId receiver, Message message) {
+  private Result<Unit, Cause> completionException(
+      Throwable cause, NodeId receiver, Message message) {
     final var msg =
         String.format(
             "Send %s to %s failed",

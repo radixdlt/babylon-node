@@ -85,14 +85,13 @@ public record ResultCodec<T, E>(Codec<T> okCodec, Codec<E> errCodec)
   public void encodeWithoutTypeId(EncoderApi encoder, Result<T, E> result) {
     result.apply(
         value -> {
-            encoder.writeByte(ResultTypeId.OK);
-            encoder.encodeWithTypeId(value, okCodec);
+          encoder.writeByte(ResultTypeId.OK);
+          encoder.encodeWithTypeId(value, okCodec);
         },
         error -> {
-            encoder.writeByte(ResultTypeId.ERR);
-            encoder.encodeWithTypeId(error, errCodec);
-        }
-    );
+          encoder.writeByte(ResultTypeId.ERR);
+          encoder.encodeWithTypeId(error, errCodec);
+        });
   }
 
   @Override

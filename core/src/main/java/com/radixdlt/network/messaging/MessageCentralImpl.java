@@ -174,7 +174,8 @@ public final class MessageCentralImpl implements MessageCentral {
               messageFromPeer -> {
                 logPreprocessedMessageAndUpdateCounters(messageFromPeer, processingStopwatch);
                 return Optional.of(messageFromPeer);
-              }, error -> {
+              },
+              error -> {
                 final var logLevel =
                     discardedInboundMessagesLogRateLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
                 log.log(
@@ -183,8 +184,7 @@ public final class MessageCentralImpl implements MessageCentral {
                     inboundMessage.source(),
                     error);
                 return Optional.empty();
-              }
-          );
+              });
     } catch (Exception ex) {
       final var msg =
           String.format("Message preprocessing from %s failed", inboundMessage.source());

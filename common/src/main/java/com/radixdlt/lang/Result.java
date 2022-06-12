@@ -147,11 +147,11 @@ public sealed interface Result<T, E> permits Ok, Err {
         t -> {
           successConsumer.accept(t);
           return this;
-        }, t -> {
+        },
+        t -> {
           failureConsumer.accept(t);
           return this;
-        }
-    );
+        });
   }
 
   /**
@@ -165,14 +165,13 @@ public sealed interface Result<T, E> permits Ok, Err {
         v -> {
           consumer.accept(v);
           return null;
-        }, Functions::toNull
-    );
+        },
+        Functions::toNull);
     return this;
   }
 
   /**
-   * Pass successful operation result value into provided consumer.
-   * Alias of onSuccess.
+   * Pass successful operation result value into provided consumer. Alias of onSuccess.
    *
    * @param consumer Consumer to pass value to
    * @return current instance for fluent call chaining
@@ -182,8 +181,8 @@ public sealed interface Result<T, E> permits Ok, Err {
         v -> {
           consumer.accept(v);
           return null;
-        }, Functions::toNull
-    );
+        },
+        Functions::toNull);
     return this;
   }
 
@@ -197,14 +196,13 @@ public sealed interface Result<T, E> permits Ok, Err {
         v -> {
           action.run();
           return null;
-        }, Functions::toNull
-    );
+        },
+        Functions::toNull);
     return this;
   }
 
   /**
-   * Run provided action in case of success.
-   * Alias of onSuccessDo.
+   * Run provided action in case of success. Alias of onSuccessDo.
    *
    * @return current instance for fluent call chaining
    */
@@ -213,8 +211,8 @@ public sealed interface Result<T, E> permits Ok, Err {
         v -> {
           action.run();
           return null;
-        }, Functions::toNull
-    );
+        },
+        Functions::toNull);
     return this;
   }
 
@@ -226,28 +224,27 @@ public sealed interface Result<T, E> permits Ok, Err {
    */
   default Result<T, E> onFailure(Consumer<? super E> consumer) {
     fold(
-        Functions::toNull, v -> {
+        Functions::toNull,
+        v -> {
           consumer.accept(v);
           return null;
-        }
-    );
+        });
     return this;
   }
 
   /**
-   * Pass failure operation result value into provided consumer.
-   * Alias of onFailure.
+   * Pass failure operation result value into provided consumer. Alias of onFailure.
    *
    * @param consumer Consumer to pass value to
    * @return current instance for fluent call chaining
    */
   default Result<T, E> onError(Consumer<? super E> consumer) {
     fold(
-        Functions::toNull, v -> {
+        Functions::toNull,
+        v -> {
           consumer.accept(v);
           return null;
-        }
-    );
+        });
     return this;
   }
 
@@ -258,27 +255,26 @@ public sealed interface Result<T, E> permits Ok, Err {
    */
   default Result<T, E> onFailureDo(Runnable action) {
     fold(
-        Functions::toNull, v -> {
+        Functions::toNull,
+        v -> {
           action.run();
           return null;
-        }
-    );
+        });
     return this;
   }
 
   /**
-   * Run provided action in case of failure.
-   * Alias of onFailureDo.
+   * Run provided action in case of failure. Alias of onFailureDo.
    *
    * @return current instance for fluent call chaining
    */
   default Result<T, E> onErrorDo(Runnable action) {
     fold(
-        Functions::toNull, v -> {
+        Functions::toNull,
+        v -> {
           action.run();
           return null;
-        }
-    );
+        });
     return this;
   }
 
@@ -340,10 +336,10 @@ public sealed interface Result<T, E> permits Ok, Err {
    * remains unchanged. If predicate returns {@code false}, then failure instance in created using
    * given {@link E}.
    *
-   * @param predicate  predicate to invoke
+   * @param predicate predicate to invoke
    * @param error failure to use in case if predicate returns {@code false}
-   * @return current instance if predicate returns {@code true} or {@link Err} instance if
-   * predicate returns {@code false}
+   * @return current instance if predicate returns {@code true} or {@link Err} instance if predicate
+   *     returns {@code false}
    */
   default Result<T, E> filter(Predicate<T> predicate, E error) {
     return fold(v -> predicate.test(v) ? this : failure(error), v -> this);
@@ -354,11 +350,11 @@ public sealed interface Result<T, E> permits Ok, Err {
    * remains unchanged. If predicate returns {@code false}, then failure instance in created using
    * {@link E} created by provided function.
    *
-   * @param predicate   predicate to invoke
+   * @param predicate predicate to invoke
    * @param errorMapper function which transforms the tested value into instance of {@link E} if
-   *                    predicate returns {@code false}
-   * @return current instance if predicate returns {@code true} or {@link Err} instance if
-   * predicate returns {@code false}
+   *     predicate returns {@code false}
+   * @return current instance if predicate returns {@code true} or {@link Err} instance if predicate
+   *     returns {@code false}
    */
   default Result<T, E> filter(Predicate<T> predicate, Func1<T, E> errorMapper) {
     return fold(v -> predicate.test(v) ? this : failure(errorMapper.apply(v)), v -> this);
@@ -427,15 +423,15 @@ public sealed interface Result<T, E> permits Ok, Err {
    */
   default T unwrap(Function<? super E, RuntimeException> mapErrorToException) {
     return fold(
-        Functions::id, v -> {
+        Functions::id,
+        v -> {
           throw mapErrorToException.apply(v);
-        }
-    );
+        });
   }
 
   /**
-   * This method allows "unwrapping" the error stored inside the Result instance. If the Result
-   * is not an error then an {@link UnwrapException} is thrown.
+   * This method allows "unwrapping" the error stored inside the Result instance. If the Result is
+   * not an error then an {@link UnwrapException} is thrown.
    *
    * @return error stored inside present instance.
    */
@@ -455,8 +451,7 @@ public sealed interface Result<T, E> permits Ok, Err {
         v -> {
           throw mapValueToException.apply(v);
         },
-        Functions::id
-    );
+        Functions::id);
   }
 
   /**
@@ -474,11 +469,11 @@ public sealed interface Result<T, E> permits Ok, Err {
         success -> {
           successConsumer.accept(success);
           return this;
-        }, failure -> {
+        },
+        failure -> {
           failureConsumer.accept(failure);
           return this;
-        }
-    );
+        });
   }
 
   /**
@@ -561,9 +556,8 @@ public sealed interface Result<T, E> permits Ok, Err {
    * Wrap value returned by provided lambda into success {@link Result} if call succeeds or into
    * failure {@link Result} if call throws exception.
    *
-   * @param supplier        the call to wrap
-   * @param exceptionMapper the function which will transform exception into instance of {@link
-   *                        E}
+   * @param supplier the call to wrap
+   * @param exceptionMapper the function which will transform exception into instance of {@link E}
    * @return result of execution of the provided lambda wrapped into {@link Result}
    */
   static <R, E> Result<R, E> lift(
@@ -575,10 +569,9 @@ public sealed interface Result<T, E> permits Ok, Err {
     }
   }
 
-
   /**
-   * Transform list of {@link Result} instances into {@link Result} with list of values.
-   * If there are any failures, the first failure is returned.
+   * Transform list of {@link Result} instances into {@link Result} with list of values. If there
+   * are any failures, the first failure is returned.
    *
    * @param resultList input list
    * @return success instance if all {@link Result} instances in list are successes or failure
@@ -598,8 +591,8 @@ public sealed interface Result<T, E> permits Ok, Err {
   }
 
   /**
-   * Transform list of {@link Result} instances into {@link Result} with list of values.
-   * If there are any failures, all the failures are returned.
+   * Transform list of {@link Result} instances into {@link Result} with list of values. If there
+   * are any failures, all the failures are returned.
    *
    * @param resultList input list
    * @return success instance if all {@link Result} instances in list are successes or failure
@@ -1370,7 +1363,8 @@ public sealed interface Result<T, E> permits Ok, Err {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Result<R, E> flatMap(Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, Result<R, E>> mapper) {
+    default <R> Result<R, E> flatMap(
+        Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, Result<R, E>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -1404,7 +1398,8 @@ public sealed interface Result<T, E> permits Ok, Err {
   interface Mapper12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, E> {
     Result<Tuple12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>, E> id();
 
-    default <R> Result<R, E> map(Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R> mapper) {
+    default <R> Result<R, E> map(
+        Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 

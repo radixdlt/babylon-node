@@ -126,7 +126,8 @@ public class ResultTest {
 
   @Test
   public void onlyOneMethodIsInvokedOnApply() {
-    Result.<Integer, Cause>success(321).apply(Functions::unitFn, failure -> fail(failure.message()));
+    Result.<Integer, Cause>success(321)
+        .apply(Functions::unitFn, failure -> fail(failure.message()));
 
     Result.failure(Causes.cause("Some error"))
         .apply(value -> fail(value.toString()), Functions::unitFn);

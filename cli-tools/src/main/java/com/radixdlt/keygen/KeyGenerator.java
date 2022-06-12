@@ -157,8 +157,8 @@ public class KeyGenerator {
           RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), newFile)
               .writeKeyPair(keypairName, keyPair);
           return unit();
-        }, UNABLE_TO_LOAD_KEYSTORE::swallow
-    );
+        },
+        UNABLE_TO_LOAD_KEYSTORE::swallow);
   }
 
   private Result<Boolean, Cause> parseShowPk(CommandLine commandLine) {
@@ -179,8 +179,8 @@ public class KeyGenerator {
           System.out.printf(
               "Public key of keypair '%s': %s%n", keypairName, keyPair.getPublicKey().toHex());
           return unit();
-        }, unused -> IRRELEVANT.swallow((Object) unused)
-    );
+        },
+        unused -> IRRELEVANT.swallow((Object) unused));
   }
 
   private Result<String, Cause> parseKeystore(CommandLine commandLine) {
