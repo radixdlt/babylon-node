@@ -67,6 +67,7 @@ package com.radixdlt.sbor.codec;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.*;
 import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.codec.core.*;
 import com.radixdlt.sbor.exceptions.SborCodecException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -137,28 +138,28 @@ public final class CodecMap {
   }
 
   public CodecMap addCoreSchemaCodecs() {
-    storeCodec(Unit.class, new CoreCodecs.UnitCodec());
-    storeCodec(String.class, new CoreCodecs.StringCodec());
+    storeCodec(Unit.class, new UnitCodec());
+    storeCodec(String.class, new StringCodec());
 
-    storeCodec(Boolean.class, new CoreCodecs.BooleanCodec());
-    storeCodec(boolean.class, new CoreCodecs.BooleanCodec());
+    storeCodec(Boolean.class, new BooleanCodec());
+    storeCodec(boolean.class, new BooleanCodec());
 
-    storeCodec(Byte.class, new CoreCodecs.ByteCodec(true));
-    storeCodec(byte.class, new CoreCodecs.ByteCodec(true));
+    storeCodec(Byte.class, new ByteCodec(true));
+    storeCodec(byte.class, new ByteCodec(true));
 
-    storeCodec(Short.class, new CoreCodecs.ShortCodec(false));
-    storeCodec(short.class, new CoreCodecs.ShortCodec(false));
+    storeCodec(Short.class, new ShortCodec(false));
+    storeCodec(short.class, new ShortCodec(false));
 
-    storeCodec(Integer.class, new CoreCodecs.IntegerCodec(false));
-    storeCodec(int.class, new CoreCodecs.IntegerCodec(false));
+    storeCodec(Integer.class, new IntegerCodec(false));
+    storeCodec(int.class, new IntegerCodec(false));
 
-    storeCodec(Long.class, new CoreCodecs.LongCodec(false));
-    storeCodec(long.class, new CoreCodecs.LongCodec(false));
+    storeCodec(Long.class, new LongCodec(false));
+    storeCodec(long.class, new LongCodec(false));
 
-    storeCodec(byte[].class, new CoreCodecs.ByteArrayCodec(sborTypeIdForArrayType));
-    storeCodec(short[].class, new CoreCodecs.ShortArrayCodec(sborTypeIdForArrayType));
-    storeCodec(int[].class, new CoreCodecs.IntegerArrayCodec(sborTypeIdForArrayType));
-    storeCodec(long[].class, new CoreCodecs.LongArrayCodec(sborTypeIdForArrayType));
+    storeCodec(byte[].class, new ByteArrayCodec(sborTypeIdForArrayType));
+    storeCodec(short[].class, new ShortArrayCodec(sborTypeIdForArrayType));
+    storeCodec(int[].class, new IntegerArrayCodec(sborTypeIdForArrayType));
+    storeCodec(long[].class, new LongArrayCodec(sborTypeIdForArrayType));
 
     OptionCodec.registerWith(this);
     EitherCodec.registerWith(this);
