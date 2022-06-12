@@ -137,28 +137,28 @@ public final class CodecMap {
   }
 
   public CodecMap addCoreSchemaCodecs() {
-    storeCodec(Unit.class, new CoreTypeCodec.UnitCodec());
-    storeCodec(String.class, new CoreTypeCodec.StringCodec());
+    storeCodec(Unit.class, new CoreCodecs.UnitCodec());
+    storeCodec(String.class, new CoreCodecs.StringCodec());
 
-    storeCodec(Boolean.class, new CoreTypeCodec.BooleanCodec());
-    storeCodec(boolean.class, new CoreTypeCodec.BooleanCodec());
+    storeCodec(Boolean.class, new CoreCodecs.BooleanCodec());
+    storeCodec(boolean.class, new CoreCodecs.BooleanCodec());
 
-    storeCodec(Byte.class, new CoreTypeCodec.ByteCodec());
-    storeCodec(byte.class, new CoreTypeCodec.ByteCodec());
+    storeCodec(Byte.class, new CoreCodecs.ByteCodec(true));
+    storeCodec(byte.class, new CoreCodecs.ByteCodec(true));
 
-    storeCodec(Short.class, new CoreTypeCodec.ShortCodec());
-    storeCodec(short.class, new CoreTypeCodec.ShortCodec());
+    storeCodec(Short.class, new CoreCodecs.ShortCodec(false));
+    storeCodec(short.class, new CoreCodecs.ShortCodec(false));
 
-    storeCodec(Integer.class, new CoreTypeCodec.IntegerCodec());
-    storeCodec(int.class, new CoreTypeCodec.IntegerCodec());
+    storeCodec(Integer.class, new CoreCodecs.IntegerCodec(false));
+    storeCodec(int.class, new CoreCodecs.IntegerCodec(false));
 
-    storeCodec(Long.class, new CoreTypeCodec.LongCodec());
-    storeCodec(long.class, new CoreTypeCodec.LongCodec());
+    storeCodec(Long.class, new CoreCodecs.LongCodec(false));
+    storeCodec(long.class, new CoreCodecs.LongCodec(false));
 
-    storeCodec(byte[].class, new CoreTypeCodec.ByteArrayCodec(sborTypeIdForArrayType));
-    storeCodec(short[].class, new CoreTypeCodec.ShortArrayCodec(sborTypeIdForArrayType));
-    storeCodec(int[].class, new CoreTypeCodec.IntegerArrayCodec(sborTypeIdForArrayType));
-    storeCodec(long[].class, new CoreTypeCodec.LongArrayCodec(sborTypeIdForArrayType));
+    storeCodec(byte[].class, new CoreCodecs.ByteArrayCodec(sborTypeIdForArrayType));
+    storeCodec(short[].class, new CoreCodecs.ShortArrayCodec(sborTypeIdForArrayType));
+    storeCodec(int[].class, new CoreCodecs.IntegerArrayCodec(sborTypeIdForArrayType));
+    storeCodec(long[].class, new CoreCodecs.LongArrayCodec(sborTypeIdForArrayType));
 
     OptionCodec.registerWith(this);
     EitherCodec.registerWith(this);

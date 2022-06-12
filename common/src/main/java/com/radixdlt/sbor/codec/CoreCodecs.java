@@ -67,14 +67,16 @@ package com.radixdlt.sbor.codec;
 import static com.radixdlt.sbor.codec.constants.TypeId.*;
 
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
+import com.radixdlt.sbor.exceptions.SborDecodeException;
 
 @SuppressWarnings("unused")
-public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
+public final class CoreCodecs {
 
-  public static final class UnitCodec extends CoreTypeCodec<Unit> {
+  public static final class UnitCodec implements Codec<Unit> {
     @Override
     public TypeId getTypeId() {
       return TYPE_UNIT;
@@ -91,7 +93,7 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
     }
   }
 
-  public static final class BooleanCodec extends CoreTypeCodec<Boolean> {
+  public static final class BooleanCodec implements Codec<Boolean> {
     @Override
     public TypeId getTypeId() {
       return TYPE_BOOL;
@@ -108,7 +110,7 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
     }
   }
 
-  public static final class StringCodec extends CoreTypeCodec<String> {
+  public static final class StringCodec implements Codec<String> {
     @Override
     public TypeId getTypeId() {
       return TYPE_STRING;
@@ -125,10 +127,28 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
     }
   }
 
-  public static final class ByteCodec extends CoreTypeCodec<Byte> {
+  public static final class ByteCodec implements Codec<Byte> {
+    private final TypeId typeId;
+
+    public ByteCodec() {
+      this(false);
+    }
+
+    /**
+     * Note that shorts are always signed in Java.
+     * If signed is false, you may have a positive SBOR value mapping to a
+     * negative Java value - but this is pretty normal/expected with Java bytes,
+     * so we don't add the possibility for asserts (unlike the other types).
+     * This also improves performance marginally on what might be a critical code path.
+     * @param signed - whether to map to the signed SBOR type or not
+     */
+    public ByteCodec(boolean signed) {
+      typeId = signed ? TYPE_I8 : TYPE_U8;
+    }
+
     @Override
     public TypeId getTypeId() {
-      return TYPE_U8;
+      return typeId;
     }
 
     @Override
@@ -142,10 +162,33 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
     }
   }
 
-  public static final class ShortCodec extends CoreTypeCodec<Short> {
+  public static final class ShortCodec implements Codec<Short> {
+    private final TypeId typeId;
+    private final boolean assertNonNegativeOnDecode;
+
+    public ShortCodec() {
+      this(true);
+    }
+
+    public ShortCodec(boolean signed) {
+      this(signed, !signed);
+    }
+
+    /**
+     * Note that shorts are always signed in Java.
+     * If signed is false, you may have a positive SBOR value mapping to a
+     * negative Java value. assertNonNegativeOnDecode protects against this.
+     * @param signed - whether to map to the signed SBOR type or not
+     * @param assertNonNegativeOnDecode - if true, raises an exception on decoding a negative value
+     */
+    public ShortCodec(boolean signed, boolean assertNonNegativeOnDecode) {
+      typeId = signed ? TYPE_I16 : TYPE_U16;
+      this.assertNonNegativeOnDecode = assertNonNegativeOnDecode;
+    }
+
     @Override
     public TypeId getTypeId() {
-      return TYPE_I16;
+      return typeId;
     }
 
     @Override
@@ -155,14 +198,44 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
 
     @Override
     public Short decodeWithoutTypeId(DecoderApi decoder) {
-      return decoder.readShort();
+      if (!assertNonNegativeOnDecode) {
+        return decoder.readShort();
+      }
+      var value = decoder.readShort();
+      if (value < 0) {
+        throw new SborDecodeException(String.format("Decoded short was negative %s.", value));
+      }
+      return value;
     }
   }
 
-  public static final class IntegerCodec extends CoreTypeCodec<Integer> {
+  public static final class IntegerCodec implements Codec<Integer> {
+    private final TypeId typeId;
+    private final boolean assertNonNegativeOnDecode;
+
+    public IntegerCodec() {
+      this(true);
+    }
+
+    public IntegerCodec(boolean signed) {
+      this(signed, !signed);
+    }
+
+    /**
+     * Note that ints are always signed in Java.
+     * If signed is false, you may have a positive SBOR value mapping to a
+     * negative Java value. assertNonNegativeOnDecode protects against this.
+     * @param signed - whether to map to the signed SBOR type or not
+     * @param assertNonNegativeOnDecode - if true, raises an exception on decoding a negative value
+     */
+    public IntegerCodec(boolean signed, boolean assertNonNegativeOnDecode) {
+      typeId = signed ? TYPE_I32 : TYPE_U32;
+      this.assertNonNegativeOnDecode = assertNonNegativeOnDecode;
+    }
+
     @Override
     public TypeId getTypeId() {
-      return TYPE_I32;
+      return typeId;
     }
 
     @Override
@@ -172,14 +245,44 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
 
     @Override
     public Integer decodeWithoutTypeId(DecoderApi decoder) {
-      return decoder.readInt();
+      if (!assertNonNegativeOnDecode) {
+        return decoder.readInt();
+      }
+      var value = decoder.readInt();
+      if (value < 0) {
+        throw new SborDecodeException(String.format("Decoded int was negative %s.", value));
+      }
+      return value;
     }
   }
 
-  public static final class LongCodec extends CoreTypeCodec<Long> {
+  public static final class LongCodec implements Codec<Long> {
+    private final TypeId typeId;
+    private final boolean assertNonNegativeOnDecode;
+
+    public LongCodec() {
+      this(true, false);
+    }
+
+    public LongCodec(boolean signed) {
+      this(signed, !signed);
+    }
+
+    /**
+     * Note that Longs are always signed in Java.
+     * If signed is false, you may have a positive SBOR value mapping to a
+     * negative Java value. assertNonNegativeOnDecode protects against this.
+     * @param signed - whether to map to the signed SBOR type or not
+     * @param assertNonNegativeOnDecode - if true, raises an exception on decoding a negative value
+     */
+    public LongCodec(boolean signed, boolean assertNonNegativeOnDecode) {
+      typeId = signed ? TYPE_I64 : TYPE_U64;
+      this.assertNonNegativeOnDecode = assertNonNegativeOnDecode;
+    }
+
     @Override
     public TypeId getTypeId() {
-      return TYPE_I64;
+      return typeId;
     }
 
     @Override
@@ -189,11 +292,18 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
 
     @Override
     public Long decodeWithoutTypeId(DecoderApi decoder) {
-      return decoder.readLong();
+      if (!assertNonNegativeOnDecode) {
+        return decoder.readLong();
+      }
+      var value = decoder.readLong();
+      if (value < 0) {
+        throw new SborDecodeException(String.format("Decoded long was negative %s.", value));
+      }
+      return value;
     }
   }
 
-  public static final class ByteArrayCodec extends CoreTypeCodec<byte[]> {
+  public static final class ByteArrayCodec implements Codec<byte[]> {
     private final TypeId collectionTypeId;
 
     public ByteArrayCodec(TypeId collectionTypeId) {
@@ -225,7 +335,7 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
     }
   }
 
-  public static final class ShortArrayCodec extends CoreTypeCodec<short[]> {
+  public static final class ShortArrayCodec implements Codec<short[]> {
     private final TypeId collectionTypeId;
 
     public ShortArrayCodec(TypeId collectionTypeId) {
@@ -260,7 +370,7 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
     }
   }
 
-  public static final class IntegerArrayCodec extends CoreTypeCodec<int[]> {
+  public static final class IntegerArrayCodec implements Codec<int[]> {
     private final TypeId collectionTypeId;
 
     public IntegerArrayCodec(TypeId collectionTypeId) {
@@ -295,7 +405,7 @@ public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
     }
   }
 
-  public static final class LongArrayCodec extends CoreTypeCodec<long[]> {
+  public static final class LongArrayCodec implements Codec<long[]> {
     private final TypeId collectionTypeId;
 
     public LongArrayCodec(TypeId collectionTypeId) {
