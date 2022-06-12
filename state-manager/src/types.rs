@@ -65,7 +65,7 @@
 use crate::result::*;
 use sbor::*;
 
-// TODO: simple derive macro?
+// We explicitly tag structures as "JavaStructure" if they are on the interface with Java
 pub trait JavaStructure: Encode + Decode {
     fn from_java(data: &[u8]) -> StateManagerResult<Self> {
         decode_with_type(data).map_err(|e| {
@@ -77,6 +77,13 @@ pub trait JavaStructure: Encode + Decode {
         encode_with_type(self)
     }
 }
+
+// Tag general structures
+impl JavaStructure for () {}
+impl<T: JavaStructure, E: JavaStructure> JavaStructure for Result<T, E> {}
+impl<T: JavaStructure> JavaStructure for Option<T> {}
+
+// NB - further structures can be tagged explicitly
 
 #[derive(Debug, TypeId, Encode, Decode, PartialEq, Eq, Hash, Clone)]
 pub struct Aid {

@@ -64,37 +64,58 @@
 
 package com.radixdlt.statemanager;
 
-import com.radixdlt.lang.Cause;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.codec.StructCodec;
+
+import java.util.HashMap;
 import java.util.Map;
 
-public class StateManagerError implements Cause {
-  static {
-    CodecMap.withDefault(StateManagerError::registerCodec);
-  }
-
-  static void registerCodec(CodecMap codecMap) {
+/**
+ * This is designed to represent system / runtime errors in the rust side.
+ */
+public class StateManagerRuntimeError {
+  public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        StateManagerError.class,
+        StateManagerRuntimeError.class,
         codecs ->
             StructCodec.fromFields(
-                StateManagerError::new,
-                Field.of(StateManagerError::getRawErrorCode, codecs.of(short.class)),
-                Field.of(StateManagerError::message, codecs.of(String.class))));
+                StateManagerRuntimeError::new,
+                Field.of(StateManagerRuntimeError::getRawErrorCode, codecs.of(short.class)),
+                Field.of(StateManagerRuntimeError::message, codecs.of(String.class))));
   }
 
-  private static final Map<Short, StateManagerErrorCode> codeMap =
-      Map.of(
-          (short) 0, StateManagerErrorCode.STATE_MANAGER_ERROR_CODE_JNI_ERROR,
-          (short) 1, StateManagerErrorCode.STATE_MANAGER_ERROR_CODE_SBOR_ERROR,
-          (short) 0x10, StateManagerErrorCode.STATE_MANAGER_ERROR_CODE_MEMPOOL_FULL,
-          (short) 0x11, StateManagerErrorCode.STATE_MANAGER_ERROR_CODE_MEMPOOL_DUPLICATE);
+  public enum ErrorCode {
+    JNI_ERROR(0),
+    SBOR_ERROR(1);
+
+    private final short codeNum;
+
+    ErrorCode(int codeNum) {
+      this.codeNum = (short) codeNum;
+    }
+
+    public short codeNum() {
+      return codeNum;
+    }
+  }
+
+  public static Map<Short, ErrorCode> createCodeMap() {
+    var map = new HashMap<Short, ErrorCode>(ErrorCode.values().length);
+
+    for (var errorCode : ErrorCode.values()) {
+      map.put(errorCode.codeNum, errorCode);
+    }
+
+    return map;
+  }
+
+  private static final Map<Short, ErrorCode> codeMap = createCodeMap();
+
   private final short errorCode;
   private final String message;
 
-  public StateManagerError(short errorCode, String message) {
+  public StateManagerRuntimeError(short errorCode, String message) {
     this.errorCode = errorCode;
     this.message = message;
   }
@@ -103,11 +124,10 @@ public class StateManagerError implements Cause {
     return this.errorCode;
   }
 
-  public StateManagerErrorCode getErrorCode() {
-    return StateManagerError.codeMap.get(this.errorCode);
+  public ErrorCode getErrorCode() {
+    return StateManagerRuntimeError.codeMap.get(this.errorCode);
   }
 
-  @Override
   public String message() {
     return message;
   }

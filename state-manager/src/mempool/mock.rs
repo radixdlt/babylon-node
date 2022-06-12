@@ -66,12 +66,12 @@ use crate::mempool::*;
 use std::collections::HashSet;
 
 pub struct MockMempool {
-    max_size: usize,
+    max_size: u32,
     data: HashSet<Transaction>,
 }
 
 impl MockMempool {
-    pub fn new(max_size: usize) -> MockMempool {
+    pub fn new(max_size: u32) -> MockMempool {
         MockMempool {
             max_size,
             data: HashSet::new(),
@@ -81,10 +81,10 @@ impl MockMempool {
 
 impl Mempool for MockMempool {
     fn add(&mut self, transaction: Transaction) -> Result<(), MempoolError> {
-        let len = self.data.len();
+        let len = self.data.len() as u32;
 
         if len >= self.max_size {
-            return Err(MempoolError::Full(len, self.max_size));
+            return Err(MempoolError::Full { current_size: len, max_size: self.max_size });
         }
 
         if !self.data.insert(transaction) {
@@ -100,12 +100,12 @@ impl Mempool for MockMempool {
         }
     }
 
-    fn get_count(&self) -> usize {
-        self.data.len()
+    fn get_count(&self) -> u32 {
+        self.data.len() as u32
     }
 
-    fn get_txns(&self, count: usize, seen: &HashSet<Transaction>) -> HashSet<Transaction> {
-        self.data.difference(seen).take(count).cloned().collect()
+    fn get_txns(&self, count: u32, seen: &HashSet<Transaction>) -> HashSet<Transaction> {
+        self.data.difference(seen).take(count as usize).cloned().collect()
     }
 }
 

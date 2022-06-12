@@ -62,12 +62,25 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.mempool;
 
-public enum StateManagerErrorCode {
-  STATE_MANAGER_ERROR_CODE_JNI_ERROR,
-  STATE_MANAGER_ERROR_CODE_SBOR_ERROR,
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.EnumEntry;
 
-  STATE_MANAGER_ERROR_CODE_MEMPOOL_FULL,
-  STATE_MANAGER_ERROR_CODE_MEMPOOL_DUPLICATE,
+public sealed interface MempoolError {
+
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        MempoolError.class,
+        (codecs) -> EnumCodec.fromEntries(
+            EnumEntry.with(Full.class, Full::new, codecs.of(int.class), codecs.of(int.class), (t, encoder) -> encoder.encode(t.currentSize, t.maxSize)),
+            EnumEntry.noFields(Duplicate.class, Duplicate::new)
+        )
+    );
+  }
+
+  record Full(int currentSize, int maxSize) implements MempoolError {  }
+
+  record Duplicate() implements MempoolError { }
 }

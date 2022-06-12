@@ -84,7 +84,7 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
     jni_slice_to_jbytearray(&env, &ret)
 }
 
-fn do_add(env: &JNIEnv, j_state: JObject, j_txn: jbyteArray) -> StateManagerResult<()> {
+fn do_add(env: &JNIEnv, j_state: JObject, j_txn: jbyteArray) -> StateManagerResult<Result<(), MempoolError>> {
     let state_manager = JNIStateManager::get_state_manager(env, j_state);
 
     let s_txn: Vec<u8> = jni_jbytearray_to_vector(env, j_txn)?;
@@ -95,8 +95,7 @@ fn do_add(env: &JNIEnv, j_state: JObject, j_txn: jbyteArray) -> StateManagerResu
         .mempool
         .lock()
         .unwrap()
-        .add(txn)
-        .map_err(|e| e.to_state_manager_error());
+        .add(txn);
 
-    ret
+    Ok(ret)
 }

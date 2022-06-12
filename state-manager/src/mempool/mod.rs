@@ -62,36 +62,28 @@
  * permissions under this License.
  */
 
+use sbor::{Encode, Decode, TypeId};
+
 pub use crate::result::ToStateManagerError;
 
-use crate::result::{StateManagerError, ERRCODE_MEMPOOL_DUPLICATE, ERRCODE_MEMPOOL_FULL};
-use crate::types::Transaction;
+use crate::types::{Transaction, JavaStructure};
 use std::collections::HashSet;
 use std::string::ToString;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
 pub enum MempoolError {
-    Full(usize, usize),
+    Full { current_size: u32, max_size: u32 },
     Duplicate,
 }
+
+// TODO - Talking point -- possibly have some explicit map to a JavaMempoolError instead of using this directly here?
+impl JavaStructure for MempoolError {}
 
 impl ToString for MempoolError {
     fn to_string(&self) -> String {
         match self {
-            MempoolError::Full(a, b) => format!("Mempool Full [{} - {}]", a, b),
+            MempoolError::Full { current_size, max_size } => format!("Mempool Full [{} - {}]", current_size, max_size),
             MempoolError::Duplicate => "Duplicate Entry".to_string(),
-        }
-    }
-}
-
-impl ToStateManagerError for MempoolError {
-    fn to_state_manager_error(&self) -> StateManagerError {
-        let message = self.to_string();
-        match self {
-            MempoolError::Full(_, _) => StateManagerError::create(ERRCODE_MEMPOOL_FULL, message),
-            MempoolError::Duplicate => {
-                StateManagerError::create(ERRCODE_MEMPOOL_DUPLICATE, message)
-            }
         }
     }
 }
@@ -99,8 +91,8 @@ impl ToStateManagerError for MempoolError {
 pub trait Mempool {
     fn add(&mut self, transaction: Transaction) -> Result<(), MempoolError>;
     fn committed(&mut self, transactions: &HashSet<Transaction>);
-    fn get_count(&self) -> usize;
-    fn get_txns(&self, count: usize, seen: &HashSet<Transaction>) -> HashSet<Transaction>;
+    fn get_count(&self) -> u32;
+    fn get_txns(&self, count: u32, seen: &HashSet<Transaction>) -> HashSet<Transaction>;
 }
 
 pub mod mock;

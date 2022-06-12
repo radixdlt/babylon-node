@@ -323,11 +323,31 @@ public sealed interface Result<T, E> permits Ok, Err {
   }
 
   /**
+   * Check if instance is success.
+   * Alias of isSuccess.
+   *
+   * @return {@code true} if instance is success and {@code false} otherwise
+   */
+  default boolean isOk() {
+    return fold(Functions::toTrue, Functions::toFalse);
+  }
+
+  /**
    * Check if instance is failure.
    *
    * @return {@code true} if instance is failure and {@code false} otherwise
    */
   default boolean isFailure() {
+    return fold(Functions::toFalse, Functions::toTrue);
+  }
+
+  /**
+   * Check if instance is failure.
+   * Alias of isFailure.
+   *
+   * @return {@code true} if instance is failure and {@code false} otherwise
+   */
+  default boolean isErr() {
     return fold(Functions::toFalse, Functions::toTrue);
   }
 

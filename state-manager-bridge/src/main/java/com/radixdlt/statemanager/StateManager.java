@@ -65,6 +65,8 @@
 package com.radixdlt.statemanager;
 
 import com.radixdlt.mempool.RustMempool;
+import com.radixdlt.sbor.StateManagerCodecRegistration;
+import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStore;
 import com.radixdlt.vertexstore.RustVertexStore;
@@ -75,6 +77,7 @@ public final class StateManager {
 
   static {
     System.loadLibrary("statemanager");
+    CodecMap.withDefault(StateManagerCodecRegistration::registerCodecs);
   }
 
   private final RustState rustState;

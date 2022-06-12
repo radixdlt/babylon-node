@@ -62,44 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.exceptions;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
-import com.radixdlt.sbor.TypedSbor;
-import com.radixdlt.statemanager.StateManager.RustState;
-import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.statemanager.StateManagerRuntimeError;
-import com.radixdlt.transactions.Transaction;
-import java.util.Objects;
 
-public class RustMempool {
-  private final RustState rustState;
+public class StateManagerRuntimeException extends RuntimeException {
+  private final StateManagerRuntimeError error;
 
-  public RustMempool(RustState rustState) {
-    this.rustState = Objects.requireNonNull(rustState);
+  public StateManagerRuntimeException(StateManagerRuntimeError error) {
+    super(error.getErrorCode() + ": " + error.message());
+    this.error = error;
   }
 
-  private static final TypeToken<Result<Result<Unit, MempoolError>, StateManagerRuntimeError>> addResponseType = new TypeToken<>() {
-  };
-
-  public Transaction add(Transaction transaction)
-      throws MempoolFullException, MempoolDuplicateException {
-    var encodedRequest = TypedSbor.encode(transaction, Transaction.class);
-    var encodedResponse = add(this.rustState, encodedRequest);
-    var result = StateManagerResponse.decode(encodedResponse, addResponseType);
-
-    // Handle Errors.
-    if (result.isErr()) {
-      switch (result.unwrapErr()) {
-        case MempoolError.Full fullStatus -> throw new MempoolFullException(fullStatus.currentSize(), fullStatus.maxSize());
-        case MempoolError.Duplicate ignored -> throw new MempoolDuplicateException(String.format("Mempool already has transaction %s", transaction.getId()));
-      }
-    }
-
-    return transaction;
+  public StateManagerRuntimeError getError() {
+    return error;
   }
-
-  private static native byte[] add(RustState rustState, byte[] transaction);
 }
