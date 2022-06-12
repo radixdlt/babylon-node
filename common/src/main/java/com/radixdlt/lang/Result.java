@@ -67,8 +67,8 @@ package com.radixdlt.lang;
 import static com.radixdlt.lang.Tuple.*;
 
 import com.radixdlt.lang.Functions.*;
-import com.radixdlt.lang.Result.Failure;
-import com.radixdlt.lang.Result.Success;
+import com.radixdlt.lang.Result.Err;
+import com.radixdlt.lang.Result.Ok;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -78,14 +78,14 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * Representation of the operation result. The result can be either success or failure. In case of
- * success it holds value returned by the operation. In case of failure it holds a failure
- * description.
+ * Representation of the operation result. The result can be either success (Ok) or failure (Err).
+ * In either case, it holds the value returned by the operation.
  *
  * @param <T> Type of value in case of success.
+ * @param <E> Type of value in case of error.
  */
 @SuppressWarnings("unused")
-public sealed interface Result<T> permits Success, Failure {
+public sealed interface Result<T, E> permits Ok, Err {
   /**
    * Transform operation result value into value of other type and wrap new value into {@link
    * Result}. Transformation takes place if current instance (this) contains successful result,
@@ -94,9 +94,8 @@ public sealed interface Result<T> permits Success, Failure {
    * @param mapper Function to transform successful value
    * @return transformed value (in case of success) or current instance (in case of failure)
    */
-  @SuppressWarnings("unchecked")
-  default <R> Result<R> map(Func1<? super T, R> mapper) {
-    return fold(l -> (Result<R>) this, r -> success(mapper.apply(r)));
+  default <R> Result<R, E> map(Func1<? super T, R> mapper) {
+    return fold(t -> Result.ok(mapper.apply(t)), Result::err);
   }
 
   /**
@@ -107,9 +106,8 @@ public sealed interface Result<T> permits Success, Failure {
    * @param supplier Source of the replacement value.
    * @return transformed value (in case of success) or current instance (in case of failure)
    */
-  @SuppressWarnings("unchecked")
-  default <R> Result<R> map(Supplier<R> supplier) {
-    return fold(l -> (Result<R>) this, unused -> success(supplier.get()));
+  default <R> Result<R, E> map(Supplier<R> supplier) {
+    return fold(unused -> success(supplier.get()), Result::err);
   }
 
   /**
@@ -119,9 +117,8 @@ public sealed interface Result<T> permits Success, Failure {
    * @param mapper Function to apply to result
    * @return transformed value (in case of success) or current instance (in case of failure)
    */
-  @SuppressWarnings("unchecked")
-  default <R> Result<R> flatMap(Func1<? super T, Result<R>> mapper) {
-    return fold(t -> (Result<R>) this, mapper);
+  default <R> Result<R, E> flatMap(Func1<? super T, Result<R, E>> mapper) {
+    return fold(mapper, Result::err);
   }
 
   /**
@@ -132,30 +129,29 @@ public sealed interface Result<T> permits Success, Failure {
    * @param mapper Source of the replacement result.
    * @return replacement result (in case of success) or current instance (in case of failure)
    */
-  @SuppressWarnings("unchecked")
-  default <R> Result<R> flatMap(Supplier<Result<R>> mapper) {
-    return fold(t -> (Result<R>) this, unused -> mapper.get());
+  default <R> Result<R, E> flatMap(Supplier<Result<R, E>> mapper) {
+    return fold(unused -> mapper.get(), Result::err);
   }
 
   /**
    * Apply consumers to result value. Note that depending on the result (success or failure) only
    * one consumer will be applied at a time.
    *
-   * @param failureConsumer Consumer for failure result
    * @param successConsumer Consumer for success result
+   * @param failureConsumer Consumer for failure result
    * @return current instance
    */
-  default Result<T> apply(
-      Consumer<? super Cause> failureConsumer, Consumer<? super T> successConsumer) {
+  default Result<T, E> apply(
+      Consumer<? super T> successConsumer, Consumer<? super E> failureConsumer) {
     return fold(
-        t -> {
-          failureConsumer.accept(t);
-          return this;
-        },
         t -> {
           successConsumer.accept(t);
           return this;
-        });
+        }, t -> {
+          failureConsumer.accept(t);
+          return this;
+        }
+    );
   }
 
   /**
@@ -164,23 +160,30 @@ public sealed interface Result<T> permits Success, Failure {
    * @param consumer Consumer to pass value to
    * @return current instance for fluent call chaining
    */
-  default Result<T> onSuccess(Consumer<T> consumer) {
+  default Result<T, E> onSuccess(Consumer<T> consumer) {
     fold(
-        Functions::toNull,
         v -> {
           consumer.accept(v);
           return null;
-        });
+        }, Functions::toNull
+    );
     return this;
   }
 
-  default Result<T> onOk(Consumer<T> consumer) {
+  /**
+   * Pass successful operation result value into provided consumer.
+   * Alias of onSuccess.
+   *
+   * @param consumer Consumer to pass value to
+   * @return current instance for fluent call chaining
+   */
+  default Result<T, E> onOk(Consumer<T> consumer) {
     fold(
-        Functions::toNull,
         v -> {
           consumer.accept(v);
           return null;
-        });
+        }, Functions::toNull
+    );
     return this;
   }
 
@@ -189,23 +192,29 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * @return current instance for fluent call chaining
    */
-  default Result<T> onSuccessDo(Runnable action) {
+  default Result<T, E> onSuccessDo(Runnable action) {
     fold(
-        Functions::toNull,
         v -> {
           action.run();
           return null;
-        });
+        }, Functions::toNull
+    );
     return this;
   }
 
-  default Result<T> onOkDo(Runnable action) {
+  /**
+   * Run provided action in case of success.
+   * Alias of onSuccessDo.
+   *
+   * @return current instance for fluent call chaining
+   */
+  default Result<T, E> onOkDo(Runnable action) {
     fold(
-        Functions::toNull,
         v -> {
           action.run();
           return null;
-        });
+        }, Functions::toNull
+    );
     return this;
   }
 
@@ -215,23 +224,30 @@ public sealed interface Result<T> permits Success, Failure {
    * @param consumer Consumer to pass value to
    * @return current instance for fluent call chaining
    */
-  default Result<T> onFailure(Consumer<? super Cause> consumer) {
+  default Result<T, E> onFailure(Consumer<? super E> consumer) {
     fold(
-        v -> {
+        Functions::toNull, v -> {
           consumer.accept(v);
           return null;
-        },
-        Functions::toNull);
+        }
+    );
     return this;
   }
 
-  default Result<T> onError(Consumer<? super Cause> consumer) {
+  /**
+   * Pass failure operation result value into provided consumer.
+   * Alias of onFailure.
+   *
+   * @param consumer Consumer to pass value to
+   * @return current instance for fluent call chaining
+   */
+  default Result<T, E> onError(Consumer<? super E> consumer) {
     fold(
-        v -> {
+        Functions::toNull, v -> {
           consumer.accept(v);
           return null;
-        },
-        Functions::toNull);
+        }
+    );
     return this;
   }
 
@@ -240,23 +256,29 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * @return current instance for fluent call chaining
    */
-  default Result<T> onFailureDo(Runnable action) {
+  default Result<T, E> onFailureDo(Runnable action) {
     fold(
-        v -> {
+        Functions::toNull, v -> {
           action.run();
           return null;
-        },
-        Functions::toNull);
+        }
+    );
     return this;
   }
 
-  default Result<T> onErrorDo(Runnable action) {
+  /**
+   * Run provided action in case of failure.
+   * Alias of onFailureDo.
+   *
+   * @return current instance for fluent call chaining
+   */
+  default Result<T, E> onErrorDo(Runnable action) {
     fold(
-        v -> {
+        Functions::toNull, v -> {
           action.run();
           return null;
-        },
-        Functions::toNull);
+        }
+    );
     return this;
   }
 
@@ -269,7 +291,7 @@ public sealed interface Result<T> permits Success, Failure {
    *     failure.
    */
   default Option<T> toOption() {
-    return fold(t1 -> Option.empty(), Option::option);
+    return fold(Option::option, t1 -> Option.empty());
   }
 
   /**
@@ -279,20 +301,20 @@ public sealed interface Result<T> permits Success, Failure {
    * @return {@link Option} instance which is present in case of failure and empty in case of
    *     success.
    */
-  default Option<Cause> toOptionErr() {
-    return fold(Option::option, t1 -> Option.empty());
+  default Option<E> toOptionErr() {
+    return fold(t1 -> Option.empty(), Option::option);
   }
 
   /**
    * Convert instance into {@link Optional} of the same value type. Successful instance is converted
    * into present {@link Optional} and failure - into empty {@link Optional}. Note that during such
-   * a conversion error information is get lost.
+   * a conversion error information is lost.
    *
    * @return {@link Optional} instance which is present in case of success and missing in case of
    *     failure.
    */
   default Optional<T> toOptional() {
-    return fold(t1 -> Optional.empty(), Optional::of);
+    return fold(Optional::of, t1 -> Optional.empty());
   }
 
   /**
@@ -301,7 +323,7 @@ public sealed interface Result<T> permits Success, Failure {
    * @return {@code true} if instance is success and {@code false} otherwise
    */
   default boolean isSuccess() {
-    return fold(Functions::toFalse, Functions::toTrue);
+    return fold(Functions::toTrue, Functions::toFalse);
   }
 
   /**
@@ -310,36 +332,36 @@ public sealed interface Result<T> permits Success, Failure {
    * @return {@code true} if instance is failure and {@code false} otherwise
    */
   default boolean isFailure() {
-    return fold(Functions::toTrue, Functions::toFalse);
+    return fold(Functions::toFalse, Functions::toTrue);
   }
 
   /**
    * Filter instance against provided predicate. If predicate returns {@code true} then instance
    * remains unchanged. If predicate returns {@code false}, then failure instance in created using
-   * given {@link Cause}.
+   * given {@link E}.
    *
-   * @param cause failure to use in case if predicate returns {@code false}
-   * @param predicate predicate to invoke
-   * @return current instance if predicate returns {@code true} or {@link Failure} instance if
-   *     predicate returns {@code false}
+   * @param predicate  predicate to invoke
+   * @param error failure to use in case if predicate returns {@code false}
+   * @return current instance if predicate returns {@code true} or {@link Err} instance if
+   * predicate returns {@code false}
    */
-  default Result<T> filter(Cause cause, Predicate<T> predicate) {
-    return fold(v -> this, v -> predicate.test(v) ? this : failure(cause));
+  default Result<T, E> filter(Predicate<T> predicate, E error) {
+    return fold(v -> predicate.test(v) ? this : failure(error), v -> this);
   }
 
   /**
    * Filter instance against provided predicate. If predicate returns {@code true} then instance
    * remains unchanged. If predicate returns {@code false}, then failure instance in created using
-   * {@link Cause} created by provided function.
+   * {@link E} created by provided function.
    *
-   * @param causeMapper function which transforms the tested value into instance of {@link Cause} if
-   *     predicate returns {@code false}
-   * @param predicate predicate to invoke
-   * @return current instance if predicate returns {@code true} or {@link Failure} instance if
-   *     predicate returns {@code false}
+   * @param predicate   predicate to invoke
+   * @param errorMapper function which transforms the tested value into instance of {@link E} if
+   *                    predicate returns {@code false}
+   * @return current instance if predicate returns {@code true} or {@link Err} instance if
+   * predicate returns {@code false}
    */
-  default Result<T> filter(Func1<T, Cause> causeMapper, Predicate<T> predicate) {
-    return fold(v -> this, v -> predicate.test(v) ? this : failure(causeMapper.apply(v)));
+  default Result<T, E> filter(Predicate<T> predicate, Func1<T, E> errorMapper) {
+    return fold(v -> predicate.test(v) ? this : failure(errorMapper.apply(v)), v -> this);
   }
 
   /**
@@ -350,7 +372,7 @@ public sealed interface Result<T> permits Success, Failure {
    * @return value stored in current instance (in case of success) or replacement value.
    */
   default T or(T replacement) {
-    return fold(unused -> replacement, Functions::id);
+    return fold(Functions::id, unused -> replacement);
   }
 
   /**
@@ -361,7 +383,7 @@ public sealed interface Result<T> permits Success, Failure {
    * @return value stored in current instance (in case of success) or replacement value.
    */
   default T or(Supplier<T> supplier) {
-    return fold(unused -> supplier.get(), Functions::id);
+    return fold(Functions::id, unused -> supplier.get());
   }
 
   /**
@@ -371,8 +393,8 @@ public sealed interface Result<T> permits Success, Failure {
    * @param replacement replacement instance returned if current instance represents failure.
    * @return current instance (in case of success) or replacement instance.
    */
-  default Result<T> orElse(Result<T> replacement) {
-    return fold(unused -> replacement, unused -> this);
+  default Result<T, E> orElse(Result<T, E> replacement) {
+    return fold(unused -> this, unused -> replacement);
   }
 
   /**
@@ -382,55 +404,81 @@ public sealed interface Result<T> permits Success, Failure {
    * @param supplier source of replacement instance returned if current instance represents failure.
    * @return current instance (in case of success) or replacement instance.
    */
-  default Result<T> orElse(Supplier<Result<T>> supplier) {
-    return fold(unused -> supplier.get(), unused -> this);
+  default Result<T, E> orElse(Supplier<Result<T, E>> supplier) {
+    return fold(unused -> this, unused -> supplier.get());
   }
 
   /**
    * This method allows "unwrapping" the value stored inside the Result instance. If the value is
-   * missing then an {@link IllegalStateException} is thrown.
+   * missing then an {@link UnwrapException} is thrown.
    *
    * @return value stored inside present instance.
    */
   default T unwrap() {
-    return unwrap(v -> new IllegalStateException("Unwrap error: " + v.message()));
+    return unwrap(UnwrapException::new);
   }
 
   /**
    * This method allows "unwrapping" the value stored inside the Result instance. If the value is
-   * missing then an exception is created from the cause and thrown.
+   * missing then an exception is created from the error and thrown.
    *
-   * @param mapToException a map from the cause to a RuntimeException
+   * @param mapErrorToException a map from the error to a RuntimeException
    * @return value stored inside present instance.
    */
-  default T unwrap(Function<? super Cause, RuntimeException> mapToException) {
+  default T unwrap(Function<? super E, RuntimeException> mapErrorToException) {
+    return fold(
+        Functions::id, v -> {
+          throw mapErrorToException.apply(v);
+        }
+    );
+  }
+
+  /**
+   * This method allows "unwrapping" the error stored inside the Result instance. If the Result
+   * is not an error then an {@link UnwrapException} is thrown.
+   *
+   * @return error stored inside present instance.
+   */
+  default E unwrapErr() {
+    return unwrapErr(UnwrapException::new);
+  }
+
+  /**
+   * This method allows "unwrapping" the error stored inside the Result instance. If the Result is
+   * not an error then an exception is created from the value and thrown.
+   *
+   * @param mapValueToException a map from the value to a RuntimeException
+   * @return error stored inside present instance.
+   */
+  default E unwrapErr(Function<? super T, RuntimeException> mapValueToException) {
     return fold(
         v -> {
-          throw mapToException.apply(v);
+          throw mapValueToException.apply(v);
         },
-        Functions::id);
+        Functions::id
+    );
   }
 
   /**
    * Handle both possible states (success/failure) and produce single value from it.
    *
-   * @param failureMapper function to transform failure into value
    * @param successMapper function to transform success into value
+   * @param failureMapper function to transform failure into value
    * @return result of application of one of the mappers.
    */
   <R> R fold(
-      Func1<? super Cause, ? extends R> failureMapper, Func1<? super T, ? extends R> successMapper);
+      Func1<? super T, ? extends R> successMapper, Func1<? super E, ? extends R> failureMapper);
 
-  default Result<T> accept(Consumer<Cause> failureConsumer, Consumer<T> successConsumer) {
+  default Result<T, E> accept(Consumer<E> failureConsumer, Consumer<T> successConsumer) {
     return fold(
-        failure -> {
-          failureConsumer.accept(failure);
-          return this;
-        },
         success -> {
           successConsumer.accept(success);
           return this;
-        });
+        }, failure -> {
+          failureConsumer.accept(failure);
+          return this;
+        }
+    );
   }
 
   /**
@@ -439,72 +487,87 @@ public sealed interface Result<T> permits Success, Failure {
    * @param value Operation result
    * @return created instance
    */
-  static <R> Result<R> success(R value) {
-    return new Success<>(value);
+  static <T, E> Result<T, E> success(T value) {
+    return new Ok<>(value);
   }
 
-  static <R> Result<R> ok(R value) {
-    return new Success<>(value);
+  /**
+   * Create an instance of successful operation result.
+   *
+   * @param value Operation result
+   * @return created instance
+   */
+  static <T, E> Result<T, E> ok(T value) {
+    return new Ok<>(value);
   }
 
-  record Success<T>(T value) implements Result<T> {
+  record Ok<T, E>(T value) implements Result<T, E> {
     @Override
     public <R> R fold(
-        Func1<? super Cause, ? extends R> failureMapper,
-        Func1<? super T, ? extends R> successMapper) {
+        Func1<? super T, ? extends R> successMapper, Func1<? super E, ? extends R> failureMapper) {
       return successMapper.apply(value);
     }
 
     @Override
     public String toString() {
-      return "Success(" + value.toString() + ")";
+      return "Ok(" + value.toString() + ")";
     }
   }
 
   /**
    * Create an instance of failure result.
    *
-   * @param value Operation error value
+   * @param error Operation error value
    * @return created instance
    */
-  static <R> Result<R> failure(Cause value) {
-    return new Failure<>(value);
+  static <T, E> Result<T, E> failure(E error) {
+    return new Err<>(error);
   }
 
-  static <R> Result<R> err(Cause value) {
-    return new Failure<>(value);
+  /**
+   * Create an instance of failure result.
+   *
+   * @param error Operation error value
+   * @return created instance
+   */
+  static <T, E> Result<T, E> err(E error) {
+    return new Err<>(error);
   }
 
-  record Failure<T>(Cause cause) implements Result<T> {
+  record Err<T, E>(E error) implements Result<T, E> {
     @Override
     public <R> R fold(
-        Func1<? super Cause, ? extends R> failureMapper,
-        Func1<? super T, ? extends R> successMapper) {
-      return failureMapper.apply(cause);
+        Func1<? super T, ? extends R> successMapper, Func1<? super E, ? extends R> failureMapper) {
+      return failureMapper.apply(error);
     }
 
     @Override
     public String toString() {
-      return "Failure(" + cause + ")";
+      return "Err(" + error + ")";
     }
   }
 
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-  static <T> Result<T> fromOptional(Cause cause, Optional<T> source) {
-    return source.map(Result::ok).orElseGet(cause::result);
+  static <T, E> Result<T, E> fromOptional(Optional<T> source, E error) {
+    return source.map(Result::<T, E>ok).orElseGet(() -> Result.err(error));
+  }
+
+  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+  static <T, E> Result<T, E> fromOptional(Optional<T> source, Supplier<E> errorSupplier) {
+    return source.map(Result::<T, E>ok).orElseGet(() -> Result.err(errorSupplier.get()));
   }
 
   /**
    * Wrap value returned by provided lambda into success {@link Result} if call succeeds or into
    * failure {@link Result} if call throws exception.
    *
+   * @param supplier        the call to wrap
    * @param exceptionMapper the function which will transform exception into instance of {@link
-   *     Cause}
-   * @param supplier the call to wrap
+   *                        E}
    * @return result of execution of the provided lambda wrapped into {@link Result}
    */
-  static <R> Result<R> lift(
-      Func1<? super Throwable, ? extends Cause> exceptionMapper, ThrowingSupplier<R> supplier) {
+  static <R, E> Result<R, E> lift(
+      ThrowingSupplier<R> supplier, Func1<? super Throwable, ? extends E> exceptionMapper) {
     try {
       return success(supplier.get());
     } catch (Throwable e) {
@@ -512,20 +575,43 @@ public sealed interface Result<T> permits Success, Failure {
     }
   }
 
+
   /**
    * Transform list of {@link Result} instances into {@link Result} with list of values.
+   * If there are any failures, the first failure is returned.
    *
    * @param resultList input list
    * @return success instance if all {@link Result} instances in list are successes or failure
    *     instance with any instances in list is a failure
    */
-  static <T> Result<List<T>> allOf(List<Result<T>> resultList) {
-    var failure = new Cause[1];
-    var values = new ArrayList<T>();
+  static <T, E> Result<List<T>, E> allOf(List<Result<T, E>> resultList) {
+    var values = new ArrayList<T>(resultList.size());
 
-    resultList.forEach(val -> val.fold(f -> failure[0] = f, values::add));
+    for (var result : resultList) {
+      if (result.isFailure()) {
+        return failure(result.unwrapErr());
+      }
+      values.add(result.unwrap());
+    }
 
-    return failure[0] != null ? failure(failure[0]) : success(values);
+    return ok(values);
+  }
+
+  /**
+   * Transform list of {@link Result} instances into {@link Result} with list of values.
+   * If there are any failures, all the failures are returned.
+   *
+   * @param resultList input list
+   * @return success instance if all {@link Result} instances in list are successes or failure
+   *     instance with any instances in list is a failure
+   */
+  static <T, E> Result<List<T>, List<E>> allOfOrAllErrors(List<Result<T, E>> resultList) {
+    var values = new ArrayList<T>(resultList.size());
+    var failures = new ArrayList<E>(resultList.size());
+
+    resultList.forEach(val -> val.fold(values::add, failures::add));
+
+    return failures.isEmpty() ? ok(values) : failure(failures);
   }
 
   /**
@@ -533,10 +619,10 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * @param first first input result
    * @param results remaining input results
-   * @return first success instance among provided
+   * @return first success instance among provided, else the first if none are successful
    */
   @SafeVarargs
-  static <T> Result<T> any(Result<T> first, Result<T>... results) {
+  static <T, E> Result<T, E> any(Result<T, E> first, Result<T, E>... results) {
     if (first.isSuccess()) {
       return first;
     }
@@ -555,10 +641,10 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * @param first first instance to check
    * @param suppliers suppliers which provide remaining instances for check
-   * @return first success instance among provided
+   * @return first success instance among provided, else the first if none are successful
    */
   @SafeVarargs
-  static <T> Result<T> any(Result<T> first, Supplier<Result<T>>... suppliers) {
+  static <T, E> Result<T, E> any(Result<T, E> first, Supplier<Result<T, E>>... suppliers) {
     if (first.isSuccess()) {
       return first;
     }
@@ -575,7 +661,7 @@ public sealed interface Result<T> permits Success, Failure {
   }
 
   @SafeVarargs
-  static Result<Unit> allOf(Result<Unit>... values) {
+  static <E> Result<Unit, E> allOf(Result<Unit, E>... values) {
     for (var value : values) {
       if (value.isFailure()) {
         return value;
@@ -591,7 +677,7 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * @return {@link Mapper1} prepared for further transformation.
    */
-  static <T1> Mapper1<T1> all(Result<T1> value) {
+  static <T1, E> Mapper1<T1, E> all(Result<T1, E> value) {
     return () -> value.flatMap(vv1 -> success(tuple(vv1)));
   }
 
@@ -602,7 +688,7 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * @return {@link Mapper2} prepared for further transformation.
    */
-  static <T1, T2> Mapper2<T1, T2> all(Result<T1> value1, Result<T2> value2) {
+  static <T1, T2, E> Mapper2<T1, T2, E> all(Result<T1, E> value1, Result<T2, E> value2) {
     return () -> value1.flatMap(vv1 -> value2.flatMap(vv2 -> success(tuple(vv1, vv2))));
   }
 
@@ -613,8 +699,8 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * @return {@link Mapper3} prepared for further transformation.
    */
-  static <T1, T2, T3> Mapper3<T1, T2, T3> all(
-      Result<T1> value1, Result<T2> value2, Result<T3> value3) {
+  static <T1, T2, T3, E> Mapper3<T1, T2, T3, E> all(
+      Result<T1, E> value1, Result<T2, E> value2, Result<T3, E> value3) {
     return () ->
         value1.flatMap(
             vv1 -> value2.flatMap(vv2 -> value3.flatMap(vv3 -> success(tuple(vv1, vv2, vv3)))));
@@ -627,8 +713,8 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * @return {@link Mapper4} prepared for further transformation.
    */
-  static <T1, T2, T3, T4> Mapper4<T1, T2, T3, T4> all(
-      Result<T1> value1, Result<T2> value2, Result<T3> value3, Result<T4> value4) {
+  static <T1, T2, T3, T4, E> Mapper4<T1, T2, T3, T4, E> all(
+      Result<T1, E> value1, Result<T2, E> value2, Result<T3, E> value3, Result<T4, E> value4) {
     return () ->
         value1.flatMap(
             vv1 ->
@@ -645,12 +731,12 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * @return {@link Mapper5} prepared for further transformation.
    */
-  static <T1, T2, T3, T4, T5> Mapper5<T1, T2, T3, T4, T5> all(
-      Result<T1> value1,
-      Result<T2> value2,
-      Result<T3> value3,
-      Result<T4> value4,
-      Result<T5> value5) {
+  static <T1, T2, T3, T4, T5, E> Mapper5<T1, T2, T3, T4, T5, E> all(
+      Result<T1, E> value1,
+      Result<T2, E> value2,
+      Result<T3, E> value3,
+      Result<T4, E> value4,
+      Result<T5, E> value5) {
     return () ->
         value1.flatMap(
             vv1 ->
@@ -671,13 +757,13 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * @return {@link Mapper6} prepared for further transformation.
    */
-  static <T1, T2, T3, T4, T5, T6> Mapper6<T1, T2, T3, T4, T5, T6> all(
-      Result<T1> value1,
-      Result<T2> value2,
-      Result<T3> value3,
-      Result<T4> value4,
-      Result<T5> value5,
-      Result<T6> value6) {
+  static <T1, T2, T3, T4, T5, T6, E> Mapper6<T1, T2, T3, T4, T5, T6, E> all(
+      Result<T1, E> value1,
+      Result<T2, E> value2,
+      Result<T3, E> value3,
+      Result<T4, E> value4,
+      Result<T5, E> value5,
+      Result<T6, E> value6) {
     return () ->
         value1.flatMap(
             vv1 ->
@@ -704,14 +790,14 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * @return {@link Mapper7} prepared for further transformation.
    */
-  static <T1, T2, T3, T4, T5, T6, T7> Mapper7<T1, T2, T3, T4, T5, T6, T7> all(
-      Result<T1> value1,
-      Result<T2> value2,
-      Result<T3> value3,
-      Result<T4> value4,
-      Result<T5> value5,
-      Result<T6> value6,
-      Result<T7> value7) {
+  static <T1, T2, T3, T4, T5, T6, T7, E> Mapper7<T1, T2, T3, T4, T5, T6, T7, E> all(
+      Result<T1, E> value1,
+      Result<T2, E> value2,
+      Result<T3, E> value3,
+      Result<T4, E> value4,
+      Result<T5, E> value5,
+      Result<T6, E> value6,
+      Result<T7, E> value7) {
     return () ->
         value1.flatMap(
             vv1 ->
@@ -740,15 +826,15 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * @return {@link Mapper8} prepared for further transformation.
    */
-  static <T1, T2, T3, T4, T5, T6, T7, T8> Mapper8<T1, T2, T3, T4, T5, T6, T7, T8> all(
-      Result<T1> value1,
-      Result<T2> value2,
-      Result<T3> value3,
-      Result<T4> value4,
-      Result<T5> value5,
-      Result<T6> value6,
-      Result<T7> value7,
-      Result<T8> value8) {
+  static <T1, T2, T3, T4, T5, T6, T7, T8, E> Mapper8<T1, T2, T3, T4, T5, T6, T7, T8, E> all(
+      Result<T1, E> value1,
+      Result<T2, E> value2,
+      Result<T3, E> value3,
+      Result<T4, E> value4,
+      Result<T5, E> value5,
+      Result<T6, E> value6,
+      Result<T7, E> value7,
+      Result<T8, E> value8) {
     return () ->
         value1.flatMap(
             vv1 ->
@@ -780,16 +866,16 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * @return {@link Mapper9} prepared for further transformation.
    */
-  static <T1, T2, T3, T4, T5, T6, T7, T8, T9> Mapper9<T1, T2, T3, T4, T5, T6, T7, T8, T9> all(
-      Result<T1> value1,
-      Result<T2> value2,
-      Result<T3> value3,
-      Result<T4> value4,
-      Result<T5> value5,
-      Result<T6> value6,
-      Result<T7> value7,
-      Result<T8> value8,
-      Result<T9> value9) {
+  static <T1, T2, T3, T4, T5, T6, T7, T8, T9, E> Mapper9<T1, T2, T3, T4, T5, T6, T7, T8, T9, E> all(
+      Result<T1, E> value1,
+      Result<T2, E> value2,
+      Result<T3, E> value3,
+      Result<T4, E> value4,
+      Result<T5, E> value5,
+      Result<T6, E> value6,
+      Result<T7, E> value7,
+      Result<T8, E> value8,
+      Result<T9, E> value9) {
     return () ->
         value1.flatMap(
             vv1 ->
@@ -818,18 +904,18 @@ public sealed interface Result<T> permits Success, Failure {
                                                                                         vv9)))))))))));
   }
 
-  static <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
-      Mapper10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> all(
-          Result<T1> value1,
-          Result<T2> value2,
-          Result<T3> value3,
-          Result<T4> value4,
-          Result<T5> value5,
-          Result<T6> value6,
-          Result<T7> value7,
-          Result<T8> value8,
-          Result<T9> value9,
-          Result<T10> value10) {
+  static <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, E>
+      Mapper10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, E> all(
+          Result<T1, E> value1,
+          Result<T2, E> value2,
+          Result<T3, E> value3,
+          Result<T4, E> value4,
+          Result<T5, E> value5,
+          Result<T6, E> value6,
+          Result<T7, E> value7,
+          Result<T8, E> value8,
+          Result<T9, E> value9,
+          Result<T10, E> value10) {
     return () ->
         value1.flatMap(
             vv1 ->
@@ -865,19 +951,19 @@ public sealed interface Result<T> permits Success, Failure {
                                                                                                 vv10))))))))))));
   }
 
-  static <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
-      Mapper11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> all(
-          Result<T1> value1,
-          Result<T2> value2,
-          Result<T3> value3,
-          Result<T4> value4,
-          Result<T5> value5,
-          Result<T6> value6,
-          Result<T7> value7,
-          Result<T8> value8,
-          Result<T9> value9,
-          Result<T10> value10,
-          Result<T11> value11) {
+  static <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, E>
+      Mapper11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, E> all(
+          Result<T1, E> value1,
+          Result<T2, E> value2,
+          Result<T3, E> value3,
+          Result<T4, E> value4,
+          Result<T5, E> value5,
+          Result<T6, E> value6,
+          Result<T7, E> value7,
+          Result<T8, E> value8,
+          Result<T9, E> value9,
+          Result<T10, E> value10,
+          Result<T11, E> value11) {
     return () ->
         value1.flatMap(
             vv1 ->
@@ -917,20 +1003,20 @@ public sealed interface Result<T> permits Success, Failure {
                                                                                                             vv11)))))))))))));
   }
 
-  static <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
-      Mapper12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> all(
-          Result<T1> value1,
-          Result<T2> value2,
-          Result<T3> value3,
-          Result<T4> value4,
-          Result<T5> value5,
-          Result<T6> value6,
-          Result<T7> value7,
-          Result<T8> value8,
-          Result<T9> value9,
-          Result<T10> value10,
-          Result<T11> value11,
-          Result<T12> value12) {
+  static <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, E>
+      Mapper12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, E> all(
+          Result<T1, E> value1,
+          Result<T2, E> value2,
+          Result<T3, E> value3,
+          Result<T4, E> value4,
+          Result<T5, E> value5,
+          Result<T6, E> value6,
+          Result<T7, E> value7,
+          Result<T8, E> value8,
+          Result<T9, E> value9,
+          Result<T10, E> value10,
+          Result<T11, E> value11,
+          Result<T12, E> value12) {
     return () ->
         value1.flatMap(
             vv1 ->
@@ -997,14 +1083,14 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * </blockquote>
    */
-  interface Mapper1<T1> {
-    Result<Tuple1<T1>> id();
+  interface Mapper1<T1, E> {
+    Result<Tuple1<T1>, E> id();
 
-    default <R> Result<R> map(Func1<T1, R> mapper) {
+    default <R> Result<R, E> map(Func1<T1, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Result<R> flatMap(Func1<T1, Result<R>> mapper) {
+    default <R> Result<R, E> flatMap(Func1<T1, Result<R, E>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -1032,14 +1118,14 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * </blockquote>
    */
-  interface Mapper2<T1, T2> {
-    Result<Tuple2<T1, T2>> id();
+  interface Mapper2<T1, T2, E> {
+    Result<Tuple2<T1, T2>, E> id();
 
-    default <R> Result<R> map(Func2<T1, T2, R> mapper) {
+    default <R> Result<R, E> map(Func2<T1, T2, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Result<R> flatMap(Func2<T1, T2, Result<R>> mapper) {
+    default <R> Result<R, E> flatMap(Func2<T1, T2, Result<R, E>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -1067,14 +1153,14 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * </blockquote>
    */
-  interface Mapper3<T1, T2, T3> {
-    Result<Tuple3<T1, T2, T3>> id();
+  interface Mapper3<T1, T2, T3, E> {
+    Result<Tuple3<T1, T2, T3>, E> id();
 
-    default <R> Result<R> map(Func3<T1, T2, T3, R> mapper) {
+    default <R> Result<R, E> map(Func3<T1, T2, T3, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Result<R> flatMap(Func3<T1, T2, T3, Result<R>> mapper) {
+    default <R> Result<R, E> flatMap(Func3<T1, T2, T3, Result<R, E>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -1102,14 +1188,14 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * </blockquote>
    */
-  interface Mapper4<T1, T2, T3, T4> {
-    Result<Tuple4<T1, T2, T3, T4>> id();
+  interface Mapper4<T1, T2, T3, T4, E> {
+    Result<Tuple4<T1, T2, T3, T4>, E> id();
 
-    default <R> Result<R> map(Func4<T1, T2, T3, T4, R> mapper) {
+    default <R> Result<R, E> map(Func4<T1, T2, T3, T4, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Result<R> flatMap(Func4<T1, T2, T3, T4, Result<R>> mapper) {
+    default <R> Result<R, E> flatMap(Func4<T1, T2, T3, T4, Result<R, E>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -1137,14 +1223,14 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * </blockquote>
    */
-  interface Mapper5<T1, T2, T3, T4, T5> {
-    Result<Tuple5<T1, T2, T3, T4, T5>> id();
+  interface Mapper5<T1, T2, T3, T4, T5, E> {
+    Result<Tuple5<T1, T2, T3, T4, T5>, E> id();
 
-    default <R> Result<R> map(Func5<T1, T2, T3, T4, T5, R> mapper) {
+    default <R> Result<R, E> map(Func5<T1, T2, T3, T4, T5, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Result<R> flatMap(Func5<T1, T2, T3, T4, T5, Result<R>> mapper) {
+    default <R> Result<R, E> flatMap(Func5<T1, T2, T3, T4, T5, Result<R, E>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -1172,14 +1258,14 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * </blockquote>
    */
-  interface Mapper6<T1, T2, T3, T4, T5, T6> {
-    Result<Tuple6<T1, T2, T3, T4, T5, T6>> id();
+  interface Mapper6<T1, T2, T3, T4, T5, T6, E> {
+    Result<Tuple6<T1, T2, T3, T4, T5, T6>, E> id();
 
-    default <R> Result<R> map(Func6<T1, T2, T3, T4, T5, T6, R> mapper) {
+    default <R> Result<R, E> map(Func6<T1, T2, T3, T4, T5, T6, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Result<R> flatMap(Func6<T1, T2, T3, T4, T5, T6, Result<R>> mapper) {
+    default <R> Result<R, E> flatMap(Func6<T1, T2, T3, T4, T5, T6, Result<R, E>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -1207,14 +1293,14 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * </blockquote>
    */
-  interface Mapper7<T1, T2, T3, T4, T5, T6, T7> {
-    Result<Tuple7<T1, T2, T3, T4, T5, T6, T7>> id();
+  interface Mapper7<T1, T2, T3, T4, T5, T6, T7, E> {
+    Result<Tuple7<T1, T2, T3, T4, T5, T6, T7>, E> id();
 
-    default <R> Result<R> map(Func7<T1, T2, T3, T4, T5, T6, T7, R> mapper) {
+    default <R> Result<R, E> map(Func7<T1, T2, T3, T4, T5, T6, T7, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Result<R> flatMap(Func7<T1, T2, T3, T4, T5, T6, T7, Result<R>> mapper) {
+    default <R> Result<R, E> flatMap(Func7<T1, T2, T3, T4, T5, T6, T7, Result<R, E>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -1242,14 +1328,14 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * </blockquote>
    */
-  interface Mapper8<T1, T2, T3, T4, T5, T6, T7, T8> {
-    Result<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> id();
+  interface Mapper8<T1, T2, T3, T4, T5, T6, T7, T8, E> {
+    Result<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>, E> id();
 
-    default <R> Result<R> map(Func8<T1, T2, T3, T4, T5, T6, T7, T8, R> mapper) {
+    default <R> Result<R, E> map(Func8<T1, T2, T3, T4, T5, T6, T7, T8, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Result<R> flatMap(Func8<T1, T2, T3, T4, T5, T6, T7, T8, Result<R>> mapper) {
+    default <R> Result<R, E> flatMap(Func8<T1, T2, T3, T4, T5, T6, T7, T8, Result<R, E>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -1277,54 +1363,67 @@ public sealed interface Result<T> permits Success, Failure {
    *
    * </blockquote>
    */
-  interface Mapper9<T1, T2, T3, T4, T5, T6, T7, T8, T9> {
-    Result<Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9>> id();
+  interface Mapper9<T1, T2, T3, T4, T5, T6, T7, T8, T9, E> {
+    Result<Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9>, E> id();
 
-    default <R> Result<R> map(Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, R> mapper) {
+    default <R> Result<R, E> map(Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Result<R> flatMap(Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, Result<R>> mapper) {
+    default <R> Result<R, E> flatMap(Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, Result<R, E>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
 
-  interface Mapper10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> {
-    Result<Tuple10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>> id();
+  interface Mapper10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, E> {
+    Result<Tuple10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>, E> id();
 
-    default <R> Result<R> map(Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R> mapper) {
+    default <R> Result<R, E> map(Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Result<R> flatMap(
-        Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, Result<R>> mapper) {
+    default <R> Result<R, E> flatMap(
+        Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, Result<R, E>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
 
-  interface Mapper11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> {
-    Result<Tuple11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>> id();
+  interface Mapper11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, E> {
+    Result<Tuple11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>, E> id();
 
-    default <R> Result<R> map(Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R> mapper) {
+    default <R> Result<R, E> map(Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Result<R> flatMap(
-        Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, Result<R>> mapper) {
+    default <R> Result<R, E> flatMap(
+        Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, Result<R, E>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
 
-  interface Mapper12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> {
-    Result<Tuple12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>> id();
+  interface Mapper12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, E> {
+    Result<Tuple12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>, E> id();
 
-    default <R> Result<R> map(Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R> mapper) {
+    default <R> Result<R, E> map(Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Result<R> flatMap(
-        Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, Result<R>> mapper) {
+    default <R> Result<R, E> flatMap(
+        Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, Result<R, E>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
+    }
+  }
+
+  class UnwrapException extends RuntimeException {
+    private final Object error;
+
+    public UnwrapException(Object error) {
+      super("Unwrap failed as the Result is an Err. The error value is: " + error);
+      this.error = error;
+    }
+
+    public Object error() {
+      return error;
     }
   }
 }

@@ -65,10 +65,7 @@
 package com.radixdlt.sbor.codec;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.EitherCodec;
-import com.radixdlt.lang.OptionCodec;
-import com.radixdlt.lang.TupleCodec;
-import com.radixdlt.lang.Unit;
+import com.radixdlt.lang.*;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.exceptions.SborCodecException;
 import java.util.Arrays;
@@ -165,6 +162,7 @@ public final class CodecMap {
 
     OptionCodec.registerWith(this);
     EitherCodec.registerWith(this);
+    ResultCodec.registerWith(this);
     TupleCodec.registerAllWith(this);
 
     CollectionCodec.registerListToMapTo(this, TypeId.TYPE_VEC);

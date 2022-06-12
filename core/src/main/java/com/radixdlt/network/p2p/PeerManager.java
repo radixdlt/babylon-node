@@ -77,6 +77,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.monitoring.SystemCounters;
@@ -148,8 +149,8 @@ public final class PeerManager {
     synchronized (lock) {
       final var checkResult = this.canConnectTo(nodeId);
       return checkResult.fold(
-          error -> CompletableFuture.failedFuture(new RuntimeException(error.message())),
-          unused -> this.findOrCreateChannelInternal(nodeId));
+          unused -> this.findOrCreateChannelInternal(nodeId), error -> CompletableFuture.failedFuture(new RuntimeException(error.message()))
+      );
     }
   }
 
@@ -193,7 +194,7 @@ public final class PeerManager {
     }
   }
 
-  private Result<Unit> canConnectTo(NodeId nodeId) {
+  private Result<Unit, Cause> canConnectTo(NodeId nodeId) {
     if (nodeId.equals(self)) {
       log.info("Ignoring self connection attempt");
       return SELF_CONNECTION_ATTEMPT.result();

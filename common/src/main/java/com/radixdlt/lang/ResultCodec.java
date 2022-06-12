@@ -64,25 +64,62 @@
 
 package com.radixdlt.lang;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import com.radixdlt.sbor.codec.Codec;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.TypeTokenUtils;
+import com.radixdlt.sbor.codec.constants.ResultTypeId;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.EncoderApi;
+import com.radixdlt.sbor.exceptions.SborCodecException;
+import com.radixdlt.sbor.exceptions.SborDecodeException;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+public record ResultCodec<T, E>(Codec<T> okCodec, Codec<E> errCodec)
+    implements Codec<Result<T, E>> {
+  @Override
+  public TypeId getTypeId() {
+    return TypeId.TYPE_RESULT;
+  }
 
-/**
- * Inspired by Guava's TypeCapture, in order to get the Type parameter T into a Type. See also <a
- * href="https://stackoverflow.com/questions/1901164/get-type-of-a-generic-parameter-in-java-with-reflection">this
- * stack overflow post</a>
- *
- * @param <T> the generic type to capture
- */
-@SuppressWarnings("unused")
-public abstract class TypeCapture<T> {
+  @Override
+  public void encodeWithoutTypeId(EncoderApi encoder, Result<T, E> result) {
+    result.apply(
+        value -> {
+            encoder.writeByte(ResultTypeId.OK);
+            encoder.encodeWithTypeId(value, okCodec);
+        },
+        error -> {
+            encoder.writeByte(ResultTypeId.ERR);
+            encoder.encodeWithTypeId(error, errCodec);
+        }
+    );
+  }
 
-  /** Returns the captured type. */
-  public final Type capture() {
-    Type superclass = getClass().getGenericSuperclass();
-    checkArgument(superclass instanceof ParameterizedType, "%s isn't parameterized", superclass);
-    return ((ParameterizedType) superclass).getActualTypeArguments()[0];
+  @Override
+  public Result<T, E> decodeWithoutTypeId(DecoderApi decoder) {
+    var resultTypeByte = decoder.readByte();
+
+    return switch (resultTypeByte) {
+      case ResultTypeId.OK -> Result.ok(decoder.decodeWithTypeId(okCodec));
+      case ResultTypeId.ERR -> Result.err(decoder.decodeWithTypeId(errCodec));
+      default -> throw new SborDecodeException(
+          String.format("Unknown result type id %s", resultTypeByte));
+    };
+  }
+
+  public static void registerWith(CodecMap codecMap) {
+    codecMap.registerForGenericSealedClassAndSubclasses(
+        Result.class,
+        (codecs, resultType) -> {
+          try {
+            var successType = TypeTokenUtils.getGenericTypeParameter(resultType, 0);
+            var errorType = TypeTokenUtils.getGenericTypeParameter(resultType, 1);
+
+            return new ResultCodec<>(codecs.of(successType), codecs.of(errorType));
+          } catch (Exception ex) {
+            throw new SborCodecException(
+                String.format("Exception creating Result type codec for %s", resultType), ex);
+          }
+        });
   }
 }

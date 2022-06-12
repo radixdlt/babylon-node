@@ -90,7 +90,7 @@ public sealed interface Option<T> permits Some, None {
    * @return transformed instance
    */
   default <U> Option<U> map(Func1<? super T, U> mapper) {
-    return fold(Option::empty, t -> present(mapper.apply(t)));
+    return fold(t -> present(mapper.apply(t)), Option::empty);
   }
 
   /**
@@ -101,7 +101,7 @@ public sealed interface Option<T> permits Some, None {
    *     instance is preseent.
    */
   default <U> Option<U> map(Supplier<U> supplier) {
-    return fold(Option::empty, t -> present(supplier.get()));
+    return fold(t -> present(supplier.get()), Option::empty);
   }
 
   /**
@@ -114,7 +114,7 @@ public sealed interface Option<T> permits Some, None {
    * @return Instance of new type
    */
   default <U> Option<U> flatMap(Func1<? super T, Option<U>> mapper) {
-    return fold(Option::empty, mapper);
+    return fold(mapper, Option::empty);
   }
 
   /**
@@ -125,7 +125,7 @@ public sealed interface Option<T> permits Some, None {
    *     instance is present.
    */
   default <U> Option<U> flatMap(Supplier<Option<U>> supplier) {
-    return fold(Option::empty, unused -> supplier.get());
+    return fold(unused -> supplier.get(), Option::empty);
   }
 
   /**
@@ -139,7 +139,7 @@ public sealed interface Option<T> permits Some, None {
    *     instance otherwise
    */
   default Option<T> filter(Predicate<? super T> predicate) {
-    return fold(Option::empty, v -> predicate.test(v) ? this : empty());
+    return fold(v -> predicate.test(v) ? this : empty(), Option::empty);
   }
 
   /**
@@ -188,14 +188,14 @@ public sealed interface Option<T> permits Some, None {
    */
   default Option<T> apply(Runnable emptyValConsumer, Consumer<? super T> nonEmptyValConsumer) {
     fold(
-        () -> {
-          emptyValConsumer.run();
-          return null;
-        },
         t2 -> {
           nonEmptyValConsumer.accept(t2);
           return null;
-        });
+        }, () -> {
+          emptyValConsumer.run();
+          return null;
+        }
+    );
     return this;
   }
 
@@ -208,7 +208,7 @@ public sealed interface Option<T> permits Some, None {
    *     instance is empty
    */
   default T or(T replacement) {
-    return fold(() -> replacement, Functions::id);
+    return fold(Functions::id, () -> replacement);
   }
 
   /**
@@ -221,7 +221,7 @@ public sealed interface Option<T> permits Some, None {
    *     current instance is empty
    */
   default T or(Supplier<T> supplier) {
-    return fold(supplier, Functions::id);
+    return fold(Functions::id, supplier);
   }
 
   /**
@@ -232,7 +232,7 @@ public sealed interface Option<T> permits Some, None {
    * @return either current instance or provided replacement instance if current instance is empty
    */
   default Option<T> orElse(Option<T> replacement) {
-    return fold(() -> replacement, unused -> this);
+    return fold(unused -> this, () -> replacement);
   }
 
   /**
@@ -243,7 +243,7 @@ public sealed interface Option<T> permits Some, None {
    * @return either current instance or provided replacement instance if current instance is empty
    */
   default Option<T> orElse(Supplier<Option<T>> supplier) {
-    return fold(supplier, unused -> this);
+    return fold(unused -> this, supplier);
   }
 
   /**
@@ -252,7 +252,7 @@ public sealed interface Option<T> permits Some, None {
    * @return {@code true} if instance is present and {@code false} otherwise.
    */
   default boolean isPresent() {
-    return fold(() -> false, Functions::toTrue);
+    return fold(Functions::toTrue, () -> false);
   }
 
   /**
@@ -261,7 +261,7 @@ public sealed interface Option<T> permits Some, None {
    * @return {@code true} if instance is empty and {@code false} otherwise.
    */
   default boolean isEmpty() {
-    return fold(() -> true, Functions::toFalse);
+    return fold(Functions::toFalse, () -> true);
   }
 
   /**
@@ -271,19 +271,18 @@ public sealed interface Option<T> permits Some, None {
    * @return created stream
    */
   default Stream<T> stream() {
-    return fold(Stream::empty, Stream::of);
+    return fold(Stream::of, Stream::empty);
   }
 
   /**
    * Convert current instance to instance of {@link Result}. The present instance is converted into
-   * success result. The empty instance is converted into failure result with provided {@link
-   * Cause}.
+   * success result. The empty instance is converted into a failure result with provided errorValue.
    *
-   * @param cause the failure necessary for conversion of empty instance.
+   * @param errorValue the error value for conversion of empty instance.
    * @return created instance
    */
-  default Result<T> toResult(Cause cause) {
-    return fold(cause::result, Result::success);
+  default <E> Result<T, E> toResult(E errorValue) {
+    return fold(Result::success, () -> Result.err(errorValue));
   }
 
   /**
@@ -294,17 +293,17 @@ public sealed interface Option<T> permits Some, None {
    * @return created instance
    */
   default Optional<T> toOptional() {
-    return fold(Optional::empty, Optional::of);
+    return fold(Optional::of, Optional::empty);
   }
 
   /**
    * Handle both possible states (empty/present) and produce single result from it.
    *
-   * @param emptyMapper function to produce value in case of empty instance
    * @param presentMapper function to transform present value into output value
+   * @param emptyMapper   function to produce value in case of empty instance
    * @return result of application of one of the mappers.
    */
-  <R> R fold(Supplier<? extends R> emptyMapper, Func1<? super T, ? extends R> presentMapper);
+  <R> R fold(Func1<? super T, ? extends R> presentMapper, Supplier<? extends R> emptyMapper);
 
   /**
    * Convert nullable value into instance of {@link Option}. This method converts {@code null} to
@@ -371,7 +370,7 @@ public sealed interface Option<T> permits Some, None {
   record Some<T>(T value) implements Option<T> {
     @Override
     public <R> R fold(
-        Supplier<? extends R> emptyMapper, Func1<? super T, ? extends R> presentMapper) {
+        Func1<? super T, ? extends R> presentMapper, Supplier<? extends R> emptyMapper) {
       return presentMapper.apply(value);
     }
 
@@ -382,13 +381,9 @@ public sealed interface Option<T> permits Some, None {
   }
 
   record None<T>() implements Option<T> {
-    static {
-      // OptionTypeCodec.registerWith(CodecMap.DEFAULT);
-    }
-
     @Override
     public <R> R fold(
-        Supplier<? extends R> emptyMapper, Func1<? super T, ? extends R> presentMapper) {
+        Func1<? super T, ? extends R> presentMapper, Supplier<? extends R> emptyMapper) {
       return emptyMapper.get();
     }
 
@@ -420,10 +415,10 @@ public sealed interface Option<T> permits Some, None {
    */
   default T unwrap(Functions.Func0<RuntimeException> createException) {
     return fold(
-        () -> {
+        Functions::id, () -> {
           throw createException.apply();
-        },
-        Functions::id);
+        }
+    );
   }
 
   /**
@@ -451,7 +446,7 @@ public sealed interface Option<T> permits Some, None {
   @SafeVarargs
   static <T> Option<T> any(Option<T> op, Supplier<Option<T>>... ops) {
     return op.fold(
-        () -> {
+        unused -> op, () -> {
           for (var option : ops) {
             var result = option.get();
             if (result.isPresent()) {
@@ -459,8 +454,8 @@ public sealed interface Option<T> permits Some, None {
             }
           }
           return op;
-        },
-        unused -> op);
+        }
+    );
   }
 
   /**

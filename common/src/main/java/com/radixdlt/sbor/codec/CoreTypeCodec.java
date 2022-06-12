@@ -71,6 +71,7 @@ import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
 
+@SuppressWarnings("unused")
 public abstract sealed class CoreTypeCodec<T> implements Codec<T> {
 
   public static final class UnitCodec extends CoreTypeCodec<Unit> {

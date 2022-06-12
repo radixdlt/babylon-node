@@ -71,6 +71,7 @@ import static org.junit.Assert.*;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -347,28 +348,57 @@ public class TypedSborTest {
   }
 
   @Test
+  public void resultCanBeEncodedAndDecoded() {
+    var resultTypeLiteral = new TypeToken<Result<String, Long>>() {};
+
+    var successResult = Result.<String, Long>success("Some value");
+    var successEncoded = TypedSbor.encode(successResult, resultTypeLiteral);
+
+    assertEquals(17, successEncoded.length);
+    assertEquals(0x24, successEncoded[0]); // Type == 0x24 - Result
+    assertEquals(0x00, successEncoded[1]); // Value - Success
+    assertEquals(0x0C, successEncoded[2]); // Value type - String
+
+    var successDecoded = TypedSbor.decode(successEncoded, resultTypeLiteral);
+    assertEquals(successResult, successDecoded);
+
+    var failureResult = Result.<String, Long>failure(123L);
+    var failureEncoded = TypedSbor.encode(failureResult, resultTypeLiteral);
+    assertEquals(11, failureEncoded.length);
+    assertEquals(0x24, failureEncoded[0]); // Type == 0x24 - Result
+    assertEquals(0x01, failureEncoded[1]); // Value - Failure
+    assertEquals(0x05, failureEncoded[2]); // Value type - i64
+
+    var failureDecoded = TypedSbor.decode(failureEncoded, resultTypeLiteral);
+    assertEquals(failureResult, failureDecoded);
+  }
+
+  @Test
   public void eitherCanBeEncodedAndDecoded() {
     var eitherTypeLiteral = new TypeToken<Either<String, Long>>() {};
 
     var leftValue = Either.<String, Long>left("Some value");
     var leftEncoded = TypedSbor.encode(leftValue, eitherTypeLiteral);
 
+    // NB - Left is "not-right", AKA failure
     assertEquals(17, leftEncoded.length);
     assertEquals(0x24, leftEncoded[0]); // Type == 0x24 - Result
     assertEquals(0x01, leftEncoded[1]); // Value - Failure
     assertEquals(0x0C, leftEncoded[2]); // Value type - String
 
+    var leftOut = TypedSbor.decode(leftEncoded, eitherTypeLiteral);
+    assertEquals(leftValue, leftOut);
+
     var rightValue = Either.<String, Long>right(123L);
     var rightEncoded = TypedSbor.encode(rightValue, eitherTypeLiteral);
+
+    // NB - Right is "right", AKA success
     assertEquals(11, rightEncoded.length);
     assertEquals(0x24, rightEncoded[0]); // Type == 0x24 - Result
     assertEquals(0x00, rightEncoded[1]); // Value - Success
     assertEquals(0x05, rightEncoded[2]); // Value type - i64
 
-    var leftOut = TypedSbor.decode(leftEncoded, eitherTypeLiteral);
     var rightOut = TypedSbor.decode(rightEncoded, eitherTypeLiteral);
-
-    assertEquals(leftValue, leftOut);
     assertEquals(rightValue, rightOut);
   }
 

@@ -91,7 +91,7 @@ public final class Unit implements Tuple.Tuple0 {
   private Unit() {}
 
   private static final Unit UNIT = new Unit();
-  private static final Result<Unit> UNIT_RESULT = Result.success(UNIT);
+  private static final Result<Unit, Object> UNIT_RESULT = Result.success(UNIT);
 
   public static Unit unit() {
     return UNIT;
@@ -165,8 +165,9 @@ public final class Unit implements Tuple.Tuple0 {
     return UNIT;
   }
 
-  public static Result<Unit> unitResult() {
-    return UNIT_RESULT;
+  @SuppressWarnings("unchecked")
+  public static <E> Result<Unit, E> unitResult() {
+    return (Result<Unit, E>) UNIT_RESULT;
   }
 
   @Override
