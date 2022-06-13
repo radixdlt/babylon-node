@@ -66,17 +66,16 @@ package com.radixdlt.sbor;
 
 import static com.radixdlt.lang.Option.none;
 import static com.radixdlt.lang.Option.some;
+import static com.radixdlt.lang.Tuple.*;
 import static org.junit.Assert.*;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Either;
-import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
+import com.radixdlt.lang.*;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.dto.SimpleRecord;
 import com.radixdlt.testclasses.SimpleEnum;
+import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -505,5 +504,145 @@ public class TypedSborTest {
     assertArrayEquals(encodedEnumTwo, encodedEnumTwoV2);
     var decodedEnumTwoV2 = coderUsingFromEntries.decode(encodedEnumTwo, SimpleEnum.class);
     assertEquals(decodedEnumTwoV2, decodedEnumTwo);
+  }
+
+  private record SborTestCase<T>(T value, TypeToken<T> type) {}
+  ;
+
+  @Test
+  @SuppressWarnings("Convert2Diamond") // Otherwise we get a compiler error :'(
+  public void allTupleSizesCanBeEncodedAndDecoded() {
+    var allTupleSizes =
+        List.of(
+            new SborTestCase<>(tuple(), new TypeToken<Tuple0>() {}),
+            new SborTestCase<>(tuple("hi"), new TypeToken<Tuple1<String>>() {}),
+            new SborTestCase<>(tuple("hi", 1), new TypeToken<Tuple2<String, Integer>>() {}),
+            new SborTestCase<>(
+                tuple("hi", 1, 2), new TypeToken<Tuple3<String, Integer, Integer>>() {}),
+            new SborTestCase<>(
+                tuple("hi", 1, 2, 3),
+                new TypeToken<Tuple4<String, Integer, Integer, Integer>>() {}),
+            new SborTestCase<>(
+                tuple("hi", 1, 2, 3, 4),
+                new TypeToken<Tuple5<String, Integer, Integer, Integer, Integer>>() {}),
+            new SborTestCase<>(
+                tuple("hi", 1, 2, 3, 4, 5),
+                new TypeToken<Tuple6<String, Integer, Integer, Integer, Integer, Integer>>() {}),
+            new SborTestCase<>(
+                tuple("hi", 1, 2, 3, 4, 5, 6),
+                new TypeToken<
+                    Tuple7<String, Integer, Integer, Integer, Integer, Integer, Integer>>() {}),
+            new SborTestCase<>(
+                tuple("hi", 1, 2, 3, 4, 5, 6, 7),
+                new TypeToken<
+                    Tuple8<
+                        String,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer>>() {}),
+            new SborTestCase<>(
+                tuple("hi", 1, 2, 3, 4, 5, 6, 7, 8),
+                new TypeToken<
+                    Tuple9<
+                        String,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer>>() {}),
+            new SborTestCase<>(
+                tuple("hi", 1, 2, 3, 4, 5, 6, 7, 8, 9),
+                new TypeToken<
+                    Tuple10<
+                        String,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer>>() {}),
+            new SborTestCase<>(
+                tuple("hi", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+                new TypeToken<
+                    Tuple11<
+                        String,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer>>() {}),
+            new SborTestCase<>(
+                tuple("hi", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
+                new TypeToken<
+                    Tuple12<
+                        String,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer,
+                        Integer>>() {}));
+
+    for (var testCase : allTupleSizes) {
+      //noinspection unchecked
+      TypeToken<Tuple> type = (TypeToken<Tuple>) testCase.type;
+      var encoded = TypedSbor.encode(testCase.value, type);
+      var decoded = TypedSbor.decode(encoded, type);
+      assertEquals(testCase.value, decoded);
+    }
+  }
+
+  @Test
+  public void tupleEncodedCorrectly() {
+    var tupleValue = tuple("hi", 1);
+    var type = new TypeToken<Tuple2<String, Integer>>() {};
+
+    var encoded = TypedSbor.encode(tupleValue, type);
+
+    assertArrayEquals(
+        new byte[] {
+          35, // Tuple Type
+          2,
+          0,
+          0,
+          0, // 2 elements in tuple
+          12, // String type
+          2,
+          0,
+          0,
+          0, // String length 2
+          104, // "h"
+          105, // "i"
+          4, // Int type
+          1,
+          0,
+          0,
+          0 // 1 encoded as int
+        },
+        encoded);
+
+    var decoded = TypedSbor.decode(encoded, type);
+
+    assertEquals(tupleValue, decoded);
   }
 }
