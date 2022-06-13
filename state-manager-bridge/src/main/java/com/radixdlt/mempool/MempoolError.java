@@ -78,13 +78,13 @@ public sealed interface MempoolError {
                 EnumEntry.with(
                     Full.class,
                     Full::new,
-                    codecs.of(int.class),
-                    codecs.of(int.class),
+                    codecs.of(long.class),
+                    codecs.of(long.class),
                     (t, encoder) -> encoder.encode(t.currentSize, t.maxSize)),
                 EnumEntry.noFields(Duplicate.class, Duplicate::new)));
   }
 
-  record Full(int currentSize, int maxSize) implements MempoolError {}
+  record Full(long currentSize, long maxSize) implements MempoolError {}
 
   record Duplicate() implements MempoolError {}
 }

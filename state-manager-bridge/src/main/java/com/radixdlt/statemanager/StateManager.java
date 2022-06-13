@@ -66,18 +66,17 @@ package com.radixdlt.statemanager;
 
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.sbor.StateManagerCodecRegistration;
-import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStore;
 import com.radixdlt.vertexstore.RustVertexStore;
 import com.radixdlt.vertexstore.VertexStore;
 import java.util.Objects;
 
-public final class StateManager {
+public final class StateManager implements AutoCloseable {
 
   static {
     System.loadLibrary("statemanager");
-    CodecMap.withDefault(StateManagerCodecRegistration::registerCodecs);
+    StateManagerCodecRegistration.registerCodecsWithDefault();
   }
 
   private final RustState rustState;
@@ -119,6 +118,11 @@ public final class StateManager {
 
   public RustMempool mempool() {
     return this.mempool;
+  }
+
+  @Override
+  public void close() throws Exception {
+    shutdown();
   }
 
   public void shutdown() {

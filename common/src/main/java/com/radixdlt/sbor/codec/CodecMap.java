@@ -118,7 +118,7 @@ public final class CodecMap {
 
   public final CodecResolver resolver = new CodecResolver();
 
-  private final Map<Class, Codec> ClassCodecCache = new HashMap<>();
+  private final Map<Class, Codec> classCodecCache = new HashMap<>();
   private final Map<TypeToken, Codec> typedCodecCache = new HashMap<>();
 
   private final Map<Class, ClassCodecCreator> classCodecCreators = new HashMap<>();
@@ -249,8 +249,8 @@ public final class CodecMap {
   }
 
   private <T> CodecMap storeCodec(Class<T> clazz, Codec<T> codec) {
-    synchronized (ClassCodecCache) {
-      ClassCodecCache.put(clazz, codec);
+    synchronized (classCodecCache) {
+      classCodecCache.put(clazz, codec);
       typedCodecCache.put(TypeToken.of(clazz), codec);
     }
     return this;
@@ -292,9 +292,16 @@ public final class CodecMap {
      */
     public <T> Codec<T> of(TypeToken<?> type) {
       // First - let's try to find a pre-registered codec for this explicit type literal
-      var codec = typedCodecCache.get(type);
-      if (codec != null) {
-        return codec;
+      var explicitTypeCodec = typedCodecCache.get(type);
+      if (explicitTypeCodec != null) {
+        return explicitTypeCodec;
+      }
+
+      // Failing that - let's see if there's anything for a class
+      var rawType = type.getRawType();
+      var classCodec = classCodecCache.get(type);
+      if (classCodec != null) {
+        return classCodec;
       }
 
       // Next - if it's an array, we need special handling...
@@ -304,24 +311,32 @@ public final class CodecMap {
         return newCodec;
       }
 
-      // Failing that - let's see if we can create one with a codec creator
-      var rawType = type.getRawType();
-      var codecCreator = typedCodecCreators.get(rawType);
-      if (codecCreator != null) {
-        var newCodec = codecCreator.create(this, type);
+      // If not - let's see if we have a typed codec creator:
+      var typedCodecCreator = typedCodecCreators.get(rawType);
+      if (typedCodecCreator != null) {
+        var newCodec = typedCodecCreator.create(this, type);
         storeCodec(type, newCodec); // Cache the codec for future use
         return newCodec;
       }
 
+      // Or a class codec creator...
+      var classCodecCreator = classCodecCreators.get(rawType);
+      if (classCodecCreator != null) {
+        var newCodec = classCodecCreator.create(this);
+        storeCodec(type, newCodec); // Cache the codec for future use
+        return newCodec;
+      }
+
+      // Otherwise - we're out of options!
       throw new SborCodecException(
           String.format(
-              "The type token %s itself has no SBOR codec, and its raw type class %s has no codec"
-                  + " creator registered.",
+              "Both the type token %s itself and its raw type class %s have no codec creator"
+                  + " registered.",
               type, rawType));
     }
 
     public <T> Codec<T> of(Class<T> clazz) {
-      var codec = ClassCodecCache.get(clazz);
+      var codec = classCodecCache.get(clazz);
 
       if (codec != null) {
         return codec;

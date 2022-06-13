@@ -102,8 +102,11 @@ public record Decoder(ByteArrayInputStream input, boolean decodeTypeIds) impleme
     var typeByte = readByte();
 
     if (typeByte != typeId.id()) {
+      var typeByteName = TypeId.fromId(typeByte).map(Enum::toString).or("UNKNOWN");
       throw new SborDecodeException(
-          String.format("Type ID byte %s does not match expected value %s", typeByte, typeId.id()));
+          String.format(
+              "Decoded Type ID %s (%s) but expected %s (%s)",
+              typeByte, typeByteName, typeId.id(), typeId));
     }
   }
 

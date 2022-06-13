@@ -64,7 +64,11 @@
 
 package com.radixdlt.sbor.codec.constants;
 
+import static com.radixdlt.lang.Option.none;
+import static com.radixdlt.lang.Option.some;
+
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.exceptions.SborCodecException;
 import java.util.Set;
 
@@ -136,5 +140,15 @@ public enum TypeId {
     if (!isMapType()) {
       throw new SborCodecException(String.format("Type id %s is not a map type id", this));
     }
+  }
+
+  /** Intended for debugging - not particularly performant. */
+  public static Option<TypeId> fromId(byte id) {
+    for (var enumValue : values()) {
+      if (enumValue.id() == id) {
+        return some(enumValue);
+      }
+    }
+    return none();
   }
 }

@@ -62,26 +62,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.statemanager.mempool;
 
-/**
- * Exception thrown when an attempt to add new items would exceed the mempool's maximum capacity.
- */
-public class MempoolFullException extends MempoolRejectedException {
-  private final long maxSize;
-  private final long currentSize;
+import static org.junit.Assert.*;
 
-  public MempoolFullException(long currentSize, long maxSize) {
-    super(String.format("Mempool full: %s of %s items", currentSize, maxSize));
-    this.maxSize = maxSize;
-    this.currentSize = currentSize;
-  }
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.transactions.Transaction;
+import org.junit.Assert;
+import org.junit.Test;
 
-  public long getMaxSize() {
-    return maxSize;
-  }
+public final class RustMempoolTest {
 
-  public long getCurrentSize() {
-    return currentSize;
+  @Test
+  public void test_rust_mempool_interface() throws Exception {
+    final var mempoolSize = 2;
+    try (var stateManager = StateManager.createAndInitialize(mempoolSize)) {
+      var rustMempool = stateManager.mempool();
+      var transaction1 = Transaction.create(new byte[] {1});
+      var transaction2 = Transaction.create(new byte[] {1, 2});
+      var transaction3 =
+          Transaction.create(
+              new byte[] {
+                1, 2, 3,
+              });
+
+      rustMempool.add(transaction1);
+
+      try {
+        // Duplicate transaction - this should fail
+        rustMempool.add(transaction1);
+        Assert.fail();
+      } catch (MempoolDuplicateException ex) {
+        // Expected
+      }
+
+      // This transaction is new, and the mempool has size 2 - this should be fine, and
+      // the mempool will now be full
+      rustMempool.add(transaction2);
+
+      try {
+        // Mempool is full - adding a new transaction should fail
+        rustMempool.add(transaction3);
+        Assert.fail();
+      } catch (MempoolFullException ex) {
+        Assert.assertEquals(2, ex.getMaxSize());
+        Assert.assertEquals(2, ex.getCurrentSize());
+      }
+
+      // NB - the following is an implementation detail, not mandated behaviour.
+      // Feel free to change in future
+      try {
+        // With a full mempool, a duplicate transaction return MempoolFull, not Duplicate
+        rustMempool.add(transaction1);
+        Assert.fail();
+      } catch (MempoolFullException ex) {
+        Assert.assertEquals(2, ex.getMaxSize());
+        Assert.assertEquals(2, ex.getCurrentSize());
+      }
+    }
   }
 }

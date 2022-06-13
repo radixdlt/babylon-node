@@ -71,7 +71,12 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.transactions.Transaction;
 
 public final class StateManagerCodecRegistration {
-  public static void registerCodecs(CodecMap codecMap) {
+
+  public static void registerCodecsWithDefault() {
+    CodecMap.withDefault(StateManagerCodecRegistration::registerCodecsWithCodecMap);
+  }
+
+  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
     Transaction.registerCodec(codecMap);
     TID.registerCodec(codecMap);
     StateManagerRuntimeError.registerCodec(codecMap);
