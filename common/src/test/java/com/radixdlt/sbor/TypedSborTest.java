@@ -64,6 +64,10 @@
 
 package com.radixdlt.sbor;
 
+import static com.radixdlt.lang.Option.none;
+import static com.radixdlt.lang.Option.some;
+import static org.junit.Assert.*;
+
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
 import com.radixdlt.lang.Option;
@@ -75,10 +79,6 @@ import com.radixdlt.sbor.dto.SimpleEnum.SimpleSealedEnum;
 import com.radixdlt.sbor.dto.SimpleRecord;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static com.radixdlt.lang.Option.none;
-import static com.radixdlt.lang.Option.some;
-import static org.junit.Assert.*;
 
 public class TypedSborTest {
   @BeforeClass

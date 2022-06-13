@@ -68,7 +68,6 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
 import com.radixdlt.sbor.codec.*;
 
-
 public class SimpleEnum {
   // We put SimpleSealedEnum Enum as a subclass because otherwise JUnit 4 was
   //   very bizarrely thinking it was a test class but then erroring because it was clearly not
@@ -123,4 +122,3 @@ public class SimpleEnum {
     record B(Either<Long, String> param1) implements SimpleSealedEnum {}
   }
 }
-
