@@ -62,60 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.mempool;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.Field;
+import com.radixdlt.sbor.codec.StructCodec;
 
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.transactions.Transaction;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import org.junit.Test;
+public record RustMempoolConfig(int maxSize) {
 
-public final class StateManagerTest {
+  static {
+    CodecMap.withDefault(RustMempoolConfig::registerCodec);
+  }
 
-  @Test
-  public void test_rust_interop() throws Exception {
-
-    final var mempoolSize = 100;
-    final var stateManagerNode1 = StateManager.createAndInitialize(mempoolSize);
-    final var stateManagerNode2 = StateManager.createAndInitialize(mempoolSize);
-
-    // Just to check that concurrent access is possible
-    var rand = new Random();
-    var cdl = new CountDownLatch(1000);
-    for (int i = 0; i < 1000; i++) {
-      new Thread(
-              () -> {
-                var tx = HashUtils.random256();
-                var stateVer = rand.nextLong();
-                stateManagerNode1.transactionStore().insertTransaction(stateVer, tx.asBytes());
-                assertArrayEquals(
-                    tx.asBytes(),
-                    stateManagerNode1.transactionStore().getTransactionAtStateVersion(stateVer));
-                cdl.countDown();
-              })
-          .start();
-    }
-
-    final var vertex = new byte[] {3, 4, 5};
-    assertFalse(stateManagerNode1.vertexStore().containsVertex(vertex));
-    stateManagerNode1.vertexStore().insertVertex(vertex);
-    assertTrue(stateManagerNode1.vertexStore().containsVertex(vertex));
-    assertFalse(stateManagerNode2.vertexStore().containsVertex(vertex));
-
-    final var payload = new byte[] {1, 2, 3, 4, 5};
-    final var transaction = Transaction.create(payload);
-    stateManagerNode1.mempool().add(transaction);
-    try {
-      stateManagerNode1.mempool().add(transaction);
-    } catch (Exception MempoolDuplicateException) {
-    }
-
-    cdl.await();
-    stateManagerNode1.shutdown();
-    stateManagerNode2.shutdown();
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        RustMempoolConfig.class,
+        codecs ->
+            StructCodec.fromFields(
+                RustMempoolConfig::new,
+                Field.of(RustMempoolConfig::maxSize, codecs.of(int.class))));
   }
 }

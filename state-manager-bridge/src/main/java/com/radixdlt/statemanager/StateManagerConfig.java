@@ -64,4 +64,26 @@
 
 package com.radixdlt.statemanager;
 
-public record StateManagerConfig(long mempoolSize) {}
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Option;
+import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.Field;
+import com.radixdlt.sbor.codec.StructCodec;
+
+public record StateManagerConfig(Option<RustMempoolConfig> mempoolConfigOpt) {
+  static {
+    CodecMap.withDefault(StateManagerConfig::registerCodec);
+  }
+
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        StateManagerConfig.class,
+        codecs ->
+            StructCodec.fromFields(
+                StateManagerConfig::new,
+                Field.of(
+                    StateManagerConfig::mempoolConfigOpt,
+                    codecs.of(new TypeToken<Option<RustMempoolConfig>>() {}))));
+  }
+}

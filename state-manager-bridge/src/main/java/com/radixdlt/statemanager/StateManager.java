@@ -64,10 +64,8 @@
 
 package com.radixdlt.statemanager;
 
-import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.sbor.StateManagerCodecRegistration;
-import com.radixdlt.transaction.RustTransactionStore;
-import com.radixdlt.transaction.TransactionStore;
+import com.radixdlt.sbor.TypedSbor;
 import java.util.Objects;
 
 public final class StateManager implements AutoCloseable {
@@ -89,27 +87,20 @@ public final class StateManager implements AutoCloseable {
   }
 
   private final RustState rustState;
-  private final TransactionStore transactionStore;
-  private final RustMempool mempool;
 
   public static StateManager createAndInitialize(StateManagerConfig config) {
     final var rustState = new RustState();
-    init(rustState, config.mempoolSize()); // TODO: pass the whole config obj, sbor-ed
+    final var encodedConfig = TypedSbor.encode(config);
+    init(rustState, encodedConfig);
     return new StateManager(rustState);
   }
 
   private StateManager(RustState rustState) {
     this.rustState = Objects.requireNonNull(rustState);
-    this.transactionStore = new RustTransactionStore(rustState);
-    this.mempool = new RustMempool(rustState);
   }
 
-  public TransactionStore transactionStore() {
-    return this.transactionStore;
-  }
-
-  public RustMempool mempool() {
-    return this.mempool;
+  public RustState getRustState() {
+    return this.rustState;
   }
 
   @Override
@@ -121,7 +112,7 @@ public final class StateManager implements AutoCloseable {
     cleanup(this.rustState);
   }
 
-  private static native void init(RustState rustState, long mempoolSize);
+  private static native void init(RustState rustState, byte[] config);
 
   private static native void cleanup(RustState rustState);
 }

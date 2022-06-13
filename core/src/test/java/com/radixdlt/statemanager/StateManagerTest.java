@@ -62,49 +62,66 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.statemanager;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.OptionalBinder;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.lang.Option;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
-import java.util.Optional;
+import static org.junit.Assert.assertArrayEquals;
 
-public final class StateManagerModule extends AbstractModule {
+import com.google.inject.Guice;
+import com.radixdlt.StateManagerMempoolModule;
+import com.radixdlt.StateManagerModule;
+import com.radixdlt.StateManagerTransactionStoreModule;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.RustMempool;
+import com.radixdlt.transaction.TransactionStore;
+import com.radixdlt.transactions.Transaction;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import org.junit.Test;
 
-  @Override
-  protected void configure() {
-    OptionalBinder.newOptionalBinder(binder(), RustMempoolConfig.class);
-  }
+public final class StateManagerTest {
 
-  @Provides
-  @Singleton
-  StateManager stateManager(Optional<RustMempoolConfig> mempoolConfigOpt) {
-    return StateManager.createAndInitialize(new StateManagerConfig(Option.from(mempoolConfigOpt)));
-  }
+  @Test
+  public void test_rust_interop() throws Exception {
+    final var testModules =
+        List.of(
+            new StateManagerModule(),
+            new StateManagerTransactionStoreModule(),
+            new StateManagerMempoolModule(),
+            MempoolConfig.asModule(100, 1000L));
 
-  @ProvidesIntoMap
-  @StringMapKey(Runners.STATE_MANAGER)
-  @Singleton
-  ModuleRunner stateManagerModuleRunner(StateManager stateManager) {
-    return new ModuleRunner() {
-      @Override
-      public void start() {
-        // no-op
-      }
+    final var injectorNode1 = Guice.createInjector(testModules);
+    final var injectorNode2 = Guice.createInjector(testModules);
 
-      @Override
-      public void stop() {
-        stateManager.shutdown();
-      }
-    };
+    // Just to check that concurrent access is possible
+    var rand = new Random();
+    var cdl = new CountDownLatch(1000);
+    for (int i = 0; i < 1000; i++) {
+      new Thread(
+              () -> {
+                final var tx = HashUtils.random256();
+                final var stateVer = rand.nextLong();
+                final var transactionStore = injectorNode1.getInstance(TransactionStore.class);
+                transactionStore.insertTransaction(stateVer, tx.asBytes());
+                assertArrayEquals(
+                    tx.asBytes(), transactionStore.getTransactionAtStateVersion(stateVer));
+                cdl.countDown();
+              })
+          .start();
+    }
+
+    final var payload = new byte[] {1, 2, 3, 4, 5};
+    final var transaction = Transaction.create(payload);
+    final var mempoolNode1 = injectorNode1.getInstance(RustMempool.class);
+    mempoolNode1.add(transaction);
+    try {
+      mempoolNode1.add(transaction);
+    } catch (Exception MempoolDuplicateException) {
+    }
+
+    cdl.await();
+    injectorNode1.getInstance(StateManager.class).shutdown();
+    injectorNode2.getInstance(StateManager.class).shutdown();
   }
 }

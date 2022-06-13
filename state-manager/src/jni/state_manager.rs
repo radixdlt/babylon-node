@@ -62,11 +62,13 @@
  * permissions under this License.
  */
 
+use crate::jni::dtos::*;
+use crate::jni::utils::*;
 use crate::mempool::mock::MockMempool;
-use crate::state_manager::StateManager;
+use crate::state_manager::{StateManager, StateManagerConfig};
 use crate::transaction_store::TransactionStore;
 use jni::objects::{JClass, JObject};
-use jni::sys::jlong;
+use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use std::sync::Arc;
 
@@ -77,9 +79,9 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_init(
     env: JNIEnv,
     _class: JClass,
     interop_state: JObject,
-    j_mempool_size: jlong,
+    j_config: jbyteArray,
 ) {
-    JNIStateManager::init(&env, interop_state, j_mempool_size);
+    JNIStateManager::init(&env, interop_state, j_config);
 }
 
 #[no_mangle]
@@ -96,9 +98,13 @@ pub struct JNIStateManager {
 }
 
 impl JNIStateManager {
-    pub fn init(env: &JNIEnv, interop_state: JObject, j_mempool_size: jlong) {
+    pub fn init(env: &JNIEnv, interop_state: JObject, j_config: jbyteArray) {
+        let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
+        let config = StateManagerConfig::from_java(&config_bytes).unwrap();
+
         // Build the basic subcomponents.
-        let mempool = MockMempool::new(j_mempool_size.try_into().unwrap()); // XXX: Very Wrong. Should return an error in case it's negative
+        let mempool_config = config.mempool_config.unwrap();
+        let mempool = MockMempool::new(mempool_config);
         let transaction_store = TransactionStore::new();
 
         // Build the state manager.

@@ -214,14 +214,14 @@ public final class DeterministicTest {
 
     public DeterministicTest buildWithEpochs(View epochHighView) {
       Objects.requireNonNull(epochHighView);
-      modules.add(new FunctionalRadixNodeModule(true, true, false, false, false, true, false));
+      modules.add(new FunctionalRadixNodeModule(true, false, false, false, true, false));
       addEpochedConsensusProcessorModule(epochHighView);
       return build();
     }
 
     public DeterministicTest buildWithEpochsAndSync(View epochHighView, SyncConfig syncConfig) {
       Objects.requireNonNull(epochHighView);
-      modules.add(new FunctionalRadixNodeModule(true, true, false, false, false, true, true));
+      modules.add(new FunctionalRadixNodeModule(true, false, false, false, true, true));
       modules.add(new InMemoryCommittedReaderModule());
       modules.add(
           new AbstractModule() {
@@ -241,7 +241,7 @@ public final class DeterministicTest {
     }
 
     public DeterministicTest buildWithoutEpochs() {
-      modules.add(new FunctionalRadixNodeModule(true, false, false, false, false, false, false));
+      modules.add(new FunctionalRadixNodeModule(false, false, false, false, false, false));
       addNonEpochedConsensusProcessorModule();
       return build();
     }

@@ -73,7 +73,7 @@ import com.radixdlt.sbor.exceptions.SborDecodeException;
 import java.util.*;
 
 @SuppressWarnings("unused")
-interface MapCodec {
+public interface MapCodec {
   record MapCodecViaHashMap<TMap, TKey, TItem>(
       TypeId mapTypeId,
       Codec<TKey> keyCodec,

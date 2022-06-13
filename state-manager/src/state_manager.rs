@@ -62,7 +62,8 @@
  * permissions under this License.
  */
 
-use crate::mempool::Mempool;
+use crate::jni::dtos::*;
+use crate::mempool::{Mempool, MempoolConfig};
 use crate::transaction_store::TransactionStore;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -83,3 +84,10 @@ impl<M: Mempool> StateManager<M> {
         }
     }
 }
+
+#[derive(Debug, TypeId, Encode, Decode, PartialEq, Eq, Hash, Clone)]
+pub struct StateManagerConfig {
+    pub mempool_config: Option<MempoolConfig>,
+}
+
+impl JavaStructure for StateManagerConfig {}

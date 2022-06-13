@@ -66,6 +66,8 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.radixdlt.StateManagerMempoolModule;
+import com.radixdlt.StateManagerModule;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.ledger.MockedCommandGeneratorModule;
@@ -119,7 +121,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   public void configure() {
     install(new EventLoggerModule());
     install(new DispatcherModule());
-    install(new ReV1DispatcherModule());
+    install(new StateManagerModule());
 
     // Consensus
     install(new ConsensusModule());
@@ -158,6 +160,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           install(new MockedStateComputerWithEpochsModule());
         }
       } else {
+        install(new StateManagerMempoolModule());
         install(new MempoolReceiverModule());
 
         if (hasMempoolRelayer) {
@@ -169,6 +172,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         } else {
           install(new RadixEngineStateComputerModule());
           install(new RadixEngineModule());
+          install(new ReV1DispatcherModule());
         }
       }
     }
