@@ -62,22 +62,17 @@
  * permissions under this License.
  */
 
-use sbor::{Decode, Encode, TypeId};
-
 pub use crate::result::ToStateManagerError;
 
-use crate::types::{JavaStructure, Transaction};
+use crate::types::Transaction;
 use std::collections::HashSet;
 use std::string::ToString;
 
-#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq)]
 pub enum MempoolError {
-    Full { current_size: u32, max_size: u32 },
+    Full { current_size: u64, max_size: u64 },
     Duplicate,
 }
-
-// TODO - Talking point -- possibly have some explicit map to a JavaMempoolError instead of using this directly here?
-impl JavaStructure for MempoolError {}
 
 impl ToString for MempoolError {
     fn to_string(&self) -> String {
@@ -94,8 +89,8 @@ impl ToString for MempoolError {
 pub trait Mempool {
     fn add(&mut self, transaction: Transaction) -> Result<(), MempoolError>;
     fn committed(&mut self, transactions: &HashSet<Transaction>);
-    fn get_count(&self) -> u32;
-    fn get_txns(&self, count: u32, seen: &HashSet<Transaction>) -> HashSet<Transaction>;
+    fn get_count(&self) -> u64;
+    fn get_txns(&self, count: u64, seen: &HashSet<Transaction>) -> HashSet<Transaction>;
 }
 
 pub mod mock;

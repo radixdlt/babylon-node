@@ -65,6 +65,7 @@
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use sbor::{TypeId, Encode, Decode};
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
@@ -88,14 +89,31 @@ fn do_add(
     env: &JNIEnv,
     j_state: JObject,
     j_txn: jbyteArray,
-) -> StateManagerResult<Result<(), MempoolError>> {
+) -> StateManagerResult<Result<(), MempoolErrorJava>> {
     let state_manager = JNIStateManager::get_state_manager(env, j_state);
 
-    let s_txn: Vec<u8> = jni_jbytearray_to_vector(env, j_txn)?;
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_txn)?;
 
-    let txn = Transaction::from_java(&s_txn)?;
+    let transaction = Transaction::from_java(&request_payload)?;
 
-    let ret = state_manager.mempool.lock().unwrap().add(txn);
+    let result = state_manager.mempool.lock().unwrap().add(transaction);
 
-    Ok(ret)
+    Ok(result.map_err(|err| err.into()))
+}
+
+#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+enum MempoolErrorJava {
+    Full { current_size: u64, max_size: u64 },
+    Duplicate,
+}
+
+impl JavaStructure for MempoolErrorJava {}
+
+impl From<MempoolError> for MempoolErrorJava {
+    fn from(err: MempoolError) -> Self {
+        return match err {
+            MempoolError::Full { current_size, max_size } => MempoolErrorJava::Full { current_size, max_size },
+            MempoolError::Duplicate => MempoolErrorJava::Duplicate,
+        }
+    }
 }
