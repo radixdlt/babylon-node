@@ -299,7 +299,7 @@ public final class CodecMap {
 
       // Failing that - let's see if there's anything for a class
       var rawType = type.getRawType();
-      var classCodec = classCodecCache.get(type);
+      var classCodec = classCodecCache.get(rawType);
       if (classCodec != null) {
         return classCodec;
       }
