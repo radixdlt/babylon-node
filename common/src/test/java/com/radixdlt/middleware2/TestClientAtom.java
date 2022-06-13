@@ -84,23 +84,23 @@ public class TestClientAtom implements TestLedgerAtom {
   @DsonOutput({Output.ALL})
   private final String metaData;
 
-  @JsonProperty("aid")
+  @JsonProperty("tid")
   @DsonOutput({Output.ALL})
   private final TID TID;
 
   @JsonCreator
   protected TestClientAtom(
-      @JsonProperty("aid") TID TID, @JsonProperty("metadata") String metaData) {
+      @JsonProperty("tid") TID TID, @JsonProperty("metadata") String metaData) {
     this.TID = TID;
     this.metaData = metaData == null ? "no metadata" : metaData;
   }
 
   public static TestClientAtom create(String metadata) {
-    var id = TID.from(HashUtils.random256().asBytes());
+    var id = com.radixdlt.identifiers.TID.from(HashUtils.random256().asBytes());
     return new TestClientAtom(id, metadata);
   }
 
-  public TID aid() {
+  public TID tid() {
     return TID;
   }
 
@@ -136,6 +136,6 @@ public class TestClientAtom implements TestLedgerAtom {
 
   @Override
   public String toString() {
-    return "ClientAtom(metaData: '" + metaData + "', aid: " + TID + ')';
+    return "ClientAtom(metaData: '" + metaData + "', tid: " + TID + ')';
   }
 }

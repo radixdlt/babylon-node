@@ -144,17 +144,17 @@ public final class CodecMap {
     storeCodec(Boolean.class, new BooleanCodec());
     storeCodec(boolean.class, new BooleanCodec());
 
-    storeCodec(Byte.class, new ByteCodec(true));
-    storeCodec(byte.class, new ByteCodec(true));
+    storeCodec(Byte.class, new ByteCodec(false));
+    storeCodec(byte.class, new ByteCodec(false));
 
-    storeCodec(Short.class, new ShortCodec(false));
-    storeCodec(short.class, new ShortCodec(false));
+    storeCodec(Short.class, new ShortCodec(true));
+    storeCodec(short.class, new ShortCodec(true));
 
-    storeCodec(Integer.class, new IntegerCodec(false));
-    storeCodec(int.class, new IntegerCodec(false));
+    storeCodec(Integer.class, new IntegerCodec(true));
+    storeCodec(int.class, new IntegerCodec(true));
 
-    storeCodec(Long.class, new LongCodec(false));
-    storeCodec(long.class, new LongCodec(false));
+    storeCodec(Long.class, new LongCodec(true));
+    storeCodec(long.class, new LongCodec(true));
 
     storeCodec(byte[].class, new ByteArrayCodec(sborTypeIdForArrayType));
     storeCodec(short[].class, new ShortArrayCodec(sborTypeIdForArrayType));

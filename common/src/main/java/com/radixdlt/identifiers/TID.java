@@ -76,9 +76,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 
-/**
- * A Transaction ID, made up of 256 bits of a hash.
- */
+/** A Transaction ID, made up of 256 bits of a hash. */
 public final class TID implements Comparable<TID> {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(

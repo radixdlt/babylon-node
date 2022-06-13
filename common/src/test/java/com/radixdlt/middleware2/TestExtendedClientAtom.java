@@ -117,7 +117,7 @@ public class TestExtendedClientAtom extends TestClientAtom {
   @Override
   public String toString() {
     return "ExtendedClientAtom(aid: "
-        + aid()
+        + tid()
         + ", metaData: '"
         + metaData()
         + "', extra: '"

@@ -84,7 +84,7 @@ public class TestDifferentClientAtom implements TestLedgerAtom {
   @DsonOutput({Output.ALL})
   private final String metaData;
 
-  @JsonProperty("dia")
+  @JsonProperty("dit")
   @DsonOutput({Output.ALL})
   private final TID TID;
 
@@ -96,11 +96,11 @@ public class TestDifferentClientAtom implements TestLedgerAtom {
   }
 
   public static TestDifferentClientAtom create(String metadata) {
-    var id = TID.from(HashUtils.random256().asBytes());
+    var id = com.radixdlt.identifiers.TID.from(HashUtils.random256().asBytes());
     return new TestDifferentClientAtom(id, metadata);
   }
 
-  public TID aid() {
+  public TID tid() {
     return TID;
   }
 
@@ -136,6 +136,6 @@ public class TestDifferentClientAtom implements TestLedgerAtom {
 
   @Override
   public String toString() {
-    return "DifferentClientAtom(metaData: '" + metaData + "', aid: " + TID + ')';
+    return "DifferentClientAtom(metaData: '" + metaData + "', tid: " + TID + ')';
   }
 }
