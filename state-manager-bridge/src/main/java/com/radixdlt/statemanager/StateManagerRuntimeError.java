@@ -67,13 +67,10 @@ package com.radixdlt.statemanager;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.codec.StructCodec;
-
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * This is designed to represent system / runtime errors in the rust side.
- */
+/** This is designed to represent system / runtime errors in the rust side. */
 public class StateManagerRuntimeError {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(

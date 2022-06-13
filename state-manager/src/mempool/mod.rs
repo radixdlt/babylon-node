@@ -62,11 +62,11 @@
  * permissions under this License.
  */
 
-use sbor::{Encode, Decode, TypeId};
+use sbor::{Decode, Encode, TypeId};
 
 pub use crate::result::ToStateManagerError;
 
-use crate::types::{Transaction, JavaStructure};
+use crate::types::{JavaStructure, Transaction};
 use std::collections::HashSet;
 use std::string::ToString;
 
@@ -82,7 +82,10 @@ impl JavaStructure for MempoolError {}
 impl ToString for MempoolError {
     fn to_string(&self) -> String {
         match self {
-            MempoolError::Full { current_size, max_size } => format!("Mempool Full [{} - {}]", current_size, max_size),
+            MempoolError::Full {
+                current_size,
+                max_size,
+            } => format!("Mempool Full [{} - {}]", current_size, max_size),
             MempoolError::Duplicate => "Duplicate Entry".to_string(),
         }
     }

@@ -81,8 +81,8 @@ public class RustMempool {
     this.rustState = Objects.requireNonNull(rustState);
   }
 
-  private static final TypeToken<Result<Result<Unit, MempoolError>, StateManagerRuntimeError>> addResponseType = new TypeToken<>() {
-  };
+  private static final TypeToken<Result<Result<Unit, MempoolError>, StateManagerRuntimeError>>
+      addResponseType = new TypeToken<>() {};
 
   public Transaction add(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
@@ -93,8 +93,10 @@ public class RustMempool {
     // Handle Errors.
     if (result.isErr()) {
       switch (result.unwrapErr()) {
-        case MempoolError.Full fullStatus -> throw new MempoolFullException(fullStatus.currentSize(), fullStatus.maxSize());
-        case MempoolError.Duplicate ignored -> throw new MempoolDuplicateException(String.format("Mempool already has transaction %s", transaction.getId()));
+        case MempoolError.Full fullStatus -> throw new MempoolFullException(
+            fullStatus.currentSize(), fullStatus.maxSize());
+        case MempoolError.Duplicate ignored -> throw new MempoolDuplicateException(
+            String.format("Mempool already has transaction %s", transaction.getId()));
       }
     }
 

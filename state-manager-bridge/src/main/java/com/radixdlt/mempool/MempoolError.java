@@ -73,14 +73,18 @@ public sealed interface MempoolError {
   static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         MempoolError.class,
-        (codecs) -> EnumCodec.fromEntries(
-            EnumEntry.with(Full.class, Full::new, codecs.of(int.class), codecs.of(int.class), (t, encoder) -> encoder.encode(t.currentSize, t.maxSize)),
-            EnumEntry.noFields(Duplicate.class, Duplicate::new)
-        )
-    );
+        (codecs) ->
+            EnumCodec.fromEntries(
+                EnumEntry.with(
+                    Full.class,
+                    Full::new,
+                    codecs.of(int.class),
+                    codecs.of(int.class),
+                    (t, encoder) -> encoder.encode(t.currentSize, t.maxSize)),
+                EnumEntry.noFields(Duplicate.class, Duplicate::new)));
   }
 
-  record Full(int currentSize, int maxSize) implements MempoolError {  }
+  record Full(int currentSize, int maxSize) implements MempoolError {}
 
-  record Duplicate() implements MempoolError { }
+  record Duplicate() implements MempoolError {}
 }

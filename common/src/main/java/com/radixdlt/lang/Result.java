@@ -323,8 +323,7 @@ public sealed interface Result<T, E> permits Ok, Err {
   }
 
   /**
-   * Check if instance is success.
-   * Alias of isSuccess.
+   * Check if instance is success. Alias of isSuccess.
    *
    * @return {@code true} if instance is success and {@code false} otherwise
    */
@@ -342,8 +341,7 @@ public sealed interface Result<T, E> permits Ok, Err {
   }
 
   /**
-   * Check if instance is failure.
-   * Alias of isFailure.
+   * Check if instance is failure. Alias of isFailure.
    *
    * @return {@code true} if instance is failure and {@code false} otherwise
    */

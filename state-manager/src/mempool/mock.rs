@@ -84,7 +84,10 @@ impl Mempool for MockMempool {
         let len = self.data.len() as u32;
 
         if len >= self.max_size {
-            return Err(MempoolError::Full { current_size: len, max_size: self.max_size });
+            return Err(MempoolError::Full {
+                current_size: len,
+                max_size: self.max_size,
+            });
         }
 
         if !self.data.insert(transaction) {
@@ -105,7 +108,11 @@ impl Mempool for MockMempool {
     }
 
     fn get_txns(&self, count: u32, seen: &HashSet<Transaction>) -> HashSet<Transaction> {
-        self.data.difference(seen).take(count as usize).cloned().collect()
+        self.data
+            .difference(seen)
+            .take(count as usize)
+            .cloned()
+            .collect()
     }
 }
 
