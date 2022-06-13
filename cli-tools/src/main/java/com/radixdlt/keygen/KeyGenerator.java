@@ -119,8 +119,8 @@ public class KeyGenerator {
 
   private Result<Unit, Cause> run(String[] args) {
     return parseParameters(args)
-        .filter(commandLine -> !commandLine.hasOption("h"), IRRELEVANT::swallow)
-        .filter(commandLine -> commandLine.getOptions().length != 0, IRRELEVANT::swallow)
+        .filterOrElse(commandLine -> !commandLine.hasOption("h"), IRRELEVANT::swallow)
+        .filterOrElse(commandLine -> commandLine.getOptions().length != 0, IRRELEVANT::swallow)
         .flatMap(
             cli ->
                 all(parseKeystore(cli), parsePassword(cli), parseKeypair(cli), parseShowPk(cli))

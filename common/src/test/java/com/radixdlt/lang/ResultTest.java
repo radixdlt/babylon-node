@@ -85,11 +85,11 @@ public class ResultTest {
   @Test
   public void failureResultsAreEqualIfFailureIsEqual() {
     assertEquals(
-        Result.failure(Causes.cause("123")),
-        Result.success(123).filter(v -> v < 0, Causes.with1("{0}")));
+        Result.<Integer, Cause>failure(Causes.cause("123")),
+        Result.<Integer, Cause>success(123).filterOrElse(v -> v < 0, Causes.with1("{0}")));
     assertNotEquals(
-        Result.failure(Causes.cause("321")),
-        Result.success(123).filter(v -> v < 0, Causes.with1("{0}")));
+        Result.<Integer, Cause>failure(Causes.cause("321")),
+        Result.<Integer, Cause>success(123).filterOrElse(v -> v < 0, Causes.with1("{0}")));
   }
 
   @Test
@@ -217,7 +217,7 @@ public class ResultTest {
     Result.<Integer, Cause>success(231)
         .onSuccess(value -> assertEquals(231, value.intValue()))
         .onFailureDo(Assert::fail)
-        .filter(value -> value > 321, Causes.with1("Value {0} is below threshold"))
+        .filterOrElse(value -> value > 321, Causes.with1("Value {0} is below threshold"))
         .onSuccessDo(Assert::fail)
         .onFailure(cause -> assertEquals("Value 231 is below threshold", cause.message()));
   }

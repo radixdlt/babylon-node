@@ -359,7 +359,7 @@ public sealed interface Result<T, E> permits Ok, Err {
    * @return current instance if predicate returns {@code true} or {@link Err} instance if predicate
    *     returns {@code false}
    */
-  default Result<T, E> filter(Predicate<T> predicate, E error) {
+  default Result<T, E> filterOr(Predicate<T> predicate, E error) {
     return fold(v -> predicate.test(v) ? this : failure(error), v -> this);
   }
 
@@ -374,7 +374,7 @@ public sealed interface Result<T, E> permits Ok, Err {
    * @return current instance if predicate returns {@code true} or {@link Err} instance if predicate
    *     returns {@code false}
    */
-  default Result<T, E> filter(Predicate<T> predicate, Func1<T, E> errorMapper) {
+  default Result<T, E> filterOrElse(Predicate<T> predicate, Func1<T, E> errorMapper) {
     return fold(v -> predicate.test(v) ? this : failure(errorMapper.apply(v)), v -> this);
   }
 
