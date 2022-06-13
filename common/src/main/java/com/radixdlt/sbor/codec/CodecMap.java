@@ -144,9 +144,12 @@ public final class CodecMap {
     storeCodec(Boolean.class, new BooleanCodec());
     storeCodec(boolean.class, new BooleanCodec());
 
+    // Because a signed byte is unexpected,
+    // We serialized to U8 by default even though they're technically signed in Java
     storeCodec(Byte.class, new ByteCodec(false));
     storeCodec(byte.class, new ByteCodec(false));
 
+    // All types are signed in Java, so map these to their signed types
     storeCodec(Short.class, new ShortCodec(true));
     storeCodec(short.class, new ShortCodec(true));
 
