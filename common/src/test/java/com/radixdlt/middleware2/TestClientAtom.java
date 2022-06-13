@@ -86,22 +86,22 @@ public class TestClientAtom implements TestLedgerAtom {
 
   @JsonProperty("tid")
   @DsonOutput({Output.ALL})
-  private final TID TID;
+  private final TID tid;
 
   @JsonCreator
   protected TestClientAtom(
-      @JsonProperty("tid") TID TID, @JsonProperty("metadata") String metaData) {
-    this.TID = TID;
+      @JsonProperty("tid") TID tid, @JsonProperty("metadata") String metaData) {
+    this.tid = tid;
     this.metaData = metaData == null ? "no metadata" : metaData;
   }
 
   public static TestClientAtom create(String metadata) {
-    var id = com.radixdlt.identifiers.TID.from(HashUtils.random256().asBytes());
+    var id = TID.from(HashUtils.random256().asBytes());
     return new TestClientAtom(id, metadata);
   }
 
   public TID tid() {
-    return TID;
+    return tid;
   }
 
   public String metaData() {
@@ -124,18 +124,18 @@ public class TestClientAtom implements TestLedgerAtom {
       return false;
     }
 
-    return TID.equals(that.TID);
+    return tid.equals(that.tid);
   }
 
   @Override
   public int hashCode() {
     int result = metaData.hashCode();
-    result = 31 * result + TID.hashCode();
+    result = 31 * result + tid.hashCode();
     return result;
   }
 
   @Override
   public String toString() {
-    return "ClientAtom(metaData: '" + metaData + "', tid: " + TID + ')';
+    return "ClientAtom(metaData: '" + metaData + "', tid: " + tid + ')';
   }
 }

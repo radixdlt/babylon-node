@@ -36,10 +36,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MempoolFullErrorAllOf {
   public static final String JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT = "mempool_transaction_count";
-  private Integer mempoolTransactionCount;
+  private Long mempoolTransactionCount = null;
 
 
-  public MempoolFullErrorAllOf mempoolTransactionCount(Integer mempoolTransactionCount) {
+  public MempoolFullErrorAllOf mempoolTransactionCount(Long mempoolTransactionCount) {
     this.mempoolTransactionCount = mempoolTransactionCount;
     return this;
   }
@@ -53,14 +53,14 @@ public class MempoolFullErrorAllOf {
   @JsonProperty(JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getMempoolTransactionCount() {
+  public Long getMempoolTransactionCount() {
     return mempoolTransactionCount;
   }
 
 
   @JsonProperty(JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMempoolTransactionCount(Integer mempoolTransactionCount) {
+  public void setMempoolTransactionCount(Long mempoolTransactionCount) {
     this.mempoolTransactionCount = mempoolTransactionCount;
   }
 

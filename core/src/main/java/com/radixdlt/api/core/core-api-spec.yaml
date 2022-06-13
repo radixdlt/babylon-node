@@ -310,7 +310,7 @@ components:
             - mempool_transaction_count
           properties:
             mempool_transaction_count:
-              type: integer
+              type: long
     InvalidTransactionError:
       allOf:
         - $ref: "#/components/schemas/CoreErrorDetails"

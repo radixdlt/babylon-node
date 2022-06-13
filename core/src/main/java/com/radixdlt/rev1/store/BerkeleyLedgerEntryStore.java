@@ -1329,11 +1329,11 @@ public final class BerkeleyLedgerEntryStore
     return new DatabaseEntry();
   }
 
-  private static DatabaseEntry txnEntry(long offset, long size, TID TID) {
+  private static DatabaseEntry txnEntry(long offset, long size, TID tid) {
     var buf = ByteBuffer.allocate(Long.BYTES + Long.BYTES + TID.BYTES);
     buf.putLong(offset);
     buf.putLong(size);
-    buf.put(TID.getBytes());
+    buf.put(tid.getBytes());
     return entry(buf.array());
   }
 

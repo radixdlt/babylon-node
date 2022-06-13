@@ -71,7 +71,6 @@ import static org.junit.Assert.assertNotEquals;
 
 import com.radixdlt.sbor.TypedSbor;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.transactions.Transaction;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 

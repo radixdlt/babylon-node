@@ -64,8 +64,6 @@
 
 package com.radixdlt.statemanager.mempool;
 
-import static org.junit.Assert.*;
-
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.statemanager.StateManager;

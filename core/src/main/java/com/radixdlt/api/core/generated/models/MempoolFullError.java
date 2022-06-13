@@ -57,10 +57,10 @@ import com.radixdlt.api.common.JSON;
 
 public class MempoolFullError extends CoreErrorDetails {
   public static final String JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT = "mempool_transaction_count";
-  private Integer mempoolTransactionCount;
+  private Long mempoolTransactionCount = null;
 
 
-  public MempoolFullError mempoolTransactionCount(Integer mempoolTransactionCount) {
+  public MempoolFullError mempoolTransactionCount(Long mempoolTransactionCount) {
     this.mempoolTransactionCount = mempoolTransactionCount;
     return this;
   }
@@ -74,14 +74,14 @@ public class MempoolFullError extends CoreErrorDetails {
   @JsonProperty(JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getMempoolTransactionCount() {
+  public Long getMempoolTransactionCount() {
     return mempoolTransactionCount;
   }
 
 
   @JsonProperty(JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMempoolTransactionCount(Integer mempoolTransactionCount) {
+  public void setMempoolTransactionCount(Long mempoolTransactionCount) {
     this.mempoolTransactionCount = mempoolTransactionCount;
   }
 

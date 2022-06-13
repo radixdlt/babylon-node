@@ -121,7 +121,7 @@ public final class StateManager implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     shutdown();
   }
 
