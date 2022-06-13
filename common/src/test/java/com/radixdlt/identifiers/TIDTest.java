@@ -70,6 +70,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import com.radixdlt.sbor.TypedSbor;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.transactions.Transaction;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -126,6 +128,7 @@ public class TIDTest {
 
   @Test
   public void testSBORSerialization() {
+    CodecMap.withDefault(TID::registerCodec);
     byte[] bytes = new byte[TID.BYTES * 2];
     TID TID0 = TID.from(bytes, 0);
 
