@@ -65,7 +65,7 @@
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use sbor::{TypeId, Encode, Decode};
+use sbor::{Decode, Encode, TypeId};
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
@@ -111,8 +111,14 @@ impl JavaStructure for MempoolErrorJava {}
 
 impl From<MempoolError> for MempoolErrorJava {
     fn from(err: MempoolError) -> Self {
-        return match err {
-            MempoolError::Full { current_size, max_size } => MempoolErrorJava::Full { current_size, max_size },
+        match err {
+            MempoolError::Full {
+                current_size,
+                max_size,
+            } => MempoolErrorJava::Full {
+                current_size,
+                max_size,
+            },
             MempoolError::Duplicate => MempoolErrorJava::Duplicate,
         }
     }
