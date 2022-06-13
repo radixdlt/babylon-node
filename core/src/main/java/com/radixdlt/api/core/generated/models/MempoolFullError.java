@@ -57,7 +57,7 @@ import com.radixdlt.api.common.JSON;
 
 public class MempoolFullError extends CoreErrorDetails {
   public static final String JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT = "mempool_transaction_count";
-  private Long mempoolTransactionCount = null;
+  private Long mempoolTransactionCount;
 
 
   public MempoolFullError mempoolTransactionCount(Long mempoolTransactionCount) {

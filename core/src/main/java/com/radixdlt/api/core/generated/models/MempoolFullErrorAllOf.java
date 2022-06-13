@@ -36,7 +36,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class MempoolFullErrorAllOf {
   public static final String JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT = "mempool_transaction_count";
-  private Long mempoolTransactionCount = null;
+  private Long mempoolTransactionCount;
 
 
   public MempoolFullErrorAllOf mempoolTransactionCount(Long mempoolTransactionCount) {
