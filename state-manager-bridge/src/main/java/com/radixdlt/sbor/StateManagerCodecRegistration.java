@@ -65,11 +65,15 @@
 package com.radixdlt.sbor;
 
 import com.radixdlt.exceptions.StateManagerRuntimeError;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.transactions.Transaction;
 
 public final class StateManagerCodecRegistration {
   public static void registerCodecs(CodecMap codecMap) {
+    Transaction.registerCodec(codecMap);
+    TID.registerCodec(codecMap);
     StateManagerRuntimeError.registerCodec(codecMap);
     MempoolError.registerCodec(codecMap);
   }

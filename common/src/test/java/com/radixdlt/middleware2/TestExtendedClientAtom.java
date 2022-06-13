@@ -69,7 +69,7 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
@@ -81,20 +81,20 @@ public class TestExtendedClientAtom extends TestClientAtom {
 
   @JsonCreator
   private TestExtendedClientAtom(
-      @JsonProperty("aid") AID aid,
+      @JsonProperty("aid") TID TID,
       @JsonProperty("metadata") String metaData,
       @JsonProperty("extra") String extra) {
-    super(aid, metaData);
+    super(TID, metaData);
     this.extra = requireNonNull(extra);
   }
 
   public TestExtendedClientAtom(String metaData) {
-    super(AID.from(HashUtils.random256().asBytes()), metaData);
+    super(TID.from(HashUtils.random256().asBytes()), metaData);
     this.extra = null;
   }
 
   public static TestExtendedClientAtom create(String metadata, String extra) {
-    var id = AID.from(HashUtils.random256().asBytes());
+    var id = TID.from(HashUtils.random256().asBytes());
     return new TestExtendedClientAtom(id, metadata, extra);
   }
 

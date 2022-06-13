@@ -75,7 +75,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -137,7 +137,7 @@ public final class REParser {
       return instructions.size();
     }
 
-    public AID txnId() {
+    public TID txnId() {
       return transaction.getId();
     }
 

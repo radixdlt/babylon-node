@@ -67,7 +67,7 @@ package com.radixdlt.transactions;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.codec.StructCodec;
@@ -78,10 +78,6 @@ import java.util.Objects;
  * and may be invalid.
  */
 public final class Transaction {
-  static {
-    CodecMap.withDefault(Transaction::registerCodec);
-  }
-
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         Transaction.class,
@@ -89,20 +85,20 @@ public final class Transaction {
             StructCodec.fromFields(
                 Transaction::new,
                 Field.of(Transaction::getPayload, codecs.of(byte[].class)),
-                Field.of(Transaction::getId, codecs.of(AID.class))));
+                Field.of(Transaction::getId, codecs.of(TID.class))));
   }
 
   private final byte[] payload;
-  private final AID id;
+  private final TID id;
 
-  private Transaction(byte[] payload, AID id) {
+  private Transaction(byte[] payload, TID id) {
     this.payload = Objects.requireNonNull(payload);
     this.id = Objects.requireNonNull(id);
   }
 
   private Transaction(byte[] payload) {
     this.payload = Objects.requireNonNull(payload);
-    this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
+    this.id = TID.from(HashUtils.transactionIdHash(payload).asBytes());
   }
 
   @JsonCreator
@@ -110,7 +106,7 @@ public final class Transaction {
     return new Transaction(payload);
   }
 
-  public AID getId() {
+  public TID getId() {
     return id;
   }
 

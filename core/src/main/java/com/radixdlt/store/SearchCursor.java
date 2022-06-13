@@ -64,7 +64,7 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.TID;
 
 /** A ledger cursor, bound to a specific ledger instance. */
 public interface SearchCursor {
@@ -75,7 +75,7 @@ public interface SearchCursor {
    *
    * @return The current AID
    */
-  AID get();
+  TID get();
 
   SearchCursor next();
 }

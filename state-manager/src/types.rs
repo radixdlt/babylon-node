@@ -65,16 +65,16 @@
 use crate::jni::dtos::*;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]
-pub struct TransactionId {
+pub struct TID {
     pub bytes: Vec<u8>,
 }
 
-impl JavaStructure for TransactionId {}
+impl JavaStructure for TID {}
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]
 pub struct Transaction {
     pub payload: Vec<u8>,
-    pub id: TransactionId,
+    pub id: TID,
 }
 
 impl JavaStructure for Transaction {}

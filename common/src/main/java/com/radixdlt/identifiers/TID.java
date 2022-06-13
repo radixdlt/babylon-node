@@ -77,29 +77,24 @@ import java.util.Comparator;
 import java.util.Objects;
 
 /**
- * An Atom ID, made up of 256 bits of a hash. The Atom ID is used so that Atoms can be located using
- * just their hid.
+ * A Transaction ID, made up of 256 bits of a hash.
  */
-public final class AID implements Comparable<AID> {
-  static {
-    CodecMap.withDefault(AID::registerCodec);
-  }
-
+public final class TID implements Comparable<TID> {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        AID.class,
+        TID.class,
         codecs ->
-            StructCodec.fromFields(AID::new, Field.of(AID::getBytes, codecs.of(byte[].class))));
+            StructCodec.fromFields(TID::new, Field.of(TID::getBytes, codecs.of(byte[].class))));
   }
 
   static final int HASH_BYTES = 32;
   public static final int BYTES = HASH_BYTES;
 
-  public static final AID ZERO = new AID(new byte[BYTES]);
+  public static final TID ZERO = new TID(new byte[BYTES]);
 
   private final byte[] value;
 
-  private AID(byte[] bytes) {
+  private TID(byte[] bytes) {
     assert (bytes != null && bytes.length == HASH_BYTES);
     this.value = bytes;
   }
@@ -136,13 +131,13 @@ public final class AID implements Comparable<AID> {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof AID)) {
+    if (!(o instanceof TID)) {
       return false;
     }
     if (hashCode() != o.hashCode()) {
       return false;
     }
-    return Arrays.equals(this.value, ((AID) o).value);
+    return Arrays.equals(this.value, ((TID) o).value);
   }
 
   @Override
@@ -164,7 +159,7 @@ public final class AID implements Comparable<AID> {
    * @param bytes The bytes (must be of length AID.BYTES)
    * @return An AID with those bytes
    */
-  public static AID from(byte[] bytes) {
+  public static TID from(byte[] bytes) {
     return from(bytes, 0);
   }
 
@@ -175,7 +170,7 @@ public final class AID implements Comparable<AID> {
    * @param offset The offset into the bytes array
    * @return An AID with those bytes
    */
-  public static AID from(byte[] bytes, int offset) {
+  public static TID from(byte[] bytes, int offset) {
     Objects.requireNonNull(bytes, "AID decoding error: input must not be null");
     if (offset < 0) {
       throw new IllegalArgumentException("AID decoding error: offset must be >= 0: " + offset);
@@ -185,7 +180,7 @@ public final class AID implements Comparable<AID> {
           String.format(
               "AID decoding error: length must be %d but is %d", offset + BYTES, bytes.length));
     }
-    return new AID(Arrays.copyOfRange(bytes, offset, offset + BYTES));
+    return new TID(Arrays.copyOfRange(bytes, offset, offset + BYTES));
   }
 
   /**
@@ -195,7 +190,7 @@ public final class AID implements Comparable<AID> {
    * @return An AID with those bytes
    */
   @JsonCreator
-  public static AID from(String hexBytes) {
+  public static TID from(String hexBytes) {
     Objects.requireNonNull(hexBytes, "hexBytes is required");
     if (hexBytes.length() != BYTES * 2) {
       throw new IllegalArgumentException(
@@ -203,23 +198,23 @@ public final class AID implements Comparable<AID> {
               "Hex bytes string length must be %d but is %d", BYTES * 2, hexBytes.length()));
     }
 
-    return new AID(Bytes.fromHexString(hexBytes));
+    return new TID(Bytes.fromHexString(hexBytes));
   }
 
   @Override
-  public int compareTo(AID o) {
+  public int compareTo(TID o) {
     return lexicalComparator().compare(this, o);
   }
 
   private static final class LexicalComparatorHolder {
     private static final Comparator<byte[]> BYTES_COMPARATOR =
         UnsignedBytes.lexicographicalComparator();
-    private static final Comparator<AID> INSTANCE =
+    private static final Comparator<TID> INSTANCE =
         (o1, o2) -> BYTES_COMPARATOR.compare(o1.value, o2.value);
   }
 
   /** Get a lexical comparator for this type. */
-  public static Comparator<AID> lexicalComparator() {
+  public static Comparator<TID> lexicalComparator() {
     return LexicalComparatorHolder.INSTANCE;
   }
 }

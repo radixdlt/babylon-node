@@ -62,25 +62,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.serialization;
+package com.radixdlt.identifiers;
 
-import com.radixdlt.identifiers.AID;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
-public class AIDSerializeTest extends SerializeMessageObject<AID> {
-  public AIDSerializeTest() {
-    super(AID.class, AIDSerializeTest::getAID);
+import com.radixdlt.sbor.TypedSbor;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
+
+public class TIDTest {
+  @Test
+  public void testIllegalConstruction() {
+    assertThatThrownBy(() -> TID.from((byte[]) null)).isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> TID.from((String) null)).isInstanceOf(NullPointerException.class);
+
+    assertThatThrownBy(() -> TID.from(new byte[7])).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> TID.from("deadbeef")).isInstanceOf(IllegalArgumentException.class);
   }
 
-  private static AID getAID() {
-    byte[] bytes = new byte[AID.BYTES];
-    for (int i = 0; i < bytes.length; i++) {
-      bytes[i] = (byte) i;
+  @Test
+  public void testCreateEquivalence() {
+    byte[] bytes1 = new byte[TID.BYTES];
+    for (int i = 0; i < TID.BYTES; i++) {
+      bytes1[i] = (byte) i;
     }
-    return AID.from(bytes);
+    byte[] bytes2 = new byte[TID.BYTES];
+    for (int i = 0; i < TID.BYTES; i++) {
+      bytes2[i] = (byte) (TID.BYTES - i);
+    }
+
+    TID TID1 = TID.from(bytes1);
+    assertArrayEquals(bytes1, TID1.getBytes());
+    byte[] bytes1Copy = new byte[TID.BYTES];
+    TID1.copyTo(bytes1Copy, 0);
+    assertArrayEquals(bytes1Copy, bytes1);
+
+    TID TID2 = TID.from(bytes2);
+    assertArrayEquals(bytes2, TID2.getBytes());
+
+    assertNotEquals(TID1, TID2);
   }
 
-  @Override
-  public void testNONEIsEmpty() {
-    // Not applicable to Atom IDs
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(TID.class).verify();
+  }
+
+  @Test
+  public void testArrayOffsetFactory() {
+    byte[] bytes = new byte[TID.BYTES * 2];
+    TID TID0 = TID.from(bytes, 0);
+    assertEquals(TID.ZERO, TID0);
+    TID TID1 = TID.from(bytes, TID.BYTES);
+    assertEquals(TID.ZERO, TID1);
+
+    assertThatThrownBy(() -> TID.from(bytes, -1)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> TID.from(bytes, TID.BYTES + 1))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void testSBORSerialization() {
+    byte[] bytes = new byte[TID.BYTES * 2];
+    TID TID0 = TID.from(bytes, 0);
+
+    var r0 = TypedSbor.encode(TID0, TID.class);
+    var aid1 = TypedSbor.decode(r0, TID.class);
+
+    assertEquals(TID0, aid1);
   }
 }

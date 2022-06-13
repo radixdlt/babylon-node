@@ -67,7 +67,7 @@ package com.radixdlt.middleware2;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -86,22 +86,22 @@ public class TestClientAtom implements TestLedgerAtom {
 
   @JsonProperty("aid")
   @DsonOutput({Output.ALL})
-  private final AID aid;
+  private final TID TID;
 
   @JsonCreator
   protected TestClientAtom(
-      @JsonProperty("aid") AID aid, @JsonProperty("metadata") String metaData) {
-    this.aid = aid;
+      @JsonProperty("aid") TID TID, @JsonProperty("metadata") String metaData) {
+    this.TID = TID;
     this.metaData = metaData == null ? "no metadata" : metaData;
   }
 
   public static TestClientAtom create(String metadata) {
-    var id = AID.from(HashUtils.random256().asBytes());
+    var id = TID.from(HashUtils.random256().asBytes());
     return new TestClientAtom(id, metadata);
   }
 
-  public AID aid() {
-    return aid;
+  public TID aid() {
+    return TID;
   }
 
   public String metaData() {
@@ -124,18 +124,18 @@ public class TestClientAtom implements TestLedgerAtom {
       return false;
     }
 
-    return aid.equals(that.aid);
+    return TID.equals(that.TID);
   }
 
   @Override
   public int hashCode() {
     int result = metaData.hashCode();
-    result = 31 * result + aid.hashCode();
+    result = 31 * result + TID.hashCode();
     return result;
   }
 
   @Override
   public String toString() {
-    return "ClientAtom(metaData: '" + metaData + "', aid: " + aid + ')';
+    return "ClientAtom(metaData: '" + metaData + "', aid: " + TID + ')';
   }
 }

@@ -129,15 +129,15 @@ mod tests {
 
         let tv1 = Transaction {
             payload: pl1.clone(),
-            id: TransactionId { bytes: pl1 },
+            id: TID { bytes: pl1 },
         };
         let tv2 = Transaction {
             payload: pl2.clone(),
-            id: TransactionId { bytes: pl2 },
+            id: TID { bytes: pl2 },
         };
         let tv3 = Transaction {
             payload: pl3.clone(),
-            id: TransactionId { bytes: pl3 },
+            id: TID { bytes: pl3 },
         };
 
         let mut mp = MockMempool::new(2);
