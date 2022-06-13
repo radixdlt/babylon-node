@@ -62,61 +62,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.capability;
+package com.radixdlt.network.p2p.transport.handshake;
 
-import com.radixdlt.network.Message;
-import com.radixdlt.network.messages.*;
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.network.capability.Capabilities;
+import com.radixdlt.network.capability.LedgerSyncCapability;
+import com.radixdlt.network.capability.RemotePeerCapability;
+import com.radixdlt.serialization.DsonOutput;
+import java.util.Optional;
 import java.util.Set;
 
-public class LedgerSyncCapability {
-  public static final String NAME = "ledger-sync";
-  // Currently, this is the only configuration available, more can be added as fields in this class.
-  private boolean isEnabled;
-  // the subset of messages which should be discarded if received by other peers when the Capability
-  // is disabled.
-  private final Set<Class<? extends Message>> unsupportedMessagesWhenDisabled;
+public abstract class BaseHandshakeMessage {
 
-  private LedgerSyncCapability(Builder builder) {
-    this.isEnabled = builder.isEnabled;
-    this.unsupportedMessagesWhenDisabled =
-        Set.of(
-            SyncRequestMessage.class, StatusRequestMessage.class, LedgerStatusUpdateMessage.class);
+  protected final Optional<String> newestForkName;
+
+  @JsonProperty("capabilities")
+  @DsonOutput(DsonOutput.Output.ALL)
+  @JsonInclude()
+  protected final Set<RemotePeerCapability> capabilities;
+
+  protected BaseHandshakeMessage(
+      String rawNewestForkName, Set<RemotePeerCapability> nullableCapabilities) {
+    this.newestForkName =
+        rawNewestForkName == null ? Optional.<String>empty() : Optional.of(rawNewestForkName);
+
+    this.capabilities =
+        nullableCapabilities == null
+            ? Set.of(LedgerSyncCapability.Builder.asDefault().build().toRemotePeerCapability())
+            : validateNumberOfCapabilitiesReceived(nullableCapabilities);
   }
 
-  public String getName() {
-    return NAME;
-  }
-
-  public boolean isEnabled() {
-    return isEnabled;
-  }
-
-  public Set<Class<? extends Message>> getUnsupportedMessagesWhenDisabled() {
-    return unsupportedMessagesWhenDisabled;
-  }
-
-  public boolean isMessageUnsupported(Class<? extends Message> messageClazz) {
-    return !this.isEnabled() && this.unsupportedMessagesWhenDisabled.contains(messageClazz);
-  }
-
-  public RemotePeerCapability toRemotePeerCapability() {
-    return new RemotePeerCapability(this.getName(), Map.of());
-  }
-
-  public static class Builder {
-    private final boolean isEnabled;
-
-    public static Builder asDefault() {
-      return new Builder(true);
+  private static Set<RemotePeerCapability> validateNumberOfCapabilitiesReceived(
+      Set<RemotePeerCapability> capabilities) {
+    if (capabilities.size() > Capabilities.MAX_NUMBER_OF_CAPABILITIES_ACCEPTED) {
+      throw new InvalidHandshakeMessageException(
+          String.format(
+              "Invalid handshake message. The remote peer sent us %s capabilities, but we accept at"
+                  + " most %s.",
+              capabilities.size(), Capabilities.MAX_NUMBER_OF_CAPABILITIES_ACCEPTED));
     }
-
-    public Builder(boolean isEnabled) {
-      this.isEnabled = isEnabled;
+    try {
+      capabilities.forEach(RemotePeerCapability::validate);
+    } catch (IllegalArgumentException e) {
+      throw new InvalidHandshakeMessageException("Invalid handshake message", e);
     }
+    return capabilities;
+  }
 
-    public LedgerSyncCapability build() {
-      return new LedgerSyncCapability(this);
-    }
+  public Optional<String> getNewestForkName() {
+    return newestForkName;
+  }
+
+  @JsonProperty("newestForkName")
+  @DsonOutput(DsonOutput.Output.ALL)
+  public String rawNewestForkName() {
+    return this.newestForkName.orElse(null);
+  }
+
+  public Set<RemotePeerCapability> getCapabilities() {
+    return capabilities;
   }
 }

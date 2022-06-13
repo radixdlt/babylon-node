@@ -68,15 +68,16 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.network.capability.RemotePeerCapability;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.Set;
 
 @SerializerId2("message.handshake.auth_initiate")
-public final class AuthInitiateMessage {
+public final class AuthInitiateMessage extends BaseHandshakeMessage {
 
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)
   @DsonOutput(DsonOutput.Output.ALL)
@@ -98,18 +99,16 @@ public final class AuthInitiateMessage {
   @DsonOutput(DsonOutput.Output.ALL)
   private final int networkId;
 
-  private final Optional<String> newestForkName;
-
   @JsonCreator
   public static AuthInitiateMessage deserialize(
       @JsonProperty(value = "signature", required = true) ECDSASignature signature,
       @JsonProperty(value = "publicKey", required = true) HashCode publicKey,
       @JsonProperty(value = "nonce", required = true) HashCode nonce,
       @JsonProperty("networkId") int networkId,
-      @JsonProperty("newestForkName") String rawNewestForkName) {
-    final var newestForkName =
-        rawNewestForkName == null ? Optional.<String>empty() : Optional.of(rawNewestForkName);
-    return new AuthInitiateMessage(signature, publicKey, nonce, networkId, newestForkName);
+      @JsonProperty("newestForkName") String rawNewestForkName,
+      @JsonProperty("capabilities") Set<RemotePeerCapability> nullableCapabilities) {
+    return new AuthInitiateMessage(
+        signature, publicKey, nonce, networkId, rawNewestForkName, nullableCapabilities);
   }
 
   public AuthInitiateMessage(
@@ -117,12 +116,13 @@ public final class AuthInitiateMessage {
       HashCode publicKey,
       HashCode nonce,
       int networkId,
-      Optional<String> newestForkName) {
+      String rawNewestForkName,
+      Set<RemotePeerCapability> nullableCapabilities) {
+    super(rawNewestForkName, nullableCapabilities);
     this.signature = signature;
     this.publicKey = publicKey;
     this.nonce = nonce;
     this.networkId = networkId;
-    this.newestForkName = newestForkName;
   }
 
   public ECDSASignature getSignature() {
@@ -141,16 +141,6 @@ public final class AuthInitiateMessage {
     return networkId;
   }
 
-  public Optional<String> getNewestForkName() {
-    return newestForkName;
-  }
-
-  @JsonProperty("newestForkName")
-  @DsonOutput(DsonOutput.Output.ALL)
-  public String rawNewestForkName() {
-    return this.newestForkName.orElse(null);
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -162,11 +152,12 @@ public final class AuthInitiateMessage {
         && Objects.equals(publicKey, that.publicKey)
         && Objects.equals(nonce, that.nonce)
         && networkId == that.networkId
-        && Objects.equals(newestForkName, that.newestForkName);
+        && Objects.equals(newestForkName, that.newestForkName)
+        && Objects.equals(capabilities, that.capabilities);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(signature, publicKey, nonce, networkId, newestForkName);
+    return Objects.hash(signature, publicKey, nonce, networkId, newestForkName, capabilities);
   }
 }

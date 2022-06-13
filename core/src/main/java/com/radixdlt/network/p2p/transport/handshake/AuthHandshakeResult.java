@@ -65,21 +65,31 @@
 package com.radixdlt.network.p2p.transport.handshake;
 
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.network.capability.RemotePeerCapability;
 import com.radixdlt.network.p2p.NodeId;
 import java.util.Optional;
+import java.util.Set;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public sealed interface AuthHandshakeResult {
   static AuthHandshakeSuccess success(
-      ECPublicKey remotePubKey, Secrets secrets, Optional<String> newestForkName) {
-    return new AuthHandshakeSuccess(NodeId.fromPublicKey(remotePubKey), secrets, newestForkName);
+      ECPublicKey remotePubKey,
+      Secrets secrets,
+      Optional<String> newestForkName,
+      Set<RemotePeerCapability> remotePeerCapabilities) {
+    return new AuthHandshakeSuccess(
+        NodeId.fromPublicKey(remotePubKey), secrets, newestForkName, remotePeerCapabilities);
   }
 
   static AuthHandshakeError error(String msg, Optional<NodeId> maybeNodeId) {
     return new AuthHandshakeError(msg, maybeNodeId);
   }
 
-  record AuthHandshakeSuccess(NodeId remoteNodeId, Secrets secrets, Optional<String> newestForkName)
+  record AuthHandshakeSuccess(
+      NodeId remoteNodeId,
+      Secrets secrets,
+      Optional<String> newestForkName,
+      Set<RemotePeerCapability> remotePeerCapabilities)
       implements AuthHandshakeResult {}
 
   record AuthHandshakeError(String msg, Optional<NodeId> maybeNodeId)

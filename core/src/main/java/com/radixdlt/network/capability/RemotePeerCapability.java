@@ -64,59 +64,93 @@
 
 package com.radixdlt.network.capability;
 
-import com.radixdlt.network.Message;
-import com.radixdlt.network.messages.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 
-public class LedgerSyncCapability {
-  public static final String NAME = "ledger-sync";
-  // Currently, this is the only configuration available, more can be added as fields in this class.
-  private boolean isEnabled;
-  // the subset of messages which should be discarded if received by other peers when the Capability
-  // is disabled.
-  private final Set<Class<? extends Message>> unsupportedMessagesWhenDisabled;
+@SerializerId2("message.handshake.auth_initiate.capability")
+public class RemotePeerCapability {
 
-  private LedgerSyncCapability(Builder builder) {
-    this.isEnabled = builder.isEnabled;
-    this.unsupportedMessagesWhenDisabled =
-        Set.of(
-            SyncRequestMessage.class, StatusRequestMessage.class, LedgerStatusUpdateMessage.class);
+  public static final int CONFIGURATION_MAP_MAX_SIZE = 5;
+  public static final int CONFIGURATION_MAX_NAME_SIZE = 32;
+  public static final int CONFIGURATION_MAX_VALUE_SIZE = 32;
+
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(DsonOutput.Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+  @JsonProperty("name")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final String name;
+
+  @JsonProperty("configuration")
+  @DsonOutput(DsonOutput.Output.ALL)
+  @JsonInclude()
+  private final Map<String, String> configuration;
+
+  /**
+   * Represents a Capability supported by a remote peer. The rationale behind using String and Map
+   * is to be able to support capabilities not yet known by a node.
+   *
+   * @param name a Capability name
+   * @param configuration a map representing the name and value of each Capability configuration.
+   */
+  @JsonCreator
+  public RemotePeerCapability(
+      @JsonProperty("name") String name,
+      @JsonProperty("configuration") Map<String, String> configuration) {
+    this.name = name;
+    this.configuration = configuration;
   }
 
   public String getName() {
-    return NAME;
+    return name;
   }
 
-  public boolean isEnabled() {
-    return isEnabled;
+  public Map<String, String> getConfiguration() {
+    return configuration;
   }
 
-  public Set<Class<? extends Message>> getUnsupportedMessagesWhenDisabled() {
-    return unsupportedMessagesWhenDisabled;
-  }
-
-  public boolean isMessageUnsupported(Class<? extends Message> messageClazz) {
-    return !this.isEnabled() && this.unsupportedMessagesWhenDisabled.contains(messageClazz);
-  }
-
-  public RemotePeerCapability toRemotePeerCapability() {
-    return new RemotePeerCapability(this.getName(), Map.of());
-  }
-
-  public static class Builder {
-    private final boolean isEnabled;
-
-    public static Builder asDefault() {
-      return new Builder(true);
+  public void validate() {
+    if (this.configuration.size() > CONFIGURATION_MAP_MAX_SIZE) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Configuration map cannot have more than %s entries.", CONFIGURATION_MAP_MAX_SIZE));
     }
+    this.configuration.forEach(
+        (configName, configValue) -> {
+          if (configName.length() > CONFIGURATION_MAX_NAME_SIZE) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "Configuration %s cannot have name length bigger than %s.",
+                    configName, CONFIGURATION_MAX_NAME_SIZE));
+          }
+          if (configValue.length() > CONFIGURATION_MAX_VALUE_SIZE) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "Configuration %s cannot have value %s length bigger than %s.",
+                    configName, configValue, CONFIGURATION_MAX_VALUE_SIZE));
+          }
+        });
+  }
 
-    public Builder(boolean isEnabled) {
-      this.isEnabled = isEnabled;
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    RemotePeerCapability that = (RemotePeerCapability) o;
+    return Objects.equals(getName(), that.getName())
+        && Objects.equals(getConfiguration(), that.getConfiguration());
+  }
 
-    public LedgerSyncCapability build() {
-      return new LedgerSyncCapability(this);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(getName(), getConfiguration());
   }
 }

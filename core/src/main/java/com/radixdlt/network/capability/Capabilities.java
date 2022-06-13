@@ -65,6 +65,7 @@
 package com.radixdlt.network.capability;
 
 import com.radixdlt.network.Message;
+import java.util.Set;
 
 public record Capabilities(LedgerSyncCapability ledgerSyncCapability) {
 
@@ -90,5 +91,11 @@ public record Capabilities(LedgerSyncCapability ledgerSyncCapability) {
    */
   public boolean isMessageUnsupported(Class<? extends Message> messageClazz) {
     return ledgerSyncCapability.isMessageUnsupported(messageClazz);
+  }
+
+  public Set<RemotePeerCapability> toRemotePeerCapabilities() {
+    return isLedgerSyncEnabled()
+        ? Set.of(this.ledgerSyncCapability.toRemotePeerCapability())
+        : Set.of();
   }
 }

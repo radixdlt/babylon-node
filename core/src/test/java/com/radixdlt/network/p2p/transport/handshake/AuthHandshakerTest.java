@@ -69,28 +69,51 @@ import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.network.capability.Capabilities;
+import com.radixdlt.network.capability.LedgerSyncCapability;
+import com.radixdlt.network.capability.RemotePeerCapability;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeError;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import io.netty.buffer.Unpooled;
 import java.security.SecureRandom;
+import java.util.Map;
+import java.util.Set;
+import org.junit.Assert;
 import org.junit.Test;
 
 public final class AuthHandshakerTest {
   private final Serialization serialization = DefaultSerialization.getInstance();
   private final SecureRandom secureRandom = new SecureRandom();
 
+  private final Capabilities capabilities =
+      new Capabilities(LedgerSyncCapability.Builder.asDefault().build());
+
   @Test
   public void test_auth_handshake() throws Exception {
     final var nodeKey1 = ECKeyPair.generateNew();
     final var nodeKey2 = ECKeyPair.generateNew();
+
+    Capabilities peer1Capabilities =
+        new Capabilities(new LedgerSyncCapability.Builder(true).build());
+
     final var handshaker1 =
         new AuthHandshaker(
-            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, "fork1");
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey1),
+            (byte) 0x01,
+            "fork1",
+            peer1Capabilities);
     final var handshaker2 =
         new AuthHandshaker(
-            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01, "fork1");
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey2),
+            (byte) 0x01,
+            "fork1",
+            capabilities);
 
     final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
     final var handshaker2ResultPair =
@@ -104,18 +127,74 @@ public final class AuthHandshakerTest {
     assertArrayEquals(handshaker1Result.secrets().aes, handshaker2Result.secrets().aes);
     assertArrayEquals(handshaker1Result.secrets().mac, handshaker2Result.secrets().mac);
     assertArrayEquals(handshaker1Result.secrets().token, handshaker2Result.secrets().token);
+
+    Assert.assertEquals(
+        Set.of(new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of())),
+        handshaker2Result.remotePeerCapabilities());
+  }
+
+  @Test
+  public void test_auth_handshake_when_ledger_sync_is_disabled() throws Exception {
+    final var nodeKey1 = ECKeyPair.generateNew();
+    final var nodeKey2 = ECKeyPair.generateNew();
+
+    Capabilities peer1Capabilities =
+        new Capabilities(new LedgerSyncCapability.Builder(false).build());
+
+    final var handshaker1 =
+        new AuthHandshaker(
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey1),
+            (byte) 0x01,
+            "fork1",
+            peer1Capabilities);
+    final var handshaker2 =
+        new AuthHandshaker(
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey2),
+            (byte) 0x01,
+            "fork1",
+            capabilities);
+
+    final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
+    final var handshaker2ResultPair =
+        handshaker2.handleInitialMessage(Unpooled.wrappedBuffer(initMessage));
+    final var handshaker2Result = (AuthHandshakeSuccess) handshaker2ResultPair.getSecond();
+    final var responseMessage = handshaker2ResultPair.getFirst();
+    final var handshaker1Result =
+        (AuthHandshakeSuccess)
+            handshaker1.handleResponseMessage(Unpooled.wrappedBuffer(responseMessage));
+
+    assertArrayEquals(handshaker1Result.secrets().aes, handshaker2Result.secrets().aes);
+    assertArrayEquals(handshaker1Result.secrets().mac, handshaker2Result.secrets().mac);
+    assertArrayEquals(handshaker1Result.secrets().token, handshaker2Result.secrets().token);
+
+    Assert.assertEquals(Set.of(), handshaker2Result.remotePeerCapabilities());
   }
 
   @Test
   public void test_auth_handshake_fail_on_network_id_mismatch() {
     final var nodeKey1 = ECKeyPair.generateNew();
     final var nodeKey2 = ECKeyPair.generateNew();
+
     final var handshaker1 =
         new AuthHandshaker(
-            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, "fork1");
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey1),
+            (byte) 0x01,
+            "fork1",
+            capabilities);
     final var handshaker2 =
         new AuthHandshaker(
-            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x02, "fork1");
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey2),
+            (byte) 0x02,
+            "fork1",
+            capabilities);
 
     final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
     final var handshaker2ResultPair =

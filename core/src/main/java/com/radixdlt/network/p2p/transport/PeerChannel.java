@@ -74,6 +74,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.network.capability.Capabilities;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.P2PConfig;
@@ -155,7 +156,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       EventDispatcher<PeerEvent> peerEventDispatcher,
       Optional<RadixNodeUri> uri,
       SocketChannel nettyChannel,
-      Optional<InetSocketAddress> remoteAddress) {
+      Optional<InetSocketAddress> remoteAddress,
+      Capabilities capabilities) {
     this.counters = requireNonNull(counters);
     this.addressing = requireNonNull(addressing);
     this.peerEventDispatcher = requireNonNull(peerEventDispatcher);
@@ -164,7 +166,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     uri.map(RadixNodeUri::getNodeId).ifPresent(nodeId -> this.remoteNodeId = nodeId);
 
     this.authHandshaker =
-        new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId, newestForkName);
+        new AuthHandshaker(
+            serialization, secureRandom, ecKeyOps, networkId, newestForkName, capabilities);
     this.nettyChannel = requireNonNull(nettyChannel);
     this.remoteAddress = requireNonNull(remoteAddress);
 

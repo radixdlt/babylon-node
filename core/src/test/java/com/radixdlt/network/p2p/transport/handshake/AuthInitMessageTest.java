@@ -62,61 +62,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.capability;
+package com.radixdlt.network.p2p.transport.handshake;
 
-import com.radixdlt.network.Message;
-import com.radixdlt.network.messages.*;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.network.capability.LedgerSyncCapability;
+import com.radixdlt.network.capability.RemotePeerCapability;
+import com.radixdlt.networks.Network;
 import java.util.Map;
 import java.util.Set;
+import org.junit.Assert;
+import org.junit.Test;
 
-public class LedgerSyncCapability {
-  public static final String NAME = "ledger-sync";
-  // Currently, this is the only configuration available, more can be added as fields in this class.
-  private boolean isEnabled;
-  // the subset of messages which should be discarded if received by other peers when the Capability
-  // is disabled.
-  private final Set<Class<? extends Message>> unsupportedMessagesWhenDisabled;
+public class AuthInitMessageTest {
 
-  private LedgerSyncCapability(Builder builder) {
-    this.isEnabled = builder.isEnabled;
-    this.unsupportedMessagesWhenDisabled =
-        Set.of(
-            SyncRequestMessage.class, StatusRequestMessage.class, LedgerStatusUpdateMessage.class);
-  }
+  @Test
+  public void
+      when_remote_peer_capabilities_is_null_then_it_is_equivalent_to_the_ledger_sync_capability() {
+    AuthInitiateMessage initiateMessage =
+        new AuthInitiateMessage(
+            ECDSASignature.zeroSignature(),
+            HashUtils.random256(),
+            HashUtils.random256(),
+            Network.LOCALNET.getId(),
+            "fork",
+            null);
 
-  public String getName() {
-    return NAME;
-  }
-
-  public boolean isEnabled() {
-    return isEnabled;
-  }
-
-  public Set<Class<? extends Message>> getUnsupportedMessagesWhenDisabled() {
-    return unsupportedMessagesWhenDisabled;
-  }
-
-  public boolean isMessageUnsupported(Class<? extends Message> messageClazz) {
-    return !this.isEnabled() && this.unsupportedMessagesWhenDisabled.contains(messageClazz);
-  }
-
-  public RemotePeerCapability toRemotePeerCapability() {
-    return new RemotePeerCapability(this.getName(), Map.of());
-  }
-
-  public static class Builder {
-    private final boolean isEnabled;
-
-    public static Builder asDefault() {
-      return new Builder(true);
-    }
-
-    public Builder(boolean isEnabled) {
-      this.isEnabled = isEnabled;
-    }
-
-    public LedgerSyncCapability build() {
-      return new LedgerSyncCapability(this);
-    }
+    Assert.assertEquals(
+        Set.of(new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of())),
+        initiateMessage.capabilities);
   }
 }
