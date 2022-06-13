@@ -36,8 +36,8 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}-deb
+          restore-keys: ${{ runner.os }}-gradle-deb
       - name: Create deb package
         run: |
           ./gradlew deb4docker
