@@ -75,8 +75,8 @@ import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.constants.TypeId;
-import com.radixdlt.sbor.dto.SimpleEnum.SimpleSealedEnum;
 import com.radixdlt.sbor.dto.SimpleRecord;
+import com.radixdlt.testclasses.SimpleEnum;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -84,7 +84,7 @@ public class TypedSborTest {
   @BeforeClass
   public static void preparation() {
     CodecMap.withDefault(SimpleRecord::registerCodec);
-    CodecMap.withDefault(SimpleSealedEnum::registerCodec);
+    CodecMap.withDefault(SimpleEnum::registerCodec);
   }
 
   @Test
@@ -437,14 +437,14 @@ public class TypedSborTest {
 
   @Test
   public void enumCanBeEncodedAndDecoded() {
-    var enumOne = new SimpleSealedEnum.A(4, "C");
-    var enumTwo = new SimpleSealedEnum.B(Either.left(5L));
+    var enumOne = new SimpleEnum.A(4, "C");
+    var enumTwo = new SimpleEnum.B(Either.left(5L));
 
     // PART 1 - We use codec variant 1 (EnumEntry.with)
-    var coderUsingWith = TypedSbor.with(SimpleSealedEnum::registerCodecUsingWith);
+    var coderUsingWith = TypedSbor.with(SimpleEnum::registerCodecUsingWith);
 
     // Enum one
-    var encodedEnumOne = coderUsingWith.encode(enumOne, SimpleSealedEnum.class);
+    var encodedEnumOne = coderUsingWith.encode(enumOne, SimpleEnum.class);
     assertArrayEquals(
         new byte[] {
           17, // Enum Type
@@ -458,11 +458,11 @@ public class TypedSborTest {
           67, // "C"
         },
         encodedEnumOne);
-    var decodedEnumOne = coderUsingWith.decode(encodedEnumOne, SimpleSealedEnum.class);
+    var decodedEnumOne = coderUsingWith.decode(encodedEnumOne, SimpleEnum.class);
     assertEquals(enumOne, decodedEnumOne);
 
     // Enum two
-    var encodedEnumTwo = coderUsingWith.encode(enumTwo, SimpleSealedEnum.class);
+    var encodedEnumTwo = coderUsingWith.encode(enumTwo, SimpleEnum.class);
     assertArrayEquals(
         new byte[] {
           17, // Enum Type
@@ -488,22 +488,22 @@ public class TypedSborTest {
           0 // Field 1 - long value
         },
         encodedEnumTwo);
-    var decodedEnumTwo = coderUsingWith.decode(encodedEnumTwo, SimpleSealedEnum.class);
+    var decodedEnumTwo = coderUsingWith.decode(encodedEnumTwo, SimpleEnum.class);
     assertEquals(enumTwo, decodedEnumTwo);
 
     // PART 2 - We use codec variant 2 (EnumEntry.fromEntries)
-    var coderUsingFromEntries = TypedSbor.with(SimpleSealedEnum::registerCodecUsingFromEntries);
+    var coderUsingFromEntries = TypedSbor.with(SimpleEnum::registerCodecUsingFromEntries);
 
     // Check Enum 1
-    var encodedEnumOneV2 = coderUsingFromEntries.encode(enumOne, SimpleSealedEnum.class);
+    var encodedEnumOneV2 = coderUsingFromEntries.encode(enumOne, SimpleEnum.class);
     assertArrayEquals(encodedEnumOne, encodedEnumOneV2);
-    var decodedEnumOneV2 = coderUsingFromEntries.decode(encodedEnumOne, SimpleSealedEnum.class);
+    var decodedEnumOneV2 = coderUsingFromEntries.decode(encodedEnumOne, SimpleEnum.class);
     assertEquals(decodedEnumOneV2, decodedEnumOne);
 
     // Check Enum 2
-    var encodedEnumTwoV2 = coderUsingFromEntries.encode(enumTwo, SimpleSealedEnum.class);
+    var encodedEnumTwoV2 = coderUsingFromEntries.encode(enumTwo, SimpleEnum.class);
     assertArrayEquals(encodedEnumTwo, encodedEnumTwoV2);
-    var decodedEnumTwoV2 = coderUsingFromEntries.decode(encodedEnumTwo, SimpleSealedEnum.class);
+    var decodedEnumTwoV2 = coderUsingFromEntries.decode(encodedEnumTwo, SimpleEnum.class);
     assertEquals(decodedEnumTwoV2, decodedEnumTwo);
   }
 }
