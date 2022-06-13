@@ -24,6 +24,19 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            eu.gcr.io/dev-container-repo/babylone-node
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -38,8 +51,19 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}-deb
           restore-keys: ${{ runner.os }}-gradle-deb
+      - name: Login to GCR
+        uses: docker/login-action@v1
+        with:
+          registry: eu.gcr.io
+          username: _json_key
+          password: ${{ secrets.GCR_EU_DEV_JSON_KEY }}
       - name: Create deb package
-        run: |
-          ./gradlew deb4docker
-          ls -lh docker
-          ls -lh .
+        run: ./gradlew deb4docker
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          file: ./docker/Dockerfile.core
+          context: docker
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
