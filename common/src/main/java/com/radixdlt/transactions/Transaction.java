@@ -69,7 +69,6 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.codec.StructCodec;
 import java.util.Objects;
 
@@ -82,10 +81,11 @@ public final class Transaction {
     codecMap.register(
         Transaction.class,
         codecs ->
-            StructCodec.fromFields(
+            StructCodec.with(
                 Transaction::new,
-                Field.of(Transaction::getPayload, codecs.of(byte[].class)),
-                Field.of(Transaction::getId, codecs.of(TID.class))));
+                codecs.of(byte[].class),
+                codecs.of(TID.class),
+                (t, encoder) -> encoder.encode(t.payload, t.id)));
   }
 
   private final byte[] payload;

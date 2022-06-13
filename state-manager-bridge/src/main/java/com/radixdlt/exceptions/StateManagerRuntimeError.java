@@ -65,7 +65,6 @@
 package com.radixdlt.exceptions;
 
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.codec.StructCodec;
 import java.util.HashMap;
 import java.util.Map;
@@ -76,10 +75,11 @@ public class StateManagerRuntimeError {
     codecMap.register(
         StateManagerRuntimeError.class,
         codecs ->
-            StructCodec.fromFields(
+            StructCodec.with(
                 StateManagerRuntimeError::new,
-                Field.of(StateManagerRuntimeError::getRawErrorCode, codecs.of(short.class)),
-                Field.of(StateManagerRuntimeError::message, codecs.of(String.class))));
+                codecs.of(short.class),
+                codecs.of(String.class),
+                (e, encoder) -> encoder.encode(e.errorCode, e.message)));
   }
 
   public enum ErrorCode {

@@ -69,7 +69,6 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
@@ -82,7 +81,8 @@ public final class TID implements Comparable<TID> {
     codecMap.register(
         TID.class,
         codecs ->
-            StructCodec.fromFields(TID::new, Field.of(TID::getBytes, codecs.of(byte[].class))));
+            StructCodec.with(
+                TID::new, codecs.of(byte[].class), (t, encoder) -> encoder.encode(t.value)));
   }
 
   static final int HASH_BYTES = 32;
