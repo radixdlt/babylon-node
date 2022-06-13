@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.exceptions;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.Field;
@@ -84,7 +84,8 @@ public class StateManagerRuntimeError {
 
   public enum ErrorCode {
     JNI_ERROR(0),
-    SBOR_ERROR(1);
+    SBOR_ERROR(1),
+    INTERFACE_CASTS_ERROR(2);
 
     private final short codeNum;
 

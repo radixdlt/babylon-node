@@ -63,8 +63,8 @@
  */
 
 pub use crate::result::ToStateManagerError;
-
 use crate::types::Transaction;
+
 use std::collections::HashSet;
 use std::string::ToString;
 

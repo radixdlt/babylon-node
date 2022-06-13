@@ -62,75 +62,68 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::JavaStructure;
-use sbor::{Decode, Encode, TypeId};
+use crate::result::{StateManagerError, StateManagerResult, ERRCODE_SBOR};
+use sbor::{decode_with_type, encode_with_type};
 
-// System Errors.
-pub const ERRCODE_JNI: i16 = 0;
-pub const ERRCODE_SBOR: i16 = 1;
-pub const ERRCODE_INTERFACE_CASTS: i16 = 2;
+pub use sbor::{Decode, Encode, TypeId};
 
-#[derive(TypeId, Encode, Decode, Debug)]
-pub struct StateManagerError {
-    error_code: i16,
-    error_msg: String,
-}
-
-impl StateManagerError {
-    pub fn create(error_code: i16, error_msg: String) -> StateManagerError {
-        StateManagerError {
-            error_code,
-            error_msg,
-        }
+/**
+ * This is a tagging interface.
+ *
+ * We explicitly tag structures as "JavaStructure" if they are on the interface with Java.
+ * In general, some structs - such as eg "Transaction" are okay to be shared with Java.
+ * But errors should be explicitly mapped to a corresponding Java error, for unmapping on the Java side.
+ */
+pub trait JavaStructure: Encode + Decode {
+    fn from_java(data: &[u8]) -> StateManagerResult<Self> {
+        decode_with_type(data).map_err(|e| {
+            StateManagerError::create(ERRCODE_SBOR, format!("SBOR Decode Failed: {:?}", e))
+        })
     }
 
-    pub fn create_result<T>(error_code: i16, error_msg: String) -> StateManagerResult<T> {
-        StateManagerResult::Err(StateManagerError::create(error_code, error_msg))
+    fn to_java(&self) -> Vec<u8> {
+        encode_with_type(self)
     }
 }
 
-impl JavaStructure for StateManagerError {}
+// Tag general structures
+impl JavaStructure for () {}
 
-pub trait ToStateManagerError {
-    fn to_state_manager_error(&self) -> StateManagerError;
-}
+impl<T: JavaStructure, E: JavaStructure> JavaStructure for Result<T, E> {}
 
-pub type StateManagerResult<T> = Result<T, StateManagerError>;
+impl<T: JavaStructure> JavaStructure for Option<T> {}
 
-pub trait ResultStateManagerMaps<T, E> {
-    fn map_sm<S, O>(self, op: O) -> StateManagerResult<Result<S, E>>
-    where
-        O: FnOnce(T) -> StateManagerResult<S>;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sbor::{Decode, Encode, TypeId};
 
-    fn map_err_sm<F, O>(self, op: O) -> StateManagerResult<Result<T, F>>
-    where
-        O: FnOnce(E) -> StateManagerResult<F>;
-}
-
-impl<T, E> ResultStateManagerMaps<T, E> for Result<T, E> {
-    fn map_sm<S, O>(self, op: O) -> StateManagerResult<Result<S, E>>
-    where
-        O: FnOnce(T) -> StateManagerResult<S>,
-    {
-        match self {
-            Ok(value) => match op(value) {
-                Ok(mapped_value) => Ok(Ok(mapped_value)),
-                Err(sys_error) => Err(sys_error),
-            },
-            Err(err) => Ok(Err(err)),
-        }
+    #[derive(Debug, TypeId, Encode, Decode, PartialEq)]
+    pub struct TypeA {
+        bytes_a: Vec<u8>,
     }
 
-    fn map_err_sm<F, O>(self, op: O) -> StateManagerResult<Result<T, F>>
-    where
-        O: FnOnce(E) -> StateManagerResult<F>,
-    {
-        match self {
-            Ok(t) => Ok(Ok(t)),
-            Err(err) => match op(err) {
-                Ok(mapped_error) => Ok(Err(mapped_error)),
-                Err(sys_error) => Err(sys_error),
-            },
-        }
+    #[derive(Debug, TypeId, Encode, Decode, PartialEq)]
+    pub struct TypeB {
+        bytes_b: Vec<u8>,
+        a: TypeA,
+    }
+
+    impl JavaStructure for TypeB {}
+
+    #[test]
+    fn local_sbor_test_transaction() {
+        let a0 = TypeA {
+            bytes_a: vec![1u8; 32],
+        };
+        let b0 = TypeB {
+            bytes_b: vec![2u8; 64],
+            a: a0,
+        };
+        let sbor0 = b0.to_java();
+        let r = TypeB::from_java(&sbor0);
+        assert!(r.is_ok());
+        let b1 = r.unwrap();
+        assert_eq!(b0, b1);
     }
 }

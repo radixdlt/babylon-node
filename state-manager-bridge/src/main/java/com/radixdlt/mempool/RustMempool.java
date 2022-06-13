@@ -65,12 +65,12 @@
 package com.radixdlt.mempool;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.TypedSbor;
 import com.radixdlt.statemanager.StateManager.RustState;
 import com.radixdlt.statemanager.StateManagerResponse;
-import com.radixdlt.statemanager.StateManagerRuntimeError;
 import com.radixdlt.transactions.Transaction;
 import java.util.Objects;
 

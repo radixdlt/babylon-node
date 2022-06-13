@@ -65,6 +65,7 @@
 package com.radixdlt.statemanager;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.exceptions.StateManagerRuntimeException;
 import com.radixdlt.lang.Result;
 import com.radixdlt.sbor.TypedSbor;

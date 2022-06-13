@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::jni::dtos::JavaStructure;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -70,8 +71,10 @@ use sbor::{Decode, Encode, TypeId};
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
 use crate::mempool::*;
-use crate::result::StateManagerResult;
-use crate::types::{JavaStructure, Transaction};
+use crate::result::{
+    ResultStateManagerMaps, StateManagerError, StateManagerResult, ERRCODE_INTERFACE_CASTS,
+};
+use crate::types::Transaction;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
@@ -98,28 +101,40 @@ fn do_add(
 
     let result = state_manager.mempool.lock().unwrap().add(transaction);
 
-    Ok(result.map_err(|err| err.into()))
+    let mapped_result = result.map_err_sm(|err| err.into())?;
+
+    Ok(mapped_result)
 }
 
 #[derive(Debug, PartialEq, TypeId, Encode, Decode)]
 enum MempoolErrorJava {
-    Full { current_size: u64, max_size: u64 },
+    Full { current_size: i64, max_size: i64 },
     Duplicate,
 }
 
 impl JavaStructure for MempoolErrorJava {}
 
-impl From<MempoolError> for MempoolErrorJava {
+impl From<MempoolError> for StateManagerResult<MempoolErrorJava> {
     fn from(err: MempoolError) -> Self {
         match err {
             MempoolError::Full {
                 current_size,
                 max_size,
-            } => MempoolErrorJava::Full {
-                current_size,
-                max_size,
-            },
-            MempoolError::Duplicate => MempoolErrorJava::Duplicate,
+            } => Ok(MempoolErrorJava::Full {
+                current_size: current_size.try_into().or_else(|_| {
+                    StateManagerError::create_result(
+                        ERRCODE_INTERFACE_CASTS,
+                        "Failed to cast current_size".to_string(),
+                    )
+                })?,
+                max_size: max_size.try_into().or_else(|_| {
+                    StateManagerError::create_result(
+                        ERRCODE_INTERFACE_CASTS,
+                        "Failed to cast max_size".to_string(),
+                    )
+                })?,
+            }),
+            MempoolError::Duplicate => Ok(MempoolErrorJava::Duplicate),
         }
     }
 }

@@ -64,8 +64,6 @@
 
 package com.radixdlt.exceptions;
 
-import com.radixdlt.statemanager.StateManagerRuntimeError;
-
 public class StateManagerRuntimeException extends RuntimeException {
   private final StateManagerRuntimeError error;
 

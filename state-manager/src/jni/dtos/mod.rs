@@ -62,4 +62,6 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+mod java_structure;
+
+pub(crate) use java_structure::*;
