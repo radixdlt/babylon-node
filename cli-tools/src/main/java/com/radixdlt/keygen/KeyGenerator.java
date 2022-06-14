@@ -191,7 +191,7 @@ public class KeyGenerator {
   }
 
   private Result<String, Cause> parseKeypair(CommandLine commandLine) {
-    return requiredString(commandLine, "n").orElse(Result.ok(DEFAULT_KEYPAIR_NAME));
+    return requiredString(commandLine, "n").orReplaceWith(Result.ok(DEFAULT_KEYPAIR_NAME));
   }
 
   private Result<String, Cause> requiredString(CommandLine commandLine, String opt) {
