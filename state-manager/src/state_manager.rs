@@ -70,7 +70,6 @@ use std::sync::Mutex;
 
 #[derive(Clone, Debug)]
 pub struct StateManager<M: Mempool> {
-    pub public_key: Vec<u8>,
     pub mempool: Arc<Mutex<M>>,
     pub transaction_store: Arc<Mutex<TransactionStore>>,
 }
@@ -78,14 +77,13 @@ pub struct StateManager<M: Mempool> {
 impl<M: Mempool> StateManager<M> {
     pub fn new(mempool: M, transaction_store: TransactionStore) -> StateManager<M> {
         StateManager {
-            public_key: Vec::new(),
             mempool: Arc::new(Mutex::new(mempool)),
             transaction_store: Arc::new(Mutex::new(transaction_store)),
         }
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct StateManagerConfig {
     pub mempool_config: Option<MempoolConfig>,
 }

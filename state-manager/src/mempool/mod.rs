@@ -94,7 +94,7 @@ pub trait Mempool {
     fn get_txns(&self, count: u64, seen: &HashSet<Transaction>) -> HashSet<Transaction>;
 }
 
-#[derive(Debug, TypeId, Encode, Decode, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct MempoolConfig {
     pub max_size: i32,
 }
