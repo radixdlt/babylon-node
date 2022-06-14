@@ -65,6 +65,7 @@
 use crate::jni::dtos::*;
 use crate::jni::utils::*;
 use crate::mempool::mock::MockMempool;
+use crate::mempool::MempoolConfig;
 use crate::state_manager::{StateManager, StateManagerConfig};
 use crate::transaction_store::TransactionStore;
 use jni::objects::{JClass, JObject};
@@ -103,7 +104,16 @@ impl JNIStateManager {
         let config = StateManagerConfig::from_java(&config_bytes).unwrap();
 
         // Build the basic subcomponents.
-        let mempool_config = config.mempool_config.unwrap();
+        let mempool_config = match config.mempool_config {
+            Some(mempool_config) => mempool_config,
+            None =>
+            // in general, missing mempool config should mean that mempool isn't needed
+            // but for now just using a default
+            {
+                MempoolConfig { max_size: 10 }
+            }
+        };
+
         let mempool = MockMempool::new(mempool_config);
         let transaction_store = TransactionStore::new();
 

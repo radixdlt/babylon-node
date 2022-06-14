@@ -73,10 +73,13 @@ import com.radixdlt.sbor.codec.StructCodec;
 
 public record StateManagerConfig(Option<RustMempoolConfig> mempoolConfigOpt) {
   static {
+    // this should be in RustMempoolConfig, but codecs must be registered in a specific order
+    CodecMap.withDefault(RustMempoolConfig::registerCodec);
+
     CodecMap.withDefault(StateManagerConfig::registerCodec);
   }
 
-  public static void registerCodec(CodecMap codecMap) {
+  private static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateManagerConfig.class,
         codecs ->

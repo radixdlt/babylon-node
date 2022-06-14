@@ -69,11 +69,6 @@ import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.codec.StructCodec;
 
 public record RustMempoolConfig(int maxSize) {
-
-  static {
-    CodecMap.withDefault(RustMempoolConfig::registerCodec);
-  }
-
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         RustMempoolConfig.class,
