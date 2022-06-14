@@ -29,7 +29,7 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            eu.gcr.io/dev-container-repo/babylone-node
+            eu.gcr.io/dev-container-repo/babylon-node
           tags: |
             type=ref,event=branch
             type=ref,event=pr
