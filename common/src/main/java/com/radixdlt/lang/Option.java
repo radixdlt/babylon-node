@@ -80,6 +80,7 @@ import java.util.stream.Stream;
  *
  * @param <T> Type of contained value
  */
+@SuppressWarnings("unused")
 public sealed interface Option<T> permits Some, None {
   /**
    * Convert instance into other instance of different type using provided mapping function.
@@ -88,8 +89,8 @@ public sealed interface Option<T> permits Some, None {
    * @param <U> Type of new value
    * @return transformed instance
    */
-  default <U> Option<U> map(FN1<U, ? super T> mapper) {
-    return fold(Option::empty, t -> present(mapper.apply(t)));
+  default <U> Option<U> map(Func1<? super T, U> mapper) {
+    return fold(t -> present(mapper.apply(t)), Option::empty);
   }
 
   /**
@@ -100,7 +101,7 @@ public sealed interface Option<T> permits Some, None {
    *     instance is preseent.
    */
   default <U> Option<U> map(Supplier<U> supplier) {
-    return fold(Option::empty, t -> present(supplier.get()));
+    return fold(t -> present(supplier.get()), Option::empty);
   }
 
   /**
@@ -112,8 +113,8 @@ public sealed interface Option<T> permits Some, None {
    * @param <U> New type
    * @return Instance of new type
    */
-  default <U> Option<U> flatMap(FN1<Option<U>, ? super T> mapper) {
-    return fold(Option::empty, mapper);
+  default <U> Option<U> flatMap(Func1<? super T, Option<U>> mapper) {
+    return fold(mapper, Option::empty);
   }
 
   /**
@@ -124,7 +125,7 @@ public sealed interface Option<T> permits Some, None {
    *     instance is present.
    */
   default <U> Option<U> flatMap(Supplier<Option<U>> supplier) {
-    return fold(Option::empty, unused -> supplier.get());
+    return fold(unused -> supplier.get(), Option::empty);
   }
 
   /**
@@ -138,7 +139,7 @@ public sealed interface Option<T> permits Some, None {
    *     instance otherwise
    */
   default Option<T> filter(Predicate<? super T> predicate) {
-    return fold(Option::empty, v -> predicate.test(v) ? this : empty());
+    return fold(v -> predicate.test(v) ? this : empty(), Option::empty);
   }
 
   /**
@@ -187,12 +188,12 @@ public sealed interface Option<T> permits Some, None {
    */
   default Option<T> apply(Runnable emptyValConsumer, Consumer<? super T> nonEmptyValConsumer) {
     fold(
-        () -> {
-          emptyValConsumer.run();
-          return null;
-        },
         t2 -> {
           nonEmptyValConsumer.accept(t2);
+          return null;
+        },
+        () -> {
+          emptyValConsumer.run();
           return null;
         });
     return this;
@@ -207,7 +208,7 @@ public sealed interface Option<T> permits Some, None {
    *     instance is empty
    */
   default T or(T replacement) {
-    return fold(() -> replacement, Functions::id);
+    return fold(Functions::id, () -> replacement);
   }
 
   /**
@@ -220,7 +221,7 @@ public sealed interface Option<T> permits Some, None {
    *     current instance is empty
    */
   default T or(Supplier<T> supplier) {
-    return fold(supplier, Functions::id);
+    return fold(Functions::id, supplier);
   }
 
   /**
@@ -231,7 +232,7 @@ public sealed interface Option<T> permits Some, None {
    * @return either current instance or provided replacement instance if current instance is empty
    */
   default Option<T> orElse(Option<T> replacement) {
-    return fold(() -> replacement, unused -> this);
+    return fold(unused -> this, () -> replacement);
   }
 
   /**
@@ -242,7 +243,7 @@ public sealed interface Option<T> permits Some, None {
    * @return either current instance or provided replacement instance if current instance is empty
    */
   default Option<T> orElse(Supplier<Option<T>> supplier) {
-    return fold(supplier, unused -> this);
+    return fold(unused -> this, supplier);
   }
 
   /**
@@ -251,7 +252,7 @@ public sealed interface Option<T> permits Some, None {
    * @return {@code true} if instance is present and {@code false} otherwise.
    */
   default boolean isPresent() {
-    return fold(() -> false, Functions::toTrue);
+    return fold(Functions::toTrue, () -> false);
   }
 
   /**
@@ -260,7 +261,7 @@ public sealed interface Option<T> permits Some, None {
    * @return {@code true} if instance is empty and {@code false} otherwise.
    */
   default boolean isEmpty() {
-    return fold(() -> true, Functions::toFalse);
+    return fold(Functions::toFalse, () -> true);
   }
 
   /**
@@ -270,19 +271,18 @@ public sealed interface Option<T> permits Some, None {
    * @return created stream
    */
   default Stream<T> stream() {
-    return fold(Stream::empty, Stream::of);
+    return fold(Stream::of, Stream::empty);
   }
 
   /**
    * Convert current instance to instance of {@link Result}. The present instance is converted into
-   * success result. The empty instance is converted into failure result with provided {@link
-   * Cause}.
+   * success result. The empty instance is converted into a failure result with provided errorValue.
    *
-   * @param cause the failure necessary for conversion of empty instance.
+   * @param errorValue the error value for conversion of empty instance.
    * @return created instance
    */
-  default Result<T> toResult(Cause cause) {
-    return fold(cause::result, Result::success);
+  default <E> Result<T, E> toResult(E errorValue) {
+    return fold(Result::success, () -> Result.err(errorValue));
   }
 
   /**
@@ -293,17 +293,17 @@ public sealed interface Option<T> permits Some, None {
    * @return created instance
    */
   default Optional<T> toOptional() {
-    return fold(Optional::empty, Optional::of);
+    return fold(Optional::of, Optional::empty);
   }
 
   /**
    * Handle both possible states (empty/present) and produce single result from it.
    *
-   * @param emptyMapper function to produce value in case of empty instance
    * @param presentMapper function to transform present value into output value
+   * @param emptyMapper function to produce value in case of empty instance
    * @return result of application of one of the mappers.
    */
-  <R> R fold(Supplier<? extends R> emptyMapper, FN1<? extends R, ? super T> presentMapper);
+  <R> R fold(Func1<? super T, ? extends R> presentMapper, Supplier<? extends R> emptyMapper);
 
   /**
    * Convert nullable value into instance of {@link Option}. This method converts {@code null} to
@@ -370,7 +370,7 @@ public sealed interface Option<T> permits Some, None {
   record Some<T>(T value) implements Option<T> {
     @Override
     public <R> R fold(
-        Supplier<? extends R> emptyMapper, FN1<? extends R, ? super T> presentMapper) {
+        Func1<? super T, ? extends R> presentMapper, Supplier<? extends R> emptyMapper) {
       return presentMapper.apply(value);
     }
 
@@ -383,7 +383,7 @@ public sealed interface Option<T> permits Some, None {
   record None<T>() implements Option<T> {
     @Override
     public <R> R fold(
-        Supplier<? extends R> emptyMapper, FN1<? extends R, ? super T> presentMapper) {
+        Func1<? super T, ? extends R> presentMapper, Supplier<? extends R> emptyMapper) {
       return emptyMapper.get();
     }
 
@@ -397,24 +397,28 @@ public sealed interface Option<T> permits Some, None {
   None NONE = new None();
 
   /**
-   * This method allows "unwrapping" the value stored inside the Option instance. If value is
-   * missing then {@link IllegalStateException} is thrown.
-   *
-   * <p>WARNING!!!<br>
-   * This method should be avoided in the production code. It's main intended use case -
-   * simplification of the tests. For this reason method is marked as {@link Deprecated}. This
-   * generates warning at compile time.
+   * This method allows "unwrapping" the value stored inside the Option instance. If the value is
+   * missing then an {@link IllegalStateException} is thrown.
    *
    * @return value stored inside present instance.
-   * @deprecated to prevent unchecked use.
    */
-  @Deprecated
   default T unwrap() {
+    return unwrap(() -> new IllegalStateException("Option is empty, unwrap failed."));
+  }
+
+  /**
+   * This method allows "unwrapping" the value stored inside the Option instance. If the value is
+   * missing then an exception is created and thrown.
+   *
+   * @param createException creates the RuntimeException
+   * @return value stored inside present instance.
+   */
+  default T unwrap(Functions.Func0<RuntimeException> createException) {
     return fold(
+        Functions::id,
         () -> {
-          throw new IllegalStateException("Option is empty!!!");
-        },
-        Functions::id);
+          throw createException.apply();
+        });
   }
 
   /**
@@ -442,6 +446,7 @@ public sealed interface Option<T> permits Some, None {
   @SafeVarargs
   static <T> Option<T> any(Option<T> op, Supplier<Option<T>>... ops) {
     return op.fold(
+        unused -> op,
         () -> {
           for (var option : ops) {
             var result = option.get();
@@ -450,8 +455,7 @@ public sealed interface Option<T> permits Some, None {
             }
           }
           return op;
-        },
-        unused -> op);
+        });
   }
 
   /**
@@ -733,11 +737,11 @@ public sealed interface Option<T> permits Some, None {
   interface Mapper1<T1> {
     Option<Tuple.Tuple1<T1>> id();
 
-    default <R> Option<R> map(FN1<R, T1> mapper) {
+    default <R> Option<R> map(Func1<T1, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Option<R> flatMap(FN1<Option<R>, T1> mapper) {
+    default <R> Option<R> flatMap(Func1<T1, Option<R>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -769,11 +773,11 @@ public sealed interface Option<T> permits Some, None {
   interface Mapper2<T1, T2> {
     Option<Tuple.Tuple2<T1, T2>> id();
 
-    default <R> Option<R> map(FN2<R, T1, T2> mapper) {
+    default <R> Option<R> map(Func2<T1, T2, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Option<R> flatMap(FN2<Option<R>, T1, T2> mapper) {
+    default <R> Option<R> flatMap(Func2<T1, T2, Option<R>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -805,11 +809,11 @@ public sealed interface Option<T> permits Some, None {
   interface Mapper3<T1, T2, T3> {
     Option<Tuple.Tuple3<T1, T2, T3>> id();
 
-    default <R> Option<R> map(FN3<R, T1, T2, T3> mapper) {
+    default <R> Option<R> map(Func3<T1, T2, T3, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Option<R> flatMap(FN3<Option<R>, T1, T2, T3> mapper) {
+    default <R> Option<R> flatMap(Func3<T1, T2, T3, Option<R>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -841,11 +845,11 @@ public sealed interface Option<T> permits Some, None {
   interface Mapper4<T1, T2, T3, T4> {
     Option<Tuple.Tuple4<T1, T2, T3, T4>> id();
 
-    default <R> Option<R> map(FN4<R, T1, T2, T3, T4> mapper) {
+    default <R> Option<R> map(Func4<T1, T2, T3, T4, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Option<R> flatMap(FN4<Option<R>, T1, T2, T3, T4> mapper) {
+    default <R> Option<R> flatMap(Func4<T1, T2, T3, T4, Option<R>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -877,11 +881,11 @@ public sealed interface Option<T> permits Some, None {
   interface Mapper5<T1, T2, T3, T4, T5> {
     Option<Tuple.Tuple5<T1, T2, T3, T4, T5>> id();
 
-    default <R> Option<R> map(FN5<R, T1, T2, T3, T4, T5> mapper) {
+    default <R> Option<R> map(Func5<T1, T2, T3, T4, T5, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Option<R> flatMap(FN5<Option<R>, T1, T2, T3, T4, T5> mapper) {
+    default <R> Option<R> flatMap(Func5<T1, T2, T3, T4, T5, Option<R>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -913,11 +917,11 @@ public sealed interface Option<T> permits Some, None {
   interface Mapper6<T1, T2, T3, T4, T5, T6> {
     Option<Tuple.Tuple6<T1, T2, T3, T4, T5, T6>> id();
 
-    default <R> Option<R> map(FN6<R, T1, T2, T3, T4, T5, T6> mapper) {
+    default <R> Option<R> map(Func6<T1, T2, T3, T4, T5, T6, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Option<R> flatMap(FN6<Option<R>, T1, T2, T3, T4, T5, T6> mapper) {
+    default <R> Option<R> flatMap(Func6<T1, T2, T3, T4, T5, T6, Option<R>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -949,11 +953,11 @@ public sealed interface Option<T> permits Some, None {
   interface Mapper7<T1, T2, T3, T4, T5, T6, T7> {
     Option<Tuple.Tuple7<T1, T2, T3, T4, T5, T6, T7>> id();
 
-    default <R> Option<R> map(FN7<R, T1, T2, T3, T4, T5, T6, T7> mapper) {
+    default <R> Option<R> map(Func7<T1, T2, T3, T4, T5, T6, T7, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Option<R> flatMap(FN7<Option<R>, T1, T2, T3, T4, T5, T6, T7> mapper) {
+    default <R> Option<R> flatMap(Func7<T1, T2, T3, T4, T5, T6, T7, Option<R>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -985,11 +989,11 @@ public sealed interface Option<T> permits Some, None {
   interface Mapper8<T1, T2, T3, T4, T5, T6, T7, T8> {
     Option<Tuple.Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> id();
 
-    default <R> Option<R> map(FN8<R, T1, T2, T3, T4, T5, T6, T7, T8> mapper) {
+    default <R> Option<R> map(Func8<T1, T2, T3, T4, T5, T6, T7, T8, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Option<R> flatMap(FN8<Option<R>, T1, T2, T3, T4, T5, T6, T7, T8> mapper) {
+    default <R> Option<R> flatMap(Func8<T1, T2, T3, T4, T5, T6, T7, T8, Option<R>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }
@@ -1021,11 +1025,11 @@ public sealed interface Option<T> permits Some, None {
   interface Mapper9<T1, T2, T3, T4, T5, T6, T7, T8, T9> {
     Option<Tuple.Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9>> id();
 
-    default <R> Option<R> map(FN9<R, T1, T2, T3, T4, T5, T6, T7, T8, T9> mapper) {
+    default <R> Option<R> map(Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, R> mapper) {
       return id().map(tuple -> tuple.map(mapper));
     }
 
-    default <R> Option<R> flatMap(FN9<Option<R>, T1, T2, T3, T4, T5, T6, T7, T8, T9> mapper) {
+    default <R> Option<R> flatMap(Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, Option<R>> mapper) {
       return id().flatMap(tuple -> tuple.map(mapper));
     }
   }

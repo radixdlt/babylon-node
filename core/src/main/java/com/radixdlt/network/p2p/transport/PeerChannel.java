@@ -71,6 +71,7 @@ import static java.util.Objects.requireNonNull;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.monitoring.SystemCounters;
@@ -304,7 +305,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     this.nettyChannel.writeAndFlush(data);
   }
 
-  public Result<Unit> send(byte[] data) {
+  public Result<Unit, Cause> send(byte[] data) {
     synchronized (this.lock) {
       if (this.state != ChannelState.ACTIVE) {
         return IO_ERROR.result();

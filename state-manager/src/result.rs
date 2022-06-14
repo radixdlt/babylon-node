@@ -62,15 +62,13 @@
  * permissions under this License.
  */
 
-use crate::types::JavaStructure;
+use crate::jni::dtos::JavaStructure;
 use sbor::{Decode, Encode, TypeId};
 
 // System Errors.
 pub const ERRCODE_JNI: i16 = 0;
 pub const ERRCODE_SBOR: i16 = 1;
-// Mempool Errors.
-pub const ERRCODE_MEMPOOL_FULL: i16 = 0x10;
-pub const ERRCODE_MEMPOOL_DUPLICATE: i16 = 0x11;
+pub const ERRCODE_INTERFACE_CASTS: i16 = 2;
 
 #[derive(TypeId, Encode, Decode, Debug)]
 pub struct StateManagerError {
@@ -85,7 +83,13 @@ impl StateManagerError {
             error_msg,
         }
     }
+
+    pub fn create_result<T>(error_code: i16, error_msg: String) -> StateManagerResult<T> {
+        StateManagerResult::Err(StateManagerError::create(error_code, error_msg))
+    }
 }
+
+impl JavaStructure for StateManagerError {}
 
 pub trait ToStateManagerError {
     fn to_state_manager_error(&self) -> StateManagerError;
@@ -93,4 +97,40 @@ pub trait ToStateManagerError {
 
 pub type StateManagerResult<T> = Result<T, StateManagerError>;
 
-impl<T: Encode + Decode> JavaStructure for StateManagerResult<T> {}
+pub trait ResultStateManagerMaps<T, E> {
+    fn map_sm<S, O>(self, op: O) -> StateManagerResult<Result<S, E>>
+    where
+        O: FnOnce(T) -> StateManagerResult<S>;
+
+    fn map_err_sm<F, O>(self, op: O) -> StateManagerResult<Result<T, F>>
+    where
+        O: FnOnce(E) -> StateManagerResult<F>;
+}
+
+impl<T, E> ResultStateManagerMaps<T, E> for Result<T, E> {
+    fn map_sm<S, O>(self, op: O) -> StateManagerResult<Result<S, E>>
+    where
+        O: FnOnce(T) -> StateManagerResult<S>,
+    {
+        match self {
+            Ok(value) => match op(value) {
+                Ok(mapped_value) => Ok(Ok(mapped_value)),
+                Err(sys_error) => Err(sys_error),
+            },
+            Err(err) => Ok(Err(err)),
+        }
+    }
+
+    fn map_err_sm<F, O>(self, op: O) -> StateManagerResult<Result<T, F>>
+    where
+        O: FnOnce(E) -> StateManagerResult<F>,
+    {
+        match self {
+            Ok(t) => Ok(Ok(t)),
+            Err(err) => match op(err) {
+                Ok(mapped_error) => Ok(Err(mapped_error)),
+                Err(sys_error) => Err(sys_error),
+            },
+        }
+    }
+}

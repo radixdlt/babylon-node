@@ -64,53 +64,39 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.exceptions.SborException;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.codec.Codec;
-import com.radixdlt.interop.sbor.codec.CodecMap;
-import com.radixdlt.interop.sbor.utils.DecodeResult;
-import com.radixdlt.lang.Option;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.exceptions.StateManagerRuntimeError;
+import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.TypedSbor;
 import com.radixdlt.statemanager.StateManager.RustState;
-import com.radixdlt.statemanager.StateManagerError;
+import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.transactions.Transaction;
 import java.util.Objects;
 
 public class RustMempool {
   private final RustState rustState;
-  private Codec codec =
-      new Codec(
-          new CodecMap()
-              .register(Transaction.class, new Transaction.TransactionCodec())
-              .register(AID.class, new AID.AIDCodec())
-              .register(StateManagerError.class, new StateManagerError.StateManagerErrorCodec()));
 
   public RustMempool(RustState rustState) {
     this.rustState = Objects.requireNonNull(rustState);
   }
 
+  private static final TypeToken<Result<Result<Unit, MempoolError>, StateManagerRuntimeError>>
+      addResponseType = new TypeToken<>() {};
+
   public Transaction add(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
-    var encodedRequest =
-        this.codec
-            .encode(transaction)
-            .unwrap(c -> new SborException(Transaction.class, true, true, c.message()));
+    var encodedRequest = TypedSbor.encode(transaction, Transaction.class);
     var encodedResponse = add(this.rustState, encodedRequest);
-
-    var result =
-        new DecodeResult(this.codec, Unit.class, StateManagerError.class).decode(encodedResponse);
+    var result = StateManagerResponse.decode(encodedResponse, addResponseType);
 
     // Handle Errors.
-    Option<StateManagerError> optErr = result.toOptionErr();
-    if (optErr.isPresent()) {
-      var err = optErr.unwrap();
-      switch (err.getErrorCode()) {
-        case STATE_MANAGER_ERROR_CODE_MEMPOOL_FULL:
-          throw new MempoolFullException(err.message());
-        case STATE_MANAGER_ERROR_CODE_MEMPOOL_DUPLICATE:
-          throw new MempoolDuplicateException(err.message());
-        default:
-          throw new IllegalStateException("Unexpected StateManagerError: " + err.toString());
+    if (result.isErr()) {
+      switch (result.unwrapErr()) {
+        case MempoolError.Full fullStatus -> throw new MempoolFullException(
+            fullStatus.currentSize(), fullStatus.maxSize());
+        case MempoolError.Duplicate ignored -> throw new MempoolDuplicateException(
+            String.format("Mempool already has transaction %s", transaction.getId()));
       }
     }
 

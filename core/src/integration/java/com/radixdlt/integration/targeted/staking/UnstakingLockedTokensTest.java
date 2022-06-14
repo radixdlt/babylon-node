@@ -83,8 +83,8 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
@@ -166,7 +166,7 @@ public class UnstakingLockedTokensTest {
         });
   }
 
-  public REProcessedTxn waitForCommit(AID txnId) {
+  public REProcessedTxn waitForCommit(TID txnId) {
     var committed =
         runner.runNextEventsThrough(
             LedgerUpdate.class,

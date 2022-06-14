@@ -64,12 +64,13 @@
 
 package com.radixdlt.lang;
 
-import com.radixdlt.lang.Functions.FN1;
+import com.radixdlt.lang.Functions.Func1;
 import java.util.function.Consumer;
 
 /** The type which can hold one of two values of different types. */
 // TODO: extend API
-public interface Either<L, R> {
+@SuppressWarnings("unused")
+public sealed interface Either<L, R> {
   /**
    * Handle both possible states (left/right) and produce single value from it. Depending on which
    * (left or right) value is stored in particular instance, respective mapping function is invoked.
@@ -78,7 +79,7 @@ public interface Either<L, R> {
    * @param rightMapper function to transform right value into output value
    * @return result of application of one of the mappers.
    */
-  <T> T fold(FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper);
+  <T> T fold(Func1<? super L, ? extends T> leftMapper, Func1<? super R, ? extends T> rightMapper);
 
   /**
    * Invoke side-effect-producing consumer to the Either container. Depending on which (left or
@@ -86,7 +87,6 @@ public interface Either<L, R> {
    *
    * @param leftConsumer function to process left value
    * @param rightConsumer function to process right value
-   * @return result of application of one of the mappers.
    */
   default void apply(Consumer<? super L> leftConsumer, Consumer<? super R> rightConsumer) {
     fold(
@@ -100,21 +100,93 @@ public interface Either<L, R> {
         });
   }
 
+  default boolean isLeft() {
+    return fold(left -> true, right -> false);
+  }
+
+  default boolean isRight() {
+    return fold(left -> false, right -> true);
+  }
+
+  /**
+   * This method allows "unwrapping" the left value stored inside the Either instance. If the value
+   * is a right then an {@link IllegalStateException} is thrown.
+   *
+   * @return value stored inside present instance.
+   */
+  default L unwrapLeft() {
+    return unwrapLeft(
+        r ->
+            new IllegalStateException(
+                "Unwrap error (not a left) - the Either was a right, containing " + r.toString()));
+  }
+
+  /**
+   * This method allows "unwrapping" the left value stored inside the Either instance. If the value
+   * is a right then an exception is created from the right value and thrown.
+   *
+   * @param mapToException a map from the cause to a RuntimeException
+   * @return value stored inside present instance.
+   */
+  default L unwrapLeft(Functions.Func1<? super R, RuntimeException> mapToException) {
+    return fold(
+        Functions::id,
+        r -> {
+          throw mapToException.apply(r);
+        });
+  }
+
+  /**
+   * This method allows "unwrapping" the right value stored inside the Either instance. If the value
+   * is a left then an {@link IllegalStateException} is thrown.
+   *
+   * @return value stored inside present instance.
+   */
+  default R unwrapRight() {
+    return unwrapRight(
+        l ->
+            new IllegalStateException(
+                "Unwrap error (not a right) - the Either was a left, containing " + l.toString()));
+  }
+
+  /**
+   * This method allows "unwrapping" the right value stored inside the Either instance. If the value
+   * is a left then an exception is created from the left value and thrown.
+   *
+   * @param mapToException a map from the cause to a RuntimeException
+   * @return value stored inside present instance.
+   */
+  default R unwrapRight(Functions.Func1<? super L, RuntimeException> mapToException) {
+    return fold(
+        l -> {
+          throw mapToException.apply(l);
+        },
+        Functions::id);
+  }
+
+  record left<L, R>(L value) implements Either<L, R> {
+    @Override
+    public <T> T fold(
+        Func1<? super L, ? extends T> leftMapper, Func1<? super R, ? extends T> rightMapper) {
+      return leftMapper.apply(value());
+    }
+  }
+
   /**
    * Create instance which contains left value.
    *
    * @return created instance.
    */
   static <L, R> Either<L, R> left(L left) {
-    record left<L, R>(L value) implements Either<L, R> {
-      @Override
-      public <T> T fold(
-          FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
-        return leftMapper.apply(value());
-      }
-    }
-
     return new left<>(left);
+  }
+
+  record right<L, R>(R value) implements Either<L, R> {
+    @Override
+    public <T> T fold(
+        Func1<? super L, ? extends T> leftMapper, Func1<? super R, ? extends T> rightMapper) {
+      return rightMapper.apply(value());
+    }
   }
 
   /**
@@ -123,14 +195,6 @@ public interface Either<L, R> {
    * @return created instance.
    */
   static <L, R> Either<L, R> right(R right) {
-    record right<L, R>(R value) implements Either<L, R> {
-      @Override
-      public <T> T fold(
-          FN1<? extends T, ? super L> leftMapper, FN1<? extends T, ? super R> rightMapper) {
-        return rightMapper.apply(value());
-      }
-    }
-
     return new right<>(right);
   }
 }

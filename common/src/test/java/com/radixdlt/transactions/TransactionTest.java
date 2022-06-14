@@ -66,25 +66,23 @@ package com.radixdlt.transactions;
 
 import static org.junit.Assert.assertEquals;
 
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.codec.Codec;
-import com.radixdlt.interop.sbor.codec.CodecMap;
+import com.radixdlt.identifiers.TID;
+import com.radixdlt.sbor.TypedSbor;
+import com.radixdlt.sbor.codec.CodecMap;
 import org.junit.Test;
 
 public class TransactionTest {
 
   @Test
   public void testSBORSerialization() {
+    CodecMap.withDefault(TID::registerCodec);
+    CodecMap.withDefault(Transaction::registerCodec);
+
     byte[] payload = new byte[10];
     Transaction t0 = Transaction.create(payload);
 
-    var codec =
-        new Codec(
-            new CodecMap()
-                .register(Transaction.class, new Transaction.TransactionCodec())
-                .register(AID.class, new AID.AIDCodec()));
-    var r0 = codec.encode(t0).unwrap();
-    var t1 = codec.decode(r0, Transaction.class).unwrap();
+    var r0 = TypedSbor.encode(t0, Transaction.class);
+    var t1 = TypedSbor.decode(r0, Transaction.class);
 
     assertEquals(t0, t1);
   }

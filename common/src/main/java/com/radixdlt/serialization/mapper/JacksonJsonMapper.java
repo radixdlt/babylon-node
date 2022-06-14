@@ -82,9 +82,9 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.hash.HashCode;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerIds;
 import com.radixdlt.utils.UInt256;
@@ -155,15 +155,15 @@ public class JacksonJsonMapper extends ObjectMapper {
             JacksonCodecConstants.RRI_STR_VALUE,
             rri -> Hex.toHexString(rri.getBytes())));
     jsonModule.addSerializer(
-        AID.class,
+        TID.class,
         new JacksonJsonObjectStringSerializer<>(
-            AID.class, JacksonCodecConstants.AID_STR_VALUE, AID::toString));
+            TID.class, JacksonCodecConstants.AID_STR_VALUE, TID::toString));
 
     jsonModule.addKeySerializer(
-        AID.class,
-        new StdSerializer<AID>(AID.class) {
+        TID.class,
+        new StdSerializer<TID>(TID.class) {
           @Override
-          public void serialize(AID value, JsonGenerator gen, SerializerProvider provider)
+          public void serialize(TID value, JsonGenerator gen, SerializerProvider provider)
               throws IOException {
             gen.writeFieldName(JacksonCodecConstants.AID_STR_VALUE + value.toString());
           }
@@ -190,11 +190,11 @@ public class JacksonJsonMapper extends ObjectMapper {
         new JacksonJsonObjectStringDeserializer<>(
             REAddr.class, JacksonCodecConstants.RRI_STR_VALUE, s -> REAddr.of(Hex.decode(s))));
     jsonModule.addDeserializer(
-        AID.class,
+        TID.class,
         new JacksonJsonObjectStringDeserializer<>(
-            AID.class, JacksonCodecConstants.AID_STR_VALUE, AID::from));
+            TID.class, JacksonCodecConstants.AID_STR_VALUE, TID::from));
     jsonModule.addKeyDeserializer(
-        AID.class,
+        TID.class,
         new KeyDeserializer() {
           @Override
           public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
@@ -203,9 +203,9 @@ public class JacksonJsonMapper extends ObjectMapper {
                   ctxt.getParser(),
                   "Expecting prefix" + JacksonCodecConstants.AID_STR_VALUE,
                   key,
-                  AID.class);
+                  TID.class);
             }
-            return AID.from(key.substring(JacksonCodecConstants.STR_VALUE_LEN));
+            return TID.from(key.substring(JacksonCodecConstants.STR_VALUE_LEN));
           }
         });
 

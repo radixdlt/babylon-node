@@ -73,7 +73,7 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.RadixEngineResult;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
@@ -101,9 +101,9 @@ import org.apache.logging.log4j.Logger;
 public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   private static final Logger logger = LogManager.getLogger();
 
-  private final ConcurrentHashMap<AID, Pair<REProcessedTxn, MempoolMetadata>> data =
+  private final ConcurrentHashMap<TID, Pair<REProcessedTxn, MempoolMetadata>> data =
       new ConcurrentHashMap<>();
-  private final Map<SubstateId, Set<AID>> substateIndex = new ConcurrentHashMap<>();
+  private final Map<SubstateId, Set<TID>> substateIndex = new ConcurrentHashMap<>();
   private final RadixEngine<LedgerAndBFTProof> radixEngine;
   private final int maxSize;
 
@@ -117,7 +117,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
     this.radixEngine = radixEngine;
   }
 
-  public <T> T getData(Function<Map<AID, Pair<REProcessedTxn, MempoolMetadata>>, T> mapper) {
+  public <T> T getData(Function<Map<TID, Pair<REProcessedTxn, MempoolMetadata>>, T> mapper) {
     return mapper.apply(data);
   }
 
@@ -168,7 +168,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
         .forEach(
             instruction -> {
               var substateId = instruction.getId();
-              Set<AID> txnIds = substateIndex.remove(substateId);
+              Set<TID> txnIds = substateIndex.remove(substateId);
               if (txnIds == null) {
                 return;
               }

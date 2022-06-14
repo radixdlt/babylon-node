@@ -75,9 +75,9 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.hash.HashCode;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerIds;
 import com.radixdlt.utils.Instants;
@@ -152,9 +152,9 @@ public class JacksonCborMapper extends ObjectMapper {
         new JacksonCborObjectBytesSerializer<>(
             REAddr.class, JacksonCodecConstants.RRI_VALUE, REAddr::getBytes));
     cborModule.addSerializer(
-        AID.class,
+        TID.class,
         new JacksonCborObjectBytesSerializer<>(
-            AID.class, JacksonCodecConstants.AID_VALUE, AID::getBytes));
+            TID.class, JacksonCodecConstants.AID_VALUE, TID::getBytes));
     cborModule.addSerializer(
         long[].class,
         new JacksonCborObjectBytesSerializer<>(
@@ -165,10 +165,10 @@ public class JacksonCborMapper extends ObjectMapper {
             Instant.class, JacksonCodecConstants.INSTANT_VALUE, Instants::toBytes));
 
     cborModule.addKeySerializer(
-        AID.class,
-        new StdSerializer<AID>(AID.class) {
+        TID.class,
+        new StdSerializer<TID>(TID.class) {
           @Override
-          public void serialize(AID value, JsonGenerator gen, SerializerProvider provider)
+          public void serialize(TID value, JsonGenerator gen, SerializerProvider provider)
               throws IOException {
             gen.writeFieldName(JacksonCodecConstants.AID_STR_VALUE + value.toString());
           }
@@ -200,9 +200,9 @@ public class JacksonCborMapper extends ObjectMapper {
         new JacksonCborObjectBytesDeserializer<>(
             REAddr.class, JacksonCodecConstants.RRI_VALUE, REAddr::of));
     cborModule.addDeserializer(
-        AID.class,
+        TID.class,
         new JacksonCborObjectBytesDeserializer<>(
-            AID.class, JacksonCodecConstants.AID_VALUE, AID::from));
+            TID.class, JacksonCodecConstants.AID_VALUE, TID::from));
     cborModule.addDeserializer(
         long[].class,
         new JacksonCborObjectBytesDeserializer<>(
@@ -212,7 +212,7 @@ public class JacksonCborMapper extends ObjectMapper {
         new JacksonCborObjectBytesDeserializer<>(
             Instant.class, JacksonCodecConstants.INSTANT_VALUE, Instants::fromBytes));
     cborModule.addKeyDeserializer(
-        AID.class,
+        TID.class,
         new KeyDeserializer() {
           @Override
           public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
@@ -221,9 +221,9 @@ public class JacksonCborMapper extends ObjectMapper {
                   ctxt.getParser(),
                   "Expecting prefix" + JacksonCodecConstants.AID_STR_VALUE,
                   key,
-                  AID.class);
+                  TID.class);
             }
-            return AID.from(key.substring(JacksonCodecConstants.STR_VALUE_LEN));
+            return TID.from(key.substring(JacksonCodecConstants.STR_VALUE_LEN));
           }
         });
 
