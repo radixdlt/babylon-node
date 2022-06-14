@@ -219,22 +219,11 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Capabilities
     var capabilitiesLedgerSyncEnabled =
-        Optional.ofNullable(properties.get("capabilities.ledger_sync.enabled"));
+        properties.get("capabilities.ledger_sync.enabled", BooleanUtils::parseBoolean);
     LedgerSyncCapability.Builder builder =
         capabilitiesLedgerSyncEnabled
-            .map(it -> new LedgerSyncCapability.Builder(parseLedgerSyncEnabled(it)))
+            .map(LedgerSyncCapability.Builder::new)
             .orElse(LedgerSyncCapability.Builder.asDefault());
     install(new CapabilitiesModule(builder.build()));
-  }
-
-  private boolean parseLedgerSyncEnabled(String isLedgerSyncEnabled) {
-    try {
-      return BooleanUtils.parseBoolean(isLedgerSyncEnabled);
-    } catch (Exception e) {
-      throw new IllegalArgumentException(
-          "It was not possible to parse the value of the configuration"
-              + " 'capabilities.ledger_sync.enabled'. Please use true or false.",
-          e);
-    }
   }
 }

@@ -83,7 +83,7 @@ public class NetworkQueryHostIpTest {
   @Test
   public void testPropertyNull() {
     RuntimeProperties properties = mock(RuntimeProperties.class);
-    when(properties.get(eq(NetworkQueryHostIp.QUERY_URLS_PROPERTY), any())).thenReturn(null);
+    when(properties.get(eq(NetworkQueryHostIp.QUERY_URLS_PROPERTY), anyString())).thenReturn(null);
     NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(properties);
     assertEquals(NetworkQueryHostIp.DEFAULT_QUERY_URLS.size(), nqhip.count());
   }
@@ -91,7 +91,7 @@ public class NetworkQueryHostIpTest {
   @Test
   public void testPropertyEmpty() {
     RuntimeProperties properties = mock(RuntimeProperties.class);
-    when(properties.get(eq(NetworkQueryHostIp.QUERY_URLS_PROPERTY), any())).thenReturn("");
+    when(properties.get(eq(NetworkQueryHostIp.QUERY_URLS_PROPERTY), anyString())).thenReturn("");
     NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(properties);
     assertEquals(NetworkQueryHostIp.DEFAULT_QUERY_URLS.size(), nqhip.count());
   }
@@ -99,7 +99,7 @@ public class NetworkQueryHostIpTest {
   @Test
   public void testPropertyNotEmpty() {
     RuntimeProperties properties = mock(RuntimeProperties.class);
-    when(properties.get(eq(NetworkQueryHostIp.QUERY_URLS_PROPERTY), any()))
+    when(properties.get(eq(NetworkQueryHostIp.QUERY_URLS_PROPERTY), anyString()))
         .thenReturn("http://localhost,http://8.8.8.8");
     NetworkQueryHostIp nqhip = (NetworkQueryHostIp) NetworkQueryHostIp.create(properties);
     assertEquals(2, nqhip.count());

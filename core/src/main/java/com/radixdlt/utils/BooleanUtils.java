@@ -71,10 +71,10 @@ public class BooleanUtils {
   }
 
   /**
-   * Parses the string argument as a boolean. The {@code boolean} returned represents the value
-   * {@code true} if the string argument is not {@code null} and is equal, ignoring case, to the
-   * string {@code "true"}. It returns the value {@code false} if the string argument is not {@code
-   * null} and is equal, ignoring case, to the string {@code "false"}.
+   * Parses the string argument as a boolean value. The {@code boolean} returned represents the
+   * value {@code true} if the string argument is not {@code null} and is equal, ignoring case, to
+   * the string {@code "true"}. It returns the value {@code false} if the string argument is not
+   * {@code null} and is equal, ignoring case, to the string {@code "false"}.
    *
    * <p>Example: {@code Boolean.parseBoolean("True")} returns {@code true}.<br>
    * Boolean.parseBoolean("false")} returns {@code false}.<br>
@@ -86,13 +86,17 @@ public class BooleanUtils {
    *     case-insensitive.
    */
   public static boolean parseBoolean(String s) {
-    if ("true".equalsIgnoreCase(s)) {
-      return Boolean.TRUE;
-    } else if ("false".equalsIgnoreCase(s)) {
-      return Boolean.FALSE;
-    } else {
-      throw new IllegalArgumentException(
-          String.format("It was not possible to parte the string '%s' as a boolean.", s));
-    }
+    var trimmedLowerCaseValue = s != null ? s.trim().toLowerCase() : null;
+    return switch (trimmedLowerCaseValue) {
+      case "true" -> true;
+      case "false" -> false;
+        // spotless doesn't work with "case null, default", so we're using the solution bellow
+        // instead
+      case Object object -> throw new IllegalArgumentException(
+          String.format(
+              "It was not possible to parte the string '%s' as a boolean. Please use 'true' or"
+                  + " 'false'.",
+              s));
+    };
   }
 }

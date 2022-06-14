@@ -66,6 +66,7 @@ package com.radixdlt.utils.properties;
 
 import static com.radixdlt.utils.RadixConstants.STANDARD_CHARSET;
 
+import com.radixdlt.utils.BooleanUtils;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
@@ -79,6 +80,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Function;
 import org.apache.commons.cli.ParseException;
@@ -213,17 +215,17 @@ public class PersistedProperties {
   }
 
   /**
-   * Returns a property value as a {@code boolean}. Note that the strings "true", ignoring case, and
-   * correctly formatted non-zero integers are {@code true} values, all others are {@code false}.
-   * Empty value handled as if value was missing.
+   * Returns a property value as a {@code boolean}. Only the strings "true" and "false", ignoring
+   * case, are considered valid values, all others are invalid and cause an exception to be thrown.
    *
    * @param key the property key
    * @param defaultValue the default value returned if no value is set
    * @return either the property value, or {@code defaultValue} if no value set
+   * @throws IllegalArgumentException if the property value is not equal to "true" or "false",
+   *     ignoring case.
    */
   public boolean get(String key, boolean defaultValue) {
-    var value = get(key);
-    return (value == null || value.trim().isEmpty()) ? defaultValue : parseBoolean(value);
+    return get(key, defaultValue, BooleanUtils::parseBoolean);
   }
 
   /**
@@ -272,26 +274,46 @@ public class PersistedProperties {
     return this.properties.keySet().toString();
   }
 
-  private <T> T get(String key, T defaultValue, Function<String, T> parser) {
+  /**
+   * Parses a property value using the parser function specified or uses a default value if no value
+   * was provided.
+   *
+   * @param key the property key.
+   * @param defaultValue the default value returned if no value is set.
+   * @param parser a function which receives the property value and computes a new value.
+   * @return parsed value or defaultValue if no value was provided.
+   * @throws IllegalArgumentException if there is an error when parsing the property value.
+   */
+  public <T> T get(String key, T defaultValue, Function<String, T> parser) {
     var value = get(key);
     try {
       return value == null ? defaultValue : parser.apply(value);
-    } catch (NumberFormatException ex) {
-      var msg = String.format("Exception while retrieving double value for %s: '%s'", key, value);
+    } catch (Exception ex) {
+      var msg =
+          String.format(
+              "There was an error when parsing configuration '%s' with value '%s'.", key, value);
       throw new IllegalArgumentException(msg, ex);
     }
   }
 
-  private boolean parseBoolean(String value) {
-    if (value.trim().equalsIgnoreCase("true")) {
-      return true;
-    }
-    // Try as 0 = false, not-0 = true
+  /**
+   * Parses a property value using the parser function specified and returns an Optional value. The
+   * empty instance is returned if no value was provided.
+   *
+   * @param key the property key.
+   * @param parser the default value returned if no value is set.
+   * @return {@link Optional} with parsed value or empty if no value was provided.
+   * @throws IllegalArgumentException if there is an error when parsing the property value.
+   */
+  public <T> Optional<T> get(String key, Function<String, T> parser) {
+    var value = get(key);
     try {
-      int i = Integer.parseInt(value);
-      return i != 0;
-    } catch (NumberFormatException e) {
-      return false;
+      return value == null ? Optional.empty() : Optional.of(parser.apply(value));
+    } catch (Exception ex) {
+      var msg =
+          String.format(
+              "There was an error when parsing configuration '%s' with value '%s'.", key, value);
+      throw new IllegalArgumentException(msg, ex);
     }
   }
 }
