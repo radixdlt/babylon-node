@@ -70,7 +70,6 @@ import static com.radixdlt.keygen.KeyGeneratorErrors.MISSING_PARAMETER;
 import static com.radixdlt.keygen.KeyGeneratorErrors.UNABLE_TO_LOAD_KEYSTORE;
 import static com.radixdlt.keygen.KeyGeneratorErrors.UNABLE_TO_PARSE_COMMAND_LINE;
 import static com.radixdlt.lang.Result.all;
-import static com.radixdlt.lang.Result.fromOptional;
 import static com.radixdlt.lang.Unit.unit;
 import static java.util.Optional.ofNullable;
 
@@ -196,7 +195,7 @@ public class KeyGenerator {
   }
 
   private Result<String, Cause> requiredString(CommandLine commandLine, String opt) {
-    return fromOptional(ofNullable(commandLine.getOptionValue(opt)), MISSING_PARAMETER);
+    return Result.fromOptionalOr(ofNullable(commandLine.getOptionValue(opt)), MISSING_PARAMETER);
   }
 
   private Result<CommandLine, Cause> parseParameters(String[] args) {

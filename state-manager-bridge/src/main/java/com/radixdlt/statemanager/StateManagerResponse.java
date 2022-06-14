@@ -77,8 +77,8 @@ public final class StateManagerResponse {
     var result = TypedSbor.decode(stateManagerResponse, type);
 
     // Handle System/Runtime Errors
-    if (result.isErr()) {
-      throw new StateManagerRuntimeException(result.unwrapErr());
+    if (result.isError()) {
+      throw new StateManagerRuntimeException(result.unwrapError());
     }
 
     return result.unwrap();

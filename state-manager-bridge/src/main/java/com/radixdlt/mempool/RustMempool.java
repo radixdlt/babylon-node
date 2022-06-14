@@ -91,8 +91,8 @@ public class RustMempool {
     var result = StateManagerResponse.decode(encodedResponse, addResponseType);
 
     // Handle Errors.
-    if (result.isErr()) {
-      switch (result.unwrapErr()) {
+    if (result.isError()) {
+      switch (result.unwrapError()) {
         case MempoolError.Full fullStatus -> throw new MempoolFullException(
             fullStatus.currentSize(), fullStatus.maxSize());
         case MempoolError.Duplicate ignored -> throw new MempoolDuplicateException(
