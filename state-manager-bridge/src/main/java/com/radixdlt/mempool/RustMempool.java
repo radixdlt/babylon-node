@@ -68,7 +68,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
-import com.radixdlt.sbor.TypedSbor;
+import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.statemanager.StateManager.RustState;
 import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.transactions.Transaction;
@@ -86,7 +86,7 @@ public class RustMempool {
 
   public Transaction add(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
-    var encodedRequest = TypedSbor.encode(transaction, Transaction.class);
+    var encodedRequest = StateManagerSbor.sbor.encode(transaction, Transaction.class);
     var encodedResponse = add(this.rustState, encodedRequest);
     var result = StateManagerResponse.decode(encodedResponse, addResponseType);
 

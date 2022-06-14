@@ -64,15 +64,13 @@
 
 package com.radixdlt.statemanager;
 
-import com.radixdlt.sbor.StateManagerCodecRegistration;
-import com.radixdlt.sbor.TypedSbor;
+import com.radixdlt.sbor.DefaultTypedSbor;
 import java.util.Objects;
 
 public final class StateManager implements AutoCloseable {
 
   static {
     System.loadLibrary("statemanager");
-    StateManagerCodecRegistration.registerCodecsWithDefault();
   }
 
   /**
@@ -90,7 +88,7 @@ public final class StateManager implements AutoCloseable {
 
   public static StateManager createAndInitialize(StateManagerConfig config) {
     final var rustState = new RustState();
-    final var encodedConfig = TypedSbor.encode(config);
+    final var encodedConfig = DefaultTypedSbor.encode(config);
     init(rustState, encodedConfig);
     return new StateManager(rustState);
   }

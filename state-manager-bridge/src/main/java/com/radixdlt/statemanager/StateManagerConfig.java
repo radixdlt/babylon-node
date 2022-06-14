@@ -68,25 +68,16 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.codec.StructCodec;
 
 public record StateManagerConfig(Option<RustMempoolConfig> mempoolConfigOpt) {
-  static {
-    // this should be in RustMempoolConfig, but codecs must be registered in a specific order
-    CodecMap.withDefault(RustMempoolConfig::registerCodec);
-
-    CodecMap.withDefault(StateManagerConfig::registerCodec);
-  }
-
-  private static void registerCodec(CodecMap codecMap) {
+  public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateManagerConfig.class,
         codecs ->
-            StructCodec.fromFields(
+            StructCodec.with(
                 StateManagerConfig::new,
-                Field.of(
-                    StateManagerConfig::mempoolConfigOpt,
-                    codecs.of(new TypeToken<Option<RustMempoolConfig>>() {}))));
+                codecs.of(new TypeToken<Option<RustMempoolConfig>>() {}),
+                (s, encoder) -> encoder.encode(s.mempoolConfigOpt)));
   }
 }

@@ -68,13 +68,13 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.exceptions.StateManagerRuntimeException;
 import com.radixdlt.lang.Result;
-import com.radixdlt.sbor.TypedSbor;
+import com.radixdlt.sbor.StateManagerSbor;
 
 public final class StateManagerResponse {
 
   public static <T> T decode(
       byte[] stateManagerResponse, TypeToken<Result<T, StateManagerRuntimeError>> type) {
-    var result = TypedSbor.decode(stateManagerResponse, type);
+    var result = StateManagerSbor.sbor.decode(stateManagerResponse, type);
 
     // Handle System/Runtime Errors
     if (result.isError()) {

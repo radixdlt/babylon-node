@@ -67,47 +67,37 @@ package com.radixdlt.sbor;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
-import java.util.function.Consumer;
 
 @SuppressWarnings("unused")
-public abstract class UntypedSbor {
-  private static final SchemaCoder Coder = SchemaCoder.DEFAULT_WITHOUT_TYPES;
+public abstract class DefaultUntypedSbor {
+  private static final Sbor typedSborWithDefaultResolver =
+      new Sbor(false, CodecMap.DEFAULT_RESOLVER);
 
   public static <T> byte[] encode(T value) {
-    return Coder.encode(value);
+    return typedSborWithDefaultResolver.encode(value);
   }
 
   public static <T> byte[] encode(T value, Class<T> clazz) {
-    return Coder.encode(value, clazz);
+    return typedSborWithDefaultResolver.encode(value, clazz);
   }
 
   public static <T> byte[] encode(T value, TypeToken<T> type) {
-    return Coder.encode(value, type);
+    return typedSborWithDefaultResolver.encode(value, type);
   }
 
   public static <T> byte[] encode(T value, Codec<T> codec) {
-    return Coder.encode(value, codec);
+    return typedSborWithDefaultResolver.encode(value, codec);
   }
 
   public static <T> T decode(byte[] input, Class<T> clazz) {
-    return Coder.decode(input, clazz);
+    return typedSborWithDefaultResolver.decode(input, clazz);
   }
 
   public static <T> T decode(byte[] input, TypeToken<T> type) {
-    return Coder.decode(input, type);
+    return typedSborWithDefaultResolver.decode(input, type);
   }
 
   public static <T> T decode(byte[] input, Codec<T> codec) {
-    return Coder.decode(input, codec);
-  }
-
-  @SafeVarargs
-  public static SchemaCoder with(Consumer<CodecMap>... registrations) {
-    var codecMap = new CodecMap();
-    for (var registration : registrations) {
-      codecMap.register(registration);
-    }
-
-    return new SchemaCoder(codecMap.resolver, false);
+    return typedSborWithDefaultResolver.decode(input, codec);
   }
 }
