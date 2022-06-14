@@ -64,6 +64,8 @@
 
 package com.radixdlt.modules;
 
+import static com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent.*;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.StateManagerMempoolModule;
@@ -81,40 +83,31 @@ import com.radixdlt.rev1.ReV1DispatcherModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
 import com.radixdlt.rev2.modules.MockedSyncServiceModule;
+import java.util.EnumSet;
+import java.util.Objects;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
-  private final boolean hasSync;
+  public enum RadixNodeComponent {
+    SYNC,
+    LEDGER,
+    MEMPOOL,
+    RADIX_ENGINE,
+    MEMPOOL_RELAYER,
+    EPOCHS,
+  }
 
-  // State manager
-  private final boolean hasLedger;
-  private final boolean hasMempool;
-  private final boolean hasRadixEngine;
-
-  private final boolean hasMempoolRelayer;
-
-  private final boolean hasEpochs;
+  private final EnumSet<RadixNodeComponent> components;
 
   // FIXME: This is required for now for shared syncing, remove after refactor
   private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
 
   public FunctionalRadixNodeModule() {
-    this(true, true, true, true, true, true);
+    this(EnumSet.allOf(RadixNodeComponent.class));
   }
 
-  public FunctionalRadixNodeModule(
-      boolean hasLedger,
-      boolean hasMempool,
-      boolean hasMempoolRelayer,
-      boolean hasRadixEngine,
-      boolean hasEpochs,
-      boolean hasSync) {
-    this.hasLedger = hasLedger;
-    this.hasMempool = hasMempool;
-    this.hasMempoolRelayer = hasMempoolRelayer;
-    this.hasRadixEngine = hasRadixEngine;
-    this.hasEpochs = hasEpochs;
-    this.hasSync = hasSync;
+  public FunctionalRadixNodeModule(EnumSet<RadixNodeComponent> components) {
+    this.components = Objects.requireNonNull(components);
   }
 
   @Override
@@ -125,19 +118,19 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
     // Consensus
     install(new ConsensusModule());
-    if (hasEpochs) {
+    if (hasComponent(EPOCHS)) {
       install(new EpochsConsensusModule());
     } else {
       install(new NoEpochsConsensusModule());
     }
 
     // Sync
-    if (hasLedger) {
-      if (!hasSync) {
+    if (hasComponent(LEDGER)) {
+      if (!hasComponent(SYNC)) {
         install(mockedSyncServiceModule);
       } else {
         install(new SyncServiceModule());
-        if (hasEpochs) {
+        if (hasComponent(EPOCHS)) {
           install(new EpochsSyncModule());
         } else {
           install(new NoEpochsSyncModule());
@@ -145,16 +138,15 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       }
     }
 
-    // State Manager
-    if (!hasLedger) {
+    if (!hasComponent(LEDGER)) {
       install(new MockedLedgerModule());
     } else {
       install(new LedgerModule());
 
-      if (!hasMempool) {
+      if (!hasComponent(MEMPOOL)) {
         install(new MockedCommandGeneratorModule());
 
-        if (!hasEpochs) {
+        if (!hasComponent(EPOCHS)) {
           install(new MockedStateComputerModule());
         } else {
           install(new MockedStateComputerWithEpochsModule());
@@ -163,11 +155,11 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         install(new StateManagerMempoolModule());
         install(new MempoolReceiverModule());
 
-        if (hasMempoolRelayer) {
+        if (hasComponent(MEMPOOL_RELAYER)) {
           install(new MempoolRelayerModule());
         }
 
-        if (!hasRadixEngine) {
+        if (!hasComponent(RADIX_ENGINE)) {
           install(new MockedMempoolStateComputerModule());
         } else {
           install(new RadixEngineStateComputerModule());
@@ -176,5 +168,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         }
       }
     }
+  }
+
+  private boolean hasComponent(RadixNodeComponent component) {
+    return this.components.contains(component);
   }
 }
