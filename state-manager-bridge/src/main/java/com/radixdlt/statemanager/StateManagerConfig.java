@@ -62,47 +62,31 @@
  * permissions under this License.
  */
 
-use crate::jni::state_manager::JNIStateManager;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
+package com.radixdlt.statemanager;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_vertexstore_RustVertexStore_insertVertex(
-    env: JNIEnv,
-    _class: JClass,
-    interop_state: JObject,
-    j_vertex: jbyteArray,
-) {
-    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Option;
+import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.Field;
+import com.radixdlt.sbor.codec.StructCodec;
 
-    let vertex: Vec<u8> = env.convert_byte_array(j_vertex).unwrap();
+public record StateManagerConfig(Option<RustMempoolConfig> mempoolConfigOpt) {
+  static {
+    // this should be in RustMempoolConfig, but codecs must be registered in a specific order
+    CodecMap.withDefault(RustMempoolConfig::registerCodec);
 
-    // only get the lock for vertex store
-    state_manager
-        .vertex_store
-        .lock()
-        .unwrap()
-        .insert_vertex(vertex);
-}
+    CodecMap.withDefault(StateManagerConfig::registerCodec);
+  }
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_vertexstore_RustVertexStore_containsVertex(
-    env: JNIEnv,
-    _class: JClass,
-    interop_state: JObject,
-    j_vertex: jbyteArray,
-) -> bool {
-    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
-
-    let vertex: Vec<u8> = env.convert_byte_array(j_vertex).unwrap();
-
-    // only get the lock for vertex store
-    let res = state_manager
-        .vertex_store
-        .lock()
-        .unwrap()
-        .contains_vertex(vertex);
-
-    res
+  private static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        StateManagerConfig.class,
+        codecs ->
+            StructCodec.fromFields(
+                StateManagerConfig::new,
+                Field.of(
+                    StateManagerConfig::mempoolConfigOpt,
+                    codecs.of(new TypeToken<Option<RustMempoolConfig>>() {}))));
+  }
 }

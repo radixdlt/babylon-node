@@ -62,10 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.vertexstore;
+package com.radixdlt;
 
-public interface VertexStore {
-  void insertVertex(byte[] vertex);
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.transaction.RustTransactionStore;
+import com.radixdlt.transaction.TransactionStore;
 
-  boolean containsVertex(byte[] vertex);
+public final class StateManagerTransactionStoreModule extends AbstractModule {
+  @Provides
+  @Singleton
+  private TransactionStore stateManagerTransactionStore(StateManager stateManager) {
+    return new RustTransactionStore(stateManager.getRustState());
+  }
 }

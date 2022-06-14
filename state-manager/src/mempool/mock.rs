@@ -71,9 +71,9 @@ pub struct MockMempool {
 }
 
 impl MockMempool {
-    pub fn new(max_size: u64) -> MockMempool {
+    pub fn new(mempool_config: MempoolConfig) -> MockMempool {
         MockMempool {
-            max_size,
+            max_size: mempool_config.max_size as u64,
             data: HashSet::new(),
         }
     }
@@ -140,7 +140,7 @@ mod tests {
             id: TId { bytes: pl3 },
         };
 
-        let mut mp = MockMempool::new(2);
+        let mut mp = MockMempool::new(MempoolConfig { max_size: 2 });
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 0);
         let get = mp.get_txns(3, &HashSet::new());

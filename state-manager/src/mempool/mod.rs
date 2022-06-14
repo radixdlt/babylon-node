@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::jni::dtos::*;
 pub use crate::result::ToStateManagerError;
 use crate::types::Transaction;
 
@@ -91,6 +92,11 @@ pub trait Mempool {
     fn committed(&mut self, transactions: &HashSet<Transaction>);
     fn get_count(&self) -> u64;
     fn get_txns(&self, count: u64, seen: &HashSet<Transaction>) -> HashSet<Transaction>;
+}
+
+#[derive(Debug, TypeId, Encode, Decode, Clone)]
+pub struct MempoolConfig {
+    pub max_size: i32,
 }
 
 pub mod mock;

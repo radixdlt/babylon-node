@@ -64,9 +64,13 @@
 
 package com.radixdlt.statemanager.mempool;
 
+import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.mempool.RustMempool;
+import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transactions.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
@@ -76,8 +80,9 @@ public final class RustMempoolTest {
   @Test
   public void test_rust_mempool_interface() throws Exception {
     final var mempoolSize = 2;
-    try (var stateManager = StateManager.createAndInitialize(mempoolSize)) {
-      var rustMempool = stateManager.mempool();
+    final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
+    try (var stateManager = StateManager.createAndInitialize(config)) {
+      var rustMempool = new RustMempool(stateManager.getRustState());
       var transaction1 = Transaction.create(new byte[] {1});
       var transaction2 = Transaction.create(new byte[] {1, 2});
       var transaction3 =

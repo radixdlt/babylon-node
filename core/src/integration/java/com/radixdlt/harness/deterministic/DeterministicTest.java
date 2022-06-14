@@ -64,6 +64,8 @@
 
 package com.radixdlt.harness.deterministic;
 
+import static com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent.*;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
@@ -94,6 +96,7 @@ import com.radixdlt.harness.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.harness.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.monitoring.SystemCounters;
@@ -113,6 +116,7 @@ import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Function;
@@ -214,14 +218,14 @@ public final class DeterministicTest {
 
     public DeterministicTest buildWithEpochs(View epochHighView) {
       Objects.requireNonNull(epochHighView);
-      modules.add(new FunctionalRadixNodeModule(true, true, false, false, false, true, false));
+      modules.add(new FunctionalRadixNodeModule(EnumSet.of(LEDGER, EPOCHS)));
       addEpochedConsensusProcessorModule(epochHighView);
       return build();
     }
 
     public DeterministicTest buildWithEpochsAndSync(View epochHighView, SyncConfig syncConfig) {
       Objects.requireNonNull(epochHighView);
-      modules.add(new FunctionalRadixNodeModule(true, true, false, false, false, true, true));
+      modules.add(new FunctionalRadixNodeModule(EnumSet.of(LEDGER, EPOCHS, SYNC)));
       modules.add(new InMemoryCommittedReaderModule());
       modules.add(
           new AbstractModule() {
@@ -241,7 +245,7 @@ public final class DeterministicTest {
     }
 
     public DeterministicTest buildWithoutEpochs() {
-      modules.add(new FunctionalRadixNodeModule(true, false, false, false, false, false, false));
+      modules.add(new FunctionalRadixNodeModule(EnumSet.noneOf(RadixNodeComponent.class)));
       addNonEpochedConsensusProcessorModule();
       return build();
     }

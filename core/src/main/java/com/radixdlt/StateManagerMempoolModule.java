@@ -62,25 +62,28 @@
  * permissions under this License.
  */
 
-use std::collections::HashSet;
+package com.radixdlt;
 
-#[derive(Debug)]
-pub struct VertexStore {
-    in_mem_store: HashSet<Vec<u8>>,
-}
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.RustMempool;
+import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.statemanager.StateManager;
 
-impl VertexStore {
-    pub fn new() -> VertexStore {
-        VertexStore {
-            in_mem_store: HashSet::new(),
-        }
-    }
+public final class StateManagerMempoolModule extends AbstractModule {
 
-    pub fn insert_vertex(&mut self, vertex: Vec<u8>) {
-        self.in_mem_store.insert(vertex);
-    }
+  @Provides
+  @Singleton
+  // TODO: should return Mampool<Transaction> once RustMempool implements it
+  private RustMempool stateManagerMempool(StateManager stateManager) {
+    return new RustMempool(stateManager.getRustState());
+  }
 
-    pub fn contains_vertex(&self, vertex: Vec<u8>) -> bool {
-        self.in_mem_store.contains(&vertex)
-    }
+  @Provides
+  @Singleton
+  private RustMempoolConfig stateManagerMempoolConfig(@MempoolMaxSize int maxSize) {
+    return new RustMempoolConfig(maxSize);
+  }
 }

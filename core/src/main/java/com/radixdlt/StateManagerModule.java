@@ -67,18 +67,28 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.environment.Runners;
-import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.lang.Option;
+import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.statemanager.StateManagerConfig;
+import java.util.Optional;
 
 public final class StateManagerModule extends AbstractModule {
+
+  @Override
+  protected void configure() {
+    OptionalBinder.newOptionalBinder(binder(), RustMempoolConfig.class);
+  }
+
   @Provides
   @Singleton
-  StateManager stateManager(@MempoolMaxSize int mempoolMaxSize) {
-    return StateManager.createAndInitialize(mempoolMaxSize);
+  StateManager stateManager(Optional<RustMempoolConfig> mempoolConfigOpt) {
+    return StateManager.createAndInitialize(new StateManagerConfig(Option.from(mempoolConfigOpt)));
   }
 
   @ProvidesIntoMap
