@@ -74,13 +74,13 @@ import java.util.*;
 
 @SuppressWarnings("unused")
 public interface MapCodec {
-  record MapCodecViaHashMap<TMap, TKey, TItem>(
+  record MapCodecViaHashMap<TMap extends Map<TKey, TItem>, TKey, TItem>(
       TypeId mapTypeId,
       Codec<TKey> keyCodec,
       Codec<TItem> itemCodec,
       Functions.Func1<TMap, Integer> getSize,
       Functions.Func1<TMap, Iterable<Map.Entry<TKey, TItem>>> getIterable,
-      Functions.Func1<HashMap<TKey, TItem>, TMap> mapFromHashMap)
+      Functions.Func1<Integer, TMap> createMapWithPreparedLength)
       implements Codec<TMap> {
 
     @Override
@@ -100,12 +100,18 @@ public interface MapCodec {
       }
     }
 
-    public HashMap<TKey, TItem> decodeToHashMap(DecoderApi decoder) {
+    @Override
+    public void encodeWithoutTypeId(EncoderApi encoder, TMap map) {
+      encodeFromIterable(encoder, getSize.apply(map), getIterable.apply(map));
+    }
+
+    @Override
+    public TMap decodeWithoutTypeId(DecoderApi decoder) {
       decoder.expectType(keyCodec.getTypeId());
       decoder.expectType(itemCodec.getTypeId());
 
       var length = decoder.readInt();
-      var map = new HashMap<TKey, TItem>(length);
+      var map = createMapWithPreparedLength.apply(length);
 
       for (var i = 0; i < length; i++) {
         map.put(keyCodec.decodeWithoutTypeId(decoder), itemCodec.decodeWithoutTypeId(decoder));
@@ -119,16 +125,6 @@ public interface MapCodec {
       }
 
       return map;
-    }
-
-    @Override
-    public void encodeWithoutTypeId(EncoderApi encoder, TMap map) {
-      encodeFromIterable(encoder, getSize.apply(map), getIterable.apply(map));
-    }
-
-    @Override
-    public TMap decodeWithoutTypeId(DecoderApi decoder) {
-      return mapFromHashMap.apply(decodeToHashMap(decoder));
     }
   }
 
@@ -150,10 +146,13 @@ public interface MapCodec {
    * In the future, we may wish to add a forMapWithDeterministicOrder method.
    */
   static <TKey, TItem> Codec<Map<TKey, TItem>> forMap(
-      Codec<TKey> keyCodec, Codec<TItem> itemCodec, TypeId mapTypeId) {
+      Codec<TKey> keyCodec,
+      Codec<TItem> itemCodec,
+      TypeId mapTypeId,
+      Functions.Func1<Integer, Map<TKey, TItem>> createEmptyMapWithSize) {
     mapTypeId.assertMapType();
     return new MapCodec.MapCodecViaHashMap<>(
-        mapTypeId, keyCodec, itemCodec, Map::size, Map::entrySet, map -> map);
+        mapTypeId, keyCodec, itemCodec, Map::size, Map::entrySet, createEmptyMapWithSize);
   }
 
   /**
@@ -168,14 +167,20 @@ public interface MapCodec {
       Codec<TKey> keyCodec, Codec<TItem> itemCodec, TypeId mapTypeId) {
     mapTypeId.assertMapType();
     return new MapCodec.MapCodecViaHashMap<>(
-        mapTypeId, keyCodec, itemCodec, HashMap::size, HashMap::entrySet, map -> map);
+        mapTypeId, keyCodec, itemCodec, HashMap::size, HashMap::entrySet, HashMap::new);
   }
 
+  @SuppressWarnings("SortedCollectionWithNonComparableKeys")
   static <TKey, TItem> Codec<TreeMap<TKey, TItem>> forTreeMap(
       Codec<TKey> keyCodec, Codec<TItem> itemCodec, TypeId mapTypeId) {
     mapTypeId.assertMapType();
     return new MapCodec.MapCodecViaHashMap<>(
-        mapTypeId, keyCodec, itemCodec, TreeMap::size, TreeMap::entrySet, TreeMap::new);
+        mapTypeId,
+        keyCodec,
+        itemCodec,
+        TreeMap::size,
+        TreeMap::entrySet,
+        length -> new TreeMap<>());
   }
 
   static void registerMapToMapTo(CodecMap codecMap, TypeId mapTypeId) {
@@ -185,7 +190,7 @@ public interface MapCodec {
           try {
             var keyType = TypeTokenUtils.getGenericTypeParameter(mapType, 0);
             var itemType = TypeTokenUtils.getGenericTypeParameter(mapType, 1);
-            return forMap(codecs.of(keyType), codecs.of(itemType), mapTypeId);
+            return forMap(codecs.of(keyType), codecs.of(itemType), mapTypeId, HashMap::new);
           } catch (Exception ex) {
             throw new SborCodecException(
                 String.format("Exception creating Map type codec for %s", mapType), ex);
