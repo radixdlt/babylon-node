@@ -162,11 +162,12 @@ public class PersistedPropertiesTest {
   public void testGetBoolean() {
     populateData();
     assertTrue(this.properties.get("bool.true", false));
-    assertTrue(this.properties.get("bool.true1", false));
     assertFalse(this.properties.get("bool.false", true));
-    assertFalse(this.properties.get("bool.false0", true));
     assertTrue(this.properties.get("bool.notexist", true));
     assertFalse(this.properties.get("bool.notexist", false));
+
+    assertThrows(IllegalArgumentException.class, () -> this.properties.get("bool.true1", false));
+    assertThrows(IllegalArgumentException.class, () -> this.properties.get("bool.false0", true));
   }
 
   @Test

@@ -97,7 +97,8 @@ public class RuntimePropertiesHostIpTest {
 
   private static RuntimePropertiesHostIp make(String value) {
     RuntimeProperties properties = mock(RuntimeProperties.class);
-    when(properties.get(eq(RuntimePropertiesHostIp.HOST_IP_PROPERTY), any())).thenReturn(value);
+    when(properties.get(eq(RuntimePropertiesHostIp.HOST_IP_PROPERTY), anyString()))
+        .thenReturn(value);
     return (RuntimePropertiesHostIp) RuntimePropertiesHostIp.create(properties);
   }
 }
