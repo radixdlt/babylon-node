@@ -77,7 +77,8 @@ import com.radixdlt.sbor.coding.EncoderApi;
 public interface Codec<T> extends UntypedCodec<T> {
   TypeId getTypeId();
 
-  default void encodeWithTypeId(EncoderApi encoder, T value) {
+  default <TIn extends T> void encodeWithTypeId(EncoderApi encoder, TIn value)
+  {
     encoder.encodeTypeId(getTypeId());
     encodeWithoutTypeId(encoder, value);
   }
@@ -115,7 +116,7 @@ public interface Codec<T> extends UntypedCodec<T> {
     }
 
     @Override
-    public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+    public <TIn extends T> void encodeWithoutTypeId(EncoderApi encoder, TIn value) {
       valueEncoder.encodeWithoutTypeId(encoder, value);
     }
 

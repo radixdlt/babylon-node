@@ -110,7 +110,7 @@ interface CollectionCodec {
     }
 
     @Override
-    public void encodeWithoutTypeId(EncoderApi encoder, TCollection collection) {
+    public <TIn extends TCollection> void encodeWithoutTypeId(EncoderApi encoder, TIn collection) {
       encodeFromIterable(encoder, getSize.apply(collection), getIterable.apply(collection));
     }
 

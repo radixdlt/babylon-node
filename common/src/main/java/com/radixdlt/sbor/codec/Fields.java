@@ -76,7 +76,7 @@ public interface Fields<T> extends UntypedCodec<T> {
   record FieldsImpl<T>(List<Field<T, ?>> fields, Functions.Func1<DecoderApi, T> decodeFields)
       implements Fields<T> {
     @Override
-    public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+    public <TIn extends T> void encodeWithoutTypeId(EncoderApi encoder, TIn value) {
       encoder.writeInt(fields.size());
 
       for (var field : fields) {

@@ -82,7 +82,7 @@ public record ResultCodec<T, E>(Codec<T> okCodec, Codec<E> errCodec)
   }
 
   @Override
-  public void encodeWithoutTypeId(EncoderApi encoder, Result<T, E> result) {
+  public <TResult extends Result<T, E>> void encodeWithoutTypeId(EncoderApi encoder, TResult result) {
     result.apply(
         value -> {
           encoder.writeByte(ResultTypeId.OK);

@@ -82,7 +82,7 @@ public record EitherCodec<L, R>(Codec<L> leftType, Codec<R> rightType)
   }
 
   @Override
-  public void encodeWithoutTypeId(EncoderApi encoder, Either<L, R> either) {
+  public <TEither extends Either<L, R>> void encodeWithoutTypeId(EncoderApi encoder, TEither either) {
     either.apply(
         left -> {
           encoder.writeByte(ResultTypeId.ERR);

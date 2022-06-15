@@ -73,7 +73,7 @@ import com.radixdlt.sbor.exceptions.SborDecodeException;
 
 @SuppressWarnings("unused")
 public interface UntypedCodec<T> {
-  void encodeWithoutTypeId(EncoderApi encoder, T value);
+  <TIn extends T> void encodeWithoutTypeId(EncoderApi encoder, TIn value);
 
   T decodeWithoutTypeId(DecoderApi decoder);
 
@@ -100,7 +100,7 @@ public interface UntypedCodec<T> {
       EncoderWithoutTypeId<T> valueEncoder, DecoderWithoutTypeId<T> valueDecoder)
       implements UntypedCodec<T> {
     @Override
-    public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+    public <TIn extends T> void encodeWithoutTypeId(EncoderApi encoder, TIn value) {
       valueEncoder.encodeWithoutTypeId(encoder, value);
     }
 

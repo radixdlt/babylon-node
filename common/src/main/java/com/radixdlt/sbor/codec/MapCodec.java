@@ -122,7 +122,7 @@ public interface MapCodec {
     }
 
     @Override
-    public void encodeWithoutTypeId(EncoderApi encoder, TMap map) {
+    public <TIn extends TMap> void encodeWithoutTypeId(EncoderApi encoder, TIn map) {
       encodeFromIterable(encoder, getSize.apply(map), getIterable.apply(map));
     }
 

@@ -78,7 +78,7 @@ public final class BooleanCodec implements Codec<Boolean> {
   }
 
   @Override
-  public void encodeWithoutTypeId(EncoderApi encoder, Boolean value) {
+  public <TIn extends Boolean> void encodeWithoutTypeId(EncoderApi encoder, TIn value) {
     encoder.writeBoolean(value);
   }
 

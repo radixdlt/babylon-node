@@ -81,7 +81,7 @@ public record OptionCodec<T>(Codec<T> innerTypeCodec) implements Codec<Option<T>
   }
 
   @Override
-  public void encodeWithoutTypeId(EncoderApi encoder, Option<T> option) {
+  public <TOption extends Option<T>> void encodeWithoutTypeId(EncoderApi encoder, TOption option) {
     option.apply(
         () -> encoder.writeByte(OptionTypeId.NONE),
         value -> {

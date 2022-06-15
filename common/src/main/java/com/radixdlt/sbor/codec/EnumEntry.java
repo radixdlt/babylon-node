@@ -83,7 +83,7 @@ public interface EnumEntry<T> extends UntypedCodec<T> {
     }
 
     @Override
-    public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+    public <TIn extends T> void encodeWithoutTypeId(EncoderApi encoder, TIn value) {
       fieldsCodec.encodeWithoutTypeId(encoder, value);
     }
 
@@ -314,7 +314,7 @@ public interface EnumEntry<T> extends UntypedCodec<T> {
     }
 
     @Override
-    public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+    public <TIn extends T> void encodeWithoutTypeId(EncoderApi encoder, TIn value) {
       encoder.writeInt(fields.size());
 
       for (var field : fields) {

@@ -79,7 +79,7 @@ public interface StructCodec<T> extends Codec<T> {
 
   record StructCodecImpl<T>(UntypedCodec<T> fields) implements StructCodec<T> {
     @Override
-    public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+    public <TIn extends T> void encodeWithoutTypeId(EncoderApi encoder, TIn value) {
       fields.encodeWithoutTypeId(encoder, value);
     }
 

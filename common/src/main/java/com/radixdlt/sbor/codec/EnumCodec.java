@@ -89,7 +89,7 @@ public class EnumCodec<T> implements Codec<T> {
   }
 
   @SuppressWarnings("unchecked")
-  public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+  public <TIn extends T> void encodeWithoutTypeId(EncoderApi encoder, TIn value) {
     var enumKey = mapEnumValueToKey.apply(value);
 
     var enumEntry = entries.get(enumKey);
