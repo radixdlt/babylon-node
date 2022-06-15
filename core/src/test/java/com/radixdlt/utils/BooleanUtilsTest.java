@@ -95,7 +95,7 @@ public class BooleanUtilsTest {
     IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> BooleanUtils.parseBoolean(null));
     assertEquals(
-        "It was not possible to parte the string 'null' as a boolean. Please use 'true' or"
+        "It was not possible to parse the string 'null' as a boolean. Please use 'true' or"
             + " 'false'.",
         exception.getMessage());
   }
@@ -105,7 +105,7 @@ public class BooleanUtilsTest {
     IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> BooleanUtils.parseBoolean(""));
     assertEquals(
-        "It was not possible to parte the string '' as a boolean. Please use 'true' or 'false'.",
+        "It was not possible to parse the string '' as a boolean. Please use 'true' or 'false'.",
         exception.getMessage());
   }
 
@@ -114,7 +114,7 @@ public class BooleanUtilsTest {
     IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> BooleanUtils.parseBoolean("yes"));
     assertEquals(
-        "It was not possible to parte the string 'yes' as a boolean. Please use 'true' or 'false'.",
+        "It was not possible to parse the string 'yes' as a boolean. Please use 'true' or 'false'.",
         exception.getMessage());
   }
 
@@ -123,7 +123,7 @@ public class BooleanUtilsTest {
     IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> BooleanUtils.parseBoolean("no"));
     assertEquals(
-        "It was not possible to parte the string 'no' as a boolean. Please use 'true' or 'false'.",
+        "It was not possible to parse the string 'no' as a boolean. Please use 'true' or 'false'.",
         exception.getMessage());
   }
 }

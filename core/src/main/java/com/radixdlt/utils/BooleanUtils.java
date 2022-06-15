@@ -94,7 +94,7 @@ public class BooleanUtils {
         // instead
       case Object object -> throw new IllegalArgumentException(
           String.format(
-              "It was not possible to parte the string '%s' as a boolean. Please use 'true' or"
+              "It was not possible to parse the string '%s' as a boolean. Please use 'true' or"
                   + " 'false'.",
               s));
     };
