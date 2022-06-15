@@ -118,13 +118,14 @@ public class KeyGenerator {
 
   private Result<Unit, Cause> run(String[] args) {
     return parseParameters(args)
-        .filterOrElse(commandLine -> !commandLine.hasOption("h"), IRRELEVANT::swallow)
-        .filterOrElse(commandLine -> commandLine.getOptions().length != 0, IRRELEVANT::swallow)
+        .filterOrElseGetError(commandLine -> !commandLine.hasOption("h"), IRRELEVANT::swallow)
+        .filterOrElseGetError(
+            commandLine -> commandLine.getOptions().length != 0, IRRELEVANT::swallow)
         .flatMap(
             cli ->
                 all(parseKeystore(cli), parsePassword(cli), parseKeypair(cli), parseShowPk(cli))
                     .flatMap(this::generateKeypair))
-        .onFailure(failure -> usage(failure.message()))
+        .onError(failure -> usage(failure.message()))
         .onSuccessDo(() -> System.out.println("Done"));
   }
 
@@ -161,7 +162,7 @@ public class KeyGenerator {
   }
 
   private Result<Boolean, Cause> parseShowPk(CommandLine commandLine) {
-    return Result.ok(commandLine.hasOption("pk"));
+    return Result.success(commandLine.hasOption("pk"));
   }
 
   private Result<Unit, Cause> printPublicKey(
@@ -191,11 +192,12 @@ public class KeyGenerator {
   }
 
   private Result<String, Cause> parseKeypair(CommandLine commandLine) {
-    return requiredString(commandLine, "n").orReplaceWith(Result.ok(DEFAULT_KEYPAIR_NAME));
+    return requiredString(commandLine, "n").orElse(Result.success(DEFAULT_KEYPAIR_NAME));
   }
 
   private Result<String, Cause> requiredString(CommandLine commandLine, String opt) {
-    return Result.fromOptionalOr(ofNullable(commandLine.getOptionValue(opt)), MISSING_PARAMETER);
+    return Result.fromOptionalOrElseError(
+        ofNullable(commandLine.getOptionValue(opt)), MISSING_PARAMETER);
   }
 
   private Result<CommandLine, Cause> parseParameters(String[] args) {

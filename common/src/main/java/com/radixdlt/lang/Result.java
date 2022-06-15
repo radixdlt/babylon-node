@@ -68,7 +68,7 @@ import static com.radixdlt.lang.Tuple.*;
 
 import com.radixdlt.lang.Functions.*;
 import com.radixdlt.lang.Result.Error;
-import com.radixdlt.lang.Result.Ok;
+import com.radixdlt.lang.Result.Success;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -78,24 +78,24 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * Representation of the operation result. The result can be either success (Ok) or failure (Error).
- * In either case, it holds the value returned by the operation.
+ * Representation of the operation result. The result can be either success (Success) or error
+ * (Error). In either case, it holds the value returned by the operation.
  *
  * @param <T> Type of value in case of success.
  * @param <E> Type of value in case of error.
  */
 @SuppressWarnings("unused")
-public sealed interface Result<T, E> permits Ok, Error {
+public sealed interface Result<T, E> permits Success, Error {
   /**
    * Transform operation result value into value of other type and wrap new value into {@link
    * Result}. Transformation takes place if current instance (this) contains successful result,
    * otherwise current instance remains unchanged and transformation function is not invoked.
    *
    * @param mapper Function to transform successful value
-   * @return transformed value (in case of success) or current instance (in case of failure)
+   * @return transformed value (in case of success) or current instance (in case of error)
    */
   default <R> Result<R, E> map(Func1<? super T, R> mapper) {
-    return fold(t -> Result.ok(mapper.apply(t)), Result::error);
+    return fold(t -> Result.success(mapper.apply(t)), Result::error);
   }
 
   /**
@@ -104,7 +104,7 @@ public sealed interface Result<T, E> permits Ok, Error {
    * unchanged.
    *
    * @param supplier Source of the replacement value.
-   * @return transformed value (in case of success) or current instance (in case of failure)
+   * @return transformed value (in case of success) or current instance (in case of error)
    */
   default <R> Result<R, E> map(Supplier<R> supplier) {
     return fold(unused -> success(supplier.get()), Result::error);
@@ -115,7 +115,7 @@ public sealed interface Result<T, E> permits Ok, Error {
    * an error, transformation function is not invoked and value remains the same.
    *
    * @param mapper Function to apply to result
-   * @return transformed value (in case of success) or current instance (in case of failure)
+   * @return transformed value (in case of success) or current instance (in case of error)
    */
   default <R> Result<R, E> flatMap(Func1<? super T, Result<R, E>> mapper) {
     return fold(mapper, Result::error);
@@ -127,35 +127,35 @@ public sealed interface Result<T, E> permits Ok, Error {
    * instance remains unchanged.
    *
    * @param mapper Source of the replacement result.
-   * @return replacement result (in case of success) or current instance (in case of failure)
+   * @return replacement result (in case of success) or current instance (in case of error)
    */
   default <R> Result<R, E> flatMap(Supplier<Result<R, E>> mapper) {
     return fold(unused -> mapper.get(), Result::error);
   }
 
   /**
-   * Apply consumers to result value. Note that depending on the result (success or failure) only
-   * one consumer will be applied at a time.
+   * Apply consumers to result value. Note that depending on the result (success or error) only one
+   * consumer will be applied at a time.
    *
    * @param successConsumer Consumer for success result
-   * @param failureConsumer Consumer for failure result
+   * @param errorConsumer Consumer for error result
    * @return current instance
    */
   default Result<T, E> apply(
-      Consumer<? super T> successConsumer, Consumer<? super E> failureConsumer) {
+      Consumer<? super T> successConsumer, Consumer<? super E> errorConsumer) {
     return fold(
         t -> {
           successConsumer.accept(t);
           return this;
         },
         t -> {
-          failureConsumer.accept(t);
+          errorConsumer.accept(t);
           return this;
         });
   }
 
   /**
-   * Pass successful operation result value into provided consumer. Alias of onOk.
+   * Pass successful operation result value into provided consumer.
    *
    * @param consumer Consumer to pass value to
    * @return current instance for fluent call chaining
@@ -171,69 +171,7 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   /**
-   * Pass successful operation result value into provided consumer. Alias of onSuccess.
-   *
-   * @param consumer Consumer to pass value to
-   * @return current instance for fluent call chaining
-   */
-  default Result<T, E> onOk(Consumer<T> consumer) {
-    fold(
-        v -> {
-          consumer.accept(v);
-          return null;
-        },
-        Functions::toNull);
-    return this;
-  }
-
-  /**
-   * Run provided action in case of success. Alias of onOkDo.
-   *
-   * @return current instance for fluent call chaining
-   */
-  default Result<T, E> onSuccessDo(Runnable action) {
-    fold(
-        v -> {
-          action.run();
-          return null;
-        },
-        Functions::toNull);
-    return this;
-  }
-
-  /**
-   * Run provided action in case of success. Alias of onSuccessDo.
-   *
-   * @return current instance for fluent call chaining
-   */
-  default Result<T, E> onOkDo(Runnable action) {
-    fold(
-        v -> {
-          action.run();
-          return null;
-        },
-        Functions::toNull);
-    return this;
-  }
-
-  /**
-   * Pass failure operation result value into provided consumer. Alias of onError.
-   *
-   * @param consumer Consumer to pass value to
-   * @return current instance for fluent call chaining
-   */
-  default Result<T, E> onFailure(Consumer<? super E> consumer) {
-    fold(
-        Functions::toNull,
-        v -> {
-          consumer.accept(v);
-          return null;
-        });
-    return this;
-  }
-
-  /**
-   * Pass failure operation result value into provided consumer. Alias of onFailure.
+   * Pass error operation result value into provided consumer.
    *
    * @param consumer Consumer to pass value to
    * @return current instance for fluent call chaining
@@ -249,23 +187,25 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   /**
-   * Run provided action in case of failure. Alias of onErrorDo.
+   * Run provided action in case of success.
    *
+   * @param action Action to run
    * @return current instance for fluent call chaining
    */
-  default Result<T, E> onFailureDo(Runnable action) {
+  default Result<T, E> onSuccessDo(Runnable action) {
     fold(
-        Functions::toNull,
         v -> {
           action.run();
           return null;
-        });
+        },
+        Functions::toNull);
     return this;
   }
 
   /**
-   * Run provided action in case of failure. Alias of onFailureDo.
+   * Run provided action in case of error.
    *
+   * @param action Action to run
    * @return current instance for fluent call chaining
    */
   default Result<T, E> onErrorDo(Runnable action) {
@@ -284,7 +224,7 @@ public sealed interface Result<T, E> permits Ok, Error {
    * during such a conversion error information is lost (if present).
    *
    * @return {@link Option} instance which is present in case of success and missing in case of
-   *     failure.
+   *     error.
    */
   default Option<T> toOption() {
     return fold(Option::option, t1 -> Option.empty());
@@ -295,8 +235,7 @@ public sealed interface Result<T, E> permits Ok, Error {
    * an empty {@link Option} and an Error instance is converted into present {@link Option}. Note
    * that during such a conversion value information is lost (if present).
    *
-   * @return {@link Option} instance which is present in case of failure and empty in case of
-   *     success.
+   * @return {@link Option} instance which is present in case of error and empty in case of success.
    */
   default Option<E> toOptionOfError() {
     return fold(t1 -> Option.empty(), Option::option);
@@ -304,11 +243,11 @@ public sealed interface Result<T, E> permits Ok, Error {
 
   /**
    * Convert instance into {@link Optional} of the same value type. Successful instance is converted
-   * into present {@link Optional} and failure - into empty {@link Optional}. Note that during such
-   * a conversion error information is lost.
+   * into present {@link Optional} and error - into empty {@link Optional}. Note that during such a
+   * conversion error information is lost.
    *
    * @return {@link Optional} instance which is present in case of success and missing in case of
-   *     failure.
+   *     error.
    */
   default Optional<T> toOptional() {
     return fold(Optional::of, t1 -> Optional.empty());
@@ -324,27 +263,9 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   /**
-   * Check if instance is success. Alias of isSuccess.
+   * Check if instance is error.
    *
-   * @return {@code true} if instance is success and {@code false} otherwise
-   */
-  default boolean isOk() {
-    return fold(Functions::toTrue, Functions::toFalse);
-  }
-
-  /**
-   * Check if instance is failure.
-   *
-   * @return {@code true} if instance is failure and {@code false} otherwise
-   */
-  default boolean isFailure() {
-    return fold(Functions::toFalse, Functions::toTrue);
-  }
-
-  /**
-   * Check if instance is failure. Alias of isFailure.
-   *
-   * @return {@code true} if instance is failure and {@code false} otherwise
+   * @return {@code true} if instance is error and {@code false} otherwise
    */
   default boolean isError() {
     return fold(Functions::toFalse, Functions::toTrue);
@@ -352,41 +273,41 @@ public sealed interface Result<T, E> permits Ok, Error {
 
   /**
    * Filter instance against provided predicate. If predicate returns {@code true} then instance
-   * remains unchanged. If predicate returns {@code false}, then failure instance in created using
+   * remains unchanged. If predicate returns {@code false}, then error instance in created using
    * given {@link E}.
    *
    * @param predicate predicate to invoke
-   * @param error failure to use in case if predicate returns {@code false}
+   * @param error error to use in case if predicate returns {@code false}
    * @return current instance if predicate returns {@code true} or {@link Error} instance if
    *     predicate returns {@code false}
    */
-  default Result<T, E> filterOr(Predicate<T> predicate, E error) {
-    return fold(v -> predicate.test(v) ? this : failure(error), v -> this);
+  default Result<T, E> filterOrElseError(Predicate<T> predicate, E error) {
+    return fold(v -> predicate.test(v) ? this : error(error), v -> this);
   }
 
   /**
    * Filter instance against provided predicate. If predicate returns {@code true} then instance
-   * remains unchanged. If predicate returns {@code false}, then failure instance in created using
+   * remains unchanged. If predicate returns {@code false}, then error instance in created using
    * {@link E} created by provided function.
    *
    * @param predicate predicate to invoke
-   * @param errorMapper function which transforms the tested value into instance of {@link E} if
+   * @param errorCreator function which transforms the tested value into instance of {@link E} if
    *     predicate returns {@code false}
    * @return current instance if predicate returns {@code true} or {@link Error} instance if
    *     predicate returns {@code false}
    */
-  default Result<T, E> filterOrElse(Predicate<T> predicate, Func1<T, E> errorMapper) {
-    return fold(v -> predicate.test(v) ? this : failure(errorMapper.apply(v)), v -> this);
+  default Result<T, E> filterOrElseGetError(Predicate<T> predicate, Func1<T, E> errorCreator) {
+    return fold(v -> predicate.test(v) ? this : error(errorCreator.apply(v)), v -> this);
   }
 
   /**
    * Return value store in the current instance (if this instance represents successful result) or
    * provided replacement value.
    *
-   * @param replacement replacement value returned if current instance represents failure.
+   * @param replacement replacement value returned if current instance represents error.
    * @return value stored in current instance (in case of success) or replacement value.
    */
-  default T or(T replacement) {
+  default T orElseValue(T replacement) {
     return fold(Functions::id, unused -> replacement);
   }
 
@@ -394,32 +315,32 @@ public sealed interface Result<T, E> permits Ok, Error {
    * Return value store in the current instance (if this instance represents successful result) or
    * value returned by provided supplier.
    *
-   * @param supplier source of replacement value returned if current instance represents failure.
+   * @param supplier source of replacement value returned if current instance represents error.
    * @return value stored in current instance (in case of success) or replacement value.
    */
-  default T orElse(Supplier<T> supplier) {
+  default T orElseGetValue(Supplier<T> supplier) {
     return fold(Functions::id, unused -> supplier.get());
   }
 
   /**
    * Return current instance if this instance represents successful result or replacement instance
-   * if current instance represents a failure.
+   * if current instance represents a error.
    *
-   * @param replacement replacement instance returned if current instance represents failure.
+   * @param replacement replacement instance returned if current instance represents error.
    * @return current instance (in case of success) or replacement instance.
    */
-  default Result<T, E> orReplaceWith(Result<T, E> replacement) {
+  default Result<T, E> orElse(Result<T, E> replacement) {
     return fold(unused -> this, unused -> replacement);
   }
 
   /**
    * Return current instance if this instance represents successful result or instance returned by
-   * provided supplier if current instance represents a failure.
+   * provided supplier if current instance represents a error.
    *
-   * @param supplier source of replacement instance returned if current instance represents failure.
+   * @param supplier source of replacement instance returned if current instance represents error.
    * @return current instance (in case of success) or replacement instance.
    */
-  default Result<T, E> orElseReplaceWith(Supplier<Result<T, E>> supplier) {
+  default Result<T, E> orElseGet(Supplier<Result<T, E>> supplier) {
     return fold(unused -> this, unused -> supplier.get());
   }
 
@@ -474,23 +395,23 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   /**
-   * Handle both possible states (success/failure) and produce single value from it.
+   * Handle both possible states (success/error) and produce single value from it.
    *
    * @param successMapper function to transform success into value
-   * @param failureMapper function to transform failure into value
+   * @param errorMapper function to transform error into value
    * @return result of application of one of the mappers.
    */
   <R> R fold(
-      Func1<? super T, ? extends R> successMapper, Func1<? super E, ? extends R> failureMapper);
+      Func1<? super T, ? extends R> successMapper, Func1<? super E, ? extends R> errorMapper);
 
-  default Result<T, E> accept(Consumer<T> successConsumer, Consumer<E> failureConsumer) {
+  default Result<T, E> accept(Consumer<T> successConsumer, Consumer<E> errorConsumer) {
     return fold(
         success -> {
           successConsumer.accept(success);
           return this;
         },
-        failure -> {
-          failureConsumer.accept(failure);
+        error -> {
+          errorConsumer.accept(error);
           return this;
         });
   }
@@ -502,44 +423,24 @@ public sealed interface Result<T, E> permits Ok, Error {
    * @return created instance
    */
   static <T, E> Result<T, E> success(T value) {
-    return new Ok<>(value);
+    return new Success<>(value);
   }
 
-  /**
-   * Create an instance of successful operation result.
-   *
-   * @param value Operation result
-   * @return created instance
-   */
-  static <T, E> Result<T, E> ok(T value) {
-    return new Ok<>(value);
-  }
-
-  record Ok<T, E>(T value) implements Result<T, E> {
+  record Success<T, E>(T value) implements Result<T, E> {
     @Override
     public <R> R fold(
-        Func1<? super T, ? extends R> successMapper, Func1<? super E, ? extends R> failureMapper) {
+        Func1<? super T, ? extends R> successMapper, Func1<? super E, ? extends R> errorMapper) {
       return successMapper.apply(value);
     }
 
     @Override
     public String toString() {
-      return "Ok(" + value.toString() + ")";
+      return "Success(" + value.toString() + ")";
     }
   }
 
   /**
-   * Create an instance of failure result.
-   *
-   * @param error Operation error value
-   * @return created instance
-   */
-  static <T, E> Result<T, E> failure(E error) {
-    return new Error<>(error);
-  }
-
-  /**
-   * Create an instance of failure result.
+   * Create an instance of Error result.
    *
    * @param error Operation error value
    * @return created instance
@@ -551,8 +452,8 @@ public sealed interface Result<T, E> permits Ok, Error {
   record Error<T, E>(E error) implements Result<T, E> {
     @Override
     public <R> R fold(
-        Func1<? super T, ? extends R> successMapper, Func1<? super E, ? extends R> failureMapper) {
-      return failureMapper.apply(error);
+        Func1<? super T, ? extends R> successMapper, Func1<? super E, ? extends R> errorMapper) {
+      return errorMapper.apply(error);
     }
 
     @Override
@@ -562,18 +463,19 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-  static <T, E> Result<T, E> fromOptionalOr(Optional<T> source, E error) {
-    return source.map(Result::<T, E>ok).orElseGet(() -> Result.error(error));
+  static <T, E> Result<T, E> fromOptionalOrElseError(Optional<T> source, E error) {
+    return source.map(Result::<T, E>success).orElseGet(() -> Result.error(error));
   }
 
   @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-  static <T, E> Result<T, E> fromOptionalOrElse(Optional<T> source, Supplier<E> errorSupplier) {
-    return source.map(Result::<T, E>ok).orElseGet(() -> Result.error(errorSupplier.get()));
+  static <T, E> Result<T, E> fromOptionalOrElseGetError(
+      Optional<T> source, Supplier<E> errorSupplier) {
+    return source.map(Result::<T, E>success).orElseGet(() -> Result.error(errorSupplier.get()));
   }
 
   /**
    * Wrap value returned by provided lambda into success {@link Result} if call succeeds or into
-   * failure {@link Result} if call throws exception.
+   * error {@link Result} if call throws exception.
    *
    * @param supplier the call to wrap
    * @param exceptionMapper the function which will transform exception into instance of {@link E}
@@ -584,46 +486,46 @@ public sealed interface Result<T, E> permits Ok, Error {
     try {
       return success(supplier.get());
     } catch (Throwable e) {
-      return failure(exceptionMapper.apply(e));
+      return error(exceptionMapper.apply(e));
     }
   }
 
   /**
    * Transform list of {@link Result} instances into {@link Result} with list of values. If there
-   * are any failures, the first failure is returned.
+   * are any errors, the first error is returned.
    *
    * @param resultList input list
-   * @return success instance if all {@link Result} instances in list are successes or failure
-   *     instance with any instances in list is a failure
+   * @return success instance if all {@link Result} instances in list are successes or error
+   *     instance with any instances in list is a error
    */
   static <T, E> Result<List<T>, E> allOf(List<Result<T, E>> resultList) {
     var values = new ArrayList<T>(resultList.size());
 
     for (var result : resultList) {
-      if (result.isFailure()) {
-        return failure(result.unwrapError());
+      if (result.isError()) {
+        return error(result.unwrapError());
       }
       values.add(result.unwrap());
     }
 
-    return ok(values);
+    return success(values);
   }
 
   /**
    * Transform list of {@link Result} instances into {@link Result} with list of values. If there
-   * are any failures, all the failures are returned.
+   * are any errors, all the errors are returned.
    *
    * @param resultList input list
-   * @return success instance if all {@link Result} instances in list are successes or failure
-   *     instance with any instances in list is a failure
+   * @return success instance if all {@link Result} instances in list are successes or error
+   *     instance with any instances in list is a error
    */
   static <T, E> Result<List<T>, List<E>> allOfOrAllErrors(List<Result<T, E>> resultList) {
     var values = new ArrayList<T>(resultList.size());
-    var failures = new ArrayList<E>(resultList.size());
+    var errors = new ArrayList<E>(resultList.size());
 
-    resultList.forEach(val -> val.fold(values::add, failures::add));
+    resultList.forEach(val -> val.fold(values::add, errors::add));
 
-    return failures.isEmpty() ? ok(values) : failure(failures);
+    return errors.isEmpty() ? success(values) : error(errors);
   }
 
   /**
@@ -675,7 +577,7 @@ public sealed interface Result<T, E> permits Ok, Error {
   @SafeVarargs
   static <E> Result<Unit, E> allOf(Result<Unit, E>... values) {
     for (var value : values) {
-      if (value.isFailure()) {
+      if (value.isError()) {
         return value;
       }
     }
@@ -683,9 +585,9 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   /**
-   * Transform provided results into single result containing tuple of values. The result is failure
-   * if any input result is failure. Otherwise returned instance contains tuple with values from
-   * input results.
+   * Transform provided results into single result containing tuple of values. The result is error
+   * if any input result is error. Otherwise returned instance contains tuple with values from input
+   * results.
    *
    * @return {@link Mapper1} prepared for further transformation.
    */
@@ -694,9 +596,9 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   /**
-   * Transform provided results into single result containing tuple of values. The result is failure
-   * if any input result is failure. Otherwise returned instance contains tuple with values from
-   * input results.
+   * Transform provided results into single result containing tuple of values. The result is error
+   * if any input result is error. Otherwise returned instance contains tuple with values from input
+   * results.
    *
    * @return {@link Mapper2} prepared for further transformation.
    */
@@ -705,9 +607,9 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   /**
-   * Transform provided results into single result containing tuple of values. The result is failure
-   * if any input result is failure. Otherwise returned instance contains tuple with values from
-   * input results.
+   * Transform provided results into single result containing tuple of values. The result is error
+   * if any input result is error. Otherwise returned instance contains tuple with values from input
+   * results.
    *
    * @return {@link Mapper3} prepared for further transformation.
    */
@@ -719,9 +621,9 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   /**
-   * Transform provided results into single result containing tuple of values. The result is failure
-   * if any input result is failure. Otherwise returned instance contains tuple with values from
-   * input results.
+   * Transform provided results into single result containing tuple of values. The result is error
+   * if any input result is error. Otherwise returned instance contains tuple with values from input
+   * results.
    *
    * @return {@link Mapper4} prepared for further transformation.
    */
@@ -737,9 +639,9 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   /**
-   * Transform provided results into single result containing tuple of values. The result is failure
-   * if any input result is failure. Otherwise returned instance contains tuple with values from
-   * input results.
+   * Transform provided results into single result containing tuple of values. The result is error
+   * if any input result is error. Otherwise returned instance contains tuple with values from input
+   * results.
    *
    * @return {@link Mapper5} prepared for further transformation.
    */
@@ -763,9 +665,9 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   /**
-   * Transform provided results into single result containing tuple of values. The result is failure
-   * if any input result is failure. Otherwise returned instance contains tuple with values from
-   * input results.
+   * Transform provided results into single result containing tuple of values. The result is error
+   * if any input result is error. Otherwise returned instance contains tuple with values from input
+   * results.
    *
    * @return {@link Mapper6} prepared for further transformation.
    */
@@ -796,9 +698,9 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   /**
-   * Transform provided results into single result containing tuple of values. The result is failure
-   * if any input result is failure. Otherwise returned instance contains tuple with values from
-   * input results.
+   * Transform provided results into single result containing tuple of values. The result is error
+   * if any input result is error. Otherwise returned instance contains tuple with values from input
+   * results.
    *
    * @return {@link Mapper7} prepared for further transformation.
    */
@@ -832,9 +734,9 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   /**
-   * Transform provided results into single result containing tuple of values. The result is failure
-   * if any input result is failure. Otherwise returned instance contains tuple with values from
-   * input results.
+   * Transform provided results into single result containing tuple of values. The result is error
+   * if any input result is error. Otherwise returned instance contains tuple with values from input
+   * results.
    *
    * @return {@link Mapper8} prepared for further transformation.
    */
@@ -872,9 +774,9 @@ public sealed interface Result<T, E> permits Ok, Error {
   }
 
   /**
-   * Transform provided results into single result containing tuple of values. The result is failure
-   * if any input result is failure. Otherwise returned instance contains tuple with values from
-   * input results.
+   * Transform provided results into single result containing tuple of values. The result is error
+   * if any input result is error. Otherwise returned instance contains tuple with values from input
+   * results.
    *
    * @return {@link Mapper9} prepared for further transformation.
    */
@@ -1445,7 +1347,7 @@ public sealed interface Result<T, E> permits Ok, Error {
     private final Object value;
 
     public UnwrapErrorException(Object value) {
-      super("UnwrapError failed as the Result is an Ok(value). The value is: " + value);
+      super("UnwrapError failed as the Result is an Success(value). The value is: " + value);
       this.value = value;
     }
 

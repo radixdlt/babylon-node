@@ -250,7 +250,7 @@ public class OptionTest {
     Option.option(1)
         .toResult(Causes.cause("Not expected"))
         .onSuccess(value -> assertEquals(1, value.intValue()))
-        .onFailureDo(Assert::fail);
+        .onErrorDo(Assert::fail);
   }
 
   @Test
@@ -258,7 +258,7 @@ public class OptionTest {
     Option.option(null)
         .toResult(Causes.cause("Expected"))
         .onSuccess(value -> fail("Should not be a success"))
-        .onFailure(cause -> assertEquals("Expected", cause.message()));
+        .onError(cause -> assertEquals("Expected", cause.message()));
   }
 
   @Test

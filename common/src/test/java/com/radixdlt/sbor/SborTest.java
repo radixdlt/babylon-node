@@ -149,6 +149,18 @@ public class SborTest {
   }
 
   @Test
+  public void intEdgeCasesCanBeEncodedAndDecoded() {
+    var encodedMaxValue = DefaultTypedSbor.encode(Integer.MAX_VALUE, int.class);
+    var encodedMinValue = DefaultTypedSbor.encode(Integer.MIN_VALUE, int.class);
+
+    var decodedMaxValue = DefaultTypedSbor.decode(encodedMaxValue, int.class);
+    var decodedMinValue = DefaultTypedSbor.decode(encodedMinValue, int.class);
+
+    assertEquals(Integer.MAX_VALUE, (int) decodedMaxValue);
+    assertEquals(Integer.MIN_VALUE, (int) decodedMinValue);
+  }
+
+  @Test
   public void longCanBeEncodedAndDecoded() {
     var r0 = DefaultTypedSbor.encode(0x0123_4567_89AB_CDEFL, long.class);
 
@@ -354,15 +366,15 @@ public class SborTest {
     var successDecoded = DefaultTypedSbor.decode(successEncoded, resultTypeLiteral);
     assertEquals(successResult, successDecoded);
 
-    var failureResult = Result.<String, Long>failure(123L);
-    var failureEncoded = DefaultTypedSbor.encode(failureResult, resultTypeLiteral);
-    assertEquals(11, failureEncoded.length);
-    assertEquals(0x24, failureEncoded[0]); // Type == 0x24 - Result
-    assertEquals(0x01, failureEncoded[1]); // Value - Failure
-    assertEquals(0x05, failureEncoded[2]); // Value type - i64
+    var errorResult = Result.<String, Long>error(123L);
+    var errorEncoded = DefaultTypedSbor.encode(errorResult, resultTypeLiteral);
+    assertEquals(11, errorEncoded.length);
+    assertEquals(0x24, errorEncoded[0]); // Type == 0x24 - Result
+    assertEquals(0x01, errorEncoded[1]); // Value - Failure
+    assertEquals(0x05, errorEncoded[2]); // Value type - i64
 
-    var failureDecoded = DefaultTypedSbor.decode(failureEncoded, resultTypeLiteral);
-    assertEquals(failureResult, failureDecoded);
+    var failureDecoded = DefaultTypedSbor.decode(errorEncoded, resultTypeLiteral);
+    assertEquals(errorResult, failureDecoded);
   }
 
   @Test

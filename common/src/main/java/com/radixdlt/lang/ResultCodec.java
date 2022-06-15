@@ -99,7 +99,7 @@ public record ResultCodec<T, E>(Codec<T> okCodec, Codec<E> errCodec)
     var resultTypeByte = decoder.readByte();
 
     return switch (resultTypeByte) {
-      case ResultTypeId.OK -> Result.ok(decoder.decodeWithTypeId(okCodec));
+      case ResultTypeId.OK -> Result.success(decoder.decodeWithTypeId(okCodec));
       case ResultTypeId.ERR -> Result.error(decoder.decodeWithTypeId(errCodec));
       default -> throw new SborDecodeException(
           String.format("Unknown result type id %s", resultTypeByte));
