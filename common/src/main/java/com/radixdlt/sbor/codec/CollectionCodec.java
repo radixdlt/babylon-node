@@ -163,6 +163,14 @@ interface CollectionCodec {
     }
   }
 
+  /**
+   * Uses the set's iterable to provide the encoding ordering. This is assumed to match the
+   * determinism requirements of the encoding.
+   *
+   * <p>NB - When using SBOR to encode state (eg in the Radix Engine), encoding must be
+   * deterministic. This isn't really relevant in Java SBOR, so we don't enforce any ordering here.
+   * In the future, we may wish to add a forMapWithDeterministicOrder method.
+   */
   static <T> Codec<Set<T>> forSet(Codec<T> itemCodec, TypeId collectionTypeId) {
     collectionTypeId.assertCollectionType();
     return new CollectionCodecViaArrayList<>(
@@ -177,6 +185,14 @@ interface CollectionCodec {
         });
   }
 
+  /**
+   * Uses the hashset's iterable to provide the encoding ordering. This is assumed to match the
+   * determinism requirements of the encoding.
+   *
+   * <p>NB - When using SBOR to encode state (eg in the Radix Engine), encoding must be
+   * deterministic. This isn't really relevant in Java SBOR, so we don't enforce any ordering here.
+   * In the future, we may wish to add a forMapWithDeterministicOrder method.
+   */
   static <T> Codec<HashSet<T>> forHashSet(Codec<T> itemCodec, TypeId collectionTypeId) {
     collectionTypeId.assertCollectionType();
     return new CollectionCodecViaArrayList<>(

@@ -141,6 +141,14 @@ public interface MapCodec {
     }
   }
 
+  /**
+   * Uses the map's iterable to provide the encoding ordering. This is assumed to match the
+   * determinism requirements of the encoding.
+   *
+   * <p>NB - When using SBOR to encode state (eg in the Radix Engine), encoding must be
+   * deterministic. This isn't really relevant in Java SBOR, so we don't enforce any ordering here.
+   * In the future, we may wish to add a forMapWithDeterministicOrder method.
+   */
   static <TKey, TItem> Codec<Map<TKey, TItem>> forMap(
       Codec<TKey> keyCodec, Codec<TItem> itemCodec, TypeId mapTypeId) {
     mapTypeId.assertMapType();
@@ -148,6 +156,14 @@ public interface MapCodec {
         mapTypeId, keyCodec, itemCodec, Map::size, Map::entrySet, map -> map);
   }
 
+  /**
+   * Uses the hashmap's iterable to provide the encoding ordering. This is assumed to match the
+   * determinism requirements of the encoding.
+   *
+   * <p>NB - When using SBOR to encode state (eg in the Radix Engine), encoding must be
+   * deterministic. This isn't really relevant in Java SBOR, so we don't enforce any ordering here.
+   * In the future, we may wish to add a forHashMapWithDeterministicOrder method.
+   */
   static <TKey, TItem> Codec<HashMap<TKey, TItem>> forHashMap(
       Codec<TKey> keyCodec, Codec<TItem> itemCodec, TypeId mapTypeId) {
     mapTypeId.assertMapType();

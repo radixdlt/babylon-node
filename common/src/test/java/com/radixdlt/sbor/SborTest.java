@@ -684,7 +684,7 @@ public class SborTest {
         new byte[] {
           0x33, // Hash Set Type
           12, // String type
-          3, 0, 0, 0, // 3 elements in set; ordered by order ingested into set
+          3, 0, 0, 0, // 3 elements in set; implicitly ingestion ordering (at least in Java 17)
           2, 0, 0, 0, // String length 2
           104, // "h"
           105, // "i"
@@ -751,7 +751,7 @@ public class SborTest {
           0x34, // Hash Map Type
           12, // Key type: String
           0x04, // Value type: Signed Integer
-          3, 0, 0, 0, // 3 elements in map; ordered by order ingested into map
+          3, 0, 0, 0, // 3 elements in map; implicitly ingestion ordering (at least in Java 17)
           2, 0, 0, 0, // String length 2
           104, // "h"
           105, // "i"
