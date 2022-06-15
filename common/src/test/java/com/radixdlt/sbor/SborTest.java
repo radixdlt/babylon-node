@@ -75,7 +75,7 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.dto.SimpleRecord;
 import com.radixdlt.testclasses.SimpleEnum;
-import java.util.List;
+import java.util.*;
 import org.junit.Test;
 
 public class SborTest {
@@ -640,5 +640,176 @@ public class SborTest {
     var decoded = DefaultTypedSbor.decode(encoded, type);
 
     assertEquals(tupleValue, decoded);
+  }
+
+  @Test
+  public void vecEncodedCorrectly() {
+    var value = List.of("hi", "and", "bye");
+    var type = new TypeToken<List<String>>() {};
+
+    var encoded = DefaultTypedSbor.encode(value, type);
+
+    assertArrayEquals(
+        new byte[] {
+          0x30, // Vec Type
+          12, // String type
+          3, 0, 0, 0, // 3 elements in array
+          2, 0, 0, 0, // String length 2
+          104, // "h"
+          105, // "i"
+          3, 0, 0, 0, // String length 3
+          97, // "a"
+          110, // "n"
+          100, // "d"
+          3, 0, 0, 0, // String length 3
+          98, // "b"
+          121, // "y"
+          101, // "e"
+        },
+        encoded);
+
+    var decoded = DefaultTypedSbor.decode(encoded, type);
+
+    assertEquals(value, decoded);
+  }
+
+  @Test
+  public void hashSetEncodedCorrectly() {
+    var value = new HashSet<>(List.of("hi", "and", "bye"));
+    var type = new TypeToken<HashSet<String>>() {};
+
+    var encoded = DefaultTypedSbor.encode(value, type);
+
+    assertArrayEquals(
+        new byte[] {
+          0x33, // Hash Set Type
+          12, // String type
+          3, 0, 0, 0, // 3 elements in set; ordered by order ingested into set
+          2, 0, 0, 0, // String length 2
+          104, // "h"
+          105, // "i"
+          3, 0, 0, 0, // String length 3
+          97, // "a"
+          110, // "n"
+          100, // "d"
+          3, 0, 0, 0, // String length 3
+          98, // "b"
+          121, // "y"
+          101, // "e"
+        },
+        encoded);
+
+    var decoded = DefaultTypedSbor.decode(encoded, type);
+
+    assertEquals(value, decoded);
+  }
+
+  @Test
+  public void treeSetEncodedCorrectly() {
+    var value = new TreeSet<>(List.of("hi", "and", "bye"));
+    var type = new TypeToken<TreeSet<String>>() {};
+
+    var encoded = DefaultTypedSbor.encode(value, type);
+
+    assertArrayEquals(
+        new byte[] {
+          0x31, // Tree Set Type
+          12, // String type
+          3, 0, 0, 0, // 3 elements in set; ordered by lexicographic key ordering
+          3, 0, 0, 0, // String length 3 - "and", first value in lexicographic ordering
+          97, // "a"
+          110, // "n"
+          100, // "d"
+          3, 0, 0, 0, // String length 3 - "bye", first value in lexicographic ordering
+          98, // "b"
+          121, // "y"
+          101, // "e"
+          2, 0, 0, 0, // String length 2 - "hi", first value in lexicographic ordering
+          104, // "h"
+          105, // "i"
+        },
+        encoded);
+
+    var decoded = DefaultTypedSbor.decode(encoded, type);
+
+    assertEquals(value, decoded);
+  }
+
+  @Test
+  public void hashMapEncodedCorrectly() {
+    var map = new HashMap<String, Integer>();
+    map.put("hi", 1);
+    map.put("and", 2);
+    map.put("bye", 3);
+
+    var type = new TypeToken<HashMap<String, Integer>>() {};
+
+    var encoded = DefaultTypedSbor.encode(map, type);
+
+    assertArrayEquals(
+        new byte[] {
+          0x34, // Hash Map Type
+          12, // Key type: String
+          0x04, // Value type: Signed Integer
+          3, 0, 0, 0, // 3 elements in map; ordered by order ingested into map
+          2, 0, 0, 0, // String length 2
+          104, // "h"
+          105, // "i"
+          1, 0, 0, 0, // 1
+          3, 0, 0, 0, // String length 3
+          97, // "a"
+          110, // "n"
+          100, // "d"
+          2, 0, 0, 0, // 2
+          3, 0, 0, 0, // String length 3
+          98, // "b"
+          121, // "y"
+          101, // "e"
+          3, 0, 0, 0, // 2
+        },
+        encoded);
+
+    var decoded = DefaultTypedSbor.decode(encoded, type);
+
+    assertEquals(map, decoded);
+  }
+
+  @Test
+  public void treeMapEncodedCorrectly() {
+    var map = new TreeMap<String, Integer>();
+    map.put("hi", 1);
+    map.put("and", 2);
+    map.put("bye", 3);
+
+    var type = new TypeToken<TreeMap<String, Integer>>() {};
+
+    var encoded = DefaultTypedSbor.encode(map, type);
+
+    assertArrayEquals(
+        new byte[] {
+          0x32, // Tree Map Type
+          12, // Key type: String
+          0x04, // Value type: Signed Integer
+          3, 0, 0, 0, // 3 elements in map; ordered by lexicographic key ordering
+          3, 0, 0, 0, // String length 3 - "and", first key in lexicographic ordering
+          97, // "a"
+          110, // "n"
+          100, // "d"
+          2, 0, 0, 0, // 2
+          3, 0, 0, 0, // String length 3 - "bye", second key in lexicographic ordering
+          98, // "b"
+          121, // "y"
+          101, // "e"
+          3, 0, 0, 0, // 2
+          2, 0, 0, 0, // String length 2 - "hi", third key in lexicographic ordering
+          104, // "h"
+          105, // "i"
+          1, 0, 0, 0, // 1
+        },
+        encoded);
+
+    var decoded = DefaultTypedSbor.decode(encoded, type);
+
+    assertEquals(map, decoded);
   }
 }
