@@ -71,10 +71,17 @@ import static org.junit.Assert.*;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.*;
+import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.MapCodec2;
 import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.Decoder;
+import com.radixdlt.sbor.coding.Encoder;
 import com.radixdlt.sbor.dto.SimpleRecord;
 import com.radixdlt.testclasses.SimpleEnum;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 import org.junit.Test;
 
@@ -742,7 +749,7 @@ public class SborTest {
     map.put("and", 2);
     map.put("bye", 3);
 
-    var type = new TypeToken<HashMap<String, Integer>>() {};
+    var type = new TypeToken<Map<String, Integer>>() {};
 
     var encoded = DefaultTypedSbor.encode(map, type);
 
@@ -768,6 +775,60 @@ public class SborTest {
           3, 0, 0, 0, // 2
         },
         encoded);
+
+    var decoded = DefaultTypedSbor.decode(encoded, type);
+
+    assertEquals(map, decoded);
+  }
+
+  @Test
+  public void hashMapEncodedCorrectly2() {
+    var map = new HashMap<String, Integer>();
+    map.put("hi", 1);
+    map.put("and", 2);
+    map.put("bye", 3);
+
+    var type = new TypeToken<Map<String, Integer>>() {};
+
+    Codec<Map> mapCodec = new CodecMap().resolver.of(type);
+    var outputStream = new ByteArrayOutputStream();
+    mapCodec.encodeWithTypeId(new Encoder(outputStream, false), map);
+    var bytes = outputStream.toByteArray();
+
+    MapCodec2.MapCodecViaHashMap mapCodec2 = (MapCodec2.MapCodecViaHashMap) mapCodec;
+
+    Decoder decoder1 = new Decoder(new ByteArrayInputStream(bytes), false);
+    Map hashmap = mapCodec2.decodeTo(decoder1, size -> new HashMap<String, Integer>((Integer) size));
+
+    Decoder decoder2 = new Decoder(new ByteArrayInputStream(bytes), false);
+    Map treemap = mapCodec2.decodeTo(decoder2, size -> new TreeMap<String, Integer>());
+
+
+    var encoded = DefaultTypedSbor.encode(map, type);
+
+
+    assertArrayEquals(
+            new byte[] {
+                    0x34, // Hash Map Type
+                    12, // Key type: String
+                    0x04, // Value type: Signed Integer
+                    3, 0, 0, 0, // 3 elements in map; implicitly ingestion ordering (at least in Java 17)
+                    2, 0, 0, 0, // String length 2
+                    104, // "h"
+                    105, // "i"
+                    1, 0, 0, 0, // 1
+                    3, 0, 0, 0, // String length 3
+                    97, // "a"
+                    110, // "n"
+                    100, // "d"
+                    2, 0, 0, 0, // 2
+                    3, 0, 0, 0, // String length 3
+                    98, // "b"
+                    121, // "y"
+                    101, // "e"
+                    3, 0, 0, 0, // 2
+            },
+            encoded);
 
     var decoded = DefaultTypedSbor.decode(encoded, type);
 
