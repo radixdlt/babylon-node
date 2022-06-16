@@ -64,6 +64,8 @@
 
 package com.radixdlt.network.p2p.transport.handshake;
 
+import static org.junit.Assert.*;
+
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.network.capability.LedgerSyncCapability;
@@ -79,17 +81,109 @@ public class AuthInitMessageTest {
   @Test
   public void
       when_remote_peer_capabilities_is_null_then_it_is_equivalent_to_the_ledger_sync_capability() {
-    AuthInitiateMessage initiateMessage =
-        new AuthInitiateMessage(
-            ECDSASignature.zeroSignature(),
-            HashUtils.random256(),
-            HashUtils.random256(),
-            Network.LOCALNET.getId(),
-            "fork",
-            null);
+    AuthInitiateMessage initiateMessage = getAuthInitiateMessage(null);
 
     Assert.assertEquals(
         Set.of(new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of())),
         initiateMessage.capabilities);
+  }
+
+  @Test
+  public void when_remote_peer_capabilities_is_bigger_than_allowed_then_an_exception_is_thrown() {
+
+    Set<RemotePeerCapability> remotePeerCapabilities =
+        Set.of(
+            new RemotePeerCapability(
+                LedgerSyncCapability.NAME,
+                Map.of(
+                    "config1",
+                    "configValue1",
+                    "config2",
+                    "configValue2",
+                    "config3",
+                    "configValue3",
+                    "config4",
+                    "configValue4",
+                    "config5",
+                    "configValue5",
+                    "config6",
+                    "configValue6")));
+
+    InvalidHandshakeMessageException invalidHandshakeMessageException =
+        assertThrows(
+            InvalidHandshakeMessageException.class,
+            () -> getAuthInitiateMessage(remotePeerCapabilities));
+
+    Throwable cause = invalidHandshakeMessageException.getCause();
+    assertTrue(cause instanceof IllegalArgumentException);
+    assertEquals(
+        String.format(
+            RemotePeerCapability.MAP_MAX_SIZE_ERROR_MSG,
+            RemotePeerCapability.CONFIGURATION_MAP_MAX_SIZE),
+        cause.getMessage());
+  }
+
+  @Test
+  public void
+      when_remote_peer_capabilities_config_name_is_bigger_than_allowed_then_an_exception_is_thrown() {
+
+    var configName = "thisConfigNameIsBiggerThanTheSizeAllowed";
+
+    Set<RemotePeerCapability> remotePeerCapabilities =
+        Set.of(
+            new RemotePeerCapability(
+                LedgerSyncCapability.NAME, Map.of(configName, "configValue1")));
+
+    InvalidHandshakeMessageException invalidHandshakeMessageException =
+        assertThrows(
+            InvalidHandshakeMessageException.class,
+            () -> getAuthInitiateMessage(remotePeerCapabilities));
+
+    Throwable cause = invalidHandshakeMessageException.getCause();
+    assertTrue(cause instanceof IllegalArgumentException);
+    assertEquals(
+        String.format(
+            RemotePeerCapability.CONFIGURATION_NAME_MAX_SIZE_ERROR_MSG,
+            configName,
+            RemotePeerCapability.CONFIGURATION_MAX_NAME_SIZE),
+        cause.getMessage());
+  }
+
+  @Test
+  public void
+      when_remote_peer_capabilities_config_value_is_bigger_than_allowed_then_an_exception_is_thrown() {
+
+    var configName = "config1";
+    var configValue = "thisConfigValueIsBiggerThanTheSizeAllowed";
+
+    Set<RemotePeerCapability> remotePeerCapabilities =
+        Set.of(
+            new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of(configName, configValue)));
+
+    InvalidHandshakeMessageException invalidHandshakeMessageException =
+        assertThrows(
+            InvalidHandshakeMessageException.class,
+            () -> getAuthInitiateMessage(remotePeerCapabilities));
+
+    Throwable cause = invalidHandshakeMessageException.getCause();
+    assertTrue(cause instanceof IllegalArgumentException);
+    assertEquals(
+        String.format(
+            RemotePeerCapability.CONFIGURATION_VALUE_MAX_SIZE_ERROR_MSG,
+            configName,
+            configValue,
+            RemotePeerCapability.CONFIGURATION_MAX_VALUE_SIZE),
+        cause.getMessage());
+  }
+
+  private AuthInitiateMessage getAuthInitiateMessage(
+      Set<RemotePeerCapability> remotePeerCapabilities) {
+    return new AuthInitiateMessage(
+        ECDSASignature.zeroSignature(),
+        HashUtils.random256(),
+        HashUtils.random256(),
+        Network.LOCALNET.getId(),
+        "fork",
+        remotePeerCapabilities);
   }
 }

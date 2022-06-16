@@ -80,6 +80,12 @@ public class RemotePeerCapability {
   public static final int CONFIGURATION_MAP_MAX_SIZE = 5;
   public static final int CONFIGURATION_MAX_NAME_SIZE = 32;
   public static final int CONFIGURATION_MAX_VALUE_SIZE = 32;
+  public static final String MAP_MAX_SIZE_ERROR_MSG =
+      "Configuration map cannot have more than %s entries.";
+  public static final String CONFIGURATION_NAME_MAX_SIZE_ERROR_MSG =
+      "Configuration '%s' cannot have name length bigger than %s.";
+  public static final String CONFIGURATION_VALUE_MAX_SIZE_ERROR_MSG =
+      "Configuration %s cannot have value '%s' length bigger than %s.";
 
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)
   @DsonOutput(DsonOutput.Output.ALL)
@@ -120,22 +126,24 @@ public class RemotePeerCapability {
   public void validate() {
     if (this.configuration.size() > CONFIGURATION_MAP_MAX_SIZE) {
       throw new IllegalArgumentException(
-          String.format(
-              "Configuration map cannot have more than %s entries.", CONFIGURATION_MAP_MAX_SIZE));
+          String.format(MAP_MAX_SIZE_ERROR_MSG, CONFIGURATION_MAP_MAX_SIZE));
     }
     this.configuration.forEach(
         (configName, configValue) -> {
           if (configName.length() > CONFIGURATION_MAX_NAME_SIZE) {
             throw new IllegalArgumentException(
                 String.format(
-                    "Configuration %s cannot have name length bigger than %s.",
-                    configName, CONFIGURATION_MAX_NAME_SIZE));
+                    CONFIGURATION_NAME_MAX_SIZE_ERROR_MSG,
+                    configName,
+                    CONFIGURATION_MAX_NAME_SIZE));
           }
           if (configValue.length() > CONFIGURATION_MAX_VALUE_SIZE) {
             throw new IllegalArgumentException(
                 String.format(
-                    "Configuration %s cannot have value %s length bigger than %s.",
-                    configName, configValue, CONFIGURATION_MAX_VALUE_SIZE));
+                    CONFIGURATION_VALUE_MAX_SIZE_ERROR_MSG,
+                    configName,
+                    configValue,
+                    CONFIGURATION_MAX_VALUE_SIZE));
           }
         });
   }
