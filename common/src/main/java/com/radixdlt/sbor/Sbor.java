@@ -126,4 +126,8 @@ public final class Sbor {
   public <T> T decode(byte[] input, Codec<T> codec) {
     return new Decoder(new ByteArrayInputStream(input), withTypeIds).decodeFromAllOfStream(codec);
   }
+
+  public Codec<?> createCodec(CodecMap.ClassCodecCreator<?> codecCreator) {
+    return codecCreator.create(codecResolver);
+  }
 }
