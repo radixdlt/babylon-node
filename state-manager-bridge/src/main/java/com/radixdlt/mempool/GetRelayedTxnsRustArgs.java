@@ -62,34 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.mempool;
 
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.GetRelayedTxnsRustArgs;
-import com.radixdlt.mempool.GetTxnsRustArgs;
-import com.radixdlt.mempool.MempoolError;
-import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.core.LongCodec;
 
-public final class StateManagerSbor {
+public class GetRelayedTxnsRustArgs {
+  long initialDelay;
+  long repeatDelay;
 
-  public static final Sbor sbor = createSborForStateManager();
-
-  private static Sbor createSborForStateManager() {
-    return new Sbor(true, new CodecMap().register(StateManagerSbor::registerCodecsWithCodecMap));
+  public GetRelayedTxnsRustArgs(long initialDelay, long repeatDelay) {
+    this.initialDelay = initialDelay;
+    this.repeatDelay = repeatDelay;
   }
 
-  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
-    RustMempoolConfig.registerCodec(codecMap);
-    StateManagerConfig.registerCodec(codecMap);
-    Transaction.registerCodec(codecMap);
-    TID.registerCodec(codecMap);
-    StateManagerRuntimeError.registerCodec(codecMap);
-    MempoolError.registerCodec(codecMap);
-    GetTxnsRustArgs.registerCodec(codecMap);
-    GetRelayedTxnsRustArgs.registerCodec(codecMap);
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        GetRelayedTxnsRustArgs.class,
+        codecs ->
+            StructCodec.with(
+                GetRelayedTxnsRustArgs::new,
+                new LongCodec(false),
+                new LongCodec(false),
+                (a, encoder) -> encoder.encode(a.initialDelay, a.repeatDelay)));
   }
 }

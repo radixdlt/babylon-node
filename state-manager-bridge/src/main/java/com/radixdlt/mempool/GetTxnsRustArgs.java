@@ -62,34 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.mempool;
 
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.GetRelayedTxnsRustArgs;
-import com.radixdlt.mempool.GetTxnsRustArgs;
-import com.radixdlt.mempool.MempoolError;
-import com.radixdlt.mempool.RustMempoolConfig;
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.core.IntegerCodec;
 import com.radixdlt.transactions.Transaction;
+import java.util.List;
+import java.util.Objects;
 
-public final class StateManagerSbor {
+public class GetTxnsRustArgs {
+  int count;
+  List<Transaction> seen;
 
-  public static final Sbor sbor = createSborForStateManager();
-
-  private static Sbor createSborForStateManager() {
-    return new Sbor(true, new CodecMap().register(StateManagerSbor::registerCodecsWithCodecMap));
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        GetTxnsRustArgs.class,
+        codecs ->
+            StructCodec.with(
+                GetTxnsRustArgs::new,
+                new IntegerCodec(false),
+                codecs.of(new TypeToken<List<Transaction>>() {}),
+                (a, encoder) -> encoder.encode(a.count, a.seen)));
   }
 
-  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
-    RustMempoolConfig.registerCodec(codecMap);
-    StateManagerConfig.registerCodec(codecMap);
-    Transaction.registerCodec(codecMap);
-    TID.registerCodec(codecMap);
-    StateManagerRuntimeError.registerCodec(codecMap);
-    MempoolError.registerCodec(codecMap);
-    GetTxnsRustArgs.registerCodec(codecMap);
-    GetRelayedTxnsRustArgs.registerCodec(codecMap);
+  GetTxnsRustArgs(int count, List<Transaction> seen) {
+    this.count = count;
+    this.seen = Objects.requireNonNull(seen);
   }
 }
