@@ -64,23 +64,14 @@
 
 package com.radixdlt.statemanager;
 
-import com.radixdlt.mempool.RustMempool;
-import com.radixdlt.transaction.RustTransactionStore;
-import com.radixdlt.transaction.TransactionStore;
-import com.radixdlt.vertexstore.RustVertexStore;
-import com.radixdlt.vertexstore.VertexStore;
+import com.radixdlt.sbor.StateManagerSbor;
 import java.util.Objects;
 
-public final class StateManager {
+public final class StateManager implements AutoCloseable {
 
   static {
     System.loadLibrary("statemanager");
   }
-
-  private final RustState rustState;
-  private final VertexStore vertexStore;
-  private final TransactionStore transactionStore;
-  private final RustMempool mempool;
 
   /**
    * Stores a pointer to the rust state manager across JNI calls. In the JNI model, this is
@@ -93,36 +84,33 @@ public final class StateManager {
     private final long stateManagerPointer = 0;
   }
 
-  public static StateManager createAndInitialize(long mempoolSize) {
-    var rustState = new RustState();
-    init(rustState, mempoolSize);
+  private final RustState rustState;
+
+  public static StateManager createAndInitialize(StateManagerConfig config) {
+    final var rustState = new RustState();
+    final var encodedConfig = StateManagerSbor.sbor.encode(config);
+    init(rustState, encodedConfig);
     return new StateManager(rustState);
   }
 
   private StateManager(RustState rustState) {
     this.rustState = Objects.requireNonNull(rustState);
-    this.vertexStore = new RustVertexStore(rustState);
-    this.transactionStore = new RustTransactionStore(rustState);
-    this.mempool = new RustMempool(rustState);
   }
 
-  public VertexStore vertexStore() {
-    return this.vertexStore;
+  public RustState getRustState() {
+    return this.rustState;
   }
 
-  public TransactionStore transactionStore() {
-    return this.transactionStore;
-  }
-
-  public RustMempool mempool() {
-    return this.mempool;
+  @Override
+  public void close() {
+    shutdown();
   }
 
   public void shutdown() {
     cleanup(this.rustState);
   }
 
-  private static native void init(RustState rustState, long mempoolSize);
+  private static native void init(RustState rustState, byte[] config);
 
   private static native void cleanup(RustState rustState);
 }

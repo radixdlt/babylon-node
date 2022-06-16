@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
+pub(crate) mod dtos;
 mod mempool;
 mod state_manager;
 mod transaction_store;
 mod utils;
-mod vertex_store;

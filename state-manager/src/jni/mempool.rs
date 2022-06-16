@@ -62,15 +62,19 @@
  * permissions under this License.
  */
 
+use crate::jni::dtos::JavaStructure;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use sbor::{Decode, Encode, TypeId};
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
 use crate::mempool::*;
-use crate::result::StateManagerResult;
-use crate::types::{JavaStructure, Transaction};
+use crate::result::{
+    ResultStateManagerMaps, StateManagerError, StateManagerResult, ERRCODE_INTERFACE_CASTS,
+};
+use crate::types::Transaction;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
@@ -84,19 +88,53 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
     jni_slice_to_jbytearray(&env, &ret)
 }
 
-fn do_add(env: &JNIEnv, j_state: JObject, j_txn: jbyteArray) -> StateManagerResult<()> {
+fn do_add(
+    env: &JNIEnv,
+    j_state: JObject,
+    j_txn: jbyteArray,
+) -> StateManagerResult<Result<(), MempoolErrorJava>> {
     let state_manager = JNIStateManager::get_state_manager(env, j_state);
 
-    let s_txn: Vec<u8> = jni_jbytearray_to_vector(env, j_txn)?;
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_txn)?;
 
-    let txn = Transaction::from_java(&s_txn)?;
+    let transaction = Transaction::from_java(&request_payload)?;
 
-    let ret = state_manager
-        .mempool
-        .lock()
-        .unwrap()
-        .add(txn)
-        .map_err(|e| e.to_state_manager_error());
+    let result = state_manager.mempool.lock().unwrap().add(transaction);
 
-    ret
+    let mapped_result = result.map_err_sm(|err| err.into())?;
+
+    Ok(mapped_result)
+}
+
+#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+enum MempoolErrorJava {
+    Full { current_size: i64, max_size: i64 },
+    Duplicate,
+}
+
+impl JavaStructure for MempoolErrorJava {}
+
+impl From<MempoolError> for StateManagerResult<MempoolErrorJava> {
+    fn from(err: MempoolError) -> Self {
+        match err {
+            MempoolError::Full {
+                current_size,
+                max_size,
+            } => Ok(MempoolErrorJava::Full {
+                current_size: current_size.try_into().or_else(|_| {
+                    StateManagerError::create_result(
+                        ERRCODE_INTERFACE_CASTS,
+                        "Failed to cast current_size".to_string(),
+                    )
+                })?,
+                max_size: max_size.try_into().or_else(|_| {
+                    StateManagerError::create_result(
+                        ERRCODE_INTERFACE_CASTS,
+                        "Failed to cast max_size".to_string(),
+                    )
+                })?,
+            }),
+            MempoolError::Duplicate => Ok(MempoolErrorJava::Duplicate),
+        }
+    }
 }

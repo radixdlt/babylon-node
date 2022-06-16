@@ -67,6 +67,7 @@ package com.radixdlt.network.messaging;
 import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
 import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
 
+import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.monitoring.SystemCounters;
@@ -117,7 +118,7 @@ class MessageDispatcher {
     this.addressing = Objects.requireNonNull(addressing);
   }
 
-  CompletableFuture<Result<Unit>> send(final OutboundMessageEvent outboundMessage) {
+  CompletableFuture<Result<Unit, Cause>> send(final OutboundMessageEvent outboundMessage) {
     final var message = outboundMessage.message();
     final var receiver = outboundMessage.receiver();
 
@@ -141,12 +142,13 @@ class MessageDispatcher {
         .exceptionally(t -> completionException(t, receiver, message));
   }
 
-  private Result<Unit> send(PeerChannel channel, byte[] bytes) {
+  private Result<Unit, Cause> send(PeerChannel channel, byte[] bytes) {
     this.counters.add(CounterType.NETWORKING_BYTES_SENT, bytes.length);
     return channel.send(bytes);
   }
 
-  private Result<Unit> completionException(Throwable cause, NodeId receiver, Message message) {
+  private Result<Unit, Cause> completionException(
+      Throwable cause, NodeId receiver, Message message) {
     final var msg =
         String.format(
             "Send %s to %s failed",
@@ -155,7 +157,7 @@ class MessageDispatcher {
     return IO_ERROR.result();
   }
 
-  private Result<Unit> updateStatistics(Result<Unit> result) {
+  private Result<Unit, Cause> updateStatistics(Result<Unit, Cause> result) {
     this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED);
     if (result.isSuccess()) {
       this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);

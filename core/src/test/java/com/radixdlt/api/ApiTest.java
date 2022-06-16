@@ -80,7 +80,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
@@ -188,7 +188,7 @@ public abstract class ApiTest {
     runner.start();
   }
 
-  protected final void runUntilCommitted(AID txnId) {
+  protected final void runUntilCommitted(TID txnId) {
     runner.runNextEventsThrough(
         LedgerUpdate.class,
         u -> {

@@ -79,7 +79,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.rev1.LedgerAndBFTProof;
@@ -228,7 +228,7 @@ public final class BerkeleyLedgerEntryStoreTest {
       throws RadixEngineException {
     final var fakeTx = mock(REProcessedTxn.class);
     final var txn = mock(Transaction.class);
-    when(txn.getId()).thenReturn(AID.from(HashUtils.random256().asBytes()));
+    when(txn.getId()).thenReturn(TID.from(HashUtils.random256().asBytes()));
     when(fakeTx.getTxn()).thenReturn(txn);
     when(fakeTx.getGroupedStateUpdates()).thenReturn(List.of());
     when(txn.getPayload()).thenReturn(HashUtils.random256().asBytes());

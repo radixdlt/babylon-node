@@ -64,77 +64,81 @@
 
 package com.radixdlt.lang;
 
-/** Collection of basic functions for various use cases. */
+/**
+ * Collection of basic function interfaces and functions for various use cases. The naming of the
+ * generic functional interfaces follows the C# naming convention of Func and Action.
+ */
+@SuppressWarnings("unused")
 public interface Functions {
   /** Function with no parameters (supplier). Provided for consistency. */
   @FunctionalInterface
-  interface FN0<R> {
+  interface Func0<R> {
     R apply();
   }
 
   /** Function with one parameter. */
   @FunctionalInterface
-  interface FN1<R, T1> {
+  interface Func1<T1, R> {
     R apply(T1 param1);
 
-    default <N> FN1<N, T1> then(FN1<N, R> function) {
+    default <N> Func1<T1, N> then(Func1<R, N> function) {
       return v1 -> function.apply(apply(v1));
     }
 
-    default <N> FN1<R, N> before(FN1<T1, N> function) {
+    default <N> Func1<N, R> before(Func1<N, T1> function) {
       return v1 -> apply(function.apply(v1));
     }
 
-    static <T> FN1<T, T> id() {
+    static <T> Func1<T, T> id() {
       return Functions::id;
     }
   }
 
   /** Function with two parameters. */
   @FunctionalInterface
-  interface FN2<R, T1, T2> {
+  interface Func2<T1, T2, R> {
     R apply(T1 param1, T2 param2);
   }
 
   /** Function with three parameters. */
   @FunctionalInterface
-  interface FN3<R, T1, T2, T3> {
+  interface Func3<T1, T2, T3, R> {
     R apply(T1 param1, T2 param2, T3 param3);
   }
 
   /** Function with four parameters. */
   @FunctionalInterface
-  interface FN4<R, T1, T2, T3, T4> {
+  interface Func4<T1, T2, T3, T4, R> {
     R apply(T1 param1, T2 param2, T3 param3, T4 param4);
   }
 
   /** Function with five parameters. */
   @FunctionalInterface
-  interface FN5<R, T1, T2, T3, T4, T5> {
+  interface Func5<T1, T2, T3, T4, T5, R> {
     R apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5);
   }
 
   /** Function with six parameters. */
   @FunctionalInterface
-  interface FN6<R, T1, T2, T3, T4, T5, T6> {
+  interface Func6<T1, T2, T3, T4, T5, T6, R> {
     R apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6);
   }
 
   /** Function with seven parameters. */
   @FunctionalInterface
-  interface FN7<R, T1, T2, T3, T4, T5, T6, T7> {
+  interface Func7<T1, T2, T3, T4, T5, T6, T7, R> {
     R apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7);
   }
 
   /** Function with eight parameters. */
   @FunctionalInterface
-  interface FN8<R, T1, T2, T3, T4, T5, T6, T7, T8> {
+  interface Func8<T1, T2, T3, T4, T5, T6, T7, T8, R> {
     R apply(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8);
   }
 
   /** Function with nine parameters. */
   @FunctionalInterface
-  interface FN9<R, T1, T2, T3, T4, T5, T6, T7, T8, T9> {
+  interface Func9<T1, T2, T3, T4, T5, T6, T7, T8, T9, R> {
     R apply(
         T1 param1,
         T2 param2,
@@ -148,7 +152,7 @@ public interface Functions {
   }
 
   @FunctionalInterface
-  interface FN10<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> {
+  interface Func10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, R> {
     R apply(
         T1 param1,
         T2 param2,
@@ -163,7 +167,7 @@ public interface Functions {
   }
 
   @FunctionalInterface
-  interface FN11<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> {
+  interface Func11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, R> {
     R apply(
         T1 param1,
         T2 param2,
@@ -179,7 +183,7 @@ public interface Functions {
   }
 
   @FunctionalInterface
-  interface FN12<R, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> {
+  interface Func12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, R> {
     R apply(
         T1 param1,
         T2 param2,
@@ -206,15 +210,130 @@ public interface Functions {
     T get() throws Throwable;
   }
 
-  /** Consumer with three parameters. */
+  /** Action with no parameters. */
   @FunctionalInterface
-  interface TriConsumer<T, K, V> {
-    void accept(T t, K k, V v);
+  interface Action0 {
+    void accept();
+  }
+
+  /** Action with one parameter. */
+  @FunctionalInterface
+  interface Action1<T1> {
+    void accept(T1 param1);
+  }
+
+  /** Action with two parameters. */
+  @FunctionalInterface
+  interface Action2<T1, T2> {
+    void accept(T1 param1, T2 param2);
+  }
+
+  /** Action with three parameters. */
+  @FunctionalInterface
+  interface Action3<T1, T2, T3> {
+    void accept(T1 param1, T2 param2, T3 param3);
+  }
+
+  /** Action with four parameters. */
+  @FunctionalInterface
+  interface Action4<T1, T2, T3, T4> {
+    void accept(T1 param1, T2 param2, T3 param3, T4 param4);
+  }
+
+  /** Action with five parameters. */
+  @FunctionalInterface
+  interface Action5<T1, T2, T3, T4, T5> {
+    void accept(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5);
+  }
+
+  /** Action with six parameters. */
+  @FunctionalInterface
+  interface Action6<T1, T2, T3, T4, T5, T6> {
+    void accept(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6);
+  }
+
+  /** Action with seven parameters. */
+  @FunctionalInterface
+  interface Action7<T1, T2, T3, T4, T5, T6, T7> {
+    void accept(T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7);
+  }
+
+  /** Action with eight parameters. */
+  @FunctionalInterface
+  interface Action8<T1, T2, T3, T4, T5, T6, T7, T8> {
+    void accept(
+        T1 param1, T2 param2, T3 param3, T4 param4, T5 param5, T6 param6, T7 param7, T8 param8);
+  }
+
+  /** Action with nine parameters. */
+  @FunctionalInterface
+  interface Action9<T1, T2, T3, T4, T5, T6, T7, T8, T9> {
+    void accept(
+        T1 param1,
+        T2 param2,
+        T3 param3,
+        T4 param4,
+        T5 param5,
+        T6 param6,
+        T7 param7,
+        T8 param8,
+        T9 param9);
+  }
+
+  /** Action with ten parameters. */
+  @FunctionalInterface
+  interface Action10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> {
+    void accept(
+        T1 param1,
+        T2 param2,
+        T3 param3,
+        T4 param4,
+        T5 param5,
+        T6 param6,
+        T7 param7,
+        T8 param8,
+        T9 param9,
+        T10 param10);
+  }
+
+  /** Action with eleven parameters. */
+  @FunctionalInterface
+  interface Action11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> {
+    void accept(
+        T1 param1,
+        T2 param2,
+        T3 param3,
+        T4 param4,
+        T5 param5,
+        T6 param6,
+        T7 param7,
+        T8 param8,
+        T9 param9,
+        T10 param10,
+        T11 param11);
+  }
+
+  /** Action with twelve parameters. */
+  @FunctionalInterface
+  interface Action12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> {
+    void accept(
+        T1 param1,
+        T2 param2,
+        T3 param3,
+        T4 param4,
+        T5 param5,
+        T6 param6,
+        T7 param7,
+        T8 param8,
+        T9 param9,
+        T10 param10,
+        T11 param11,
+        T12 param12);
   }
 
   /** Function with variable argument list. */
   @FunctionalInterface
-  interface FNx<R> {
+  interface FuncVar<R> {
     R apply(Object... values);
   }
 

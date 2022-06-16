@@ -185,6 +185,9 @@ public final class RadixNodeModule extends AbstractModule {
     // Epochs - Sync
     install(new EpochsSyncModule());
 
+    // State manager
+    install(new StateManagerModule());
+
     // State Computer
     install(new MockedPersistenceStoreModule());
     install(new REv2StateComputerModule());
@@ -207,8 +210,6 @@ public final class RadixNodeModule extends AbstractModule {
     install(new P2PModule(properties));
     install(new PeerDiscoveryModule());
     install(new PeerLivenessMonitorModule());
-
-    install(new StateManagerModule());
 
     // API
     var bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);

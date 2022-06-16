@@ -69,6 +69,7 @@ import static com.radixdlt.network.messaging.MessagingErrors.MESSAGE_EXPIRED;
 import static java.util.Optional.ofNullable;
 
 import com.google.inject.Provider;
+import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
@@ -111,7 +112,7 @@ final class MessagePreprocessor {
     this.addressing = Objects.requireNonNull(addressing);
   }
 
-  Result<MessageFromPeer<Message>> process(InboundMessage inboundMessage) {
+  Result<MessageFromPeer<Message>, Cause> process(InboundMessage inboundMessage) {
     final byte[] messageBytes = inboundMessage.message();
     this.counters.add(CounterType.NETWORKING_BYTES_RECEIVED, messageBytes.length);
     final var result =
@@ -119,27 +120,27 @@ final class MessagePreprocessor {
             .flatMap(message -> processMessage(inboundMessage.source(), message));
     this.counters.increment(CounterType.MESSAGES_INBOUND_RECEIVED);
     result.fold(
-        unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_DISCARDED),
-        unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED));
+        unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED),
+        unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_DISCARDED));
     return result;
   }
 
-  Result<MessageFromPeer<Message>> processMessage(NodeId source, Message message) {
+  Result<MessageFromPeer<Message>, Cause> processMessage(NodeId source, Message message) {
     final var currentTime = timeSource.currentTime();
 
     if (currentTime - message.getTimestamp() > messageTtlMs) {
       return MESSAGE_EXPIRED.result();
     } else {
-      return Result.ok(new MessageFromPeer<>(source, message));
+      return Result.success(new MessageFromPeer<>(source, message));
     }
   }
 
-  private Result<Message> deserialize(InboundMessage inboundMessage, byte[] in) {
+  private Result<Message, Cause> deserialize(InboundMessage inboundMessage, byte[] in) {
     try {
       byte[] uncompressed = Compress.uncompress(in);
 
-      return Result.fromOptional(
-          IO_ERROR, ofNullable(serialization.fromDson(uncompressed, Message.class)));
+      return Result.fromOptionalOrElseError(
+          ofNullable(serialization.fromDson(uncompressed, Message.class)), IO_ERROR);
     } catch (IOException e) {
       log.error(
           String.format(

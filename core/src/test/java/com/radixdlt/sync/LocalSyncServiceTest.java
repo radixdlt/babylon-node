@@ -84,7 +84,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.DtoTxnsAndProof;
@@ -653,7 +653,7 @@ public class LocalSyncServiceTest {
     when(respTail.getLedgerHeader()).thenReturn(respTailLedgerHeader);
     final var response = mock(DtoTxnsAndProof.class);
     final var txn = mock(Transaction.class);
-    when(txn.getId()).thenReturn(AID.ZERO);
+    when(txn.getId()).thenReturn(TID.ZERO);
     when(response.getTxns()).thenReturn(ImmutableList.of(txn));
     when(response.getHead()).thenReturn(respHead);
     when(response.getTail()).thenReturn(respTail);

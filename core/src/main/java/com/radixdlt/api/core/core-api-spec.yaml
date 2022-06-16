@@ -311,6 +311,7 @@ components:
           properties:
             mempool_transaction_count:
               type: integer
+              format: int64
     InvalidTransactionError:
       allOf:
         - $ref: "#/components/schemas/CoreErrorDetails"

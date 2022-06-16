@@ -70,12 +70,12 @@ import static com.radixdlt.keygen.KeyGeneratorErrors.MISSING_PARAMETER;
 import static com.radixdlt.keygen.KeyGeneratorErrors.UNABLE_TO_LOAD_KEYSTORE;
 import static com.radixdlt.keygen.KeyGeneratorErrors.UNABLE_TO_PARSE_COMMAND_LINE;
 import static com.radixdlt.lang.Result.all;
-import static com.radixdlt.lang.Result.fromOptional;
 import static com.radixdlt.lang.Unit.unit;
 import static java.util.Optional.ofNullable;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
+import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import java.io.File;
@@ -112,19 +112,20 @@ public class KeyGenerator {
   }
 
   public static void main(String[] args) {
-    var rc = new KeyGenerator().run(args).fold(unused -> -1, unused -> 0);
+    var rc = new KeyGenerator().run(args).fold(unused -> 0, unused -> -1);
     System.exit(rc);
   }
 
-  private Result<Unit> run(String[] args) {
+  private Result<Unit, Cause> run(String[] args) {
     return parseParameters(args)
-        .filter(IRRELEVANT::swallow, commandLine -> !commandLine.hasOption("h"))
-        .filter(IRRELEVANT::swallow, commandLine -> commandLine.getOptions().length != 0)
+        .filterOrElseGetError(commandLine -> !commandLine.hasOption("h"), IRRELEVANT::swallow)
+        .filterOrElseGetError(
+            commandLine -> commandLine.getOptions().length != 0, IRRELEVANT::swallow)
         .flatMap(
             cli ->
                 all(parseKeystore(cli), parsePassword(cli), parseKeypair(cli), parseShowPk(cli))
                     .flatMap(this::generateKeypair))
-        .onFailure(failure -> usage(failure.message()))
+        .onError(failure -> usage(failure.message()))
         .onSuccessDo(() -> System.out.println("Done"));
   }
 
@@ -135,7 +136,7 @@ public class KeyGenerator {
     new HelpFormatter().printHelp(KeyGenerator.class.getSimpleName(), options, true);
   }
 
-  private Result<Unit> generateKeypair(
+  private Result<Unit, Cause> generateKeypair(
       String keystore, String password, String keypairName, boolean shouldShowPk) {
     var keystoreFile = new File(keystore);
     var newFile = !keystoreFile.canWrite();
@@ -152,26 +153,25 @@ public class KeyGenerator {
         keypairName, publicKey, newFile ? "new" : "existing", keystore);
 
     return Result.lift(
-        UNABLE_TO_LOAD_KEYSTORE::swallow,
         () -> {
           RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), newFile)
               .writeKeyPair(keypairName, keyPair);
           return unit();
-        });
+        },
+        UNABLE_TO_LOAD_KEYSTORE::swallow);
   }
 
-  private Result<Boolean> parseShowPk(CommandLine commandLine) {
-    return Result.ok(commandLine.hasOption("pk"));
+  private Result<Boolean, Cause> parseShowPk(CommandLine commandLine) {
+    return Result.success(commandLine.hasOption("pk"));
   }
 
-  private Result<Unit> printPublicKey(
+  private Result<Unit, Cause> printPublicKey(
       File keystoreFile, String password, String keypairName, boolean newFile) {
     if (!keystoreFile.exists() || !keystoreFile.canRead()) {
       return MISSING_KEYSTORE_FILE.result();
     }
 
     return Result.lift(
-        unused -> IRRELEVANT.swallow((Object) unused),
         () -> {
           var keyPair =
               RadixKeyStore.fromFile(keystoreFile, password.toCharArray(), newFile)
@@ -179,27 +179,29 @@ public class KeyGenerator {
           System.out.printf(
               "Public key of keypair '%s': %s%n", keypairName, keyPair.getPublicKey().toHex());
           return unit();
-        });
+        },
+        unused -> IRRELEVANT.swallow((Object) unused));
   }
 
-  private Result<String> parseKeystore(CommandLine commandLine) {
+  private Result<String, Cause> parseKeystore(CommandLine commandLine) {
     return requiredString(commandLine, "k");
   }
 
-  private Result<String> parsePassword(CommandLine commandLine) {
+  private Result<String, Cause> parsePassword(CommandLine commandLine) {
     return requiredString(commandLine, "p");
   }
 
-  private Result<String> parseKeypair(CommandLine commandLine) {
-    return requiredString(commandLine, "n").orElse(Result.ok(DEFAULT_KEYPAIR_NAME));
+  private Result<String, Cause> parseKeypair(CommandLine commandLine) {
+    return requiredString(commandLine, "n").orElse(Result.success(DEFAULT_KEYPAIR_NAME));
   }
 
-  private Result<String> requiredString(CommandLine commandLine, String opt) {
-    return fromOptional(MISSING_PARAMETER, ofNullable(commandLine.getOptionValue(opt)));
+  private Result<String, Cause> requiredString(CommandLine commandLine, String opt) {
+    return Result.fromOptionalOrElseError(
+        ofNullable(commandLine.getOptionValue(opt)), MISSING_PARAMETER);
   }
 
-  private Result<CommandLine> parseParameters(String[] args) {
+  private Result<CommandLine, Cause> parseParameters(String[] args) {
     return Result.lift(
-        UNABLE_TO_PARSE_COMMAND_LINE::swallow, () -> new DefaultParser().parse(options, args));
+        () -> new DefaultParser().parse(options, args), UNABLE_TO_PARSE_COMMAND_LINE::swallow);
   }
 }

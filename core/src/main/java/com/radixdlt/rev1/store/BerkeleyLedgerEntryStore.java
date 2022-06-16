@@ -100,8 +100,8 @@ import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.monitoring.SystemCounters;
@@ -1329,11 +1329,11 @@ public final class BerkeleyLedgerEntryStore
     return new DatabaseEntry();
   }
 
-  private static DatabaseEntry txnEntry(long offset, long size, AID aid) {
-    var buf = ByteBuffer.allocate(Long.BYTES + Long.BYTES + AID.BYTES);
+  private static DatabaseEntry txnEntry(long offset, long size, TID tid) {
+    var buf = ByteBuffer.allocate(Long.BYTES + Long.BYTES + TID.BYTES);
     buf.putLong(offset);
     buf.putLong(size);
-    buf.put(aid.getBytes());
+    buf.put(tid.getBytes());
     return entry(buf.array());
   }
 
@@ -1350,8 +1350,8 @@ public final class BerkeleyLedgerEntryStore
     return entry(pKey);
   }
 
-  private static DatabaseEntry entry(AID aid) {
-    return entry(aid.getBytes());
+  private static DatabaseEntry entry(TID TID) {
+    return entry(TID.getBytes());
   }
 
   private void addTime(long start, CounterType detailTime, CounterType detailCounter) {

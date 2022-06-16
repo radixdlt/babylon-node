@@ -64,18 +64,12 @@
 
 package com.radixdlt.transactions;
 
-import static com.radixdlt.interop.sbor.codec.ClassField.plain;
-import static com.radixdlt.lang.Result.all;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.interop.sbor.api.DecoderApi;
-import com.radixdlt.interop.sbor.codec.ClassCodec;
-import com.radixdlt.interop.sbor.codec.ClassField;
-import com.radixdlt.lang.Result;
-import java.util.List;
+import com.radixdlt.identifiers.TID;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 import java.util.Objects;
 
 /**
@@ -83,17 +77,28 @@ import java.util.Objects;
  * and may be invalid.
  */
 public final class Transaction {
-  private final byte[] payload;
-  private final AID id;
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        Transaction.class,
+        codecs ->
+            StructCodec.with(
+                Transaction::new,
+                codecs.of(byte[].class),
+                codecs.of(TID.class),
+                (t, encoder) -> encoder.encode(t.payload, t.id)));
+  }
 
-  private Transaction(byte[] payload, AID id) {
+  private final byte[] payload;
+  private final TID id;
+
+  private Transaction(byte[] payload, TID id) {
     this.payload = Objects.requireNonNull(payload);
     this.id = Objects.requireNonNull(id);
   }
 
   private Transaction(byte[] payload) {
     this.payload = Objects.requireNonNull(payload);
-    this.id = AID.from(HashUtils.transactionIdHash(payload).asBytes());
+    this.id = TID.from(HashUtils.transactionIdHash(payload).asBytes());
   }
 
   @JsonCreator
@@ -101,7 +106,7 @@ public final class Transaction {
     return new Transaction(payload);
   }
 
-  public AID getId() {
+  public TID getId() {
     return id;
   }
 
@@ -128,19 +133,5 @@ public final class Transaction {
   @Override
   public String toString() {
     return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
-  }
-
-  /** SBOR decoding */
-  public static class TransactionCodec implements ClassCodec<Transaction> {
-    @Override
-    public List<ClassField<Transaction>> fields() {
-      return List.of(
-          plain(byte[].class, Transaction::getPayload), plain(AID.class, Transaction::getId));
-    }
-
-    @Override
-    public Result<Transaction> decodeFields(DecoderApi decoder) {
-      return all(decoder.decode(byte[].class), decoder.decode(AID.class)).map(Transaction::new);
-    }
   }
 }

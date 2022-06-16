@@ -74,7 +74,7 @@ public interface Cause {
    *
    * @return cause converted into {@link Result} with necessary type.
    */
-  default <T> Result<T> result() {
-    return Result.failure(this);
+  default <T> Result<T, Cause> result() {
+    return Result.error(this);
   }
 }

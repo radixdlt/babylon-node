@@ -64,7 +64,7 @@
 
 package com.radixdlt.atom;
 
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.utils.Ints;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -74,7 +74,7 @@ import org.bouncycastle.util.encoders.Hex;
 
 /** The id of a unique substate */
 public final class SubstateId {
-  public static final int BYTES = AID.BYTES + Integer.BYTES;
+  public static final int BYTES = TID.BYTES + Integer.BYTES;
 
   private final byte[] idBytes;
 
@@ -82,10 +82,10 @@ public final class SubstateId {
     this.idBytes = Objects.requireNonNull(idBytes);
   }
 
-  public static SubstateId ofSubstate(AID txId, int index) {
+  public static SubstateId ofSubstate(TID txId, int index) {
     byte[] id = new byte[BYTES];
     txId.copyTo(id, 0);
-    Ints.copyTo(index, id, AID.BYTES);
+    Ints.copyTo(index, id, TID.BYTES);
     return new SubstateId(id);
   }
 
@@ -118,8 +118,8 @@ public final class SubstateId {
     return idBytes;
   }
 
-  public AID getTxnId() {
-    return AID.from(idBytes);
+  public TID getTxnId() {
+    return TID.from(idBytes);
   }
 
   public Optional<SubstateId> getVirtualParent() {
@@ -140,7 +140,7 @@ public final class SubstateId {
 
   public Optional<Integer> getIndex() {
     return idBytes.length == BYTES
-        ? Optional.of(Ints.fromByteArray(idBytes, AID.BYTES))
+        ? Optional.of(Ints.fromByteArray(idBytes, TID.BYTES))
         : Optional.empty();
   }
 

@@ -69,7 +69,7 @@ import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.atom.SubstateId;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.ParsedTxn;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -115,7 +115,7 @@ public final class REProcessedTxn {
     return Optional.ofNullable(signedByKey);
   }
 
-  public AID getTxnId() {
+  public TID getTxnId() {
     return parsedTxn.txn().getId();
   }
 
