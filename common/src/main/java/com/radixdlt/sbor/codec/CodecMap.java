@@ -200,7 +200,7 @@ public final class CodecMap {
       throw new SborCodecException(
           String.format(
               "The class object %s is not sealed, so cannot be passed into "
-                  + "registerForSealedClassAndSubclasses.",
+                  + "registerForSealedClassAndSubclasses",
               clazz));
     }
 
@@ -229,7 +229,7 @@ public final class CodecMap {
       throw new SborCodecException(
           String.format(
               "The class object %s is not sealed, so cannot be passed into "
-                  + "registerForGenericSealedClassAndSubclasses.",
+                  + "registerForGenericSealedClassAndSubclasses",
               clazz));
     }
 
@@ -331,7 +331,7 @@ public final class CodecMap {
       throw new SborCodecException(
           String.format(
               "Both the type token %s itself and its raw type class %s have no codec creator"
-                  + " registered.",
+                  + " registered",
               type, rawType));
     }
 
@@ -360,15 +360,14 @@ public final class CodecMap {
       if (typedCodecCreator != null) {
         throw new SborCodecException(
             String.format(
-                "The class %s has no registered class codec creator, BUT it does have a registered"
+                "%s has no registered class codec creator, BUT it does have a registered"
                     + " generic codec creator. You should pass an explicit generic type, new"
-                    + " TypeToken<X<Y,Z>>() {} instead.",
+                    + " TypeToken<X<Y,Z>>() {} instead",
                 clazz));
       }
 
       throw new SborCodecException(
-          String.format(
-              "The class %s has no registered class or generic typed codec creator.", clazz));
+          String.format("%s has no registered class or generic typed codec creator", clazz));
     }
 
     // NB - Arrays have to be handled separately because they're special types in Java

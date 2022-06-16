@@ -70,7 +70,6 @@ import static com.radixdlt.keygen.KeyGeneratorErrors.MISSING_PARAMETER;
 import static com.radixdlt.keygen.KeyGeneratorErrors.UNABLE_TO_LOAD_KEYSTORE;
 import static com.radixdlt.keygen.KeyGeneratorErrors.UNABLE_TO_PARSE_COMMAND_LINE;
 import static com.radixdlt.lang.Result.all;
-import static com.radixdlt.lang.Result.fromOptional;
 import static com.radixdlt.lang.Unit.unit;
 import static java.util.Optional.ofNullable;
 
@@ -119,13 +118,14 @@ public class KeyGenerator {
 
   private Result<Unit, Cause> run(String[] args) {
     return parseParameters(args)
-        .filterOrElse(commandLine -> !commandLine.hasOption("h"), IRRELEVANT::swallow)
-        .filterOrElse(commandLine -> commandLine.getOptions().length != 0, IRRELEVANT::swallow)
+        .filterOrElseGetError(commandLine -> !commandLine.hasOption("h"), IRRELEVANT::swallow)
+        .filterOrElseGetError(
+            commandLine -> commandLine.getOptions().length != 0, IRRELEVANT::swallow)
         .flatMap(
             cli ->
                 all(parseKeystore(cli), parsePassword(cli), parseKeypair(cli), parseShowPk(cli))
                     .flatMap(this::generateKeypair))
-        .onFailure(failure -> usage(failure.message()))
+        .onError(failure -> usage(failure.message()))
         .onSuccessDo(() -> System.out.println("Done"));
   }
 
@@ -162,7 +162,7 @@ public class KeyGenerator {
   }
 
   private Result<Boolean, Cause> parseShowPk(CommandLine commandLine) {
-    return Result.ok(commandLine.hasOption("pk"));
+    return Result.success(commandLine.hasOption("pk"));
   }
 
   private Result<Unit, Cause> printPublicKey(
@@ -192,11 +192,12 @@ public class KeyGenerator {
   }
 
   private Result<String, Cause> parseKeypair(CommandLine commandLine) {
-    return requiredString(commandLine, "n").orElse(Result.ok(DEFAULT_KEYPAIR_NAME));
+    return requiredString(commandLine, "n").orElse(Result.success(DEFAULT_KEYPAIR_NAME));
   }
 
   private Result<String, Cause> requiredString(CommandLine commandLine, String opt) {
-    return fromOptional(ofNullable(commandLine.getOptionValue(opt)), MISSING_PARAMETER);
+    return Result.fromOptionalOrElseError(
+        ofNullable(commandLine.getOptionValue(opt)), MISSING_PARAMETER);
   }
 
   private Result<CommandLine, Cause> parseParameters(String[] args) {

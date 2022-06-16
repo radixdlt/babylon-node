@@ -131,7 +131,7 @@ final class MessagePreprocessor {
     if (currentTime - message.getTimestamp() > messageTtlMs) {
       return MESSAGE_EXPIRED.result();
     } else {
-      return Result.ok(new MessageFromPeer<>(source, message));
+      return Result.success(new MessageFromPeer<>(source, message));
     }
   }
 
@@ -139,7 +139,7 @@ final class MessagePreprocessor {
     try {
       byte[] uncompressed = Compress.uncompress(in);
 
-      return Result.fromOptional(
+      return Result.fromOptionalOrElseError(
           ofNullable(serialization.fromDson(uncompressed, Message.class)), IO_ERROR);
     } catch (IOException e) {
       log.error(

@@ -67,16 +67,22 @@ package com.radixdlt.sbor;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.MempoolError;
+import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transactions.Transaction;
 
-public final class StateManagerCodecRegistration {
+public final class StateManagerSbor {
 
-  public static void registerCodecsWithDefault() {
-    CodecMap.withDefault(StateManagerCodecRegistration::registerCodecsWithCodecMap);
+  public static final Sbor sbor = createSborForStateManager();
+
+  private static Sbor createSborForStateManager() {
+    return new Sbor(true, new CodecMap().register(StateManagerSbor::registerCodecsWithCodecMap));
   }
 
   public static void registerCodecsWithCodecMap(CodecMap codecMap) {
+    RustMempoolConfig.registerCodec(codecMap);
+    StateManagerConfig.registerCodec(codecMap);
     Transaction.registerCodec(codecMap);
     TID.registerCodec(codecMap);
     StateManagerRuntimeError.registerCodec(codecMap);

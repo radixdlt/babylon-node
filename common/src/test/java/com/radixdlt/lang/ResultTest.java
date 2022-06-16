@@ -85,18 +85,18 @@ public class ResultTest {
   @Test
   public void failureResultsAreEqualIfFailureIsEqual() {
     assertEquals(
-        Result.<Integer, Cause>failure(Causes.cause("123")),
-        Result.<Integer, Cause>success(123).filterOrElse(v -> v < 0, Causes.with1("{0}")));
+        Result.<Integer, Cause>error(Causes.cause("123")),
+        Result.<Integer, Cause>success(123).filterOrElseGetError(v -> v < 0, Causes.with1("{0}")));
     assertNotEquals(
-        Result.<Integer, Cause>failure(Causes.cause("321")),
-        Result.<Integer, Cause>success(123).filterOrElse(v -> v < 0, Causes.with1("{0}")));
+        Result.<Integer, Cause>error(Causes.cause("321")),
+        Result.<Integer, Cause>success(123).filterOrElseGetError(v -> v < 0, Causes.with1("{0}")));
   }
 
   @Test
   public void successResultCanBeTransformedWithMap() {
     Result.success(123)
         .map(Objects::toString)
-        .onFailureDo(Assert::fail)
+        .onErrorDo(Assert::fail)
         .onSuccess(value -> assertEquals("123", value));
   }
 
@@ -104,23 +104,23 @@ public class ResultTest {
   public void successResultCanBeTransformedWithFlatMap() {
     Result.success(123)
         .flatMap(v -> Result.success(v.toString()))
-        .onFailureDo(Assert::fail)
+        .onErrorDo(Assert::fail)
         .onSuccess(value -> assertEquals("123", value));
   }
 
   @Test
   public void failureResultRemainsUnchangedAfterMap() {
-    Result.<Integer, Cause>failure(Causes.cause("Some error"))
+    Result.<Integer, Cause>error(Causes.cause("Some error"))
         .map(Objects::toString)
-        .onFailure(cause -> assertEquals("Some error", cause.message()))
+        .onError(cause -> assertEquals("Some error", cause.message()))
         .onSuccessDo(Assert::fail);
   }
 
   @Test
   public void failureResultRemainsUnchangedAfterFlatMap() {
-    Result.<Integer, Cause>failure(Causes.cause("Some error"))
+    Result.<Integer, Cause>error(Causes.cause("Some error"))
         .flatMap(v -> Result.success(v.toString()))
-        .onFailure(cause -> assertEquals("Some error", cause.message()))
+        .onError(cause -> assertEquals("Some error", cause.message()))
         .onSuccessDo(Assert::fail);
   }
 
@@ -129,17 +129,17 @@ public class ResultTest {
     Result.<Integer, Cause>success(321)
         .apply(Functions::unitFn, failure -> fail(failure.message()));
 
-    Result.failure(Causes.cause("Some error"))
+    Result.error(Causes.cause("Some error"))
         .apply(value -> fail(value.toString()), Functions::unitFn);
   }
 
   @Test
   public void onSuccessIsInvokedForSuccessResult() {
     Result.<Integer, Cause>success(123)
-        .onFailureDo(Assert::fail)
+        .onErrorDo(Assert::fail)
         .onSuccess(value -> assertEquals(123, value.intValue()));
-    Result.<Integer, Cause>failure(Causes.cause("123"))
-        .onFailure(cause -> assertEquals("123", cause.message()))
+    Result.<Integer, Cause>error(Causes.cause("123"))
+        .onError(cause -> assertEquals("123", cause.message()))
         .onSuccess(value -> fail(value.toString()));
   }
 
@@ -147,14 +147,14 @@ public class ResultTest {
   public void onSuccessDoIsInvokedForSuccessResult() {
     var flag1 = new AtomicBoolean(false);
 
-    Result.success(123).onFailureDo(Assert::fail).onSuccessDo(() -> flag1.set(true));
+    Result.success(123).onErrorDo(Assert::fail).onSuccessDo(() -> flag1.set(true));
 
     assertTrue(flag1.get());
 
     var flag2 = new AtomicBoolean(false);
 
-    Result.<Integer, Cause>failure(Causes.cause("123"))
-        .onFailureDo(() -> flag2.set(true))
+    Result.<Integer, Cause>error(Causes.cause("123"))
+        .onErrorDo(() -> flag2.set(true))
         .onSuccessDo(Assert::fail);
 
     assertTrue(flag2.get());
@@ -163,10 +163,10 @@ public class ResultTest {
   @Test
   public void onFailureIsInvokedForFailure() {
     Result.<Integer, Cause>success(123)
-        .onFailure(cause -> fail(cause.message()))
+        .onError(cause -> fail(cause.message()))
         .onSuccess(value -> assertEquals(123, value.intValue()));
-    Result.<Integer, Cause>failure(Causes.cause("123"))
-        .onFailure(cause -> assertEquals("123", cause.message()))
+    Result.<Integer, Cause>error(Causes.cause("123"))
+        .onError(cause -> assertEquals("123", cause.message()))
         .onSuccess(value -> fail(value.toString()));
   }
 
@@ -174,14 +174,14 @@ public class ResultTest {
   public void onFailureDoIsInvokedForFailureResult() {
     var flag1 = new AtomicBoolean(false);
 
-    Result.success(123).onFailureDo(Assert::fail).onSuccessDo(() -> flag1.set(true));
+    Result.success(123).onErrorDo(Assert::fail).onSuccessDo(() -> flag1.set(true));
 
     assertTrue(flag1.get());
 
     var flag2 = new AtomicBoolean(false);
 
-    Result.<Integer, Cause>failure(Causes.cause("123"))
-        .onFailureDo(() -> flag2.set(true))
+    Result.<Integer, Cause>error(Causes.cause("123"))
+        .onErrorDo(() -> flag2.set(true))
         .onSuccessDo(Assert::fail);
 
     assertTrue(flag2.get());
@@ -196,7 +196,7 @@ public class ResultTest {
 
     var flag1 = new AtomicBoolean(false);
 
-    Result.<Integer, Cause>failure(Causes.cause("123"))
+    Result.<Integer, Cause>error(Causes.cause("123"))
         .toOption()
         .onPresent(__ -> fail("Should not happen"))
         .onEmpty(() -> flag1.set(true));
@@ -207,25 +207,25 @@ public class ResultTest {
   @Test
   public void resultStatusCanBeChecked() {
     assertTrue(Result.success(321).isSuccess());
-    assertFalse(Result.success(321).isFailure());
-    assertFalse(Result.failure(Causes.cause("321")).isSuccess());
-    assertTrue(Result.failure(Causes.cause("321")).isFailure());
+    assertFalse(Result.success(321).isError());
+    assertFalse(Result.error(Causes.cause("321")).isSuccess());
+    assertTrue(Result.error(Causes.cause("321")).isError());
   }
 
   @Test
   public void successResultCanBeFiltered() {
     Result.<Integer, Cause>success(231)
         .onSuccess(value -> assertEquals(231, value.intValue()))
-        .onFailureDo(Assert::fail)
-        .filterOrElse(value -> value > 321, Causes.with1("Value {0} is below threshold"))
+        .onErrorDo(Assert::fail)
+        .filterOrElseGetError(value -> value > 321, Causes.with1("Value {0} is below threshold"))
         .onSuccessDo(Assert::fail)
-        .onFailure(cause -> assertEquals("Value 231 is below threshold", cause.message()));
+        .onError(cause -> assertEquals("Value 231 is below threshold", cause.message()));
   }
 
   @Test
   public void liftWrapsCodeWhichCanThrowExceptions() {
     Result.lift(() -> throwingFunction(3), Causes::fromThrowable)
-        .onFailure(
+        .onError(
             cause ->
                 assertTrue(
                     cause
@@ -234,7 +234,7 @@ public class ResultTest {
         .onSuccess(value -> fail("Expecting failure"));
 
     Result.lift(() -> throwingFunction(4), Causes::fromThrowable)
-        .onFailure(cause -> fail(cause.message()))
+        .onError(cause -> fail(cause.message()))
         .onSuccess(value -> assertEquals("Input:4", value));
   }
 

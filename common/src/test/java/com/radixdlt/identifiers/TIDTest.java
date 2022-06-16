@@ -69,7 +69,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-import com.radixdlt.sbor.TypedSbor;
+import com.radixdlt.sbor.Sbor;
 import com.radixdlt.sbor.codec.CodecMap;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -127,12 +127,13 @@ public class TIDTest {
 
   @Test
   public void testSBORSerialization() {
-    CodecMap.withDefault(TID::registerCodec);
+    var sbor = new Sbor(true, new CodecMap().register(TID::registerCodec));
+
     byte[] bytes = new byte[TID.BYTES * 2];
     TID TID0 = TID.from(bytes, 0);
 
-    var r0 = TypedSbor.encode(TID0, TID.class);
-    var aid1 = TypedSbor.decode(r0, TID.class);
+    var r0 = sbor.encode(TID0, TID.class);
+    var aid1 = sbor.decode(r0, TID.class);
 
     assertEquals(TID0, aid1);
   }

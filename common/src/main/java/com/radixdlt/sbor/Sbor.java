@@ -72,11 +72,29 @@ import com.radixdlt.sbor.coding.Encoder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-public record SchemaCoder(CodecMap.CodecResolver codecResolver, boolean withTypes) {
-  public static final SchemaCoder DEFAULT_WITH_TYPES =
-      new SchemaCoder(CodecMap.DEFAULT_RESOLVER, true);
-  public static final SchemaCoder DEFAULT_WITHOUT_TYPES =
-      new SchemaCoder(CodecMap.DEFAULT_RESOLVER, false);
+/**
+ * The recommended use of this is to register your type codecs explicitly on a singleton instance.
+ * You can also consider registering codecs on the default CodecMap, and using DefaultTypedSbor /
+ * DefaultUntypedSbor.
+ */
+@SuppressWarnings("unused")
+public final class Sbor {
+  private final boolean withTypeIds;
+  private final CodecMap.CodecResolver codecResolver;
+
+  public Sbor(boolean withTypeIds) {
+    this(withTypeIds, new CodecMap());
+  }
+
+  public Sbor(boolean withTypeIds, CodecMap codecMap) {
+    this.withTypeIds = withTypeIds;
+    this.codecResolver = codecMap.resolver;
+  }
+
+  public Sbor(boolean withTypeIds, CodecMap.CodecResolver codecResolver) {
+    this.withTypeIds = withTypeIds;
+    this.codecResolver = codecResolver;
+  }
 
   @SuppressWarnings("unchecked")
   public <T> byte[] encode(T value) {
@@ -93,7 +111,7 @@ public record SchemaCoder(CodecMap.CodecResolver codecResolver, boolean withType
 
   public <T> byte[] encode(T value, Codec<T> codec) {
     var outputStream = new ByteArrayOutputStream();
-    new Encoder(outputStream, withTypes).encodeWithTypeId(value, codec);
+    new Encoder(outputStream, withTypeIds).encodeWithTypeId(value, codec);
     return outputStream.toByteArray();
   }
 
@@ -106,6 +124,10 @@ public record SchemaCoder(CodecMap.CodecResolver codecResolver, boolean withType
   }
 
   public <T> T decode(byte[] input, Codec<T> codec) {
-    return new Decoder(new ByteArrayInputStream(input), withTypes).decodeFromAllOfStream(codec);
+    return new Decoder(new ByteArrayInputStream(input), withTypeIds).decodeFromAllOfStream(codec);
+  }
+
+  public Codec<?> createCodec(CodecMap.ClassCodecCreator<?> codecCreator) {
+    return codecCreator.create(codecResolver);
   }
 }

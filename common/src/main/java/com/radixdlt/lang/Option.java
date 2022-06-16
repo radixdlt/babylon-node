@@ -282,7 +282,7 @@ public sealed interface Option<T> permits Some, None {
    * @return created instance
    */
   default <E> Result<T, E> toResult(E errorValue) {
-    return fold(Result::success, () -> Result.err(errorValue));
+    return fold(Result::success, () -> Result.error(errorValue));
   }
 
   /**
