@@ -64,9 +64,9 @@
 
 package com.radixdlt.network.capability;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
+import java.util.Map;
 import org.junit.Test;
 
 public class LedgerSyncCapabilityTest {
@@ -87,5 +87,13 @@ public class LedgerSyncCapabilityTest {
     ledgerSyncCapability
         .getUnsupportedMessagesWhenDisabled()
         .forEach(message -> assertFalse(ledgerSyncCapability.isMessageUnsupported(message)));
+  }
+
+  @Test
+  public void conversion_to_remote_capabilities_works_as_expected() {
+    LedgerSyncCapability ledgerSyncCapability = new LedgerSyncCapability.Builder(true).build();
+
+    RemotePeerCapability expected = new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of());
+    assertEquals(expected, ledgerSyncCapability.toRemotePeerCapability());
   }
 }

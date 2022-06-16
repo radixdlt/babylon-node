@@ -73,6 +73,8 @@ import com.google.inject.Key;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.network.capability.Capabilities;
+import com.radixdlt.network.capability.LedgerSyncCapability;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.RadixNodeUri;
@@ -89,6 +91,9 @@ import java.util.Optional;
 
 final class MockP2PNetwork {
   private ImmutableList<TestNode> nodes;
+
+  private final Capabilities capabilities =
+      new Capabilities(LedgerSyncCapability.Builder.asDefault().build());
 
   // this needs to be mutable due to circular dependency in runner
   void setNodes(ImmutableList<TestNode> nodes) {
@@ -120,7 +125,8 @@ final class MockP2PNetwork {
             clientPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() {}),
             Optional.of(serverPeerUri),
             clientSocketChannel,
-            Optional.empty());
+            Optional.empty(),
+            capabilities);
 
     if (serverPeerOpt.isEmpty()) {
       clientChannel.channelActive(null /* unused */);
@@ -145,7 +151,8 @@ final class MockP2PNetwork {
             serverPeer.injector.getInstance(new Key<EventDispatcher<PeerEvent>>() {}),
             Optional.empty(),
             serverSocketChannel,
-            Optional.empty());
+            Optional.empty(),
+            capabilities);
 
     when(clientSocketChannel.writeAndFlush(any()))
         .thenAnswer(

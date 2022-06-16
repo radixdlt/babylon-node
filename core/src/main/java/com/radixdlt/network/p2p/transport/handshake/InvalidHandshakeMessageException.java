@@ -62,61 +62,25 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.capability;
+package com.radixdlt.network.p2p.transport.handshake;
 
-import com.radixdlt.network.Message;
-import com.radixdlt.network.messages.*;
-import java.util.Map;
-import java.util.Set;
+public class InvalidHandshakeMessageException extends RuntimeException {
+  public InvalidHandshakeMessageException() {}
 
-public class LedgerSyncCapability {
-  public static final String NAME = "ledger-sync";
-  // Currently, this is the only configuration available, more can be added as fields in this class.
-  private boolean isEnabled;
-  // the subset of messages which should be discarded if received by other peers when the Capability
-  // is disabled.
-  private final Set<Class<? extends Message>> unsupportedMessagesWhenDisabled;
-
-  private LedgerSyncCapability(Builder builder) {
-    this.isEnabled = builder.isEnabled;
-    this.unsupportedMessagesWhenDisabled =
-        Set.of(
-            SyncRequestMessage.class, StatusRequestMessage.class, LedgerStatusUpdateMessage.class);
+  public InvalidHandshakeMessageException(String message) {
+    super(message);
   }
 
-  public String getName() {
-    return NAME;
+  public InvalidHandshakeMessageException(String message, Throwable cause) {
+    super(message, cause);
   }
 
-  public boolean isEnabled() {
-    return isEnabled;
+  public InvalidHandshakeMessageException(Throwable cause) {
+    super(cause);
   }
 
-  public Set<Class<? extends Message>> getUnsupportedMessagesWhenDisabled() {
-    return unsupportedMessagesWhenDisabled;
-  }
-
-  public boolean isMessageUnsupported(Class<? extends Message> messageClazz) {
-    return !this.isEnabled() && this.unsupportedMessagesWhenDisabled.contains(messageClazz);
-  }
-
-  public RemotePeerCapability toRemotePeerCapability() {
-    return new RemotePeerCapability(this.getName(), Map.of());
-  }
-
-  public static class Builder {
-    private final boolean isEnabled;
-
-    public static Builder asDefault() {
-      return new Builder(true);
-    }
-
-    public Builder(boolean isEnabled) {
-      this.isEnabled = isEnabled;
-    }
-
-    public LedgerSyncCapability build() {
-      return new LedgerSyncCapability(this);
-    }
+  public InvalidHandshakeMessageException(
+      String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    super(message, cause, enableSuppression, writableStackTrace);
   }
 }

@@ -68,6 +68,7 @@ import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.network.capability.Capabilities;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.PeerEvent;
 import com.radixdlt.network.p2p.RadixNodeUri;
@@ -110,6 +111,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
   private final ECKeyOps ecKeyOps;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
   private final Optional<RadixNodeUri> uri;
+  private final Capabilities capabilities;
 
   public PeerChannelInitializer(
       P2PConfig config,
@@ -121,7 +123,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
       SecureRandom secureRandom,
       ECKeyOps ecKeyOps,
       EventDispatcher<PeerEvent> peerEventDispatcher,
-      Optional<RadixNodeUri> uri) {
+      Optional<RadixNodeUri> uri,
+      Capabilities capabilities) {
     this.config = Objects.requireNonNull(config);
     this.addressing = Objects.requireNonNull(addressing);
     this.networkId = networkId;
@@ -132,6 +135,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
     this.ecKeyOps = Objects.requireNonNull(ecKeyOps);
     this.peerEventDispatcher = Objects.requireNonNull(peerEventDispatcher);
     this.uri = Objects.requireNonNull(uri);
+    this.capabilities = capabilities;
   }
 
   @Override
@@ -222,7 +226,8 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
             peerEventDispatcher,
             uri,
             socketChannel,
-            Optional.ofNullable(remoteAddress));
+            Optional.ofNullable(remoteAddress),
+            capabilities);
 
     final int packetLength = MAX_PACKET_LENGTH + FRAME_HEADER_LENGTH;
     final int headerLength = FRAME_HEADER_LENGTH;
