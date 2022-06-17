@@ -82,8 +82,7 @@ public class Mempools {
       }
 
       @Override
-      public List<Transaction> committed(List<T> committed) {
-        return List.of();
+      public void handleTransactionsCommitted(List<T> transactions) {
       }
 
       @Override

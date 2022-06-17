@@ -106,6 +106,7 @@ public class RustMempool implements Mempool<Transaction> {
       }
     }
 
+    // No error is possible for this call at present, so unwrap should be safe
     var processedTransaction = result.unwrap();
     return processedTransaction;
   }
@@ -121,7 +122,7 @@ public class RustMempool implements Mempool<Transaction> {
     var encodedResponse = getTxns(this.rustState, encodedRequest);
     var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
 
-    // No Specific Return Code Expected.
+    // No error is possible for this call at present, so unwrap should be safe
     var newTransactions = result.unwrap();
     return newTransactions;
   }
@@ -133,35 +134,36 @@ public class RustMempool implements Mempool<Transaction> {
     var encodedResponse = getRelayTxns(this.rustState, encodedRequest);
     var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
 
-    // No Specific Return Code Expected.
+    // No error is possible for this call at present, so unwrap should be safe
     return result.unwrap();
   }
 
   @Override
-  public List<Transaction> committed(List<Transaction> committed) {
+  public void handleTransactionsCommitted(List<Transaction> transactions) {
     var encodedRequest =
-        StateManagerSbor.sbor.encode(committed, new TypeToken<List<Transaction>>() {});
-    var encodedResponse = committed(this.rustState, encodedRequest);
+        StateManagerSbor.sbor.encode(transactions, new TypeToken<List<Transaction>>() {});
+    var encodedResponse = handleTransactionsCommitted(this.rustState, encodedRequest);
     var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
 
-    // No Specific Return Code Expected.
-    return result.unwrap();
+    // No error should be possible for this call at present
+    // But unwrap to make sure we didn't have one.
+    result.unwrap();
   }
 
   @Override
   public int getCount() {
     var encodedResponse = getCount(this.rustState);
-    var result =
+    var transactionCount =
         StateManagerResponse.decode(
             encodedResponse, new TypeToken<Result<Integer, StateManagerRuntimeError>>() {});
 
     // Not A Result
-    return result;
+    return transactionCount;
   }
 
   private static native byte[] add(RustState rustState, byte[] transaction);
 
-  private static native byte[] committed(RustState rustState, byte[] transactions);
+  private static native byte[] handleTransactionsCommitted(RustState rustState, byte[] transactions);
 
   private static native byte[] getCount(RustState rustState);
 

@@ -146,7 +146,7 @@ public class REv2StateComputerModule extends AbstractModule {
       @Override
       public void commit(
           VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-        mempool.committed(txnsAndProof.getTxns());
+        mempool.handleTransactionsCommitted(txnsAndProof.getTxns());
         counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 
         var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());

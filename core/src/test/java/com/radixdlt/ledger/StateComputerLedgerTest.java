@@ -288,6 +288,6 @@ public class StateComputerLedgerTest {
 
     // Assert
     verify(stateComputer, never()).commit(any(), any());
-    verify(mempool, never()).committed(any());
+    verify(mempool, never()).handleTransactionsCommitted(any());
   }
 }

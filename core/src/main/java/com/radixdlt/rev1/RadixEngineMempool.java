@@ -157,7 +157,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   }
 
   @Override
-  public List<Transaction> committed(List<REProcessedTxn> transactions) {
+  public void handleTransactionsCommitted(List<REProcessedTxn> transactions) {
     final var removed = new ArrayList<Transaction>();
     final var committedIds =
         transactions.stream().map(p -> p.getTxn().getId()).collect(Collectors.toSet());
@@ -186,8 +186,6 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
     if (!removed.isEmpty()) {
       logger.debug("Evicting {} txns from mempool", removed.size());
     }
-
-    return removed;
   }
 
   @Override

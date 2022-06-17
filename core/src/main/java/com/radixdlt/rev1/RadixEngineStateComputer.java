@@ -419,7 +419,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
       // TODO: refactor mempool to be less generic and make this more efficient
       // TODO: Move this into engine
-      this.mempool.committed(txCommitted);
+      this.mempool.handleTransactionsCommitted(txCommitted);
       systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 
       var epochChangeOptional =

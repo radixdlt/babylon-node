@@ -259,8 +259,7 @@ public final class RustMempoolTest {
 
       // Commit two existing transactions and one non-existing in the mempool.
       var transactionList = List.of(transaction1, transaction2, transaction3);
-      var commitReturn = rustMempool.committed(transactionList);
-      Assert.assertEquals(List.of(transaction1, transaction2), commitReturn);
+      rustMempool.handleTransactionsCommitted(transactionList);
       Assert.assertEquals(0, rustMempool.getCount());
     }
   }

@@ -104,10 +104,9 @@ public class REv2Mempool implements Mempool<Transaction> {
   }
 
   @Override
-  public List<Transaction> committed(List<Transaction> commands) {
-    commands.forEach(this.data::remove);
+  public void handleTransactionsCommitted(List<Transaction> transactions) {
+    transactions.forEach(this.data::remove);
     updateCounts();
-    return List.of();
   }
 
   @Override

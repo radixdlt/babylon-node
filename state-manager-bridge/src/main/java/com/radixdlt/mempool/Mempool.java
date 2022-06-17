@@ -90,7 +90,7 @@ public interface Mempool<T> {
 
   List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis);
 
-  List<Transaction> committed(List<T> committed);
+  void handleTransactionsCommitted(List<T> transactions);
 
   int getCount();
 }
