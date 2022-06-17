@@ -66,8 +66,6 @@ package com.radixdlt.mempool;
 
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /**
  * Basic mempool functionality.
@@ -90,8 +88,7 @@ public interface Mempool<T> {
    */
   List<Transaction> getTxns(int count, List<T> seen);
 
-  List<Transaction> scanUpdateAndGet(
-      Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator);
+  List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis);
 
   List<Transaction> committed(List<T> committed);
 

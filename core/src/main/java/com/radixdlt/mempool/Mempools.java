@@ -66,8 +66,6 @@ package com.radixdlt.mempool;
 
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /** Mempool which is always empty */
 public class Mempools {
@@ -99,8 +97,8 @@ public class Mempools {
       }
 
       @Override
-      public List<Transaction> scanUpdateAndGet(
-          Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
+      public List<Transaction> getTransactionsToRelay(
+          long initialDelayMillis, long repeatDelayMillis) {
         return List.of();
       }
     };

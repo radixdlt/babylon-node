@@ -75,4 +75,4 @@ import javax.inject.Qualifier;
 @Qualifier
 @Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface MempoolRelayInitialDelay {}
+public @interface MempoolRelayInitialDelayMs {}

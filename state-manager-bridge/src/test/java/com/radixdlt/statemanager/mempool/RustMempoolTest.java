@@ -284,11 +284,11 @@ public final class RustMempoolTest {
       rustMempool.add(transaction3);
       Assert.assertEquals(3, rustMempool.getCount());
 
-      var returnedList = rustMempool.getRelayTxns(100, 200);
+      var returnedList = rustMempool.getTransactionsToRelay(100, 200);
       Assert.assertEquals(0, returnedList.size());
       Assert.assertEquals(List.of(), returnedList);
 
-      returnedList = rustMempool.getRelayTxns(0, 200);
+      returnedList = rustMempool.getTransactionsToRelay(0, 200);
       Assert.assertEquals(3, returnedList.size());
       Assert.assertTrue(
           List.of(transaction1, transaction2, transaction3).containsAll(returnedList));

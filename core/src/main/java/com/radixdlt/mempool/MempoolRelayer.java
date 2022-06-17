@@ -86,8 +86,8 @@ public final class MempoolRelayer {
   private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
   private final SystemCounters counters;
   private final Mempool<?> mempool;
-  private final long initialDelay;
-  private final long repeatDelay;
+  private final long initialDelayMillis;
+  private final long repeatDelayMillis;
   private final int maxPeers;
 
   @Inject
@@ -95,15 +95,15 @@ public final class MempoolRelayer {
       Mempool<?> mempool,
       RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
       PeersView peersView,
-      @MempoolRelayInitialDelay long initialDelay,
-      @MempoolRelayRepeatDelay long repeatDelay,
+      @MempoolRelayInitialDelayMs long initialDelayMillis,
+      @MempoolRelayRepeatDelayMs long repeatDelayMillis,
       @MempoolRelayMaxPeers int maxPeers,
       SystemCounters counters) {
     this.mempool = mempool;
     this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
     this.peersView = Objects.requireNonNull(peersView);
-    this.initialDelay = initialDelay;
-    this.repeatDelay = repeatDelay;
+    this.initialDelayMillis = initialDelayMillis;
+    this.repeatDelayMillis = repeatDelayMillis;
     this.maxPeers = maxPeers;
     this.counters = Objects.requireNonNull(counters);
   }
@@ -112,27 +112,22 @@ public final class MempoolRelayer {
     return mempoolAddSuccess -> {
       final var ignorePeers =
           mempoolAddSuccess.getOrigin().map(ImmutableList::of).orElse(ImmutableList.of());
-      relayCommands(ImmutableList.of(mempoolAddSuccess.getTxn()), ignorePeers);
+      relayTransactions(ImmutableList.of(mempoolAddSuccess.getTxn()), ignorePeers);
     };
   }
 
   public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
     return ev -> {
-      final var now = System.currentTimeMillis();
-      final var maxAddTime = now - initialDelay;
-      final var txns =
-          mempool.scanUpdateAndGet(
-              m ->
-                  m.getInserted() <= maxAddTime
-                      && now >= m.getLastRelayed().orElse(0L) + repeatDelay,
-              m -> m.setLastRelayed(now));
-      if (!txns.isEmpty()) {
-        relayCommands(txns, ImmutableList.of());
+      final var transactions =
+          mempool.getTransactionsToRelay(initialDelayMillis, repeatDelayMillis);
+      if (!transactions.isEmpty()) {
+        relayTransactions(transactions, ImmutableList.of());
       }
     };
   }
 
-  private void relayCommands(List<Transaction> transactions, ImmutableList<BFTNode> ignorePeers) {
+  private void relayTransactions(
+      List<Transaction> transactions, ImmutableList<BFTNode> ignorePeers) {
     final var mempoolAddMsg = MempoolAdd.create(transactions);
     final var peers =
         this.peersView.peers().map(PeersView.PeerInfo::bftNode).collect(Collectors.toList());

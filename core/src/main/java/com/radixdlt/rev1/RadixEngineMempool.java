@@ -226,7 +226,20 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   }
 
   @Override
-  public List<Transaction> scanUpdateAndGet(
+  public List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis) {
+    final var now = System.currentTimeMillis();
+    final var recentlyAddedCutoff = now - initialDelayMillis;
+    final var lastRelayedCutoff = now - repeatDelayMillis;
+    return scanUpdateAndGet(
+        m ->
+            // Don't relay recently added
+            m.getInserted() <= recentlyAddedCutoff
+                // Don't relay recently relayed
+                && m.getLastRelayed().orElse(0L) <= lastRelayedCutoff,
+        m -> m.setLastRelayed(now));
+  }
+
+  private List<Transaction> scanUpdateAndGet(
       Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
     return this.data.values().stream()
         .filter(e -> predicate.test(e.getSecond()))

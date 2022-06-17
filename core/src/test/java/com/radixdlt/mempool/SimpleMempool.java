@@ -67,16 +67,7 @@ package com.radixdlt.mempool;
 import com.google.common.collect.Lists;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.transactions.Transaction;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.*;
 
 /** Simple mempool which performs no validation and removes on commit. */
 public final class SimpleMempool implements Mempool<Transaction> {
@@ -144,8 +135,7 @@ public final class SimpleMempool implements Mempool<Transaction> {
   }
 
   @Override
-  public List<Transaction> scanUpdateAndGet(
-      Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
+  public List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis) {
     return List.of();
   }
 

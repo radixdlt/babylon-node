@@ -68,8 +68,6 @@ import com.google.common.collect.Lists;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.transactions.Transaction;
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -139,8 +137,7 @@ public class REv2Mempool implements Mempool<Transaction> {
   }
 
   @Override
-  public List<Transaction> scanUpdateAndGet(
-      Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
+  public List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis) {
     return List.of();
   }
 

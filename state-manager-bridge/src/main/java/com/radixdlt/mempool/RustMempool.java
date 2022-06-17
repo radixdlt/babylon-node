@@ -75,7 +75,7 @@ import java.util.List;
 import java.util.Objects;
 
 // This must become the new Mempool Interface.
-public class RustMempool {
+public class RustMempool implements Mempool<Transaction> {
   private final RustState rustState;
 
   public RustMempool(RustState rustState) {
@@ -89,6 +89,7 @@ public class RustMempool {
           Result<Result<List<Transaction>, MempoolError>, StateManagerRuntimeError>>
       listTransactionType = new TypeToken<>() {};
 
+  @Override
   public Transaction add(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
     var encodedRequest = StateManagerSbor.sbor.encode(transaction, Transaction.class);
@@ -109,6 +110,7 @@ public class RustMempool {
     return processedTransaction;
   }
 
+  @Override
   public List<Transaction> getTxns(int count, List<Transaction> seen) {
     if (count <= 0) {
       throw new IllegalArgumentException("State Manager Mempool: count must be > 0: " + count);
@@ -124,8 +126,9 @@ public class RustMempool {
     return newTransactions;
   }
 
-  public List<Transaction> getRelayTxns(long initMillis, long delayMillis) {
-    var args = new GetRelayedTxnsRustArgs(initMillis, delayMillis);
+  @Override
+  public List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis) {
+    var args = new GetRelayedTxnsRustArgs(initialDelayMillis, repeatDelayMillis);
     var encodedRequest = StateManagerSbor.sbor.encode(args, GetRelayedTxnsRustArgs.class);
     var encodedResponse = getRelayTxns(this.rustState, encodedRequest);
     var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
@@ -134,6 +137,7 @@ public class RustMempool {
     return result.unwrap();
   }
 
+  @Override
   public List<Transaction> committed(List<Transaction> committed) {
     var encodedRequest =
         StateManagerSbor.sbor.encode(committed, new TypeToken<List<Transaction>>() {});
@@ -144,6 +148,7 @@ public class RustMempool {
     return result.unwrap();
   }
 
+  @Override
   public int getCount() {
     var encodedResponse = getCount(this.rustState);
     var result =
