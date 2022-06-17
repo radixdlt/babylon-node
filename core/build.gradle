@@ -277,7 +277,7 @@ ospackage {
         packageName = debPackageName()
 
         doLast {
-            println "SUCCESS: Built deb image: ${debOutputFileName()}"
+            println "SUCCESS: Built deb package: ${debOutputFileName()}"
         }
     }
     buildRpm {
@@ -320,7 +320,7 @@ task deb4docker(dependsOn: buildDeb) {
         if (!file(builtDebFileLocation).exists()) {
             throw new GradleException("Expected to find built deb package at $builtDebFileLocation but it wasn't there - perhaps the replacement regex in deb4docker is broken / needs fixing")
         }
-        println "Built deb image found at: $builtDebFileLocation"
+        println "Built deb package found at: $builtDebFileLocation"
 
         def names = [] as Set
         destinationDir.eachFileMatch(groovy.io.FileType.FILES, previousDebFileToDeleteRegex) {
@@ -336,6 +336,6 @@ task deb4docker(dependsOn: buildDeb) {
             from builtDebFileLocation
             into destinationDir
         }
-        println "SUCCESS: Deb image copied for the docker build to: $destinationLocation"
+        println "SUCCESS: deb package copied for the docker build to: $destinationLocation"
     }
 }
