@@ -64,6 +64,7 @@
 
 package com.radixdlt.sbor.codec;
 
+import com.radixdlt.lang.Functions;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
@@ -94,6 +95,16 @@ public interface Codec<T> extends UntypedCodec<T> {
 
   static <T> Codec<T> from(TypeId typeId, UntypedCodec<T> untypedCodec) {
     return of(typeId, untypedCodec::encodeWithoutTypeId, untypedCodec::decodeWithoutTypeId);
+  }
+
+  static <TOuter, TInner> Codec<TOuter> wrap(
+      Functions.Func1<TOuter, TInner> wrap,
+      Codec<TInner> codec1,
+      Functions.Func1<TInner, TOuter> unwrap) {
+    return Codec.of(
+        codec1.getTypeId(),
+        (encoder, value) -> codec1.encodeWithTypeId(encoder, wrap.apply(value)),
+        decoder -> unwrap.apply(codec1.decodeWithTypeId(decoder)));
   }
 
   @FunctionalInterface

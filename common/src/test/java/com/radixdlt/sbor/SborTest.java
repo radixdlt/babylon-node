@@ -69,6 +69,8 @@ import static com.radixdlt.lang.Option.some;
 import static com.radixdlt.lang.Tuple.*;
 import static org.junit.Assert.*;
 
+import com.google.common.primitives.UnsignedInteger;
+import com.google.common.primitives.UnsignedLong;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.*;
 import com.radixdlt.sbor.codec.CodecMap;
@@ -161,6 +163,18 @@ public class SborTest {
   }
 
   @Test
+  public void unsignedIntEdgeCasesCanBeEncodedAndDecoded() {
+    var encodedMaxValue = DefaultTypedSbor.encode(UnsignedInteger.MAX_VALUE);
+    var encodedMinValue = DefaultTypedSbor.encode(UnsignedInteger.ZERO);
+
+    var decodedMaxValue = DefaultTypedSbor.decode(encodedMaxValue, UnsignedInteger.class);
+    var decodedMinValue = DefaultTypedSbor.decode(encodedMinValue, UnsignedInteger.class);
+
+    assertEquals(UnsignedInteger.MAX_VALUE, decodedMaxValue);
+    assertEquals(UnsignedInteger.ZERO, decodedMinValue);
+  }
+
+  @Test
   public void longCanBeEncodedAndDecoded() {
     var r0 = DefaultTypedSbor.encode(0x0123_4567_89AB_CDEFL, long.class);
 
@@ -178,6 +192,18 @@ public class SborTest {
     var r1 = DefaultTypedSbor.decode(r0, long.class);
 
     assertEquals(0x0123_4567_89AB_CDEFL, (long) r1);
+  }
+
+  @Test
+  public void unsignedLongEdgeCasesCanBeEncodedAndDecoded() {
+    var encodedMaxValue = DefaultTypedSbor.encode(UnsignedLong.MAX_VALUE);
+    var encodedMinValue = DefaultTypedSbor.encode(UnsignedLong.ZERO);
+
+    var decodedMaxValue = DefaultTypedSbor.decode(encodedMaxValue, UnsignedLong.class);
+    var decodedMinValue = DefaultTypedSbor.decode(encodedMinValue, UnsignedLong.class);
+
+    assertEquals(UnsignedLong.MAX_VALUE, decodedMaxValue);
+    assertEquals(UnsignedLong.ZERO, decodedMinValue);
   }
 
   @Test
@@ -515,7 +541,6 @@ public class SborTest {
   }
 
   private record SborTestCase<T>(T value, TypeToken<T> type) {}
-  ;
 
   @Test
   @SuppressWarnings("Convert2Diamond") // Otherwise we get a compiler error :'(
