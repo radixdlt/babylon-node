@@ -128,7 +128,6 @@ public final class RadixEngineStateComputer implements StateComputer {
   private final RadixEngine<LedgerAndBFTProof> radixEngine;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
   private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
-  private final EventDispatcher<TxnsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
   private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
   private final SystemCounters systemCounters;
   private final Hasher hasher;
@@ -149,7 +148,6 @@ public final class RadixEngineStateComputer implements StateComputer {
       @MaxSigsPerRound OptionalInt maxSigsPerRound, // TODO: Move this into radixEngine
       EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
       EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
-      EventDispatcher<TxnsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
       Hasher hasher,
       SystemCounters systemCounters) {
@@ -166,8 +164,6 @@ public final class RadixEngineStateComputer implements StateComputer {
         Objects.requireNonNull(mempoolAddedCommandEventDispatcher);
     this.invalidProposedCommandEventDispatcher =
         Objects.requireNonNull(invalidProposedCommandEventDispatcher);
-    this.mempoolAtomsRemovedEventDispatcher =
-        Objects.requireNonNull(mempoolAtomsRemovedEventDispatcher);
     this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
     this.hasher = Objects.requireNonNull(hasher);
     this.systemCounters = Objects.requireNonNull(systemCounters);
@@ -423,12 +419,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 
       // TODO: refactor mempool to be less generic and make this more efficient
       // TODO: Move this into engine
-      var removed = this.mempool.committed(txCommitted);
+      this.mempool.committed(txCommitted);
       systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
-      if (!removed.isEmpty()) {
-        var atomsRemovedFromMempool = TxnsRemovedFromMempool.create(removed);
-        mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
-      }
 
       var epochChangeOptional =
           txnsAndProof
