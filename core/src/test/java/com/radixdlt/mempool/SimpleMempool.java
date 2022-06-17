@@ -113,7 +113,8 @@ public final class SimpleMempool implements Mempool<Transaction> {
   }
 
   @Override
-  public List<Transaction> getTxns(int count, List<Transaction> seen) {
+  public List<Transaction> getTransactionsForProposal(
+      int count, List<Transaction> preparedTransactions) {
     int size = Math.min(count, this.data.size());
     if (size > 0) {
       List<Transaction> commands = Lists.newArrayList();
@@ -123,7 +124,7 @@ public final class SimpleMempool implements Mempool<Transaction> {
       Iterator<Transaction> i = values.iterator();
       while (commands.size() < size && i.hasNext()) {
         var a = i.next();
-        if (!seen.contains(a)) {
+        if (!preparedTransactions.contains(a)) {
           commands.add(a);
         }
       }

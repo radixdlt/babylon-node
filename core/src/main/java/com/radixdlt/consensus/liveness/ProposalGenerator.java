@@ -62,20 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.transactions.Transaction;
+import java.util.List;
 
-public class REv2PreparedTxn implements StateComputerLedger.PreparedTxn {
-  private final Transaction transaction;
+/** Generates transactions for a proposal in the given view */
+public interface ProposalGenerator {
 
-  public REv2PreparedTxn(Transaction transaction) {
-    this.transaction = transaction;
-  }
-
-  @Override
-  public Transaction transaction() {
-    return transaction;
-  }
+  /**
+   * Generates transactions for a proposal in the given view TODO: Update interface to return an
+   * error if already generated a command for a given view
+   *
+   * @param view the view to create the vertex for
+   * @param prepared vertices with transactions which have already been prepared
+   * @return new transactions for the next proposal
+   */
+  List<Transaction> getTransactionsForProposal(View view, List<PreparedVertex> prepared);
 }

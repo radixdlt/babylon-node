@@ -112,12 +112,13 @@ public class RustMempool implements Mempool<Transaction> {
   }
 
   @Override
-  public List<Transaction> getTxns(int count, List<Transaction> seen) {
+  public List<Transaction> getTransactionsForProposal(
+      int count, List<Transaction> preparedTransactions) {
     if (count <= 0) {
       throw new IllegalArgumentException("State Manager Mempool: count must be > 0: " + count);
     }
 
-    var args = new GetTxnsRustArgs(count, seen);
+    var args = new GetTxnsRustArgs(count, preparedTransactions);
     var encodedRequest = StateManagerSbor.sbor.encode(args, GetTxnsRustArgs.class);
     var encodedResponse = getTxns(this.rustState, encodedRequest);
     var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
@@ -163,7 +164,8 @@ public class RustMempool implements Mempool<Transaction> {
 
   private static native byte[] add(RustState rustState, byte[] transaction);
 
-  private static native byte[] handleTransactionsCommitted(RustState rustState, byte[] transactions);
+  private static native byte[] handleTransactionsCommitted(
+      RustState rustState, byte[] transactions);
 
   private static native byte[] getCount(RustState rustState);
 

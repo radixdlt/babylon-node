@@ -189,10 +189,11 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   }
 
   @Override
-  public List<Transaction> getTxns(int count, List<REProcessedTxn> prepared) {
+  public List<Transaction> getTransactionsForProposal(
+      int count, List<REProcessedTxn> preparedTransactions) {
     // TODO: Order by highest fees paid
     var copy = new TreeSet<>(data.keySet());
-    prepared.stream()
+    preparedTransactions.stream()
         .flatMap(REProcessedTxn::stateUpdates)
         .filter(REStateUpdate::isShutDown)
         .flatMap(i -> substateIndex.getOrDefault(i.getId(), Set.of()).stream())

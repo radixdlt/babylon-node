@@ -82,8 +82,7 @@ public class Mempools {
       }
 
       @Override
-      public void handleTransactionsCommitted(List<T> transactions) {
-      }
+      public void handleTransactionsCommitted(List<T> transactions) {}
 
       @Override
       public int getCount() {
@@ -91,7 +90,7 @@ public class Mempools {
       }
 
       @Override
-      public List<Transaction> getTxns(int count, List<T> seen) {
+      public List<Transaction> getTransactionsForProposal(int count, List<T> preparedTransactions) {
         return List.of();
       }
 

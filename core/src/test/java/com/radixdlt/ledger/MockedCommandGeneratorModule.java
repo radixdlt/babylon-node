@@ -65,12 +65,12 @@
 package com.radixdlt.ledger;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 
 /** Module which provides a random hash command generator */
 public class MockedCommandGeneratorModule extends AbstractModule {
   @Override
   protected void configure() {
-    bind(NextTxnsGenerator.class).to(RandomHashTxnsGenerator.class);
+    bind(ProposalGenerator.class).to(RandomHashTxnsGenerator.class);
   }
 }

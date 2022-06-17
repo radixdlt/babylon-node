@@ -166,24 +166,20 @@ public final class RustMempoolTest {
 
       Assert.assertThrows(
           IllegalArgumentException.class,
-          () -> {
-            rustMempool.getTxns(-1, List.of());
-          });
+          () -> rustMempool.getTransactionsForProposal(-1, List.of()));
 
       Assert.assertThrows(
           IllegalArgumentException.class,
-          () -> {
-            rustMempool.getTxns(0, List.of());
-          });
+          () -> rustMempool.getTransactionsForProposal(0, List.of()));
 
       // Get one to three transaction.
-      returnedList = rustMempool.getTxns(1, List.of());
+      returnedList = rustMempool.getTransactionsForProposal(1, List.of());
       // Check if it contains 1 element only, either transaction1, transaction2, transaction3
       Assert.assertEquals(1, returnedList.size());
       Assert.assertTrue(
           List.of(transaction1, transaction2, transaction3).containsAll(returnedList));
 
-      returnedList = rustMempool.getTxns(2, List.of());
+      returnedList = rustMempool.getTransactionsForProposal(2, List.of());
       Assert.assertEquals(2, returnedList.size());
       // Transform it into a set to avoid duplicates.
       returnedSet = new HashSet<>(returnedList);
@@ -193,7 +189,7 @@ public final class RustMempoolTest {
       Assert.assertTrue(
           List.of(transaction1, transaction2, transaction3).containsAll(returnedList));
 
-      returnedList = rustMempool.getTxns(3, List.of());
+      returnedList = rustMempool.getTransactionsForProposal(3, List.of());
       Assert.assertEquals(3, returnedList.size());
       // Transform it into a set to avoid duplicates.
       returnedSet = new HashSet<>(returnedList);
@@ -204,7 +200,7 @@ public final class RustMempoolTest {
           List.of(transaction1, transaction2, transaction3).containsAll(returnedList));
 
       // Get transactions, using seen to avoid existing transactions.
-      returnedList = rustMempool.getTxns(3, List.of(transaction1));
+      returnedList = rustMempool.getTransactionsForProposal(3, List.of(transaction1));
       Assert.assertEquals(2, returnedList.size());
       // Transform it into a set to avoid duplicates.
       returnedSet = new HashSet<>(returnedList);
@@ -213,7 +209,7 @@ public final class RustMempoolTest {
       // Check that elements are our expected transactions
       Assert.assertTrue(List.of(transaction2, transaction3).containsAll(returnedList));
 
-      returnedList = rustMempool.getTxns(3, List.of(transaction2));
+      returnedList = rustMempool.getTransactionsForProposal(3, List.of(transaction2));
       Assert.assertEquals(2, returnedList.size());
       // Transform it into a set to avoid duplicates.
       returnedSet = new HashSet<>(returnedList);
@@ -222,7 +218,7 @@ public final class RustMempoolTest {
       // Check that elements are our expected transactions
       Assert.assertTrue(List.of(transaction1, transaction3).containsAll(returnedList));
 
-      returnedList = rustMempool.getTxns(3, List.of(transaction3));
+      returnedList = rustMempool.getTransactionsForProposal(3, List.of(transaction3));
       Assert.assertEquals(2, returnedList.size());
       // Transform it into a set to avoid duplicates.
       returnedSet = new HashSet<>(returnedList);
@@ -231,7 +227,9 @@ public final class RustMempoolTest {
       // Check that elements are our expected transactions
       Assert.assertTrue(List.of(transaction1, transaction2).containsAll(returnedList));
 
-      returnedList = rustMempool.getTxns(3, List.of(transaction1, transaction2, transaction3));
+      returnedList =
+          rustMempool.getTransactionsForProposal(
+              3, List.of(transaction1, transaction2, transaction3));
       Assert.assertEquals(List.of(), returnedList);
     }
   }

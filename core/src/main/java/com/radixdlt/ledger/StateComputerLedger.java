@@ -77,7 +77,7 @@ import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
@@ -94,37 +94,38 @@ import java.util.Objects;
 import java.util.Optional;
 
 /** Synchronizes execution */
-public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
+public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
-  public interface PreparedTxn {
+  public interface PreparedTransaction {
     Transaction transaction();
   }
 
   public static class StateComputerResult {
-    private final List<PreparedTxn> preparedTxns;
+    private final List<PreparedTransaction> preparedTransactions;
     private final Map<Transaction, Exception> failedCommands;
     private final BFTValidatorSet nextValidatorSet;
 
     public StateComputerResult(
-        List<PreparedTxn> preparedTxns,
+        List<PreparedTransaction> preparedTransactions,
         Map<Transaction, Exception> failedCommands,
         BFTValidatorSet nextValidatorSet) {
-      this.preparedTxns = Objects.requireNonNull(preparedTxns);
+      this.preparedTransactions = Objects.requireNonNull(preparedTransactions);
       this.failedCommands = Objects.requireNonNull(failedCommands);
       this.nextValidatorSet = nextValidatorSet;
     }
 
     public StateComputerResult(
-        List<PreparedTxn> preparedTxns, Map<Transaction, Exception> failedCommands) {
-      this(preparedTxns, failedCommands, null);
+        List<PreparedTransaction> preparedTransactions,
+        Map<Transaction, Exception> failedCommands) {
+      this(preparedTransactions, failedCommands, null);
     }
 
     public Optional<BFTValidatorSet> getNextValidatorSet() {
       return Optional.ofNullable(nextValidatorSet);
     }
 
-    public List<PreparedTxn> getSuccessfulCommands() {
-      return preparedTxns;
+    public List<PreparedTransaction> getSuccessfulCommands() {
+      return preparedTransactions;
     }
 
     public Map<Transaction, Exception> getFailedCommands() {
@@ -135,9 +136,10 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
   public interface StateComputer {
     void addToMempool(MempoolAdd mempoolAdd, BFTNode origin);
 
-    List<Transaction> getNextTxnsFromMempool(List<PreparedTxn> prepared);
+    List<Transaction> getTransactionsForProposal(List<PreparedTransaction> preparedTransactions);
 
-    StateComputerResult prepare(List<PreparedTxn> previous, VerifiedVertex vertex, long timestamp);
+    StateComputerResult prepare(
+        List<PreparedTransaction> previous, VerifiedVertex vertex, long timestamp);
 
     void commit(
         VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState);
@@ -188,13 +190,13 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
   }
 
   @Override
-  public List<Transaction> generateNextTxns(View view, List<PreparedVertex> prepared) {
-    final ImmutableList<PreparedTxn> preparedTxns =
+  public List<Transaction> getTransactionsForProposal(View view, List<PreparedVertex> prepared) {
+    final ImmutableList<PreparedTransaction> preparedTransactions =
         prepared.stream()
-            .flatMap(PreparedVertex::successfulCommands)
+            .flatMap(PreparedVertex::successfulTransactions)
             .collect(ImmutableList.toImmutableList());
     synchronized (lock) {
-      return stateComputer.getNextTxnsFromMempool(preparedTxns);
+      return stateComputer.getTransactionsForProposal(preparedTransactions);
     }
   }
 
@@ -203,9 +205,9 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
       LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
     final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
-    final ImmutableList<PreparedTxn> prevCommands =
+    final ImmutableList<PreparedTransaction> prevCommands =
         previous.stream()
-            .flatMap(PreparedVertex::successfulCommands)
+            .flatMap(PreparedVertex::successfulTransactions)
             .collect(ImmutableList.toImmutableList());
     final long quorumTimestamp;
     // if vertex has genesis parent then QC is mocked so just use previous timestamp
@@ -253,7 +255,7 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
           stateComputer.prepare(concatenatedCommands, vertex, quorumTimestamp);
 
       AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
-      for (PreparedTxn txn : result.getSuccessfulCommands()) {
+      for (PreparedTransaction txn : result.getSuccessfulCommands()) {
         accumulatorState =
             this.accumulator.accumulate(accumulatorState, txn.transaction().getId().asHashCode());
       }
@@ -278,8 +280,8 @@ public final class StateComputerLedger implements Ledger, NextTxnsGenerator {
     return committedUpdate -> {
       final ImmutableList<Transaction> transactions =
           committedUpdate.committed().stream()
-              .flatMap(PreparedVertex::successfulCommands)
-              .map(PreparedTxn::transaction)
+              .flatMap(PreparedVertex::successfulTransactions)
+              .map(PreparedTransaction::transaction)
               .collect(ImmutableList.toImmutableList());
       var proof = committedUpdate.vertexStoreState().getRootHeader();
       var verifiedTxnsAndProof = VerifiedTxnsAndProof.create(transactions, proof);

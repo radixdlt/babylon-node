@@ -135,14 +135,16 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       }
 
       @Override
-      public List<Transaction> getNextTxnsFromMempool(
-          List<StateComputerLedger.PreparedTxn> prepared) {
-        return mempool.getTxns(1, List.of());
+      public List<Transaction> getTransactionsForProposal(
+          List<StateComputerLedger.PreparedTransaction> preparedTransactions) {
+        return mempool.getTransactionsForProposal(1, List.of());
       }
 
       @Override
       public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+          List<StateComputerLedger.PreparedTransaction> previous,
+          VerifiedVertex vertex,
+          long timestamp) {
         return new StateComputerLedger.StateComputerResult(
             vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()),
             Map.of());
