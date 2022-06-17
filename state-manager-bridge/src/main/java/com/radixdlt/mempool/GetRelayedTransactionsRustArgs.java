@@ -64,31 +64,27 @@
 
 package com.radixdlt.mempool;
 
-import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.sbor.codec.core.IntegerCodec;
-import com.radixdlt.transactions.Transaction;
-import java.util.List;
-import java.util.Objects;
+import com.radixdlt.sbor.codec.core.LongCodec;
 
-public class GetTxnsRustArgs {
-  int count;
-  List<Transaction> seen;
+public class GetRelayedTransactionsRustArgs {
+  long initialDelayMillis;
+  long repeatDelayMillis;
+
+  public GetRelayedTransactionsRustArgs(long initialDelayMillis, long repeatDelayMillis) {
+    this.initialDelayMillis = initialDelayMillis;
+    this.repeatDelayMillis = repeatDelayMillis;
+  }
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        GetTxnsRustArgs.class,
+        GetRelayedTransactionsRustArgs.class,
         codecs ->
             StructCodec.with(
-                GetTxnsRustArgs::new,
-                new IntegerCodec(false),
-                codecs.of(new TypeToken<List<Transaction>>() {}),
-                (a, encoder) -> encoder.encode(a.count, a.seen)));
-  }
-
-  GetTxnsRustArgs(int count, List<Transaction> seen) {
-    this.count = count;
-    this.seen = Objects.requireNonNull(seen);
+                GetRelayedTransactionsRustArgs::new,
+                new LongCodec(false),
+                new LongCodec(false),
+                (a, encoder) -> encoder.encode(a.initialDelayMillis, a.repeatDelayMillis)));
   }
 }

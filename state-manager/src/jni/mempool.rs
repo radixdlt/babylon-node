@@ -83,15 +83,15 @@ use crate::types::Transaction;
 #[derive(Encode, Decode, TypeId)]
 struct GetTransactionArgs {
     count: u32,
-    seen: Vec<Transaction>,
+    prepared_transactions: Vec<Transaction>,
 }
 
 impl JavaStructure for GetRelayTransactionsArgs {}
 
 #[derive(Encode, Decode, TypeId)]
 struct GetRelayTransactionsArgs {
-    init_millis: u64,
-    repeat_millis: u64,
+    initial_delay_millis: u64,
+    repeat_delay_millis: u64,
 }
 
 impl JavaStructure for GetTransactionArgs {}
@@ -113,25 +113,25 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTxns(
+extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForProposal(
     env: JNIEnv,
     _class: JClass,
     j_state: JObject,
     j_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_get_transactions(&env, j_state, j_payload).to_java();
+    let ret = do_get_transactions_for_proposal(&env, j_state, j_payload).to_java();
 
     jni_slice_to_jbytearray(&env, &ret)
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_mempool_RustMempool_committed(
+extern "system" fn Java_com_radixdlt_mempool_RustMempool_handleTransactionsCommitted(
     env: JNIEnv,
     _class: JClass,
     j_state: JObject,
     j_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_committed(&env, j_state, j_payload).to_java();
+    let ret = do_handle_transactions_committed(&env, j_state, j_payload).to_java();
 
     jni_slice_to_jbytearray(&env, &ret)
 }
@@ -148,13 +148,13 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_mempool_RustMempool_getRelayTxns(
+extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
     env: JNIEnv,
     _class: JClass,
     j_state: JObject,
     j_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_get_relay_transactions(&env, j_state, j_payload).to_java();
+    let ret = do_get_transactions_to_relay(&env, j_state, j_payload).to_java();
 
     jni_slice_to_jbytearray(&env, &ret)
 }
@@ -178,7 +178,7 @@ fn do_add(
     Ok(mapped_result)
 }
 
-fn do_get_transactions(
+fn do_get_transactions_for_proposal(
     env: &JNIEnv,
     j_state: JObject,
     j_payload: jbyteArray,
@@ -191,13 +191,13 @@ fn do_get_transactions(
         .mempool
         .lock()
         .unwrap()
-        .get_transactions(args.count.into(), &args.seen);
+        .get_transactions_for_proposal(args.count.into(), &args.prepared_transactions);
 
     let mapped_result = result.map_err_sm(|err| err.into())?;
     Ok(mapped_result)
 }
 
-fn do_committed(
+fn do_handle_transactions_committed(
     env: &JNIEnv,
     j_state: JObject,
     j_payload: jbyteArray,
@@ -210,7 +210,7 @@ fn do_committed(
         .mempool
         .lock()
         .unwrap()
-        .committed(&transactions);
+        .handle_committed_transactions(&transactions);
 
     let mapped_result = result.map_err_sm(|err| err.into())?;
     Ok(mapped_result)
@@ -230,7 +230,7 @@ fn do_get_count(env: &JNIEnv, j_state: JObject) -> StateManagerResult<i32> {
     Ok(result)
 }
 
-fn do_get_relay_transactions(
+fn do_get_transactions_to_relay(
     env: &JNIEnv,
     j_state: JObject,
     j_payload: jbyteArray,
@@ -242,7 +242,7 @@ fn do_get_relay_transactions(
         .mempool
         .lock()
         .unwrap()
-        .get_relay_transactions(args.init_millis, args.repeat_millis);
+        .get_transactions_to_relay(args.initial_delay_millis, args.repeat_delay_millis);
 
     let mapped_result = result.map_err_sm(|err| err.into())?;
     Ok(mapped_result)

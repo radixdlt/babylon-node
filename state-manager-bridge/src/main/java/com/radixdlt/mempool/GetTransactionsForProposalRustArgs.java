@@ -64,27 +64,31 @@
 
 package com.radixdlt.mempool;
 
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.sbor.codec.core.LongCodec;
+import com.radixdlt.sbor.codec.core.IntegerCodec;
+import com.radixdlt.transactions.Transaction;
+import java.util.List;
+import java.util.Objects;
 
-public class GetRelayedTxnsRustArgs {
-  long initialDelay;
-  long repeatDelay;
-
-  public GetRelayedTxnsRustArgs(long initialDelay, long repeatDelay) {
-    this.initialDelay = initialDelay;
-    this.repeatDelay = repeatDelay;
-  }
+public class GetTransactionsForProposalRustArgs {
+  int count;
+  List<Transaction> preparedTransactions;
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        GetRelayedTxnsRustArgs.class,
+        GetTransactionsForProposalRustArgs.class,
         codecs ->
             StructCodec.with(
-                GetRelayedTxnsRustArgs::new,
-                new LongCodec(false),
-                new LongCodec(false),
-                (a, encoder) -> encoder.encode(a.initialDelay, a.repeatDelay)));
+                GetTransactionsForProposalRustArgs::new,
+                new IntegerCodec(false),
+                codecs.of(new TypeToken<List<Transaction>>() {}),
+                (a, encoder) -> encoder.encode(a.count, a.preparedTransactions)));
+  }
+
+  GetTransactionsForProposalRustArgs(int count, List<Transaction> preparedTransactions) {
+    this.count = count;
+    this.preparedTransactions = Objects.requireNonNull(preparedTransactions);
   }
 }

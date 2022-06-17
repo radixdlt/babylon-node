@@ -87,11 +87,11 @@ impl MempoolData {
         self.relayed = Some(relayed);
     }
 
-    fn should_relay(&self, time: Instant, first_delay: Duration, relay_delay: Duration) -> bool {
+    fn should_relay(&self, time: Instant, initial_delay: Duration, relay_delay: Duration) -> bool {
         match self.relayed {
             None => {
                 // Never been relayed. Wait for initial delay.
-                time >= self.inserted + first_delay
+                time >= self.inserted + initial_delay
             }
             Some(relayed) => {
                 // Repeat every relay_delay
@@ -143,7 +143,7 @@ impl Mempool for SimpleMempool {
         }
     }
 
-    fn committed(
+    fn handle_committed_transactions(
         &mut self,
         transactions: &[Transaction],
     ) -> Result<Vec<Transaction>, MempoolError> {
@@ -160,12 +160,12 @@ impl Mempool for SimpleMempool {
         self.data.len().try_into().unwrap()
     }
 
-    fn get_transactions(
+    fn get_transactions_for_proposal(
         &self,
         count: u64,
-        seen: &[Transaction],
+        prepared_transactions: &[Transaction],
     ) -> Result<Vec<Transaction>, MempoolError> {
-        let vseen: HashSet<TId> = seen.iter().map(|t| t.id.clone()).collect();
+        let vseen: HashSet<TId> = prepared_transactions.iter().map(|t| t.id.clone()).collect();
 
         let transactions = self
             .data
@@ -178,20 +178,20 @@ impl Mempool for SimpleMempool {
         Ok(transactions)
     }
 
-    fn get_relay_transactions(
+    fn get_transactions_to_relay(
         &mut self,
-        init_millis: u64,
-        repeat_millis: u64,
+        initial_delay_millis: u64,
+        repeat_delay_millis: u64,
     ) -> Result<Vec<Transaction>, MempoolError> {
         let nowish = Instant::now();
-        let init_delay = Duration::from_millis(init_millis);
-        let repeat_delay = Duration::from_millis(repeat_millis);
+        let initial_delay = Duration::from_millis(initial_delay_millis);
+        let repeat_delay = Duration::from_millis(repeat_delay_millis);
 
         let mut to_relay = Vec::new();
         let relay_iter = self
             .data
             .values_mut()
-            .filter(|d| d.should_relay(nowish, init_delay, repeat_delay));
+            .filter(|d| d.should_relay(nowish, initial_delay, repeat_delay));
 
         for data in relay_iter {
             data.set_relayed_time(nowish);
@@ -229,7 +229,7 @@ mod tests {
         let mut mp = SimpleMempool::new(MempoolConfig { max_size: 2 });
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 0);
-        let rc = mp.get_transactions(3, &Vec::new());
+        let rc = mp.get_transactions_for_proposal(3, &Vec::new());
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert!(get.is_empty());
@@ -239,18 +239,18 @@ mod tests {
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 1);
         assert!(mp.data.contains_key(&tv1.id));
-        let rc = mp.get_transactions(3, &Vec::new());
+        let rc = mp.get_transactions_for_proposal(3, &Vec::new());
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
-        let rc = mp.get_transactions(3, &[tv1.clone(), tv2.clone(), tv3.clone()]);
+        let rc = mp.get_transactions_for_proposal(3, &[tv1.clone(), tv2.clone(), tv3.clone()]);
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert!(get.is_empty());
 
-        let rc = mp.get_transactions(3, &[tv2.clone(), tv3.clone()]);
+        let rc = mp.get_transactions_for_proposal(3, &[tv2.clone(), tv3.clone()]);
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert_eq!(get.len(), 1);
@@ -267,31 +267,32 @@ mod tests {
         assert!(mp.data.contains_key(&tv1.id));
         assert!(mp.data.contains_key(&tv2.id));
 
-        let rc = mp.get_transactions(3, &Vec::new());
+        let rc = mp.get_transactions_for_proposal(3, &Vec::new());
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert_eq!(get.len(), 2);
         assert!(get.contains(&tv1));
         assert!(get.contains(&tv2));
 
-        let rc = mp.get_transactions(3, &Vec::from([tv1.clone(), tv2.clone(), tv3.clone()]));
+        let rc = mp
+            .get_transactions_for_proposal(3, &Vec::from([tv1.clone(), tv2.clone(), tv3.clone()]));
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert!(get.is_empty());
 
-        let rc = mp.get_transactions(3, &Vec::from([tv2.clone(), tv3.clone()]));
+        let rc = mp.get_transactions_for_proposal(3, &Vec::from([tv2.clone(), tv3.clone()]));
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
-        let rc = mp.get_transactions(3, &Vec::from([tv1.clone(), tv3.clone()]));
+        let rc = mp.get_transactions_for_proposal(3, &Vec::from([tv1.clone(), tv3.clone()]));
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv2));
 
-        let rc = mp.committed(&Vec::from([tv1.clone()]));
+        let rc = mp.handle_committed_transactions(&Vec::from([tv1.clone()]));
         assert!(rc.is_ok());
         let rem = rc.unwrap();
         assert!(rem.contains(&tv1));
@@ -300,7 +301,7 @@ mod tests {
         assert!(mp.data.contains_key(&tv2.id));
         assert!(!mp.data.contains_key(&tv1.id));
 
-        let rc = mp.committed(&Vec::from([tv2.clone()]));
+        let rc = mp.handle_committed_transactions(&Vec::from([tv2.clone()]));
         assert!(rc.is_ok());
         let rem = rc.unwrap();
         assert!(rem.contains(&tv2));
@@ -310,7 +311,7 @@ mod tests {
         assert!(!mp.data.contains_key(&tv1.id));
 
         // mempool is empty. Should return no transactions.
-        let rc = mp.committed(&Vec::from([tv3, tv2, tv1]));
+        let rc = mp.handle_committed_transactions(&Vec::from([tv3, tv2, tv1]));
         assert!(rc.is_ok());
         let rem = rc.unwrap();
         assert!(rem.is_empty());
@@ -352,14 +353,14 @@ mod tests {
         assert!(rc.is_ok());
 
         // High initial delay. Check nothing gets returned.
-        let rc = mp.get_relay_transactions(delay, 0);
+        let rc = mp.get_transactions_to_relay(delay, 0);
         assert!(rc.is_ok());
         let rel = rc.unwrap();
         assert!(rel.is_empty());
 
         // Now sleep for the initial and check that they are all returned.
         std::thread::sleep(Duration::from_millis(delay));
-        let rc = mp.get_relay_transactions(delay, 0);
+        let rc = mp.get_transactions_to_relay(delay, 0);
         assert!(rc.is_ok());
         let rel = rc.unwrap();
         assert!(rel.contains(&tv1));
@@ -368,7 +369,7 @@ mod tests {
         assert_eq!(rel.len(), 3);
 
         // With no relay delay, they should be returned again immediately.
-        let rc = mp.get_relay_transactions(delay, 0);
+        let rc = mp.get_transactions_to_relay(delay, 0);
         assert!(rc.is_ok());
         let rel = rc.unwrap();
         assert!(rel.contains(&tv1));
@@ -377,14 +378,14 @@ mod tests {
         assert_eq!(rel.len(), 3);
 
         // With a relay delay, nothing should be returned now.
-        let rc = mp.get_relay_transactions(0, delay);
+        let rc = mp.get_transactions_to_relay(0, delay);
         assert!(rc.is_ok());
         let rel = rc.unwrap();
         assert!(rel.is_empty());
 
         // Sleep for the relay delay, and check that it is returned.
         std::thread::sleep(Duration::from_millis(delay));
-        let rc = mp.get_relay_transactions(0, delay);
+        let rc = mp.get_transactions_to_relay(0, delay);
         assert!(rc.is_ok());
         let rel = rc.unwrap();
         assert!(rel.contains(&tv1));

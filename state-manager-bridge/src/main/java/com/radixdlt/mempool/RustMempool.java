@@ -118,9 +118,10 @@ public class RustMempool implements Mempool<Transaction> {
       throw new IllegalArgumentException("State Manager Mempool: count must be > 0: " + count);
     }
 
-    var args = new GetTxnsRustArgs(count, preparedTransactions);
-    var encodedRequest = StateManagerSbor.sbor.encode(args, GetTxnsRustArgs.class);
-    var encodedResponse = getTxns(this.rustState, encodedRequest);
+    var args = new GetTransactionsForProposalRustArgs(count, preparedTransactions);
+    var encodedRequest =
+        StateManagerSbor.sbor.encode(args, GetTransactionsForProposalRustArgs.class);
+    var encodedResponse = getTransactionsForProposal(this.rustState, encodedRequest);
     var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
 
     // No error is possible for this call at present, so unwrap should be safe
@@ -130,9 +131,9 @@ public class RustMempool implements Mempool<Transaction> {
 
   @Override
   public List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis) {
-    var args = new GetRelayedTxnsRustArgs(initialDelayMillis, repeatDelayMillis);
-    var encodedRequest = StateManagerSbor.sbor.encode(args, GetRelayedTxnsRustArgs.class);
-    var encodedResponse = getRelayTxns(this.rustState, encodedRequest);
+    var args = new GetRelayedTransactionsRustArgs(initialDelayMillis, repeatDelayMillis);
+    var encodedRequest = StateManagerSbor.sbor.encode(args, GetRelayedTransactionsRustArgs.class);
+    var encodedResponse = getTransactionsToRelay(this.rustState, encodedRequest);
     var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
 
     // No error is possible for this call at present, so unwrap should be safe
@@ -169,7 +170,7 @@ public class RustMempool implements Mempool<Transaction> {
 
   private static native byte[] getCount(RustState rustState);
 
-  private static native byte[] getTxns(RustState rustState, byte[] getTxnsRustArgs);
+  private static native byte[] getTransactionsForProposal(RustState rustState, byte[] encodedArgs);
 
-  private static native byte[] getRelayTxns(RustState rustState, byte[] relayTimes);
+  private static native byte[] getTransactionsToRelay(RustState rustState, byte[] encodedArgs);
 }
