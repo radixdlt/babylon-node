@@ -71,6 +71,8 @@ import com.radixdlt.lang.*;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.codec.core.*;
 import com.radixdlt.sbor.exceptions.SborCodecException;
+import com.radixdlt.utils.Int128Codec;
+import com.radixdlt.utils.UInt128;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -170,6 +172,8 @@ public final class CodecMap {
         UnsignedLong.class,
         Codec.wrap(
             UnsignedLong::longValue, new LongCodec(false, false), UnsignedLong::fromLongBits));
+
+    storeCodec(UInt128.class, new Int128Codec(false));
 
     storeCodec(byte[].class, new ByteArrayCodec(sborTypeIdForArrayType));
     storeCodec(short[].class, new ShortArrayCodec(sborTypeIdForArrayType));
