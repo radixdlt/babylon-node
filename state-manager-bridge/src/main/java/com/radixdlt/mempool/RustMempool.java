@@ -67,13 +67,14 @@ package com.radixdlt.mempool;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.statemanager.StateManager.RustState;
 import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.transactions.Transaction;
+import java.util.List;
 import java.util.Objects;
 
+// This must become the new Mempool Interface.
 public class RustMempool {
   private final RustState rustState;
 
@@ -81,8 +82,12 @@ public class RustMempool {
     this.rustState = Objects.requireNonNull(rustState);
   }
 
-  private static final TypeToken<Result<Result<Unit, MempoolError>, StateManagerRuntimeError>>
+  private static final TypeToken<
+          Result<Result<Transaction, MempoolError>, StateManagerRuntimeError>>
       addResponseType = new TypeToken<>() {};
+  private static final TypeToken<
+          Result<Result<List<Transaction>, MempoolError>, StateManagerRuntimeError>>
+      listTransactionType = new TypeToken<>() {};
 
   public Transaction add(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
@@ -100,8 +105,62 @@ public class RustMempool {
       }
     }
 
-    return transaction;
+    var processedTransaction = result.unwrap();
+    return processedTransaction;
+  }
+
+  public List<Transaction> getTxns(int count, List<Transaction> seen) {
+    if (count <= 0) {
+      throw new IllegalArgumentException("State Manager Mempool: count must be > 0: " + count);
+    }
+
+    var args = new GetTxnsRustArgs(count, seen);
+    var encodedRequest = StateManagerSbor.sbor.encode(args, GetTxnsRustArgs.class);
+    var encodedResponse = getTxns(this.rustState, encodedRequest);
+    var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
+
+    // No Specific Return Code Expected.
+    var newTransactions = result.unwrap();
+    return newTransactions;
+  }
+
+  public List<Transaction> getRelayTxns(long initMillis, long delayMillis) {
+    var args = new GetRelayedTxnsRustArgs(initMillis, delayMillis);
+    var encodedRequest = StateManagerSbor.sbor.encode(args, GetRelayedTxnsRustArgs.class);
+    var encodedResponse = getRelayTxns(this.rustState, encodedRequest);
+    var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
+
+    // No Specific Return Code Expected.
+    return result.unwrap();
+  }
+
+  public List<Transaction> committed(List<Transaction> committed) {
+    var encodedRequest =
+        StateManagerSbor.sbor.encode(committed, new TypeToken<List<Transaction>>() {});
+    var encodedResponse = committed(this.rustState, encodedRequest);
+    var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
+
+    // No Specific Return Code Expected.
+    return result.unwrap();
+  }
+
+  public int getCount() {
+    var encodedResponse = getCount(this.rustState);
+    var result =
+        StateManagerResponse.decode(
+            encodedResponse, new TypeToken<Result<Integer, StateManagerRuntimeError>>() {});
+
+    // Not A Result
+    return result;
   }
 
   private static native byte[] add(RustState rustState, byte[] transaction);
+
+  private static native byte[] committed(RustState rustState, byte[] transactions);
+
+  private static native byte[] getCount(RustState rustState);
+
+  private static native byte[] getTxns(RustState rustState, byte[] getTxnsRustArgs);
+
+  private static native byte[] getRelayTxns(RustState rustState, byte[] relayTimes);
 }

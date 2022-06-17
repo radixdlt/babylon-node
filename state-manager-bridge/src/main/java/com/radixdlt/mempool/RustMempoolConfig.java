@@ -67,6 +67,7 @@ package com.radixdlt.mempool;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.Field;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.core.IntegerCodec;
 
 public record RustMempoolConfig(int maxSize) {
   public static void registerCodec(CodecMap codecMap) {
@@ -75,6 +76,6 @@ public record RustMempoolConfig(int maxSize) {
         codecs ->
             StructCodec.fromFields(
                 RustMempoolConfig::new,
-                Field.of(RustMempoolConfig::maxSize, codecs.of(int.class))));
+                Field.of(RustMempoolConfig::maxSize, new IntegerCodec(false))));
   }
 }

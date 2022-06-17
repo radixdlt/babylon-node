@@ -64,6 +64,9 @@
 
 use crate::jni::dtos::*;
 
+impl JavaStructure for i32 {}
+impl JavaStructure for Vec<Transaction> {}
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]
 pub struct TId {
     pub bytes: Vec<u8>,
