@@ -110,6 +110,10 @@ public class RustMempool {
   }
 
   public List<Transaction> getTxns(int count, List<Transaction> seen) {
+    if (count <= 0) {
+      throw new IllegalArgumentException("State Manager Mempool: count must be > 0: " + count);
+    }
+
     var args = new GetTxnsRustArgs(count, seen);
     var encodedRequest = StateManagerSbor.sbor.encode(args, GetTxnsRustArgs.class);
     var encodedResponse = getTxns(this.rustState, encodedRequest);

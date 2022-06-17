@@ -101,13 +101,12 @@ public final class RustMempoolTest {
 
       Assert.assertEquals(1, rustMempool.getCount());
 
-      try {
-        // Duplicate transaction - this should fail
-        rustMempool.add(transaction1);
-        Assert.fail();
-      } catch (MempoolDuplicateException ex) {
-        // Expected
-      }
+      Assert.assertThrows(
+          MempoolDuplicateException.class,
+          () -> {
+            // Duplicate transaction - this should fail
+            rustMempool.add(transaction1);
+          });
       Assert.assertEquals(1, rustMempool.getCount());
 
       // This transaction is new, and the mempool has size 2 - this should be fine, and
@@ -165,12 +164,19 @@ public final class RustMempoolTest {
       List<Transaction> returnedList;
       Set<Transaction> returnedSet;
 
-      returnedList = rustMempool.getTxns(0, List.of());
-      Assert.assertEquals(List.of(), returnedList);
+      Assert.assertThrows(
+          IllegalArgumentException.class,
+          () -> {
+            rustMempool.getTxns(-1, List.of());
+          });
+
+      Assert.assertThrows(
+          IllegalArgumentException.class,
+          () -> {
+            rustMempool.getTxns(0, List.of());
+          });
 
       // Get one to three transaction.
-      returnedList = rustMempool.getTxns(0, List.of());
-      Assert.assertEquals(List.of(), returnedList);
       returnedList = rustMempool.getTxns(1, List.of());
       // Check if it contains 1 element only, either transaction1, transaction2, transaction3
       Assert.assertEquals(1, returnedList.size());
