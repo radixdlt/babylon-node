@@ -64,43 +64,90 @@
 
 package com.radixdlt.network.p2p;
 
-import static java.util.stream.Collectors.groupingBy;
+import static com.radixdlt.utils.TypedMocks.cmock;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.network.capability.LedgerSyncCapability;
+import com.radixdlt.network.capability.RemotePeerCapability;
+import com.radixdlt.network.messaging.InboundMessage;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.transport.PeerChannel;
-import java.util.stream.Stream;
-import javax.inject.Inject;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import org.junit.Test;
 
-/** A Peers view using PeersManager */
-public final class PeerManagerPeersView implements PeersView {
-  private final PeerManager peerManager;
+public class PeerManagerPeersViewTest {
 
-  @Inject
-  public PeerManagerPeersView(PeerManager peerManager) {
-    this.peerManager = peerManager;
+  @Test
+  public void when_peer_connected_event_is_processed_then_its_capabilities_are_exposed_correctly() {
+    // given
+    var remotePeerCapabilitiesExpected =
+        Set.of(new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of()));
+
+    var peerManager = getPeerManager();
+    PeerManagerPeersView peerManagerPeersView = new PeerManagerPeersView(peerManager);
+    PeerChannel peerChanel = mockPeerChannel(remotePeerCapabilitiesExpected);
+
+    // when
+    peerManager.peerEventProcessor().process(new PeerEvent.PeerConnected(peerChanel));
+
+    // then
+    Set<RemotePeerCapability> remotePeerCapabilitiesInChannel =
+        peerManagerPeersView
+            .peers()
+            .findFirst()
+            .map(it -> it.getChannels().get(0).getCapabilities())
+            .get();
+
+    assertEquals(remotePeerCapabilitiesExpected, remotePeerCapabilitiesInChannel);
   }
 
-  @Override
-  public Stream<PeerInfo> peers() {
-    final var grouppedByNodeId =
-        this.peerManager.activeChannels().stream()
-            .collect(groupingBy(PeerChannel::getRemoteNodeId));
+  private PeerManager getPeerManager() {
+    var self =
+        RadixNodeUri.fromPubKeyAndAddress(
+            Network.LOCALNET.getId(), ECKeyPair.generateNew().getPublicKey(), "10.0.0.1", 30000);
 
-    return grouppedByNodeId.entrySet().stream()
-        .map(
-            e -> {
-              final var channelsInfo =
-                  e.getValue().stream()
-                      .map(
-                          c ->
-                              PeerChannelInfo.create(
-                                  c.getUri(),
-                                  c.getHost(),
-                                  c.getPort(),
-                                  c.isOutbound(),
-                                  c.getRemotePeerCapabilities()))
-                      .collect(ImmutableList.toImmutableList());
-              return PeerInfo.create(e.getKey(), channelsInfo);
-            });
+    return new PeerManager(
+        self,
+        mockP2PConfig(),
+        Addressing.ofNetwork(Network.LOCALNET),
+        () -> mock(AddressBook.class),
+        () -> mock(PendingOutboundChannelsManager.class),
+        mock(SystemCounters.class));
+  }
+
+  private P2PConfig mockP2PConfig() {
+    P2PConfig p2PConfigMock = mock(P2PConfig.class);
+    when(p2PConfigMock.maxInboundChannels()).thenReturn(10);
+    when(p2PConfigMock.maxOutboundChannels()).thenReturn(10);
+    return p2PConfigMock;
+  }
+
+  private PeerChannel mockPeerChannel(Set<RemotePeerCapability> remotePeerCapabilitiesExpected) {
+    var peerChanel = mock(PeerChannel.class);
+    var inboundMessages = cmock(new TypeLiteral<Flowable<InboundMessage>>() {});
+    // new key, but same host/port as peer2
+    var peer =
+        RadixNodeUri.fromPubKeyAndAddress(
+            Network.LOCALNET.getId(), ECKeyPair.generateNew().getPublicKey(), "10.0.0.2", 30000);
+
+    when(peerChanel.getUri()).thenReturn(Optional.of(peer));
+    when(peerChanel.inboundMessages()).thenReturn(inboundMessages);
+    when(inboundMessages.toObservable())
+        .thenReturn(cmock(new TypeLiteral<Observable<InboundMessage>>() {}));
+    when(peerChanel.isOutbound()).thenReturn(true);
+    when(peerChanel.getRemoteNodeId()).thenReturn(peer.getNodeId());
+    when(peerChanel.getRemotePeerCapabilities()).thenReturn(remotePeerCapabilitiesExpected);
+    return peerChanel;
   }
 }
