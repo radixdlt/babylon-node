@@ -62,6 +62,18 @@
  * permissions under this License.
  */
 
-mod in_memory_transaction_store;
+use crate::types::*;
 
-pub use in_memory_transaction_store::TransactionStore;
+#[derive(Debug, PartialEq)]
+pub enum TransactionStoreError {
+    ExhaustedStateVersions,
+    NotFound(TransactionStateVersion),
+}
+
+pub trait TransactionStore {
+    fn store_transaction(&mut self, transaction: Transaction) -> Result<TransactionStateVersion, TransactionStoreError>;
+    fn get_transaction(&self, state: TransactionStateVersion) -> Result<Transaction, TransactionStoreError>;
+}
+
+pub mod in_memory;
+

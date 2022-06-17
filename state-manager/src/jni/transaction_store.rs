@@ -72,22 +72,26 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_insertTran
     env: JNIEnv,
     _class: JClass,
     interop_state: JObject,
-    j_state_version: jlong,
-    j_transaction_bytes: jbyteArray,
+    j_payload: jbyteArray,
 ) {
-    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
-
-    let transaction_bytes: Vec<u8> = env
-        .convert_byte_array(j_transaction_bytes)
-        .expect("Can't convert transaction data byte array to vec");
-
-    // Only get the lock for transaction store
-    state_manager
-        .transaction_store
-        .lock()
-        .unwrap()
-        .insert_transaction(j_state_version as u64, transaction_bytes);
+//    let ret = do_insert_transaction(&env, j_state, j_payload).to_java();
 }
+
+/*
+fn do_insert_transaction(
+    env: &JNIEnv,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> StateManagerResult<Result<TransactionStateVersion, TransactionStoreErrorJava>> {
+    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
+    let request_payload: Vec<u8> = jnu_jbytearray_to_vector(env, j_payload)?;
+    let transaction = Transaction::from_java(&request_payload)?;
+
+    let result = state_manager.transaction_store.lock().unwrap().store_transaction(transaction);
+    let mapped_result = result.map_err_sm(|err| err.into())?;
+}
+*/
+/*
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransactionAtStateVersion(
@@ -106,3 +110,4 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
     env.byte_array_from_slice(transaction_data)
         .expect("Can't create jbyteArray for transaction data")
 }
+*/

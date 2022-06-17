@@ -69,13 +69,13 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 #[derive(Clone, Debug)]
-pub struct StateManager<M: Mempool> {
+pub struct StateManager<M: Mempool, TS: TransactionStore> {
     pub mempool: Arc<Mutex<M>>,
-    pub transaction_store: Arc<Mutex<TransactionStore>>,
+    pub transaction_store: Arc<Mutex<TS>>,
 }
 
-impl<M: Mempool> StateManager<M> {
-    pub fn new(mempool: M, transaction_store: TransactionStore) -> StateManager<M> {
+impl<M: Mempool, TS: TransactionStore> StateManager<M, TS> {
+    pub fn new(mempool: M, transaction_store: TS) -> StateManager<M, TS> {
         StateManager {
             mempool: Arc::new(Mutex::new(mempool)),
             transaction_store: Arc::new(Mutex::new(transaction_store)),

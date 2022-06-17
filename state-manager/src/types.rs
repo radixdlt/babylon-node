@@ -81,3 +81,23 @@ pub struct Transaction {
 }
 
 impl JavaStructure for Transaction {}
+
+
+pub type TransactionStateVersion = u64;
+
+pub trait TransactionStateVersionTrait: Sized {
+    fn prev(&self) -> Option<Self>;
+    fn next(&self) -> Option<Self>;
+}
+
+impl TransactionStateVersionTrait for TransactionStateVersion {
+    fn prev(&self) -> Option<TransactionStateVersion> {
+	self.checked_sub(1)
+    }
+
+    fn next(&self) -> Option<TransactionStateVersion> {
+	self.checked_add(1)
+    }
+}
+
+impl JavaStructure for TransactionStateVersion {}
