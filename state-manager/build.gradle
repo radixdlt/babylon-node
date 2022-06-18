@@ -100,3 +100,34 @@ task runRustFormat(type: Exec) {
 task buildRustDebug(type: Exec) {
     commandLine 'cargo', 'build'
 }
+
+task buildRustForDocker(type: Exec) {
+    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+        environment("CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER", "x86_64-unknown-linux-gnu-gcc")
+    }
+
+    // Trigger a custom error message on failure...
+    ignoreExitValue true
+
+    // If you change this, copy it to the exception below
+    commandLine 'cargo', 'build', '--target=x86_64-unknown-linux-gnu'
+
+    doLast {
+        if (executionResult.get().getExitValue() != 0) {
+            println("Building the rust for docker failed. Some possible ideas to debug:")
+            println("-> You will need to install the correct target with:")
+            println("rustup target add x86_64-unknown-linux-gnu")
+            println("-> You may need to install an appropriate linker, depending on your platform")
+            if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+                // https://stackoverflow.com/questions/40424255/cross-compilation-to-x86-64-unknown-linux-gnu-fails-on-mac-osx
+                println("-> On Mac OSX, you can try:")
+                println("brew tap SergioBenitez/osxct")
+                println("brew install x86_64-unknown-linux-gnu")
+            }
+            throw new RuntimeException(String.format(
+                "cargo build --target=x86_64-unknown-linux-gnu failed with non-zero exit value %s",
+                executionResult.get().getExitValue()
+            ))
+        }
+    }
+}
