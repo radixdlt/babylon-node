@@ -67,8 +67,10 @@ package com.radixdlt.statemanager;
 import static org.junit.Assert.assertArrayEquals;
 
 import com.google.inject.Guice;
+import com.google.inject.Key;
 import com.radixdlt.StateManagerModule;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.transaction.TransactionStore;
@@ -82,7 +84,10 @@ public final class StateManagerTest {
 
   @Test
   public void test_rust_interop() throws Exception {
-    final var testModules = List.of(new StateManagerModule(), MempoolConfig.asModule(100, 1000L));
+    final var testModules = List.of(
+        new StateManagerModule(),
+        MempoolConfig.asModule(100, 1000L)
+    );
 
     final var injectorNode1 = Guice.createInjector(testModules);
     final var injectorNode2 = Guice.createInjector(testModules);
@@ -106,7 +111,7 @@ public final class StateManagerTest {
 
     final var payload = new byte[] {1, 2, 3, 4, 5};
     final var transaction = Transaction.create(payload);
-    final var mempoolNode1 = injectorNode1.getInstance(RustMempool.class);
+    final var mempoolNode1 = injectorNode1.getInstance(new Key<Mempool<Transaction>>() {});
     mempoolNode1.add(transaction);
     try {
       mempoolNode1.add(transaction);
