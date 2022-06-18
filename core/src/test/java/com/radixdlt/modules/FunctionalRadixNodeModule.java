@@ -68,7 +68,6 @@ import static com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent.
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.radixdlt.StateManagerMempoolModule;
 import com.radixdlt.StateManagerModule;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
@@ -114,7 +113,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   public void configure() {
     install(new EventLoggerModule());
     install(new DispatcherModule());
-    install(new StateManagerModule());
 
     // Consensus
     install(new ConsensusModule());
@@ -152,7 +150,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           install(new MockedStateComputerWithEpochsModule());
         }
       } else {
-        install(new StateManagerMempoolModule());
         install(new MempoolReceiverModule());
 
         if (hasComponent(MEMPOOL_RELAYER)) {
