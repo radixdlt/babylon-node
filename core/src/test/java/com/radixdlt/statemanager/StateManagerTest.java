@@ -72,7 +72,6 @@ import com.radixdlt.StateManagerModule;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.transaction.TransactionStore;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
@@ -84,10 +83,7 @@ public final class StateManagerTest {
 
   @Test
   public void test_rust_interop() throws Exception {
-    final var testModules = List.of(
-        new StateManagerModule(),
-        MempoolConfig.asModule(100, 1000L)
-    );
+    final var testModules = List.of(new StateManagerModule(), MempoolConfig.asModule(100, 1000L));
 
     final var injectorNode1 = Guice.createInjector(testModules);
     final var injectorNode2 = Guice.createInjector(testModules);
