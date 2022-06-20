@@ -76,7 +76,10 @@ import com.radixdlt.lang.*;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.dto.SimpleRecord;
+import com.radixdlt.sbor.exceptions.SborDecodeException;
 import com.radixdlt.testclasses.SimpleEnum;
+import com.radixdlt.utils.Int128Codec;
+import com.radixdlt.utils.UInt128;
 import java.util.*;
 import org.junit.Test;
 
@@ -204,6 +207,91 @@ public class SborTest {
 
     assertEquals(UnsignedLong.MAX_VALUE, decodedMaxValue);
     assertEquals(UnsignedLong.ZERO, decodedMinValue);
+  }
+
+  @Test
+  public void unsignedInteger128EncodedCorrectly() {
+    var value = UInt128.THREE;
+
+    var encoded = DefaultTypedSbor.encode(value);
+
+    assertArrayEquals(
+        new byte[] {
+          11, // UINT128 Type
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0, // The lower long of the value in little endian
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0 // The upper long of the value in little endian
+        },
+        encoded);
+
+    var decoded = DefaultTypedSbor.decode(encoded, UInt128.class);
+    assertEquals(value, decoded);
+  }
+
+  @Test
+  public void unsignedInteger128EdgeCasesCanBeEncodedAndDecoded() {
+    var encodedMaxValue = DefaultTypedSbor.encode(UInt128.MAX_VALUE);
+    var encodedMinValue = DefaultTypedSbor.encode(UInt128.ZERO);
+
+    var decodedMaxValue = DefaultTypedSbor.decode(encodedMaxValue, UInt128.class);
+    var decodedMinValue = DefaultTypedSbor.decode(encodedMinValue, UInt128.class);
+
+    assertEquals(UInt128.MAX_VALUE, decodedMaxValue);
+    assertEquals(UInt128.ZERO, decodedMinValue);
+  }
+
+  @Test
+  public void signedInteger128EncodedCorrectly() {
+    // Interpreted as signed, this would be negative as its top bit is 1.
+    // But because we subtract -1L (all 1s), it has a 0 lower long, which makes the test more
+    // specific.
+    var negativeValue = UInt128.MAX_VALUE.subtract(UInt128.from(-1L));
+
+    var signedCodecWithNoAsserts = new Int128Codec(true, false);
+    var encodedNegativeValue = DefaultTypedSbor.encode(negativeValue, signedCodecWithNoAsserts);
+
+    assertArrayEquals(
+        new byte[] {
+          6, // Signed Int128 Type
+          0, 0, 0, 0, 0, 0, 0, 0, // The lower long in little endian
+          -1, -1, -1, -1, -1, -1, -1, -1, // The upper long in little endian
+          // NB - the upper-most bit is negative, indicating this number is negative if interpreted
+          // as signed
+        },
+        encodedNegativeValue);
+
+    var decodedNegativeValue =
+        DefaultTypedSbor.decode(encodedNegativeValue, signedCodecWithNoAsserts);
+    assertEquals(negativeValue, decodedNegativeValue);
+  }
+
+  @Test
+  public void negativeSignedInteger128TriggersAssertIfDecodedWithAssertsOn() {
+    // Interpreted as signed, this would be negative as its top bit is 1.
+    // But because we subtract -1L (all 1s), it has a 0 lower long, which makes the test more
+    // specific.
+    var negativeValue = UInt128.MAX_VALUE.subtract(UInt128.from(Long.MAX_VALUE));
+
+    // Put assertions on for possibly-negative values
+    var signedCodecWithAsserts = new Int128Codec(true, true);
+    var encodedNegativeValue = DefaultTypedSbor.encode(negativeValue, signedCodecWithAsserts);
+
+    assertThrows(
+        SborDecodeException.class,
+        () -> DefaultTypedSbor.decode(encodedNegativeValue, signedCodecWithAsserts));
   }
 
   @Test
