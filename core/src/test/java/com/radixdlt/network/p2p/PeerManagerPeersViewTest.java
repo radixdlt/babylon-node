@@ -95,14 +95,14 @@ public class PeerManagerPeersViewTest {
         Set.of(new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of()));
 
     var peerManager = getPeerManager();
-    PeerManagerPeersView peerManagerPeersView = new PeerManagerPeersView(peerManager);
-    PeerChannel peerChanel = mockPeerChannel(remotePeerCapabilitiesExpected);
+    var peerManagerPeersView = new PeerManagerPeersView(peerManager);
+    var peerChannel = mockPeerChannel(remotePeerCapabilitiesExpected);
 
     // when
-    peerManager.peerEventProcessor().process(new PeerEvent.PeerConnected(peerChanel));
+    peerManager.peerEventProcessor().process(new PeerEvent.PeerConnected(peerChannel));
 
     // then
-    Set<RemotePeerCapability> remotePeerCapabilitiesInChannel =
+    var remotePeerCapabilitiesInChannel =
         peerManagerPeersView
             .peers()
             .findFirst()
