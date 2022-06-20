@@ -96,7 +96,7 @@ public final class TransactionSubmitHandler
 
     // BAB-TODO: This will need to pass more information from the mempool when it's available
     try {
-      mempool.add(transaction);
+      mempool.addTransaction(transaction);
       return new TransactionSubmitResponse().duplicate(false);
     } catch (MempoolDuplicateException e) {
       return new TransactionSubmitResponse().duplicate(true);

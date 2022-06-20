@@ -74,7 +74,7 @@ import java.util.List;
  */
 public interface Mempool<T> {
   /** Add a transaction to the local mempool. */
-  T add(Transaction transaction) throws MempoolRejectedException;
+  T addTransaction(Transaction transaction) throws MempoolRejectedException;
 
   /**
    * Retrieve a list of transactions from the local mempool for creating a proposal for consensus.

@@ -76,7 +76,8 @@ public class Mempools {
   public static <T> Mempool<T> empty() {
     return new Mempool<>() {
       @Override
-      public T add(Transaction transaction) throws MempoolFullException, MempoolDuplicateException {
+      public T addTransaction(Transaction transaction)
+          throws MempoolFullException, MempoolDuplicateException {
         // No-op
         return null;
       }

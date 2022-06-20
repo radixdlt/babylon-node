@@ -90,7 +90,7 @@ public class RustMempool implements Mempool<Transaction> {
       listTransactionType = new TypeToken<>() {};
 
   @Override
-  public Transaction add(Transaction transaction)
+  public Transaction addTransaction(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
     var encodedRequest = StateManagerSbor.sbor.encode(transaction, Transaction.class);
     var encodedResponse = add(this.rustState, encodedRequest);

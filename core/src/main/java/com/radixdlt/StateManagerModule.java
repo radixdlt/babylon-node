@@ -67,7 +67,6 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.environment.Runners;
@@ -82,19 +81,12 @@ import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStore;
 import com.radixdlt.transactions.Transaction;
-import java.util.Optional;
 
 public final class StateManagerModule extends AbstractModule {
-
-  @Override
-  protected void configure() {
-    OptionalBinder.newOptionalBinder(binder(), RustMempoolConfig.class);
-  }
-
   @Provides
   @Singleton
-  StateManager stateManager(Optional<RustMempoolConfig> mempoolConfigOpt) {
-    return StateManager.createAndInitialize(new StateManagerConfig(Option.from(mempoolConfigOpt)));
+  StateManager stateManager(RustMempoolConfig mempoolConfig) {
+    return StateManager.createAndInitialize(new StateManagerConfig(Option.some(mempoolConfig)));
   }
 
   @Provides

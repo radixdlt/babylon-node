@@ -116,7 +116,7 @@ impl SimpleMempool {
 }
 
 impl Mempool for SimpleMempool {
-    fn add(&mut self, transaction: Transaction) -> Result<Transaction, MempoolError> {
+    fn add_transaction(&mut self, transaction: Transaction) -> Result<Transaction, MempoolError> {
         let len: u64 = self.data.len().try_into().unwrap();
 
         if len >= self.max_size {
@@ -160,17 +160,17 @@ impl Mempool for SimpleMempool {
         self.data.len().try_into().unwrap()
     }
 
-    fn get_transactions_for_proposal(
+    fn get_proposal_transactions(
         &self,
         count: u64,
-        prepared_transactions: &[Transaction],
+        prepared: &[Transaction],
     ) -> Result<Vec<Transaction>, MempoolError> {
-        let vseen: HashSet<TId> = prepared_transactions.iter().map(|t| t.id.clone()).collect();
+        let prepared_ids: HashSet<TId> = prepared.iter().map(|t| t.id.clone()).collect();
 
         let transactions = self
             .data
             .iter()
-            .filter(|&(tid, _)| !vseen.contains(tid))
+            .filter(|&(tid, _)| !prepared_ids.contains(tid))
             .take(count as usize)
             .map(|(_, data)| data.transaction.clone())
             .collect();
@@ -178,7 +178,7 @@ impl Mempool for SimpleMempool {
         Ok(transactions)
     }
 
-    fn get_transactions_to_relay(
+    fn get_relay_transactions(
         &mut self,
         initial_delay_millis: u64,
         repeat_delay_millis: u64,
@@ -229,64 +229,64 @@ mod tests {
         let mut mp = SimpleMempool::new(MempoolConfig { max_size: 2 });
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 0);
-        let rc = mp.get_transactions_for_proposal(3, &Vec::new());
+        let rc = mp.get_proposal_transactions(3, &Vec::new());
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert!(get.is_empty());
 
-        let rc = mp.add(tv1.clone());
+        let rc = mp.add_transaction(tv1.clone());
         assert!(rc.is_ok());
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 1);
         assert!(mp.data.contains_key(&tv1.id));
-        let rc = mp.get_transactions_for_proposal(3, &Vec::new());
+        let rc = mp.get_proposal_transactions(3, &Vec::new());
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
-        let rc = mp.get_transactions_for_proposal(3, &[tv1.clone(), tv2.clone(), tv3.clone()]);
+        let rc = mp.get_proposal_transactions(3, &[tv1.clone(), tv2.clone(), tv3.clone()]);
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert!(get.is_empty());
 
-        let rc = mp.get_transactions_for_proposal(3, &[tv2.clone(), tv3.clone()]);
+        let rc = mp.get_proposal_transactions(3, &[tv2.clone(), tv3.clone()]);
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
-        let rc = mp.add(tv1.clone());
+        let rc = mp.add_transaction(tv1.clone());
         assert!(rc.is_err());
         assert_eq!(rc, Err(MempoolError::Duplicate));
 
-        let rc = mp.add(tv2.clone());
+        let rc = mp.add_transaction(tv2.clone());
         assert!(rc.is_ok());
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 2);
         assert!(mp.data.contains_key(&tv1.id));
         assert!(mp.data.contains_key(&tv2.id));
 
-        let rc = mp.get_transactions_for_proposal(3, &Vec::new());
+        let rc = mp.get_proposal_transactions(3, &Vec::new());
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert_eq!(get.len(), 2);
         assert!(get.contains(&tv1));
         assert!(get.contains(&tv2));
 
-        let rc = mp
-            .get_transactions_for_proposal(3, &Vec::from([tv1.clone(), tv2.clone(), tv3.clone()]));
+        let rc =
+            mp.get_proposal_transactions(3, &Vec::from([tv1.clone(), tv2.clone(), tv3.clone()]));
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert!(get.is_empty());
 
-        let rc = mp.get_transactions_for_proposal(3, &Vec::from([tv2.clone(), tv3.clone()]));
+        let rc = mp.get_proposal_transactions(3, &Vec::from([tv2.clone(), tv3.clone()]));
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
-        let rc = mp.get_transactions_for_proposal(3, &Vec::from([tv1.clone(), tv3.clone()]));
+        let rc = mp.get_proposal_transactions(3, &Vec::from([tv1.clone(), tv3.clone()]));
         assert!(rc.is_ok());
         let get = rc.unwrap();
         assert_eq!(get.len(), 1);
@@ -345,22 +345,22 @@ mod tests {
         let delay = 200; // 1/5 second
 
         let mut mp = SimpleMempool::new(MempoolConfig { max_size: 3 });
-        let rc = mp.add(tv1.clone());
+        let rc = mp.add_transaction(tv1.clone());
         assert!(rc.is_ok());
-        let rc = mp.add(tv2.clone());
+        let rc = mp.add_transaction(tv2.clone());
         assert!(rc.is_ok());
-        let rc = mp.add(tv3.clone());
+        let rc = mp.add_transaction(tv3.clone());
         assert!(rc.is_ok());
 
         // High initial delay. Check nothing gets returned.
-        let rc = mp.get_transactions_to_relay(delay, 0);
+        let rc = mp.get_relay_transactions(delay, 0);
         assert!(rc.is_ok());
         let rel = rc.unwrap();
         assert!(rel.is_empty());
 
         // Now sleep for the initial and check that they are all returned.
         std::thread::sleep(Duration::from_millis(delay));
-        let rc = mp.get_transactions_to_relay(delay, 0);
+        let rc = mp.get_relay_transactions(delay, 0);
         assert!(rc.is_ok());
         let rel = rc.unwrap();
         assert!(rel.contains(&tv1));
@@ -369,7 +369,7 @@ mod tests {
         assert_eq!(rel.len(), 3);
 
         // With no relay delay, they should be returned again immediately.
-        let rc = mp.get_transactions_to_relay(delay, 0);
+        let rc = mp.get_relay_transactions(delay, 0);
         assert!(rc.is_ok());
         let rel = rc.unwrap();
         assert!(rel.contains(&tv1));
@@ -378,14 +378,14 @@ mod tests {
         assert_eq!(rel.len(), 3);
 
         // With a relay delay, nothing should be returned now.
-        let rc = mp.get_transactions_to_relay(0, delay);
+        let rc = mp.get_relay_transactions(0, delay);
         assert!(rc.is_ok());
         let rel = rc.unwrap();
         assert!(rel.is_empty());
 
         // Sleep for the relay delay, and check that it is returned.
         std::thread::sleep(Duration::from_millis(delay));
-        let rc = mp.get_transactions_to_relay(0, delay);
+        let rc = mp.get_relay_transactions(0, delay);
         assert!(rc.is_ok());
         let rel = rc.unwrap();
         assert!(rel.contains(&tv1));

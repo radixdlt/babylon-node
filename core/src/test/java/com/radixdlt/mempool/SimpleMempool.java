@@ -86,7 +86,7 @@ public final class SimpleMempool implements Mempool<Transaction> {
   }
 
   @Override
-  public Transaction add(Transaction transaction)
+  public Transaction addTransaction(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
     if (this.data.size() >= maxSize) {
       throw new MempoolFullException(this.data.size(), maxSize);

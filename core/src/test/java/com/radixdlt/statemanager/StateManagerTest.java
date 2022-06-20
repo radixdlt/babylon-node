@@ -108,9 +108,9 @@ public final class StateManagerTest {
     final var payload = new byte[] {1, 2, 3, 4, 5};
     final var transaction = Transaction.create(payload);
     final var mempoolNode1 = injectorNode1.getInstance(new Key<Mempool<Transaction>>() {});
-    mempoolNode1.add(transaction);
+    mempoolNode1.addTransaction(transaction);
     try {
-      mempoolNode1.add(transaction);
+      mempoolNode1.addTransaction(transaction);
     } catch (Exception MempoolDuplicateException) {
     }
 

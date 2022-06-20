@@ -125,7 +125,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
             .forEach(
                 txn -> {
                   try {
-                    mempool.add(txn);
+                    mempool.addTransaction(txn);
                     counters.set(
                         SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
                   } catch (MempoolRejectedException e) {

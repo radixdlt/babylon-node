@@ -172,7 +172,11 @@ fn do_add(
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
     let transaction = Transaction::from_java(&request_payload)?;
 
-    let result = state_manager.mempool.lock().unwrap().add(transaction);
+    let result = state_manager
+        .mempool
+        .lock()
+        .unwrap()
+        .add_transaction(transaction);
 
     let mapped_result = result.map_err_sm(|err| err.into())?;
     Ok(mapped_result)
@@ -191,7 +195,7 @@ fn do_get_transactions_for_proposal(
         .mempool
         .lock()
         .unwrap()
-        .get_transactions_for_proposal(args.count.into(), &args.prepared_transactions);
+        .get_proposal_transactions(args.count.into(), &args.prepared_transactions);
 
     let mapped_result = result.map_err_sm(|err| err.into())?;
     Ok(mapped_result)
@@ -242,7 +246,7 @@ fn do_get_transactions_to_relay(
         .mempool
         .lock()
         .unwrap()
-        .get_transactions_to_relay(args.initial_delay_millis, args.repeat_delay_millis);
+        .get_relay_transactions(args.initial_delay_millis, args.repeat_delay_millis);
 
     let mapped_result = result.map_err_sm(|err| err.into())?;
     Ok(mapped_result)

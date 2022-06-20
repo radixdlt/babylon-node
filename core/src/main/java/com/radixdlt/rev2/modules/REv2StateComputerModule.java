@@ -107,7 +107,7 @@ public class REv2StateComputerModule extends AbstractModule {
             .forEach(
                 transaction -> {
                   try {
-                    mempool.add(transaction);
+                    mempool.addTransaction(transaction);
                   } catch (MempoolRejectedException e) {
                     log.error(e);
                   }

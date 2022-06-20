@@ -199,7 +199,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       throws MempoolRejectedException {
     synchronized (lock) {
       try {
-        var processed = mempool.add(transaction);
+        var processed = mempool.addTransaction(transaction);
 
         systemCounters.increment(CounterType.MEMPOOL_ADD_SUCCESS);
         systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());

@@ -97,7 +97,7 @@ public final class RustMempoolTest {
       Assert.assertEquals(0, rustMempool.getCount());
 
       // Add a transaction.
-      rustMempool.add(transaction1);
+      rustMempool.addTransaction(transaction1);
 
       Assert.assertEquals(1, rustMempool.getCount());
 
@@ -105,18 +105,18 @@ public final class RustMempoolTest {
           MempoolDuplicateException.class,
           () -> {
             // Duplicate transaction - this should fail
-            rustMempool.add(transaction1);
+            rustMempool.addTransaction(transaction1);
           });
       Assert.assertEquals(1, rustMempool.getCount());
 
       // This transaction is new, and the mempool has size 2 - this should be fine, and
       // the mempool will now be full
-      rustMempool.add(transaction2);
+      rustMempool.addTransaction(transaction2);
       Assert.assertEquals(2, rustMempool.getCount());
 
       try {
         // Mempool is full - adding a new transaction should fail
-        rustMempool.add(transaction3);
+        rustMempool.addTransaction(transaction3);
         Assert.fail();
       } catch (MempoolFullException ex) {
         Assert.assertEquals(2, ex.getMaxSize());
@@ -128,7 +128,7 @@ public final class RustMempoolTest {
       // Feel free to change in future
       try {
         // With a full mempool, a duplicate transaction return MempoolFull, not Duplicate
-        rustMempool.add(transaction1);
+        rustMempool.addTransaction(transaction1);
         Assert.fail();
       } catch (MempoolFullException ex) {
         Assert.assertEquals(2, ex.getMaxSize());
@@ -153,9 +153,9 @@ public final class RustMempoolTest {
               });
 
       // Add Transactions
-      rustMempool.add(transaction1);
-      rustMempool.add(transaction2);
-      rustMempool.add(transaction3);
+      rustMempool.addTransaction(transaction1);
+      rustMempool.addTransaction(transaction2);
+      rustMempool.addTransaction(transaction3);
       Assert.assertEquals(3, rustMempool.getCount());
 
       // Simple Test. Get transactions, and check that are returned.
@@ -249,9 +249,9 @@ public final class RustMempoolTest {
               });
 
       // Add Transactions
-      var returnedTransaction = rustMempool.add(transaction1);
+      var returnedTransaction = rustMempool.addTransaction(transaction1);
       Assert.assertEquals(returnedTransaction, transaction1);
-      returnedTransaction = rustMempool.add(transaction2);
+      returnedTransaction = rustMempool.addTransaction(transaction2);
       Assert.assertEquals(returnedTransaction, transaction2);
       Assert.assertEquals(2, rustMempool.getCount());
 
@@ -276,9 +276,9 @@ public final class RustMempoolTest {
                 1, 2, 3,
               });
 
-      rustMempool.add(transaction1);
-      rustMempool.add(transaction2);
-      rustMempool.add(transaction3);
+      rustMempool.addTransaction(transaction1);
+      rustMempool.addTransaction(transaction2);
+      rustMempool.addTransaction(transaction3);
       Assert.assertEquals(3, rustMempool.getCount());
 
       var returnedList = rustMempool.getTransactionsToRelay(100, 200);
