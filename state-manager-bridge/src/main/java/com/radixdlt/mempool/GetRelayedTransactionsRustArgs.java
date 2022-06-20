@@ -64,15 +64,27 @@
 
 package com.radixdlt.mempool;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.core.LongCodec;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+public class GetRelayedTransactionsRustArgs {
+  long initialDelayMillis;
+  long repeatDelayMillis;
 
-/** Specifies how long a txn needs to stay in a mempool in order to be relayed to other peers. */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface MempoolRelayInitialDelay {}
+  public GetRelayedTransactionsRustArgs(long initialDelayMillis, long repeatDelayMillis) {
+    this.initialDelayMillis = initialDelayMillis;
+    this.repeatDelayMillis = repeatDelayMillis;
+  }
+
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        GetRelayedTransactionsRustArgs.class,
+        codecs ->
+            StructCodec.with(
+                GetRelayedTransactionsRustArgs::new,
+                new LongCodec(false),
+                new LongCodec(false),
+                (a, encoder) -> encoder.encode(a.initialDelayMillis, a.repeatDelayMillis)));
+  }
+}

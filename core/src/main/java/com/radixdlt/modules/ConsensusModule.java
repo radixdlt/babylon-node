@@ -93,11 +93,11 @@ import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -219,7 +219,7 @@ public final class ConsensusModule extends AbstractModule {
       EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
       ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
       PacemakerTimeoutCalculator timeoutCalculator,
-      NextTxnsGenerator nextTxnsGenerator,
+      ProposalGenerator proposalGenerator,
       Hasher hasher,
       RemoteEventDispatcher<Proposal> proposalDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
@@ -236,7 +236,7 @@ public final class ConsensusModule extends AbstractModule {
         timeoutDispatcher,
         timeoutSender,
         timeoutCalculator,
-        nextTxnsGenerator,
+        proposalGenerator,
         proposalDispatcher,
         voteDispatcher,
         hasher,

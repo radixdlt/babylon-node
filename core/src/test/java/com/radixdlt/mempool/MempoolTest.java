@@ -125,8 +125,8 @@ public class MempoolTest {
   @Inject private SystemCounters systemCounters;
   @Inject private PeersView peersView;
   @Inject private CurrentForkView currentForkView;
-  @Inject @MempoolRelayInitialDelay private long initialDelay;
-  @Inject @MempoolRelayRepeatDelay private long repeatDelay;
+  @Inject @MempoolRelayInitialDelayMs private long initialDelay;
+  @Inject @MempoolRelayRepeatDelayMs private long repeatDelay;
 
   private Injector getInjector() {
     return Guice.createInjector(

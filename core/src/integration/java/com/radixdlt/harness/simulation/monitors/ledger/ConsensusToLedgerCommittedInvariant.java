@@ -111,7 +111,7 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
             committedUpdate ->
                 Observable.fromStream(
                     committedUpdate.committed().stream()
-                        .flatMap(PreparedVertex::successfulCommands)))
+                        .flatMap(PreparedVertex::successfulTransactions)))
         .flatMapMaybe(
             txn ->
                 committedTxns

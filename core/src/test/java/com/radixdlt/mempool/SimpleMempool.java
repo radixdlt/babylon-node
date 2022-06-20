@@ -67,16 +67,7 @@ package com.radixdlt.mempool;
 import com.google.common.collect.Lists;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.transactions.Transaction;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.*;
 
 /** Simple mempool which performs no validation and removes on commit. */
 public final class SimpleMempool implements Mempool<Transaction> {
@@ -95,7 +86,7 @@ public final class SimpleMempool implements Mempool<Transaction> {
   }
 
   @Override
-  public Transaction add(Transaction transaction)
+  public Transaction addTransaction(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
     if (this.data.size() >= maxSize) {
       throw new MempoolFullException(this.data.size(), maxSize);
@@ -111,10 +102,9 @@ public final class SimpleMempool implements Mempool<Transaction> {
   }
 
   @Override
-  public List<Transaction> committed(List<Transaction> commands) {
-    commands.forEach(this.data::remove);
+  public void handleTransactionsCommitted(List<Transaction> transactions) {
+    transactions.forEach(this.data::remove);
     updateCounts();
-    return List.of();
   }
 
   @Override
@@ -123,7 +113,8 @@ public final class SimpleMempool implements Mempool<Transaction> {
   }
 
   @Override
-  public List<Transaction> getTxns(int count, List<Transaction> seen) {
+  public List<Transaction> getTransactionsForProposal(
+      int count, List<Transaction> preparedTransactions) {
     int size = Math.min(count, this.data.size());
     if (size > 0) {
       List<Transaction> commands = Lists.newArrayList();
@@ -133,7 +124,7 @@ public final class SimpleMempool implements Mempool<Transaction> {
       Iterator<Transaction> i = values.iterator();
       while (commands.size() < size && i.hasNext()) {
         var a = i.next();
-        if (!seen.contains(a)) {
+        if (!preparedTransactions.contains(a)) {
           commands.add(a);
         }
       }
@@ -144,8 +135,7 @@ public final class SimpleMempool implements Mempool<Transaction> {
   }
 
   @Override
-  public List<Transaction> scanUpdateAndGet(
-      Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
+  public List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis) {
     return List.of();
   }
 

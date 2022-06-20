@@ -125,7 +125,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
             .forEach(
                 txn -> {
                   try {
-                    mempool.add(txn);
+                    mempool.addTransaction(txn);
                     counters.set(
                         SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
                   } catch (MempoolRejectedException e) {
@@ -135,14 +135,16 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       }
 
       @Override
-      public List<Transaction> getNextTxnsFromMempool(
-          List<StateComputerLedger.PreparedTxn> prepared) {
-        return mempool.getTxns(1, List.of());
+      public List<Transaction> getTransactionsForProposal(
+          List<StateComputerLedger.PreparedTransaction> preparedTransactions) {
+        return mempool.getTransactionsForProposal(1, List.of());
       }
 
       @Override
       public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+          List<StateComputerLedger.PreparedTransaction> previous,
+          VerifiedVertex vertex,
+          long timestamp) {
         return new StateComputerLedger.StateComputerResult(
             vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()),
             Map.of());
@@ -151,7 +153,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       @Override
       public void commit(
           VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-        mempool.committed(txnsAndProof.getTxns());
+        mempool.handleTransactionsCommitted(txnsAndProof.getTxns());
         counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 
         var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());

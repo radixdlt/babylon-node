@@ -64,10 +64,10 @@
 
 package com.radixdlt.ledger;
 
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
 import com.radixdlt.transactions.Transaction;
 
-public class MockPrepared implements PreparedTxn {
+public class MockPrepared implements PreparedTransaction {
 
   private final Transaction transaction;
 

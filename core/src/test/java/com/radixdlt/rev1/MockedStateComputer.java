@@ -107,13 +107,16 @@ public final class MockedStateComputer implements StateComputer {
   public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
 
   @Override
-  public List<Transaction> getNextTxnsFromMempool(List<StateComputerLedger.PreparedTxn> prepared) {
+  public List<Transaction> getTransactionsForProposal(
+      List<StateComputerLedger.PreparedTransaction> preparedTransactions) {
     return List.of();
   }
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      List<StateComputerLedger.PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+      List<StateComputerLedger.PreparedTransaction> previous,
+      VerifiedVertex vertex,
+      long timestamp) {
     return new StateComputerLedger.StateComputerResult(
         vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()), Map.of());
   }

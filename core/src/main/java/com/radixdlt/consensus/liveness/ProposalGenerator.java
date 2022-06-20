@@ -62,29 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.sbor.codec.core.LongCodec;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.transactions.Transaction;
+import java.util.List;
 
-public class GetRelayedTxnsRustArgs {
-  long initialDelay;
-  long repeatDelay;
+/** Generates transactions for a proposal in the given view */
+public interface ProposalGenerator {
 
-  public GetRelayedTxnsRustArgs(long initialDelay, long repeatDelay) {
-    this.initialDelay = initialDelay;
-    this.repeatDelay = repeatDelay;
-  }
-
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        GetRelayedTxnsRustArgs.class,
-        codecs ->
-            StructCodec.with(
-                GetRelayedTxnsRustArgs::new,
-                new LongCodec(false),
-                new LongCodec(false),
-                (a, encoder) -> encoder.encode(a.initialDelay, a.repeatDelay)));
-  }
+  /**
+   * Generates transactions for a proposal in the given view TODO: Update interface to return an
+   * error if already generated a command for a given view
+   *
+   * @param view the view to create the vertex for
+   * @param prepared vertices with transactions which have already been prepared
+   * @return new transactions for the next proposal
+   */
+  List<Transaction> getTransactionsForProposal(View view, List<PreparedVertex> prepared);
 }

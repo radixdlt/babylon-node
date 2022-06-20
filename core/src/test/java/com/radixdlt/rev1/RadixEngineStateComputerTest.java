@@ -204,8 +204,6 @@ public class RadixEngineStateComputerTest {
             .toInstance(TypedMocks.rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() {})
             .toInstance(TypedMocks.rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<TxnsRemovedFromMempool>>() {})
-            .toInstance(TypedMocks.rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<REOutput>>() {})
             .toInstance(TypedMocks.rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() {})

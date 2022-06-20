@@ -93,11 +93,11 @@ import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.epoch.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -288,7 +288,7 @@ public class EpochsConsensusModule extends AbstractModule {
   private PacemakerFactory pacemakerFactory(
       @Self BFTNode self,
       SystemCounters counters,
-      NextTxnsGenerator nextTxnsGenerator,
+      ProposalGenerator proposalGenerator,
       Hasher hasher,
       EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher,
       ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
@@ -307,7 +307,7 @@ public class EpochsConsensusModule extends AbstractModule {
             (scheduledTimeout, ms) ->
                 localTimeoutSender.dispatch(Epoched.from(epoch, scheduledTimeout), ms),
             timeoutCalculator,
-            nextTxnsGenerator,
+            proposalGenerator,
             proposalDispatcher,
             voteDispatcher,
             hasher,

@@ -64,31 +64,15 @@
 
 package com.radixdlt.mempool;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.sbor.codec.core.IntegerCodec;
-import com.radixdlt.transactions.Transaction;
-import java.util.List;
-import java.util.Objects;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public class GetTxnsRustArgs {
-  int count;
-  List<Transaction> seen;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        GetTxnsRustArgs.class,
-        codecs ->
-            StructCodec.with(
-                GetTxnsRustArgs::new,
-                new IntegerCodec(false),
-                codecs.of(new TypeToken<List<Transaction>>() {}),
-                (a, encoder) -> encoder.encode(a.count, a.seen)));
-  }
-
-  GetTxnsRustArgs(int count, List<Transaction> seen) {
-    this.count = count;
-    this.seen = Objects.requireNonNull(seen);
-  }
-}
+/** Specifies how long a txn needs to stay in a mempool in order to be relayed to other peers. */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface MempoolRelayInitialDelayMs {}

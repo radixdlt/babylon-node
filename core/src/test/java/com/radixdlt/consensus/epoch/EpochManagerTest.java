@@ -109,7 +109,7 @@ import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -126,7 +126,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -162,7 +162,7 @@ public class EpochManagerTest {
 
   private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
-  private NextTxnsGenerator nextTxnsGenerator = mock(NextTxnsGenerator.class);
+  private ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
   private ScheduledEventDispatcher<GetVerticesRequest> timeoutScheduler =
       rmock(ScheduledEventDispatcher.class);
   private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
@@ -177,13 +177,14 @@ public class EpochManagerTest {
         }
 
         @Override
-        public List<Transaction> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
+        public List<Transaction> getTransactionsForProposal(
+            List<PreparedTransaction> preparedTransactions) {
           return List.of();
         }
 
         @Override
         public StateComputerResult prepare(
-            List<PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+            List<PreparedTransaction> previous, VerifiedVertex vertex, long timestamp) {
           return new StateComputerResult(List.of(), Map.of());
         }
 
@@ -247,7 +248,7 @@ public class EpochManagerTest {
             .toInstance(rmock(RemoteEventDispatcher.class));
 
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
-        bind(NextTxnsGenerator.class).toInstance(nextTxnsGenerator);
+        bind(ProposalGenerator.class).toInstance(proposalGenerator);
         bind(SystemCounters.class).toInstance(new SystemCountersImpl());
         bind(Mempool.class).toInstance(mempool);
         bind(StateComputer.class).toInstance(stateComputer);

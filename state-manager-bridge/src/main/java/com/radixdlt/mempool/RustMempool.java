@@ -75,7 +75,7 @@ import java.util.List;
 import java.util.Objects;
 
 // This must become the new Mempool Interface.
-public class RustMempool {
+public class RustMempool implements Mempool<Transaction> {
   private final RustState rustState;
 
   public RustMempool(RustState rustState) {
@@ -89,7 +89,8 @@ public class RustMempool {
           Result<Result<List<Transaction>, MempoolError>, StateManagerRuntimeError>>
       listTransactionType = new TypeToken<>() {};
 
-  public Transaction add(Transaction transaction)
+  @Override
+  public Transaction addTransaction(Transaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
     var encodedRequest = StateManagerSbor.sbor.encode(transaction, Transaction.class);
     var encodedResponse = add(this.rustState, encodedRequest);
@@ -105,62 +106,71 @@ public class RustMempool {
       }
     }
 
+    // No error is possible for this call at present, so unwrap should be safe
     var processedTransaction = result.unwrap();
     return processedTransaction;
   }
 
-  public List<Transaction> getTxns(int count, List<Transaction> seen) {
+  @Override
+  public List<Transaction> getTransactionsForProposal(
+      int count, List<Transaction> preparedTransactions) {
     if (count <= 0) {
       throw new IllegalArgumentException("State Manager Mempool: count must be > 0: " + count);
     }
 
-    var args = new GetTxnsRustArgs(count, seen);
-    var encodedRequest = StateManagerSbor.sbor.encode(args, GetTxnsRustArgs.class);
-    var encodedResponse = getTxns(this.rustState, encodedRequest);
+    var args = new GetTransactionsForProposalRustArgs(count, preparedTransactions);
+    var encodedRequest =
+        StateManagerSbor.sbor.encode(args, GetTransactionsForProposalRustArgs.class);
+    var encodedResponse = getTransactionsForProposal(this.rustState, encodedRequest);
     var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
 
-    // No Specific Return Code Expected.
+    // No error is possible for this call at present, so unwrap should be safe
     var newTransactions = result.unwrap();
     return newTransactions;
   }
 
-  public List<Transaction> getRelayTxns(long initMillis, long delayMillis) {
-    var args = new GetRelayedTxnsRustArgs(initMillis, delayMillis);
-    var encodedRequest = StateManagerSbor.sbor.encode(args, GetRelayedTxnsRustArgs.class);
-    var encodedResponse = getRelayTxns(this.rustState, encodedRequest);
+  @Override
+  public List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis) {
+    var args = new GetRelayedTransactionsRustArgs(initialDelayMillis, repeatDelayMillis);
+    var encodedRequest = StateManagerSbor.sbor.encode(args, GetRelayedTransactionsRustArgs.class);
+    var encodedResponse = getTransactionsToRelay(this.rustState, encodedRequest);
     var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
 
-    // No Specific Return Code Expected.
+    // No error is possible for this call at present, so unwrap should be safe
     return result.unwrap();
   }
 
-  public List<Transaction> committed(List<Transaction> committed) {
+  @Override
+  public void handleTransactionsCommitted(List<Transaction> transactions) {
     var encodedRequest =
-        StateManagerSbor.sbor.encode(committed, new TypeToken<List<Transaction>>() {});
-    var encodedResponse = committed(this.rustState, encodedRequest);
+        StateManagerSbor.sbor.encode(transactions, new TypeToken<List<Transaction>>() {});
+    var encodedResponse = handleTransactionsCommitted(this.rustState, encodedRequest);
     var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
 
-    // No Specific Return Code Expected.
-    return result.unwrap();
+    // No error should be possible for this call at present
+    // But unwrap to make sure we didn't have one.
+    result.unwrap();
   }
 
+  @Override
   public int getCount() {
     var encodedResponse = getCount(this.rustState);
-    var result =
+    var transactionCount =
         StateManagerResponse.decode(
             encodedResponse, new TypeToken<Result<Integer, StateManagerRuntimeError>>() {});
 
     // Not A Result
-    return result;
+    return transactionCount;
   }
 
   private static native byte[] add(RustState rustState, byte[] transaction);
 
-  private static native byte[] committed(RustState rustState, byte[] transactions);
+  private static native byte[] handleTransactionsCommitted(
+      RustState rustState, byte[] transactions);
 
   private static native byte[] getCount(RustState rustState);
 
-  private static native byte[] getTxns(RustState rustState, byte[] getTxnsRustArgs);
+  private static native byte[] getTransactionsForProposal(RustState rustState, byte[] encodedArgs);
 
-  private static native byte[] getRelayTxns(RustState rustState, byte[] relayTimes);
+  private static native byte[] getTransactionsToRelay(RustState rustState, byte[] encodedArgs);
 }

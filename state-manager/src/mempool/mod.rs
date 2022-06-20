@@ -86,19 +86,21 @@ impl ToString for MempoolError {
 }
 
 pub trait Mempool {
-    fn add(&mut self, transaction: Transaction) -> Result<Transaction, MempoolError>;
-    fn committed(&mut self, transactions: &[Transaction])
-        -> Result<Vec<Transaction>, MempoolError>;
+    fn add_transaction(&mut self, transaction: Transaction) -> Result<Transaction, MempoolError>;
+    fn handle_committed_transactions(
+        &mut self,
+        transactions: &[Transaction],
+    ) -> Result<Vec<Transaction>, MempoolError>;
     fn get_count(&self) -> u64;
-    fn get_transactions(
+    fn get_proposal_transactions(
         &self,
         count: u64,
-        seen: &[Transaction],
+        prepared_transactions: &[Transaction],
     ) -> Result<Vec<Transaction>, MempoolError>;
     fn get_relay_transactions(
         &mut self,
-        init_millis: u64,
-        repeat_millis: u64,
+        initial_delay_millis: u64,
+        repeat_delay_millis: u64,
     ) -> Result<Vec<Transaction>, MempoolError>;
 }
 

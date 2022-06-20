@@ -67,28 +67,32 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.lang.Option;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
-import java.util.Optional;
+import com.radixdlt.transaction.RustTransactionStore;
+import com.radixdlt.transaction.TransactionStore;
+import com.radixdlt.transactions.Transaction;
 
 public final class StateManagerModule extends AbstractModule {
-
-  @Override
-  protected void configure() {
-    OptionalBinder.newOptionalBinder(binder(), RustMempoolConfig.class);
+  @Provides
+  @Singleton
+  StateManager stateManager(RustMempoolConfig mempoolConfig) {
+    return StateManager.createAndInitialize(new StateManagerConfig(Option.some(mempoolConfig)));
   }
 
   @Provides
   @Singleton
-  StateManager stateManager(Optional<RustMempoolConfig> mempoolConfigOpt) {
-    return StateManager.createAndInitialize(new StateManagerConfig(Option.from(mempoolConfigOpt)));
+  private RustMempoolConfig stateManagerMempoolConfig(@MempoolMaxSize int maxSize) {
+    return new RustMempoolConfig(maxSize);
   }
 
   @ProvidesIntoMap
@@ -106,5 +110,17 @@ public final class StateManagerModule extends AbstractModule {
         stateManager.shutdown();
       }
     };
+  }
+
+  @Provides
+  @Singleton
+  private Mempool<Transaction> stateManagerMempool(StateManager stateManager) {
+    return new RustMempool(stateManager.getRustState());
+  }
+
+  @Provides
+  @Singleton
+  private TransactionStore stateManagerTransactionStore(StateManager stateManager) {
+    return new RustTransactionStore(stateManager.getRustState());
   }
 }

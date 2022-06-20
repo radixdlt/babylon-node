@@ -62,19 +62,17 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.mempool;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.transaction.RustTransactionStore;
-import com.radixdlt.transaction.TransactionStore;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public final class StateManagerTransactionStoreModule extends AbstractModule {
-  @Provides
-  @Singleton
-  private TransactionStore stateManagerTransactionStore(StateManager stateManager) {
-    return new RustTransactionStore(stateManager.getRustState());
-  }
-}
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
+
+/** Specifies how often a txn is re-relayed once its eligible for relay */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface MempoolRelayRepeatDelayMs {}

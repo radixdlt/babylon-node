@@ -62,16 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.rev2;
 
+import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.transactions.Transaction;
-import java.util.List;
-import java.util.Objects;
 
-/** Event describing atoms which have been removed from the mempool after a commit. */
-public record TxnsRemovedFromMempool(List<Transaction> removed) {
-  public static TxnsRemovedFromMempool create(List<Transaction> removed) {
-    Objects.requireNonNull(removed);
-    return new TxnsRemovedFromMempool(removed);
+public class REv2PreparedTransaction implements StateComputerLedger.PreparedTransaction {
+  private final Transaction transaction;
+
+  public REv2PreparedTransaction(Transaction transaction) {
+    this.transaction = transaction;
+  }
+
+  @Override
+  public Transaction transaction() {
+    return transaction;
   }
 }

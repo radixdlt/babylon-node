@@ -114,7 +114,7 @@ public class PacemakerTest {
   private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);
   private SafetyRules safetyRules = mock(SafetyRules.class);
   private PacemakerTimeoutCalculator timeoutCalculator = mock(PacemakerTimeoutCalculator.class);
-  private NextTxnsGenerator nextTxnsGenerator = mock(NextTxnsGenerator.class);
+  private ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
   private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
   private RemoteEventDispatcher<Proposal> proposalDispatcher = rmock(RemoteEventDispatcher.class);
   private EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher = rmock(EventDispatcher.class);
@@ -144,7 +144,7 @@ public class PacemakerTest {
             this.timeoutDispatcher,
             this.timeoutSender,
             this.timeoutCalculator,
-            this.nextTxnsGenerator,
+            this.proposalGenerator,
             this.proposalDispatcher,
             this.voteDispatcher,
             hasher,
