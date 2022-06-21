@@ -247,7 +247,8 @@ def debOutputFileName() {
     return "${debPackageName()}_${debSafeVersionName()}_all.deb"
 }
 
-ospackage {
+// https://github.com/nebula-plugins/gradle-ospackage-plugin/wiki/Provided-Plugins#os-package-plugin
+ospackage() {
     os = LINUX
 
     postInstall file('ospackage/postinst.sh')
@@ -265,23 +266,23 @@ ospackage {
         into "/etc/systemd/system"
     }
     // XXX: This ought to be done somewhere else.
-    from("${project(':state-manager').projectDir}/target/debug/libstatemanager.so") {
+    from("${project(':state-manager').projectDir}/target/x86_64-unknown-linux-gnu/debug/libstatemanager.so") {
        into "/usr/lib/jni/"
     }
 
     // See https://github.com/nebula-plugins/gradle-ospackage-plugin/wiki/Deb-Plugin#basic-usage
     buildDeb {
-        dependsOn += [installDist]
+        dependsOn += [installDist, ":state-manager:buildRustForDocker"]
 
         version = debSafeVersionName()
         packageName = debPackageName()
 
         doLast {
-            println "SUCCESS: Built deb image: ${debOutputFileName()}"
+            println "SUCCESS: Built deb package: ${debOutputFileName()}"
         }
     }
     buildRpm {
-        dependsOn += [installDist]
+        dependsOn += [installDist, ":state-manager:buildRustForDocker"]
     }
 }
 
@@ -320,7 +321,7 @@ task deb4docker(dependsOn: buildDeb) {
         if (!file(builtDebFileLocation).exists()) {
             throw new GradleException("Expected to find built deb package at $builtDebFileLocation but it wasn't there - perhaps the replacement regex in deb4docker is broken / needs fixing")
         }
-        println "Built deb image found at: $builtDebFileLocation"
+        println "Built deb package found at: $builtDebFileLocation"
 
         def names = [] as Set
         destinationDir.eachFileMatch(groovy.io.FileType.FILES, previousDebFileToDeleteRegex) {
@@ -336,6 +337,6 @@ task deb4docker(dependsOn: buildDeb) {
             from builtDebFileLocation
             into destinationDir
         }
-        println "SUCCESS: Deb image copied for the docker build to: $destinationLocation"
+        println "SUCCESS: deb package copied for the docker build to: $destinationLocation"
     }
 }

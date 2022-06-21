@@ -114,7 +114,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -234,7 +234,7 @@ public class ConsensusModuleTest {
 
         bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
         bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
-        bind(NextTxnsGenerator.class).toInstance(mock(NextTxnsGenerator.class));
+        bind(ProposalGenerator.class).toInstance(mock(ProposalGenerator.class));
         bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
         bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
         bind(BFTConfiguration.class).toInstance(bftConfiguration);

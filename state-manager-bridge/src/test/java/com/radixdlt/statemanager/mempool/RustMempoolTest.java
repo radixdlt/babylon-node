@@ -72,13 +72,16 @@ import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transactions.Transaction;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 
 public final class RustMempoolTest {
 
   @Test
-  public void test_rust_mempool_interface() throws Exception {
+  public void test_rust_mempool_add() throws Exception {
     final var mempoolSize = 2;
     final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
     try (var stateManager = StateManager.createAndInitialize(config)) {
@@ -91,39 +94,201 @@ public final class RustMempoolTest {
                 1, 2, 3,
               });
 
-      rustMempool.add(transaction1);
+      Assert.assertEquals(0, rustMempool.getCount());
 
-      try {
-        // Duplicate transaction - this should fail
-        rustMempool.add(transaction1);
-        Assert.fail();
-      } catch (MempoolDuplicateException ex) {
-        // Expected
-      }
+      // Add a transaction.
+      rustMempool.addTransaction(transaction1);
+
+      Assert.assertEquals(1, rustMempool.getCount());
+
+      Assert.assertThrows(
+          MempoolDuplicateException.class,
+          () -> {
+            // Duplicate transaction - this should fail
+            rustMempool.addTransaction(transaction1);
+          });
+      Assert.assertEquals(1, rustMempool.getCount());
 
       // This transaction is new, and the mempool has size 2 - this should be fine, and
       // the mempool will now be full
-      rustMempool.add(transaction2);
+      rustMempool.addTransaction(transaction2);
+      Assert.assertEquals(2, rustMempool.getCount());
 
       try {
         // Mempool is full - adding a new transaction should fail
-        rustMempool.add(transaction3);
+        rustMempool.addTransaction(transaction3);
         Assert.fail();
       } catch (MempoolFullException ex) {
         Assert.assertEquals(2, ex.getMaxSize());
         Assert.assertEquals(2, ex.getCurrentSize());
       }
+      Assert.assertEquals(2, rustMempool.getCount());
 
       // NB - the following is an implementation detail, not mandated behaviour.
       // Feel free to change in future
       try {
         // With a full mempool, a duplicate transaction return MempoolFull, not Duplicate
-        rustMempool.add(transaction1);
+        rustMempool.addTransaction(transaction1);
         Assert.fail();
       } catch (MempoolFullException ex) {
         Assert.assertEquals(2, ex.getMaxSize());
         Assert.assertEquals(2, ex.getCurrentSize());
       }
+      Assert.assertEquals(2, rustMempool.getCount());
+    }
+  }
+
+  @Test
+  public void test_rust_mempool_getTxns() throws Exception {
+    final var mempoolSize = 3;
+    final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
+    try (var stateManager = StateManager.createAndInitialize(config)) {
+      var rustMempool = new RustMempool(stateManager.getRustState());
+      var transaction1 = Transaction.create(new byte[] {1});
+      var transaction2 = Transaction.create(new byte[] {1, 2});
+      var transaction3 =
+          Transaction.create(
+              new byte[] {
+                1, 2, 3,
+              });
+
+      // Add Transactions
+      rustMempool.addTransaction(transaction1);
+      rustMempool.addTransaction(transaction2);
+      rustMempool.addTransaction(transaction3);
+      Assert.assertEquals(3, rustMempool.getCount());
+
+      // Simple Test. Get transactions, and check that are returned.
+
+      // Get zero transactions.
+      List<Transaction> returnedList;
+      Set<Transaction> returnedSet;
+
+      Assert.assertThrows(
+          IllegalArgumentException.class,
+          () -> rustMempool.getTransactionsForProposal(-1, List.of()));
+
+      Assert.assertThrows(
+          IllegalArgumentException.class,
+          () -> rustMempool.getTransactionsForProposal(0, List.of()));
+
+      // Get one to three transaction.
+      returnedList = rustMempool.getTransactionsForProposal(1, List.of());
+      // Check if it contains 1 element only, either transaction1, transaction2, transaction3
+      Assert.assertEquals(1, returnedList.size());
+      Assert.assertTrue(
+          List.of(transaction1, transaction2, transaction3).containsAll(returnedList));
+
+      returnedList = rustMempool.getTransactionsForProposal(2, List.of());
+      Assert.assertEquals(2, returnedList.size());
+      // Transform it into a set to avoid duplicates.
+      returnedSet = new HashSet<>(returnedList);
+      // Check no duplicates
+      Assert.assertEquals(2, returnedSet.size());
+      // Check that elements are our expected transactions
+      Assert.assertTrue(
+          List.of(transaction1, transaction2, transaction3).containsAll(returnedList));
+
+      returnedList = rustMempool.getTransactionsForProposal(3, List.of());
+      Assert.assertEquals(3, returnedList.size());
+      // Transform it into a set to avoid duplicates.
+      returnedSet = new HashSet<>(returnedList);
+      // Check no duplicates
+      Assert.assertEquals(3, returnedSet.size());
+      // Check that elements are our expected transactions
+      Assert.assertTrue(
+          List.of(transaction1, transaction2, transaction3).containsAll(returnedList));
+
+      // Get transactions, using seen to avoid existing transactions.
+      returnedList = rustMempool.getTransactionsForProposal(3, List.of(transaction1));
+      Assert.assertEquals(2, returnedList.size());
+      // Transform it into a set to avoid duplicates.
+      returnedSet = new HashSet<>(returnedList);
+      // Check no duplicates
+      Assert.assertEquals(2, returnedSet.size());
+      // Check that elements are our expected transactions
+      Assert.assertTrue(List.of(transaction2, transaction3).containsAll(returnedList));
+
+      returnedList = rustMempool.getTransactionsForProposal(3, List.of(transaction2));
+      Assert.assertEquals(2, returnedList.size());
+      // Transform it into a set to avoid duplicates.
+      returnedSet = new HashSet<>(returnedList);
+      // Check no duplicates
+      Assert.assertEquals(2, returnedSet.size());
+      // Check that elements are our expected transactions
+      Assert.assertTrue(List.of(transaction1, transaction3).containsAll(returnedList));
+
+      returnedList = rustMempool.getTransactionsForProposal(3, List.of(transaction3));
+      Assert.assertEquals(2, returnedList.size());
+      // Transform it into a set to avoid duplicates.
+      returnedSet = new HashSet<>(returnedList);
+      // Check no duplicates
+      Assert.assertEquals(2, returnedSet.size());
+      // Check that elements are our expected transactions
+      Assert.assertTrue(List.of(transaction1, transaction2).containsAll(returnedList));
+
+      returnedList =
+          rustMempool.getTransactionsForProposal(
+              3, List.of(transaction1, transaction2, transaction3));
+      Assert.assertEquals(List.of(), returnedList);
+    }
+  }
+
+  @Test
+  public void test_rust_mempool_committed() throws Exception {
+    final var mempoolSize = 2;
+    final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
+    try (var stateManager = StateManager.createAndInitialize(config)) {
+      var rustMempool = new RustMempool(stateManager.getRustState());
+      var transaction1 = Transaction.create(new byte[] {1});
+      var transaction2 = Transaction.create(new byte[] {1, 2});
+      var transaction3 =
+          Transaction.create(
+              new byte[] {
+                1, 2, 3,
+              });
+
+      // Add Transactions
+      var returnedTransaction = rustMempool.addTransaction(transaction1);
+      Assert.assertEquals(returnedTransaction, transaction1);
+      returnedTransaction = rustMempool.addTransaction(transaction2);
+      Assert.assertEquals(returnedTransaction, transaction2);
+      Assert.assertEquals(2, rustMempool.getCount());
+
+      // Commit two existing transactions and one non-existing in the mempool.
+      var transactionList = List.of(transaction1, transaction2, transaction3);
+      rustMempool.handleTransactionsCommitted(transactionList);
+      Assert.assertEquals(0, rustMempool.getCount());
+    }
+  }
+
+  @Test
+  public void test_rust_mempool_getRelayTxns() throws Exception {
+    final var mempoolSize = 3;
+    final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
+    try (var stateManager = StateManager.createAndInitialize(config)) {
+      var rustMempool = new RustMempool(stateManager.getRustState());
+      var transaction1 = Transaction.create(new byte[] {1});
+      var transaction2 = Transaction.create(new byte[] {1, 2});
+      var transaction3 =
+          Transaction.create(
+              new byte[] {
+                1, 2, 3,
+              });
+
+      rustMempool.addTransaction(transaction1);
+      rustMempool.addTransaction(transaction2);
+      rustMempool.addTransaction(transaction3);
+      Assert.assertEquals(3, rustMempool.getCount());
+
+      var returnedList = rustMempool.getTransactionsToRelay(100, 200);
+      Assert.assertEquals(0, returnedList.size());
+      Assert.assertEquals(List.of(), returnedList);
+
+      returnedList = rustMempool.getTransactionsToRelay(0, 200);
+      Assert.assertEquals(3, returnedList.size());
+      Assert.assertTrue(
+          List.of(transaction1, transaction2, transaction3).containsAll(returnedList));
     }
   }
 }

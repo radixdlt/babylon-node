@@ -122,7 +122,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   }
 
   @Override
-  public REProcessedTxn add(Transaction transaction) throws MempoolRejectedException {
+  public REProcessedTxn addTransaction(Transaction transaction) throws MempoolRejectedException {
     if (this.data.size() >= maxSize) {
       throw new MempoolFullException(this.data.size(), maxSize);
     }
@@ -157,7 +157,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   }
 
   @Override
-  public List<Transaction> committed(List<REProcessedTxn> transactions) {
+  public void handleTransactionsCommitted(List<REProcessedTxn> transactions) {
     final var removed = new ArrayList<Transaction>();
     final var committedIds =
         transactions.stream().map(p -> p.getTxn().getId()).collect(Collectors.toSet());
@@ -186,15 +186,14 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
     if (!removed.isEmpty()) {
       logger.debug("Evicting {} txns from mempool", removed.size());
     }
-
-    return removed;
   }
 
   @Override
-  public List<Transaction> getTxns(int count, List<REProcessedTxn> prepared) {
+  public List<Transaction> getTransactionsForProposal(
+      int count, List<REProcessedTxn> preparedTransactions) {
     // TODO: Order by highest fees paid
     var copy = new TreeSet<>(data.keySet());
-    prepared.stream()
+    preparedTransactions.stream()
         .flatMap(REProcessedTxn::stateUpdates)
         .filter(REStateUpdate::isShutDown)
         .flatMap(i -> substateIndex.getOrDefault(i.getId(), Set.of()).stream())
@@ -226,7 +225,20 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   }
 
   @Override
-  public List<Transaction> scanUpdateAndGet(
+  public List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis) {
+    final var now = System.currentTimeMillis();
+    final var recentlyAddedCutoff = now - initialDelayMillis;
+    final var lastRelayedCutoff = now - repeatDelayMillis;
+    return scanUpdateAndGet(
+        m ->
+            // Don't relay recently added
+            m.getInserted() <= recentlyAddedCutoff
+                // Don't relay recently relayed
+                && m.getLastRelayed().orElse(0L) <= lastRelayedCutoff,
+        m -> m.setLastRelayed(now));
+  }
+
+  private List<Transaction> scanUpdateAndGet(
       Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
     return this.data.values().stream()
         .filter(e -> predicate.test(e.getSecond()))

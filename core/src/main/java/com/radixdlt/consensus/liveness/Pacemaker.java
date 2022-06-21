@@ -110,7 +110,7 @@ public final class Pacemaker {
   private final SafetyRules safetyRules;
   private final ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender;
   private final PacemakerTimeoutCalculator timeoutCalculator;
-  private final NextTxnsGenerator nextTxnsGenerator;
+  private final ProposalGenerator proposalGenerator;
   private final Hasher hasher;
   private final RemoteEventDispatcher<Proposal> proposalDispatcher;
   private final RemoteEventDispatcher<Vote> voteDispatcher;
@@ -131,7 +131,7 @@ public final class Pacemaker {
       EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
       ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
       PacemakerTimeoutCalculator timeoutCalculator,
-      NextTxnsGenerator nextTxnsGenerator,
+      ProposalGenerator proposalGenerator,
       RemoteEventDispatcher<Proposal> proposalDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
       Hasher hasher,
@@ -146,7 +146,7 @@ public final class Pacemaker {
     this.timeoutSender = Objects.requireNonNull(timeoutSender);
     this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
     this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
-    this.nextTxnsGenerator = Objects.requireNonNull(nextTxnsGenerator);
+    this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
     this.proposalDispatcher = Objects.requireNonNull(proposalDispatcher);
     this.hasher = Objects.requireNonNull(hasher);
     this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
@@ -219,7 +219,7 @@ public final class Pacemaker {
     } else {
       final List<PreparedVertex> preparedVertices =
           vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
-      nextTransactions = nextTxnsGenerator.generateNextTxns(view, preparedVertices);
+      nextTransactions = proposalGenerator.getTransactionsForProposal(view, preparedVertices);
       systemCounters.add(
           SystemCounters.CounterType.BFT_PACEMAKER_PROPOSED_TRANSACTIONS, nextTransactions.size());
     }

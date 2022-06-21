@@ -75,15 +75,11 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.mempool.REv2Mempool;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.rev2.REv2PreparedTxn;
+import com.radixdlt.rev2.REv2PreparedTransaction;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
@@ -101,28 +97,17 @@ public class REv2StateComputerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private Mempool<Transaction> mempool(
-      SystemCounters systemCounters, Random random, @MempoolMaxSize int mempoolMaxSize) {
-    return new REv2Mempool(systemCounters, mempoolMaxSize, random);
-  }
-
-  @Provides
-  @Singleton
   private StateComputerLedger.StateComputer stateComputer(
-      Mempool<Transaction> mempool,
-      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-      SystemCounters counters) {
+      Mempool<Transaction> mempool, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
     return new StateComputerLedger.StateComputer() {
       @Override
       public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
         mempoolAdd
             .transactions()
             .forEach(
-                txn -> {
+                transaction -> {
                   try {
-                    mempool.add(txn);
-                    counters.set(
-                        SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+                    mempool.addTransaction(transaction);
                   } catch (MempoolRejectedException e) {
                     log.error(e);
                   }
@@ -130,24 +115,31 @@ public class REv2StateComputerModule extends AbstractModule {
       }
 
       @Override
-      public List<Transaction> getNextTxnsFromMempool(
-          List<StateComputerLedger.PreparedTxn> prepared) {
-        return mempool.getTxns(1, List.of());
+      public List<Transaction> getTransactionsForProposal(
+          List<StateComputerLedger.PreparedTransaction> preparedTransactions) {
+        var transactionsNotToInclude =
+            preparedTransactions.stream()
+                .map(StateComputerLedger.PreparedTransaction::transaction)
+                .toList();
+        return mempool.getTransactionsForProposal(1, transactionsNotToInclude);
       }
 
       @Override
       public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+          List<StateComputerLedger.PreparedTransaction> previous,
+          VerifiedVertex vertex,
+          long timestamp) {
         return new StateComputerLedger.StateComputerResult(
-            vertex.getTxns().stream().map(REv2PreparedTxn::new).collect(Collectors.toList()),
+            vertex.getTxns().stream()
+                .map(REv2PreparedTransaction::new)
+                .collect(Collectors.toList()),
             Map.of());
       }
 
       @Override
       public void commit(
           VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-        mempool.committed(txnsAndProof.getTxns());
-        counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+        mempool.handleTransactionsCommitted(txnsAndProof.getTxns());
 
         var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
         ledgerUpdateDispatcher.dispatch(ledgerUpdate);

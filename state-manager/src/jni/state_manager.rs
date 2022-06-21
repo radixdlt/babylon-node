@@ -64,7 +64,7 @@
 
 use crate::jni::dtos::*;
 use crate::jni::utils::*;
-use crate::mempool::mock::MockMempool;
+use crate::mempool::simple::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{StateManager, StateManagerConfig};
 use crate::transaction_store::TransactionStore;
@@ -95,7 +95,7 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
 }
 
 pub struct JNIStateManager {
-    state_manager: Arc<StateManager<MockMempool>>,
+    state_manager: Arc<StateManager<SimpleMempool>>,
 }
 
 impl JNIStateManager {
@@ -114,7 +114,7 @@ impl JNIStateManager {
             }
         };
 
-        let mempool = MockMempool::new(mempool_config);
+        let mempool = SimpleMempool::new(mempool_config);
         let transaction_store = TransactionStore::new();
 
         // Build the state manager.
@@ -136,7 +136,7 @@ impl JNIStateManager {
     pub fn get_state_manager(
         env: &JNIEnv,
         interop_state: JObject,
-    ) -> Arc<StateManager<MockMempool>> {
+    ) -> Arc<StateManager<SimpleMempool>> {
         let jni_state_manager: &JNIStateManager = &env
             .get_rust_field(interop_state, POINTER_JNI_FIELD_NAME)
             .unwrap();

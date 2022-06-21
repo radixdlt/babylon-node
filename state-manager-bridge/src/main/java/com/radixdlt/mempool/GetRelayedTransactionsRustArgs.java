@@ -62,28 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.mempool;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.RustMempool;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.core.LongCodec;
 
-public final class StateManagerMempoolModule extends AbstractModule {
+public class GetRelayedTransactionsRustArgs {
+  long initialDelayMillis;
+  long repeatDelayMillis;
 
-  @Provides
-  @Singleton
-  // TODO: should return Mampool<Transaction> once RustMempool implements it
-  private RustMempool stateManagerMempool(StateManager stateManager) {
-    return new RustMempool(stateManager.getRustState());
+  public GetRelayedTransactionsRustArgs(long initialDelayMillis, long repeatDelayMillis) {
+    this.initialDelayMillis = initialDelayMillis;
+    this.repeatDelayMillis = repeatDelayMillis;
   }
 
-  @Provides
-  @Singleton
-  private RustMempoolConfig stateManagerMempoolConfig(@MempoolMaxSize int maxSize) {
-    return new RustMempoolConfig(maxSize);
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        GetRelayedTransactionsRustArgs.class,
+        codecs ->
+            StructCodec.with(
+                GetRelayedTransactionsRustArgs::new,
+                new LongCodec(false),
+                new LongCodec(false),
+                (a, encoder) -> encoder.encode(a.initialDelayMillis, a.repeatDelayMillis)));
   }
 }

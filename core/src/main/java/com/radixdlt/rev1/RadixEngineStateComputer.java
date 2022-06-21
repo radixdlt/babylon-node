@@ -100,7 +100,7 @@ import com.radixdlt.engine.RadixEngineResult;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -128,7 +128,6 @@ public final class RadixEngineStateComputer implements StateComputer {
   private final RadixEngine<LedgerAndBFTProof> radixEngine;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
   private final EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
-  private final EventDispatcher<TxnsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher;
   private final EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher;
   private final SystemCounters systemCounters;
   private final Hasher hasher;
@@ -149,7 +148,6 @@ public final class RadixEngineStateComputer implements StateComputer {
       @MaxSigsPerRound OptionalInt maxSigsPerRound, // TODO: Move this into radixEngine
       EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
       EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
-      EventDispatcher<TxnsRemovedFromMempool> mempoolAtomsRemovedEventDispatcher,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
       Hasher hasher,
       SystemCounters systemCounters) {
@@ -166,17 +164,15 @@ public final class RadixEngineStateComputer implements StateComputer {
         Objects.requireNonNull(mempoolAddedCommandEventDispatcher);
     this.invalidProposedCommandEventDispatcher =
         Objects.requireNonNull(invalidProposedCommandEventDispatcher);
-    this.mempoolAtomsRemovedEventDispatcher =
-        Objects.requireNonNull(mempoolAtomsRemovedEventDispatcher);
     this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
     this.hasher = Objects.requireNonNull(hasher);
     this.systemCounters = Objects.requireNonNull(systemCounters);
     this.proposerElection = proposerElection;
   }
 
-  public record RadixEngineTxn(
+  public record RadixEngineTransaction(
       Transaction transaction, REProcessedTxn processed, PermissionLevel permissionLevel)
-      implements PreparedTxn {}
+      implements PreparedTransaction {}
 
   public REProcessedTxn test(byte[] payload, boolean isSigned) throws RadixEngineException {
     synchronized (lock) {
@@ -203,7 +199,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       throws MempoolRejectedException {
     synchronized (lock) {
       try {
-        var processed = mempool.add(transaction);
+        var processed = mempool.addTransaction(transaction);
 
         systemCounters.increment(CounterType.MEMPOOL_ADD_SUCCESS);
         systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
@@ -239,13 +235,17 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   @Override
-  public List<Transaction> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
+  public List<Transaction> getTransactionsForProposal(
+      List<PreparedTransaction> preparedTransactions) {
     synchronized (lock) {
       var cmds =
-          prepared.stream().map(RadixEngineTxn.class::cast).map(RadixEngineTxn::processed).toList();
+          preparedTransactions.stream()
+              .map(RadixEngineTransaction.class::cast)
+              .map(RadixEngineTransaction::processed)
+              .toList();
 
       // TODO: only return commands which will not cause a missing dependency error
-      return mempool.getTxns(maxSigsPerRound.orElse(50), cmds);
+      return mempool.getTransactionsForProposal(maxSigsPerRound.orElse(50), cmds);
     }
   }
 
@@ -253,7 +253,7 @@ public final class RadixEngineStateComputer implements StateComputer {
     return l -> proposerElection.getProposer(View.of(l)).getKey();
   }
 
-  private RadixEngineTxn executeSystemUpdate(
+  private RadixEngineTransaction executeSystemUpdate(
       RadixEngineBranch<LedgerAndBFTProof> branch, VerifiedVertex vertex, long timestamp) {
     var systemActions = TxnConstructionRequest.create();
     var view = vertex.getView();
@@ -278,14 +278,15 @@ public final class RadixEngineStateComputer implements StateComputer {
       throw new IllegalStateException(
           String.format("Failed to execute system updates: %s", systemActions), e);
     }
-    return new RadixEngineTxn(systemUpdate, result.getProcessedTxn(), PermissionLevel.SUPER_USER);
+    return new RadixEngineTransaction(
+        systemUpdate, result.getProcessedTxn(), PermissionLevel.SUPER_USER);
   }
 
   private void executeUserCommands(
       BFTNode proposer,
       RadixEngineBranch<LedgerAndBFTProof> branch,
       List<Transaction> nextTransactions,
-      ImmutableList.Builder<PreparedTxn> successBuilder,
+      ImmutableList.Builder<PreparedTransaction> successBuilder,
       ImmutableMap.Builder<Transaction, Exception> errorBuilder) {
     // TODO: This check should probably be done before getting into state computer
     this.maxSigsPerRound.ifPresent(
@@ -310,21 +311,21 @@ public final class RadixEngineStateComputer implements StateComputer {
       }
 
       var radixEngineCommand =
-          new RadixEngineTxn(txn, result.getProcessedTxn(), PermissionLevel.USER);
+          new RadixEngineTransaction(txn, result.getProcessedTxn(), PermissionLevel.USER);
       successBuilder.add(radixEngineCommand);
     }
   }
 
   @Override
   public StateComputerResult prepare(
-      List<PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+      List<PreparedTransaction> previous, VerifiedVertex vertex, long timestamp) {
     synchronized (lock) {
       var next = vertex.getTxns();
       var transientBranch = this.radixEngine.transientBranch();
 
       for (var command : previous) {
         // TODO: fix this cast with generics. Currently the fix would become a bit too messy
-        final var radixEngineCommand = (RadixEngineTxn) command;
+        final var radixEngineCommand = (RadixEngineTransaction) command;
         try {
           transientBranch.execute(
               List.of(radixEngineCommand.transaction()), radixEngineCommand.permissionLevel());
@@ -337,7 +338,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       }
 
       var systemTxn = this.executeSystemUpdate(transientBranch, vertex, timestamp);
-      var successBuilder = ImmutableList.<PreparedTxn>builder();
+      var successBuilder = ImmutableList.<PreparedTransaction>builder();
 
       successBuilder.add(systemTxn);
 
@@ -423,12 +424,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 
       // TODO: refactor mempool to be less generic and make this more efficient
       // TODO: Move this into engine
-      var removed = this.mempool.committed(txCommitted);
+      this.mempool.handleTransactionsCommitted(txCommitted);
       systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
-      if (!removed.isEmpty()) {
-        var atomsRemovedFromMempool = TxnsRemovedFromMempool.create(removed);
-        mempoolAtomsRemovedEventDispatcher.dispatch(atomsRemovedFromMempool);
-      }
 
       var epochChangeOptional =
           txnsAndProof

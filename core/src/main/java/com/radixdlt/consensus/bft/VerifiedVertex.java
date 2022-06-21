@@ -69,7 +69,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Map;
@@ -141,7 +141,7 @@ public final class VerifiedVertex {
 
   public interface PreparedVertexBuilder {
     PreparedVertex andTxns(
-        List<PreparedTxn> preparedTxns, Map<Transaction, Exception> txnExceptions);
+        List<PreparedTransaction> preparedTransactions, Map<Transaction, Exception> txnExceptions);
   }
 
   public PreparedVertexBuilder withHeader(LedgerHeader ledgerHeader, long timeOfExecution) {

@@ -79,16 +79,16 @@ public final class MempoolConfig {
   public static AbstractModule asModule(
       int maxSize,
       long throttleMs,
-      long relayInitialDelay,
-      long relayRepeatDelay,
+      long relayInitialDelayMillis,
+      long relayRepeatDelayMillis,
       int relayMaxPeers) {
     return new AbstractModule() {
       @Override
       protected void configure() {
         bindConstant().annotatedWith(MempoolMaxSize.class).to(maxSize);
         bindConstant().annotatedWith(MempoolThrottleMs.class).to(throttleMs);
-        bindConstant().annotatedWith(MempoolRelayInitialDelay.class).to(relayInitialDelay);
-        bindConstant().annotatedWith(MempoolRelayRepeatDelay.class).to(relayRepeatDelay);
+        bindConstant().annotatedWith(MempoolRelayInitialDelayMs.class).to(relayInitialDelayMillis);
+        bindConstant().annotatedWith(MempoolRelayRepeatDelayMs.class).to(relayRepeatDelayMillis);
         bindConstant().annotatedWith(MempoolRelayMaxPeers.class).to(relayMaxPeers);
       }
     };

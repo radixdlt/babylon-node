@@ -66,8 +66,6 @@ package com.radixdlt.mempool;
 
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /**
  * Basic mempool functionality.
@@ -76,24 +74,21 @@ import java.util.function.Predicate;
  */
 public interface Mempool<T> {
   /** Add a transaction to the local mempool. */
-  T add(Transaction transaction) throws MempoolRejectedException;
+  T addTransaction(Transaction transaction) throws MempoolRejectedException;
 
   /**
-   * Retrieve a list of atoms from the local mempool for processing by consensus.
+   * Retrieve a list of transactions from the local mempool for creating a proposal for consensus.
    *
-   * <p>Note that the supplied {@code seen} parameter is used to avoid inclusion of atoms that are
-   * "in-flight" but not yet committed to the ledger.
-   *
-   * @param count the number of atoms to retrieve
-   * @param seen hashes of commands seen by consensus, but not yet committed to the ledger
+   * @param count the number of transactions to retrieve
+   * @param preparedTransactions transactions used in the prepared vertex ahead of the proposal
+   *     which will need to be taken into account when choosing transactions
    * @return A list of commands for processing by consensus
    */
-  List<Transaction> getTxns(int count, List<T> seen);
+  List<Transaction> getTransactionsForProposal(int count, List<T> preparedTransactions);
 
-  List<Transaction> scanUpdateAndGet(
-      Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator);
+  List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis);
 
-  List<Transaction> committed(List<T> committed);
+  void handleTransactionsCommitted(List<T> transactions);
 
   int getCount();
 }

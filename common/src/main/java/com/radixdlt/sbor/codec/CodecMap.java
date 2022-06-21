@@ -64,11 +64,15 @@
 
 package com.radixdlt.sbor.codec;
 
+import com.google.common.primitives.UnsignedInteger;
+import com.google.common.primitives.UnsignedLong;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.*;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.codec.core.*;
 import com.radixdlt.sbor.exceptions.SborCodecException;
+import com.radixdlt.utils.Int128Codec;
+import com.radixdlt.utils.UInt128;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -155,9 +159,21 @@ public final class CodecMap {
 
     storeCodec(Integer.class, new IntegerCodec(true));
     storeCodec(int.class, new IntegerCodec(true));
+    storeCodec(
+        UnsignedInteger.class,
+        Codec.wrap(
+            UnsignedInteger::intValue,
+            new IntegerCodec(false, false),
+            UnsignedInteger::fromIntBits));
 
     storeCodec(Long.class, new LongCodec(true));
     storeCodec(long.class, new LongCodec(true));
+    storeCodec(
+        UnsignedLong.class,
+        Codec.wrap(
+            UnsignedLong::longValue, new LongCodec(false, false), UnsignedLong::fromLongBits));
+
+    storeCodec(UInt128.class, new Int128Codec(false));
 
     storeCodec(byte[].class, new ByteArrayCodec(sborTypeIdForArrayType));
     storeCodec(short[].class, new ShortArrayCodec(sborTypeIdForArrayType));

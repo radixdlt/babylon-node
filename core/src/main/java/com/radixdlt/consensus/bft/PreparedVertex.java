@@ -66,7 +66,7 @@ package com.radixdlt.consensus.bft;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Pair;
 import java.util.List;
@@ -81,18 +81,18 @@ public final class PreparedVertex {
 
   private final LedgerHeader ledgerHeader;
 
-  private final List<PreparedTxn> preparedTxns;
+  private final List<PreparedTransaction> preparedTransactions;
   private final Map<Transaction, Exception> commandExceptions;
 
   PreparedVertex(
       VerifiedVertex vertex,
       LedgerHeader ledgerHeader,
-      List<PreparedTxn> preparedTxns,
+      List<PreparedTransaction> preparedTransactions,
       Map<Transaction, Exception> commandExceptions,
       long timeOfExecution) {
     this.vertex = Objects.requireNonNull(vertex);
     this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
-    this.preparedTxns = Objects.requireNonNull(preparedTxns);
+    this.preparedTransactions = Objects.requireNonNull(preparedTransactions);
     this.commandExceptions = Objects.requireNonNull(commandExceptions);
     this.timeOfExecution = timeOfExecution;
   }
@@ -113,8 +113,8 @@ public final class PreparedVertex {
     return vertex.getView();
   }
 
-  public Stream<PreparedTxn> successfulCommands() {
-    return preparedTxns.stream();
+  public Stream<PreparedTransaction> successfulTransactions() {
+    return preparedTransactions.stream();
   }
 
   public Stream<Pair<Transaction, Exception>> errorCommands() {
@@ -123,7 +123,8 @@ public final class PreparedVertex {
 
   public Stream<Transaction> getTxns() {
     return Stream.concat(
-        successfulCommands().map(PreparedTxn::transaction), errorCommands().map(Pair::getFirst));
+        successfulTransactions().map(PreparedTransaction::transaction),
+        errorCommands().map(Pair::getFirst));
   }
 
   /**

@@ -64,15 +64,31 @@
 
 package com.radixdlt.mempool;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.core.IntegerCodec;
+import com.radixdlt.transactions.Transaction;
+import java.util.List;
+import java.util.Objects;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+public class GetTransactionsForProposalRustArgs {
+  int count;
+  List<Transaction> preparedTransactions;
 
-/** Specifies how often a txn is re-relayed once its eligible for relay */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface MempoolRelayRepeatDelay {}
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        GetTransactionsForProposalRustArgs.class,
+        codecs ->
+            StructCodec.with(
+                GetTransactionsForProposalRustArgs::new,
+                new IntegerCodec(false),
+                codecs.of(new TypeToken<List<Transaction>>() {}),
+                (a, encoder) -> encoder.encode(a.count, a.preparedTransactions)));
+  }
+
+  GetTransactionsForProposalRustArgs(int count, List<Transaction> preparedTransactions) {
+    this.count = count;
+    this.preparedTransactions = Objects.requireNonNull(preparedTransactions);
+  }
+}

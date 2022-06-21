@@ -75,7 +75,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockPrepared;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -107,13 +107,14 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
 
   @Override
-  public List<Transaction> getNextTxnsFromMempool(List<PreparedTxn> prepared) {
+  public List<Transaction> getTransactionsForProposal(
+      List<PreparedTransaction> preparedTransactions) {
     return List.of();
   }
 
   @Override
   public StateComputerResult prepare(
-      List<PreparedTxn> previous, VerifiedVertex vertex, long timestamp) {
+      List<PreparedTransaction> previous, VerifiedVertex vertex, long timestamp) {
     var view = vertex.getView();
     var epoch = vertex.getParentHeader().getLedgerHeader().getEpoch();
     var next = vertex.getTxns();

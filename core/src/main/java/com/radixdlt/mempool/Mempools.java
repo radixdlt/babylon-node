@@ -66,8 +66,6 @@ package com.radixdlt.mempool;
 
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /** Mempool which is always empty */
 public class Mempools {
@@ -78,15 +76,14 @@ public class Mempools {
   public static <T> Mempool<T> empty() {
     return new Mempool<>() {
       @Override
-      public T add(Transaction transaction) throws MempoolFullException, MempoolDuplicateException {
+      public T addTransaction(Transaction transaction)
+          throws MempoolFullException, MempoolDuplicateException {
         // No-op
         return null;
       }
 
       @Override
-      public List<Transaction> committed(List<T> committed) {
-        return List.of();
-      }
+      public void handleTransactionsCommitted(List<T> transactions) {}
 
       @Override
       public int getCount() {
@@ -94,13 +91,13 @@ public class Mempools {
       }
 
       @Override
-      public List<Transaction> getTxns(int count, List<T> seen) {
+      public List<Transaction> getTransactionsForProposal(int count, List<T> preparedTransactions) {
         return List.of();
       }
 
       @Override
-      public List<Transaction> scanUpdateAndGet(
-          Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
+      public List<Transaction> getTransactionsToRelay(
+          long initialDelayMillis, long repeatDelayMillis) {
         return List.of();
       }
     };

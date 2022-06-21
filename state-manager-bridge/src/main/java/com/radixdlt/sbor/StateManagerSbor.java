@@ -66,6 +66,8 @@ package com.radixdlt.sbor;
 
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.identifiers.TID;
+import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
+import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
 import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.sbor.codec.CodecMap;
@@ -87,5 +89,7 @@ public final class StateManagerSbor {
     TID.registerCodec(codecMap);
     StateManagerRuntimeError.registerCodec(codecMap);
     MempoolError.registerCodec(codecMap);
+    GetTransactionsForProposalRustArgs.registerCodec(codecMap);
+    GetRelayedTransactionsRustArgs.registerCodec(codecMap);
   }
 }

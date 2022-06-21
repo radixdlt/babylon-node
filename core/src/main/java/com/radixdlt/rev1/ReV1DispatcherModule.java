@@ -80,9 +80,6 @@ public class ReV1DispatcherModule extends AbstractModule {
         .toProvider(Dispatchers.dispatcherProvider(REOutput.class))
         .in(Scopes.SINGLETON);
 
-    bind(new TypeLiteral<EventDispatcher<TxnsRemovedFromMempool>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(TxnsRemovedFromMempool.class))
-        .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() {})
         .toProvider(
             Dispatchers.dispatcherProvider(

@@ -88,7 +88,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
@@ -125,8 +125,8 @@ public class StateComputerLedgerTest {
 
   private final Transaction nextTransaction = Transaction.create(new byte[] {0});
   private final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
-  private final PreparedTxn successfulNextCommand =
-      new PreparedTxn() {
+  private final PreparedTransaction successfulNextCommand =
+      new PreparedTransaction() {
         @Override
         public Transaction transaction() {
           return nextTransaction;
@@ -288,6 +288,6 @@ public class StateComputerLedgerTest {
 
     // Assert
     verify(stateComputer, never()).commit(any(), any());
-    verify(mempool, never()).committed(any());
+    verify(mempool, never()).handleTransactionsCommitted(any());
   }
 }

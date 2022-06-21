@@ -65,8 +65,6 @@
 use crate::jni::dtos::*;
 pub use crate::result::ToStateManagerError;
 use crate::types::Transaction;
-
-use std::collections::HashSet;
 use std::string::ToString;
 
 #[derive(Debug, PartialEq)]
@@ -88,15 +86,27 @@ impl ToString for MempoolError {
 }
 
 pub trait Mempool {
-    fn add(&mut self, transaction: Transaction) -> Result<(), MempoolError>;
-    fn committed(&mut self, transactions: &HashSet<Transaction>);
+    fn add_transaction(&mut self, transaction: Transaction) -> Result<Transaction, MempoolError>;
+    fn handle_committed_transactions(
+        &mut self,
+        transactions: &[Transaction],
+    ) -> Result<Vec<Transaction>, MempoolError>;
     fn get_count(&self) -> u64;
-    fn get_txns(&self, count: u64, seen: &HashSet<Transaction>) -> HashSet<Transaction>;
+    fn get_proposal_transactions(
+        &self,
+        count: u64,
+        prepared_transactions: &[Transaction],
+    ) -> Result<Vec<Transaction>, MempoolError>;
+    fn get_relay_transactions(
+        &mut self,
+        initial_delay_millis: u64,
+        repeat_delay_millis: u64,
+    ) -> Result<Vec<Transaction>, MempoolError>;
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct MempoolConfig {
-    pub max_size: i32,
+    pub max_size: u32,
 }
 
-pub mod mock;
+pub mod simple;

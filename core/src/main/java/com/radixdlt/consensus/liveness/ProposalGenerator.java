@@ -62,17 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.consensus.liveness;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.transactions.Transaction;
+import java.util.List;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+/** Generates transactions for a proposal in the given view */
+public interface ProposalGenerator {
 
-/** Specifies how long a txn needs to stay in a mempool in order to be relayed to other peers. */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface MempoolRelayInitialDelay {}
+  /**
+   * Generates transactions for a proposal in the given view TODO: Update interface to return an
+   * error if already generated a command for a given view
+   *
+   * @param view the view to create the vertex for
+   * @param prepared vertices with transactions which have already been prepared
+   * @return new transactions for the next proposal
+   */
+  List<Transaction> getTransactionsForProposal(View view, List<PreparedVertex> prepared);
+}

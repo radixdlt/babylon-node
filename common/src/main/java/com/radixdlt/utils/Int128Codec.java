@@ -62,16 +62,63 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.utils;
 
-import com.radixdlt.transactions.Transaction;
-import java.util.List;
-import java.util.Objects;
+import static com.radixdlt.sbor.codec.constants.TypeId.*;
 
-/** Event describing atoms which have been removed from the mempool after a commit. */
-public record TxnsRemovedFromMempool(List<Transaction> removed) {
-  public static TxnsRemovedFromMempool create(List<Transaction> removed) {
-    Objects.requireNonNull(removed);
-    return new TxnsRemovedFromMempool(removed);
+import com.radixdlt.sbor.codec.Codec;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.EncoderApi;
+import com.radixdlt.sbor.exceptions.SborDecodeException;
+
+public final class Int128Codec implements Codec<UInt128> {
+  private final TypeId typeId;
+  private final boolean assertNotInTypedByteRangeOnDecode;
+
+  public Int128Codec() {
+    this(false, false);
+  }
+
+  public Int128Codec(boolean signed) {
+    this(signed, false);
+  }
+
+  /**
+   * Note that Longs are always signed in Java. If signed is false, you may have a positive SBOR
+   * value mapping to a negative Java value. assertNonNegativeOnDecode protects against this.
+   *
+   * @param signed - whether to map to the signed SBOR type or not
+   * @param assertNotPossiblyNegative - if true, raises an exception on decoding a value which would
+   *     be negative if interpreted as signed
+   */
+  public Int128Codec(boolean signed, boolean assertNotPossiblyNegative) {
+    typeId = signed ? TYPE_I128 : TYPE_U128;
+    this.assertNotInTypedByteRangeOnDecode = assertNotPossiblyNegative;
+  }
+
+  @Override
+  public TypeId getTypeId() {
+    return typeId;
+  }
+
+  @Override
+  public void encodeWithoutTypeId(EncoderApi encoder, UInt128 value) {
+    encoder.writeLong(value.getLow());
+    encoder.writeLong(value.getHigh());
+  }
+
+  @Override
+  public UInt128 decodeWithoutTypeId(DecoderApi decoder) {
+    var lowLong = decoder.readLong();
+    var highLong = decoder.readLong();
+    var value = UInt128.from(highLong, lowLong);
+
+    if (assertNotInTypedByteRangeOnDecode && highLong < 0) {
+      throw new SborDecodeException(
+          String.format(
+              "Decoded 128 bit integer %s could be negative if interpreted as signed", value));
+    }
+    return value;
   }
 }

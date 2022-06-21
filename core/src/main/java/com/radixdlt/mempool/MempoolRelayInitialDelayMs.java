@@ -62,141 +62,17 @@
  * permissions under this License.
  */
 
-use crate::mempool::*;
-use std::collections::HashSet;
+package com.radixdlt.mempool;
 
-pub struct MockMempool {
-    max_size: u64,
-    data: HashSet<Transaction>,
-}
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-impl MockMempool {
-    pub fn new(mempool_config: MempoolConfig) -> MockMempool {
-        MockMempool {
-            max_size: mempool_config.max_size as u64,
-            data: HashSet::new(),
-        }
-    }
-}
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-impl Mempool for MockMempool {
-    fn add(&mut self, transaction: Transaction) -> Result<(), MempoolError> {
-        let len: u64 = self.data.len() as u64;
-
-        if len >= self.max_size {
-            return Err(MempoolError::Full {
-                current_size: len,
-                max_size: self.max_size,
-            });
-        }
-
-        if !self.data.insert(transaction) {
-            return Err(MempoolError::Duplicate);
-        }
-
-        Ok(())
-    }
-
-    fn committed(&mut self, txns: &HashSet<Transaction>) {
-        for t in txns {
-            self.data.remove(t);
-        }
-    }
-
-    fn get_count(&self) -> u64 {
-        self.data.len() as u64
-    }
-
-    fn get_txns(&self, count: u64, seen: &HashSet<Transaction>) -> HashSet<Transaction> {
-        self.data
-            .difference(seen)
-            .take(count as usize)
-            .cloned()
-            .collect()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::mempool::mock::*;
-    use crate::types::*;
-
-    #[test]
-    fn mock_test() {
-        let pl1 = vec![1u8; 32];
-        let pl2 = vec![2u8; 32];
-        let pl3 = vec![3u8; 32];
-
-        let tv1 = Transaction {
-            payload: pl1.clone(),
-            id: TId { bytes: pl1 },
-        };
-        let tv2 = Transaction {
-            payload: pl2.clone(),
-            id: TId { bytes: pl2 },
-        };
-        let tv3 = Transaction {
-            payload: pl3.clone(),
-            id: TId { bytes: pl3 },
-        };
-
-        let mut mp = MockMempool::new(MempoolConfig { max_size: 2 });
-        assert_eq!(mp.max_size, 2);
-        assert_eq!(mp.get_count(), 0);
-        let get = mp.get_txns(3, &HashSet::new());
-        assert!(get.is_empty());
-
-        let rc = mp.add(tv1.clone());
-        assert!(rc.is_ok());
-        assert_eq!(mp.max_size, 2);
-        assert_eq!(mp.get_count(), 1);
-        assert!(mp.data.contains(&tv1));
-        let get = mp.get_txns(3, &HashSet::new());
-        assert_eq!(get.len(), 1);
-        assert!(get.contains(&tv1));
-
-        let get = mp.get_txns(3, &HashSet::from([tv1.clone(), tv2.clone(), tv3.clone()]));
-        assert!(get.is_empty());
-
-        let get = mp.get_txns(3, &HashSet::from([tv2.clone(), tv3.clone()]));
-        assert_eq!(get.len(), 1);
-        assert!(get.contains(&tv1));
-
-        let rc = mp.add(tv1.clone());
-        assert!(rc.is_err());
-        assert_eq!(rc, Err(MempoolError::Duplicate));
-
-        let rc = mp.add(tv2.clone());
-        assert!(rc.is_ok());
-        assert_eq!(mp.max_size, 2);
-        assert_eq!(mp.get_count(), 2);
-        assert!(mp.data.contains(&tv1));
-        assert!(mp.data.contains(&tv2));
-
-        let get = mp.get_txns(3, &HashSet::new());
-        assert_eq!(get.len(), 2);
-        assert!(get.contains(&tv1));
-        assert!(get.contains(&tv2));
-
-        let get = mp.get_txns(3, &HashSet::from([tv1.clone(), tv2.clone(), tv3.clone()]));
-        assert!(get.is_empty());
-
-        let get = mp.get_txns(3, &HashSet::from([tv2.clone(), tv3.clone()]));
-        assert_eq!(get.len(), 1);
-        assert!(get.contains(&tv1));
-
-        let get = mp.get_txns(3, &HashSet::from([tv1.clone(), tv3]));
-        assert_eq!(get.len(), 1);
-        assert!(get.contains(&tv2));
-
-        mp.committed(&HashSet::from([tv1.clone()]));
-        assert_eq!(mp.get_count(), 1);
-        assert!(mp.data.contains(&tv2));
-        assert!(!mp.data.contains(&tv1));
-
-        mp.committed(&HashSet::from([tv2.clone()]));
-        assert_eq!(mp.get_count(), 0);
-        assert!(!mp.data.contains(&tv2));
-        assert!(!mp.data.contains(&tv1));
-    }
-}
+/** Specifies how long a txn needs to stay in a mempool in order to be relayed to other peers. */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface MempoolRelayInitialDelayMs {}

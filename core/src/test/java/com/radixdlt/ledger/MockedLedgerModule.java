@@ -71,8 +71,8 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.liveness.NextTxnsGenerator;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTxn;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.LinkedList;
 import java.util.List;
@@ -82,7 +82,7 @@ import java.util.Optional;
 public class MockedLedgerModule extends AbstractModule {
   @Override
   public void configure() {
-    bind(NextTxnsGenerator.class).toInstance((view, aids) -> List.of());
+    bind(ProposalGenerator.class).toInstance((view, aids) -> List.of());
   }
 
   @Provides
@@ -103,7 +103,7 @@ public class MockedLedgerModule extends AbstractModule {
             vertex
                 .withHeader(ledgerHeader, timeSupplier.currentTime())
                 .andTxns(
-                    vertex.getTxns().stream().<PreparedTxn>map(MockPrepared::new).toList(),
+                    vertex.getTxns().stream().<PreparedTransaction>map(MockPrepared::new).toList(),
                     Map.of()));
       }
     };

@@ -67,10 +67,10 @@ package com.radixdlt.rev2;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.transactions.Transaction;
 
-public class REv2PreparedTxn implements StateComputerLedger.PreparedTxn {
+public class REv2PreparedTransaction implements StateComputerLedger.PreparedTransaction {
   private final Transaction transaction;
 
-  public REv2PreparedTxn(Transaction transaction) {
+  public REv2PreparedTransaction(Transaction transaction) {
     this.transaction = transaction;
   }
 
