@@ -69,11 +69,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
@@ -93,9 +93,9 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.harness.MockedPeersViewModule;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
-import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
@@ -287,20 +287,14 @@ public class RecoveryLivenessTest {
           @Override
           protected void configure() {
             bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-            bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
             bind(Environment.class)
                 .toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
             bindConstant()
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
           }
-
-          @Provides
-          private PeersView peersView(@Self BFTNode self) {
-            return () ->
-                allNodes.stream().filter(n -> !self.equals(n)).map(PeersView.PeerInfo::fromBftNode);
-          }
-        });
+        },
+        new MockedPeersViewModule(ImmutableMap.of(), allNodes));
   }
 
   private void restartNode(int index) {

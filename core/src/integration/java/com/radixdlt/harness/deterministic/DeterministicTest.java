@@ -67,6 +67,7 @@ package com.radixdlt.harness.deterministic;
 import static com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent.*;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
@@ -80,7 +81,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -92,6 +92,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.harness.MockedPeersViewModule;
 import com.radixdlt.harness.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.harness.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -103,7 +104,6 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.p2p.NoOpPeerControl;
 import com.radixdlt.network.p2p.PeerControl;
-import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.EpochCeilingView;
@@ -230,16 +230,11 @@ public final class DeterministicTest {
       modules.add(
           new AbstractModule() {
             @Provides
-            private PeersView peersView(@Self BFTNode self) {
-              return () ->
-                  nodes.stream().filter(n -> !self.equals(n)).map(PeersView.PeerInfo::fromBftNode);
-            }
-
-            @Provides
             private SyncConfig syncConfig() {
               return syncConfig;
             }
           });
+      modules.add(new MockedPeersViewModule(ImmutableMap.of(), nodes));
       addEpochedConsensusProcessorModule(epochHighView);
       return build();
     }

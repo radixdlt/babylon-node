@@ -66,13 +66,13 @@ package com.radixdlt.harness.deterministic;
 
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.google.inject.util.Modules;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -87,11 +87,11 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.FailOnEvent;
+import com.radixdlt.harness.MockedPeersViewModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
-import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.rev1.InvalidProposedTxn;
@@ -199,13 +199,8 @@ public abstract class DeterministicActorsTest {
                 .to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
             bindConstant().annotatedWith(NetworkId.class).to(Network.LOCALNET.getId());
           }
-
-          @Provides
-          private PeersView peersView(@Self BFTNode self) {
-            return () ->
-                allNodes.stream().filter(n -> !self.equals(n)).map(PeersView.PeerInfo::fromBftNode);
-          }
-        });
+        },
+        new MockedPeersViewModule(ImmutableMap.of(), allNodes));
   }
 
   private static class RunningActor {

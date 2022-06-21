@@ -225,6 +225,8 @@ public final class SimulationTest {
     private Module networkModule;
     private ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> addressBookNodes;
 
+    private List<BFTNode> bftNodes;
+
     private Builder() {}
 
     public Builder addOverrideModuleToInitialNodes(
@@ -296,6 +298,8 @@ public final class SimulationTest {
               .map(e -> BFTValidator.from(BFTNode.create(e.getKey()), e.getValue()))
               .collect(ImmutableList.toImmutableList());
 
+      this.bftNodes = bftNodes;
+
       this.initialNodesModule =
           new AbstractModule() {
             @Override
@@ -309,7 +313,6 @@ public final class SimulationTest {
           new AbstractModule() {
             @Override
             public void configure() {
-              bind(new TypeLiteral<ImmutableList<BFTNode>>() {}).toInstance(bftNodes);
               bind(new TypeLiteral<ImmutableList<BFTValidator>>() {}).toInstance(validators);
             }
           });
@@ -525,7 +528,7 @@ public final class SimulationTest {
       modules.add(new MockedSystemModule());
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
-      modules.add(new MockedPeersViewModule(this.addressBookNodes));
+      modules.add(new MockedPeersViewModule(this.addressBookNodes, bftNodes));
 
       // Functional
       modules.add(new FunctionalRadixNodeModule(ledgerType.components));
