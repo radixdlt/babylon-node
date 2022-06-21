@@ -76,6 +76,8 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.network.Message;
+import com.radixdlt.network.capability.Capabilities;
+import com.radixdlt.network.capability.LedgerSyncCapability;
 import com.radixdlt.network.messages.PeerPingMessage;
 import com.radixdlt.network.messaging.EventQueueFactory;
 import com.radixdlt.network.messaging.InboundMessage;
@@ -134,7 +136,8 @@ public class MessageCentralFuzzyTest {
             queueFactory,
             new SystemCountersImpl(),
             () -> peerControl,
-            Addressing.ofNetwork(Network.LOCALNET));
+            Addressing.ofNetwork(Network.LOCALNET),
+            new Capabilities(LedgerSyncCapability.Builder.asDefault().build()));
 
     var counter = new AtomicLong(0);
 

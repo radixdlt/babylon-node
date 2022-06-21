@@ -64,6 +64,7 @@
 
 package com.radixdlt.network.messaging;
 
+import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -71,12 +72,16 @@ import static org.mockito.Mockito.when;
 import com.google.inject.Provider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.Message;
+import com.radixdlt.network.capability.Capabilities;
+import com.radixdlt.network.capability.LedgerSyncCapability;
 import com.radixdlt.network.messages.ConsensusEventMessage;
+import com.radixdlt.network.messages.SyncRequestMessage;
+import com.radixdlt.network.messages.SyncResponseMessage;
 import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Compress;
 import com.radixdlt.utils.TimeSupplier;
@@ -91,60 +96,27 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class MessageCentralImplTest {
 
-  @Mock private MessageCentralConfiguration messageCentralConfig;
-
   @Mock private Serialization serialization;
 
-  @Mock private PeerManager peerManager;
-
-  @Mock private InboundMessage inboundMessage;
-
-  @Mock private TimeSupplier timeSupplier;
-
-  @Mock private EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory;
-
-  @Mock private SystemCounters systemCounters;
-
-  @Mock private Provider<PeerControl> peerControl;
+  @Mock private NodeId nodeId;
 
   @Test
   public void
       when_messagesOf_is_called__then_underlying_pipeline_should_run_on_rxjava_computation_pool()
           throws Exception {
     // given
-    when(messageCentralConfig.messagingOutboundQueueMax(anyInt())).thenReturn(1);
-
     when(serialization.fromDson(any(byte[].class), eq(Message.class)))
         .thenReturn(mock(ConsensusEventMessage.class));
 
-    when(inboundMessage.message()).thenReturn(Compress.compress("".getBytes()));
-    when(inboundMessage.source()).thenReturn(mock(NodeId.class));
-
-    Observable<InboundMessage> inboundMessages =
-        Observable.create(
-            emitter -> {
-              emitter.onNext(inboundMessage);
-              emitter.onComplete();
-            });
-    when(peerManager.messages()).thenReturn(inboundMessages);
-
-    when(outboundEventQueueFactory.createEventQueue(anyInt(), any(Comparator.class)))
-        .thenReturn(new SimplePriorityBlockingQueue<>(1, OutboundMessageEvent.comparator()));
+    var peerManager = emitInboundMessages(new byte[0]);
 
     MessageCentralImpl messageCentral =
-        new MessageCentralImpl(
-            messageCentralConfig,
-            serialization,
-            peerManager,
-            timeSupplier,
-            outboundEventQueueFactory,
-            systemCounters,
-            peerControl,
-            Addressing.ofNetwork(Network.LOCALNET));
-
-    TestObserver<String> observer = TestObserver.create();
+        getMessageCentral(
+            peerManager, new Capabilities(LedgerSyncCapability.Builder.asDefault().build()));
 
     // when
+    TestObserver<String> observer = TestObserver.create();
+
     messageCentral
         .messagesOf(ConsensusEventMessage.class)
         .map(e -> Thread.currentThread().getName())
@@ -154,6 +126,93 @@ public class MessageCentralImplTest {
     observer.await();
 
     // then
+    // make sure messages are observed in a thread different from the one used by Netty.
     observer.assertValue(v -> v.startsWith("RxComputationThreadPool"));
+  }
+
+  @Test
+  public void when_the_ledger_capability_is_disabled_then_unsupported_messages_must_be_ignored()
+      throws Exception {
+    // given
+    byte[] syncRequestMessageBytes = "SyncRequestMessage".getBytes();
+    mockSyncRequestMessage(syncRequestMessageBytes);
+
+    byte[] syncResponseMessageBytes = "SyncResponseMessage".getBytes();
+    var syncResponseMessage = mockSyncResponseMessage(syncResponseMessageBytes);
+
+    var peerManager = emitInboundMessages(syncRequestMessageBytes, syncResponseMessageBytes);
+
+    var messageCentral =
+        getMessageCentral(
+            peerManager, new Capabilities(new LedgerSyncCapability.Builder(false).build()));
+
+    // when
+    TestObserver<MessageFromPeer<? extends Message>> observer = TestObserver.create();
+    messageCentral.messagesOf(SyncResponseMessage.class).subscribe(observer);
+
+    messageCentral.close();
+    observer.await();
+
+    // then
+    // make sure SyncRequestMessage has been ignored
+    observer.assertResult(new MessageFromPeer<>(nodeId, syncResponseMessage));
+  }
+
+  private MessageCentralImpl getMessageCentral(PeerManager peerManager, Capabilities capabilities) {
+    var timeSupplierMock = mock(TimeSupplier.class);
+    var systemCountersMock = mock(SystemCounters.class);
+    var peerControlMock = mock(Provider.class);
+
+    var messageCentralConfig = mock(MessageCentralConfiguration.class);
+    when(messageCentralConfig.messagingOutboundQueueMax(anyInt())).thenReturn(1);
+
+    var outboundEventQueueFactory = mock(EventQueueFactory.class);
+    when(outboundEventQueueFactory.createEventQueue(anyInt(), any(Comparator.class)))
+        .thenReturn(new SimplePriorityBlockingQueue<>(1, OutboundMessageEvent.comparator()));
+
+    MessageCentralImpl messageCentral =
+        new MessageCentralImpl(
+            messageCentralConfig,
+            serialization,
+            peerManager,
+            timeSupplierMock,
+            outboundEventQueueFactory,
+            systemCountersMock,
+            peerControlMock,
+            Addressing.ofNetwork(Network.LOCALNET),
+            capabilities);
+    return messageCentral;
+  }
+
+  private PeerManager emitInboundMessages(byte[]... inboundMessagesBytes) {
+    var peerManager = mock(PeerManager.class);
+    Observable<InboundMessage> observable =
+        Observable.create(
+            emitter -> {
+              for (var i = 0L; i < inboundMessagesBytes.length; i++) {
+                emitter.onNext(
+                    new InboundMessage(
+                        i, nodeId, Compress.compress(inboundMessagesBytes[(int) i])));
+              }
+              emitter.onComplete();
+            });
+    when(peerManager.messages()).thenReturn(observable);
+    return peerManager;
+  }
+
+  private SyncRequestMessage mockSyncRequestMessage(byte[] syncRequestMessageBytes)
+      throws DeserializeException {
+    SyncRequestMessage syncRequestMessage = mock(SyncRequestMessage.class);
+    when(serialization.fromDson(aryEq(syncRequestMessageBytes), eq(Message.class)))
+        .thenReturn(syncRequestMessage);
+    return syncRequestMessage;
+  }
+
+  private SyncResponseMessage mockSyncResponseMessage(byte[] syncResponseMessageBytes)
+      throws DeserializeException {
+    SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
+    when(serialization.fromDson(aryEq(syncResponseMessageBytes), eq(Message.class)))
+        .thenReturn(syncResponseMessage);
+    return syncResponseMessage;
   }
 }

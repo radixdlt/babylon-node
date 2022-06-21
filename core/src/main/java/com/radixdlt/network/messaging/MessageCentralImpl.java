@@ -72,6 +72,7 @@ import com.radixdlt.api.system.health.MovingAverage;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.Message;
+import com.radixdlt.network.capability.Capabilities;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
@@ -115,6 +116,9 @@ public final class MessageCentralImpl implements MessageCentral {
   private final SimpleBlockingQueue<OutboundMessageEvent> outboundQueue;
   private final SimpleThreadPool<OutboundMessageEvent> outboundThreadPool;
 
+  // Capabilities
+  private final Capabilities capabilities;
+
   @Inject
   public MessageCentralImpl(
       MessageCentralConfiguration config,
@@ -124,7 +128,8 @@ public final class MessageCentralImpl implements MessageCentral {
       EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
       SystemCounters counters,
       Provider<PeerControl> peerControl,
-      Addressing addressing) {
+      Addressing addressing,
+      Capabilities capabilities) {
     this.counters = Objects.requireNonNull(counters);
     this.outboundQueue =
         outboundEventQueueFactory.createEventQueue(
@@ -159,6 +164,8 @@ public final class MessageCentralImpl implements MessageCentral {
             .map(Optional::get)
             .publish()
             .autoConnect();
+
+    this.capabilities = capabilities;
   }
 
   private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
@@ -172,8 +179,12 @@ public final class MessageCentralImpl implements MessageCentral {
           .process(inboundMessage)
           .fold(
               messageFromPeer -> {
-                logPreprocessedMessageAndUpdateCounters(messageFromPeer, processingStopwatch);
-                return Optional.of(messageFromPeer);
+                if (capabilities.isMessageUnsupported(messageFromPeer.getMessage().getClass())) {
+                  return Optional.empty();
+                } else {
+                  logPreprocessedMessageAndUpdateCounters(messageFromPeer, processingStopwatch);
+                  return Optional.of(messageFromPeer);
+                }
               },
               error -> {
                 final var logLevel =
