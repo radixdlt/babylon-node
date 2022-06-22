@@ -6,7 +6,6 @@ import com.radixdlt.network.p2p.transport.*;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.networks.Network;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.middleware2.network.*;
 import com.radixdlt.sync.*;
 import com.radixdlt.sync.messages.remote.*;
 import com.radixdlt.environment.rx.*;

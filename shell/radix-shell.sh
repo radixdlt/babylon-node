@@ -1,1 +1,1 @@
-RADIX_NODE_KEYSTORE_PASSWORD=supersecret RADIXDLT_CONSOLE_APPENDER_THRESHOLD=OFF jshell --enable-preview --class-path $(./gradlew -q cli-tools:getClassPathForRadixShell) ./shell/shell-init.java -R -Djava.net.preferIPv4Stack=true
+RADIX_NODE_KEYSTORE_PASSWORD=supersecret RADIXDLT_CONSOLE_APPENDER_THRESHOLD=OFF jshell -R -Djava.library.path=$(./gradlew -q cli-tools:getNativeLibPathForRadixShell) --enable-preview --class-path $(./gradlew -q cli-tools:getClassPathForRadixShell) ./shell/shell-init.java -R -Djava.net.preferIPv4Stack=true
