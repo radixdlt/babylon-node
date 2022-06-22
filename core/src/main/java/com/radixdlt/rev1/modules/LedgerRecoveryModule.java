@@ -147,12 +147,12 @@ public final class LedgerRecoveryModule extends AbstractModule {
   private static VerifiedVertexStoreState serializedToVerifiedVertexStore(
       SerializedVertexStoreState serializedVertexStoreState, Hasher hasher) {
     var root = serializedVertexStoreState.getRoot();
-    var rootVertexId = hasher.hash(root);
+    var rootVertexId = hasher.hashDsonEncoded(root);
     var verifiedRoot = new VerifiedVertex(root, rootVertexId);
 
     var vertices =
         serializedVertexStoreState.getVertices().stream()
-            .map(v -> new VerifiedVertex(v, hasher.hash(v)))
+            .map(v -> new VerifiedVertex(v, hasher.hashDsonEncoded(v)))
             .collect(ImmutableList.toImmutableList());
 
     return VerifiedVertexStoreState.create(
@@ -166,7 +166,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
   private static VerifiedVertexStoreState epochProofToGenesisVertexStore(
       LedgerProof lastEpochProof, Hasher hasher) {
     var genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw());
-    var verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+    var verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hashDsonEncoded(genesisVertex));
     var nextLedgerHeader =
         LedgerHeader.create(
             lastEpochProof.getNextEpoch(),

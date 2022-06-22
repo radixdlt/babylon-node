@@ -437,7 +437,7 @@ public final class RadixEngineStateComputer implements StateComputer {
                     // TODO: Move vertex stuff somewhere else
                     var genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
                     var verifiedGenesisVertex =
-                        new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+                        new VerifiedVertex(genesisVertex, hasher.hashDsonEncoded(genesisVertex));
                     var nextLedgerHeader =
                         LedgerHeader.create(
                             header.getNextEpoch(),

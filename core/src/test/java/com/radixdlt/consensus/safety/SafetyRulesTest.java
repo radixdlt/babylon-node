@@ -101,7 +101,7 @@ public class SafetyRulesTest {
   public void setup() {
     this.safetyState = mock(SafetyState.class);
     Hasher hasher = mock(Hasher.class);
-    when(hasher.hash(any())).thenReturn(HashUtils.random256());
+    when(hasher.hashDsonEncoded(any())).thenReturn(HashUtils.random256());
     when(hasher.hashBytes(any())).thenReturn(HashUtils.random256());
     HashSigner hashSigner = mock(HashSigner.class);
     when(hashSigner.sign(any(HashCode.class))).thenReturn(ECDSASignature.zeroSignature());
@@ -135,7 +135,7 @@ public class SafetyRulesTest {
   @Test
   public void when_vote_with_qc_on_different_locked_view__then_exception_is_thrown() {
     Hasher hasher = mock(Hasher.class);
-    when(hasher.hash(any())).thenReturn(mock(HashCode.class));
+    when(hasher.hashDsonEncoded(any())).thenReturn(mock(HashCode.class));
     HashSigner hashSigner = mock(HashSigner.class);
     when(hashSigner.sign(any(HashCode.class))).thenReturn(ECDSASignature.zeroSignature());
 

@@ -144,7 +144,7 @@ public class MessageCentralValidatorSync {
           // TODO: Move hasher to a more appropriate place
           ImmutableList<VerifiedVertex> hashedVertices =
               msg.getVertices().stream()
-                  .map(v -> new VerifiedVertex(v, hasher.hash(v)))
+                  .map(v -> new VerifiedVertex(v, hasher.hashDsonEncoded(v)))
                   .collect(ImmutableList.toImmutableList());
 
           return RemoteEvent.create(node, new GetVerticesResponse(hashedVertices));

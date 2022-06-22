@@ -150,7 +150,7 @@ public class StateComputerLedgerTest {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     this.ledgerHeader = LedgerHeader.genesis(accumulatorState, null, 0);
     this.genesis = UnverifiedVertex.createGenesis(ledgerHeader);
-    this.genesisVertex = new VerifiedVertex(genesis, hasher.hash(genesis));
+    this.genesisVertex = new VerifiedVertex(genesis, hasher.hashDsonEncoded(genesis));
     this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
     this.currentLedgerHeader =
         this.genesisQC.getCommittedAndLedgerStateProof(hasher).map(Pair::getSecond).orElseThrow();
@@ -177,7 +177,7 @@ public class StateComputerLedgerTest {
                 ? BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
                 : null);
     this.genesis = UnverifiedVertex.createGenesis(ledgerHeader);
-    this.genesisVertex = new VerifiedVertex(genesis, hasher.hash(genesis));
+    this.genesisVertex = new VerifiedVertex(genesis, hasher.hashDsonEncoded(genesis));
     this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
     this.currentLedgerHeader =
         this.genesisQC.getCommittedAndLedgerStateProof(hasher).map(Pair::getSecond).orElseThrow();
@@ -201,7 +201,7 @@ public class StateComputerLedgerTest {
         .thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
     var unverifiedVertex =
         UnverifiedVertex.create(genesisQC, View.of(1), List.of(), BFTNode.random());
-    var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
+    var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hashDsonEncoded(unverifiedVertex));
 
     // Act
     Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
@@ -225,7 +225,7 @@ public class StateComputerLedgerTest {
             new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
     var unverifiedVertex =
         UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTransaction), BFTNode.random());
-    var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
+    var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hashDsonEncoded(unverifiedVertex));
 
     // Act
     Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
@@ -251,7 +251,7 @@ public class StateComputerLedgerTest {
     // Act
     var unverifiedVertex =
         UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTransaction), BFTNode.random());
-    var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
+    var proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hashDsonEncoded(unverifiedVertex));
     Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
     // Assert

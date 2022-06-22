@@ -85,7 +85,7 @@ public class Sha256Hasher implements Hasher {
   }
 
   @Override
-  public HashCode hash(Object o) {
+  public HashCode hashDsonEncoded(Object o) {
     return HashUtils.sha256(serialization.toDson(o, DsonOutput.Output.HASH));
   }
 

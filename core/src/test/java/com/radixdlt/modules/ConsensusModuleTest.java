@@ -277,7 +277,7 @@ public class ConsensusModuleTest {
     final var proposerBftNode = BFTNode.create(proposerKeyPair.getPublicKey());
     var unverifiedVertex =
         UnverifiedVertex.create(parent, View.of(1), List.of(txn), proposerBftNode);
-    var hash = hasher.hash(unverifiedVertex);
+    var hash = hasher.hashDsonEncoded(unverifiedVertex);
     var verifiedVertex = new VerifiedVertex(unverifiedVertex, hash);
     var next =
         new BFTHeader(

@@ -187,7 +187,7 @@ public class VertexStoreTest {
           var rawVertex =
               UnverifiedVertex.create(
                   qc, view, List.of(Transaction.create(new byte[0])), BFTNode.random());
-          HashCode hash = hasher.hash(rawVertex);
+          HashCode hash = hasher.hashDsonEncoded(rawVertex);
           VerifiedVertex vertex = new VerifiedVertex(rawVertex, hash);
           lastParentHeader.set(new BFTHeader(view, hash, MOCKED_HEADER));
           lastGrandParentHeader.set(parentHeader);

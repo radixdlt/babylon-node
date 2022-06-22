@@ -237,7 +237,7 @@ public class RadixEngineStateComputerTest {
 
     var genesisLedgerHeader =
         LedgerProof.genesis(
-            new AccumulatorState(0, hasher.hash(genesisTxns.getTxns().get(0).getId())),
+            new AccumulatorState(0, hasher.hashDsonEncoded(genesisTxns.getTxns().get(0).getId())),
             genesisValidatorSet,
             0);
     if (!genesisLedgerHeader.isEndOfEpoch()) {

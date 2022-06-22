@@ -297,7 +297,7 @@ public class EpochManagerTest {
         var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
         var unverifiedVertex =
             UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0));
-        var verifiedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
+        var verifiedVertex = new VerifiedVertex(unverifiedVertex, hasher.hashDsonEncoded(unverifiedVertex));
         var qc =
             QuorumCertificate.ofGenesis(
                 verifiedVertex, LedgerHeader.genesis(accumulatorState, validatorSet, 0));
@@ -332,7 +332,7 @@ public class EpochManagerTest {
     LedgerHeader header = LedgerHeader.genesis(accumulatorState, nextValidatorSet, 0);
     UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header);
     VerifiedVertex verifiedGenesisVertex =
-        new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+        new VerifiedVertex(genesisVertex, hasher.hashDsonEncoded(genesisVertex));
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             header.getEpoch() + 1,

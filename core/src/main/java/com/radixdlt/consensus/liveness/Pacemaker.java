@@ -227,7 +227,7 @@ public final class Pacemaker {
     final UnverifiedVertex proposedVertex =
         UnverifiedVertex.create(highestQC, view, nextTransactions, self);
     final VerifiedVertex verifiedVertex =
-        new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
+        new VerifiedVertex(proposedVertex, hasher.hashDsonEncoded(proposedVertex));
     return safetyRules.signProposal(
         verifiedVertex, highQC.highestCommittedQC(), highQC.highestTC());
   }
@@ -276,7 +276,7 @@ public final class Pacemaker {
     final var proposedVertex =
         UnverifiedVertex.createTimeout(
             highQC.highestQC(), viewUpdate.getCurrentView(), viewUpdate.getLeader());
-    final var blankVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
+    final var blankVertex = new VerifiedVertex(proposedVertex, hasher.hashDsonEncoded(proposedVertex));
     this.timeoutVoteVertexId = Optional.of(blankVertex.getId());
 
     // TODO: reimplement in async way

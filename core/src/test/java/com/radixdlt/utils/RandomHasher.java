@@ -85,7 +85,7 @@ public class RandomHasher implements Hasher {
   }
 
   @Override
-  public HashCode hash(Object o) {
+  public HashCode hashDsonEncoded(Object o) {
     cache.putIfAbsent(o, HashUtils.random256());
     return cache.get(o);
   }

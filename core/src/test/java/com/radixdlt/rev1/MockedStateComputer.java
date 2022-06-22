@@ -132,7 +132,7 @@ public final class MockedStateComputer implements StateComputer {
                   LedgerProof header = txnsAndProof.getProof();
                   UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
                   VerifiedVertex verifiedGenesisVertex =
-                      new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+                      new VerifiedVertex(genesisVertex, hasher.hashDsonEncoded(genesisVertex));
                   LedgerHeader nextLedgerHeader =
                       LedgerHeader.create(
                           header.getNextEpoch(),

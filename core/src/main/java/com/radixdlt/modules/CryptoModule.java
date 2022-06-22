@@ -96,7 +96,7 @@ public final class CryptoModule extends AbstractModule {
       }
 
       @Override
-      public HashCode hash(Object o) {
+      public HashCode hashDsonEncoded(Object o) {
         // Call hashBytes to ensure counters incremented
         return this.hashBytes(serialization.toDson(o, Output.HASH));
       }

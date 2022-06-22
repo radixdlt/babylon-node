@@ -207,7 +207,7 @@ public class PacemakerTest {
     when(bftInsertUpdate.getVertexStoreState()).thenReturn(vertexStoreState);
     var node = BFTNode.random();
     when(preparedVertex.getId())
-        .thenReturn(hasher.hash(UnverifiedVertex.createTimeout(highestQc, view, node)));
+        .thenReturn(hasher.hashDsonEncoded(UnverifiedVertex.createTimeout(highestQc, view, node)));
 
     when(this.safetyRules.getLastVote(view)).thenReturn(Optional.empty());
     when(this.safetyRules.createVote(any(), any(), anyLong(), any())).thenReturn(emptyVote);

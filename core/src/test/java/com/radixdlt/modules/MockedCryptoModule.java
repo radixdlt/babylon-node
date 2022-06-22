@@ -115,7 +115,7 @@ public class MockedCryptoModule extends AbstractModule {
           }
 
           @Override
-          public HashCode hash(Object o) {
+          public HashCode hashDsonEncoded(Object o) {
             byte[] dson = timeWhinge("Serialization", () -> serialization.toDson(o, Output.HASH));
             return this.hashBytes(dson);
           }
@@ -140,7 +140,7 @@ public class MockedCryptoModule extends AbstractModule {
 
     // Make sure classes etc loaded, as first use seems to take some time
     Object dummyObject = ECDSASignature.zeroSignature(); // Arbitrary serializable class
-    hasher.hash(dummyObject);
+    hasher.hashDsonEncoded(dummyObject);
     running.set(true);
 
     return hasher;
