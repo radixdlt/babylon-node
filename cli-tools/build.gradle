@@ -110,6 +110,12 @@ task getClassPathForRadixShell {
     }
 }
 
+task getNativeLibPathForRadixShell {
+    doLast {
+        print "${project(':state-manager').projectDir}/target/debug/"
+    }
+}
+
 task generateNodeKey(type: Exec) {
     dependsOn compileJava
     dependsOn ':common:jar'
