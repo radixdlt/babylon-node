@@ -257,8 +257,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
     }
 
     // TODO: Move insertion and maybe check into BFTSync
-    var proposedVertex =
-        new VerifiedVertex(proposal.getVertex(), this.hasher.hashDsonEncoded(proposal.getVertex()));
+    var proposedVertex = proposal.getVertex().withId(hasher);
     this.vertexStore.insertVertex(proposedVertex);
   }
 

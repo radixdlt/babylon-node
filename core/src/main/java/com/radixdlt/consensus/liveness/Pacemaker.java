@@ -224,12 +224,10 @@ public final class Pacemaker {
           SystemCounters.CounterType.BFT_PACEMAKER_PROPOSED_TRANSACTIONS, nextTransactions.size());
     }
 
-    final UnverifiedVertex proposedVertex =
-        UnverifiedVertex.create(highestQC, view, nextTransactions, self);
-    final VerifiedVertex verifiedVertex =
-        new VerifiedVertex(proposedVertex, hasher.hashDsonEncoded(proposedVertex));
+    final VerifiedVertex proposedVertex =
+        UnverifiedVertex.create(highestQC, view, nextTransactions, self).withId(hasher);
     return safetyRules.signProposal(
-        verifiedVertex, highQC.highestCommittedQC(), highQC.highestTC());
+        proposedVertex, highQC.highestCommittedQC(), highQC.highestTC());
   }
 
   /**
@@ -273,19 +271,18 @@ public final class Pacemaker {
     }
 
     final var highQC = this.latestViewUpdate.getHighQC();
-    final var proposedVertex =
+    final var vertex =
         UnverifiedVertex.createTimeout(
-            highQC.highestQC(), viewUpdate.getCurrentView(), viewUpdate.getLeader());
-    final var blankVertex = new VerifiedVertex(proposedVertex, hasher.hashDsonEncoded(proposedVertex));
-    this.timeoutVoteVertexId = Optional.of(blankVertex.getId());
+                highQC.highestQC(), viewUpdate.getCurrentView(), viewUpdate.getLeader())
+            .withId(hasher);
+    this.timeoutVoteVertexId = Optional.of(vertex.getId());
 
     // TODO: reimplement in async way
     this.vertexStore
-        .getPreparedVertex(blankVertex.getId())
+        .getPreparedVertex(vertex.getId())
         .ifPresentOrElse(
             this::createAndSendTimeoutVote, // if vertex is already there, send the vote immediately
-            () ->
-                maybeInsertVertex(blankVertex) // otherwise insert and wait for async bft update msg
+            () -> maybeInsertVertex(vertex) // otherwise insert and wait for async bft update msg
             );
   }
 

@@ -71,8 +71,8 @@ public interface Hasher {
   int hashSizeInBytes();
 
   /**
-   * Serializes and hashes an arbitrary object into a byte array.
-   * The object will first be serialized with DSON in the HASH output mode.
+   * Serializes and hashes an arbitrary object into a byte array. The object will first be
+   * serialized with DSON in the HASH output mode.
    *
    * @param o object to hash
    */

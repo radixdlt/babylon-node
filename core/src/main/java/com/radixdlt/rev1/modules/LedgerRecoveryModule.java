@@ -74,7 +74,6 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.SerializedVertexStoreState;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -146,18 +145,16 @@ public final class LedgerRecoveryModule extends AbstractModule {
 
   private static VerifiedVertexStoreState serializedToVerifiedVertexStore(
       SerializedVertexStoreState serializedVertexStoreState, Hasher hasher) {
-    var root = serializedVertexStoreState.getRoot();
-    var rootVertexId = hasher.hashDsonEncoded(root);
-    var verifiedRoot = new VerifiedVertex(root, rootVertexId);
+    var rootVertex = serializedVertexStoreState.getRoot().withId(hasher);
 
     var vertices =
         serializedVertexStoreState.getVertices().stream()
-            .map(v -> new VerifiedVertex(v, hasher.hashDsonEncoded(v)))
+            .map(v -> v.withId(hasher))
             .collect(ImmutableList.toImmutableList());
 
     return VerifiedVertexStoreState.create(
         serializedVertexStoreState.getHighQC(),
-        verifiedRoot,
+        rootVertex,
         vertices,
         serializedVertexStoreState.getHighestTC(),
         hasher);
@@ -165,17 +162,16 @@ public final class LedgerRecoveryModule extends AbstractModule {
 
   private static VerifiedVertexStoreState epochProofToGenesisVertexStore(
       LedgerProof lastEpochProof, Hasher hasher) {
-    var genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw());
-    var verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hashDsonEncoded(genesisVertex));
+    var genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw()).withId(hasher);
     var nextLedgerHeader =
         LedgerHeader.create(
             lastEpochProof.getNextEpoch(),
             View.genesis(),
             lastEpochProof.getAccumulatorState(),
             lastEpochProof.timestamp());
-    var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
     return VerifiedVertexStoreState.create(
-        HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher);
+        HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
   }
 
   @Provides

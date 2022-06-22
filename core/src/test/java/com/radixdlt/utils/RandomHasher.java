@@ -77,6 +77,8 @@ import org.bouncycastle.util.encoders.Hex;
  */
 public class RandomHasher implements Hasher {
 
+  public static RandomHasher INSTANCE = new RandomHasher();
+
   private final Map<Object, HashCode> cache = new HashMap<>();
 
   @Override

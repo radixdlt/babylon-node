@@ -435,23 +435,18 @@ public final class RadixEngineStateComputer implements StateComputer {
                   validatorSet -> {
                     var header = txnsAndProof.getProof();
                     // TODO: Move vertex stuff somewhere else
-                    var genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
-                    var verifiedGenesisVertex =
-                        new VerifiedVertex(genesisVertex, hasher.hashDsonEncoded(genesisVertex));
+                    var genesisVertex =
+                        UnverifiedVertex.createGenesis(header.getRaw()).withId(hasher);
                     var nextLedgerHeader =
                         LedgerHeader.create(
                             header.getNextEpoch(),
                             View.genesis(),
                             header.getAccumulatorState(),
                             header.timestamp());
-                    var genesisQC =
-                        QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+                    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
                     final var initialState =
                         VerifiedVertexStoreState.create(
-                            HighQC.from(genesisQC),
-                            verifiedGenesisVertex,
-                            Optional.empty(),
-                            hasher);
+                            HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
                     var proposerElection = new WeightedRotatingLeaders(validatorSet);
                     var bftConfiguration =
                         new BFTConfiguration(proposerElection, validatorSet, initialState);

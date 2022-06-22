@@ -130,9 +130,8 @@ public final class MockedStateComputer implements StateComputer {
             .map(
                 validatorSet -> {
                   LedgerProof header = txnsAndProof.getProof();
-                  UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
-                  VerifiedVertex verifiedGenesisVertex =
-                      new VerifiedVertex(genesisVertex, hasher.hashDsonEncoded(genesisVertex));
+                  VerifiedVertex genesisVertex =
+                      UnverifiedVertex.createGenesis(header.getRaw()).withId(hasher);
                   LedgerHeader nextLedgerHeader =
                       LedgerHeader.create(
                           header.getNextEpoch(),
@@ -140,10 +139,10 @@ public final class MockedStateComputer implements StateComputer {
                           header.getAccumulatorState(),
                           header.timestamp());
                   QuorumCertificate genesisQC =
-                      QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+                      QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
                   final var initialState =
                       VerifiedVertexStoreState.create(
-                          HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher);
+                          HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =
                       new BFTConfiguration(proposerElection, validatorSet, initialState);

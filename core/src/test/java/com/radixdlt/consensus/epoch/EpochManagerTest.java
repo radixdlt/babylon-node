@@ -295,9 +295,9 @@ public class EpochManagerTest {
       BFTConfiguration bftConfiguration(
           @Self BFTNode self, Hasher hasher, BFTValidatorSet validatorSet) {
         var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-        var unverifiedVertex =
-            UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0));
-        var verifiedVertex = new VerifiedVertex(unverifiedVertex, hasher.hashDsonEncoded(unverifiedVertex));
+        var verifiedVertex =
+            UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0))
+                .withId(hasher);
         var qc =
             QuorumCertificate.ofGenesis(
                 verifiedVertex, LedgerHeader.genesis(accumulatorState, validatorSet, 0));
@@ -330,9 +330,7 @@ public class EpochManagerTest {
         BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     LedgerHeader header = LedgerHeader.genesis(accumulatorState, nextValidatorSet, 0);
-    UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header);
-    VerifiedVertex verifiedGenesisVertex =
-        new VerifiedVertex(genesisVertex, hasher.hashDsonEncoded(genesisVertex));
+    VerifiedVertex verifiedGenesisVertex = UnverifiedVertex.createGenesis(header).withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             header.getEpoch() + 1,

@@ -69,7 +69,9 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -169,6 +171,10 @@ public final class UnverifiedVertex {
   @DsonOutput(Output.ALL)
   private byte[] getProposerJson() {
     return proposer == null ? null : proposer.getKey().getCompressedBytes();
+  }
+
+  public VerifiedVertex withId(Hasher hasher) {
+    return VerifiedVertex.from(this, hasher);
   }
 
   public BFTNode getProposer() {

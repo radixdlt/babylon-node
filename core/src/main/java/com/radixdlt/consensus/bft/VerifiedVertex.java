@@ -69,6 +69,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
@@ -80,9 +81,13 @@ public final class VerifiedVertex {
   private final UnverifiedVertex vertex;
   private final HashCode id;
 
-  public VerifiedVertex(UnverifiedVertex vertex, HashCode id) {
+  private VerifiedVertex(UnverifiedVertex vertex, HashCode id) {
     this.vertex = Objects.requireNonNull(vertex);
     this.id = Objects.requireNonNull(id);
+  }
+
+  public static VerifiedVertex from(UnverifiedVertex vertex, Hasher hasher) {
+    return new VerifiedVertex(vertex, hasher.hashDsonEncoded(vertex));
   }
 
   public BFTNode getProposer() {
