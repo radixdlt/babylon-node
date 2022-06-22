@@ -80,7 +80,7 @@ public class RandomHasher implements Hasher {
   private final Map<Object, HashCode> cache = new HashMap<>();
 
   @Override
-  public int bytes() {
+  public int hashSizeInBytes() {
     return 32;
   }
 

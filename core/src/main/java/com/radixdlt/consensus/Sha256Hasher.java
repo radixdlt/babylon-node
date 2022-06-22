@@ -80,7 +80,7 @@ public class Sha256Hasher implements Hasher {
   }
 
   @Override
-  public int bytes() {
+  public int hashSizeInBytes() {
     return 32;
   }
 

@@ -110,7 +110,7 @@ public class MockedCryptoModule extends AbstractModule {
     Hasher hasher =
         new Hasher() {
           @Override
-          public int bytes() {
+          public int hashSizeInBytes() {
             return 32;
           }
 

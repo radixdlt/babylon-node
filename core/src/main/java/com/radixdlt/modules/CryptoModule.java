@@ -91,7 +91,7 @@ public final class CryptoModule extends AbstractModule {
       private Sha256Hasher hasher = new Sha256Hasher(serialization);
 
       @Override
-      public int bytes() {
+      public int hashSizeInBytes() {
         return 32;
       }
 
