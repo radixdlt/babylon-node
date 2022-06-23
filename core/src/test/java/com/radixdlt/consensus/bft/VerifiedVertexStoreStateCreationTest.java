@@ -93,9 +93,9 @@ public class VerifiedVertexStoreStateCreationTest {
 
   @Before
   public void setup() {
+    this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
     this.genesisVertex = UnverifiedVertex.createGenesis(MOCKED_HEADER).withId(hasher);
     this.genesisHash = genesisVertex.getId();
-    this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
   }
 
   @Test

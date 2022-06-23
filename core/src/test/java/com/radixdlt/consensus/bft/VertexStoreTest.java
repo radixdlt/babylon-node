@@ -143,8 +143,8 @@ public class VertexStoreTest {
     this.bftHighQCUpdateEventDispatcher = rmock(EventDispatcher.class);
     this.committedSender = rmock(EventDispatcher.class);
 
-    this.genesisHash = HashUtils.zero256();
     this.genesisVertex = UnverifiedVertex.createGenesis(MOCKED_HEADER).withId(ZeroHasher.INSTANCE);
+    this.genesisHash = genesisVertex.getId();
     this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
     this.sut =
         new VertexStoreAdapter(

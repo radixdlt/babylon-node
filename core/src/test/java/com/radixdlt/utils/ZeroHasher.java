@@ -65,6 +65,7 @@
 package com.radixdlt.utils;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 
 /**
@@ -82,11 +83,11 @@ public class ZeroHasher implements Hasher {
 
   @Override
   public HashCode hashDsonEncoded(Object o) {
-    return HashCode.fromInt(0);
+    return HashUtils.zero256();
   }
 
   @Override
   public HashCode hashBytes(byte[] bytes) {
-    return HashCode.fromInt(0);
+    return HashUtils.zero256();
   }
 }
