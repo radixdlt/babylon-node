@@ -116,7 +116,6 @@ public final class MessageCentralImpl implements MessageCentral {
   private final SimpleBlockingQueue<OutboundMessageEvent> outboundQueue;
   private final SimpleThreadPool<OutboundMessageEvent> outboundThreadPool;
 
-  // Capabilities
   private final Capabilities capabilities;
 
   @Inject
@@ -143,7 +142,7 @@ public final class MessageCentralImpl implements MessageCentral {
 
     this.messagePreprocessor =
         new MessagePreprocessor(
-            counters, config, timeSource, serialization, peerControl, addressing);
+            counters, config, timeSource, serialization, peerControl, addressing, capabilities);
 
     // Start outbound processing thread
     this.outboundThreadPool =
@@ -179,12 +178,8 @@ public final class MessageCentralImpl implements MessageCentral {
           .process(inboundMessage)
           .fold(
               messageFromPeer -> {
-                if (capabilities.isMessageUnsupported(messageFromPeer.getMessage().getClass())) {
-                  return Optional.empty();
-                } else {
-                  logPreprocessedMessageAndUpdateCounters(messageFromPeer, processingStopwatch);
-                  return Optional.of(messageFromPeer);
-                }
+                logPreprocessedMessageAndUpdateCounters(messageFromPeer, processingStopwatch);
+                return Optional.of(messageFromPeer);
               },
               error -> {
                 final var logLevel =

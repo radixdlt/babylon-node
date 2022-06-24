@@ -70,10 +70,12 @@ import static java.util.Optional.ofNullable;
 
 import com.google.inject.Provider;
 import com.radixdlt.lang.Cause;
+import com.radixdlt.lang.Causes;
 import com.radixdlt.lang.Result;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.Message;
+import com.radixdlt.network.capability.Capabilities;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.networks.Addressing;
@@ -96,6 +98,7 @@ final class MessagePreprocessor {
   private final Serialization serialization;
   private final Provider<PeerControl> peerControl;
   private final Addressing addressing;
+  private final Capabilities capabilities;
 
   MessagePreprocessor(
       SystemCounters counters,
@@ -103,13 +106,15 @@ final class MessagePreprocessor {
       TimeSupplier timeSource,
       Serialization serialization,
       Provider<PeerControl> peerControl,
-      Addressing addressing) {
+      Addressing addressing,
+      Capabilities capabilities) {
     this.messageTtlMs = Objects.requireNonNull(config).messagingTimeToLive(30_000L);
     this.counters = Objects.requireNonNull(counters);
     this.timeSource = Objects.requireNonNull(timeSource);
     this.serialization = Objects.requireNonNull(serialization);
     this.peerControl = Objects.requireNonNull(peerControl);
     this.addressing = Objects.requireNonNull(addressing);
+    this.capabilities = Objects.requireNonNull(capabilities);
   }
 
   Result<MessageFromPeer<Message>, Cause> process(InboundMessage inboundMessage) {
@@ -119,10 +124,24 @@ final class MessagePreprocessor {
         deserialize(inboundMessage, messageBytes)
             .flatMap(message -> processMessage(inboundMessage.source(), message));
     this.counters.increment(CounterType.MESSAGES_INBOUND_RECEIVED);
-    result.fold(
-        unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED),
-        unused -> this.counters.increment(CounterType.MESSAGES_INBOUND_DISCARDED));
-    return result;
+    return switch (result) {
+      case Result.Success<MessageFromPeer<Message>, Cause> s -> {
+        Class<? extends Message> messageClazz = s.value().getMessage().getClass();
+        if (capabilities.isMessageUnsupported(messageClazz)) {
+          this.counters.increment(CounterType.MESSAGES_INBOUND_DISCARDED);
+          yield Result.error(
+              Causes.cause(
+                  String.format("%s is currently not supported.", messageClazz.getSimpleName())));
+        } else {
+          this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED);
+          yield result;
+        }
+      }
+      case Result.Error error -> {
+        this.counters.increment(CounterType.MESSAGES_INBOUND_DISCARDED);
+        yield error;
+      }
+    };
   }
 
   Result<MessageFromPeer<Message>, Cause> processMessage(NodeId source, Message message) {

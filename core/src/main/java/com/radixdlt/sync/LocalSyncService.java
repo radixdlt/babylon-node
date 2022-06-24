@@ -64,8 +64,6 @@
 
 package com.radixdlt.sync;
 
-import static java.util.stream.Collectors.toSet;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -297,7 +295,10 @@ public final class LocalSyncService {
 
   private ImmutableSet<BFTNode> choosePeersForSyncCheck() {
     final var allPeers =
-        this.peersView.peers().filter(this::filterByLedgerSync).collect(Collectors.toList());
+        this.peersView
+            .peers()
+            .filter(this::doesPeerSupportLedgerSyncCapability)
+            .collect(Collectors.toList());
     Collections.shuffle(allPeers);
     return allPeers.stream()
         .limit(this.syncConfig.syncCheckMaxPeers())
@@ -305,12 +306,11 @@ public final class LocalSyncService {
         .collect(ImmutableSet.toImmutableSet());
   }
 
-  private boolean filterByLedgerSync(PeersView.PeerInfo peerInfo) {
+  private boolean doesPeerSupportLedgerSyncCapability(PeersView.PeerInfo peerInfo) {
     return peerInfo.getChannels().stream()
         .flatMap(peerChannelInfo -> peerChannelInfo.getCapabilities().stream())
         .map(RemotePeerCapability::getName)
-        .collect(toSet())
-        .contains(LedgerSyncCapability.NAME);
+        .anyMatch(LedgerSyncCapability.NAME::equals);
   }
 
   private SyncState processStatusResponse(

@@ -100,4 +100,9 @@ public final class MessageFromPeer<T> {
   public int hashCode() {
     return Objects.hash(source, message);
   }
+
+  @Override
+  public String toString() {
+    return "MessageFromPeer{" + "source=" + source + ", message=" + message + '}';
+  }
 }

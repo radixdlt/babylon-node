@@ -84,6 +84,8 @@ import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.network.Message;
+import com.radixdlt.network.capability.Capabilities;
+import com.radixdlt.network.capability.LedgerSyncCapability;
 import com.radixdlt.network.messages.ConsensusEventMessage;
 import com.radixdlt.network.messages.GetVerticesErrorResponseMessage;
 import com.radixdlt.network.messages.GetVerticesRequestMessage;
@@ -151,18 +153,17 @@ public class MessagePreprocessorTest {
           System::currentTimeMillis,
           SERIALIZATION,
           () -> peerControl,
-          Addressing.ofNetwork(Network.LOCALNET));
+          Addressing.ofNetwork(Network.LOCALNET),
+          new Capabilities(LedgerSyncCapability.Builder.asDefault().build()));
 
-  private final Class<?> clazz;
   private final InboundMessage inboundMessage;
 
-  public MessagePreprocessorTest(Class<?> clazz, InboundMessage inboundMessage) {
-    this.clazz = clazz;
+  public MessagePreprocessorTest(InboundMessage inboundMessage) {
     this.inboundMessage = inboundMessage;
   }
 
   @Parameters
-  public static Collection<Object[]> testParameters() {
+  public static Collection<InboundMessage> testParameters() {
     var consensusMessages =
         Stream.of(
             prepareTestMessage(new ConsensusEventMessage(randomProposal()), "proposal"),
@@ -178,15 +179,15 @@ public class MessagePreprocessorTest {
         .toList();
   }
 
-  private static Object[] prepareTestMessage(Message message, String field) {
+  private static InboundMessage prepareTestMessage(Message message, String field) {
     return prepareTestMessage(message, field, null);
   }
 
-  private static Object[] prepareTestMessage(Message message, String field, Object value) {
+  private static InboundMessage prepareTestMessage(Message message, String field, Object value) {
     var source = NodeId.fromPublicKey(ECKeyPair.generateNew().getPublicKey());
     var inboundMessage = generateMessage(source, message, field, value);
 
-    return new Object[] {message.getClass(), inboundMessage};
+    return inboundMessage;
   }
 
   private static InboundMessage generateMessage(

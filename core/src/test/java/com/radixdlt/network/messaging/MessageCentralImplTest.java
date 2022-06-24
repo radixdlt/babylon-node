@@ -148,7 +148,10 @@ public class MessageCentralImplTest {
 
     // when
     TestObserver<MessageFromPeer<? extends Message>> observer = TestObserver.create();
-    messageCentral.messagesOf(SyncResponseMessage.class).subscribe(observer);
+    Observable.merge(
+            messageCentral.messagesOf(SyncRequestMessage.class),
+            messageCentral.messagesOf(SyncResponseMessage.class))
+        .subscribe(observer);
 
     messageCentral.close();
     observer.await();
