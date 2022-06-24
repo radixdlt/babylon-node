@@ -95,7 +95,7 @@ public final class MessageCentralPeerLiveness {
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
+              final var node = BFTNode.create(m.source().getPublicKey());
               return RemoteEvent.create(node, Ping.create());
             });
   }
@@ -106,7 +106,7 @@ public final class MessageCentralPeerLiveness {
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
+              final var node = BFTNode.create(m.source().getPublicKey());
               return RemoteEvent.create(node, Pong.create());
             });
   }

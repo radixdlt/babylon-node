@@ -95,7 +95,7 @@ public final class MessageCentralLedgerSync {
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
+              final var node = BFTNode.create(m.source().getPublicKey());
               return RemoteEvent.create(node, StatusRequest.create());
             });
   }
@@ -106,8 +106,8 @@ public final class MessageCentralLedgerSync {
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
-              final var msg = m.getMessage();
+              final var node = BFTNode.create(m.source().getPublicKey());
+              final var msg = m.message();
               return RemoteEvent.create(node, StatusResponse.create(msg.getHeader()));
             });
   }
@@ -118,8 +118,8 @@ public final class MessageCentralLedgerSync {
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
-              final var msg = m.getMessage();
+              final var node = BFTNode.create(m.source().getPublicKey());
+              final var msg = m.message();
               return RemoteEvent.create(node, SyncRequest.create(msg.getCurrentHeader()));
             });
   }
@@ -130,8 +130,8 @@ public final class MessageCentralLedgerSync {
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
-              final var msg = m.getMessage();
+              final var node = BFTNode.create(m.source().getPublicKey());
+              final var msg = m.message();
               return RemoteEvent.create(node, SyncResponse.create(msg.getCommands()));
             });
   }
@@ -142,8 +142,8 @@ public final class MessageCentralLedgerSync {
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
-              final var header = m.getMessage().getHeader();
+              final var node = BFTNode.create(m.source().getPublicKey());
+              final var header = m.message().getHeader();
               return RemoteEvent.create(node, LedgerStatusUpdate.create(header));
             });
   }

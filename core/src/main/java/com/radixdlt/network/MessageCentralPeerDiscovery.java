@@ -95,7 +95,7 @@ public final class MessageCentralPeerDiscovery {
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
+              final var node = BFTNode.create(m.source().getPublicKey());
               return RemoteEvent.create(node, GetPeers.create());
             });
   }
@@ -106,8 +106,8 @@ public final class MessageCentralPeerDiscovery {
         .toFlowable(BackpressureStrategy.BUFFER)
         .map(
             m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
-              return RemoteEvent.create(node, PeersResponse.create(m.getMessage().getPeers()));
+              final var node = BFTNode.create(m.source().getPublicKey());
+              return RemoteEvent.create(node, PeersResponse.create(m.message().getPeers()));
             });
   }
 

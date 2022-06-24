@@ -126,7 +126,7 @@ final class MessagePreprocessor {
     this.counters.increment(CounterType.MESSAGES_INBOUND_RECEIVED);
     return switch (result) {
       case Result.Success<MessageFromPeer<Message>, Cause> s -> {
-        Class<? extends Message> messageClazz = s.value().getMessage().getClass();
+        Class<? extends Message> messageClazz = s.value().message().getClass();
         if (capabilities.isMessageUnsupported(messageClazz)) {
           this.counters.increment(CounterType.MESSAGES_INBOUND_DISCARDED);
           yield Result.error(

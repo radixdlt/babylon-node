@@ -90,11 +90,11 @@ public final class MessageCentralBFTNetwork {
   // TODO: cleanup unnecessary code duplication and "fat" lambdas
   public Flowable<RemoteEvent<Vote>> remoteVotes() {
     return remoteBftEvents()
-        .filter(m -> m.getMessage().getConsensusMessage() instanceof Vote)
+        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
         .map(
             m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
-              final var msg = m.getMessage();
+              final var node = BFTNode.create(m.source().getPublicKey());
+              final var msg = m.message();
               var vote = (Vote) msg.getConsensusMessage();
               return RemoteEvent.create(node, vote);
             });
@@ -102,11 +102,11 @@ public final class MessageCentralBFTNetwork {
 
   public Flowable<RemoteEvent<Proposal>> remoteProposals() {
     return remoteBftEvents()
-        .filter(m -> m.getMessage().getConsensusMessage() instanceof Proposal)
+        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
         .map(
             m -> {
-              final var node = BFTNode.create(m.getSource().getPublicKey());
-              final var msg = m.getMessage();
+              final var node = BFTNode.create(m.source().getPublicKey());
+              final var msg = m.message();
               var proposal = (Proposal) msg.getConsensusMessage();
               return RemoteEvent.create(node, proposal);
             });
