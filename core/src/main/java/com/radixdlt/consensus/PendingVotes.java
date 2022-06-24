@@ -147,7 +147,7 @@ public final class PendingVotes {
   public VoteProcessingResult insertVote(Vote vote, BFTValidatorSet validatorSet) {
     final BFTNode node = vote.getAuthor();
     final VoteData voteData = vote.getVoteData();
-    final HashCode voteDataHash = this.hasher.hash(voteData);
+    final HashCode voteDataHash = this.hasher.hashDsonEncoded(voteData);
 
     if (!validatorSet.containsNode(node)) {
       return VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR);
@@ -165,7 +165,7 @@ public final class PendingVotes {
 
   private Optional<QuorumCertificate> processVoteForQC(Vote vote, BFTValidatorSet validatorSet) {
     final VoteData voteData = vote.getVoteData();
-    final HashCode voteDataHash = this.hasher.hash(voteData);
+    final HashCode voteDataHash = this.hasher.hashDsonEncoded(voteData);
     final BFTNode node = vote.getAuthor();
 
     final ValidationState validationState =
@@ -189,7 +189,7 @@ public final class PendingVotes {
     final ECDSASignature timeoutSignature = vote.getTimeoutSignature().orElseThrow();
 
     final VoteTimeout voteTimeout = VoteTimeout.of(vote);
-    final HashCode voteTimeoutHash = this.hasher.hash(voteTimeout);
+    final HashCode voteTimeoutHash = this.hasher.hashDsonEncoded(voteTimeout);
     final BFTNode node = vote.getAuthor();
 
     final ValidationState validationState =
@@ -237,7 +237,7 @@ public final class PendingVotes {
 
     if (previousVote.isTimeout) {
       final var voteTimeout = new VoteTimeout(previousVote.view, previousVote.epoch);
-      final var voteTimeoutHash = this.hasher.hash(voteTimeout);
+      final var voteTimeoutHash = this.hasher.hashDsonEncoded(voteTimeout);
 
       var timeoutValidationState = this.timeoutVoteState.get(voteTimeoutHash);
       if (timeoutValidationState != null) {

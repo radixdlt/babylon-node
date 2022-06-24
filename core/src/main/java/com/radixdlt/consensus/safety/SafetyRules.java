@@ -234,7 +234,7 @@ public final class SafetyRules {
     }
 
     final VoteTimeout voteTimeout = VoteTimeout.of(vote);
-    final HashCode voteTimeoutHash = hasher.hash(voteTimeout);
+    final HashCode voteTimeoutHash = hasher.hashDsonEncoded(voteTimeout);
 
     final ECDSASignature timeoutSignature = this.signer.sign(voteTimeoutHash);
     final Vote timeoutVote = vote.withTimeoutSignature(timeoutSignature);
@@ -266,7 +266,7 @@ public final class SafetyRules {
   }
 
   public boolean verifyQcAgainstTheValidatorSet(QuorumCertificate qc) {
-    final var qcHash = hasher.hash(qc);
+    final var qcHash = hasher.hashDsonEncoded(qc);
 
     if (verifiedCertificatesCache.contains(qcHash)) {
       return true;
@@ -333,7 +333,7 @@ public final class SafetyRules {
   }
 
   public boolean verifyTcAgainstTheValidatorSet(TimeoutCertificate tc) {
-    final var tcHash = hasher.hash(tc);
+    final var tcHash = hasher.hashDsonEncoded(tc);
 
     if (verifiedCertificatesCache.contains(tcHash)) {
       return true;
@@ -352,7 +352,7 @@ public final class SafetyRules {
 
   private boolean areAllTcTimestampedSignaturesValid(TimeoutCertificate tc) {
     final var voteTimeout = new VoteTimeout(tc.getView(), tc.getEpoch());
-    final var voteTimeoutHash = hasher.hash(voteTimeout);
+    final var voteTimeoutHash = hasher.hashDsonEncoded(voteTimeout);
     return tc.getTimestampedSignatures().getSignatures().entrySet().parallelStream()
         .allMatch(
             e -> {

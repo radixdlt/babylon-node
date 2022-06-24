@@ -209,6 +209,6 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 
   private boolean verifyObjectSignature(
       BFTNode author, Object hashable, ECDSASignature signature, Object what) {
-    return verifyHashSignature(author, this.hasher.hash(hashable), signature, what);
+    return verifyHashSignature(author, this.hasher.hashDsonEncoded(hashable), signature, what);
   }
 }

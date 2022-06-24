@@ -77,15 +77,17 @@ import org.bouncycastle.util.encoders.Hex;
  */
 public class RandomHasher implements Hasher {
 
+  public static RandomHasher INSTANCE = new RandomHasher();
+
   private final Map<Object, HashCode> cache = new HashMap<>();
 
   @Override
-  public int bytes() {
+  public int hashSizeInBytes() {
     return 32;
   }
 
   @Override
-  public HashCode hash(Object o) {
+  public HashCode hashDsonEncoded(Object o) {
     cache.putIfAbsent(o, HashUtils.random256());
     return cache.get(o);
   }

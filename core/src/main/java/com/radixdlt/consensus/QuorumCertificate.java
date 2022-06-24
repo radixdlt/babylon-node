@@ -144,7 +144,7 @@ public final class QuorumCertificate {
         .getCommitted()
         .map(
             committed -> {
-              var opaque = hasher.hash(voteData);
+              var opaque = hasher.hashDsonEncoded(voteData);
               var ledgerStateProof =
                   new LedgerProof(opaque, committed.getLedgerHeader(), signatures);
               return Pair.of(committed, ledgerStateProof);

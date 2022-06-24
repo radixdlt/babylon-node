@@ -95,6 +95,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.transactions.Transaction;
+import com.radixdlt.utils.ZeroHasher;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -142,9 +143,8 @@ public class VertexStoreTest {
     this.bftHighQCUpdateEventDispatcher = rmock(EventDispatcher.class);
     this.committedSender = rmock(EventDispatcher.class);
 
-    this.genesisHash = HashUtils.zero256();
-    this.genesisVertex =
-        new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
+    this.genesisVertex = UnverifiedVertex.createGenesis(MOCKED_HEADER).withId(ZeroHasher.INSTANCE);
+    this.genesisHash = genesisVertex.getId();
     this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
     this.sut =
         new VertexStoreAdapter(
@@ -184,12 +184,11 @@ public class VertexStoreTest {
             view = view.next();
           }
 
-          var rawVertex =
+          var vertex =
               UnverifiedVertex.create(
-                  qc, view, List.of(Transaction.create(new byte[0])), BFTNode.random());
-          HashCode hash = hasher.hash(rawVertex);
-          VerifiedVertex vertex = new VerifiedVertex(rawVertex, hash);
-          lastParentHeader.set(new BFTHeader(view, hash, MOCKED_HEADER));
+                      qc, view, List.of(Transaction.create(new byte[0])), BFTNode.random())
+                  .withId(hasher);
+          lastParentHeader.set(new BFTHeader(view, vertex.getId(), MOCKED_HEADER));
           lastGrandParentHeader.set(parentHeader);
           lastGreatGrandParentHeader.set(grandParentHeader);
 

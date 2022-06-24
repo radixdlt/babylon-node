@@ -62,84 +62,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.utils;
 
 import com.google.common.hash.HashCode;
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LastProof;
-import java.util.Optional;
 
-/** Starting configuration for simulation/deterministic steady state tests. */
-public class MockedRecoveryModule extends AbstractModule {
+/**
+ * A hasher that returns a random hash for any object. The same object will always get the same
+ * hash.
+ */
+public class ZeroHasher implements Hasher {
 
-  private final HashCode preGenesisAccumulatorHash;
+  public static ZeroHasher INSTANCE = new ZeroHasher();
 
-  public MockedRecoveryModule() {
-    this(HashUtils.zero256());
+  @Override
+  public int hashSizeInBytes() {
+    return 32;
   }
 
-  public MockedRecoveryModule(HashCode preGenesisAccumulatorHash) {
-    this.preGenesisAccumulatorHash = preGenesisAccumulatorHash;
+  @Override
+  public HashCode hashDsonEncoded(Object o) {
+    return HashUtils.zero256();
   }
 
-  @Provides
-  private ViewUpdate view(BFTConfiguration configuration, ProposerElection proposerElection) {
-    HighQC highQC = configuration.getVertexStoreState().getHighQC();
-    View view = highQC.highestQC().getView().next();
-    final BFTNode leader = proposerElection.getProposer(view);
-    final BFTNode nextLeader = proposerElection.getProposer(view.next());
-
-    return ViewUpdate.create(view, highQC, leader, nextLeader);
-  }
-
-  @Provides
-  private BFTConfiguration configuration(
-      @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
-    var accumulatorState = new AccumulatorState(0, preGenesisAccumulatorHash);
-    VerifiedVertex genesisVertex =
-        UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0))
-            .withId(hasher);
-    LedgerHeader nextLedgerHeader =
-        LedgerHeader.create(
-            proof.getNextEpoch(), View.genesis(), proof.getAccumulatorState(), proof.timestamp());
-    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
-    return new BFTConfiguration(
-        proposerElection,
-        validatorSet,
-        VerifiedVertexStoreState.create(
-            HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
-  }
-
-  @Provides
-  @LastEpochProof
-  public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    return LedgerProof.genesis(accumulatorState, validatorSet, 0);
-  }
-
-  @Provides
-  @LastProof
-  private LedgerProof lastProof(BFTConfiguration bftConfiguration) {
-    return bftConfiguration.getVertexStoreState().getRootHeader();
+  @Override
+  public HashCode hashBytes(byte[] bytes) {
+    return HashUtils.zero256();
   }
 }

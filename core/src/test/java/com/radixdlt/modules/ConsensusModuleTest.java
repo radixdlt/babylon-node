@@ -141,6 +141,7 @@ import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.ZeroHasher;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -168,16 +169,17 @@ public class ConsensusModuleTest {
   @Before
   public void setup() {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    var genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, null, 0));
-    var hashedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
+    var genesisVertex =
+        UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, null, 0))
+            .withId(ZeroHasher.INSTANCE);
     var qc =
-        QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(accumulatorState, null, 0));
+        QuorumCertificate.ofGenesis(genesisVertex, LedgerHeader.genesis(accumulatorState, null, 0));
     this.validatorKeyPair = ECKeyPair.generateNew();
     this.validatorBftNode = BFTNode.create(this.validatorKeyPair.getPublicKey());
     var validatorSet =
         BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorBftNode, UInt256.ONE)));
     var vertexStoreState =
-        VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis, Optional.empty(), hasher);
+        VerifiedVertexStoreState.create(HighQC.from(qc), genesisVertex, Optional.empty(), hasher);
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     this.bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
     this.ecKeyPair = ECKeyPair.generateNew();
@@ -275,14 +277,12 @@ public class ConsensusModuleTest {
   private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(
       QuorumCertificate parent, ECKeyPair proposerKeyPair, Transaction txn) {
     final var proposerBftNode = BFTNode.create(proposerKeyPair.getPublicKey());
-    var unverifiedVertex =
-        UnverifiedVertex.create(parent, View.of(1), List.of(txn), proposerBftNode);
-    var hash = hasher.hash(unverifiedVertex);
-    var verifiedVertex = new VerifiedVertex(unverifiedVertex, hash);
+    var vertex =
+        UnverifiedVertex.create(parent, View.of(1), List.of(txn), proposerBftNode).withId(hasher);
     var next =
         new BFTHeader(
             View.of(1),
-            verifiedVertex.getId(),
+            vertex.getId(),
             LedgerHeader.create(1, View.of(1), new AccumulatorState(1, HashUtils.zero256()), 1));
     final var voteData = new VoteData(next, parent.getProposed(), parent.getParent());
     final var timestamp = 1;
@@ -294,7 +294,7 @@ public class ConsensusModuleTest {
             new TimestampedECDSASignatures(
                 Map.of(proposerBftNode, TimestampedECDSASignature.from(timestamp, qcSignature))));
 
-    return Pair.of(unsyncedQC, verifiedVertex);
+    return Pair.of(unsyncedQC, vertex);
   }
 
   @Test

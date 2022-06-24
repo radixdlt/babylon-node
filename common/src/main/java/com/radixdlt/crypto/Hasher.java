@@ -68,14 +68,15 @@ import com.google.common.hash.HashCode;
 
 /** An object capable of hashing an object */
 public interface Hasher {
-  int bytes();
+  int hashSizeInBytes();
 
   /**
-   * Serializes and hashes an arbitrary object into a byte array.
+   * Serializes and hashes an arbitrary object into a byte array. The object will first be
+   * serialized with DSON in the HASH output mode.
    *
    * @param o object to hash
    */
-  HashCode hash(Object o);
+  HashCode hashDsonEncoded(Object o);
 
   /**
    * Hahes a raw byte array.

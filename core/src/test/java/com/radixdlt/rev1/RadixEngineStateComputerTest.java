@@ -73,7 +73,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -93,7 +92,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
@@ -137,6 +135,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.transactions.Transaction;
+import com.radixdlt.utils.RandomHasher;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -237,7 +236,7 @@ public class RadixEngineStateComputerTest {
 
     var genesisLedgerHeader =
         LedgerProof.genesis(
-            new AccumulatorState(0, hasher.hash(genesisTxns.getTxns().get(0).getId())),
+            new AccumulatorState(0, hasher.hashDsonEncoded(genesisTxns.getTxns().get(0).getId())),
             genesisValidatorSet,
             0);
     if (!genesisLedgerHeader.isEndOfEpoch()) {
@@ -300,7 +299,7 @@ public class RadixEngineStateComputerTest {
     var v =
         UnverifiedVertex.create(
             mock(QuorumCertificate.class), View.of(9), List.of(), BFTNode.random());
-    var vertex = new VerifiedVertex(v, mock(HashCode.class));
+    var vertex = v.withId(RandomHasher.INSTANCE);
 
     // Action
     var result = sut.prepare(List.of(), vertex, 0);
@@ -319,7 +318,7 @@ public class RadixEngineStateComputerTest {
     when(parentHeader.getView()).thenReturn(View.of(0));
     when(qc.getProposed()).thenReturn(parentHeader);
     var unverified = UnverifiedVertex.create(qc, View.of(11), List.of(), BFTNode.random());
-    var vertex = new VerifiedVertex(unverified, mock(HashCode.class));
+    var vertex = unverified.withId(RandomHasher.INSTANCE);
 
     // Act
     StateComputerResult result = sut.prepare(List.of(), vertex, 0);
@@ -350,8 +349,9 @@ public class RadixEngineStateComputerTest {
     var parentHeader = mock(BFTHeader.class);
     when(parentHeader.getView()).thenReturn(View.of(0));
     when(qc.getProposed()).thenReturn(parentHeader);
-    var v = UnverifiedVertex.create(qc, View.of(11), List.of(txn), BFTNode.random());
-    var vertex = new VerifiedVertex(v, mock(HashCode.class));
+    var vertex =
+        UnverifiedVertex.create(qc, View.of(11), List.of(txn), BFTNode.random())
+            .withId(RandomHasher.INSTANCE);
 
     // Act
     StateComputerResult result = sut.prepare(List.of(), vertex, 0);
@@ -388,7 +388,7 @@ public class RadixEngineStateComputerTest {
             View.of(1),
             List.of(illegalTxn),
             proposerElection.getProposer(View.of(1)));
-    var vertex = new VerifiedVertex(v, mock(HashCode.class));
+    var vertex = v.withId(RandomHasher.INSTANCE);
 
     // Act
     var result = sut.prepare(ImmutableList.of(), vertex, 0);
