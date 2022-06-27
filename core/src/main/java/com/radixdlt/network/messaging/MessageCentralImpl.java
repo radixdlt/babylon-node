@@ -116,8 +116,6 @@ public final class MessageCentralImpl implements MessageCentral {
   private final SimpleBlockingQueue<OutboundMessageEvent> outboundQueue;
   private final SimpleThreadPool<OutboundMessageEvent> outboundThreadPool;
 
-  private final Capabilities capabilities;
-
   @Inject
   public MessageCentralImpl(
       MessageCentralConfiguration config,
@@ -163,8 +161,6 @@ public final class MessageCentralImpl implements MessageCentral {
             .map(Optional::get)
             .publish()
             .autoConnect();
-
-    this.capabilities = capabilities;
   }
 
   private Optional<MessageFromPeer<Message>> processInboundMessage(InboundMessage inboundMessage) {
