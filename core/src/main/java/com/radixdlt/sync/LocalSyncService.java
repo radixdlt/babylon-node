@@ -79,6 +79,8 @@ import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.network.capability.LedgerSyncCapability;
+import com.radixdlt.network.capability.RemotePeerCapability;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.sync.SyncState.IdleState;
 import com.radixdlt.sync.SyncState.SyncCheckState;
@@ -292,12 +294,23 @@ public final class LocalSyncService {
   }
 
   private ImmutableSet<BFTNode> choosePeersForSyncCheck() {
-    final var allPeers = this.peersView.peers().collect(Collectors.toList());
+    final var allPeers =
+        this.peersView
+            .peers()
+            .filter(this::doesPeerSupportLedgerSyncCapability)
+            .collect(Collectors.toList());
     Collections.shuffle(allPeers);
     return allPeers.stream()
         .limit(this.syncConfig.syncCheckMaxPeers())
         .map(PeersView.PeerInfo::bftNode)
         .collect(ImmutableSet.toImmutableSet());
+  }
+
+  private boolean doesPeerSupportLedgerSyncCapability(PeersView.PeerInfo peerInfo) {
+    return peerInfo.getChannels().stream()
+        .flatMap(peerChannelInfo -> peerChannelInfo.getCapabilities().stream())
+        .map(RemotePeerCapability::getName)
+        .anyMatch(LedgerSyncCapability.NAME::equals);
   }
 
   private SyncState processStatusResponse(

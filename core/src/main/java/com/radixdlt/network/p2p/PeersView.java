@@ -149,10 +149,6 @@ public interface PeersView {
     private NodeId nodeId;
     private ImmutableList<PeerChannelInfo> channels;
 
-    public static PeerInfo fromBftNode(BFTNode bftNode) {
-      return new PeerInfo(NodeId.fromPublicKey(bftNode.getKey()), ImmutableList.of());
-    }
-
     public static PeerInfo create(NodeId nodeId, ImmutableList<PeerChannelInfo> channels) {
       return new PeerInfo(nodeId, channels);
     }
