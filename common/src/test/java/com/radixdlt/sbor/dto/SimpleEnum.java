@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.testclasses;
+package com.radixdlt.sbor.dto;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Either;
@@ -70,12 +70,14 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
 import com.radixdlt.sbor.codec.EnumEntry;
 import com.radixdlt.sbor.codec.Field;
+import org.junit.Ignore;
 
-// We put SimpleEnum in a non-test folder because otherwise, when put in a tests directory,
-//   JUnit 4 was very bizarrely thinking it was a test class but then erroring because it was
-// clearly not
-//   a test class... very weird (!?)
-// JUnit 4 is probably just too old and hasn't been tested with sealed interfaces...
+// Using @Ignore here cause JUnit 4 was very bizarrely thinking it was a test class but then
+// erroring
+// because it was
+// clearly not a test class... very weird (!?) JUnit 4 is probably just too old and hasn't been
+// tested with sealed interfaces...
+@Ignore
 public sealed interface SimpleEnum {
 
   // It's recommended to run all custom codec registration methods from one file on app boot-up
