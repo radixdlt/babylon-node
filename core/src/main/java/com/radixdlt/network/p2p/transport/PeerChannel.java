@@ -75,6 +75,8 @@ import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.network.capability.Capabilities;
+import com.radixdlt.network.capability.RemotePeerCapability;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.P2PConfig;
@@ -106,6 +108,7 @@ import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -144,6 +147,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
   private final RateCalculator outMessagesStats = new RateCalculator(Duration.ofSeconds(10), 128);
 
+  private Set<RemotePeerCapability> remotePeerCapabilities = Set.of();
+
   public PeerChannel(
       P2PConfig config,
       Addressing addressing,
@@ -156,7 +161,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
       EventDispatcher<PeerEvent> peerEventDispatcher,
       Optional<RadixNodeUri> uri,
       SocketChannel nettyChannel,
-      Optional<InetSocketAddress> remoteAddress) {
+      Optional<InetSocketAddress> remoteAddress,
+      Capabilities capabilities) {
     this.counters = requireNonNull(counters);
     this.addressing = requireNonNull(addressing);
     this.peerEventDispatcher = requireNonNull(peerEventDispatcher);
@@ -165,7 +171,8 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     uri.map(RadixNodeUri::getNodeId).ifPresent(nodeId -> this.remoteNodeId = nodeId);
 
     this.authHandshaker =
-        new AuthHandshaker(serialization, secureRandom, ecKeyOps, networkId, newestForkName);
+        new AuthHandshaker(
+            serialization, secureRandom, ecKeyOps, networkId, newestForkName, capabilities);
     this.nettyChannel = requireNonNull(nettyChannel);
     this.remoteAddress = requireNonNull(remoteAddress);
 
@@ -231,6 +238,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     this.frameCodec = new FrameCodec(successResult.secrets());
     this.remoteNewestForkName = successResult.newestForkName();
     this.state = ChannelState.ACTIVE;
+    this.remotePeerCapabilities = successResult.remotePeerCapabilities();
 
     if (log.isTraceEnabled()) {
       log.trace("Successful auth handshake: {}", this);
@@ -363,6 +371,10 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
 
   public Optional<String> getRemoteNewestForkName() {
     return remoteNewestForkName;
+  }
+
+  public Set<RemotePeerCapability> getRemotePeerCapabilities() {
+    return remotePeerCapabilities;
   }
 
   @Override

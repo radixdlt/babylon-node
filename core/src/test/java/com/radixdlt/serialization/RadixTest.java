@@ -64,7 +64,7 @@
 
 package com.radixdlt.serialization;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -86,7 +86,9 @@ public abstract class RadixTest {
     TestSetupUtils.installBouncyCastleProvider();
 
     properties = mock(RuntimeProperties.class);
-    doAnswer(invocation -> invocation.getArgument(1)).when(properties).get(any(), any());
+    doAnswer(invocation -> invocation.getArgument(1))
+        .when(properties)
+        .get(anyString(), anyString());
 
     ntpService = mock(NtpService.class);
     when(ntpService.getUTCTimeMS())

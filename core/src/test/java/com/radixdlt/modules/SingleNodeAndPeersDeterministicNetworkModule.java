@@ -75,6 +75,7 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeersView;
 import java.util.List;
 import java.util.stream.Stream;
@@ -101,7 +102,10 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     final var peers =
         Stream.generate(BFTNode::random)
             .limit(numPeers)
-            .map(PeersView.PeerInfo::fromBftNode)
+            .map(
+                it ->
+                    PeersView.PeerInfo.create(
+                        NodeId.fromPublicKey(it.getKey()), ImmutableList.of()))
             .collect(ImmutableList.toImmutableList());
     return peers::stream;
   }

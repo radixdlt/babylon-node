@@ -62,81 +62,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network;
+package com.radixdlt.network.p2p.transport.handshake;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messages.ConsensusEventMessage;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.p2p.NodeId;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.network.capability.Capabilities;
+import com.radixdlt.network.capability.LedgerSyncCapability;
+import com.radixdlt.network.capability.RemotePeerCapability;
+import com.radixdlt.serialization.DsonOutput;
+import java.util.Optional;
+import java.util.Set;
 
-/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
-public final class MessageCentralBFTNetwork {
-  private final MessageCentral messageCentral;
+public abstract class BaseHandshakeMessage {
 
-  @Inject
-  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+  protected final Optional<String> newestForkName;
+
+  @JsonProperty("capabilities")
+  @DsonOutput(DsonOutput.Output.ALL)
+  @JsonInclude()
+  protected final Set<RemotePeerCapability> capabilities;
+
+  protected BaseHandshakeMessage(
+      String rawNewestForkName, Set<RemotePeerCapability> nullableCapabilities) {
+    this.newestForkName =
+        rawNewestForkName == null ? Optional.<String>empty() : Optional.of(rawNewestForkName);
+
+    this.capabilities =
+        nullableCapabilities == null
+            ? Set.of(LedgerSyncCapability.Builder.asDefault().build().toRemotePeerCapability())
+            : validateNumberOfCapabilitiesReceived(nullableCapabilities);
   }
 
-  // TODO: cleanup unnecessary code duplication and "fat" lambdas
-  public Flowable<RemoteEvent<Vote>> remoteVotes() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              final var msg = m.message();
-              var vote = (Vote) msg.getConsensusMessage();
-              return RemoteEvent.create(node, vote);
-            });
+  private static Set<RemotePeerCapability> validateNumberOfCapabilitiesReceived(
+      Set<RemotePeerCapability> capabilities) {
+    if (capabilities.size() > Capabilities.MAX_NUMBER_OF_CAPABILITIES_ACCEPTED) {
+      throw new InvalidHandshakeMessageException(
+          String.format(
+              "Invalid handshake message. The remote peer sent us %s capabilities, but we accept at"
+                  + " most %s.",
+              capabilities.size(), Capabilities.MAX_NUMBER_OF_CAPABILITIES_ACCEPTED));
+    }
+    try {
+      capabilities.forEach(RemotePeerCapability::validate);
+    } catch (IllegalArgumentException e) {
+      throw new InvalidHandshakeMessageException("Invalid handshake message", e);
+    }
+    return capabilities;
   }
 
-  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              final var msg = m.message();
-              var proposal = (Proposal) msg.getConsensusMessage();
-              return RemoteEvent.create(node, proposal);
-            });
+  public Optional<String> getNewestForkName() {
+    return newestForkName;
   }
 
-  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
-    return this.messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .toFlowable(BackpressureStrategy.BUFFER);
+  @JsonProperty("newestForkName")
+  @DsonOutput(DsonOutput.Output.ALL)
+  public String rawNewestForkName() {
+    return this.newestForkName.orElse(null);
   }
 
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
-    return this::sendProposal;
-  }
-
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
-    ConsensusEventMessage message = new ConsensusEventMessage(proposal);
-    send(message, receiver);
-  }
-
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
-    return this::sendVote;
-  }
-
-  private void sendVote(BFTNode receiver, Vote vote) {
-    ConsensusEventMessage message = new ConsensusEventMessage(vote);
-    send(message, receiver);
-  }
-
-  private void send(Message message, BFTNode recipient) {
-    this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
+  public Set<RemotePeerCapability> getCapabilities() {
+    return capabilities;
   }
 }

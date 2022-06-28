@@ -62,81 +62,92 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network;
+package com.radixdlt.network.p2p;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messages.ConsensusEventMessage;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.p2p.NodeId;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
+import static com.radixdlt.utils.TypedMocks.cmock;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import com.google.inject.TypeLiteral;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.network.capability.LedgerSyncCapability;
+import com.radixdlt.network.capability.RemotePeerCapability;
+import com.radixdlt.network.messaging.InboundMessage;
+import com.radixdlt.network.p2p.addressbook.AddressBook;
+import com.radixdlt.network.p2p.transport.PeerChannel;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
+import io.reactivex.rxjava3.core.Observable;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import org.junit.Test;
 
-/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
-public final class MessageCentralBFTNetwork {
-  private final MessageCentral messageCentral;
+public class PeerManagerPeersViewTest {
 
-  @Inject
-  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+  @Test
+  public void when_peer_connected_event_is_processed_then_its_capabilities_are_exposed_correctly() {
+    // given
+    var remotePeerCapabilitiesExpected =
+        Set.of(new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of()));
+
+    var peerManager = getPeerManager();
+    var peerManagerPeersView = new PeerManagerPeersView(peerManager);
+    var peerChannel = mockPeerChannel(remotePeerCapabilitiesExpected);
+
+    // when
+    peerManager.peerEventProcessor().process(new PeerEvent.PeerConnected(peerChannel));
+
+    // then
+    var remotePeerCapabilitiesInChannel =
+        peerManagerPeersView
+            .peers()
+            .findFirst()
+            .map(it -> it.getChannels().get(0).getCapabilities())
+            .get();
+
+    assertEquals(remotePeerCapabilitiesExpected, remotePeerCapabilitiesInChannel);
   }
 
-  // TODO: cleanup unnecessary code duplication and "fat" lambdas
-  public Flowable<RemoteEvent<Vote>> remoteVotes() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              final var msg = m.message();
-              var vote = (Vote) msg.getConsensusMessage();
-              return RemoteEvent.create(node, vote);
-            });
+  private PeerManager getPeerManager() {
+    var self =
+        RadixNodeUri.fromPubKeyAndAddress(
+            Network.LOCALNET.getId(), ECKeyPair.generateNew().getPublicKey(), "10.0.0.1", 30000);
+
+    return new PeerManager(
+        self,
+        mockP2PConfig(),
+        Addressing.ofNetwork(Network.LOCALNET),
+        () -> mock(AddressBook.class),
+        () -> mock(PendingOutboundChannelsManager.class),
+        mock(SystemCounters.class));
   }
 
-  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              final var msg = m.message();
-              var proposal = (Proposal) msg.getConsensusMessage();
-              return RemoteEvent.create(node, proposal);
-            });
+  private P2PConfig mockP2PConfig() {
+    P2PConfig p2PConfigMock = mock(P2PConfig.class);
+    when(p2PConfigMock.maxInboundChannels()).thenReturn(10);
+    when(p2PConfigMock.maxOutboundChannels()).thenReturn(10);
+    return p2PConfigMock;
   }
 
-  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
-    return this.messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .toFlowable(BackpressureStrategy.BUFFER);
-  }
+  private PeerChannel mockPeerChannel(Set<RemotePeerCapability> remotePeerCapabilitiesExpected) {
+    var peerChanel = mock(PeerChannel.class);
+    var inboundMessages = cmock(new TypeLiteral<Flowable<InboundMessage>>() {});
+    // new key, but same host/port as peer2
+    var peer =
+        RadixNodeUri.fromPubKeyAndAddress(
+            Network.LOCALNET.getId(), ECKeyPair.generateNew().getPublicKey(), "10.0.0.2", 30000);
 
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
-    return this::sendProposal;
-  }
-
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
-    ConsensusEventMessage message = new ConsensusEventMessage(proposal);
-    send(message, receiver);
-  }
-
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
-    return this::sendVote;
-  }
-
-  private void sendVote(BFTNode receiver, Vote vote) {
-    ConsensusEventMessage message = new ConsensusEventMessage(vote);
-    send(message, receiver);
-  }
-
-  private void send(Message message, BFTNode recipient) {
-    this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
+    when(peerChanel.getUri()).thenReturn(Optional.of(peer));
+    when(peerChanel.inboundMessages()).thenReturn(inboundMessages);
+    when(inboundMessages.toObservable())
+        .thenReturn(cmock(new TypeLiteral<Observable<InboundMessage>>() {}));
+    when(peerChanel.isOutbound()).thenReturn(true);
+    when(peerChanel.getRemoteNodeId()).thenReturn(peer.getNodeId());
+    when(peerChanel.getRemotePeerCapabilities()).thenReturn(remotePeerCapabilitiesExpected);
+    return peerChanel;
   }
 }

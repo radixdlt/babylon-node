@@ -62,81 +62,41 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network;
+package com.radixdlt.utils;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messages.ConsensusEventMessage;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.p2p.NodeId;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
+public class BooleanUtils {
 
-/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
-public final class MessageCentralBFTNetwork {
-  private final MessageCentral messageCentral;
-
-  @Inject
-  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+  private BooleanUtils() {
+    throw new IllegalStateException("Utility class");
   }
 
-  // TODO: cleanup unnecessary code duplication and "fat" lambdas
-  public Flowable<RemoteEvent<Vote>> remoteVotes() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              final var msg = m.message();
-              var vote = (Vote) msg.getConsensusMessage();
-              return RemoteEvent.create(node, vote);
-            });
-  }
-
-  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              final var msg = m.message();
-              var proposal = (Proposal) msg.getConsensusMessage();
-              return RemoteEvent.create(node, proposal);
-            });
-  }
-
-  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
-    return this.messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .toFlowable(BackpressureStrategy.BUFFER);
-  }
-
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
-    return this::sendProposal;
-  }
-
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
-    ConsensusEventMessage message = new ConsensusEventMessage(proposal);
-    send(message, receiver);
-  }
-
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
-    return this::sendVote;
-  }
-
-  private void sendVote(BFTNode receiver, Vote vote) {
-    ConsensusEventMessage message = new ConsensusEventMessage(vote);
-    send(message, receiver);
-  }
-
-  private void send(Message message, BFTNode recipient) {
-    this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
+  /**
+   * Parses the string argument as a boolean value. The {@code boolean} returned represents the
+   * value {@code true} if the string argument is not {@code null} and is equal, ignoring case, to
+   * the string {@code "true"}. It returns the value {@code false} if the string argument is not
+   * {@code null} and is equal, ignoring case, to the string {@code "false"}.
+   *
+   * <p>Example: {@code Boolean.parseBoolean("True")} returns {@code true}.<br>
+   * Boolean.parseBoolean("false")} returns {@code false}.<br>
+   * Example: {@code Boolean.parseBoolean("yes")} throws {@code IllegalArgumentException}.
+   *
+   * @param s the {@code String} containing the boolean representation to be parsed
+   * @return the boolean represented by the string argument
+   * @throws IllegalArgumentException if {@code s} is not equal to "true" or "false"
+   *     case-insensitive.
+   */
+  public static boolean parseBoolean(String s) {
+    var trimmedLowerCaseValue = s != null ? s.trim().toLowerCase() : null;
+    return switch (trimmedLowerCaseValue) {
+      case "true" -> true;
+      case "false" -> false;
+        // spotless doesn't work with "case null, default", so we're using the solution bellow
+        // instead
+      case Object object -> throw new IllegalArgumentException(
+          String.format(
+              "It was not possible to parse the string '%s' as a boolean. Please use 'true' or"
+                  + " 'false'.",
+              s));
+    };
   }
 }

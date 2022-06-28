@@ -64,11 +64,10 @@
 
 package com.radixdlt;
 
-import static org.mockito.Mockito.any;
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.google.inject.Guice;
 import com.radixdlt.crypto.ECKeyPair;
@@ -77,7 +76,9 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.serialization.TestSetupUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
+import org.apache.commons.cli.ParseException;
 import org.assertj.core.util.Files;
+import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -92,19 +93,54 @@ public class RadixNodeModuleTest {
   @Test
   public void testInjectorNotNullToken() {
     final var properties = createDefaultProperties();
-    when(properties.get(eq("network.id"))).thenReturn("99");
-    when(properties.get(eq("network.genesis_txn"))).thenReturn("00");
+    when(properties.get("network.id")).thenReturn("99");
+    when(properties.get("network.genesis_txn")).thenReturn("00");
+    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
+  }
+
+  @Test
+  public void when_capabilities_ledger_sync_enabled_value_is_invalid_exception_is_thrown() {
+    final var properties = createDefaultProperties();
+    when(properties.get("network.id")).thenReturn("99");
+    when(properties.get("network.genesis_txn")).thenReturn("00");
+    when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("yes");
+
+    Exception exception =
+        assertThrows(
+            com.google.inject.CreationException.class,
+            () -> Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this));
+
+    assertTrue(exception.getCause() instanceof IllegalArgumentException);
+    assertEquals(
+        "There was an error when parsing configuration 'capabilities.ledger_sync.enabled' with"
+            + " value 'yes'.",
+        exception.getCause().getMessage());
+  }
+
+  @Test
+  public void when_capabilities_ledger_sync_enabled_value_is_valid_no_exception_is_thrown() {
+    final var properties = createDefaultProperties();
+    when(properties.get("network.id")).thenReturn("99");
+    when(properties.get("network.genesis_txn")).thenReturn("00");
+    when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("true");
+
     Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
   }
 
   private RuntimeProperties createDefaultProperties() {
-    final var properties = mock(RuntimeProperties.class);
-    doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
+    final RuntimeProperties properties;
+    try {
+      // Changing it to a spy as it is the only to test polymorphism with mockito.
+      properties = spy(new RuntimeProperties(new JSONObject(), new String[0]));
+    } catch (ParseException e) {
+      throw new RuntimeException(e);
+    }
+    doReturn("127.0.0.1").when(properties).get(eq("host.ip"), anyString());
     var keyStore = new File("nonesuch.ks");
     Files.delete(keyStore);
     generateKeystore(keyStore);
 
-    when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");
+    doReturn("nonesuch.ks").when(properties).get(eq("node.key.path"), anyString());
     return properties;
   }
 

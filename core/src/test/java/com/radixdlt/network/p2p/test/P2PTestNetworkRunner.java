@@ -84,9 +84,11 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.modules.CapabilitiesModule;
 import com.radixdlt.modules.DispatcherModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.network.capability.LedgerSyncCapability;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.P2PModule;
 import com.radixdlt.network.p2p.PeerDiscoveryModule;
@@ -229,7 +231,8 @@ public final class P2PTestNetworkRunner {
                 .annotatedWith(NewestForkConfig.class)
                 .toInstance(new FixedEpochForkConfig("genesis", null, 0L));
           }
-        });
+        },
+        new CapabilitiesModule(LedgerSyncCapability.Builder.asDefault().build()));
   }
 
   public void cleanup() {

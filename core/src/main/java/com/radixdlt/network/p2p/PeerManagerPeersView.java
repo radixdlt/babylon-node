@@ -94,7 +94,11 @@ public final class PeerManagerPeersView implements PeersView {
                       .map(
                           c ->
                               PeerChannelInfo.create(
-                                  c.getUri(), c.getHost(), c.getPort(), c.isOutbound()))
+                                  c.getUri(),
+                                  c.getHost(),
+                                  c.getPort(),
+                                  c.isOutbound(),
+                                  c.getRemotePeerCapabilities()))
                       .collect(ImmutableList.toImmutableList());
               return PeerInfo.create(e.getKey(), channelsInfo);
             });

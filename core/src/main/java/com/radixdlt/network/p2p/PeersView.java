@@ -66,8 +66,10 @@ package com.radixdlt.network.p2p;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.network.capability.RemotePeerCapability;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /** Retrieve the node's current peers */
@@ -78,17 +80,28 @@ public interface PeersView {
     private String host;
     private int port;
     private boolean isOutbound;
+    private Set<RemotePeerCapability> capabilities;
 
     public static PeerChannelInfo create(
-        Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
-      return new PeerChannelInfo(uri, host, port, isOutbound);
+        Optional<RadixNodeUri> uri,
+        String host,
+        int port,
+        boolean isOutbound,
+        Set<RemotePeerCapability> capabilities) {
+      return new PeerChannelInfo(uri, host, port, isOutbound, capabilities);
     }
 
-    private PeerChannelInfo(Optional<RadixNodeUri> uri, String host, int port, boolean isOutbound) {
+    private PeerChannelInfo(
+        Optional<RadixNodeUri> uri,
+        String host,
+        int port,
+        boolean isOutbound,
+        Set<RemotePeerCapability> capabilities) {
       this.uri = uri;
       this.host = host;
       this.port = port;
       this.isOutbound = isOutbound;
+      this.capabilities = capabilities;
     }
 
     public Optional<RadixNodeUri> getUri() {
@@ -105,6 +118,10 @@ public interface PeersView {
 
     public boolean isOutbound() {
       return isOutbound;
+    }
+
+    public Set<RemotePeerCapability> getCapabilities() {
+      return capabilities;
     }
 
     @Override
@@ -131,10 +148,6 @@ public interface PeersView {
   final class PeerInfo {
     private NodeId nodeId;
     private ImmutableList<PeerChannelInfo> channels;
-
-    public static PeerInfo fromBftNode(BFTNode bftNode) {
-      return new PeerInfo(NodeId.fromPublicKey(bftNode.getKey()), ImmutableList.of());
-    }
 
     public static PeerInfo create(NodeId nodeId, ImmutableList<PeerChannelInfo> channels) {
       return new PeerInfo(nodeId, channels);

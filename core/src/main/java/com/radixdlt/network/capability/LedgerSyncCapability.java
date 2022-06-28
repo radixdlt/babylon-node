@@ -62,81 +62,61 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network;
+package com.radixdlt.network.capability;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messages.ConsensusEventMessage;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.p2p.NodeId;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import java.util.Objects;
+import com.radixdlt.network.Message;
+import com.radixdlt.network.messages.*;
+import java.util.Map;
+import java.util.Set;
 
-/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
-public final class MessageCentralBFTNetwork {
-  private final MessageCentral messageCentral;
+public class LedgerSyncCapability {
+  public static final String NAME = "ledger-sync";
+  // Currently, this is the only configuration available, more can be added as fields in this class.
+  private boolean isEnabled;
+  // the subset of messages which should be discarded if received by other peers when the Capability
+  // is disabled.
+  private final Set<Class<? extends Message>> unsupportedMessagesWhenDisabled;
 
-  @Inject
-  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+  private LedgerSyncCapability(Builder builder) {
+    this.isEnabled = builder.isEnabled;
+    this.unsupportedMessagesWhenDisabled =
+        Set.of(
+            SyncRequestMessage.class, StatusRequestMessage.class, LedgerStatusUpdateMessage.class);
   }
 
-  // TODO: cleanup unnecessary code duplication and "fat" lambdas
-  public Flowable<RemoteEvent<Vote>> remoteVotes() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              final var msg = m.message();
-              var vote = (Vote) msg.getConsensusMessage();
-              return RemoteEvent.create(node, vote);
-            });
+  public String getName() {
+    return NAME;
   }
 
-  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              final var msg = m.message();
-              var proposal = (Proposal) msg.getConsensusMessage();
-              return RemoteEvent.create(node, proposal);
-            });
+  public boolean isEnabled() {
+    return isEnabled;
   }
 
-  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
-    return this.messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .toFlowable(BackpressureStrategy.BUFFER);
+  public Set<Class<? extends Message>> getUnsupportedMessagesWhenDisabled() {
+    return unsupportedMessagesWhenDisabled;
   }
 
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
-    return this::sendProposal;
+  public boolean isMessageUnsupported(Class<? extends Message> messageClazz) {
+    return !this.isEnabled() && this.unsupportedMessagesWhenDisabled.contains(messageClazz);
   }
 
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
-    ConsensusEventMessage message = new ConsensusEventMessage(proposal);
-    send(message, receiver);
+  public RemotePeerCapability toRemotePeerCapability() {
+    return new RemotePeerCapability(this.getName(), Map.of());
   }
 
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
-    return this::sendVote;
-  }
+  public static class Builder {
+    private final boolean isEnabled;
 
-  private void sendVote(BFTNode receiver, Vote vote) {
-    ConsensusEventMessage message = new ConsensusEventMessage(vote);
-    send(message, receiver);
-  }
+    public static Builder asDefault() {
+      return new Builder(true);
+    }
 
-  private void send(Message message, BFTNode recipient) {
-    this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
+    public Builder(boolean isEnabled) {
+      this.isEnabled = isEnabled;
+    }
+
+    public LedgerSyncCapability build() {
+      return new LedgerSyncCapability(this);
+    }
   }
 }

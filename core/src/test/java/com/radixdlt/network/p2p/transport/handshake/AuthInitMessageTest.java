@@ -64,100 +64,126 @@
 
 package com.radixdlt.network.p2p.transport.handshake;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.hash.HashCode;
+import static org.junit.Assert.*;
+
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.network.capability.LedgerSyncCapability;
 import com.radixdlt.network.capability.RemotePeerCapability;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
+import com.radixdlt.networks.Network;
+import java.util.Map;
 import java.util.Set;
+import org.junit.Assert;
+import org.junit.Test;
 
-@SerializerId2("message.handshake.auth_initiate")
-public final class AuthInitiateMessage extends BaseHandshakeMessage {
+public class AuthInitMessageTest {
 
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(DsonOutput.Output.ALL)
-  private SerializerDummy serializer = SerializerDummy.DUMMY;
+  @Test
+  public void
+      when_remote_peer_capabilities_is_null_then_it_is_equivalent_to_the_ledger_sync_capability() {
+    AuthInitiateMessage initiateMessage = getAuthInitiateMessage(null);
 
-  @JsonProperty("signature")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final ECDSASignature signature;
+    Assert.assertEquals(
+        Set.of(new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of())),
+        initiateMessage.capabilities);
+  }
 
-  @JsonProperty("publicKey")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final HashCode publicKey;
+  @Test
+  public void when_remote_peer_capabilities_is_bigger_than_allowed_then_an_exception_is_thrown() {
 
-  @JsonProperty("nonce")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final HashCode nonce;
+    Set<RemotePeerCapability> remotePeerCapabilities =
+        Set.of(
+            new RemotePeerCapability(
+                LedgerSyncCapability.NAME,
+                Map.of(
+                    "config1",
+                    "configValue1",
+                    "config2",
+                    "configValue2",
+                    "config3",
+                    "configValue3",
+                    "config4",
+                    "configValue4",
+                    "config5",
+                    "configValue5",
+                    "config6",
+                    "configValue6")));
 
-  @JsonProperty("networkId")
-  @DsonOutput(DsonOutput.Output.ALL)
-  private final int networkId;
+    InvalidHandshakeMessageException invalidHandshakeMessageException =
+        assertThrows(
+            InvalidHandshakeMessageException.class,
+            () -> getAuthInitiateMessage(remotePeerCapabilities));
 
-  @JsonCreator
-  public static AuthInitiateMessage deserialize(
-      @JsonProperty(value = "signature", required = true) ECDSASignature signature,
-      @JsonProperty(value = "publicKey", required = true) HashCode publicKey,
-      @JsonProperty(value = "nonce", required = true) HashCode nonce,
-      @JsonProperty("networkId") int networkId,
-      @JsonProperty("newestForkName") String rawNewestForkName,
-      @JsonProperty("capabilities") Set<RemotePeerCapability> nullableCapabilities) {
+    Throwable cause = invalidHandshakeMessageException.getCause();
+    assertTrue(cause instanceof IllegalArgumentException);
+    assertEquals(
+        String.format(
+            RemotePeerCapability.MAP_MAX_SIZE_ERROR_MSG,
+            RemotePeerCapability.CONFIGURATION_MAP_MAX_SIZE),
+        cause.getMessage());
+  }
+
+  @Test
+  public void
+      when_remote_peer_capabilities_config_name_is_bigger_than_allowed_then_an_exception_is_thrown() {
+
+    var configName = "thisConfigNameIsBiggerThanTheSizeAllowed";
+
+    Set<RemotePeerCapability> remotePeerCapabilities =
+        Set.of(
+            new RemotePeerCapability(
+                LedgerSyncCapability.NAME, Map.of(configName, "configValue1")));
+
+    InvalidHandshakeMessageException invalidHandshakeMessageException =
+        assertThrows(
+            InvalidHandshakeMessageException.class,
+            () -> getAuthInitiateMessage(remotePeerCapabilities));
+
+    Throwable cause = invalidHandshakeMessageException.getCause();
+    assertTrue(cause instanceof IllegalArgumentException);
+    assertEquals(
+        String.format(
+            RemotePeerCapability.CONFIGURATION_NAME_MAX_SIZE_ERROR_MSG,
+            configName,
+            RemotePeerCapability.CONFIGURATION_MAX_NAME_SIZE),
+        cause.getMessage());
+  }
+
+  @Test
+  public void
+      when_remote_peer_capabilities_config_value_is_bigger_than_allowed_then_an_exception_is_thrown() {
+
+    var configName = "config1";
+    var configValue = "thisConfigValueIsBiggerThanTheSizeAllowed";
+
+    Set<RemotePeerCapability> remotePeerCapabilities =
+        Set.of(
+            new RemotePeerCapability(LedgerSyncCapability.NAME, Map.of(configName, configValue)));
+
+    InvalidHandshakeMessageException invalidHandshakeMessageException =
+        assertThrows(
+            InvalidHandshakeMessageException.class,
+            () -> getAuthInitiateMessage(remotePeerCapabilities));
+
+    Throwable cause = invalidHandshakeMessageException.getCause();
+    assertTrue(cause instanceof IllegalArgumentException);
+    assertEquals(
+        String.format(
+            RemotePeerCapability.CONFIGURATION_VALUE_MAX_SIZE_ERROR_MSG,
+            configName,
+            configValue,
+            RemotePeerCapability.CONFIGURATION_MAX_VALUE_SIZE),
+        cause.getMessage());
+  }
+
+  private AuthInitiateMessage getAuthInitiateMessage(
+      Set<RemotePeerCapability> remotePeerCapabilities) {
     return new AuthInitiateMessage(
-        signature, publicKey, nonce, networkId, rawNewestForkName, nullableCapabilities);
-  }
-
-  public AuthInitiateMessage(
-      ECDSASignature signature,
-      HashCode publicKey,
-      HashCode nonce,
-      int networkId,
-      String rawNewestForkName,
-      Set<RemotePeerCapability> nullableCapabilities) {
-    super(rawNewestForkName, nullableCapabilities);
-    this.signature = signature;
-    this.publicKey = publicKey;
-    this.nonce = nonce;
-    this.networkId = networkId;
-  }
-
-  public ECDSASignature getSignature() {
-    return signature;
-  }
-
-  public HashCode getPublicKey() {
-    return publicKey;
-  }
-
-  public HashCode getNonce() {
-    return nonce;
-  }
-
-  public int getNetworkId() {
-    return networkId;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-
-    return (o instanceof AuthInitiateMessage that)
-        && Objects.equals(signature, that.signature)
-        && Objects.equals(publicKey, that.publicKey)
-        && Objects.equals(nonce, that.nonce)
-        && networkId == that.networkId
-        && Objects.equals(newestForkName, that.newestForkName)
-        && Objects.equals(capabilities, that.capabilities);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(signature, publicKey, nonce, networkId, newestForkName, capabilities);
+        ECDSASignature.zeroSignature(),
+        HashUtils.random256(),
+        HashUtils.random256(),
+        Network.LOCALNET.getId(),
+        "fork",
+        remotePeerCapabilities);
   }
 }

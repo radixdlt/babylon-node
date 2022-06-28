@@ -167,6 +167,6 @@ public class MessageCentralValidatorSync {
     return this.messageCentral
         .messagesOf(c)
         .toFlowable(BackpressureStrategy.BUFFER)
-        .map(m -> mapper.apply(m.getSource(), m.getMessage()));
+        .map(m -> mapper.apply(m.source(), m.message()));
   }
 }

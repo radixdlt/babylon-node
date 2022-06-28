@@ -62,81 +62,103 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network;
+package com.radixdlt.network.capability;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.network.messages.ConsensusEventMessage;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.p2p.NodeId;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
+import java.util.Map;
 import java.util.Objects;
 
-/** BFT Network sending and receiving layer used on top of the MessageCentral layer. */
-public final class MessageCentralBFTNetwork {
-  private final MessageCentral messageCentral;
+@SerializerId2("message.handshake.auth_initiate.capability")
+public class RemotePeerCapability {
 
-  @Inject
-  public MessageCentralBFTNetwork(MessageCentral messageCentral) {
-    this.messageCentral = Objects.requireNonNull(messageCentral);
+  public static final int CONFIGURATION_MAP_MAX_SIZE = 5;
+  public static final int CONFIGURATION_MAX_NAME_SIZE = 32;
+  public static final int CONFIGURATION_MAX_VALUE_SIZE = 32;
+  public static final String MAP_MAX_SIZE_ERROR_MSG =
+      "Configuration map cannot have more than %s entries.";
+  public static final String CONFIGURATION_NAME_MAX_SIZE_ERROR_MSG =
+      "Configuration '%s' cannot have name length bigger than %s.";
+  public static final String CONFIGURATION_VALUE_MAX_SIZE_ERROR_MSG =
+      "Configuration %s cannot have value '%s' length bigger than %s.";
+
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(DsonOutput.Output.ALL)
+  private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+  @JsonProperty("name")
+  @DsonOutput(DsonOutput.Output.ALL)
+  private final String name;
+
+  @JsonProperty("configuration")
+  @DsonOutput(DsonOutput.Output.ALL)
+  @JsonInclude()
+  private final Map<String, String> configuration;
+
+  /**
+   * Represents a Capability supported by a remote peer. The rationale behind using String and Map
+   * is to be able to support capabilities not yet known by a node.
+   *
+   * @param name a Capability name
+   * @param configuration a map representing the name and value of each Capability configuration.
+   */
+  @JsonCreator
+  public RemotePeerCapability(
+      @JsonProperty("name") String name,
+      @JsonProperty("configuration") Map<String, String> configuration) {
+    this.name = name;
+    this.configuration = configuration;
   }
 
-  // TODO: cleanup unnecessary code duplication and "fat" lambdas
-  public Flowable<RemoteEvent<Vote>> remoteVotes() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Vote)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              final var msg = m.message();
-              var vote = (Vote) msg.getConsensusMessage();
-              return RemoteEvent.create(node, vote);
-            });
+  public String getName() {
+    return name;
   }
 
-  public Flowable<RemoteEvent<Proposal>> remoteProposals() {
-    return remoteBftEvents()
-        .filter(m -> m.message().getConsensusMessage() instanceof Proposal)
-        .map(
-            m -> {
-              final var node = BFTNode.create(m.source().getPublicKey());
-              final var msg = m.message();
-              var proposal = (Proposal) msg.getConsensusMessage();
-              return RemoteEvent.create(node, proposal);
-            });
+  public Map<String, String> getConfiguration() {
+    return configuration;
   }
 
-  private Flowable<MessageFromPeer<ConsensusEventMessage>> remoteBftEvents() {
-    return this.messageCentral
-        .messagesOf(ConsensusEventMessage.class)
-        .toFlowable(BackpressureStrategy.BUFFER);
+  public void validate() {
+    if (this.configuration.size() > CONFIGURATION_MAP_MAX_SIZE) {
+      throw new IllegalArgumentException(
+          String.format(MAP_MAX_SIZE_ERROR_MSG, CONFIGURATION_MAP_MAX_SIZE));
+    }
+    this.configuration.forEach(
+        (configName, configValue) -> {
+          if (configName.length() > CONFIGURATION_MAX_NAME_SIZE) {
+            throw new IllegalArgumentException(
+                String.format(
+                    CONFIGURATION_NAME_MAX_SIZE_ERROR_MSG,
+                    configName,
+                    CONFIGURATION_MAX_NAME_SIZE));
+          }
+          if (configValue.length() > CONFIGURATION_MAX_VALUE_SIZE) {
+            throw new IllegalArgumentException(
+                String.format(
+                    CONFIGURATION_VALUE_MAX_SIZE_ERROR_MSG,
+                    configName,
+                    configValue,
+                    CONFIGURATION_MAX_VALUE_SIZE));
+          }
+        });
   }
 
-  public RemoteEventDispatcher<Proposal> proposalDispatcher() {
-    return this::sendProposal;
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    RemotePeerCapability that = (RemotePeerCapability) o;
+    return Objects.equals(getName(), that.getName())
+        && Objects.equals(getConfiguration(), that.getConfiguration());
   }
 
-  private void sendProposal(BFTNode receiver, Proposal proposal) {
-    ConsensusEventMessage message = new ConsensusEventMessage(proposal);
-    send(message, receiver);
-  }
-
-  public RemoteEventDispatcher<Vote> voteDispatcher() {
-    return this::sendVote;
-  }
-
-  private void sendVote(BFTNode receiver, Vote vote) {
-    ConsensusEventMessage message = new ConsensusEventMessage(vote);
-    send(message, receiver);
-  }
-
-  private void send(Message message, BFTNode recipient) {
-    this.messageCentral.send(NodeId.fromPublicKey(recipient.getKey()), message);
+  @Override
+  public int hashCode() {
+    return Objects.hash(getName(), getConfiguration());
   }
 }

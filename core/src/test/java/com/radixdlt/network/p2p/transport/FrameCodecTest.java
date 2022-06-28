@@ -68,6 +68,8 @@ import static org.junit.Assert.assertArrayEquals;
 
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.network.capability.Capabilities;
+import com.radixdlt.network.capability.LedgerSyncCapability;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshakeResult.AuthHandshakeSuccess;
 import com.radixdlt.network.p2p.transport.handshake.AuthHandshaker;
 import com.radixdlt.network.p2p.transport.handshake.Secrets;
@@ -82,6 +84,9 @@ import org.junit.Test;
 public final class FrameCodecTest {
   private final Serialization serialization = DefaultSerialization.getInstance();
   private final SecureRandom secureRandom = new SecureRandom();
+
+  private final Capabilities capabilities =
+      new Capabilities(LedgerSyncCapability.Builder.asDefault().build());
 
   @Test
   public void test_frame_codec_write_read() throws Exception {
@@ -116,10 +121,20 @@ public final class FrameCodecTest {
       throws Exception {
     final var handshaker1 =
         new AuthHandshaker(
-            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey1), (byte) 0x01, "fork1");
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey1),
+            (byte) 0x01,
+            "fork1",
+            capabilities);
     final var handshaker2 =
         new AuthHandshaker(
-            serialization, secureRandom, ECKeyOps.fromKeyPair(nodeKey2), (byte) 0x01, "fork1");
+            serialization,
+            secureRandom,
+            ECKeyOps.fromKeyPair(nodeKey2),
+            (byte) 0x01,
+            "fork1",
+            capabilities);
 
     final var initMessage = handshaker1.initiate(nodeKey2.getPublicKey());
     final var handshaker2ResultPair =

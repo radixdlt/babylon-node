@@ -72,6 +72,7 @@ import com.radixdlt.api.system.health.MovingAverage;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.Message;
+import com.radixdlt.network.capability.Capabilities;
 import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.PeerManager;
@@ -124,7 +125,8 @@ public final class MessageCentralImpl implements MessageCentral {
       EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
       SystemCounters counters,
       Provider<PeerControl> peerControl,
-      Addressing addressing) {
+      Addressing addressing,
+      Capabilities capabilities) {
     this.counters = Objects.requireNonNull(counters);
     this.outboundQueue =
         outboundEventQueueFactory.createEventQueue(
@@ -138,7 +140,7 @@ public final class MessageCentralImpl implements MessageCentral {
 
     this.messagePreprocessor =
         new MessagePreprocessor(
-            counters, config, timeSource, serialization, peerControl, addressing);
+            counters, config, timeSource, serialization, peerControl, addressing, capabilities);
 
     // Start outbound processing thread
     this.outboundThreadPool =
@@ -200,7 +202,7 @@ public final class MessageCentralImpl implements MessageCentral {
     totalMessageProcessingTime = Math.max(totalMessageProcessingTime + messageProcessingTime, 0L);
     updateCounters();
     if (log.isTraceEnabled()) {
-      log.trace("Received from {}: {}", message.getSource(), message.getMessage());
+      log.trace("Received from {}: {}", message.source(), message.message());
     }
   }
 
@@ -217,7 +219,7 @@ public final class MessageCentralImpl implements MessageCentral {
   @SuppressWarnings("unchecked")
   public <T extends Message> Observable<MessageFromPeer<T>> messagesOf(Class<T> messageType) {
     return this.peerMessages
-        .filter(p -> messageType.isInstance(p.getMessage()))
+        .filter(p -> messageType.isInstance(p.message()))
         .map(p -> (MessageFromPeer<T>) p);
   }
 
