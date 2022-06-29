@@ -70,7 +70,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -95,7 +94,6 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
-import com.radixdlt.harness.MockedPeersViewModule;
 import com.radixdlt.harness.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.harness.simulation.application.BFTValidatorSetNodeSelector;
 import com.radixdlt.harness.simulation.application.EpochsNodeSelector;
@@ -119,11 +117,9 @@ import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.network.GetVerticesRequestRateLimit;
-import com.radixdlt.network.p2p.NoOpPeerControl;
-import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.MockedP2PModule;
 import com.radixdlt.rev1.EpochCeilingView;
 import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
@@ -304,6 +300,8 @@ public final class SimulationTest {
           new AbstractModule() {
             @Override
             protected void configure() {
+              // FIXME This list is injected in at least 2 places: NetworkDroppers and
+              // NetworkLatencies. Maybe we could make this more explicit?
               bind(new TypeLiteral<ImmutableList<BFTNode>>() {}).toInstance(bftNodes);
               bind(new TypeLiteral<ImmutableList<BFTValidator>>() {}).toInstance(validators);
             }
@@ -518,17 +516,23 @@ public final class SimulationTest {
               bindConstant()
                   .annotatedWith(PacemakerMaxExponent.class)
                   .to(0); // Use constant timeout for now
-              bind(RateLimiter.class)
-                  .annotatedWith(GetVerticesRequestRateLimit.class)
-                  .toInstance(RateLimiter.create(50.0));
               bind(NodeEvents.class).toInstance(nodeEvents);
-              bind(PeerControl.class).toInstance(new NoOpPeerControl());
             }
           });
       modules.add(new MockedSystemModule());
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
-      modules.add(new MockedPeersViewModule(this.addressBookNodes, bftNodes));
+      MockedP2PModule.Builder mockedP2PModuleBuilder =
+          new MockedP2PModule.Builder().withDefaultRateLimit();
+      // There are two ways we can define the peers a node is aware of. 1 - Using all nodes in the
+      // network. 2
+      // - Creating an address book.
+      if (this.addressBookNodes != null) {
+        mockedP2PModuleBuilder.withPeersByNode(this.addressBookNodes);
+      } else {
+        mockedP2PModuleBuilder.withAllNodes(bftNodes);
+      }
+      modules.add(mockedP2PModuleBuilder.build());
 
       // Functional
       modules.add(new FunctionalRadixNodeModule(ledgerType.components));

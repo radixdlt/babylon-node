@@ -62,96 +62,69 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p;
+package com.radixdlt.p2p;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.network.hostip.HostIp;
-import com.radixdlt.network.hostip.HostIpModule;
-import com.radixdlt.network.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
-import com.radixdlt.network.p2p.addressbook.AddressBook;
-import com.radixdlt.network.p2p.addressbook.AddressBookPeerControl;
-import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
-import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
-import com.radixdlt.network.p2p.transport.PeerOutboundBootstrapImpl;
-import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.store.BerkeleyAddressBookStore;
-import com.radixdlt.utils.properties.RuntimeProperties;
+import com.radixdlt.network.capability.LedgerSyncCapability;
+import com.radixdlt.network.p2p.NodeId;
+import com.radixdlt.network.p2p.PeersView;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
-public final class P2PModule extends AbstractModule {
+class MockedPeersViewModule extends AbstractModule {
+  private ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNode;
+  private List<BFTNode> allNodes;
 
-  private final RuntimeProperties properties;
-
-  public P2PModule(RuntimeProperties properties) {
-    this.properties = properties;
+  /**
+   * @param peersByNodeOrNull - If passed a null map, then each node is assumed to have each other
+   *     node as a peer.
+   */
+  public MockedPeersViewModule(
+      ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNodeOrNull) {
+    this.peersByNode = Objects.requireNonNull(peersByNodeOrNull);
   }
 
-  @Override
-  protected void configure() {
-    final var eventBinder =
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-            .permitDuplicates();
-    eventBinder.addBinding().toInstance(PeerEvent.class);
-    eventBinder.addBinding().toInstance(PeerOutboundConnectionTimeout.class);
-
-    bind(AddressBook.class).in(Scopes.SINGLETON);
-    bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
-    bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
-    bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
-    bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class).in(Scopes.SINGLETON);
-    bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
-    bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
-    bind(PeerManager.class).in(Scopes.SINGLETON);
-
-    install(new HostIpModule(properties));
-    install(new PeerDiscoveryModule());
-    install(new PeerLivenessMonitorModule());
-  }
-
-  @ProvidesIntoSet
-  private EventProcessorOnRunner<?> peerManagerPeerEventProcessor(PeerManager peerManager) {
-    return new EventProcessorOnRunner<>(
-        Runners.P2P_NETWORK, PeerEvent.class, peerManager.peerEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private EventProcessorOnRunner<?> pendingOutboundChannelsManagerPeerEventProcessor(
-      PendingOutboundChannelsManager pendingOutboundChannelsManager) {
-    return new EventProcessorOnRunner<>(
-        Runners.P2P_NETWORK, PeerEvent.class, pendingOutboundChannelsManager.peerEventProcessor());
-  }
-
-  @ProvidesIntoSet
-  private EventProcessorOnRunner<?> peerOutboundConnectionTimeoutEventProcessor(
-      PendingOutboundChannelsManager pendingOutboundChannelsManager) {
-    return new EventProcessorOnRunner<>(
-        Runners.P2P_NETWORK,
-        PeerOutboundConnectionTimeout.class,
-        pendingOutboundChannelsManager.peerOutboundConnectionTimeoutEventProcessor());
+  public MockedPeersViewModule(List<BFTNode> allNodes) {
+    this.allNodes = Objects.requireNonNull(allNodes);
   }
 
   @Provides
-  public P2PConfig p2pConfig() {
-    return P2PConfig.fromRuntimeProperties(this.properties);
-  }
+  public PeersView peersView(@Self BFTNode self) {
+    final var peersForNode =
+        peersByNode != null && peersByNode.containsKey(self.getKey())
+            ? peersByNode // Use a specific set of peers for the given node, if defined
+                .get(self.getKey())
+                .stream()
+                .map(BFTNode::create)
+                .collect(ImmutableList.toImmutableList())
+            : allNodes; // Else return all the nodes in the network
 
-  @Provides
-  @Self
-  public RadixNodeUri selfUri(
-      @NetworkId int networkId, @Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) {
-    final var host =
-        hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-    final var port = p2pConfig.broadcastPort();
-    return RadixNodeUri.fromPubKeyAndAddress(networkId, selfKey, host, port);
+    var peerChannelInfo =
+        PeersView.PeerChannelInfo.create(
+            Optional.empty(),
+            "",
+            0,
+            true,
+            Set.of(LedgerSyncCapability.Builder.asDefault().build().toRemotePeerCapability()));
+    var channels = ImmutableList.of(peerChannelInfo);
+
+    final var peersForNodeWithoutSelf =
+        peersForNode.stream()
+            .filter(n -> !n.equals(self))
+            .map(it -> PeersView.PeerInfo.create(NodeId.fromPublicKey(it.getKey()), channels))
+            .collect(ImmutableList.toImmutableList());
+
+    // PeersView is a functional interface, so we're actually returning an implementation of
+    // PeersView.peers. To avoid exceptions from multiple iterations of a stream,
+    // each call to PeersView.peers returns a new stream
+    return peersForNodeWithoutSelf::stream;
   }
 }

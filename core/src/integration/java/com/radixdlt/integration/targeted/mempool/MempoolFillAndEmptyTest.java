@@ -81,6 +81,7 @@ import com.radixdlt.integration.Slow;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.p2p.MockedP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
@@ -115,10 +116,11 @@ public final class MempoolFillAndEmptyTest {
         new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
         new ForksModule(),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
+        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(1000)),
         new MempoolFillerModule(),
+        new MockedP2PModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {

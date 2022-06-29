@@ -89,6 +89,7 @@ import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.p2p.MockedP2PModule;
 import com.radixdlt.rev1.REOutput;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -145,8 +146,9 @@ public abstract class ApiTest {
                             Map.of(
                                 ValidatorRegisteredCopy.class, Amount.ofSubunits(UInt256.ONE))))),
             new ForksModule(),
-            new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 1),
+            new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
             new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),
+            new MockedP2PModule.Builder().build(),
             new AbstractModule() {
               @Override
               protected void configure() {

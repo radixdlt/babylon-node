@@ -135,7 +135,7 @@ public abstract class AbstractRadixEngineTest {
                             Map.of(ValidatorRegisteredCopy.class, Amount.ofSubunits(UInt256.ONE))))
                     .overrideMaxMessageLen(maxMessageLen)),
             new ForksModule(),
-            new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 1),
+            new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
             new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),
             new AbstractModule() {
               @Override

@@ -69,7 +69,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -93,9 +92,9 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.MockedPeersViewModule;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
+import com.radixdlt.p2p.MockedP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
@@ -294,7 +293,7 @@ public class RecoveryLivenessTest {
                 .to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
           }
         },
-        new MockedPeersViewModule(ImmutableMap.of(), allNodes));
+        new MockedP2PModule.Builder().withAllNodes(allNodes).build());
   }
 
   private void restartNode(int index) {

@@ -82,6 +82,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.p2p.MockedP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
@@ -114,7 +115,8 @@ public class PacemakerTest {
             Set.of(PrivateKeys.ofNumeric(1).getPublicKey()),
             Amount.ofTokens(1000),
             Amount.ofTokens(100)),
-        new SingleNodeAndPeersDeterministicNetworkModule(PrivateKeys.ofNumeric(1), 0),
+        new SingleNodeAndPeersDeterministicNetworkModule(PrivateKeys.ofNumeric(1)),
+        new MockedP2PModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {

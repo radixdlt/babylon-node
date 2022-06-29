@@ -68,7 +68,6 @@ import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ClassToInstanceMap;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -99,7 +98,7 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.MockedP2PModule;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -118,7 +117,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
@@ -207,16 +205,15 @@ public class RecoveryTest {
         new AbstractModule() {
           @Override
           protected void configure() {
-            bind(PeersView.class).toInstance(Stream::of);
             bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-            bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(ImmutableList.of(self));
             bind(Environment.class).toInstance(network.createSender(BFTNode.create(self.getKey())));
             bindConstant()
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
           }
         },
-        new PersistedNodeForTestingModule());
+        new PersistedNodeForTestingModule(),
+        new MockedP2PModule.Builder().build());
   }
 
   private RadixEngine<LedgerAndBFTProof> getRadixEngine() {
