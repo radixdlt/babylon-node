@@ -93,36 +93,7 @@ public final class Keys {
    * @param keyStore Key store path.
    */
   public static ECKeyPair readNodeKey(String keyStore) throws IOException, CryptoException {
-    return readKey(
-        keyStore, "node", "RADIX_NODE_KEYSTORE_PASSWORD", "RADIX_NODE_KEY_PASSWORD", false);
-  }
-
-  /**
-   * Read an {@link ECKeyPair} from the specified {@link RadixKeyStore}, using key pair name and
-   * environment variables specific to staker. If keystore or key pair don't exists, they are
-   * created.
-   *
-   * @param keyStore Key store path.
-   */
-  public static ECKeyPair readStakerKey(String keyStore) throws IOException, CryptoException {
-    return readKey(
-        keyStore, "wallet", "RADIX_STAKER_KEYSTORE_PASSWORD", "RADIX_STAKER_KEY_PASSWORD", true);
-  }
-
-  /**
-   * Read an {@link ECKeyPair} from the specified {@link RadixKeyStore}, using key pair name and
-   * environment variables specific to validator. If keystore or key pair don't exists, they are
-   * created.
-   *
-   * @param keyStore Key store path.
-   */
-  public static ECKeyPair readValidatorKey(String keyStore) throws IOException, CryptoException {
-    return readKey(
-        keyStore,
-        "node",
-        "RADIX_VALIDATOR_KEYSTORE_PASSWORD",
-        "RADIX_VALIDATOR_KEY_PASSWORD",
-        true);
+    return readKey(keyStore, "node", "RADIX_NODE_KEYSTORE_PASSWORD", false);
   }
 
   /**
@@ -137,27 +108,19 @@ public final class Keys {
    * @param keyStorePasswordEnv The environment variable holding the keystore password. This
    *     environment variable is read and used as the password for accessing the key store overall.
    *     If the environment variable does not exist, no password is used.
-   * @param keyPasswordEnv The environment variable holding the key password. This environment
-   *     variable is read and used as the password for accessing the key within the store. If the
-   *     environment variable does not exist, no password is used.
    * @param create If set to {@code true}, then keystore file and keypair will be created if not
    *     exists.
    * @return The key read from the key store
    */
   private static ECKeyPair readKey(
-      String keyStorePath,
-      String keyName,
-      String keyStorePasswordEnv,
-      String keyPasswordEnv,
-      boolean create)
+      String keyStorePath, String keyName, String keyStorePasswordEnv, boolean create)
       throws IOException, CryptoException {
-    var keyPassword = readPassword(keyPasswordEnv);
     var keyStorePassword = readPassword(keyStorePasswordEnv);
 
     try (var ks = RadixKeyStore.fromFile(new File(keyStorePath), keyStorePassword, create)) {
       return ks.readKeyPair(keyName, create);
     } finally {
-      reset(keyPassword, keyStorePassword);
+      reset(keyStorePassword);
     }
   }
 
