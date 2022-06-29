@@ -77,25 +77,25 @@ public final class Addressing {
   public static String accountHrp(int networkId) {
     return Network.ofId(networkId)
         .map(Network::getAccountHrp)
-        .orElse(Network.STOKENET.getAccountHrp() + networkId);
+        .orElse(Network.MAINNET.getAccountHrp() + networkId);
   }
 
   public static String validatorHrp(int networkId) {
     return Network.ofId(networkId)
         .map(Network::getValidatorHrp)
-        .orElse(Network.STOKENET.getValidatorHrp() + networkId);
+        .orElse(Network.MAINNET.getValidatorHrp() + networkId);
   }
 
   public static String resourceHrpSuffix(int networkId) {
     return Network.ofId(networkId)
         .map(Network::getResourceHrpSuffix)
-        .orElse(Network.STOKENET.getResourceHrpSuffix() + networkId);
+        .orElse(Network.MAINNET.getResourceHrpSuffix() + networkId);
   }
 
   public static String nodeHrp(int networkId) {
     return Network.ofId(networkId)
         .map(Network::getNodeHrp)
-        .orElse(Network.STOKENET.getNodeHrp() + networkId);
+        .orElse(Network.MAINNET.getNodeHrp() + networkId);
   }
 
   private final ValidatorAddressing validatorAddressing;

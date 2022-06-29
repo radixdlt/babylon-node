@@ -62,59 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.network.p2p.transport;
+package com.radixdlt.p2ptest;
 
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
-import io.netty.util.concurrent.Future;
-import java.net.SocketAddress;
-import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Stream;
 
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public class ExceptionHandler extends ChannelDuplexHandler {
-  private static final Logger log = LogManager.getLogger();
-  private final Optional<PeerChannel> mainHandler;
+public final class JavaProcess {
 
-  public ExceptionHandler(Optional<PeerChannel> mainHandler) {
-    this.mainHandler = mainHandler;
-  }
+  private JavaProcess() {}
 
-  @Override
-  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-    logAndCloseChannel(ctx, cause);
-  }
+  public static Process exec(Class<?> clazz, String xmx, List<String> args) throws IOException {
+    final var javaBin =
+        System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
 
-  @Override
-  public void connect(
-      ChannelHandlerContext ctx,
-      SocketAddress remoteAddress,
-      SocketAddress localAddress,
-      ChannelPromise promise) {
-    ctx.connect(
-        remoteAddress, localAddress, promise.addListener(future -> handleFailure(future, ctx)));
-  }
+    final var baseCommand =
+        List.of(
+            javaBin,
+            "-Xmx" + xmx,
+            "--enable-preview",
+            "-Djava.net.preferIPv4Stack=true",
+            "-cp",
+            System.getProperty("java.class.path"),
+            "-Djava.library.path=" + System.getProperty("java.library.path"),
+            clazz.getName());
 
-  @Override
-  public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-    ctx.write(msg, promise.addListener(future -> handleFailure(future, ctx)));
-  }
+    final var commandWithArgs = Stream.of(baseCommand, args).flatMap(List::stream).toList();
 
-  private void handleFailure(Future<?> future, ChannelHandlerContext ctx) {
-    if (!future.isSuccess()) {
-      logAndCloseChannel(ctx, future.cause());
-    }
-  }
-
-  private void logAndCloseChannel(ChannelHandlerContext ctx, Throwable cause) {
-    if (log.isTraceEnabled()) {
-      var affectedEntity = mainHandler.map(Object::toString).orElse("(to a peer via proxy)");
-      log.trace("Closing channel {} due to {}", affectedEntity, cause);
-    }
-
-    // The channel is closed to prevent a resource leak
-    ctx.close();
+    final var processBuilder = new ProcessBuilder(commandWithArgs);
+    return processBuilder.inheritIO().start();
   }
 }

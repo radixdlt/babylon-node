@@ -205,7 +205,7 @@ public final class RadixShell {
       if (network.genesisTxn().isEmpty() && properties.get("network.genesis_txn", "").isEmpty()) {
         properties.set(
             "network.genesis_txn",
-            Network.STOKENET.genesisTxn().get()); // default to stokenet genesis
+            Network.MAINNET.genesisTxn().get()); // Default to mainnet genesis
       }
 
       final var injector = Guice.createInjector(new RadixNodeModule(properties));

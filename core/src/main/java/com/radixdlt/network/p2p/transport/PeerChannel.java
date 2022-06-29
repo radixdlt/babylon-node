@@ -68,6 +68,7 @@ import static com.radixdlt.lang.Unit.unitResult;
 import static com.radixdlt.network.messaging.MessagingErrors.IO_ERROR;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
@@ -342,6 +343,19 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
   public void disconnect() {
     synchronized (this.lock) {
       this.nettyChannel.close();
+    }
+  }
+
+  /* Do NOT use this method for any production code.
+   * It's only intended to be used for low-level p2p testing. */
+  @VisibleForTesting
+  public void unsafeRawWriteToChannel(byte[] data) throws IOException {
+    final var buf = PooledByteBufAllocator.DEFAULT.buffer(data.length);
+    try (var out = new ByteBufOutputStream(buf)) {
+      out.write(data);
+    }
+    synchronized (lock) {
+      this.write(buf);
     }
   }
 
