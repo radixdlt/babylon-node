@@ -64,6 +64,9 @@
 
 package com.radixdlt.p2p;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.RateLimiter;
@@ -73,6 +76,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.GetVerticesRequestRateLimit;
 import com.radixdlt.network.p2p.NoOpPeerControl;
 import com.radixdlt.network.p2p.PeerControl;
+import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import java.util.List;
 
 public class MockedP2PModule extends AbstractModule {
@@ -90,6 +94,11 @@ public class MockedP2PModule extends AbstractModule {
         .toInstance(this.builder.rateLimiter);
 
     bind(PeerControl.class).toInstance(builder.peerControl);
+
+    // Not adding a method to customize it for now as all tests use this version
+    var addressBookPersistence = mock(AddressBookPersistence.class);
+    when(addressBookPersistence.getAllEntries()).thenReturn(ImmutableList.of());
+    bind(AddressBookPersistence.class).toInstance(addressBookPersistence);
 
     MockedPeersViewModule mockedPeersViewModule;
     if (builder.peersByNode != null) {
