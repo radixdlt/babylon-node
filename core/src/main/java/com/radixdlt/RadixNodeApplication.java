@@ -259,12 +259,6 @@ public final class RadixNodeApplication {
     }
 
     try {
-      injector.getInstance(BerkeleySafetyStateStore.class).close();
-    } catch (Exception e) {
-      // no-op
-    }
-
-    try {
       injector.getInstance(PeerServerBootstrap.class).stop();
     } catch (InterruptedException e) {
       // no-op
