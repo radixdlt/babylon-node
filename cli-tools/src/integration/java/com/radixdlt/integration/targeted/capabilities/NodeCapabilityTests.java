@@ -84,6 +84,8 @@ public class NodeCapabilityTests {
 
   @Test
   public void ensure_a_disabled_capability_can_still_send_messages() {
+    RadixShell.Node node1 = null;
+    RadixShell.Node node2 = null;
     try {
       var expectedResultMap = new HashMap<String, Boolean>();
       // Contains capability messages and whether they are expected or not
@@ -91,11 +93,11 @@ public class NodeCapabilityTests {
 
       var messagesReceived = new HashSet<String>();
 
-      var n1Port = getNextNodePort();
-      var n2Port = getNextNodePort();
+      var n1Port = 30301;
+      var n2Port = 30302;
 
-      var node1 = startNode(n1Port, false);
-      var node2 = startNode(n2Port, true);
+      node1 = startNode(n1Port, false);
+      node2 = startNode(n2Port, true);
 
       connectNodes(node1, node2);
 
@@ -110,20 +112,23 @@ public class NodeCapabilityTests {
       assertTrue(result.message, result.testOk);
     } catch (Exception ex) {
       fail(String.format("Exception %s", ex.getMessage()));
+    } finally {
+      node1.stopP2PServer();
+      node2.stopP2PServer();
     }
   }
 
   @Test
   public void ensure_disabled_messages_are_discarded() {
+    RadixShell.Node node1 = null;
+    RadixShell.Node node2 = null;
     try {
-      var messagesReceived = new HashSet<String>();
-      // Contains capability messages and whether they are expected or not
-      var n1Port = getNextNodePort();
-      var n2Port = getNextNodePort();
+      var n1Port = 30301;
+      var n2Port = 30302;
 
       // Start both nodes with capabilities disabled, so no StatusRequestMessages are sent.
-      var node1 = startNode(n1Port, false);
-      var node2 = startNode(n2Port, false);
+      node1 = startNode(n1Port, false);
+      node2 = startNode(n2Port, false);
 
       connectNodes(node1, node2);
 
@@ -141,11 +146,16 @@ public class NodeCapabilityTests {
 
     } catch (Exception ex) {
       fail(String.format("Exception %s", ex.getMessage()));
+    } finally {
+      node1.stopP2PServer();
+      node2.stopP2PServer();
     }
   }
 
   @Test
   public void ensure_messages_for_an_enabled_capability_are_processed() {
+    RadixShell.Node node1 = null;
+    RadixShell.Node node2 = null;
     try {
       var expectedResultMap = new HashMap<String, Boolean>();
       // Contains capability messages and whether they are expected or not
@@ -153,11 +163,11 @@ public class NodeCapabilityTests {
       expectedResultMap.put("node1-StatusResponseMessage", true);
 
       var messagesReceived = new HashSet<String>();
-      var n1Port = getNextNodePort();
-      var n2Port = getNextNodePort();
+      var n1Port = 30301;
+      var n2Port = 30302;
 
-      var node1 = startNode(n1Port, true);
-      var node2 = startNode(n2Port, true);
+      node1 = startNode(n1Port, true);
+      node2 = startNode(n2Port, true);
 
       connectNodes(node1, node2);
 
@@ -176,20 +186,25 @@ public class NodeCapabilityTests {
       assertTrue(result.message, result.testOk);
     } catch (Exception ex) {
       fail(String.format("Exception %s", ex.getMessage()));
+    } finally {
+      node1.stopP2PServer();
+      node2.stopP2PServer();
     }
   }
 
   @Test
   public void ensure_capabilities_are_sent_in_the_handshake_message() {
+    RadixShell.Node node1 = null;
+    RadixShell.Node node2 = null;
     try {
       var capabilityName = "ledger-sync";
       var peerCapabilityFound = false;
       var messagesReceived = new HashSet<String>();
-      var n1Port = getNextNodePort();
-      var n2Port = getNextNodePort();
+      var n1Port = 30301;
+      var n2Port = 30302;
 
-      var node1 = startNode(n1Port, true);
-      var node2 = startNode(n2Port, true);
+      node1 = startNode(n1Port, true);
+      node2 = startNode(n2Port, true);
 
       var counters = node1.getInstance(SystemCountersImpl.class);
       connectNodes(node1, node2);
@@ -214,11 +229,17 @@ public class NodeCapabilityTests {
           peerCapabilityFound);
     } catch (Exception ex) {
       fail(String.format("Exception %s", ex.getMessage()));
+    } finally {
+      node1.stopP2PServer();
+      node2.stopP2PServer();
     }
   }
 
   @Test
   public void ensure_nodes_are_aware_of_and_respect_other_node_capabilities() {
+    RadixShell.Node node1 = null;
+    RadixShell.Node node2 = null;
+    RadixShell.Node node3 = null;
     try {
       // Contains capability messages and whether they are expected or not
       var expectedResultMap = new HashMap<String, Boolean>();
@@ -227,29 +248,28 @@ public class NodeCapabilityTests {
       expectedResultMap.put("node3-StatusRequestMessage", false);
 
       var messagesReceived = new HashSet<String>();
+      var n1Port = 30301;
+      var n2Port = 30302;
+      var n3Port = 30303;
 
-      var n1Port = getNextNodePort();
-      var n2Port = getNextNodePort();
-      var n3Port = getNextNodePort();
-
-      var node1 = startNode(n1Port, true);
-      var node2 = startNode(n2Port, true);
-      var node3 = startNode(n3Port, false);
+      node1 = startNode(n1Port, true);
+      node2 = startNode(n2Port, true);
+      node3 = startNode(n3Port, false);
 
       connectNodes(node1, node2);
       connectNodes(node1, node3);
       connectNodes(node2, node3);
 
-      //Node's 1 and 2 should receive the StatusRequest message but node3 shouldn't.
+      // Node's 1 and 2 should receive the StatusRequest message but node3 shouldn't.
       node1.onMsg(
-              StatusRequestMessage.class,
-              m -> messagesReceived.add("node1-" + m.message().getClass().getSimpleName()));
+          StatusRequestMessage.class,
+          m -> messagesReceived.add("node1-" + m.message().getClass().getSimpleName()));
       node2.onMsg(
-              StatusRequestMessage.class,
-              m -> messagesReceived.add("node2-" + m.message().getClass().getSimpleName()));
+          StatusRequestMessage.class,
+          m -> messagesReceived.add("node2-" + m.message().getClass().getSimpleName()));
       node3.onMsg(
-              StatusRequestMessage.class,
-              m -> messagesReceived.add("node3-" + m.message().getClass().getSimpleName()));
+          StatusRequestMessage.class,
+          m -> messagesReceived.add("node3-" + m.message().getClass().getSimpleName()));
 
       // Have the expected messages been received?
       Result result = waitForMessagesReceived(expectedResultMap, messagesReceived, 2);
@@ -257,13 +277,18 @@ public class NodeCapabilityTests {
 
       var node3Counters = node2.getInstance(SystemCounters.class);
 
-      //Ensure Node3 doesn't have a discarded message (i.e. Node's 1 and 2 shouldn't send a status request message to node 3)
+      // Ensure Node3 doesn't have a discarded message (i.e. Node's 1 and 2 shouldn't send a status
+      // request message to node 3)
       result =
           waitForCounterValueEquals(
               node3Counters, SystemCounters.CounterType.MESSAGES_INBOUND_DISCARDED, 0, 1);
 
     } catch (Exception ex) {
       fail(String.format("Exception %s", ex.getMessage()));
+    } finally {
+      node1.stopP2PServer();
+      node2.stopP2PServer();
+      node3.stopP2PServer();
     }
   }
 
@@ -300,10 +325,10 @@ public class NodeCapabilityTests {
 
   /*
   Repeatedly check to see if the expected messages have been received. Will retry every 100ms
-  until for the maxWaitTimeSecs is exceeded.
+  until either the messages have been found or the maxWaitTimeSecs is exceeded.
   If the expectedResultMap contains any messages that shouldn't be received, then the
-  maxWaitTimeSecs becomes the actual time the method will retry
-  before returning. In these cases, the maxWaitTime should be enough time to be confident a
+  maxWaitTimeSecs becomes the actual time the method will retry before returning.
+  In these cases, the maxWaitTime should be set to enough time to be confident a
   message isn't going to be received.
   */
   private Result waitForMessagesReceived(
@@ -327,7 +352,7 @@ public class NodeCapabilityTests {
       result = checkMessages(expectedResultMap, messagesReceived);
 
       // If maxWaitTimeIsActualWaitTime is true, we want to ignore the result and only verify the
-      // message(s) don't exist after the wait period.
+      // message(s) do not exist after the wait period.
       if (result.testOk && !maxWaitTimeIsActualWaitTime) {
         break;
       } else {
@@ -402,11 +427,6 @@ public class NodeCapabilityTests {
     if (!connected) {
       fail("Failed to connect within allocated time");
     }
-  }
-
-  private int getNextNodePort() {
-    nextNodePort++;
-    return nextNodePort;
   }
 
   private class Result {
