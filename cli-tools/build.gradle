@@ -216,7 +216,7 @@ tasks.getByName("createGenerateNodeKeyScripts") {
 }
 tasks.getByName("startScripts").dependsOn createGenerateNodeKeyScripts
 
-task runCliToolsTargetedIntegrationTests(type: Test) {
+task runTargetedIntegrationTestsUsingCliTools(type: Test) {
     filter {
         includeTestsMatching "com.radixdlt.integration.targeted.*"
     }

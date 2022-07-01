@@ -201,8 +201,10 @@ public class NodeCapabilityTests {
               .findFirst()
               .get()
               .getRemotePeerCapabilities();
+
       var capability =
           node1Capabilities.stream().filter(c -> c.getName().equals(capabilityName)).findFirst();
+
       if (!capability.isEmpty() && capability.get().getName().equals(capabilityName)) {
         peerCapabilityFound = true;
       }
@@ -238,20 +240,27 @@ public class NodeCapabilityTests {
       connectNodes(node1, node3);
       connectNodes(node2, node3);
 
+      //Node's 1 and 2 should receive the StatusRequest message but node3 shouldn't.
       node1.onMsg(
-          StatusRequestMessage.class,
-          m -> messagesReceived.add("node1-" + m.message().getClass().getSimpleName()));
+              StatusRequestMessage.class,
+              m -> messagesReceived.add("node1-" + m.message().getClass().getSimpleName()));
       node2.onMsg(
-          StatusRequestMessage.class,
-          m -> messagesReceived.add("node2-" + m.message().getClass().getSimpleName()));
+              StatusRequestMessage.class,
+              m -> messagesReceived.add("node2-" + m.message().getClass().getSimpleName()));
       node3.onMsg(
-          StatusRequestMessage.class,
-          m -> messagesReceived.add("node3-" + m.message().getClass().getSimpleName()));
+              StatusRequestMessage.class,
+              m -> messagesReceived.add("node3-" + m.message().getClass().getSimpleName()));
 
       // Have the expected messages been received?
       Result result = waitForMessagesReceived(expectedResultMap, messagesReceived, 2);
-
       assertTrue(result.message, result.testOk);
+
+      var node3Counters = node2.getInstance(SystemCounters.class);
+
+      //Ensure Node3 doesn't have a discarded message (i.e. Node's 1 and 2 shouldn't send a status request message to node 3)
+      result =
+          waitForCounterValueEquals(
+              node3Counters, SystemCounters.CounterType.MESSAGES_INBOUND_DISCARDED, 0, 1);
 
     } catch (Exception ex) {
       fail(String.format("Exception %s", ex.getMessage()));
