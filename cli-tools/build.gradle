@@ -67,6 +67,17 @@ apply plugin: 'org.sonarqube'
 apply plugin: 'project-report'
 apply plugin: 'application'
 
+sourceSets {
+    integration {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/integration/java')
+        }
+        resources.srcDir file('src/integration/resources')
+    }
+}
+
 compileTestJava {
     options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 }
@@ -82,9 +93,15 @@ dependencies {
     implementation 'io.netty:netty-all'
 
     testImplementation 'junit:junit'
-    testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.assertj:assertj-core'
+    testImplementation project(':cli-tools')
+
 }
+
+configurations {
+    integrationImplementation.extendsFrom testImplementation
+}
+
 
 jacocoTestReport {
     dependsOn test
@@ -198,3 +215,13 @@ tasks.getByName("createGenerateNodeKeyScripts") {
     }
 }
 tasks.getByName("startScripts").dependsOn createGenerateNodeKeyScripts
+
+task runCliToolsTargetedIntegrationTests(type: Test) {
+    filter {
+        includeTestsMatching "com.radixdlt.integration.targeted.*"
+    }
+
+    environment "RADIX_NODE_KEYSTORE_PASSWORD",  System.getenv('supersecret')
+    testClassesDirs = sourceSets.integration.output.classesDirs
+    classpath = sourceSets.integration.runtimeClasspath
+}
