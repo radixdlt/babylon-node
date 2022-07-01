@@ -266,7 +266,7 @@ public final class RadixNodeApplication {
 
     try {
       injector.getInstance(PeerServerBootstrap.class).stop();
-    } catch (Exception e) {
+    } catch (InterruptedException e) {
       // no-op
     }
 
