@@ -258,6 +258,12 @@ public final class RadixNodeApplication {
       // no-op
     }
 
+    try {
+      injector.getInstance(PeerServerBootstrap.class).stop();
+    } catch (InterruptedException e) {
+      // no-op
+    }
+
     System.out.println("Node shutdown completed");
   }
 
