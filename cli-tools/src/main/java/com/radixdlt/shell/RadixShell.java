@@ -260,6 +260,16 @@ public final class RadixShell {
       }
     }
 
+    public void stopP2PServer() {
+      final var peerServer = injector.getInstance(PeerServerBootstrap.class);
+      try {
+        peerServer.stop();
+        log.info("P2P server stopped: " + self());
+      } catch (InterruptedException e) {
+        log.error("Cannot stop p2p server", e);
+      }
+    }
+
     public RadixNodeUri self() {
       return injector.getInstance(Key.get(RadixNodeUri.class, Self.class));
     }
