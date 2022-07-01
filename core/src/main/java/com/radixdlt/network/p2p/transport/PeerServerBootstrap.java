@@ -75,7 +75,6 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.serialization.Serialization;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -96,7 +95,6 @@ public final class PeerServerBootstrap {
   private final ECKeyOps ecKeyOps;
   private final EventDispatcher<PeerEvent> peerEventDispatcher;
   private final Capabilities capabilities;
-  private ChannelFuture serverBind;
 
   @Inject
   public PeerServerBootstrap(
@@ -145,12 +143,6 @@ public final class PeerServerBootstrap {
                 Optional.empty(),
                 capabilities));
 
-    serverBind = serverBootstrap.bind(config.listenAddress(), config.listenPort()).sync();
-  }
-
-  public void stop() throws InterruptedException {
-    if (serverBind != null) {
-      serverBind.channel().close().sync();
-    }
+    serverBootstrap.bind(config.listenAddress(), config.listenPort()).sync();
   }
 }
