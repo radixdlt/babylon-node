@@ -62,94 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.ledger;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
+import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.transactions.Transaction;
-import com.radixdlt.utils.Pair;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Stream;
 
-/** Vertex which has been executed in the prepare phase */
-public final class PreparedVertex {
-  private final long timeOfExecution;
-  private final VertexWithHash vertex;
+public class MockExecuted implements ExecutedTransaction {
 
-  private final LedgerHeader ledgerHeader;
+  private final Transaction transaction;
 
-  private final List<PreparedTransaction> preparedTransactions;
-  private final Map<Transaction, Exception> commandExceptions;
-
-  public PreparedVertex(
-      VertexWithHash vertex,
-      LedgerHeader ledgerHeader,
-      List<PreparedTransaction> preparedTransactions,
-      Map<Transaction, Exception> commandExceptions,
-      long timeOfExecution) {
-    this.vertex = Objects.requireNonNull(vertex);
-    this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
-    this.preparedTransactions = Objects.requireNonNull(preparedTransactions);
-    this.commandExceptions = Objects.requireNonNull(commandExceptions);
-    this.timeOfExecution = timeOfExecution;
-  }
-
-  public long getTimeOfExecution() {
-    return timeOfExecution;
-  }
-
-  public HashCode getId() {
-    return vertex.getHash();
-  }
-
-  public HashCode getParentId() {
-    return vertex.getParentId();
-  }
-
-  public Round getRound() {
-    return vertex.getRound();
-  }
-
-  public Stream<PreparedTransaction> successfulTransactions() {
-    return preparedTransactions.stream();
-  }
-
-  public Stream<Pair<Transaction, Exception>> errorCommands() {
-    return commandExceptions.entrySet().stream().map(e -> Pair.of(e.getKey(), e.getValue()));
-  }
-
-  public Stream<Transaction> getTxns() {
-    return Stream.concat(
-        successfulTransactions().map(PreparedTransaction::transaction),
-        errorCommands().map(Pair::getFirst));
-  }
-
-  /**
-   * Retrieve the resulting header which is to be persisted on ledger
-   *
-   * @return the header
-   */
-  public LedgerHeader getLedgerHeader() {
-    return ledgerHeader;
-  }
-
-  /**
-   * Retrieve the vertex which was executed
-   *
-   * @return the executed vertex
-   */
-  public VertexWithHash getVertex() {
-    return vertex;
+  public MockExecuted(Transaction transaction) {
+    this.transaction = transaction;
   }
 
   @Override
-  public String toString() {
-    return String.format(
-        "%s{vertex=%s ledgerHeader=%s}",
-        this.getClass().getSimpleName(), this.vertex, this.ledgerHeader);
+  public Transaction transaction() {
+    return transaction;
   }
 }

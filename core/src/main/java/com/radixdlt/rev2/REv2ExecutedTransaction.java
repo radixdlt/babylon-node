@@ -62,16 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.rev2;
 
-import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
+import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.transactions.Transaction;
 
-public class MockPrepared implements PreparedTransaction {
-
+public class REv2ExecutedTransaction implements StateComputerLedger.ExecutedTransaction {
   private final Transaction transaction;
 
-  public MockPrepared(Transaction transaction) {
+  public REv2ExecutedTransaction(Transaction transaction) {
     this.transaction = transaction;
   }
 

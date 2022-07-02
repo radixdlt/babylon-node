@@ -64,7 +64,7 @@
 
 package com.radixdlt.ledger;
 
-import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.crypto.HashUtils;
@@ -74,7 +74,7 @@ import java.util.List;
 /** Generates new random hash commands */
 public final class RandomHashTxnsGenerator implements ProposalGenerator {
   @Override
-  public List<Transaction> getTransactionsForProposal(Round round, List<PreparedVertex> prepared) {
+  public List<Transaction> getTransactionsForProposal(Round round, List<ExecutedVertex> prepared) {
     return List.of(Transaction.create(HashUtils.random256().asBytes()));
   }
 }

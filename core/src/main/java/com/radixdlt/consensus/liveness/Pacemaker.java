@@ -168,7 +168,9 @@ public final class Pacemaker {
   public void processBFTUpdate(BFTInsertUpdate update) {
     /* we only process the insertion of an empty vertex used for timeout vote (see: processLocalTimeout) */
     if (!this.isViewTimedOut
-        || this.timeoutVoteVertexId.filter(update.getInserted().getId()::equals).isEmpty()) {
+        || this.timeoutVoteVertexId
+            .filter(update.getInserted().getVertexHash()::equals)
+            .isEmpty()) {
       return;
     }
 
@@ -207,9 +209,9 @@ public final class Pacemaker {
     if (highestQC.getProposed().getLedgerHeader().isEndOfEpoch()) {
       nextTransactions = List.of();
     } else {
-      final List<PreparedVertex> preparedVertices =
+      final List<ExecutedVertex> executedVertices =
           vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
-      nextTransactions = proposalGenerator.getTransactionsForProposal(round, preparedVertices);
+      nextTransactions = proposalGenerator.getTransactionsForProposal(round, executedVertices);
       systemCounters.add(
           SystemCounters.CounterType.BFT_PACEMAKER_PROPOSED_TRANSACTIONS, nextTransactions.size());
     }
@@ -269,7 +271,7 @@ public final class Pacemaker {
 
     // TODO: reimplement in async way
     this.vertexStore
-        .getPreparedVertex(vertex.getHash())
+        .getExecutedVertex(vertex.getHash())
         .ifPresentOrElse(
             this::createAndSendTimeoutVote, // if vertex is already there, send the vote immediately
             () -> maybeInsertVertex(vertex) // otherwise insert and wait for async bft update msg
@@ -286,14 +288,16 @@ public final class Pacemaker {
     }
   }
 
-  private void createAndSendTimeoutVote(PreparedVertex preparedVertex) {
+  private void createAndSendTimeoutVote(ExecutedVertex executedVertex) {
     final BFTHeader bftHeader =
         new BFTHeader(
-            preparedVertex.getRound(), preparedVertex.getId(), preparedVertex.getLedgerHeader());
+            executedVertex.getRound(),
+            executedVertex.getVertexHash(),
+            executedVertex.getLedgerHeader());
 
     final Vote baseVote =
         this.safetyRules.createVote(
-            preparedVertex.getVertex(),
+            executedVertex.getVertex(),
             bftHeader,
             this.timeSupplier.currentTime(),
             this.latestRoundUpdate.getHighQC());

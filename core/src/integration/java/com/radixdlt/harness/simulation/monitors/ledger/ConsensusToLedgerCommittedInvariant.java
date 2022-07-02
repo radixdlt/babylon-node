@@ -65,7 +65,7 @@
 package com.radixdlt.harness.simulation.monitors.ledger;
 
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
@@ -111,7 +111,7 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
             committedUpdate ->
                 Observable.fromStream(
                     committedUpdate.committed().stream()
-                        .flatMap(PreparedVertex::successfulTransactions)))
+                        .flatMap(ExecutedVertex::successfulTransactions)))
         .flatMapMaybe(
             txn ->
                 committedTxns

@@ -71,14 +71,14 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.lang.Option;
 import java.util.List;
 
 public interface VertexStore {
-  record CommittedUpdate(ImmutableList<PreparedVertex> committedVertices) {}
+  record CommittedUpdate(ImmutableList<ExecutedVertex> committedVertices) {}
 
   sealed interface InsertQcResult {
     record Inserted(
@@ -112,9 +112,9 @@ public interface VertexStore {
 
   VertexWithHash getRoot();
 
-  List<PreparedVertex> getPathFromRoot(HashCode vertexId);
+  List<ExecutedVertex> getPathFromRoot(HashCode vertexId);
 
-  Option<PreparedVertex> getPreparedVertex(HashCode id);
+  Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash);
 
-  Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexId, int count);
+  Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count);
 }

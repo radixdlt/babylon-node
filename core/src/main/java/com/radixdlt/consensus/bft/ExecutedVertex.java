@@ -62,20 +62,105 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.consensus.bft;
 
-import com.radixdlt.ledger.StateComputerLedger;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.transactions.Transaction;
+import com.radixdlt.utils.Pair;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 
-public class REv2PreparedTransaction implements StateComputerLedger.PreparedTransaction {
-  private final Transaction transaction;
+/**
+ * A Vertex which has been executed by the engine.
+ *
+ * <p>In particular, a system transaction has been added, and user-transactions have been executed.
+ * Some of these may fail, this is captured in transactionsWhichRaisedAnException. The system
+ * transaction and user-transactions are captured in executedTransactions.
+ *
+ * <p>The ledger header captures an overview of the resultant state after ingesting these
+ * transactions.
+ */
+public final class ExecutedVertex {
+  private final long timeOfExecution;
+  private final VertexWithHash vertex;
 
-  public REv2PreparedTransaction(Transaction transaction) {
-    this.transaction = transaction;
+  private final LedgerHeader ledgerHeader;
+
+  private final List<ExecutedTransaction> executedTransactions;
+  private final Map<Transaction, Exception> transactionsWhichRaisedAnException;
+
+  public ExecutedVertex(
+      VertexWithHash vertex,
+      LedgerHeader ledgerHeader,
+      List<ExecutedTransaction> executedTransactions,
+      Map<Transaction, Exception> transactionsWhichRaisedAnException,
+      long timeOfExecution) {
+    this.vertex = Objects.requireNonNull(vertex);
+    this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
+    this.executedTransactions = Objects.requireNonNull(executedTransactions);
+    this.transactionsWhichRaisedAnException =
+        Objects.requireNonNull(transactionsWhichRaisedAnException);
+    this.timeOfExecution = timeOfExecution;
+  }
+
+  public long getTimeOfExecution() {
+    return timeOfExecution;
+  }
+
+  public HashCode getVertexHash() {
+    return vertex.getHash();
+  }
+
+  public HashCode getParentId() {
+    return vertex.getParentId();
+  }
+
+  public Round getRound() {
+    return vertex.getRound();
+  }
+
+  public Stream<ExecutedTransaction> successfulTransactions() {
+    return executedTransactions.stream();
+  }
+
+  public Stream<Pair<Transaction, Exception>> errorCommands() {
+    return transactionsWhichRaisedAnException.entrySet().stream()
+        .map(e -> Pair.of(e.getKey(), e.getValue()));
+  }
+
+  public Stream<Transaction> getTxns() {
+    return Stream.concat(
+        successfulTransactions().map(ExecutedTransaction::transaction),
+        errorCommands().map(Pair::getFirst));
+  }
+
+  /**
+   * Retrieve the resulting header which is to be persisted on ledger
+   *
+   * @return the header
+   */
+  public LedgerHeader getLedgerHeader() {
+    return ledgerHeader;
+  }
+
+  /**
+   * Retrieve the vertex which was executed
+   *
+   * @return the executed vertex
+   */
+  public VertexWithHash getVertex() {
+    return vertex;
   }
 
   @Override
-  public Transaction transaction() {
-    return transaction;
+  public String toString() {
+    return String.format(
+        "%s{vertex=%s ledgerHeader=%s}",
+        this.getClass().getSimpleName(), this.vertex, this.ledgerHeader);
   }
 }

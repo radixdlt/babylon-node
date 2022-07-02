@@ -146,7 +146,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 
   @Override
   public void processBFTUpdate(BFTInsertUpdate update) {
-    HashCode vertexId = update.getInserted().getId();
+    HashCode vertexId = update.getInserted().getVertexHash();
     log.trace("LOCAL_SYNC: {}", vertexId);
 
     syncingEvents.stream()

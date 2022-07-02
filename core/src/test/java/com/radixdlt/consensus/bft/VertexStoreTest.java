@@ -123,7 +123,7 @@ public class VertexStoreTest {
             invocation -> {
               VertexWithHash vertexWithHash = invocation.getArgument(1);
               return Optional.of(
-                  new PreparedVertex(
+                  new ExecutedVertex(
                       vertexWithHash, MOCKED_HEADER, ImmutableList.of(), ImmutableMap.of(), 1L));
             })
         .when(ledger)

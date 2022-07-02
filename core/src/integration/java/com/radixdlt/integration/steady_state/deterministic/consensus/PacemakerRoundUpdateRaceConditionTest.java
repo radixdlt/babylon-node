@@ -118,11 +118,11 @@ public class PacemakerRoundUpdateRaceConditionTest {
                   @ProvidesIntoSet
                   @ProcessOnDispatch
                   private EventProcessor<BFTInsertUpdate> bftInsertUpdateProcessor() {
-                    final Map<HashCode, PreparedVertex> insertedVertices = new HashMap<>();
+                    final Map<HashCode, ExecutedVertex> insertedVertices = new HashMap<>();
                     return bftInsertUpdate -> {
-                      final PreparedVertex inserted = bftInsertUpdate.getInserted();
-                      insertedVertices.putIfAbsent(inserted.getId(), inserted);
-                      final Optional<PreparedVertex> maybeParent =
+                      final ExecutedVertex inserted = bftInsertUpdate.getInserted();
+                      insertedVertices.putIfAbsent(inserted.getVertexHash(), inserted);
+                      final Optional<ExecutedVertex> maybeParent =
                           Optional.ofNullable(insertedVertices.get(inserted.getParentId()));
 
                       maybeParent.ifPresent(

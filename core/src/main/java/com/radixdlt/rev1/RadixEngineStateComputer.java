@@ -92,7 +92,7 @@ import com.radixdlt.engine.RadixEngineResult;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
+import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -164,7 +164,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
   public record RadixEngineTransaction(
       Transaction transaction, REProcessedTxn processed, PermissionLevel permissionLevel)
-      implements PreparedTransaction {}
+      implements ExecutedTransaction {}
 
   public REProcessedTxn test(byte[] payload, boolean isSigned) throws RadixEngineException {
     synchronized (lock) {
@@ -228,10 +228,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 
   @Override
   public List<Transaction> getTransactionsForProposal(
-      List<PreparedTransaction> preparedTransactions) {
+      List<ExecutedTransaction> executedTransactions) {
     synchronized (lock) {
       var cmds =
-          preparedTransactions.stream()
+          executedTransactions.stream()
               .map(RadixEngineTransaction.class::cast)
               .map(RadixEngineTransaction::processed)
               .toList();
@@ -278,7 +278,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       BFTNode proposer,
       RadixEngineBranch<LedgerAndBFTProof> branch,
       List<Transaction> nextTransactions,
-      ImmutableList.Builder<PreparedTransaction> successBuilder,
+      ImmutableList.Builder<ExecutedTransaction> successBuilder,
       ImmutableMap.Builder<Transaction, Exception> errorBuilder) {
     // TODO: This check should probably be done before getting into state computer
     this.maxSigsPerRound.ifPresent(
@@ -310,7 +310,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
   @Override
   public StateComputerResult prepare(
-      List<PreparedTransaction> previous, VertexWithHash vertex, long timestamp) {
+      List<ExecutedTransaction> previous, VertexWithHash vertex, long timestamp) {
     synchronized (lock) {
       var next = vertex.getTxns();
       var transientBranch = this.radixEngine.transientBranch();
@@ -330,7 +330,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       }
 
       var systemTxn = this.executeSystemUpdate(transientBranch, vertex, timestamp);
-      var successBuilder = ImmutableList.<PreparedTransaction>builder();
+      var successBuilder = ImmutableList.<ExecutedTransaction>builder();
 
       successBuilder.add(systemTxn);
 

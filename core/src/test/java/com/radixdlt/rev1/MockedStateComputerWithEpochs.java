@@ -72,8 +72,8 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.MockPrepared;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
+import com.radixdlt.ledger.MockExecuted;
+import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -106,19 +106,19 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
   @Override
   public List<Transaction> getTransactionsForProposal(
-      List<PreparedTransaction> preparedTransactions) {
+      List<ExecutedTransaction> executedTransactions) {
     return List.of();
   }
 
   @Override
   public StateComputerResult prepare(
-      List<PreparedTransaction> previous, VertexWithHash vertex, long timestamp) {
+      List<ExecutedTransaction> previous, VertexWithHash vertex, long timestamp) {
     var round = vertex.getRound();
     var epoch = vertex.getParentHeader().getLedgerHeader().getEpoch();
     var next = vertex.getTxns();
     if (round.compareTo(epochMaxRound) >= 0) {
       return new StateComputerResult(
-          next.stream().map(MockPrepared::new).collect(Collectors.toList()),
+          next.stream().map(MockExecuted::new).collect(Collectors.toList()),
           ImmutableMap.of(),
           validatorSetMapping.apply(epoch + 1));
     } else {

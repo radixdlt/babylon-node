@@ -186,15 +186,15 @@ public class PacemakerTest {
     HighQC highQC = mock(HighQC.class);
     BFTInsertUpdate bftInsertUpdate = mock(BFTInsertUpdate.class);
     when(bftInsertUpdate.getHeader()).thenReturn(bftHeader);
-    PreparedVertex preparedVertex = mock(PreparedVertex.class);
-    when(preparedVertex.getRound()).thenReturn(round);
-    when(preparedVertex.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
+    ExecutedVertex executedVertex = mock(ExecutedVertex.class);
+    when(executedVertex.getRound()).thenReturn(round);
+    when(executedVertex.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
     VerifiedVertexStoreState vertexStoreState = mock(VerifiedVertexStoreState.class);
     when(vertexStoreState.getHighQC()).thenReturn(highQC);
-    when(bftInsertUpdate.getInserted()).thenReturn(preparedVertex);
+    when(bftInsertUpdate.getInserted()).thenReturn(executedVertex);
     when(bftInsertUpdate.getVertexStoreState()).thenReturn(vertexStoreState);
     var node = BFTNode.random();
-    when(preparedVertex.getId())
+    when(executedVertex.getVertexHash())
         .thenReturn(hasher.hashDsonEncoded(Vertex.createTimeout(highestQc, round, node)));
 
     when(this.safetyRules.getLastVote(round)).thenReturn(Optional.empty());
@@ -202,7 +202,7 @@ public class PacemakerTest {
     when(this.safetyRules.timeoutVote(emptyVote)).thenReturn(emptyVoteWithTimeout);
     when(this.validatorSet.nodes()).thenReturn(validators);
 
-    when(this.vertexStore.getPreparedVertex(any())).thenReturn(Optional.empty());
+    when(this.vertexStore.getExecutedVertex(any())).thenReturn(Optional.empty());
 
     this.pacemaker.processLocalTimeout(
         ScheduledLocalTimeout.create(
@@ -216,7 +216,7 @@ public class PacemakerTest {
     verify(this.safetyRules, times(1)).timeoutVote(emptyVote);
     verifyNoMoreInteractions(this.safetyRules);
 
-    verify(this.vertexStore, times(1)).getPreparedVertex(any());
+    verify(this.vertexStore, times(1)).getExecutedVertex(any());
 
     ArgumentCaptor<VertexWithHash> insertVertexCaptor =
         ArgumentCaptor.forClass(VertexWithHash.class);

@@ -70,9 +70,9 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
+import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.LinkedList;
 import java.util.List;
@@ -90,8 +90,8 @@ public class MockedLedgerModule extends AbstractModule {
   Ledger syncedLedger(TimeSupplier timeSupplier) {
     return new Ledger() {
       @Override
-      public Optional<PreparedVertex> prepare(
-          LinkedList<PreparedVertex> previous, VertexWithHash vertex) {
+      public Optional<ExecutedVertex> prepare(
+          LinkedList<ExecutedVertex> previous, VertexWithHash vertex) {
         final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
         final LedgerHeader ledgerHeader =
             vertex
@@ -100,10 +100,10 @@ public class MockedLedgerModule extends AbstractModule {
                 .updateRoundAndTimestamp(vertex.getRound(), timestamp);
 
         return Optional.of(
-            new PreparedVertex(
+            new ExecutedVertex(
                 vertex,
                 ledgerHeader,
-                vertex.getTxns().stream().<PreparedTransaction>map(MockPrepared::new).toList(),
+                vertex.getTxns().stream().<ExecutedTransaction>map(MockExecuted::new).toList(),
                 Map.of(),
                 timeSupplier.currentTime()));
       }

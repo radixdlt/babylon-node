@@ -71,7 +71,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.harness.simulation.TestInvariant.TestInvariantError;
@@ -155,8 +155,8 @@ public final class SafetyChecker {
   }
 
   public Optional<TestInvariantError> process(BFTNode node, BFTCommittedUpdate committedUpdate) {
-    ImmutableList<PreparedVertex> vertices = committedUpdate.committed();
-    for (PreparedVertex vertex : vertices) {
+    ImmutableList<ExecutedVertex> vertices = committedUpdate.committed();
+    for (ExecutedVertex vertex : vertices) {
       Optional<TestInvariantError> maybeError = process(node, vertex.getVertex());
       if (maybeError.isPresent()) {
         return maybeError;

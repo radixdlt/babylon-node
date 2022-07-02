@@ -76,7 +76,7 @@ import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.rev2.REv2PreparedTransaction;
+import com.radixdlt.rev2.REv2ExecutedTransaction;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Map;
@@ -116,22 +116,22 @@ public class REv2StateComputerModule extends AbstractModule {
 
       @Override
       public List<Transaction> getTransactionsForProposal(
-          List<StateComputerLedger.PreparedTransaction> preparedTransactions) {
+          List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
         var transactionsNotToInclude =
-            preparedTransactions.stream()
-                .map(StateComputerLedger.PreparedTransaction::transaction)
+            executedTransactions.stream()
+                .map(StateComputerLedger.ExecutedTransaction::transaction)
                 .toList();
         return mempool.getTransactionsForProposal(1, transactionsNotToInclude);
       }
 
       @Override
       public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.PreparedTransaction> previous,
+          List<StateComputerLedger.ExecutedTransaction> previous,
           VertexWithHash vertex,
           long timestamp) {
         return new StateComputerLedger.StateComputerResult(
             vertex.getTxns().stream()
-                .map(REv2PreparedTransaction::new)
+                .map(REv2ExecutedTransaction::new)
                 .collect(Collectors.toList()),
             Map.of());
       }

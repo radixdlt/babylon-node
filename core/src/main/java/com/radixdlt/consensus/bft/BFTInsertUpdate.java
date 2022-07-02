@@ -70,18 +70,18 @@ import java.util.Objects;
 /** An update emitted when the BFT has inserted a new vertex */
 public final class BFTInsertUpdate {
   private final VerifiedVertexStoreState vertexStoreState;
-  private final PreparedVertex insertedVertex;
+  private final ExecutedVertex insertedVertex;
   private final int siblingsCount;
 
   private BFTInsertUpdate(
-      PreparedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
+      ExecutedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
     this.insertedVertex = Objects.requireNonNull(insertedVertex);
     this.siblingsCount = siblingsCount;
     this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
   }
 
   public static BFTInsertUpdate insertedVertex(
-      PreparedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
+      ExecutedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
     return new BFTInsertUpdate(insertedVertex, siblingsCount, vertexStoreState);
   }
 
@@ -99,10 +99,12 @@ public final class BFTInsertUpdate {
 
   public BFTHeader getHeader() {
     return new BFTHeader(
-        insertedVertex.getRound(), insertedVertex.getId(), insertedVertex.getLedgerHeader());
+        insertedVertex.getRound(),
+        insertedVertex.getVertexHash(),
+        insertedVertex.getLedgerHeader());
   }
 
-  public PreparedVertex getInserted() {
+  public ExecutedVertex getInserted() {
     return insertedVertex;
   }
 

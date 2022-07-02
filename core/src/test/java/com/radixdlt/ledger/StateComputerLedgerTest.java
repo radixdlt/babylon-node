@@ -84,11 +84,11 @@ import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
+import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
@@ -124,8 +124,8 @@ public class StateComputerLedgerTest {
 
   private final Transaction nextTransaction = Transaction.create(new byte[] {0});
   private final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
-  private final PreparedTransaction successfulNextCommand =
-      new PreparedTransaction() {
+  private final ExecutedTransaction successfulNextCommand =
+      new ExecutedTransaction() {
         @Override
         public Transaction transaction() {
           return nextTransaction;
@@ -200,7 +200,7 @@ public class StateComputerLedgerTest {
         Vertex.create(genesisQC, Round.of(1), List.of(), BFTNode.random()).withId(hasher);
 
     // Act
-    Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
+    Optional<ExecutedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
     // Assert
     assertThat(nextPrepared)
@@ -224,7 +224,7 @@ public class StateComputerLedgerTest {
             .withId(hasher);
 
     // Act
-    Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
+    Optional<ExecutedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
     // Assert
     assertThat(nextPrepared)
@@ -248,7 +248,7 @@ public class StateComputerLedgerTest {
     var proposedVertex =
         Vertex.create(genesisQC, Round.of(1), List.of(nextTransaction), BFTNode.random())
             .withId(hasher);
-    Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
+    Optional<ExecutedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
     // Assert
     assertThat(nextPrepared)

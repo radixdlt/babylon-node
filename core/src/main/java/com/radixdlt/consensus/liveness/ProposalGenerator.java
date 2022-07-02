@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
@@ -80,5 +80,5 @@ public interface ProposalGenerator {
    * @param prepared vertices with transactions which have already been prepared
    * @return new transactions for the next proposal
    */
-  List<Transaction> getTransactionsForProposal(Round round, List<PreparedVertex> prepared);
+  List<Transaction> getTransactionsForProposal(Round round, List<ExecutedVertex> prepared);
 }

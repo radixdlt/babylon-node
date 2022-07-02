@@ -73,8 +73,8 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.MissingParentException;
-import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.Hasher;
@@ -95,7 +95,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
   private final Hasher hasher;
   private final Ledger ledger;
 
-  private final Map<HashCode, PreparedVertex> vertices = new HashMap<>();
+  private final Map<HashCode, ExecutedVertex> vertices = new HashMap<>();
   private final Map<HashCode, Set<HashCode>> vertexChildren = new HashMap<>();
 
   // These should never be null
@@ -122,7 +122,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
   public static VertexStoreJavaImpl create(
       VerifiedVertexStoreState vertexStoreState, Ledger ledger, Hasher hasher) {
-    VertexStoreJavaImpl vertexStore =
+    var vertexStore =
         new VertexStoreJavaImpl(
             ledger,
             hasher,
@@ -131,27 +131,27 @@ public final class VertexStoreJavaImpl implements VertexStore {
             vertexStoreState.getHighQC().highestQC(),
             vertexStoreState.getHighQC().highestTC());
 
-    for (VertexWithHash vertex : vertexStoreState.getVertices()) {
-      LinkedList<PreparedVertex> previous = vertexStore.getPathFromRoot(vertex.getParentId());
-      Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(previous, vertex);
-      if (preparedVertexMaybe.isEmpty()) {
+    for (var vertex : vertexStoreState.getVertices()) {
+      var previous = vertexStore.getPathFromRoot(vertex.getParentId());
+      var executedVertexMaybe = ledger.prepare(previous, vertex);
+      if (executedVertexMaybe.isEmpty()) {
         // Try pruning to see if that helps catching up to the ledger
         // This can occur if a node crashes between persisting a new QC and committing
         // TODO: Cleanup and remove
-        VerifiedVertexStoreState pruned = vertexStoreState.prune(hasher);
+        var pruned = vertexStoreState.prune(hasher);
         if (!pruned.equals(vertexStoreState)) {
           return create(pruned, ledger, hasher);
         }
 
         // FIXME: If this occurs then it means that our highQC may not have an associated vertex
-        // FIXME: so should save preparedVertex
+        // FIXME: so should save executedVertex
         break;
       } else {
-        PreparedVertex preparedVertex = preparedVertexMaybe.get();
-        vertexStore.vertices.put(preparedVertex.getId(), preparedVertex);
-        vertexStore.vertexChildren.put(preparedVertex.getId(), new HashSet<>());
-        Set<HashCode> siblings = vertexStore.vertexChildren.get(preparedVertex.getParentId());
-        siblings.add(preparedVertex.getId());
+        var executedVertex = executedVertexMaybe.get();
+        vertexStore.vertices.put(executedVertex.getVertexHash(), executedVertex);
+        vertexStore.vertexChildren.put(executedVertex.getVertexHash(), new HashSet<>());
+        var siblings = vertexStore.vertexChildren.get(executedVertex.getParentId());
+        siblings.add(executedVertex.getVertexHash());
       }
     }
 
@@ -165,14 +165,16 @@ public final class VertexStoreJavaImpl implements VertexStore {
   public Option<VerifiedVertexStoreState> tryRebuild(VerifiedVertexStoreState vertexStoreState) {
     // FIXME: Currently this assumes vertexStoreState is a chain with no forks which is our only use
     // case at the moment.
-    LinkedList<PreparedVertex> prepared = new LinkedList<>();
+    var executedVertices = new LinkedList<ExecutedVertex>();
     for (VertexWithHash vertex : vertexStoreState.getVertices()) {
-      Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(prepared, vertex);
-      if (preparedVertexMaybe.isEmpty()) {
+      var executedVertexMaybe = ledger.prepare(executedVertices, vertex);
+
+      // If any vertex couldn't be executed successfully, our saved state is invalid
+      if (executedVertexMaybe.isEmpty()) {
         return Option.empty();
       }
 
-      prepared.add(preparedVertexMaybe.get());
+      executedVertices.add(executedVertexMaybe.get());
     }
 
     this.rootVertex = vertexStoreState.getRoot();
@@ -182,11 +184,11 @@ public final class VertexStoreJavaImpl implements VertexStore {
     this.vertexChildren.clear();
     this.vertexChildren.put(rootVertex.getHash(), new HashSet<>());
 
-    for (PreparedVertex preparedVertex : prepared) {
-      this.vertices.put(preparedVertex.getId(), preparedVertex);
-      this.vertexChildren.put(preparedVertex.getId(), new HashSet<>());
-      Set<HashCode> siblings = vertexChildren.get(preparedVertex.getParentId());
-      siblings.add(preparedVertex.getId());
+    for (var executedVertex : executedVertices) {
+      this.vertices.put(executedVertex.getVertexHash(), executedVertex);
+      this.vertexChildren.put(executedVertex.getVertexHash(), new HashSet<>());
+      Set<HashCode> siblings = vertexChildren.get(executedVertex.getParentId());
+      siblings.add(executedVertex.getVertexHash());
     }
 
     return Option.present(vertexStoreState);
@@ -261,12 +263,12 @@ public final class VertexStoreJavaImpl implements VertexStore {
   /**
    * Returns the vertex with specified id or empty if not exists.
    *
-   * @param id the id of a vertex
+   * @param vertexHash the id of a vertex
    * @return the specified vertex or empty
    */
   // TODO: reimplement in async way
-  public Option<PreparedVertex> getPreparedVertex(HashCode id) {
-    return Option.option(vertices.get(id));
+  public Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash) {
+    return Option.option(vertices.get(vertexHash));
   }
 
   public InsertVertexChainResult insertVertexChain(VerifiedVertexChain verifiedVertexChain) {
@@ -297,7 +299,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
    * @param vertex vertex to insert
    */
   public Option<BFTInsertUpdate> insertVertex(VertexWithHash vertex) {
-    PreparedVertex v = vertices.get(vertex.getHash());
+    ExecutedVertex v = vertices.get(vertex.getHash());
     if (v != null) {
       return Option.empty();
     }
@@ -310,17 +312,17 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   private Option<BFTInsertUpdate> insertVertexInternal(VertexWithHash vertex) {
-    LinkedList<PreparedVertex> previous = getPathFromRoot(vertex.getParentId());
-    final var preparedVertexMaybe = Option.from(ledger.prepare(previous, vertex));
-    return preparedVertexMaybe.map(
-        preparedVertex -> {
-          vertices.put(preparedVertex.getId(), preparedVertex);
-          vertexChildren.put(preparedVertex.getId(), new HashSet<>());
-          Set<HashCode> siblings = vertexChildren.get(preparedVertex.getParentId());
-          siblings.add(preparedVertex.getId());
+    LinkedList<ExecutedVertex> previous = getPathFromRoot(vertex.getParentId());
+    final var executedVertexOption = Option.from(ledger.prepare(previous, vertex));
+    return executedVertexOption.map(
+        executedVertex -> {
+          vertices.put(executedVertex.getVertexHash(), executedVertex);
+          vertexChildren.put(executedVertex.getVertexHash(), new HashSet<>());
+          Set<HashCode> siblings = vertexChildren.get(executedVertex.getParentId());
+          siblings.add(executedVertex.getVertexHash());
 
           VerifiedVertexStoreState vertexStoreState = getState();
-          return BFTInsertUpdate.insertedVertex(preparedVertex, siblings.size(), vertexStoreState);
+          return BFTInsertUpdate.insertedVertex(executedVertex, siblings.size(), vertexStoreState);
         });
   }
 
@@ -358,17 +360,17 @@ public final class VertexStoreJavaImpl implements VertexStore {
     final var path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getHash()));
     HashCode prev = null;
     for (int i = path.size() - 1; i >= 0; i--) {
-      this.removeVertexAndPruneInternal(path.get(i).getId(), prev);
-      prev = path.get(i).getId();
+      this.removeVertexAndPruneInternal(path.get(i).getVertexHash(), prev);
+      prev = path.get(i).getVertexHash();
     }
 
     return Optional.of(new CommittedUpdate(path));
   }
 
-  public LinkedList<PreparedVertex> getPathFromRoot(HashCode vertexId) {
-    final LinkedList<PreparedVertex> path = new LinkedList<>();
+  public LinkedList<ExecutedVertex> getPathFromRoot(HashCode vertexId) {
+    final LinkedList<ExecutedVertex> path = new LinkedList<>();
 
-    PreparedVertex vertex = vertices.get(vertexId);
+    ExecutedVertex vertex = vertices.get(vertexId);
     while (vertex != null) {
       path.addFirst(vertex);
       vertex = vertices.get(vertex.getParentId());
@@ -392,20 +394,20 @@ public final class VertexStoreJavaImpl implements VertexStore {
    *
    * <p>if the store does not contain some vertex then will return an empty list.
    *
-   * @param vertexId the id of the vertex
+   * @param vertexHash the id of the vertex
    * @param count the number of vertices to retrieve
    * @return the list of vertices if all found, otherwise an empty list
    */
-  public Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexId, int count) {
-    HashCode nextId = vertexId;
+  public Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count) {
+    HashCode nextId = vertexHash;
     ImmutableList.Builder<VertexWithHash> builder = ImmutableList.builderWithExpectedSize(count);
     for (int i = 0; i < count; i++) {
       final VertexWithHash vertexWithHash;
       if (nextId.equals(rootVertex.getHash())) {
         vertexWithHash = rootVertex;
       } else if (this.vertices.containsKey(nextId)) {
-        final PreparedVertex preparedVertex = this.vertices.get(nextId);
-        vertexWithHash = preparedVertex.getVertex();
+        final ExecutedVertex executedVertex = this.vertices.get(nextId);
+        vertexWithHash = executedVertex.getVertex();
       } else {
         return Option.empty();
       }

@@ -74,7 +74,7 @@ import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
@@ -96,36 +96,36 @@ import java.util.Optional;
 /** Synchronizes execution */
 public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
-  public interface PreparedTransaction {
+  public interface ExecutedTransaction {
     Transaction transaction();
   }
 
   public static class StateComputerResult {
-    private final List<PreparedTransaction> preparedTransactions;
+    private final List<ExecutedTransaction> executedTransactions;
     private final Map<Transaction, Exception> failedCommands;
     private final BFTValidatorSet nextValidatorSet;
 
     public StateComputerResult(
-        List<PreparedTransaction> preparedTransactions,
+        List<ExecutedTransaction> executedTransactions,
         Map<Transaction, Exception> failedCommands,
         BFTValidatorSet nextValidatorSet) {
-      this.preparedTransactions = Objects.requireNonNull(preparedTransactions);
+      this.executedTransactions = Objects.requireNonNull(executedTransactions);
       this.failedCommands = Objects.requireNonNull(failedCommands);
       this.nextValidatorSet = nextValidatorSet;
     }
 
     public StateComputerResult(
-        List<PreparedTransaction> preparedTransactions,
+        List<ExecutedTransaction> executedTransactions,
         Map<Transaction, Exception> failedCommands) {
-      this(preparedTransactions, failedCommands, null);
+      this(executedTransactions, failedCommands, null);
     }
 
     public Optional<BFTValidatorSet> getNextValidatorSet() {
       return Optional.ofNullable(nextValidatorSet);
     }
 
-    public List<PreparedTransaction> getSuccessfulCommands() {
-      return preparedTransactions;
+    public List<ExecutedTransaction> getSuccessfulCommands() {
+      return executedTransactions;
     }
 
     public Map<Transaction, Exception> getFailedCommands() {
@@ -136,10 +136,10 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   public interface StateComputer {
     void addToMempool(MempoolAdd mempoolAdd, BFTNode origin);
 
-    List<Transaction> getTransactionsForProposal(List<PreparedTransaction> preparedTransactions);
+    List<Transaction> getTransactionsForProposal(List<ExecutedTransaction> executedTransactions);
 
     StateComputerResult prepare(
-        List<PreparedTransaction> previous, VertexWithHash vertex, long timestamp);
+        List<ExecutedTransaction> previous, VertexWithHash vertex, long timestamp);
 
     void commit(
         VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState);
@@ -190,24 +190,24 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   }
 
   @Override
-  public List<Transaction> getTransactionsForProposal(Round round, List<PreparedVertex> prepared) {
-    final ImmutableList<PreparedTransaction> preparedTransactions =
+  public List<Transaction> getTransactionsForProposal(Round round, List<ExecutedVertex> prepared) {
+    final ImmutableList<ExecutedTransaction> executedTransactions =
         prepared.stream()
-            .flatMap(PreparedVertex::successfulTransactions)
+            .flatMap(ExecutedVertex::successfulTransactions)
             .collect(ImmutableList.toImmutableList());
     synchronized (lock) {
-      return stateComputer.getTransactionsForProposal(preparedTransactions);
+      return stateComputer.getTransactionsForProposal(executedTransactions);
     }
   }
 
   @Override
-  public Optional<PreparedVertex> prepare(
-      LinkedList<PreparedVertex> previous, VertexWithHash vertex) {
+  public Optional<ExecutedVertex> prepare(
+      LinkedList<ExecutedVertex> previous, VertexWithHash vertex) {
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
     final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
-    final ImmutableList<PreparedTransaction> prevCommands =
+    final ImmutableList<ExecutedTransaction> prevCommands =
         previous.stream()
-            .flatMap(PreparedVertex::successfulTransactions)
+            .flatMap(ExecutedVertex::successfulTransactions)
             .collect(ImmutableList.toImmutableList());
     final long quorumTimestamp;
     // if vertex has genesis parent then QC is mocked so just use previous timestamp
@@ -227,7 +227,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       // Don't execute atom if in process of epoch change
       if (parentHeader.isEndOfEpoch()) {
         return Optional.of(
-            new PreparedVertex(
+            new ExecutedVertex(
                 vertex,
                 parentHeader.updateRoundAndTimestamp(vertex.getRound(), quorumTimestamp),
                 ImmutableList.of(),
@@ -254,7 +254,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
           stateComputer.prepare(concatenatedCommands, vertex, quorumTimestamp);
 
       AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
-      for (PreparedTransaction txn : result.getSuccessfulCommands()) {
+      for (ExecutedTransaction txn : result.getSuccessfulCommands()) {
         accumulatorState =
             this.accumulator.accumulate(accumulatorState, txn.transaction().getId().asHashCode());
       }
@@ -268,7 +268,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               result.getNextValidatorSet().orElse(null));
 
       return Optional.of(
-          new PreparedVertex(
+          new ExecutedVertex(
               vertex,
               ledgerHeader,
               result.getSuccessfulCommands(),
@@ -281,8 +281,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     return committedUpdate -> {
       final ImmutableList<Transaction> transactions =
           committedUpdate.committed().stream()
-              .flatMap(PreparedVertex::successfulTransactions)
-              .map(PreparedTransaction::transaction)
+              .flatMap(ExecutedVertex::successfulTransactions)
+              .map(ExecutedTransaction::transaction)
               .collect(ImmutableList.toImmutableList());
       var proof = committedUpdate.vertexStoreState().getRootHeader();
       var verifiedTxnsAndProof = VerifiedTxnsAndProof.create(transactions, proof);

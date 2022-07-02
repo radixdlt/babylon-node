@@ -64,7 +64,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import java.util.LinkedList;
 import java.util.Optional;
 
@@ -78,5 +78,5 @@ public interface Ledger {
    * @param vertex vertex to prepare
    * @return the results of executing the prepare stage
    */
-  Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VertexWithHash vertex);
+  Optional<ExecutedVertex> prepare(LinkedList<ExecutedVertex> previous, VertexWithHash vertex);
 }

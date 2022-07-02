@@ -102,7 +102,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
+import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -154,13 +154,13 @@ public class EpochManagerTest {
 
         @Override
         public List<Transaction> getTransactionsForProposal(
-            List<PreparedTransaction> preparedTransactions) {
+            List<ExecutedTransaction> executedTransactions) {
           return List.of();
         }
 
         @Override
         public StateComputerResult prepare(
-            List<PreparedTransaction> previous, VertexWithHash vertex, long timestamp) {
+            List<ExecutedTransaction> previous, VertexWithHash vertex, long timestamp) {
           return new StateComputerResult(List.of(), Map.of());
         }
 

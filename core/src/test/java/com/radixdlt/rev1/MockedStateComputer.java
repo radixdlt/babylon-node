@@ -81,7 +81,7 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.MockPrepared;
+import com.radixdlt.ledger.MockExecuted;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.VerifiedTxnsAndProof;
@@ -108,17 +108,17 @@ public final class MockedStateComputer implements StateComputer {
 
   @Override
   public List<Transaction> getTransactionsForProposal(
-      List<StateComputerLedger.PreparedTransaction> preparedTransactions) {
+      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
     return List.of();
   }
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      List<StateComputerLedger.PreparedTransaction> previous,
+      List<StateComputerLedger.ExecutedTransaction> previous,
       VertexWithHash vertex,
       long timestamp) {
     return new StateComputerLedger.StateComputerResult(
-        vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()), Map.of());
+        vertex.getTxns().stream().map(MockExecuted::new).collect(Collectors.toList()), Map.of());
   }
 
   @Override

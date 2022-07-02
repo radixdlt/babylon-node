@@ -65,7 +65,7 @@
 package com.radixdlt.harness.simulation.monitors.application;
 
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
@@ -102,7 +102,7 @@ public class CommittedChecker implements TestInvariant {
                     .filter(
                         e ->
                             e.committed().stream()
-                                .flatMap(PreparedVertex::getTxns)
+                                .flatMap(ExecutedVertex::getTxns)
                                 .anyMatch(c -> Arrays.equals(c.getPayload(), txn.getPayload())))
                     .timeout(10, TimeUnit.SECONDS)
                     .firstOrError()

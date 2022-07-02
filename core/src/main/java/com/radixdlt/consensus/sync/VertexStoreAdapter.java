@@ -75,7 +75,7 @@ import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
@@ -143,12 +143,12 @@ public final class VertexStoreAdapter {
     };
   }
 
-  public Optional<PreparedVertex> getPreparedVertex(HashCode id) {
-    return vertexStore.getPreparedVertex(id).toOptional();
+  public Optional<ExecutedVertex> getExecutedVertex(HashCode vertexHash) {
+    return vertexStore.getExecutedVertex(vertexHash).toOptional();
   }
 
-  public List<PreparedVertex> getPathFromRoot(HashCode vertexId) {
-    return vertexStore.getPathFromRoot(vertexId);
+  public List<ExecutedVertex> getPathFromRoot(HashCode vertexHash) {
+    return vertexStore.getPathFromRoot(vertexHash);
   }
 
   public void insertVertexChain(VerifiedVertexChain verifiedVertexChain) {
