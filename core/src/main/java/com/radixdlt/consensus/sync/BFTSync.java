@@ -484,7 +484,7 @@ public final class BFTSync implements BFTSyncer {
     var parentId = vertex.getParentId();
 
     if (vertexStore.containsVertex(parentId)) {
-      vertexStore.insertVertexChain(VerifiedVertexChain.create(syncState.fetched));
+      vertexStore.insertVertexChain(VertexChain.create(syncState.fetched));
       // Finish it off
       this.syncing.remove(syncState.localSyncId);
       this.syncToQC(syncState.highQC, syncState.author);

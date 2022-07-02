@@ -75,8 +75,8 @@ import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.MissingParentException;
-import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexChain;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.lang.Option;
 import java.util.ArrayList;
@@ -271,10 +271,10 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return Option.option(vertices.get(vertexHash));
   }
 
-  public InsertVertexChainResult insertVertexChain(VerifiedVertexChain verifiedVertexChain) {
+  public InsertVertexChainResult insertVertexChain(VertexChain vertexChain) {
     final var bftInsertUpdates = new ArrayList<BFTInsertUpdate>();
     final var insertedQcs = new ArrayList<InsertQcResult.Inserted>();
-    for (VertexWithHash v : verifiedVertexChain.getVertices()) {
+    for (VertexWithHash v : vertexChain.getVertices()) {
       final var insertQcResult = insertQc(v.getQC());
 
       switch (insertQcResult) {

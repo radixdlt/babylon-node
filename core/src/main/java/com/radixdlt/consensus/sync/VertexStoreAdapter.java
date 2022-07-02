@@ -76,8 +76,8 @@ import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexChain;
 import com.radixdlt.environment.EventDispatcher;
 import java.util.List;
 import java.util.Objects;
@@ -151,8 +151,8 @@ public final class VertexStoreAdapter {
     return vertexStore.getPathFromRoot(vertexHash);
   }
 
-  public void insertVertexChain(VerifiedVertexChain verifiedVertexChain) {
-    final var result = vertexStore.insertVertexChain(verifiedVertexChain);
+  public void insertVertexChain(VertexChain vertexChain) {
+    final var result = vertexStore.insertVertexChain(vertexChain);
     result
         .insertedQcs()
         .forEach(

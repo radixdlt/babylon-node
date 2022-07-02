@@ -72,8 +72,8 @@ import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexChain;
 import com.radixdlt.lang.Option;
 import java.util.List;
 
@@ -102,7 +102,7 @@ public interface VertexStore {
 
   Option<BFTInsertUpdate> insertVertex(VertexWithHash vertex);
 
-  InsertVertexChainResult insertVertexChain(VerifiedVertexChain verifiedVertexChain);
+  InsertVertexChainResult insertVertexChain(VertexChain vertexChain);
 
   Option<VerifiedVertexStoreState> tryRebuild(VerifiedVertexStoreState vertexStoreState);
 
