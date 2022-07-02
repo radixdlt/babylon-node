@@ -70,6 +70,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimeoutCertificate;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.crypto.Hasher;
 import java.util.HashMap;
 import java.util.Objects;
@@ -80,20 +81,20 @@ import javax.annotation.concurrent.Immutable;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @Immutable
 public final class VerifiedVertexStoreState {
-  private final VerifiedVertex root;
+  private final VertexWithHash root;
   private final LedgerProof rootHeader;
   private final HighQC highQC;
   // TODO: collapse the following two
-  private final ImmutableList<VerifiedVertex> vertices;
-  private final ImmutableMap<HashCode, VerifiedVertex> idToVertex;
+  private final ImmutableList<VertexWithHash> vertices;
+  private final ImmutableMap<HashCode, VertexWithHash> idToVertex;
   private Optional<TimeoutCertificate> highestTC;
 
   private VerifiedVertexStoreState(
       HighQC highQC,
       LedgerProof rootHeader,
-      VerifiedVertex root,
-      ImmutableMap<HashCode, VerifiedVertex> idToVertex,
-      ImmutableList<VerifiedVertex> vertices,
+      VertexWithHash root,
+      ImmutableMap<HashCode, VertexWithHash> idToVertex,
+      ImmutableList<VertexWithHash> vertices,
       Optional<TimeoutCertificate> highestTC) {
     this.highQC = highQC;
     this.rootHeader = rootHeader;
@@ -104,14 +105,14 @@ public final class VerifiedVertexStoreState {
   }
 
   public static VerifiedVertexStoreState create(
-      HighQC highQC, VerifiedVertex root, Optional<TimeoutCertificate> highestTC, Hasher hasher) {
+      HighQC highQC, VertexWithHash root, Optional<TimeoutCertificate> highestTC, Hasher hasher) {
     return create(highQC, root, ImmutableList.of(), highestTC, hasher);
   }
 
   public static VerifiedVertexStoreState create(
       HighQC highQC,
-      VerifiedVertex root,
-      ImmutableList<VerifiedVertex> vertices,
+      VertexWithHash root,
+      ImmutableList<VertexWithHash> vertices,
       Optional<TimeoutCertificate> highestTC,
       Hasher hasher) {
     final var headers =
@@ -124,20 +125,20 @@ public final class VerifiedVertexStoreState {
                         String.format("highQC=%s does not have commit", highQC)));
     var bftHeader = headers.getFirst();
 
-    if (!bftHeader.getVertexId().equals(root.getId())) {
+    if (!bftHeader.getVertexId().equals(root.getHash())) {
       throw new IllegalStateException(
           String.format("committedHeader=%s does not match rootVertex=%s", bftHeader, root));
     }
 
-    var seen = new HashMap<HashCode, VerifiedVertex>();
-    seen.put(root.getId(), root);
+    var seen = new HashMap<HashCode, VertexWithHash>();
+    seen.put(root.getHash(), root);
 
     for (var vertex : vertices) {
       if (!seen.containsKey(vertex.getParentId())) {
         throw new IllegalStateException(
             String.format("Missing qc=%s {root=%s vertices=%s}", vertex.getQC(), root, vertices));
       }
-      seen.put(vertex.getId(), vertex);
+      seen.put(vertex.getHash(), vertex);
     }
 
     if (seen.keySet().stream()
@@ -200,7 +201,7 @@ public final class VerifiedVertexStoreState {
         this.highQC,
         this.root.toSerializable(),
         this.vertices.stream()
-            .map(VerifiedVertex::toSerializable)
+            .map(VertexWithHash::toSerializable)
             .collect(ImmutableList.toImmutableList()),
         this.highestTC.orElse(null));
   }
@@ -209,11 +210,11 @@ public final class VerifiedVertexStoreState {
     return highQC;
   }
 
-  public VerifiedVertex getRoot() {
+  public VertexWithHash getRoot() {
     return root;
   }
 
-  public ImmutableList<VerifiedVertex> getVertices() {
+  public ImmutableList<VertexWithHash> getVertices() {
     return vertices;
   }
 

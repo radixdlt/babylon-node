@@ -69,8 +69,8 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
 import com.radixdlt.utils.TimeSupplier;
@@ -91,7 +91,7 @@ public class MockedLedgerModule extends AbstractModule {
     return new Ledger() {
       @Override
       public Optional<PreparedVertex> prepare(
-          LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
+          LinkedList<PreparedVertex> previous, VertexWithHash vertex) {
         final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
         final LedgerHeader ledgerHeader =
             vertex
@@ -100,11 +100,12 @@ public class MockedLedgerModule extends AbstractModule {
                 .updateRoundAndTimestamp(vertex.getRound(), timestamp);
 
         return Optional.of(
-            vertex
-                .withHeader(ledgerHeader, timeSupplier.currentTime())
-                .andTxns(
-                    vertex.getTxns().stream().<PreparedTransaction>map(MockPrepared::new).toList(),
-                    Map.of()));
+            new PreparedVertex(
+                vertex,
+                ledgerHeader,
+                vertex.getTxns().stream().<PreparedTransaction>map(MockPrepared::new).toList(),
+                Map.of(),
+                timeSupplier.currentTime()));
       }
     };
   }

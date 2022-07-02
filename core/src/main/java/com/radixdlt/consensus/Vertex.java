@@ -70,7 +70,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
@@ -90,7 +89,7 @@ import javax.annotation.concurrent.Immutable;
  * is potentially untrusted.
  *
  * <p>This Vertex class should very rarely be used raw, and generally should be converted to a
- * VerifiedVertex.
+ * VertexWithHash.
  */
 @Immutable
 @SerializerId2("consensus.vertex")
@@ -183,8 +182,8 @@ public final class Vertex {
     return proposer == null ? null : proposer.getKey().getCompressedBytes();
   }
 
-  public VerifiedVertex withId(Hasher hasher) {
-    return VerifiedVertex.from(this, hasher);
+  public VertexWithHash withId(Hasher hasher) {
+    return VertexWithHash.from(this, hasher);
   }
 
   public BFTNode getProposer() {

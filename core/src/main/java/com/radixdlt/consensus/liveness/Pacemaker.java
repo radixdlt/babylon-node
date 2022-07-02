@@ -66,12 +66,7 @@ package com.radixdlt.consensus.liveness;
 
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -219,7 +214,7 @@ public final class Pacemaker {
           SystemCounters.CounterType.BFT_PACEMAKER_PROPOSED_TRANSACTIONS, nextTransactions.size());
     }
 
-    final VerifiedVertex proposedVertex =
+    final VertexWithHash proposedVertex =
         Vertex.create(highestQC, round, nextTransactions, self).withId(hasher);
     return safetyRules.signProposal(
         proposedVertex, highQC.highestCommittedQC(), highQC.highestTC());
@@ -270,11 +265,11 @@ public final class Pacemaker {
         Vertex.createTimeout(
                 highQC.highestQC(), roundUpdate.getCurrentRound(), roundUpdate.getLeader())
             .withId(hasher);
-    this.timeoutVoteVertexId = Optional.of(vertex.getId());
+    this.timeoutVoteVertexId = Optional.of(vertex.getHash());
 
     // TODO: reimplement in async way
     this.vertexStore
-        .getPreparedVertex(vertex.getId())
+        .getPreparedVertex(vertex.getHash())
         .ifPresentOrElse(
             this::createAndSendTimeoutVote, // if vertex is already there, send the vote immediately
             () -> maybeInsertVertex(vertex) // otherwise insert and wait for async bft update msg
@@ -283,9 +278,9 @@ public final class Pacemaker {
 
   // FIXME: This is a temporary fix so that we can continue
   // if the vertex store is too far ahead of the pacemaker
-  private void maybeInsertVertex(VerifiedVertex verifiedVertex) {
+  private void maybeInsertVertex(VertexWithHash vertexWithHash) {
     try {
-      this.vertexStore.insertVertex(verifiedVertex);
+      this.vertexStore.insertVertex(vertexWithHash);
     } catch (MissingParentException e) {
       log.debug("Could not insert timeout vertex: {}", e.getMessage());
     }

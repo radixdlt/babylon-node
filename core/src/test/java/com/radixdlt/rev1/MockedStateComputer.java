@@ -72,9 +72,9 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
@@ -115,7 +115,7 @@ public final class MockedStateComputer implements StateComputer {
   @Override
   public StateComputerLedger.StateComputerResult prepare(
       List<StateComputerLedger.PreparedTransaction> previous,
-      VerifiedVertex vertex,
+      VertexWithHash vertex,
       long timestamp) {
     return new StateComputerLedger.StateComputerResult(
         vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()), Map.of());
@@ -130,7 +130,7 @@ public final class MockedStateComputer implements StateComputer {
             .map(
                 validatorSet -> {
                   LedgerProof header = txnsAndProof.getProof();
-                  VerifiedVertex genesisVertex =
+                  VertexWithHash genesisVertex =
                       Vertex.createGenesis(header.getRaw()).withId(hasher);
                   LedgerHeader nextLedgerHeader =
                       LedgerHeader.create(

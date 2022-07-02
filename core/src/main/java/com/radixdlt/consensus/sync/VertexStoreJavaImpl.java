@@ -71,10 +71,10 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.MissingParentException;
 import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.Hasher;
@@ -99,7 +99,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
   private final Map<HashCode, Set<HashCode>> vertexChildren = new HashMap<>();
 
   // These should never be null
-  private VerifiedVertex rootVertex;
+  private VertexWithHash rootVertex;
   private QuorumCertificate highestQC;
   private QuorumCertificate highestCommittedQC;
   private Optional<TimeoutCertificate> highestTC;
@@ -107,7 +107,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
   private VertexStoreJavaImpl(
       Ledger ledger,
       Hasher hasher,
-      VerifiedVertex rootVertex,
+      VertexWithHash rootVertex,
       QuorumCertificate commitQC,
       QuorumCertificate highestQC,
       Optional<TimeoutCertificate> highestTC) {
@@ -116,7 +116,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     this.rootVertex = Objects.requireNonNull(rootVertex);
     this.highestQC = Objects.requireNonNull(highestQC);
     this.highestCommittedQC = Objects.requireNonNull(commitQC);
-    this.vertexChildren.put(rootVertex.getId(), new HashSet<>());
+    this.vertexChildren.put(rootVertex.getHash(), new HashSet<>());
     this.highestTC = Objects.requireNonNull(highestTC);
   }
 
@@ -131,7 +131,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
             vertexStoreState.getHighQC().highestQC(),
             vertexStoreState.getHighQC().highestTC());
 
-    for (VerifiedVertex vertex : vertexStoreState.getVertices()) {
+    for (VertexWithHash vertex : vertexStoreState.getVertices()) {
       LinkedList<PreparedVertex> previous = vertexStore.getPathFromRoot(vertex.getParentId());
       Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(previous, vertex);
       if (preparedVertexMaybe.isEmpty()) {
@@ -158,7 +158,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return vertexStore;
   }
 
-  public VerifiedVertex getRoot() {
+  public VertexWithHash getRoot() {
     return rootVertex;
   }
 
@@ -166,7 +166,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     // FIXME: Currently this assumes vertexStoreState is a chain with no forks which is our only use
     // case at the moment.
     LinkedList<PreparedVertex> prepared = new LinkedList<>();
-    for (VerifiedVertex vertex : vertexStoreState.getVertices()) {
+    for (VertexWithHash vertex : vertexStoreState.getVertices()) {
       Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(prepared, vertex);
       if (preparedVertexMaybe.isEmpty()) {
         return Option.empty();
@@ -180,7 +180,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     this.highestQC = vertexStoreState.getHighQC().highestQC();
     this.vertices.clear();
     this.vertexChildren.clear();
-    this.vertexChildren.put(rootVertex.getId(), new HashSet<>());
+    this.vertexChildren.put(rootVertex.getHash(), new HashSet<>());
 
     for (PreparedVertex preparedVertex : prepared) {
       this.vertices.put(preparedVertex.getId(), preparedVertex);
@@ -193,7 +193,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   public boolean containsVertex(HashCode vertexId) {
-    return vertices.containsKey(vertexId) || rootVertex.getId().equals(vertexId);
+    return vertices.containsKey(vertexId) || rootVertex.getHash().equals(vertexId);
   }
 
   public InsertQcResult insertQc(QuorumCertificate qc) {
@@ -225,14 +225,14 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   private void getChildrenVerticesList(
-      VerifiedVertex parent, ImmutableList.Builder<VerifiedVertex> builder) {
-    Set<HashCode> childrenIds = this.vertexChildren.get(parent.getId());
+      VertexWithHash parent, ImmutableList.Builder<VertexWithHash> builder) {
+    Set<HashCode> childrenIds = this.vertexChildren.get(parent.getHash());
     if (childrenIds == null) {
       return;
     }
 
     for (HashCode childId : childrenIds) {
-      VerifiedVertex v = vertices.get(childId).getVertex();
+      VertexWithHash v = vertices.get(childId).getVertex();
       builder.add(v);
       getChildrenVerticesList(v, builder);
     }
@@ -240,7 +240,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
   private VerifiedVertexStoreState getState() {
     // TODO: store list dynamically rather than recomputing
-    ImmutableList.Builder<VerifiedVertex> verticesBuilder = ImmutableList.builder();
+    ImmutableList.Builder<VertexWithHash> verticesBuilder = ImmutableList.builder();
     getChildrenVerticesList(this.rootVertex, verticesBuilder);
     return VerifiedVertexStoreState.create(
         this.highQC(), this.rootVertex, verticesBuilder.build(), this.highestTC, hasher);
@@ -272,7 +272,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
   public InsertVertexChainResult insertVertexChain(VerifiedVertexChain verifiedVertexChain) {
     final var bftInsertUpdates = new ArrayList<BFTInsertUpdate>();
     final var insertedQcs = new ArrayList<InsertQcResult.Inserted>();
-    for (VerifiedVertex v : verifiedVertexChain.getVertices()) {
+    for (VertexWithHash v : verifiedVertexChain.getVertices()) {
       final var insertQcResult = insertQc(v.getQC());
 
       switch (insertQcResult) {
@@ -296,8 +296,8 @@ public final class VertexStoreJavaImpl implements VertexStore {
    *
    * @param vertex vertex to insert
    */
-  public Option<BFTInsertUpdate> insertVertex(VerifiedVertex vertex) {
-    PreparedVertex v = vertices.get(vertex.getId());
+  public Option<BFTInsertUpdate> insertVertex(VertexWithHash vertex) {
+    PreparedVertex v = vertices.get(vertex.getHash());
     if (v != null) {
       return Option.empty();
     }
@@ -309,7 +309,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return insertVertexInternal(vertex);
   }
 
-  private Option<BFTInsertUpdate> insertVertexInternal(VerifiedVertex vertex) {
+  private Option<BFTInsertUpdate> insertVertexInternal(VertexWithHash vertex) {
     LinkedList<PreparedVertex> previous = getPathFromRoot(vertex.getParentId());
     final var preparedVertexMaybe = Option.from(ledger.prepare(previous, vertex));
     return preparedVertexMaybe.map(
@@ -327,7 +327,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
   private void removeVertexAndPruneInternal(HashCode vertexId, HashCode skip) {
     vertices.remove(vertexId);
 
-    if (this.rootVertex.getId().equals(vertexId)) {
+    if (this.rootVertex.getHash().equals(vertexId)) {
       return;
     }
 
@@ -351,11 +351,11 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
 
     final HashCode vertexId = header.getVertexId();
-    final VerifiedVertex tipVertex = vertices.get(vertexId).getVertex();
+    final VertexWithHash tipVertex = vertices.get(vertexId).getVertex();
 
     this.rootVertex = tipVertex;
     this.highestCommittedQC = commitQC;
-    final var path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getId()));
+    final var path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getHash()));
     HashCode prev = null;
     for (int i = path.size() - 1; i >= 0; i--) {
       this.removeVertexAndPruneInternal(path.get(i).getId(), prev);
@@ -396,22 +396,22 @@ public final class VertexStoreJavaImpl implements VertexStore {
    * @param count the number of vertices to retrieve
    * @return the list of vertices if all found, otherwise an empty list
    */
-  public Option<ImmutableList<VerifiedVertex>> getVertices(HashCode vertexId, int count) {
+  public Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexId, int count) {
     HashCode nextId = vertexId;
-    ImmutableList.Builder<VerifiedVertex> builder = ImmutableList.builderWithExpectedSize(count);
+    ImmutableList.Builder<VertexWithHash> builder = ImmutableList.builderWithExpectedSize(count);
     for (int i = 0; i < count; i++) {
-      final VerifiedVertex verifiedVertex;
-      if (nextId.equals(rootVertex.getId())) {
-        verifiedVertex = rootVertex;
+      final VertexWithHash vertexWithHash;
+      if (nextId.equals(rootVertex.getHash())) {
+        vertexWithHash = rootVertex;
       } else if (this.vertices.containsKey(nextId)) {
         final PreparedVertex preparedVertex = this.vertices.get(nextId);
-        verifiedVertex = preparedVertex.getVertex();
+        vertexWithHash = preparedVertex.getVertex();
       } else {
         return Option.empty();
       }
 
-      builder.add(verifiedVertex);
-      nextId = verifiedVertex.getParentId();
+      builder.add(vertexWithHash);
+      nextId = vertexWithHash.getParentId();
     }
 
     return Option.present(builder.build());

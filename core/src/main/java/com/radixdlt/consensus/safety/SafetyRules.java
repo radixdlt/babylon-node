@@ -66,15 +66,7 @@ package com.radixdlt.consensus.safety;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.VoteTimeout;
@@ -122,7 +114,7 @@ public final class SafetyRules {
     this.validatorSet = Objects.requireNonNull(validatorSet);
   }
 
-  private boolean checkLastVoted(VerifiedVertex proposedVertex) {
+  private boolean checkLastVoted(VertexWithHash proposedVertex) {
     // ensure vertex does not violate earlier votes
     if (proposedVertex.getRound().lte(this.state.getLastVotedView())) {
       logger.warn(
@@ -135,7 +127,7 @@ public final class SafetyRules {
     }
   }
 
-  private boolean checkLocked(VerifiedVertex proposedVertex, Builder nextStateBuilder) {
+  private boolean checkLocked(VertexWithHash proposedVertex, Builder nextStateBuilder) {
     if (proposedVertex.getParentHeader().getRound().lt(this.state.getLockedView())) {
       logger.warn(
           "Safety warning: Vertex {} does not respect locked round {}",
@@ -161,7 +153,7 @@ public final class SafetyRules {
    * @return signed proposal object for consensus
    */
   public Optional<Proposal> signProposal(
-      VerifiedVertex proposedVertex,
+      VertexWithHash proposedVertex,
       QuorumCertificate highestCommittedQC,
       Optional<TimeoutCertificate> highestTC) {
     final Builder safetyStateBuilder = this.state.toBuilder();
@@ -171,13 +163,13 @@ public final class SafetyRules {
 
     this.state = safetyStateBuilder.build();
 
-    final ECDSASignature signature = this.signer.sign(proposedVertex.getId());
+    final ECDSASignature signature = this.signer.sign(proposedVertex.getHash());
     return Optional.of(
         new Proposal(proposedVertex.toSerializable(), highestCommittedQC, signature, highestTC));
   }
 
   private static VoteData constructVoteData(
-      VerifiedVertex proposedVertex, BFTHeader proposedHeader) {
+      VertexWithHash proposedVertex, BFTHeader proposedHeader) {
     final BFTHeader parent = proposedVertex.getParentHeader();
 
     // Add a vertex to commit if creating a quorum for the proposed vertex would
@@ -204,7 +196,7 @@ public final class SafetyRules {
    * @return A vote result containing the vote and any committed vertices
    */
   public Optional<Vote> voteFor(
-      VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
+      VertexWithHash proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
     Builder safetyStateBuilder = this.state.toBuilder();
 
     if (!checkLastVoted(proposedVertex)) {
@@ -243,7 +235,7 @@ public final class SafetyRules {
   }
 
   public Vote createVote(
-      VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
+      VertexWithHash proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
     final VoteData voteData = constructVoteData(proposedVertex, proposedHeader);
     final var voteHash = Vote.getHashOfData(hasher, voteData, timestamp);
 

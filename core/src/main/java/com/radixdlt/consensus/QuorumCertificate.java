@@ -68,7 +68,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -109,12 +108,13 @@ public final class QuorumCertificate {
    * @return a mocked QC
    */
   public static QuorumCertificate ofGenesis(
-      VerifiedVertex genesisVertex, LedgerHeader ledgerHeader) {
+      VertexWithHash genesisVertex, LedgerHeader ledgerHeader) {
     if (!genesisVertex.getRound().isGenesis()) {
       throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", genesisVertex));
     }
 
-    BFTHeader header = new BFTHeader(genesisVertex.getRound(), genesisVertex.getId(), ledgerHeader);
+    BFTHeader header =
+        new BFTHeader(genesisVertex.getRound(), genesisVertex.getHash(), ledgerHeader);
     final VoteData voteData = new VoteData(header, header, header);
     return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
   }

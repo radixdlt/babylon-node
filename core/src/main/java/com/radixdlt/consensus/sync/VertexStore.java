@@ -69,9 +69,9 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.lang.Option;
@@ -100,7 +100,7 @@ public interface VertexStore {
 
   void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
 
-  Option<BFTInsertUpdate> insertVertex(VerifiedVertex vertex);
+  Option<BFTInsertUpdate> insertVertex(VertexWithHash vertex);
 
   InsertVertexChainResult insertVertexChain(VerifiedVertexChain verifiedVertexChain);
 
@@ -110,11 +110,11 @@ public interface VertexStore {
 
   HighQC highQC();
 
-  VerifiedVertex getRoot();
+  VertexWithHash getRoot();
 
   List<PreparedVertex> getPathFromRoot(HashCode vertexId);
 
   Option<PreparedVertex> getPreparedVertex(HashCode id);
 
-  Option<ImmutableList<VerifiedVertex>> getVertices(HashCode vertexId, int count);
+  Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexId, int count);
 }

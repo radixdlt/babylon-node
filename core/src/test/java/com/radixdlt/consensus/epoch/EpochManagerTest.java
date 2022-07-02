@@ -80,15 +80,7 @@ import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -168,7 +160,7 @@ public class EpochManagerTest {
 
         @Override
         public StateComputerResult prepare(
-            List<PreparedTransaction> previous, VerifiedVertex vertex, long timestamp) {
+            List<PreparedTransaction> previous, VertexWithHash vertex, long timestamp) {
           return new StateComputerResult(List.of(), Map.of());
         }
 
@@ -314,7 +306,7 @@ public class EpochManagerTest {
         BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     LedgerHeader header = LedgerHeader.genesis(accumulatorState, nextValidatorSet, 0);
-    VerifiedVertex verifiedGenesisVertex = Vertex.createGenesis(header).withId(hasher);
+    VertexWithHash verifiedGenesisVertex = Vertex.createGenesis(header).withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             header.getEpoch() + 1,

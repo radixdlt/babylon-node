@@ -68,14 +68,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.*;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
@@ -85,7 +78,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class VerifiedVertexStoreStateCreationTest {
-  private VerifiedVertex genesisVertex;
+  private VertexWithHash genesisVertex;
   private HashCode genesisHash;
   private Hasher hasher;
   private static final LedgerHeader MOCKED_HEADER =
@@ -95,7 +88,7 @@ public class VerifiedVertexStoreStateCreationTest {
   public void setup() {
     this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
     this.genesisVertex = Vertex.createGenesis(MOCKED_HEADER).withId(hasher);
-    this.genesisHash = genesisVertex.getId();
+    this.genesisHash = genesisVertex.getHash();
   }
 
   @Test

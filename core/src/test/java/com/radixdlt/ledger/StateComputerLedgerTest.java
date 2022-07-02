@@ -80,12 +80,12 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
@@ -119,7 +119,7 @@ public class StateComputerLedgerTest {
   private LedgerAccumulatorVerifier accumulatorVerifier;
 
   private LedgerHeader ledgerHeader;
-  private VerifiedVertex genesisVertex;
+  private VertexWithHash genesisVertex;
   private QuorumCertificate genesisQC;
 
   private final Transaction nextTransaction = Transaction.create(new byte[] {0});

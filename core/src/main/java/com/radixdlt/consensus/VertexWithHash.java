@@ -62,32 +62,34 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
-/** A vertex which has been verified with hash id */
-public final class VerifiedVertex {
+/**
+ * A vertex representing a possible future committed round of transactions, along with a hash
+ * computed locally.
+ *
+ * <p>As such, whilst the content of the vertex may be from a peer, and so untrusted, we are
+ * confident that the hash accurately represents the vertex contents.
+ */
+public final class VertexWithHash {
   private final Vertex vertex;
-  private final HashCode id;
+  private final HashCode vertexHash;
 
-  private VerifiedVertex(Vertex vertex, HashCode id) {
+  private VertexWithHash(Vertex vertex, HashCode vertexHash) {
     this.vertex = Objects.requireNonNull(vertex);
-    this.id = Objects.requireNonNull(id);
+    this.vertexHash = Objects.requireNonNull(vertexHash);
   }
 
-  public static VerifiedVertex from(Vertex vertex, Hasher hasher) {
-    return new VerifiedVertex(vertex, hasher.hashDsonEncoded(vertex));
+  public static VertexWithHash from(Vertex vertex, Hasher hasher) {
+    return new VertexWithHash(vertex, hasher.hashDsonEncoded(vertex));
   }
 
   public BFTNode getProposer() {
@@ -136,34 +138,25 @@ public final class VerifiedVertex {
     return vertex.getQC();
   }
 
-  public HashCode getId() {
-    return id;
+  public HashCode getHash() {
+    return vertexHash;
   }
 
   public HashCode getParentId() {
     return vertex.getQC().getProposed().getVertexId();
   }
 
-  public interface PreparedVertexBuilder {
-    PreparedVertex andTxns(
-        List<PreparedTransaction> preparedTransactions, Map<Transaction, Exception> txnExceptions);
-  }
-
-  public PreparedVertexBuilder withHeader(LedgerHeader ledgerHeader, long timeOfExecution) {
-    return (success, exceptions) ->
-        new PreparedVertex(this, ledgerHeader, success, exceptions, timeOfExecution);
-  }
-
   @Override
   public int hashCode() {
-    return Objects.hash(this.vertex, this.id);
+    return Objects.hash(this.vertex, this.vertexHash);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof VerifiedVertex) {
-      final var that = (VerifiedVertex) o;
-      return Objects.equals(this.id, that.id) && Objects.equals(this.vertex, that.vertex);
+    if (o instanceof VertexWithHash) {
+      final var that = (VertexWithHash) o;
+      return Objects.equals(this.vertexHash, that.vertexHash)
+          && Objects.equals(this.vertex, that.vertex);
     }
     return false;
   }
@@ -171,11 +164,11 @@ public final class VerifiedVertex {
   @Override
   public String toString() {
     return String.format(
-        "%s{epoch=%s round=%s parentView=%s id=%s}",
+        "%s{epoch=%s round=%s parentRound=%s hash=%s}",
         this.getClass().getSimpleName(),
         this.vertex.getQC().getProposed().getLedgerHeader().getEpoch(),
         this.vertex.getRound(),
         this.vertex.getQC().getProposed().getRound(),
-        this.id);
+        this.vertexHash);
   }
 }

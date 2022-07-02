@@ -166,7 +166,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
         .getVertices()
         .forEach(
             v -> {
-              HashCode vertexId = v.getId();
+              HashCode vertexId = v.getHash();
               syncingEvents.stream()
                   .filter(e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId))
                   .forEach(this::processQueuedConsensusEvent);

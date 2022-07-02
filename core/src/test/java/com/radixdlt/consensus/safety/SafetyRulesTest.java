@@ -77,11 +77,11 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
@@ -125,7 +125,7 @@ public class SafetyRulesTest {
     Round round = mock(Round.class);
     when(round.lte(round)).thenReturn(true);
     when(safetyState.getLastVotedView()).thenReturn(round);
-    VerifiedVertex vertex = mock(VerifiedVertex.class);
+    VertexWithHash vertex = mock(VertexWithHash.class);
     when(vertex.getRound()).thenReturn(round);
 
     assertThat(this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
@@ -155,7 +155,7 @@ public class SafetyRulesTest {
             hashVerifier,
             validatorSet);
 
-    VerifiedVertex vertex = mock(VerifiedVertex.class);
+    VertexWithHash vertex = mock(VertexWithHash.class);
     when(vertex.getRound()).thenReturn(Round.of(3));
     BFTHeader parent = mock(BFTHeader.class);
     when(parent.getRound()).thenReturn(Round.of(0));
@@ -170,7 +170,7 @@ public class SafetyRulesTest {
     when(safetyState.getLastVotedView()).thenReturn(Round.of(0));
     when(safetyState.getLockedView()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
-    VerifiedVertex vertex = mock(VerifiedVertex.class);
+    VertexWithHash vertex = mock(VertexWithHash.class);
     when(vertex.hasDirectParent()).thenReturn(true);
     when(vertex.touchesGenesis()).thenReturn(true);
     when(vertex.parentHasDirectParent()).thenReturn(true);
@@ -195,7 +195,7 @@ public class SafetyRulesTest {
     when(safetyState.getLastVotedView()).thenReturn(Round.of(1));
     when(safetyState.getLockedView()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
-    VerifiedVertex proposal = mock(VerifiedVertex.class);
+    VertexWithHash proposal = mock(VertexWithHash.class);
     when(proposal.touchesGenesis()).thenReturn(true);
     when(proposal.hasDirectParent()).thenReturn(true);
     when(proposal.parentHasDirectParent()).thenReturn(true);
@@ -219,7 +219,7 @@ public class SafetyRulesTest {
     when(safetyState.getLockedView()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
 
-    VerifiedVertex proposal = mock(VerifiedVertex.class);
+    VertexWithHash proposal = mock(VertexWithHash.class);
     when(proposal.touchesGenesis()).thenReturn(false);
     when(proposal.hasDirectParent()).thenReturn(true);
     when(proposal.parentHasDirectParent()).thenReturn(true);
@@ -245,7 +245,7 @@ public class SafetyRulesTest {
     when(safetyState.getLockedView()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
 
-    VerifiedVertex proposal = mock(VerifiedVertex.class);
+    VertexWithHash proposal = mock(VertexWithHash.class);
     when(proposal.touchesGenesis()).thenReturn(false);
     when(proposal.hasDirectParent()).thenReturn(false);
     when(proposal.parentHasDirectParent()).thenReturn(true);

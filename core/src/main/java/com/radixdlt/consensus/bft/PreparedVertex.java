@@ -66,6 +66,7 @@ package com.radixdlt.consensus.bft;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Pair;
@@ -77,15 +78,15 @@ import java.util.stream.Stream;
 /** Vertex which has been executed in the prepare phase */
 public final class PreparedVertex {
   private final long timeOfExecution;
-  private final VerifiedVertex vertex;
+  private final VertexWithHash vertex;
 
   private final LedgerHeader ledgerHeader;
 
   private final List<PreparedTransaction> preparedTransactions;
   private final Map<Transaction, Exception> commandExceptions;
 
-  PreparedVertex(
-      VerifiedVertex vertex,
+  public PreparedVertex(
+      VertexWithHash vertex,
       LedgerHeader ledgerHeader,
       List<PreparedTransaction> preparedTransactions,
       Map<Transaction, Exception> commandExceptions,
@@ -102,7 +103,7 @@ public final class PreparedVertex {
   }
 
   public HashCode getId() {
-    return vertex.getId();
+    return vertex.getHash();
   }
 
   public HashCode getParentId() {
@@ -141,7 +142,7 @@ public final class PreparedVertex {
    *
    * @return the executed vertex
    */
-  public VerifiedVertex getVertex() {
+  public VertexWithHash getVertex() {
     return vertex;
   }
 

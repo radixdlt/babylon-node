@@ -70,8 +70,8 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -143,7 +143,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       @Override
       public StateComputerLedger.StateComputerResult prepare(
           List<StateComputerLedger.PreparedTransaction> previous,
-          VerifiedVertex vertex,
+          VertexWithHash vertex,
           long timestamp) {
         return new StateComputerLedger.StateComputerResult(
             vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()),

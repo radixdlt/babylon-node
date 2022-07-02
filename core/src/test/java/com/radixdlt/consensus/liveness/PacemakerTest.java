@@ -73,14 +73,7 @@ import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -225,8 +218,8 @@ public class PacemakerTest {
 
     verify(this.vertexStore, times(1)).getPreparedVertex(any());
 
-    ArgumentCaptor<VerifiedVertex> insertVertexCaptor =
-        ArgumentCaptor.forClass(VerifiedVertex.class);
+    ArgumentCaptor<VertexWithHash> insertVertexCaptor =
+        ArgumentCaptor.forClass(VertexWithHash.class);
     verify(this.vertexStore, times(1)).insertVertex(insertVertexCaptor.capture());
     assertEquals(insertVertexCaptor.getValue().getParentId(), highQcParentVertexId);
 

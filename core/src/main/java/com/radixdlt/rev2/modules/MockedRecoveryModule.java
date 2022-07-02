@@ -73,11 +73,11 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
@@ -115,7 +115,7 @@ public class MockedRecoveryModule extends AbstractModule {
   private BFTConfiguration configuration(
       @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
     var accumulatorState = new AccumulatorState(0, preGenesisAccumulatorHash);
-    VerifiedVertex genesisVertex =
+    VertexWithHash genesisVertex =
         Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0))
             .withId(hasher);
     LedgerHeader nextLedgerHeader =

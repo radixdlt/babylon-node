@@ -69,10 +69,7 @@ import static java.util.function.Predicate.not;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.RoundVotingResult.FormedQC;
 import com.radixdlt.consensus.bft.RoundVotingResult.FormedTC;
@@ -122,7 +119,7 @@ public final class BFTSync implements BFTSyncer {
     private final LedgerProof committedProof;
     private final BFTNode author;
     private SyncStage syncStage;
-    private final LinkedList<VerifiedVertex> fetched = new LinkedList<>();
+    private final LinkedList<VertexWithHash> fetched = new LinkedList<>();
 
     SyncState(HighQC highQC, BFTNode author, Hasher hasher) {
       this.localSyncId = highQC.highestQC().getProposed().getVertexId();
@@ -426,8 +423,8 @@ public final class BFTSync implements BFTSyncer {
 
     // TODO: check if there are any vertices which haven't been local sync processed yet
     if (requiresLedgerSync(syncState)) {
-      syncState.fetched.sort(Comparator.comparing(VerifiedVertex::getRound));
-      ImmutableList<VerifiedVertex> nonRootVertices =
+      syncState.fetched.sort(Comparator.comparing(VertexWithHash::getRound));
+      ImmutableList<VertexWithHash> nonRootVertices =
           syncState.fetched.stream().skip(1).collect(ImmutableList.toImmutableList());
       var vertexStoreState =
           VerifiedVertexStoreState.create(
@@ -564,7 +561,7 @@ public final class BFTSync implements BFTSyncer {
     log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
     var firstVertex = response.getVertices().get(0);
-    var requestInfo = new GetVerticesRequest(firstVertex.getId(), response.getVertices().size());
+    var requestInfo = new GetVerticesRequest(firstVertex.getHash(), response.getVertices().size());
     var syncRequestState = bftSyncing.remove(requestInfo);
 
     if (syncRequestState != null) {

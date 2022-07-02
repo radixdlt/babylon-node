@@ -70,12 +70,12 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.environment.EventProcessor;
@@ -139,7 +139,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     List<Transaction> getTransactionsForProposal(List<PreparedTransaction> preparedTransactions);
 
     StateComputerResult prepare(
-        List<PreparedTransaction> previous, VerifiedVertex vertex, long timestamp);
+        List<PreparedTransaction> previous, VertexWithHash vertex, long timestamp);
 
     void commit(
         VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState);
@@ -202,7 +202,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   @Override
   public Optional<PreparedVertex> prepare(
-      LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
+      LinkedList<PreparedVertex> previous, VertexWithHash vertex) {
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
     final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
     final ImmutableList<PreparedTransaction> prevCommands =
@@ -226,14 +226,13 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
       // Don't execute atom if in process of epoch change
       if (parentHeader.isEndOfEpoch()) {
-        final long localTimestamp = timeSupplier.currentTime();
-        final PreparedVertex preparedVertex =
-            vertex
-                .withHeader(
-                    parentHeader.updateRoundAndTimestamp(vertex.getRound(), quorumTimestamp),
-                    localTimestamp)
-                .andTxns(ImmutableList.of(), ImmutableMap.of());
-        return Optional.of(preparedVertex);
+        return Optional.of(
+            new PreparedVertex(
+                vertex,
+                parentHeader.updateRoundAndTimestamp(vertex.getRound(), quorumTimestamp),
+                ImmutableList.of(),
+                ImmutableMap.of(),
+                timeSupplier.currentTime()));
       }
 
       final var maybeCommands =
@@ -268,11 +267,13 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               quorumTimestamp,
               result.getNextValidatorSet().orElse(null));
 
-      final long localTimestamp = timeSupplier.currentTime();
       return Optional.of(
-          vertex
-              .withHeader(ledgerHeader, localTimestamp)
-              .andTxns(result.getSuccessfulCommands(), result.getFailedCommands()));
+          new PreparedVertex(
+              vertex,
+              ledgerHeader,
+              result.getSuccessfulCommands(),
+              result.getFailedCommands(),
+              timeSupplier.currentTime()));
     }
   }
 

@@ -70,12 +70,12 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
@@ -171,11 +171,11 @@ public final class VertexStoreAdapter {
     result.insertUpdates().forEach(bftUpdateDispatcher::dispatch);
   }
 
-  public Optional<ImmutableList<VerifiedVertex>> getVertices(HashCode vertexId, int count) {
+  public Optional<ImmutableList<VertexWithHash>> getVertices(HashCode vertexId, int count) {
     return vertexStore.getVertices(vertexId, count).toOptional();
   }
 
-  public void insertVertex(VerifiedVertex vertex) {
+  public void insertVertex(VertexWithHash vertex) {
     final var result = vertexStore.insertVertex(vertex);
     result.onPresent(bftUpdateDispatcher::dispatch);
   }
@@ -197,7 +197,7 @@ public final class VertexStoreAdapter {
     return vertexStore.highQC();
   }
 
-  public VerifiedVertex getRoot() {
+  public VertexWithHash getRoot() {
     return vertexStore.getRoot();
   }
 }

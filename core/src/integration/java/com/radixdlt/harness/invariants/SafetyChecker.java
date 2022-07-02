@@ -68,11 +68,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.harness.simulation.TestInvariant.TestInvariantError;
 import java.util.HashMap;
@@ -86,7 +86,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 /** Processes committed vertices and verifies that it forms a single chain without any forks. */
 @NotThreadSafe
 public final class SafetyChecker {
-  private final TreeMap<EpochRound, VerifiedVertex> committedVertices = new TreeMap<>();
+  private final TreeMap<EpochRound, VertexWithHash> committedVertices = new TreeMap<>();
   private final Map<BFTNode, EpochRound> lastCommittedByNode = new HashMap<>();
   private final ImmutableSet<BFTNode> nodes;
 
@@ -96,7 +96,7 @@ public final class SafetyChecker {
   }
 
   private static Optional<TestInvariantError> conflictingVerticesError(
-      VerifiedVertex vertex, VerifiedVertex currentVertex) {
+      VertexWithHash vertex, VertexWithHash currentVertex) {
     return Optional.of(
         new TestInvariantError(
             String.format(
@@ -105,18 +105,18 @@ public final class SafetyChecker {
   }
 
   private static Optional<TestInvariantError> brokenChainError(
-      VerifiedVertex vertex, VerifiedVertex closeVertex) {
+      VertexWithHash vertex, VertexWithHash closeVertex) {
     return Optional.of(
         new TestInvariantError(String.format("Broken Chain [%s, %s]", vertex, closeVertex)));
   }
 
-  private Optional<TestInvariantError> process(BFTNode node, VerifiedVertex vertex) {
+  private Optional<TestInvariantError> process(BFTNode node, VertexWithHash vertex) {
     final EpochRound epochRound =
         EpochRound.of(vertex.getParentHeader().getLedgerHeader().getEpoch(), vertex.getRound());
 
-    final VerifiedVertex currentVertexAtRound = committedVertices.get(epochRound);
+    final VertexWithHash currentVertexAtRound = committedVertices.get(epochRound);
     if (currentVertexAtRound != null) {
-      if (!currentVertexAtRound.getId().equals(vertex.getId())) {
+      if (!currentVertexAtRound.getHash().equals(vertex.getHash())) {
         return conflictingVerticesError(vertex, currentVertexAtRound);
       }
     } else {
@@ -124,9 +124,9 @@ public final class SafetyChecker {
           EpochRound.of(
               vertex.getParentHeader().getLedgerHeader().getEpoch(),
               vertex.getParentHeader().getRound());
-      VerifiedVertex parent = committedVertices.get(parentEpochRound);
+      VertexWithHash parent = committedVertices.get(parentEpochRound);
       if (parent == null) {
-        Entry<EpochRound, VerifiedVertex> higherCommitted =
+        Entry<EpochRound, VertexWithHash> higherCommitted =
             committedVertices.higherEntry(parentEpochRound);
         if (higherCommitted != null) {
           BFTHeader higherParentHeader = higherCommitted.getValue().getParentHeader();

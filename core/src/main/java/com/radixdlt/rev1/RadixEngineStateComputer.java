@@ -72,11 +72,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.radixdlt.atom.*;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -250,7 +246,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   private RadixEngineTransaction executeSystemUpdate(
-      RadixEngineBranch<LedgerAndBFTProof> branch, VerifiedVertex vertex, long timestamp) {
+      RadixEngineBranch<LedgerAndBFTProof> branch, VertexWithHash vertex, long timestamp) {
     var systemActions = TxnConstructionRequest.create();
     var view = vertex.getRound();
     if (view.compareTo(epochCeilingRound) <= 0) {
@@ -314,7 +310,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
   @Override
   public StateComputerResult prepare(
-      List<PreparedTransaction> previous, VerifiedVertex vertex, long timestamp) {
+      List<PreparedTransaction> previous, VertexWithHash vertex, long timestamp) {
     synchronized (lock) {
       var next = vertex.getTxns();
       var transientBranch = this.radixEngine.transientBranch();

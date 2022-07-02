@@ -77,16 +77,7 @@ import static org.mockito.Mockito.verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.consensus.sync.VertexStoreJavaImpl;
 import com.radixdlt.crypto.HashUtils;
@@ -106,9 +97,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class VertexStoreTest {
-  private VerifiedVertex genesisVertex;
-  private Supplier<VerifiedVertex> nextVertex;
-  private Function<Boolean, VerifiedVertex> nextSkippableVertex;
+  private VertexWithHash genesisVertex;
+  private Supplier<VertexWithHash> nextVertex;
+  private Function<Boolean, VertexWithHash> nextSkippableVertex;
   private HashCode genesisHash;
   private QuorumCertificate rootQC;
   private VertexStoreAdapter sut;
@@ -130,10 +121,10 @@ public class VertexStoreTest {
     // TODO: replace mock with the real thing
     doAnswer(
             invocation -> {
-              VerifiedVertex verifiedVertex = invocation.getArgument(1);
+              VertexWithHash vertexWithHash = invocation.getArgument(1);
               return Optional.of(
                   new PreparedVertex(
-                      verifiedVertex, MOCKED_HEADER, ImmutableList.of(), ImmutableMap.of(), 1L));
+                      vertexWithHash, MOCKED_HEADER, ImmutableList.of(), ImmutableMap.of(), 1L));
             })
         .when(ledger)
         .prepare(any(), any());
@@ -144,7 +135,7 @@ public class VertexStoreTest {
     this.committedSender = rmock(EventDispatcher.class);
 
     this.genesisVertex = Vertex.createGenesis(MOCKED_HEADER).withId(ZeroHasher.INSTANCE);
-    this.genesisHash = genesisVertex.getId();
+    this.genesisHash = genesisVertex.getHash();
     this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
     this.sut =
         new VertexStoreAdapter(
@@ -187,7 +178,7 @@ public class VertexStoreTest {
           var vertex =
               Vertex.create(qc, round, List.of(Transaction.create(new byte[0])), BFTNode.random())
                   .withId(hasher);
-          lastParentHeader.set(new BFTHeader(round, vertex.getId(), MOCKED_HEADER));
+          lastParentHeader.set(new BFTHeader(round, vertex.getHash(), MOCKED_HEADER));
           lastGrandParentHeader.set(parentHeader);
           lastGreatGrandParentHeader.set(grandParentHeader);
 
@@ -228,7 +219,7 @@ public class VertexStoreTest {
     assertThat(success).isTrue();
     assertThat(sut.highQC().highestQC()).isEqualTo(qc);
     assertThat(sut.highQC().highestCommittedQC()).isEqualTo(qc);
-    assertThat(sut.getVertices(vertices.get(2).getId(), 3))
+    assertThat(sut.getVertices(vertices.get(2).getHash(), 3))
         .hasValue(ImmutableList.of(vertices.get(2), vertices.get(1), vertices.get(0)));
     verify(committedSender, times(1))
         .dispatch(
@@ -271,7 +262,7 @@ public class VertexStoreTest {
         .dispatch(
             argThat(
                 u -> {
-                  List<VerifiedVertex> sentVertices = u.getVertexStoreState().getVertices();
+                  List<VertexWithHash> sentVertices = u.getVertexStoreState().getVertices();
                   return sentVertices.equals(vertices.subList(1, vertices.size()));
                 }));
   }

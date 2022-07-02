@@ -66,6 +66,7 @@ package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.VertexWithHash;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
@@ -73,16 +74,16 @@ import javax.annotation.concurrent.Immutable;
 /** A chain of vertices verified to be consistent */
 @Immutable
 public final class VerifiedVertexChain {
-  private final ImmutableList<VerifiedVertex> vertices;
+  private final ImmutableList<VertexWithHash> vertices;
 
-  private VerifiedVertexChain(ImmutableList<VerifiedVertex> vertices) {
+  private VerifiedVertexChain(ImmutableList<VertexWithHash> vertices) {
     this.vertices = vertices;
   }
 
-  public static VerifiedVertexChain create(List<VerifiedVertex> vertices) {
+  public static VerifiedVertexChain create(List<VertexWithHash> vertices) {
     if (vertices.size() >= 2) {
       for (int index = 1; index < vertices.size(); index++) {
-        HashCode parentId = vertices.get(index - 1).getId();
+        HashCode parentId = vertices.get(index - 1).getHash();
         HashCode parentIdCheck = vertices.get(index).getParentId();
         if (!parentId.equals(parentIdCheck)) {
           throw new IllegalArgumentException(String.format("Invalid chain: %s", vertices));
@@ -93,7 +94,7 @@ public final class VerifiedVertexChain {
     return new VerifiedVertexChain(ImmutableList.copyOf(vertices));
   }
 
-  public ImmutableList<VerifiedVertex> getVertices() {
+  public ImmutableList<VertexWithHash> getVertices() {
     return vertices;
   }
 
