@@ -71,7 +71,7 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.LedgerHeaderMock;
@@ -83,16 +83,16 @@ public class UnverifiedVertexSerializeTest extends SerializeObject<UnverifiedVer
   }
 
   private static UnverifiedVertex get() {
-    View view = View.of(1234567891L);
+    Round round = Round.of(1234567891L);
     LedgerHeader ledgerHeader = LedgerHeaderMock.get();
-    BFTHeader header = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
-    BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
+    BFTHeader header = new BFTHeader(round, HashUtils.random256(), ledgerHeader);
+    BFTHeader parent = new BFTHeader(Round.of(1234567890L), HashUtils.random256(), ledgerHeader);
     VoteData voteData = new VoteData(header, parent, null);
 
     QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
     var txn = Transaction.create(new byte[] {0, 1, 2, 3});
 
-    return UnverifiedVertex.create(qc, view, List.of(txn), BFTNode.random());
+    return UnverifiedVertex.create(qc, round, List.of(txn), BFTNode.random());
   }
 }

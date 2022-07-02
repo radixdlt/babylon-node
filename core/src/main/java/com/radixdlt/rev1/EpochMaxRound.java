@@ -62,61 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_ledger;
+package com.radixdlt.rev1;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.radixdlt.harness.simulation.NetworkDroppers;
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.SimulationTest.Builder;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
-import java.util.LongSummaryStatistics;
-import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Test;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-/**
- * Dropping random vote and view-timeout messages should cause consensus to fork quite a bit. This
- * is to test that safety should always be preserved even in multiple forking situations.
- */
-public class RandomVoteAndViewTimeoutDropperTest {
-  private final Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numNodes(4)
-          .networkModules(
-              NetworkOrdering.inOrder(),
-              NetworkLatencies.fixed(),
-              NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.4))
-          .ledger()
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered());
-
-  /**
-   * Tests a configuration of 4 nodes with a dropping proposal adversary Test should fail with
-   * GetVertices RPC disabled
-   */
-  @Test
-  public void sanity_test() {
-    SimulationTest test = bftTestBuilder.build();
-    final var runningTest = test.run();
-    final var checkResults = runningTest.awaitCompletion();
-
-    LongSummaryStatistics statistics =
-        runningTest.getNetwork().getSystemCounters().values().stream()
-            .map(s -> s.get(CounterType.BFT_VERTEX_STORE_FORKS))
-            .mapToLong(l -> l)
-            .summaryStatistics();
-
-    System.out.println(statistics);
-
-    assertThat(checkResults)
-        .allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
-  }
-}
+/** Identifies the highest round per epoch until an epoch change must occur. */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface EpochMaxRound {}

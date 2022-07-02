@@ -62,62 +62,104 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimeoutCertificate;
 import java.util.Objects;
 
-/** A bft view with it's corresponding epoch */
-public final class EpochView implements Comparable<EpochView> {
-  private final long epoch;
-  private final View view;
+/** The result of a round/round voting (either QC or TC). */
+public sealed interface RoundVotingResult {
 
-  public EpochView(long epoch, View view) {
-    if (epoch < 0) {
-      throw new IllegalArgumentException("epoch must be >= 0");
-    }
-    this.epoch = epoch;
-    this.view = Objects.requireNonNull(view);
+  static FormedQC qc(QuorumCertificate qc) {
+    return new FormedQC(qc);
   }
 
-  public static EpochView of(long epoch, View view) {
-    return new EpochView(epoch, view);
+  static FormedTC tc(TimeoutCertificate tc) {
+    return new FormedTC(tc);
   }
 
-  public long getEpoch() {
-    return epoch;
-  }
+  Round getRound();
 
-  public View getView() {
-    return view;
-  }
+  /** Signifies that the round has been completed with a formed quorum certificate. */
+  final class FormedQC implements RoundVotingResult {
 
-  @Override
-  public String toString() {
-    return String.format("%s{epoch=%s view=%s}", this.getClass().getSimpleName(), epoch, view);
-  }
+    private final QuorumCertificate qc;
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(epoch, view);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof EpochView)) {
-      return false;
+    public FormedQC(QuorumCertificate qc) {
+      this.qc = qc;
     }
 
-    EpochView other = (EpochView) o;
-    return other.epoch == this.epoch && Objects.equals(other.view, this.view);
-  }
-
-  @Override
-  public int compareTo(EpochView o) {
-    if (this.epoch != o.epoch) {
-      return Long.compare(this.epoch, o.epoch);
+    public QuorumCertificate getQC() {
+      return this.qc;
     }
 
-    return this.view.compareTo(o.view);
+    @Override
+    public Round getRound() {
+      return this.qc.getRound();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      FormedQC formedQC = (FormedQC) o;
+      return Objects.equals(qc, formedQC.qc);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(qc);
+    }
+
+    @Override
+    public String toString() {
+      return String.format("FormedQC{qc=%s}", qc);
+    }
+  }
+
+  /** Signifies that the round/round has been completed with a timeout certificate. */
+  final class FormedTC implements RoundVotingResult {
+
+    private final TimeoutCertificate tc;
+
+    public FormedTC(TimeoutCertificate tc) {
+      this.tc = tc;
+    }
+
+    public TimeoutCertificate getTC() {
+      return this.tc;
+    }
+
+    @Override
+    public Round getRound() {
+      return this.tc.getRound();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      FormedTC formedTC = (FormedTC) o;
+      return Objects.equals(tc, formedTC.tc);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(tc);
+    }
+
+    @Override
+    public String toString() {
+      return String.format("FormedTC{tc=%s}", tc);
+    }
   }
 }

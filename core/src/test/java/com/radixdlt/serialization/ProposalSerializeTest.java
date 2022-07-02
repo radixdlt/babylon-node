@@ -73,7 +73,7 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
@@ -88,19 +88,19 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
   }
 
   private static Proposal get() {
-    View view = View.of(1234567891L);
+    Round round = Round.of(1234567891L);
     HashCode id = HashUtils.random256();
 
     LedgerHeader ledgerHeader = LedgerHeaderMock.get();
-    BFTHeader header = new BFTHeader(view, id, ledgerHeader);
-    BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
+    BFTHeader header = new BFTHeader(round, id, ledgerHeader);
+    BFTHeader parent = new BFTHeader(Round.of(1234567890L), HashUtils.random256(), ledgerHeader);
     VoteData voteData = new VoteData(header, parent, null);
     QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     var txn = Transaction.create(new byte[] {0, 1, 2, 3});
 
     // add a particle to ensure atom is valid and has at least one shard
     BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-    UnverifiedVertex vertex = UnverifiedVertex.create(qc, view, List.of(txn), author);
+    UnverifiedVertex vertex = UnverifiedVertex.create(qc, round, List.of(txn), author);
     return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
   }
 }

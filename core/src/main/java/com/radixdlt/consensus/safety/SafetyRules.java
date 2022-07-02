@@ -75,12 +75,8 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.ValidationState;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
@@ -128,9 +124,9 @@ public final class SafetyRules {
 
   private boolean checkLastVoted(VerifiedVertex proposedVertex) {
     // ensure vertex does not violate earlier votes
-    if (proposedVertex.getView().lte(this.state.getLastVotedView())) {
+    if (proposedVertex.getRound().lte(this.state.getLastVotedView())) {
       logger.warn(
-          "Safety warning: Vertex {} violates earlier vote at view {}",
+          "Safety warning: Vertex {} violates earlier vote at round {}",
           proposedVertex,
           this.state.getLastVotedView());
       return false;
@@ -140,17 +136,18 @@ public final class SafetyRules {
   }
 
   private boolean checkLocked(VerifiedVertex proposedVertex, Builder nextStateBuilder) {
-    if (proposedVertex.getParentHeader().getView().lt(this.state.getLockedView())) {
+    if (proposedVertex.getParentHeader().getRound().lt(this.state.getLockedView())) {
       logger.warn(
-          "Safety warning: Vertex {} does not respect locked view {}",
+          "Safety warning: Vertex {} does not respect locked round {}",
           proposedVertex,
           this.state.getLockedView());
       return false;
     }
 
     // pre-commit phase on consecutive qc's proposed vertex
-    if (proposedVertex.getGrandParentHeader().getView().compareTo(this.state.getLockedView()) > 0) {
-      nextStateBuilder.lockedView(proposedVertex.getGrandParentHeader().getView());
+    if (proposedVertex.getGrandParentHeader().getRound().compareTo(this.state.getLockedView())
+        > 0) {
+      nextStateBuilder.lockedView(proposedVertex.getGrandParentHeader().getRound());
     }
     return true;
   }
@@ -255,8 +252,8 @@ public final class SafetyRules {
     return new Vote(this.self, voteData, timestamp, signature, highQC, Optional.empty());
   }
 
-  public Optional<Vote> getLastVote(View view) {
-    return this.state.getLastVote().filter(lastVote -> lastVote.getView().equals(view));
+  public Optional<Vote> getLastVote(Round round) {
+    return this.state.getLastVote().filter(lastVote -> lastVote.getRound().equals(round));
   }
 
   public boolean verifyHighQcAgainstTheValidatorSet(HighQC highQC) {
@@ -316,7 +313,7 @@ public final class SafetyRules {
                 committed -> qc.getProposed().equals(committed) && qc.getParent().equals(committed))
             .orElse(false);
 
-    final var isGenesisView = qc.getProposed().getView().isGenesis();
+    final var isGenesisView = qc.getProposed().getRound().isGenesis();
 
     return committedAndParentAndProposedAreTheSame && isGenesisView;
   }
@@ -351,7 +348,7 @@ public final class SafetyRules {
   }
 
   private boolean areAllTcTimestampedSignaturesValid(TimeoutCertificate tc) {
-    final var voteTimeout = new VoteTimeout(tc.getView(), tc.getEpoch());
+    final var voteTimeout = new VoteTimeout(tc.getRound(), tc.getEpoch());
     final var voteTimeoutHash = hasher.hashDsonEncoded(voteTimeout);
     return tc.getTimestampedSignatures().getSignatures().entrySet().parallelStream()
         .allMatch(

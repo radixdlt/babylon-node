@@ -66,11 +66,8 @@ package com.radixdlt.rev1;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -89,17 +86,17 @@ import javax.annotation.Nullable;
 
 public final class MockedStateComputerWithEpochs implements StateComputer {
   private final Function<Long, BFTValidatorSet> validatorSetMapping;
-  private final View epochHighView;
+  private final Round epochMaxRound;
   private final MockedStateComputer stateComputer;
 
   @Inject
   public MockedStateComputerWithEpochs(
-      @EpochCeilingView View epochHighView,
+      @EpochMaxRound Round epochMaxRound,
       Function<Long, BFTValidatorSet> validatorSetMapping,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
       Hasher hasher) {
     this.validatorSetMapping = Objects.requireNonNull(validatorSetMapping);
-    this.epochHighView = Objects.requireNonNull(epochHighView);
+    this.epochMaxRound = Objects.requireNonNull(epochMaxRound);
     this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
   }
 
@@ -115,10 +112,10 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   @Override
   public StateComputerResult prepare(
       List<PreparedTransaction> previous, VerifiedVertex vertex, long timestamp) {
-    var view = vertex.getView();
+    var round = vertex.getRound();
     var epoch = vertex.getParentHeader().getLedgerHeader().getEpoch();
     var next = vertex.getTxns();
-    if (view.compareTo(epochHighView) >= 0) {
+    if (round.compareTo(epochMaxRound) >= 0) {
       return new StateComputerResult(
           next.stream().map(MockPrepared::new).collect(Collectors.toList()),
           ImmutableMap.of(),

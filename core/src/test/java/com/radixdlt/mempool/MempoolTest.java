@@ -78,8 +78,8 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -295,7 +295,7 @@ public class MempoolTest {
     when(proof.getAccumulatorState())
         .thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
     when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
-    when(proof.getView()).thenReturn(View.of(1));
+    when(proof.getRound()).thenReturn(Round.of(1));
     var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn), proof);
     stateComputer.commit(commandsAndProof, null);
 
@@ -322,7 +322,7 @@ public class MempoolTest {
     when(proof.getAccumulatorState())
         .thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
     when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
-    when(proof.getView()).thenReturn(View.of(1));
+    when(proof.getRound()).thenReturn(Round.of(1));
     var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn2), proof);
     stateComputer.commit(commandsAndProof, null);
 
@@ -347,7 +347,7 @@ public class MempoolTest {
     when(proof.getAccumulatorState())
         .thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
     when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
-    when(proof.getView()).thenReturn(View.of(1));
+    when(proof.getRound()).thenReturn(Round.of(1));
     var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn3), proof);
     stateComputer.commit(commandsAndProof, null);
 

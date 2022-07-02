@@ -62,19 +62,54 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.application.system.construction;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static com.radixdlt.atom.TxAction.*;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+import com.radixdlt.application.system.state.RoundData;
+import com.radixdlt.application.system.state.ValidatorBFTData;
+import com.radixdlt.atom.ActionConstructor;
+import com.radixdlt.atom.TxBuilder;
+import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.KeyComparator;
+import java.util.TreeMap;
 
-/** Identifies the highest view per epoch until an epoch change must occur. */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface EpochCeilingView {}
+public class NextRoundConstructorV3 implements ActionConstructor<NextRound> {
+  @Override
+  public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
+    var prevRound = txBuilder.downSystem(RoundData.class);
+    if (action.round() <= prevRound.round()) {
+      throw new InvalidRoundException(prevRound.round(), action.round());
+    }
+
+    var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(KeyComparator.instance());
+    for (long round = prevRound.round() + 1; round < action.round(); round++) {
+      var missingLeader = action.leaderMapping().apply(round);
+      if (!validatorsToUpdate.containsKey(missingLeader)) {
+        var validatorData = txBuilder.down(ValidatorBFTData.class, missingLeader);
+        validatorsToUpdate.put(missingLeader, validatorData);
+      }
+      var nextData = validatorsToUpdate.get(missingLeader).incrementProposalsMissed();
+      validatorsToUpdate.put(missingLeader, nextData);
+    }
+
+    var curLeader = action.leaderMapping().apply(action.round());
+    if (!validatorsToUpdate.containsKey(curLeader)) {
+      var validatorData = txBuilder.down(ValidatorBFTData.class, curLeader);
+      validatorsToUpdate.put(curLeader, validatorData);
+    }
+    var nextData =
+        action.isTimeout()
+            ? validatorsToUpdate.get(curLeader).incrementProposalsMissed()
+            : validatorsToUpdate.get(curLeader).incrementCompletedProposals();
+    validatorsToUpdate.put(curLeader, nextData);
+
+    for (var e : validatorsToUpdate.entrySet()) {
+      txBuilder.up(e.getValue());
+    }
+
+    txBuilder.up(new RoundData(action.round(), action.timestamp()));
+    txBuilder.end();
+  }
+}

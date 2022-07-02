@@ -89,7 +89,7 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.crypto.ECKeyPair;
@@ -213,7 +213,7 @@ public class LargeEpochChangeTest {
     var proof =
         new LedgerProof(
             HashUtils.zero256(),
-            LedgerHeader.create(1, View.of(1), accumulator, 0),
+            LedgerHeader.create(1, Round.of(1), accumulator, 0),
             new TimestampedECDSASignatures());
     sut.execute(List.of(mint), LedgerAndBFTProof.create(proof), PermissionLevel.SYSTEM);
 
@@ -264,7 +264,7 @@ public class LargeEpochChangeTest {
       var proof2 =
           new LedgerProof(
               HashUtils.zero256(),
-              LedgerHeader.create(1, View.of(1), acc, 0),
+              LedgerHeader.create(1, Round.of(1), acc, 0),
               new TimestampedECDSASignatures());
       execution.start();
       var result = sut.execute(txns, LedgerAndBFTProof.create(proof2), PermissionLevel.SUPER_USER);
@@ -316,7 +316,7 @@ public class LargeEpochChangeTest {
     construction.start();
     logger.info("executing epoch...");
     var acc = new AccumulatorState(2 + 1 + NUM_ROUNDS * (1 + numTxnsPerRound), HashUtils.zero256());
-    var header = LedgerHeader.create(1, View.of(10), acc, 0, nextValidatorSet.orElseThrow());
+    var header = LedgerHeader.create(1, Round.of(10), acc, 0, nextValidatorSet.orElseThrow());
     var proof2 = new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
     var executionResult =
         this.sut.execute(

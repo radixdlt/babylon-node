@@ -62,54 +62,62 @@
  * permissions under this License.
  */
 
-package com.radixdlt.application.system.construction;
+package com.radixdlt.consensus.epoch;
 
-import static com.radixdlt.atom.TxAction.*;
+import com.radixdlt.consensus.bft.Round;
+import java.util.Objects;
 
-import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.application.system.state.ValidatorBFTData;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.utils.KeyComparator;
-import java.util.TreeMap;
+/** A bft round with it's corresponding epoch */
+public final class EpochRound implements Comparable<EpochRound> {
+  private final long epoch;
+  private final Round round;
 
-public class NextViewConstructorV3 implements ActionConstructor<NextRound> {
+  public EpochRound(long epoch, Round round) {
+    if (epoch < 0) {
+      throw new IllegalArgumentException("epoch must be >= 0");
+    }
+    this.epoch = epoch;
+    this.round = Objects.requireNonNull(round);
+  }
+
+  public static EpochRound of(long epoch, Round round) {
+    return new EpochRound(epoch, round);
+  }
+
+  public long getEpoch() {
+    return epoch;
+  }
+
+  public Round getRound() {
+    return round;
+  }
+
   @Override
-  public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
-    var prevRound = txBuilder.downSystem(RoundData.class);
-    if (action.view() <= prevRound.view()) {
-      throw new InvalidRoundException(prevRound.view(), action.view());
+  public String toString() {
+    return String.format("%s{epoch=%s round=%s}", this.getClass().getSimpleName(), epoch, round);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(epoch, round);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof EpochRound)) {
+      return false;
     }
 
-    var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(KeyComparator.instance());
-    for (long view = prevRound.view() + 1; view < action.view(); view++) {
-      var missingLeader = action.leaderMapping().apply(view);
-      if (!validatorsToUpdate.containsKey(missingLeader)) {
-        var validatorData = txBuilder.down(ValidatorBFTData.class, missingLeader);
-        validatorsToUpdate.put(missingLeader, validatorData);
-      }
-      var nextData = validatorsToUpdate.get(missingLeader).incrementProposalsMissed();
-      validatorsToUpdate.put(missingLeader, nextData);
+    EpochRound other = (EpochRound) o;
+    return other.epoch == this.epoch && Objects.equals(other.round, this.round);
+  }
+
+  @Override
+  public int compareTo(EpochRound o) {
+    if (this.epoch != o.epoch) {
+      return Long.compare(this.epoch, o.epoch);
     }
 
-    var curLeader = action.leaderMapping().apply(action.view());
-    if (!validatorsToUpdate.containsKey(curLeader)) {
-      var validatorData = txBuilder.down(ValidatorBFTData.class, curLeader);
-      validatorsToUpdate.put(curLeader, validatorData);
-    }
-    var nextData =
-        action.isTimeout()
-            ? validatorsToUpdate.get(curLeader).incrementProposalsMissed()
-            : validatorsToUpdate.get(curLeader).incrementCompletedProposals();
-    validatorsToUpdate.put(curLeader, nextData);
-
-    for (var e : validatorsToUpdate.entrySet()) {
-      txBuilder.up(e.getValue());
-    }
-
-    txBuilder.up(new RoundData(action.view(), action.timestamp()));
-    txBuilder.end();
+    return this.round.compareTo(o.round);
   }
 }

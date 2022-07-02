@@ -74,7 +74,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -116,13 +116,13 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
                 })
             .pacemakerTimeout(3000)
             .ledgerAndEpochsAndSync(
-                View.of(10), (unused) -> IntStream.of(0, 1), SyncConfig.of(200L, 10, 2000L))
+                Round.of(10), (unused) -> IntStream.of(0, 1), SyncConfig.of(200L, 10, 2000L))
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
                 LedgerMonitors.consensusToLedger(),
                 LedgerMonitors.ordered(),
-                ConsensusMonitors.epochCeilingView(View.of(10)));
+                ConsensusMonitors.epochMaxRound(Round.of(10)));
   }
 
   @Test

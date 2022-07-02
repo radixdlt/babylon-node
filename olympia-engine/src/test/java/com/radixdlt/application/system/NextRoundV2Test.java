@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.NextEpochConstructorV3;
-import com.radixdlt.application.system.construction.NextViewConstructorV3;
+import com.radixdlt.application.system.construction.NextRoundConstructorV3;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
@@ -108,7 +108,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class NextViewV2Test {
+public class NextRoundV2Test {
   @Parameterized.Parameters
   public static Collection<Object[]> parameters() {
     return List.of(
@@ -117,7 +117,7 @@ public class NextViewV2Test {
             List.of(
                 new EpochUpdateConstraintScrypt(10, Amount.ofTokens(10).toSubunits(), 9800, 1, 10),
                 new RoundUpdateConstraintScrypt(10)),
-            new NextViewConstructorV3()
+            new NextRoundConstructorV3()
           }
         });
   }
@@ -126,12 +126,12 @@ public class NextViewV2Test {
   private RadixEngine<Void> sut;
   private EngineStore<Void> store;
   private final List<ConstraintScrypt> scrypts;
-  private final ActionConstructor<NextRound> nextViewConstructor;
+  private final ActionConstructor<NextRound> nextRoundConstructor;
 
-  public NextViewV2Test(
-      List<ConstraintScrypt> scrypts, ActionConstructor<NextRound> nextViewConstructor) {
+  public NextRoundV2Test(
+      List<ConstraintScrypt> scrypts, ActionConstructor<NextRound> nextRoundConstructor) {
     this.scrypts = scrypts;
-    this.nextViewConstructor = nextViewConstructor;
+    this.nextRoundConstructor = nextRoundConstructor;
   }
 
   @Before
@@ -169,7 +169,7 @@ public class NextViewV2Test {
                 .put(
                     StakeTokens.class,
                     new StakeTokensConstructorV3(Amount.ofTokens(10).toSubunits()))
-                .put(NextRound.class, nextViewConstructor)
+                .put(NextRound.class, nextRoundConstructor)
                 .put(RegisterValidator.class, new RegisterValidatorConstructor())
                 .build(),
             cm,

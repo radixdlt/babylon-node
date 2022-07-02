@@ -67,8 +67,8 @@ package com.radixdlt.integration.steady_state.deterministic.consensus_ledger_epo
 import static com.radixdlt.environment.deterministic.network.MessageSelector.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.network.ChannelId;
@@ -94,15 +94,15 @@ public class MovingWindowValidatorsTest {
             .map(index -> (int) (epoch - 1 + index) % totalValidatorCount);
   }
 
-  private void run(int numNodes, int windowSize, long maxEpoch, View highView) {
+  private void run(int numNodes, int windowSize, long maxEpoch, Round highRound) {
     DeterministicTest bftTest =
         DeterministicTest.builder()
             .numNodes(numNodes)
             .messageMutator(mutator())
             .messageSelector(firstSelector())
             .epochNodeIndexesMapping(windowedEpochToNodesMapper(windowSize, numNodes))
-            .buildWithEpochs(highView)
-            .runUntil(DeterministicTest.hasReachedEpochView(EpochView.of(maxEpoch, highView)));
+            .buildWithEpochs(highRound)
+            .runUntil(DeterministicTest.hasReachedEpochRound(EpochRound.of(maxEpoch, highRound)));
 
     LinkedList<SystemCounters> testCounters = systemCounters(bftTest);
     assertThat(testCounters)
@@ -112,7 +112,7 @@ public class MovingWindowValidatorsTest {
         .extracting(sc -> sc.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT))
         .containsOnly(0L);
 
-    long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, highView.number());
+    long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, highRound.number());
 
     assertThat(testCounters)
         .extracting(sc -> sc.get(CounterType.BFT_COMMITTED_VERTICES))
@@ -144,31 +144,31 @@ public class MovingWindowValidatorsTest {
 
   @Test
   public void
-      given_correct_1_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_postconditions() {
-    run(4, 1, 100L, View.of(100));
+      given_correct_1_node_bft_with_4_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_postconditions() {
+    run(4, 1, 100L, Round.of(100));
   }
 
   @Test
   public void
-      given_correct_3_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_postconditions() {
-    run(4, 3, 120L, View.of(100));
+      given_correct_3_node_bft_with_4_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_postconditions() {
+    run(4, 3, 120L, Round.of(100));
   }
 
   @Test
   public void
-      given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_postconditions() {
-    run(50, 25, 100L, View.of(100));
+      given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_postconditions() {
+    run(50, 25, 100L, Round.of(100));
   }
 
   @Test
   public void
-      given_correct_25_node_bft_with_100_total_nodes_with_changing_epochs_per_1_view__then_should_pass_bft_and_postconditions() {
-    run(100, 25, 100L, View.of(100));
+      given_correct_25_node_bft_with_100_total_nodes_with_changing_epochs_per_1_round__then_should_pass_bft_and_postconditions() {
+    run(100, 25, 100L, Round.of(100));
   }
 
   private static long maxProcessedFor(
-      int numNodes, int numValidators, long epochs, long epochHighView) {
-    return epochHighView * epochs * numValidators / numNodes;
+      int numNodes, int numValidators, long epochs, long epochMaxRound) {
+    return epochMaxRound * epochs * numValidators / numNodes;
   }
 
   private static LinkedList<SystemCounters> systemCounters(DeterministicTest bftTest) {

@@ -73,7 +73,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -92,7 +92,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
             .permitDuplicates();
     eventBinder.addBinding().toInstance(ScheduledLocalTimeout.class);
     eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
-    eventBinder.addBinding().toInstance(ViewUpdate.class);
+    eventBinder.addBinding().toInstance(RoundUpdate.class);
     eventBinder.addBinding().toInstance(LedgerUpdate.class);
   }
 
@@ -141,7 +141,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
   @ProvidesIntoSet
   private EventProcessorOnRunner<?> viewUpdateProcessor(BFTEventProcessor processor) {
     return new EventProcessorOnRunner<>(
-        Runners.CONSENSUS, ViewUpdate.class, processor::processViewUpdate);
+        Runners.CONSENSUS, RoundUpdate.class, processor::processViewUpdate);
   }
 
   @ProvidesIntoSet

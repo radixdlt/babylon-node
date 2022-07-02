@@ -70,7 +70,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof.OrderByEpochAndVersionComparator;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -96,20 +96,20 @@ public class LedgerProofTest {
   public void testGetters() {
     LedgerHeader l0 = mock(LedgerHeader.class);
     HashCode accumulatorHash = mock(HashCode.class);
-    View view = mock(View.class);
+    Round round = mock(Round.class);
     when(l0.getEpoch()).thenReturn(3L);
     AccumulatorState accumulatorState = mock(AccumulatorState.class);
     when(accumulatorState.getAccumulatorHash()).thenReturn(accumulatorHash);
     when(accumulatorState.getStateVersion()).thenReturn(12345L);
     when(l0.getAccumulatorState()).thenReturn(accumulatorState);
-    when(l0.getView()).thenReturn(view);
+    when(l0.getRound()).thenReturn(round);
     when(l0.timestamp()).thenReturn(2468L);
     when(l0.isEndOfEpoch()).thenReturn(true);
     var ledgerHeaderAndProof =
         new LedgerProof(HashUtils.random256(), l0, mock(TimestampedECDSASignatures.class));
     assertThat(ledgerHeaderAndProof.getEpoch()).isEqualTo(3L);
     assertThat(ledgerHeaderAndProof.getStateVersion()).isEqualTo(12345L);
-    assertThat(ledgerHeaderAndProof.getView()).isEqualTo(view);
+    assertThat(ledgerHeaderAndProof.getRound()).isEqualTo(round);
     assertThat(ledgerHeaderAndProof.timestamp()).isEqualTo(2468L);
     assertThat(ledgerHeaderAndProof.isEndOfEpoch()).isTrue();
   }

@@ -70,7 +70,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerProof;
@@ -118,7 +118,7 @@ public final class LedgerProof {
 
   public static LedgerProof mock() {
     var acc = new AccumulatorState(0, HashUtils.zero256());
-    var header = LedgerHeader.create(0, View.genesis(), acc, 0);
+    var header = LedgerHeader.create(0, Round.genesis(), acc, 0);
     return new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
   }
 
@@ -178,8 +178,8 @@ public final class LedgerProof {
     return ledgerHeader.getEpoch() + 1;
   }
 
-  public View getView() {
-    return ledgerHeader.getView();
+  public Round getRound() {
+    return ledgerHeader.getRound();
   }
 
   public AccumulatorState getAccumulatorState() {

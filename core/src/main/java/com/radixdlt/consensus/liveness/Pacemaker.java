@@ -72,14 +72,8 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.MissingParentException;
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.crypto.Hasher;
@@ -118,7 +112,7 @@ public final class Pacemaker {
   private final TimeSupplier timeSupplier;
   private final SystemCounters systemCounters;
 
-  private ViewUpdate latestViewUpdate;
+  private RoundUpdate latestRoundUpdate;
   private boolean isViewTimedOut = false;
   private Optional<HashCode> timeoutVoteVertexId = Optional.empty();
 
@@ -136,7 +130,7 @@ public final class Pacemaker {
       RemoteEventDispatcher<Vote> voteDispatcher,
       Hasher hasher,
       TimeSupplier timeSupplier,
-      ViewUpdate initialViewUpdate,
+      RoundUpdate initialRoundUpdate,
       SystemCounters systemCounters) {
     this.self = Objects.requireNonNull(self);
     this.counters = Objects.requireNonNull(counters);
@@ -151,25 +145,26 @@ public final class Pacemaker {
     this.hasher = Objects.requireNonNull(hasher);
     this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
-    this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
+    this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
     this.systemCounters = Objects.requireNonNull(systemCounters);
   }
 
   public void start() {
-    log.info("Pacemaker Start: {}", latestViewUpdate);
+    log.info("Pacemaker Start: {}", latestRoundUpdate);
     this.startView();
   }
 
-  /** Processes a local view update message * */
-  public void processViewUpdate(ViewUpdate viewUpdate) {
-    log.trace("View Update: {}", viewUpdate);
+  /** Processes a local round update message * */
+  public void processViewUpdate(RoundUpdate roundUpdate) {
+    log.trace("View Update: {}", roundUpdate);
 
-    final View previousView = this.latestViewUpdate.getCurrentView();
-    if (viewUpdate.getCurrentView().lte(previousView)) {
+    final Round previousRound = this.latestRoundUpdate.getCurrentRound();
+    if (roundUpdate.getCurrentRound().lte(previousRound)) {
       return;
     }
-    this.latestViewUpdate = viewUpdate;
-    this.systemCounters.set(CounterType.BFT_PACEMAKER_ROUND, viewUpdate.getCurrentView().number());
+    this.latestRoundUpdate = roundUpdate;
+    this.systemCounters.set(
+        CounterType.BFT_PACEMAKER_ROUND, roundUpdate.getCurrentRound().number());
 
     this.startView();
   }
@@ -189,14 +184,14 @@ public final class Pacemaker {
     this.isViewTimedOut = false;
     this.timeoutVoteVertexId = Optional.empty();
 
-    long timeout = timeoutCalculator.timeout(latestViewUpdate.uncommittedViewsCount());
+    long timeout = timeoutCalculator.timeout(latestRoundUpdate.uncommittedRoundsCount());
     ScheduledLocalTimeout scheduledLocalTimeout =
-        ScheduledLocalTimeout.create(latestViewUpdate, timeout);
+        ScheduledLocalTimeout.create(latestRoundUpdate, timeout);
     this.timeoutSender.dispatch(scheduledLocalTimeout, timeout);
 
-    final BFTNode currentViewProposer = latestViewUpdate.getLeader();
+    final BFTNode currentViewProposer = latestRoundUpdate.getLeader();
     if (this.self.equals(currentViewProposer)) {
-      Optional<Proposal> proposalMaybe = generateProposal(latestViewUpdate.getCurrentView());
+      Optional<Proposal> proposalMaybe = generateProposal(latestRoundUpdate.getCurrentRound());
       proposalMaybe.ifPresent(
           proposal -> {
             log.trace("Broadcasting proposal: {}", proposal);
@@ -206,8 +201,8 @@ public final class Pacemaker {
     }
   }
 
-  private Optional<Proposal> generateProposal(View view) {
-    final HighQC highQC = this.latestViewUpdate.getHighQC();
+  private Optional<Proposal> generateProposal(Round round) {
+    final HighQC highQC = this.latestRoundUpdate.getHighQC();
     final QuorumCertificate highestQC = highQC.highestQC();
 
     final List<Transaction> nextTransactions;
@@ -219,13 +214,13 @@ public final class Pacemaker {
     } else {
       final List<PreparedVertex> preparedVertices =
           vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
-      nextTransactions = proposalGenerator.getTransactionsForProposal(view, preparedVertices);
+      nextTransactions = proposalGenerator.getTransactionsForProposal(round, preparedVertices);
       systemCounters.add(
           SystemCounters.CounterType.BFT_PACEMAKER_PROPOSED_TRANSACTIONS, nextTransactions.size());
     }
 
     final VerifiedVertex proposedVertex =
-        UnverifiedVertex.create(highestQC, view, nextTransactions, self).withId(hasher);
+        UnverifiedVertex.create(highestQC, round, nextTransactions, self).withId(hasher);
     return safetyRules.signProposal(
         proposedVertex, highQC.highestCommittedQC(), highQC.highestTC());
   }
@@ -236,13 +231,13 @@ public final class Pacemaker {
    * a timeout signature, which can later be used to form a timeout certificate.
    */
   public void processLocalTimeout(ScheduledLocalTimeout scheduledTimeout) {
-    final var view = scheduledTimeout.view();
+    final var view = scheduledTimeout.round();
 
-    if (!view.equals(this.latestViewUpdate.getCurrentView())) {
+    if (!view.equals(this.latestRoundUpdate.getCurrentRound())) {
       log.trace(
           "LocalTimeout: Ignoring timeout {}, current is {}",
           scheduledTimeout,
-          this.latestViewUpdate.getCurrentView());
+          this.latestRoundUpdate.getCurrentRound());
       return;
     }
 
@@ -265,15 +260,15 @@ public final class Pacemaker {
     rescheduleTimeout(scheduledTimeout);
   }
 
-  private void createTimeoutVertexAndSendVote(ViewUpdate viewUpdate) {
+  private void createTimeoutVertexAndSendVote(RoundUpdate roundUpdate) {
     if (this.timeoutVoteVertexId.isPresent()) {
-      return; // vertex for a timeout vote for this view is already inserted
+      return; // vertex for a timeout vote for this round is already inserted
     }
 
-    final var highQC = this.latestViewUpdate.getHighQC();
+    final var highQC = this.latestRoundUpdate.getHighQC();
     final var vertex =
         UnverifiedVertex.createTimeout(
-                highQC.highestQC(), viewUpdate.getCurrentView(), viewUpdate.getLeader())
+                highQC.highestQC(), roundUpdate.getCurrentRound(), roundUpdate.getLeader())
             .withId(hasher);
     this.timeoutVoteVertexId = Optional.of(vertex.getId());
 
@@ -299,14 +294,14 @@ public final class Pacemaker {
   private void createAndSendTimeoutVote(PreparedVertex preparedVertex) {
     final BFTHeader bftHeader =
         new BFTHeader(
-            preparedVertex.getView(), preparedVertex.getId(), preparedVertex.getLedgerHeader());
+            preparedVertex.getRound(), preparedVertex.getId(), preparedVertex.getLedgerHeader());
 
     final Vote baseVote =
         this.safetyRules.createVote(
             preparedVertex.getVertex(),
             bftHeader,
             this.timeSupplier.currentTime(),
-            this.latestViewUpdate.getHighQC());
+            this.latestRoundUpdate.getHighQC());
 
     final Vote timeoutVote = this.safetyRules.timeoutVote(baseVote);
 
@@ -325,7 +320,7 @@ public final class Pacemaker {
         new LocalTimeoutOccurrence(scheduledTimeout);
     this.timeoutDispatcher.dispatch(localTimeoutOccurrence);
 
-    final long timeout = timeoutCalculator.timeout(latestViewUpdate.uncommittedViewsCount());
+    final long timeout = timeoutCalculator.timeout(latestRoundUpdate.uncommittedRoundsCount());
     final ScheduledLocalTimeout nextTimeout = scheduledTimeout.nextRetry(timeout);
     this.timeoutSender.dispatch(nextTimeout, timeout);
   }

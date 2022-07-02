@@ -68,7 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.harness.simulation.Monitor;
@@ -76,7 +76,7 @@ import com.radixdlt.harness.simulation.MonitorKey;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.EventNeverOccursInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
-import com.radixdlt.harness.simulation.monitors.epochs.EpochViewInvariant;
+import com.radixdlt.harness.simulation.monitors.epochs.EpochRoundInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -138,7 +138,9 @@ public final class ConsensusMonitors {
       @MonitorKey(Monitor.CONSENSUS_NO_TIMEOUTS)
       TestInvariant noTimeoutsInvariant(NodeEvents nodeEvents) {
         return new EventNeverOccursInvariant<>(
-            nodeEvents, LocalTimeoutOccurrence.class, timeout -> timeout.getView().gt(View.of(1)));
+            nodeEvents,
+            LocalTimeoutOccurrence.class,
+            timeout -> timeout.getRound().gt(Round.of(1)));
       }
 
       @ProvidesIntoMap
@@ -147,7 +149,7 @@ public final class ConsensusMonitors {
         return new EventNeverOccursInvariant<>(
             nodeEvents,
             EpochLocalTimeoutOccurrence.class,
-            timeout -> timeout.getEpochView().getView().gt(View.of(1)));
+            timeout -> timeout.getEpochRound().getRound().gt(Round.of(1)));
       }
     };
   }
@@ -172,12 +174,12 @@ public final class ConsensusMonitors {
     };
   }
 
-  public static Module epochCeilingView(View epochCeilingView) {
+  public static Module epochMaxRound(Round epochMaxRound) {
     return new AbstractModule() {
       @ProvidesIntoMap
-      @MonitorKey(Monitor.EPOCH_CEILING_VIEW)
-      TestInvariant epochHighViewInvariant(NodeEvents nodeEvents) {
-        return new EpochViewInvariant(epochCeilingView, nodeEvents);
+      @MonitorKey(Monitor.EPOCH_MAX_ROUND)
+      TestInvariant epochMaxRoundInvariant(NodeEvents nodeEvents) {
+        return new EpochRoundInvariant(epochMaxRound, nodeEvents);
       }
     };
   }

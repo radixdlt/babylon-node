@@ -99,7 +99,7 @@ public final class BFTInsertUpdate {
 
   public BFTHeader getHeader() {
     return new BFTHeader(
-        insertedVertex.getView(), insertedVertex.getId(), insertedVertex.getLedgerHeader());
+        insertedVertex.getRound(), insertedVertex.getId(), insertedVertex.getLedgerHeader());
   }
 
   public PreparedVertex getInserted() {

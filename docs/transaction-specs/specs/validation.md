@@ -79,7 +79,7 @@ Permission levels are designed to allow/disallow certain actions.
 | **Level**    | **Permissions Allowed**                                                                                                                                                                                               |
 |--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `SYSTEM`     | <ul><li>To allocate native tokens</li><li>To skip transaction signature validation</li><li>To skip transaction fee validation</li><li>To conduct hard-forks when necessary (e.g. on safety/liveness breaks)</li></ul> |
-| `SUPER_USER` | <ul><li>To update system epoch and view state</li></ul>                                                                                                                                                               |
+| `SUPER_USER` | <ul><li>To update system epoch and round state</li></ul>                                                                                                                                                               |
 | `USER`       | <ul><li>To conduct user transactions, like token transfer, stake and unstake</li></ul>                                                                                                                                |
 
 Note that a higher-tier permission level is allowed for all actions granted by a lower-tier level.

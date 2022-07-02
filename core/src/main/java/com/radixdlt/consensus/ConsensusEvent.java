@@ -65,7 +65,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 
 /** A consensus event which requires syncing to be effectively processed */
 public sealed interface ConsensusEvent permits Proposal, Vote {
@@ -78,11 +78,11 @@ public sealed interface ConsensusEvent permits Proposal, Vote {
   long getEpoch();
 
   /**
-   * Get the view the consensus event is meant for
+   * Get the round the consensus event is meant for
    *
-   * @return view of consensus event
+   * @return round of consensus event
    */
-  View getView();
+  Round getRound();
 
   /**
    * Get the node author of this consensus message

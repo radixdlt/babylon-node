@@ -68,7 +68,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -83,42 +83,42 @@ public final class VoteTimeout {
   @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
   SerializerDummy serializer = SerializerDummy.DUMMY;
 
-  private final View view;
+  private final Round round;
 
   @JsonProperty("epoch")
   @DsonOutput(DsonOutput.Output.ALL)
   private final long epoch;
 
   @JsonCreator
-  public VoteTimeout(@JsonProperty("view") long view, @JsonProperty("epoch") long epoch) {
-    this(View.of(view), epoch);
+  public VoteTimeout(@JsonProperty("round") long view, @JsonProperty("epoch") long epoch) {
+    this(Round.of(view), epoch);
   }
 
-  public VoteTimeout(View view, long epoch) {
+  public VoteTimeout(Round round, long epoch) {
     if (epoch < 0) {
       throw new IllegalArgumentException("Epoch can't be < 0");
     }
 
-    this.view = Objects.requireNonNull(view);
+    this.round = Objects.requireNonNull(round);
     this.epoch = epoch;
   }
 
   public static VoteTimeout of(Vote vote) {
-    return new VoteTimeout(vote.getView(), vote.getEpoch());
+    return new VoteTimeout(vote.getRound(), vote.getEpoch());
   }
 
-  public View getView() {
-    return view;
+  public Round getRound() {
+    return round;
   }
 
   public long getEpoch() {
     return epoch;
   }
 
-  @JsonProperty("view")
+  @JsonProperty("round")
   @DsonOutput(DsonOutput.Output.ALL)
   private Long getSerializerView() {
-    return this.view.number();
+    return this.round.number();
   }
 
   @Override
@@ -130,16 +130,17 @@ public final class VoteTimeout {
       return false;
     }
     VoteTimeout that = (VoteTimeout) o;
-    return epoch == that.epoch && Objects.equals(view, that.view);
+    return epoch == that.epoch && Objects.equals(round, that.round);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(view, epoch);
+    return Objects.hash(round, epoch);
   }
 
   @Override
   public String toString() {
-    return String.format("%s{epoch=%s view=%s}", getClass().getSimpleName(), getEpoch(), getView());
+    return String.format(
+        "%s{epoch=%s round=%s}", getClass().getSimpleName(), getEpoch(), getRound());
   }
 }

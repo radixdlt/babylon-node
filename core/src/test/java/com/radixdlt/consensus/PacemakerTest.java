@@ -73,8 +73,8 @@ import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -100,7 +100,7 @@ public class PacemakerTest {
 
   @Inject private DeterministicProcessor processor;
 
-  @Inject private ViewUpdate initialViewUpdate;
+  @Inject private RoundUpdate initialRoundUpdate;
 
   @Inject private DeterministicNetwork network;
 
@@ -210,16 +210,16 @@ public class PacemakerTest {
         .haveExactly(
             1,
             new Condition<>(
-                msg -> msg.message() instanceof EpochViewUpdate,
-                "A remote view timeout has been emitted"));
-    EpochViewUpdate nextEpochViewUpdate =
+                msg -> msg.message() instanceof EpochRoundUpdate,
+                "A remote round timeout has been emitted"));
+    EpochRoundUpdate nextEpochRoundUpdate =
         network.allMessages().stream()
-            .filter(msg -> msg.message() instanceof EpochViewUpdate)
+            .filter(msg -> msg.message() instanceof EpochRoundUpdate)
             .map(ControlledMessage::message)
-            .map(EpochViewUpdate.class::cast)
+            .map(EpochRoundUpdate.class::cast)
             .findAny()
             .orElseThrow();
-    assertThat(nextEpochViewUpdate.getViewUpdate().getCurrentView())
-        .isEqualTo(initialViewUpdate.getCurrentView().next());
+    assertThat(nextEpochRoundUpdate.getRoundUpdate().getCurrentRound())
+        .isEqualTo(initialRoundUpdate.getCurrentRound().next());
   }
 }

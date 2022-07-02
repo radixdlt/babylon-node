@@ -62,18 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.radixdlt.consensus.bft.Round;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public class EpochViewUpdateTest {
+public class RoundTest {
+  @Test
+  public void testBadArgument() {
+    assertThatThrownBy(() -> Round.of(-1L)).isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void testPrevious() {
+    assertThat(Round.of(2L).previous()).isEqualTo(Round.of(1L));
+    assertThatThrownBy(() -> Round.of(0L).previous());
+  }
+
+  @Test
+  public void testNext() {
+    assertThat(Round.of(1L).next()).isEqualTo(Round.of(2L));
+    assertThatThrownBy(() -> Round.of(Long.MAX_VALUE).next());
+  }
+
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(EpochViewUpdate.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+    EqualsVerifier.forClass(Round.class).verify();
   }
 }

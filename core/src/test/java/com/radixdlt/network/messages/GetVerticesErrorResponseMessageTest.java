@@ -72,8 +72,8 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import java.util.Optional;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -84,7 +84,7 @@ public class GetVerticesErrorResponseMessageTest {
   @Test
   public void sensibleToString() {
     VerifiedVertex verifiedVertex = mock(VerifiedVertex.class);
-    when(verifiedVertex.getView()).thenReturn(View.genesis());
+    when(verifiedVertex.getRound()).thenReturn(Round.genesis());
     when(verifiedVertex.getId()).thenReturn(HashCode.fromInt(1));
     QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, mock(LedgerHeader.class));
     HighQC highQC = HighQC.from(qc, qc, Optional.empty());

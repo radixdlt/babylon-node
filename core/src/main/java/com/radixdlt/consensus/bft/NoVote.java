@@ -66,7 +66,7 @@ package com.radixdlt.consensus.bft;
 
 import java.util.Objects;
 
-/** An event emitted when the node decides not to vote for a view */
+/** An event emitted when the node decides not to vote for a round */
 public final class NoVote {
   private final VerifiedVertex vertex;
 

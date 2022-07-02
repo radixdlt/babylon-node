@@ -81,14 +81,8 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.crypto.Hasher;
@@ -128,11 +122,11 @@ public class PacemakerTest {
   public void setUp() {
     HighQC highQC = mock(HighQC.class);
     QuorumCertificate committedQc = mock(QuorumCertificate.class);
-    when(committedQc.getView()).thenReturn(View.of(0));
+    when(committedQc.getRound()).thenReturn(Round.of(0));
     when(highQC.highestCommittedQC()).thenReturn(committedQc);
 
-    ViewUpdate initialViewUpdate =
-        ViewUpdate.create(View.of(0), highQC, mock(BFTNode.class), mock(BFTNode.class));
+    RoundUpdate initialRoundUpdate =
+        RoundUpdate.create(Round.of(0), highQC, mock(BFTNode.class), mock(BFTNode.class));
 
     this.pacemaker =
         new Pacemaker(
@@ -149,28 +143,29 @@ public class PacemakerTest {
             this.voteDispatcher,
             hasher,
             timeSupplier,
-            initialViewUpdate,
+            initialRoundUpdate,
             new SystemCountersImpl());
   }
 
   @Test
   public void when_local_timeout__then_resend_previous_vote() {
-    View view = View.of(0);
+    Round round = Round.of(0);
     Vote lastVote = mock(Vote.class);
     Vote lastVoteWithTimeout = mock(Vote.class);
     ImmutableSet<BFTNode> validators = rmock(ImmutableSet.class);
 
-    when(this.safetyRules.getLastVote(view)).thenReturn(Optional.of(lastVote));
+    when(this.safetyRules.getLastVote(round)).thenReturn(Optional.of(lastVote));
     when(this.safetyRules.timeoutVote(lastVote)).thenReturn(lastVoteWithTimeout);
     when(this.validatorSet.nodes()).thenReturn(validators);
 
-    ViewUpdate viewUpdate =
-        ViewUpdate.create(View.of(0), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class));
-    this.pacemaker.processLocalTimeout(ScheduledLocalTimeout.create(viewUpdate, 0L));
+    RoundUpdate roundUpdate =
+        RoundUpdate.create(
+            Round.of(0), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class));
+    this.pacemaker.processLocalTimeout(ScheduledLocalTimeout.create(roundUpdate, 0L));
 
     verify(this.voteDispatcher, times(1)).dispatch(eq(validators), eq(lastVoteWithTimeout));
     verifyNoMoreInteractions(this.vertexStore);
-    verify(this.safetyRules, times(1)).getLastVote(view);
+    verify(this.safetyRules, times(1)).getLastVote(round);
     verify(this.safetyRules, times(1)).timeoutVote(lastVote);
     verifyNoMoreInteractions(this.safetyRules);
   }
@@ -186,11 +181,11 @@ public class PacemakerTest {
     HashCode highQcParentVertexId = mock(HashCode.class);
     when(highestQcProposed.getVertexId()).thenReturn(highQcParentVertexId);
     when(highestQc.getProposed()).thenReturn(highestQcProposed);
-    when(committedQc.getView()).thenReturn(View.of(0));
-    ViewUpdate viewUpdate =
-        ViewUpdate.create(View.of(1), viewUpdateHighQc, mock(BFTNode.class), mock(BFTNode.class));
-    this.pacemaker.processViewUpdate(viewUpdate);
-    View view = View.of(1);
+    when(committedQc.getRound()).thenReturn(Round.of(0));
+    RoundUpdate roundUpdate =
+        RoundUpdate.create(Round.of(1), viewUpdateHighQc, mock(BFTNode.class), mock(BFTNode.class));
+    this.pacemaker.processViewUpdate(roundUpdate);
+    Round round = Round.of(1);
     Vote emptyVote = mock(Vote.class);
     Vote emptyVoteWithTimeout = mock(Vote.class);
     ImmutableSet<BFTNode> validators = rmock(ImmutableSet.class);
@@ -199,7 +194,7 @@ public class PacemakerTest {
     BFTInsertUpdate bftInsertUpdate = mock(BFTInsertUpdate.class);
     when(bftInsertUpdate.getHeader()).thenReturn(bftHeader);
     PreparedVertex preparedVertex = mock(PreparedVertex.class);
-    when(preparedVertex.getView()).thenReturn(view);
+    when(preparedVertex.getRound()).thenReturn(round);
     when(preparedVertex.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
     VerifiedVertexStoreState vertexStoreState = mock(VerifiedVertexStoreState.class);
     when(vertexStoreState.getHighQC()).thenReturn(highQC);
@@ -207,9 +202,9 @@ public class PacemakerTest {
     when(bftInsertUpdate.getVertexStoreState()).thenReturn(vertexStoreState);
     var node = BFTNode.random();
     when(preparedVertex.getId())
-        .thenReturn(hasher.hashDsonEncoded(UnverifiedVertex.createTimeout(highestQc, view, node)));
+        .thenReturn(hasher.hashDsonEncoded(UnverifiedVertex.createTimeout(highestQc, round, node)));
 
-    when(this.safetyRules.getLastVote(view)).thenReturn(Optional.empty());
+    when(this.safetyRules.getLastVote(round)).thenReturn(Optional.empty());
     when(this.safetyRules.createVote(any(), any(), anyLong(), any())).thenReturn(emptyVote);
     when(this.safetyRules.timeoutVote(emptyVote)).thenReturn(emptyVoteWithTimeout);
     when(this.validatorSet.nodes()).thenReturn(validators);
@@ -218,12 +213,12 @@ public class PacemakerTest {
 
     this.pacemaker.processLocalTimeout(
         ScheduledLocalTimeout.create(
-            ViewUpdate.create(View.of(1), mock(HighQC.class), node, BFTNode.random()), 0L));
+            RoundUpdate.create(Round.of(1), mock(HighQC.class), node, BFTNode.random()), 0L));
 
     this.pacemaker.processBFTUpdate(bftInsertUpdate);
 
     verify(this.voteDispatcher, times(1)).dispatch(eq(validators), eq(emptyVoteWithTimeout));
-    verify(this.safetyRules, times(1)).getLastVote(view);
+    verify(this.safetyRules, times(1)).getLastVote(round);
     verify(this.safetyRules, times(1)).createVote(any(), any(), anyLong(), any());
     verify(this.safetyRules, times(1)).timeoutVote(emptyVote);
     verifyNoMoreInteractions(this.safetyRules);
@@ -242,8 +237,8 @@ public class PacemakerTest {
   public void when_local_timeout_for_non_current_view__then_ignored() {
     this.pacemaker.processLocalTimeout(
         ScheduledLocalTimeout.create(
-            ViewUpdate.create(
-                View.of(1), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class)),
+            RoundUpdate.create(
+                Round.of(1), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class)),
             0L));
     verifyNoMoreInteractions(this.safetyRules);
   }

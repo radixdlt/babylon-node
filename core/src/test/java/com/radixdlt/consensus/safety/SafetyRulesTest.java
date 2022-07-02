@@ -80,8 +80,8 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
@@ -122,11 +122,11 @@ public class SafetyRulesTest {
 
   @Test
   public void when_vote_on_same_view__then_exception_is_thrown() {
-    View view = mock(View.class);
-    when(view.lte(view)).thenReturn(true);
-    when(safetyState.getLastVotedView()).thenReturn(view);
+    Round round = mock(Round.class);
+    when(round.lte(round)).thenReturn(true);
+    when(safetyState.getLastVotedView()).thenReturn(round);
     VerifiedVertex vertex = mock(VerifiedVertex.class);
-    when(vertex.getView()).thenReturn(view);
+    when(vertex.getRound()).thenReturn(round);
 
     assertThat(this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
         .isEmpty();
@@ -140,7 +140,7 @@ public class SafetyRulesTest {
     when(hashSigner.sign(any(HashCode.class))).thenReturn(ECDSASignature.zeroSignature());
 
     Vote lastVote = mock(Vote.class);
-    when(lastVote.getView()).thenReturn(View.of(1));
+    when(lastVote.getRound()).thenReturn(Round.of(1));
 
     final var hashVerifier = mock(HashVerifier.class);
     final var validatorSet = mock(BFTValidatorSet.class);
@@ -148,7 +148,7 @@ public class SafetyRulesTest {
     final var safetyRules =
         new SafetyRules(
             BFTNode.random(),
-            new SafetyState(View.of(2), Optional.of(lastVote)),
+            new SafetyState(Round.of(2), Optional.of(lastVote)),
             mock(PersistentSafetyStateStore.class),
             hasher,
             hashSigner,
@@ -156,9 +156,9 @@ public class SafetyRulesTest {
             validatorSet);
 
     VerifiedVertex vertex = mock(VerifiedVertex.class);
-    when(vertex.getView()).thenReturn(View.of(3));
+    when(vertex.getRound()).thenReturn(Round.of(3));
     BFTHeader parent = mock(BFTHeader.class);
-    when(parent.getView()).thenReturn(View.of(0));
+    when(parent.getRound()).thenReturn(Round.of(0));
     when(vertex.getParentHeader()).thenReturn(parent);
 
     assertThat(safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
@@ -167,19 +167,19 @@ public class SafetyRulesTest {
 
   @Test
   public void when_vote_on_proposal_after_genesis__then_returned_vote_has_no_commit() {
-    when(safetyState.getLastVotedView()).thenReturn(View.of(0));
-    when(safetyState.getLockedView()).thenReturn(View.of(0));
+    when(safetyState.getLastVotedView()).thenReturn(Round.of(0));
+    when(safetyState.getLockedView()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
     VerifiedVertex vertex = mock(VerifiedVertex.class);
     when(vertex.hasDirectParent()).thenReturn(true);
     when(vertex.touchesGenesis()).thenReturn(true);
     when(vertex.parentHasDirectParent()).thenReturn(true);
-    when(vertex.getView()).thenReturn(View.of(1));
+    when(vertex.getRound()).thenReturn(Round.of(1));
     BFTHeader parent = mock(BFTHeader.class);
-    when(parent.getView()).thenReturn(View.of(0));
+    when(parent.getRound()).thenReturn(Round.of(0));
     when(vertex.getParentHeader()).thenReturn(parent);
     BFTHeader grandParent = mock(BFTHeader.class);
-    when(grandParent.getView()).thenReturn(mock(View.class));
+    when(grandParent.getRound()).thenReturn(mock(Round.class));
     when(vertex.getGrandParentHeader()).thenReturn(grandParent);
     BFTHeader header = mock(BFTHeader.class);
     Optional<Vote> voteMaybe = safetyRules.voteFor(vertex, header, 1L, mock(HighQC.class));
@@ -192,19 +192,19 @@ public class SafetyRulesTest {
 
   @Test
   public void when_vote_on_proposal_two_after_genesis__then_returned_vote_has_no_commit() {
-    when(safetyState.getLastVotedView()).thenReturn(View.of(1));
-    when(safetyState.getLockedView()).thenReturn(View.of(0));
+    when(safetyState.getLastVotedView()).thenReturn(Round.of(1));
+    when(safetyState.getLockedView()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
     VerifiedVertex proposal = mock(VerifiedVertex.class);
     when(proposal.touchesGenesis()).thenReturn(true);
     when(proposal.hasDirectParent()).thenReturn(true);
     when(proposal.parentHasDirectParent()).thenReturn(true);
     BFTHeader parent = mock(BFTHeader.class);
-    when(parent.getView()).thenReturn(View.of(1));
+    when(parent.getRound()).thenReturn(Round.of(1));
     when(proposal.getParentHeader()).thenReturn(parent);
-    when(proposal.getView()).thenReturn(View.of(2));
+    when(proposal.getRound()).thenReturn(Round.of(2));
     BFTHeader grandParent = mock(BFTHeader.class);
-    when(grandParent.getView()).thenReturn(mock(View.class));
+    when(grandParent.getRound()).thenReturn(mock(Round.class));
     when(proposal.getGrandParentHeader()).thenReturn(grandParent);
     Optional<Vote> voteMaybe =
         safetyRules.voteFor(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
@@ -215,8 +215,8 @@ public class SafetyRulesTest {
 
   @Test
   public void when_vote_on_proposal_three_after_genesis__then_returned_vote_has_commit() {
-    when(safetyState.getLastVotedView()).thenReturn(View.of(1));
-    when(safetyState.getLockedView()).thenReturn(View.of(0));
+    when(safetyState.getLastVotedView()).thenReturn(Round.of(1));
+    when(safetyState.getLockedView()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
 
     VerifiedVertex proposal = mock(VerifiedVertex.class);
@@ -224,12 +224,12 @@ public class SafetyRulesTest {
     when(proposal.hasDirectParent()).thenReturn(true);
     when(proposal.parentHasDirectParent()).thenReturn(true);
     BFTHeader grandparentHeader = mock(BFTHeader.class);
-    when(grandparentHeader.getView()).thenReturn(mock(View.class));
+    when(grandparentHeader.getRound()).thenReturn(mock(Round.class));
     when(proposal.getGrandParentHeader()).thenReturn(grandparentHeader);
     BFTHeader parent = mock(BFTHeader.class);
-    when(parent.getView()).thenReturn(View.of(2));
+    when(parent.getRound()).thenReturn(Round.of(2));
     when(proposal.getParentHeader()).thenReturn(parent);
-    when(proposal.getView()).thenReturn(View.of(3));
+    when(proposal.getRound()).thenReturn(Round.of(3));
 
     Optional<Vote> voteMaybe =
         safetyRules.voteFor(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
@@ -241,8 +241,8 @@ public class SafetyRulesTest {
   @Test
   public void
       when_vote_on_proposal_three_after_genesis_with_skip__then_returned_vote_has_no_commit() {
-    when(safetyState.getLastVotedView()).thenReturn(View.of(1));
-    when(safetyState.getLockedView()).thenReturn(View.of(0));
+    when(safetyState.getLastVotedView()).thenReturn(Round.of(1));
+    when(safetyState.getLockedView()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
 
     VerifiedVertex proposal = mock(VerifiedVertex.class);
@@ -250,11 +250,11 @@ public class SafetyRulesTest {
     when(proposal.hasDirectParent()).thenReturn(false);
     when(proposal.parentHasDirectParent()).thenReturn(true);
     BFTHeader parent = mock(BFTHeader.class);
-    when(parent.getView()).thenReturn(View.of(2));
+    when(parent.getRound()).thenReturn(Round.of(2));
     when(proposal.getParentHeader()).thenReturn(parent);
-    when(proposal.getView()).thenReturn(View.of(4));
+    when(proposal.getRound()).thenReturn(Round.of(4));
     BFTHeader grandParent = mock(BFTHeader.class);
-    when(grandParent.getView()).thenReturn(mock(View.class));
+    when(grandParent.getRound()).thenReturn(mock(Round.class));
     when(proposal.getGrandParentHeader()).thenReturn(grandParent);
 
     Optional<Vote> voteMaybe =
@@ -275,7 +275,7 @@ public class SafetyRulesTest {
   public void when_timeout_a_vote_than_it_has_a_timeout_signature() {
     Vote vote = mock(Vote.class);
     Vote voteWithTimeout = mock(Vote.class);
-    when(vote.getView()).thenReturn(View.of(1));
+    when(vote.getRound()).thenReturn(Round.of(1));
     when(vote.getEpoch()).thenReturn(1L);
     when(vote.withTimeoutSignature(any())).thenReturn(voteWithTimeout);
     when(vote.isTimeout()).thenReturn(false);

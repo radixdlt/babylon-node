@@ -88,11 +88,8 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -263,27 +260,28 @@ public class RadixEngineStateComputerTest {
     setupGenesis();
   }
 
-  private Transaction systemUpdateTxn(long nextView, long nextEpoch) throws TxBuilderException {
+  private Transaction systemUpdateTxn(long nextRound, long nextEpoch) throws TxBuilderException {
     TxBuilder builder;
     if (nextEpoch >= 2) {
       var request =
           TxnConstructionRequest.create()
               .action(
                   new NextRound(
-                      10, true, 0, v -> proposerElection.getProposer(View.of(v)).getKey()))
+                      10, true, 0, v -> proposerElection.getProposer(Round.of(v)).getKey()))
               .action(new NextEpoch(0));
       builder = radixEngine.construct(request);
     } else {
       builder =
           radixEngine.construct(
-              new NextRound(nextView, false, 0, i -> registeredNodes.get(0).getPublicKey()));
+              new NextRound(nextRound, false, 0, i -> registeredNodes.get(0).getPublicKey()));
     }
 
     return builder.buildWithoutSignature();
   }
 
-  private Transaction systemUpdateCommand(long nextView, long nextEpoch) throws TxBuilderException {
-    return systemUpdateTxn(nextView, nextEpoch);
+  private Transaction systemUpdateCommand(long nextRound, long nextEpoch)
+      throws TxBuilderException {
+    return systemUpdateTxn(nextRound, nextEpoch);
   }
 
   private Transaction registerCommand(ECKeyPair keyPair) throws TxBuilderException {
@@ -294,11 +292,11 @@ public class RadixEngineStateComputerTest {
 
   @Test
   @Ignore("Ignore for now given need for more refactoring to get this test to work")
-  public void executing_non_epoch_high_view_should_return_no_validator_set() {
+  public void executing_non_epoch_max_round_should_return_no_validator_set() {
     // Arrange
     var v =
         UnverifiedVertex.create(
-            mock(QuorumCertificate.class), View.of(9), List.of(), BFTNode.random());
+            mock(QuorumCertificate.class), Round.of(9), List.of(), BFTNode.random());
     var vertex = v.withId(RandomHasher.INSTANCE);
 
     // Action
@@ -311,13 +309,13 @@ public class RadixEngineStateComputerTest {
   }
 
   @Test
-  public void executing_epoch_high_view_should_return_next_validator_set() {
+  public void executing_epoch_max_round_should_return_next_validator_set() {
     // Arrange
     var qc = mock(QuorumCertificate.class);
     var parentHeader = mock(BFTHeader.class);
-    when(parentHeader.getView()).thenReturn(View.of(0));
+    when(parentHeader.getRound()).thenReturn(Round.of(0));
     when(qc.getProposed()).thenReturn(parentHeader);
-    var unverified = UnverifiedVertex.create(qc, View.of(11), List.of(), BFTNode.random());
+    var unverified = UnverifiedVertex.create(qc, Round.of(11), List.of(), BFTNode.random());
     var vertex = unverified.withId(RandomHasher.INSTANCE);
 
     // Act
@@ -339,7 +337,7 @@ public class RadixEngineStateComputerTest {
   }
 
   @Test
-  public void executing_epoch_high_view_with_register_should_not_return_new_next_validator_set()
+  public void executing_epoch_max_round_with_register_should_not_return_new_next_validator_set()
       throws Exception {
     // Arrange
     ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -347,10 +345,10 @@ public class RadixEngineStateComputerTest {
     BFTNode node = BFTNode.create(keyPair.getPublicKey());
     var qc = mock(QuorumCertificate.class);
     var parentHeader = mock(BFTHeader.class);
-    when(parentHeader.getView()).thenReturn(View.of(0));
+    when(parentHeader.getRound()).thenReturn(Round.of(0));
     when(qc.getProposed()).thenReturn(parentHeader);
     var vertex =
-        UnverifiedVertex.create(qc, View.of(11), List.of(txn), BFTNode.random())
+        UnverifiedVertex.create(qc, Round.of(11), List.of(txn), BFTNode.random())
             .withId(RandomHasher.INSTANCE);
 
     // Act
@@ -358,7 +356,7 @@ public class RadixEngineStateComputerTest {
 
     // Assert
     assertThat(result.getSuccessfulCommands())
-        .hasSize(1); // since high view, command is not executed
+        .hasSize(1); // since high round, command is not executed
     assertThat(result.getNextValidatorSet())
         .hasValueSatisfying(
             s -> {
@@ -373,7 +371,7 @@ public class RadixEngineStateComputerTest {
     var txn =
         radixEngine
             .construct(
-                new NextRound(1, false, 0, i -> proposerElection.getProposer(View.of(i)).getKey()))
+                new NextRound(1, false, 0, i -> proposerElection.getProposer(Round.of(i)).getKey()))
             .buildWithoutSignature();
     var illegalTxn =
         TxLowLevelBuilder.newBuilder(
@@ -385,9 +383,9 @@ public class RadixEngineStateComputerTest {
     var v =
         UnverifiedVertex.create(
             mock(QuorumCertificate.class),
-            View.of(1),
+            Round.of(1),
             List.of(illegalTxn),
-            proposerElection.getProposer(View.of(1)));
+            proposerElection.getProposer(Round.of(1)));
     var vertex = v.withId(RandomHasher.INSTANCE);
 
     // Act
@@ -408,16 +406,16 @@ public class RadixEngineStateComputerTest {
 
   // TODO: should catch this and log it somewhere as proof of byzantine quorum
   @Test
-  // Note that checking upper bound view for epoch now requires additional
+  // Note that checking upper bound round for epoch now requires additional
   // state not easily obtained where checked in the RadixEngine
-  @Ignore("FIXME: Reinstate when upper bound on epoch view is in place.")
-  public void committing_epoch_high_views_should_fail() throws TxBuilderException {
+  @Ignore("FIXME: Reinstate when upper bound on epoch round is in place.")
+  public void committing_epoch_max_rounds_should_fail() throws TxBuilderException {
     // Arrange
     var cmd0 = systemUpdateCommand(10, 1);
     var ledgerProof =
         new LedgerProof(
             HashUtils.random256(),
-            LedgerHeader.create(0, View.of(11), new AccumulatorState(3, HashUtils.zero256()), 0),
+            LedgerHeader.create(0, Round.of(11), new AccumulatorState(3, HashUtils.zero256()), 0),
             new TimestampedECDSASignatures());
     var commandsAndProof = VerifiedTxnsAndProof.create(ImmutableList.of(cmd0), ledgerProof);
 
@@ -437,7 +435,7 @@ public class RadixEngineStateComputerTest {
     var ledgerProof =
         new LedgerProof(
             HashUtils.random256(),
-            LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 0),
+            LedgerHeader.create(0, Round.of(9), new AccumulatorState(3, HashUtils.zero256()), 0),
             new TimestampedECDSASignatures());
     var commandsAndProof = VerifiedTxnsAndProof.create(ImmutableList.of(cmd0, cmd1), ledgerProof);
 
@@ -458,7 +456,7 @@ public class RadixEngineStateComputerTest {
             HashUtils.random256(),
             LedgerHeader.create(
                 0,
-                View.of(9),
+                Round.of(9),
                 new AccumulatorState(3, HashUtils.zero256()),
                 0,
                 BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))),
@@ -482,7 +480,7 @@ public class RadixEngineStateComputerTest {
             HashUtils.random256(),
             LedgerHeader.create(
                 0,
-                View.of(9),
+                Round.of(9),
                 new AccumulatorState(3, HashUtils.zero256()),
                 0,
                 BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))),

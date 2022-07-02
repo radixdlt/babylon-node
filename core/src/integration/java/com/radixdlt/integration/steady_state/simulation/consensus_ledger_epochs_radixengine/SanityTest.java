@@ -92,7 +92,7 @@ public class SanityTest {
               new MainnetForksModule(),
               new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
               new ForksModule())
-          .ledgerAndRadixEngineWithEpochHighView()
+          .ledgerAndRadixEngineWithEpochMaxRound()
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

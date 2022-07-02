@@ -184,12 +184,12 @@ public final class VertexStoreAdapter {
     return vertexStore.containsVertex(vertexId);
   }
 
-  public boolean hasCommittedVertexOrRootAtOrAboveView(BFTHeader committedHeader) {
+  public boolean hasCommittedVertexOrRootAtOrAboveRound(BFTHeader committedHeader) {
     if (vertexStore.containsVertex(committedHeader.getVertexId())) {
       return true;
     } else {
-      final var rootView = vertexStore.getRoot().getView();
-      return rootView.gte(committedHeader.getView());
+      final var rootRound = vertexStore.getRoot().getRound();
+      return rootRound.gte(committedHeader.getRound());
     }
   }
 

@@ -70,7 +70,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -123,8 +123,8 @@ public final class Proposal implements ConsensusEvent {
     this.committedQC = requireNonNull(committedQC);
     this.signature = requireNonNull(signature);
 
-    this.highestTC = // only relevant if it's for a higher view than QC
-        highestTC.filter(tc -> tc.getView().gt(vertex.getQC().getView())).orElse(null);
+    this.highestTC = // only relevant if it's for a higher round than QC
+        highestTC.filter(tc -> tc.getRound().gt(vertex.getQC().getRound())).orElse(null);
   }
 
   @Override
@@ -133,8 +133,8 @@ public final class Proposal implements ConsensusEvent {
   }
 
   @Override
-  public View getView() {
-    return vertex.getView();
+  public Round getRound() {
+    return vertex.getRound();
   }
 
   @Override

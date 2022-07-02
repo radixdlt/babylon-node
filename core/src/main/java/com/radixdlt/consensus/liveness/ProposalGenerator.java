@@ -65,20 +65,20 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
 
-/** Generates transactions for a proposal in the given view */
+/** Generates transactions for a proposal in the given round */
 public interface ProposalGenerator {
 
   /**
-   * Generates transactions for a proposal in the given view TODO: Update interface to return an
-   * error if already generated a command for a given view
+   * Generates transactions for a proposal in the given round TODO: Update interface to return an
+   * error if already generated a command for a given round
    *
-   * @param view the view to create the vertex for
+   * @param round the round to create the vertex for
    * @param prepared vertices with transactions which have already been prepared
    * @return new transactions for the next proposal
    */
-  List<Transaction> getTransactionsForProposal(View view, List<PreparedVertex> prepared);
+  List<Transaction> getTransactionsForProposal(Round round, List<PreparedVertex> prepared);
 }

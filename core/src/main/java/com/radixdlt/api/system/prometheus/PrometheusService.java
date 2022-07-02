@@ -161,11 +161,11 @@ public class PrometheusService {
   }
 
   private void exportSystemInfo(StringBuilder builder) {
-    var currentEpochView = inMemorySystemInfo.getCurrentView();
+    var currentEpochRound = inMemorySystemInfo.getCurrentRound();
 
     appendCounter(
-        builder, "info_epochmanager_currentview_view", currentEpochView.getView().number());
-    appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpochView.getEpoch());
+        builder, "info_epochmanager_currentround_round", currentEpochRound.getRound().number());
+    appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpochRound.getEpoch());
     appendCounter(builder, "total_peers", peersView.peers().count());
 
     var totalValidators =

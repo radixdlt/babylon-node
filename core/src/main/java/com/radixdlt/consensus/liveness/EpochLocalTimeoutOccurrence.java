@@ -65,7 +65,7 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.EpochRound;
 
 /** A timeout which has occurred in the bft node */
 public final class EpochLocalTimeoutOccurrence {
@@ -77,8 +77,8 @@ public final class EpochLocalTimeoutOccurrence {
     this.localTimeoutOccurrence = localTimeoutOccurrence;
   }
 
-  public EpochView getEpochView() {
-    return new EpochView(epoch, localTimeoutOccurrence.getView());
+  public EpochRound getEpochRound() {
+    return new EpochRound(epoch, localTimeoutOccurrence.getRound());
   }
 
   public LocalTimeoutOccurrence getBase() {

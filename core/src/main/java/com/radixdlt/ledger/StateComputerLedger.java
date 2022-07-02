@@ -74,9 +74,9 @@ import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -190,7 +190,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   }
 
   @Override
-  public List<Transaction> getTransactionsForProposal(View view, List<PreparedVertex> prepared) {
+  public List<Transaction> getTransactionsForProposal(Round round, List<PreparedVertex> prepared) {
     final ImmutableList<PreparedTransaction> preparedTransactions =
         prepared.stream()
             .flatMap(PreparedVertex::successfulTransactions)
@@ -212,8 +212,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     final long quorumTimestamp;
     // if vertex has genesis parent then QC is mocked so just use previous timestamp
     // this does have the edge case of never increasing timestamps if configuration is
-    // one view per epoch but good enough for now
-    if (vertex.getParentHeader().getView().isGenesis()) {
+    // one round per epoch but good enough for now
+    if (vertex.getParentHeader().getRound().isGenesis()) {
       quorumTimestamp = vertex.getParentHeader().getLedgerHeader().timestamp();
     } else {
       quorumTimestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
@@ -230,7 +230,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         final PreparedVertex preparedVertex =
             vertex
                 .withHeader(
-                    parentHeader.updateViewAndTimestamp(vertex.getView(), quorumTimestamp),
+                    parentHeader.updateRoundAndTimestamp(vertex.getRound(), quorumTimestamp),
                     localTimestamp)
                 .andTxns(ImmutableList.of(), ImmutableMap.of());
         return Optional.of(preparedVertex);
@@ -263,7 +263,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       final LedgerHeader ledgerHeader =
           LedgerHeader.create(
               parentHeader.getEpoch(),
-              vertex.getView(),
+              vertex.getRound(),
               accumulatorState,
               quorumTimestamp,
               result.getNextValidatorSet().orElse(null));

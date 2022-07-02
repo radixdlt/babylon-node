@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.NextEpochConstructorV3;
-import com.radixdlt.application.system.construction.NextViewConstructorV3;
+import com.radixdlt.application.system.construction.NextRoundConstructorV3;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
@@ -226,7 +226,7 @@ public class UnstakeTokensV2Test {
             serialization,
             REConstructor.newBuilder()
                 .put(CreateSystem.class, new CreateSystemConstructorV2())
-                .put(NextRound.class, new NextViewConstructorV3())
+                .put(NextRound.class, new NextRoundConstructorV3())
                 .put(
                     NextEpoch.class,
                     new NextEpochConstructorV3(Amount.ofTokens(10).toSubunits(), 9800, 1, 10))

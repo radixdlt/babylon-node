@@ -89,7 +89,7 @@ public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
     return Observable.merge(correctProposals)
         .concatMap(
             v -> {
-              if (!v.getView().equals(v.getQC().getProposed().getView().next())) {
+              if (!v.getRound().equals(v.getQC().getProposed().getRound().next())) {
                 return Observable.just(
                     new TestInvariantError(String.format("Vertex %s has no direct parent", v)));
               } else {

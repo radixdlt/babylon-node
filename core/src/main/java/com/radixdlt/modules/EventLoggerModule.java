@@ -75,7 +75,7 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
@@ -124,8 +124,8 @@ public final class EventLoggerModule extends AbstractModule {
         t ->
             logger.warn(
                 "bft_timout{epoch={} round={} leader={} nextLeader={} count={}}",
-                t.getEpochView().getEpoch(),
-                t.getEpochView().getView().number(),
+                t.getEpochRound().getEpoch(),
+                t.getEpochRound().getRound().number(),
                 nodeString.apply(t.getLeader()),
                 nodeString.apply(t.getNextLeader()),
                 t.getBase().timeout().count()));
@@ -136,16 +136,16 @@ public final class EventLoggerModule extends AbstractModule {
   EventProcessorOnDispatch<?> logRounds(Function<BFTNode, String> nodeString) {
     final var logLimiter = RateLimiter.create(1.0);
     return new EventProcessorOnDispatch<>(
-        EpochViewUpdate.class,
+        EpochRoundUpdate.class,
         u -> {
           var logLevel = logLimiter.tryAcquire() ? INFO : TRACE;
           logger.log(
               logLevel,
               "bft_nxtrnd{epoch={} round={} leader={} nextLeader={}}",
               u.getEpoch(),
-              u.getEpochView().getView().number(),
-              nodeString.apply(u.getViewUpdate().getLeader()),
-              nodeString.apply(u.getViewUpdate().getNextLeader()));
+              u.getEpochRound().getRound().number(),
+              nodeString.apply(u.getRoundUpdate().getLeader()),
+              nodeString.apply(u.getRoundUpdate().getNextLeader()));
         });
   }
 
@@ -224,7 +224,7 @@ public final class EventLoggerModule extends AbstractModule {
         logLevel,
         "lgr_commit{epoch={} round={} version={} hash={} user_txns={}}",
         proof.getEpoch(),
-        proof.getView().number(),
+        proof.getRound().number(),
         proof.getStateVersion(),
         Bytes.toHexString(proof.getAccumulatorState().getAccumulatorHash().asBytes())
             .substring(0, 16),

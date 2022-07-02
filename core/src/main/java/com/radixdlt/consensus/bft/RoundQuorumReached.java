@@ -62,64 +62,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation.network;
+package com.radixdlt.consensus.bft;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
+import java.util.Objects;
 
-/** Drops one proposal per view */
-public class FProposalsPerViewDropper implements Predicate<SimulationNetwork.MessageInTransit> {
-  private final ConcurrentHashMap<View, Set<BFTNode>> proposalToDrop = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<View, Integer> proposalCount = new ConcurrentHashMap<>();
-  private final ImmutableList<BFTNode> validatorSet;
-  private final Random random;
-  private final int faultySize;
+/** A local event message indicating that a round quorum (either QC or TC) has been reached. */
+public final class RoundQuorumReached {
 
-  public FProposalsPerViewDropper(ImmutableList<BFTNode> validatorSet, Random random) {
-    this.validatorSet = validatorSet;
-    this.random = random;
-    this.faultySize = (validatorSet.size() - 1) / 3;
+  private final RoundVotingResult votingResult;
+
+  // the author of the last received message that lead to forming a quorum
+  private final BFTNode lastAuthor;
+
+  public RoundQuorumReached(RoundVotingResult votingResult, BFTNode lastAuthor) {
+    this.votingResult = Objects.requireNonNull(votingResult);
+    this.lastAuthor = Objects.requireNonNull(lastAuthor);
   }
 
-  public FProposalsPerViewDropper(ImmutableList<BFTNode> validatorSet) {
-    this.validatorSet = validatorSet;
-    this.random = null;
-    this.faultySize = (validatorSet.size() - 1) / 3;
+  public BFTNode lastAuthor() {
+    return lastAuthor;
+  }
+
+  public RoundVotingResult votingResult() {
+    return votingResult;
   }
 
   @Override
-  public boolean test(SimulationNetwork.MessageInTransit msg) {
-    if (msg.getContent() instanceof Proposal) {
-      final Proposal proposal = (Proposal) msg.getContent();
-      final View view = proposal.getVertex().getView();
-      final Set<BFTNode> nodesToDrop =
-          proposalToDrop.computeIfAbsent(
-              view,
-              v -> {
-                final List<BFTNode> nodes = Lists.newArrayList(validatorSet);
-                if (random != null) {
-                  Collections.shuffle(nodes, random);
-                }
-                return ImmutableSet.copyOf(nodes.subList(0, faultySize));
-              });
-      if (proposalCount.merge(view, 1, Integer::sum).equals(validatorSet.size())) {
-        proposalToDrop.remove(view);
-        proposalCount.remove(view);
-      }
-
-      return nodesToDrop.contains(msg.getReceiver());
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
     }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    RoundQuorumReached that = (RoundQuorumReached) o;
+    return Objects.equals(votingResult, that.votingResult)
+        && Objects.equals(lastAuthor, that.lastAuthor);
+  }
 
-    return false;
+  @Override
+  public int hashCode() {
+    return Objects.hash(votingResult, lastAuthor);
   }
 }

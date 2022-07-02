@@ -72,7 +72,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -95,7 +95,7 @@ public final class LedgerHeader {
   @DsonOutput(Output.ALL)
   private final long epoch;
 
-  private final View view;
+  private final Round round;
 
   @JsonProperty("accumulator_state")
   @DsonOutput(Output.ALL)
@@ -114,16 +114,16 @@ public final class LedgerHeader {
   @VisibleForTesting
   LedgerHeader(
       @JsonProperty("epoch") long epoch,
-      @JsonProperty("view") long view,
+      @JsonProperty("round") long view,
       @JsonProperty(value = "accumulator_state", required = true) AccumulatorState accumulatorState,
       @JsonProperty("timestamp") long timestamp,
       @JsonProperty("next_validators") ImmutableSet<BFTValidator> nextValidators) {
-    this(epoch, View.of(view), accumulatorState, timestamp, nextValidators);
+    this(epoch, Round.of(view), accumulatorState, timestamp, nextValidators);
   }
 
   private LedgerHeader(
       long epoch,
-      View view,
+      Round round,
       AccumulatorState accumulatorState,
       long timestamp,
       ImmutableSet<BFTValidator> nextValidators) {
@@ -133,7 +133,7 @@ public final class LedgerHeader {
       throw new IllegalArgumentException("Epoch can't be < 0");
     }
 
-    this.view = view;
+    this.round = round;
     this.accumulatorState = requireNonNull(accumulatorState);
     this.nextValidators = nextValidators;
     this.timestamp = timestamp;
@@ -143,44 +143,44 @@ public final class LedgerHeader {
       AccumulatorState accumulatorState, BFTValidatorSet nextValidators, long timestamp) {
     return new LedgerHeader(
         0,
-        View.genesis(),
+        Round.genesis(),
         accumulatorState,
         timestamp,
         nextValidators == null ? null : nextValidators.getValidators());
   }
 
   public static LedgerHeader create(
-      long epoch, View view, AccumulatorState accumulatorState, long timestamp) {
-    return new LedgerHeader(epoch, view, accumulatorState, timestamp, null);
+      long epoch, Round round, AccumulatorState accumulatorState, long timestamp) {
+    return new LedgerHeader(epoch, round, accumulatorState, timestamp, null);
   }
 
   public static LedgerHeader create(
       long epoch,
-      View view,
+      Round round,
       AccumulatorState accumulatorState,
       long timestamp,
       BFTValidatorSet validatorSet) {
     return new LedgerHeader(
         epoch,
-        view,
+        round,
         accumulatorState,
         timestamp,
         validatorSet == null ? null : validatorSet.getValidators());
   }
 
-  public LedgerHeader updateViewAndTimestamp(View view, long timestamp) {
+  public LedgerHeader updateRoundAndTimestamp(Round round, long timestamp) {
     return new LedgerHeader(
-        this.epoch, view, this.accumulatorState, timestamp, this.nextValidators);
+        this.epoch, round, this.accumulatorState, timestamp, this.nextValidators);
   }
 
-  @JsonProperty("view")
+  @JsonProperty("round")
   @DsonOutput(Output.ALL)
   private long getSerializerView() {
-    return view.number();
+    return round.number();
   }
 
-  public View getView() {
-    return view;
+  public Round getRound() {
+    return round;
   }
 
   public Optional<BFTValidatorSet> getNextValidatorSet() {
@@ -206,7 +206,7 @@ public final class LedgerHeader {
   @Override
   public int hashCode() {
     return Objects.hash(
-        this.accumulatorState, this.timestamp, this.epoch, this.view, this.nextValidators);
+        this.accumulatorState, this.timestamp, this.epoch, this.round, this.nextValidators);
   }
 
   @Override
@@ -219,19 +219,19 @@ public final class LedgerHeader {
         && this.timestamp == other.timestamp
         && Objects.equals(this.accumulatorState, other.accumulatorState)
         && this.epoch == other.epoch
-        && Objects.equals(this.view, other.view)
+        && Objects.equals(this.round, other.round)
         && Objects.equals(this.nextValidators, other.nextValidators);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "%s{accumulator=%s timestamp=%s epoch=%s view=%s nextValidators=%s}",
+        "%s{accumulator=%s timestamp=%s epoch=%s round=%s nextValidators=%s}",
         getClass().getSimpleName(),
         this.accumulatorState,
         this.timestamp,
         this.epoch,
-        this.view,
+        this.round,
         this.nextValidators);
   }
 }

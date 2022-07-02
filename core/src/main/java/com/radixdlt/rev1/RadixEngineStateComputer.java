@@ -77,12 +77,8 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
@@ -135,7 +131,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   private final Object lock = new Object();
 
   private ProposerElection proposerElection;
-  private View epochCeilingView;
+  private Round epochCeilingRound;
   private OptionalInt maxSigsPerRound;
 
   @Inject
@@ -144,20 +140,20 @@ public final class RadixEngineStateComputer implements StateComputer {
       RadixEngine<LedgerAndBFTProof> radixEngine,
       Forks forks,
       RadixEngineMempool mempool, // TODO: Move this into radixEngine
-      @EpochCeilingView View epochCeilingView, // TODO: Move this into radixEngine
+      @EpochMaxRound Round epochCeilingRound, // TODO: Move this into radixEngine
       @MaxSigsPerRound OptionalInt maxSigsPerRound, // TODO: Move this into radixEngine
       EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher,
       EventDispatcher<InvalidProposedTxn> invalidProposedCommandEventDispatcher,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
       Hasher hasher,
       SystemCounters systemCounters) {
-    if (epochCeilingView.isGenesis()) {
-      throw new IllegalArgumentException("Epoch change view must not be genesis.");
+    if (epochCeilingRound.isGenesis()) {
+      throw new IllegalArgumentException("Epoch change round must not be genesis.");
     }
 
     this.radixEngine = Objects.requireNonNull(radixEngine);
     this.forks = Objects.requireNonNull(forks);
-    this.epochCeilingView = epochCeilingView;
+    this.epochCeilingRound = epochCeilingRound;
     this.maxSigsPerRound = maxSigsPerRound;
     this.mempool = Objects.requireNonNull(mempool);
     this.mempoolAddSuccessEventDispatcher =
@@ -250,20 +246,20 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   private LongFunction<ECPublicKey> getValidatorMapping() {
-    return l -> proposerElection.getProposer(View.of(l)).getKey();
+    return l -> proposerElection.getProposer(Round.of(l)).getKey();
   }
 
   private RadixEngineTransaction executeSystemUpdate(
       RadixEngineBranch<LedgerAndBFTProof> branch, VerifiedVertex vertex, long timestamp) {
     var systemActions = TxnConstructionRequest.create();
-    var view = vertex.getView();
-    if (view.compareTo(epochCeilingView) <= 0) {
+    var view = vertex.getRound();
+    if (view.compareTo(epochCeilingRound) <= 0) {
       systemActions.action(
           new NextRound(view.number(), vertex.isTimeout(), timestamp, getValidatorMapping()));
     } else {
-      if (vertex.getParentHeader().getView().compareTo(epochCeilingView) < 0) {
+      if (vertex.getParentHeader().getRound().compareTo(epochCeilingRound) < 0) {
         systemActions.action(
-            new NextRound(epochCeilingView.number(), true, timestamp, getValidatorMapping()));
+            new NextRound(epochCeilingRound.number(), true, timestamp, getValidatorMapping()));
       }
       systemActions.action(new NextEpoch(timestamp));
     }
@@ -412,7 +408,7 @@ public final class RadixEngineStateComputer implements StateComputer {
         rules.actionConstructors(),
         rules.postProcessor(),
         rules.parser());
-    this.epochCeilingView = rules.maxRounds();
+    this.epochCeilingRound = rules.maxRounds();
     this.maxSigsPerRound = rules.maxSigsPerRound();
   }
 
@@ -440,7 +436,7 @@ public final class RadixEngineStateComputer implements StateComputer {
                     var nextLedgerHeader =
                         LedgerHeader.create(
                             header.getNextEpoch(),
-                            View.genesis(),
+                            Round.genesis(),
                             header.getAccumulatorState(),
                             header.timestamp());
                     var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);

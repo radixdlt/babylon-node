@@ -109,8 +109,8 @@ public final class PreparedVertex {
     return vertex.getParentId();
   }
 
-  public View getView() {
-    return vertex.getView();
+  public Round getRound() {
+    return vertex.getRound();
   }
 
   public Stream<PreparedTransaction> successfulTransactions() {

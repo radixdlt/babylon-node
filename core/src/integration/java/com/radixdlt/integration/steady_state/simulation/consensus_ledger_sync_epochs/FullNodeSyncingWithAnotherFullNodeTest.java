@@ -73,7 +73,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.harness.simulation.NetworkLatencies;
@@ -141,7 +141,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
                 })
             .pacemakerTimeout(3000)
             .ledgerAndEpochsAndSync(
-                View.of(100),
+                Round.of(100),
                 (unused) -> VALIDATORS_INDICES.stream().mapToInt(i -> i),
                 SyncConfig.of(1000L, 10, 500L, 10, Long.MAX_VALUE))
             .addTestModules(
@@ -150,7 +150,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
                 ConsensusMonitors.directParents(),
                 LedgerMonitors.consensusToLedger(),
                 LedgerMonitors.ordered(),
-                ConsensusMonitors.epochCeilingView(View.of(100)),
+                ConsensusMonitors.epochMaxRound(Round.of(100)),
                 SyncMonitors.maxLedgerSyncLag(MAX_LEDGER_SYNC_LAG));
   }
 

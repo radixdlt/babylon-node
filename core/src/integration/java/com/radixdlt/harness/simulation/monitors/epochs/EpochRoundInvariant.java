@@ -62,81 +62,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.harness.simulation.monitors.epochs;
 
-import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.harness.simulation.TestInvariant;
+import com.radixdlt.harness.simulation.monitors.NodeEvents;
+import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
+import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
 
-/** Represents an internal (local) view update. */
-public final class ViewUpdate {
+/** Invariant which checks that a committed vertex never goes above some round */
+public class EpochRoundInvariant implements TestInvariant {
+  private final NodeEvents commits;
+  private final Round epochMaxRound;
 
-  private final View currentView;
-  private final HighQC highQC;
-
-  private final BFTNode leader;
-  private final BFTNode nextLeader;
-
-  private ViewUpdate(View currentView, HighQC highQC, BFTNode leader, BFTNode nextLeader) {
-    this.currentView = currentView;
-    this.highQC = highQC;
-    this.leader = leader;
-    this.nextLeader = nextLeader;
-  }
-
-  public static ViewUpdate create(
-      View currentView, HighQC highQC, BFTNode leader, BFTNode nextLeader) {
-    Objects.requireNonNull(currentView);
-    Objects.requireNonNull(highQC);
-    Objects.requireNonNull(leader);
-    Objects.requireNonNull(nextLeader);
-
-    return new ViewUpdate(currentView, highQC, leader, nextLeader);
-  }
-
-  public HighQC getHighQC() {
-    return highQC;
-  }
-
-  public BFTNode getLeader() {
-    return leader;
-  }
-
-  public BFTNode getNextLeader() {
-    return nextLeader;
-  }
-
-  public View getCurrentView() {
-    return currentView;
-  }
-
-  public long uncommittedViewsCount() {
-    return Math.max(0L, currentView.number() - highQC.highestCommittedQC().getView().number() - 1);
+  public EpochRoundInvariant(Round epochMaxRound, NodeEvents commits) {
+    this.commits = commits;
+    this.epochMaxRound = Objects.requireNonNull(epochMaxRound);
   }
 
   @Override
-  public String toString() {
-    return String.format(
-        "%s[%s %s leader=%s next=%s]",
-        getClass().getSimpleName(), this.currentView, this.highQC, this.leader, this.nextLeader);
-  }
+  public Observable<TestInvariantError> check(RunningNetwork network) {
+    return Observable.<BFTCommittedUpdate>create(
+            emitter ->
+                this.commits.addListener(
+                    (node, commit) -> emitter.onNext(commit), BFTCommittedUpdate.class))
+        .serialize()
+        .concatMap(committedUpdate -> Observable.fromStream(committedUpdate.committed().stream()))
+        .flatMap(
+            vertex -> {
+              final Round round = vertex.getRound();
+              if (round.compareTo(epochMaxRound) > 0) {
+                return Observable.just(
+                    new TestInvariantError(
+                        String.format(
+                            "Vertex committed with round %s but epochMaxRound is %s",
+                            round, epochMaxRound)));
+              }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final ViewUpdate that = (ViewUpdate) o;
-    return Objects.equals(currentView, that.currentView)
-        && Objects.equals(highQC, that.highQC)
-        && Objects.equals(leader, that.leader)
-        && Objects.equals(nextLeader, that.nextLeader);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(currentView, highQC, leader, nextLeader);
+              return Observable.empty();
+            });
   }
 }

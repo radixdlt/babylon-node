@@ -65,7 +65,7 @@
 package com.radixdlt.integration.steady_state.deterministic.consensus;
 
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -79,7 +79,7 @@ public class OneProposalDropperResponsiveTest {
   private final Random random = new Random(123456);
 
   private void runOneProposalDropperResponsiveTest(
-      int numNodes, Function<View, Integer> nodeToDropFunction) {
+      int numNodes, Function<Round, Integer> nodeToDropFunction) {
     DeterministicTest.builder()
         .numNodes(numNodes)
         .messageSelector(MessageSelector.randomSelector(random))
@@ -89,18 +89,18 @@ public class OneProposalDropperResponsiveTest {
         .runForCount(30_000);
   }
 
-  private MessageMutator dropNode(int numNodes, Function<View, Integer> nodeToDropFunction) {
-    final Map<View, Integer> proposalToDrop = new HashMap<>();
-    final Map<View, Integer> proposalCount = new HashMap<>();
+  private MessageMutator dropNode(int numNodes, Function<Round, Integer> nodeToDropFunction) {
+    final Map<Round, Integer> proposalToDrop = new HashMap<>();
+    final Map<Round, Integer> proposalCount = new HashMap<>();
     return (message, queue) -> {
       Object msg = message.message();
       if (msg instanceof Proposal) {
         final Proposal proposal = (Proposal) msg;
-        final View view = proposal.getVertex().getView();
-        final int nodeToDrop = proposalToDrop.computeIfAbsent(view, nodeToDropFunction);
-        if (proposalCount.merge(view, 1, Integer::sum).equals(numNodes)) {
-          proposalToDrop.remove(view);
-          proposalCount.remove(view);
+        final Round round = proposal.getVertex().getRound();
+        final int nodeToDrop = proposalToDrop.computeIfAbsent(round, nodeToDropFunction);
+        if (proposalCount.merge(round, 1, Integer::sum).equals(numNodes)) {
+          proposalToDrop.remove(round);
+          proposalCount.remove(round);
         }
         return message.channelId().receiverIndex() == nodeToDrop;
       }

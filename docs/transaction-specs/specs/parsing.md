@@ -159,7 +159,7 @@ Substates are serialized and deserialized based on the following protocol:
 | **Name**    | **Type** | **Description**      |
 |-------------|----------|----------------------|
 | `reserved`  | `u8`     | Reserved, always `0` |
-| `view`      | `u64`    | The new view         |
+| `round`     | `u64`    | The new round        |
 | `timestamp` | `u64`    | The new timestamp    |
 
 #### `EPOCH_DATA`

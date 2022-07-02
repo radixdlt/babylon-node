@@ -74,8 +74,8 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
-import com.radixdlt.consensus.bft.ViewVotingResult.FormedTC;
+import com.radixdlt.consensus.bft.RoundVotingResult.FormedQC;
+import com.radixdlt.consensus.bft.RoundVotingResult.FormedTC;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
@@ -107,11 +107,11 @@ public final class BFTSync implements BFTSyncer {
   private static class SyncRequestState {
     private final List<HashCode> syncIds = new ArrayList<>();
     private final ImmutableList<BFTNode> authors;
-    private final View view;
+    private final Round round;
 
-    SyncRequestState(ImmutableList<BFTNode> authors, View view) {
+    SyncRequestState(ImmutableList<BFTNode> authors, Round round) {
       this.authors = Objects.requireNonNull(authors);
-      this.view = Objects.requireNonNull(view);
+      this.round = Objects.requireNonNull(round);
     }
   }
 
@@ -154,8 +154,9 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private static final Comparator<Map.Entry<GetVerticesRequest, SyncRequestState>> syncPriority =
-      Comparator.comparing((Map.Entry<GetVerticesRequest, SyncRequestState> e) -> e.getValue().view)
-          .reversed(); // Prioritise by highest view
+      Comparator.comparing(
+              (Map.Entry<GetVerticesRequest, SyncRequestState> e) -> e.getValue().round)
+          .reversed(); // Prioritise by highest round
 
   private static final Logger log = LogManager.getLogger();
   private final BFTNode self;
@@ -211,7 +212,7 @@ public final class BFTSync implements BFTSyncer {
     this.systemCounters = Objects.requireNonNull(systemCounters);
   }
 
-  public EventProcessor<ViewQuorumReached> viewQuorumReachedEventProcessor() {
+  public EventProcessor<RoundQuorumReached> viewQuorumReachedEventProcessor() {
     return viewQuorumReached -> {
       this.runOnThreads.add(Thread.currentThread().getName());
 
@@ -236,11 +237,11 @@ public final class BFTSync implements BFTSyncer {
     this.runOnThreads.add(Thread.currentThread().getName());
     final var qc = highQC.highestQC();
 
-    if (qc.getProposed().getView().lt(vertexStore.getRoot().getView())) {
+    if (qc.getProposed().getRound().lt(vertexStore.getRoot().getRound())) {
       return SyncResult.INVALID;
     }
 
-    if (qc.getProposed().getView().lt(this.currentLedgerHeader.getView())) {
+    if (qc.getProposed().getRound().lt(this.currentLedgerHeader.getRound())) {
       return SyncResult.INVALID;
     }
 
@@ -255,7 +256,7 @@ public final class BFTSync implements BFTSyncer {
 
     // TODO: Move this check into pre-check
     // Bad genesis qc, ignore...
-    if (qc.getView().isGenesis()) {
+    if (qc.getRound().isGenesis()) {
       log.warn("SYNC_TO_QC: Bad Genesis: {}", highQC);
       return SyncResult.INVALID;
     }
@@ -276,7 +277,7 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private boolean requiresLedgerSync(SyncState syncState) {
-    return !vertexStore.hasCommittedVertexOrRootAtOrAboveView(syncState.committedHeader);
+    return !vertexStore.hasCommittedVertexOrRootAtOrAboveRound(syncState.committedHeader);
   }
 
   private void startSync(HighQC highQC, BFTNode author) {
@@ -308,12 +309,12 @@ public final class BFTSync implements BFTSyncer {
 
     final var qc = syncState.highQC().highestQC();
     this.sendBFTSyncRequest(
-        qc.getView(), qc.getProposed().getVertexId(), 1, authors, syncState.localSyncId);
+        qc.getRound(), qc.getProposed().getVertexId(), 1, authors, syncState.localSyncId);
   }
 
   private void doCommittedSync(SyncState syncState) {
     final var committedQCId = syncState.highQC().highestCommittedQC().getProposed().getVertexId();
-    final var commitedView = syncState.highQC().highestCommittedQC().getView();
+    final var commitedView = syncState.highQC().highestCommittedQC().getRound();
 
     syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
     log.debug(
@@ -400,9 +401,9 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private void sendBFTSyncRequest(
-      View view, HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId) {
+      Round round, HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId) {
     var request = new GetVerticesRequest(vertexId, count);
-    var syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, view));
+    var syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, round));
 
     if (syncRequestState.syncIds.isEmpty()) {
       if (this.syncRequestRateLimiter.tryAcquire()) {
@@ -425,7 +426,7 @@ public final class BFTSync implements BFTSyncer {
 
     // TODO: check if there are any vertices which haven't been local sync processed yet
     if (requiresLedgerSync(syncState)) {
-      syncState.fetched.sort(Comparator.comparing(VerifiedVertex::getView));
+      syncState.fetched.sort(Comparator.comparing(VerifiedVertex::getRound));
       ImmutableList<VerifiedVertex> nonRootVertices =
           syncState.fetched.stream().skip(1).collect(ImmutableList.toImmutableList());
       var vertexStoreState =
@@ -454,7 +455,7 @@ public final class BFTSync implements BFTSyncer {
     log.debug(
         "SYNC_STATE: Processing vertices {} View {} From {} CurrentLedgerHeader {}",
         syncState,
-        response.getVertices().get(0).getView(),
+        response.getVertices().get(0).getRound(),
         sender,
         this.currentLedgerHeader);
 
@@ -505,7 +506,7 @@ public final class BFTSync implements BFTSyncer {
               .collect(ImmutableList.toImmutableList());
 
       this.sendBFTSyncRequest(
-          syncState.highQC.highestQC().getView(), parentId, 1, authors, syncState.localSyncId);
+          syncState.highQC.highestQC().getRound(), parentId, 1, authors, syncState.localSyncId);
     }
   }
 
@@ -529,8 +530,8 @@ public final class BFTSync implements BFTSyncer {
       if (response
               .highQC()
               .highestQC()
-              .getView()
-              .compareTo(vertexStore.highQC().highestQC().getView())
+              .getRound()
+              .compareTo(vertexStore.highQC().highestQC().getRound())
           > 0) {
         // error response indicates that the node has moved on from last sync so try and sync to a
         // new qc
@@ -613,6 +614,6 @@ public final class BFTSync implements BFTSyncer {
     syncing
         .entrySet()
         .removeIf(
-            e -> e.getValue().highQC.highestQC().getView().lte(ledgerUpdate.getTail().getView()));
+            e -> e.getValue().highQC.highestQC().getRound().lte(ledgerUpdate.getTail().getRound()));
   }
 }

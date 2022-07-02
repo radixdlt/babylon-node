@@ -208,7 +208,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
 
     // proposed vertex doesn't have any children
-    boolean isHighQC = qc.getView().gt(highestQC.getView());
+    boolean isHighQC = qc.getRound().gt(highestQC.getRound());
     boolean isAnythingCommitted = qc.getCommittedAndLedgerStateProof(hasher).isPresent();
     if (!isHighQC && !isAnythingCommitted) {
       return new VertexStore.InsertQcResult.Ignored();
@@ -253,7 +253,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
    */
   public void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
     if (this.highestTC.isEmpty()
-        || this.highestTC.get().getView().lt(timeoutCertificate.getView())) {
+        || this.highestTC.get().getRound().lt(timeoutCertificate.getRound())) {
       this.highestTC = Optional.of(timeoutCertificate);
     }
   }
@@ -346,7 +346,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
    * @param commitQC the proof of commit
    */
   private Optional<CommittedUpdate> commit(BFTHeader header, QuorumCertificate commitQC) {
-    if (header.getView().compareTo(this.rootVertex.getView()) <= 0) {
+    if (header.getRound().compareTo(this.rootVertex.getRound()) <= 0) {
       return Optional.empty();
     }
 

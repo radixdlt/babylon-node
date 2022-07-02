@@ -71,8 +71,8 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -83,15 +83,15 @@ import java.util.Optional;
 /** Manages consensus recovery on startup */
 public class ConsensusRecoveryModule extends AbstractModule {
   @Provides
-  private ViewUpdate view(
+  private RoundUpdate view(
       VerifiedVertexStoreState vertexStoreState, BFTConfiguration configuration) {
     var highQC = vertexStoreState.getHighQC();
-    var view = highQC.highestQC().getView().next();
+    var view = highQC.highestQC().getRound().next();
     var proposerElection = configuration.getProposerElection();
     var leader = proposerElection.getProposer(view);
     var nextLeader = proposerElection.getProposer(view.next());
 
-    return ViewUpdate.create(view, highQC, leader, nextLeader);
+    return RoundUpdate.create(view, highQC, leader, nextLeader);
   }
 
   @Provides

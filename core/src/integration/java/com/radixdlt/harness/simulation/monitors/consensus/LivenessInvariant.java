@@ -68,8 +68,8 @@ import com.google.common.collect.Ordering;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
@@ -108,15 +108,15 @@ public class LivenessInvariant implements TestInvariant {
             })
         .serialize()
         .map(QuorumCertificate::getProposed)
-        .map(header -> EpochView.of(header.getLedgerHeader().getEpoch(), header.getView()))
-        .scan(EpochView.of(0, View.genesis()), Ordering.natural()::max)
+        .map(header -> EpochRound.of(header.getLedgerHeader().getEpoch(), header.getRound()))
+        .scan(EpochRound.of(0, Round.genesis()), Ordering.natural()::max)
         .distinctUntilChanged()
         .debounce(duration, timeUnit)
         .map(
-            epochView ->
+            epochRound ->
                 new TestInvariantError(
                     String.format(
                         "Highest QC hasn't increased from %s after %s %s",
-                        epochView, duration, timeUnit)));
+                        epochRound, duration, timeUnit)));
   }
 }

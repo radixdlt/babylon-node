@@ -148,7 +148,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
             ValidatorBFTData.class,
             d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
             (d, s, r, c) -> {
-              var closedRound = s.getClosedRound().view();
+              var closedRound = s.getClosedRound().round();
               var next = new StartValidatorBFTUpdate(closedRound);
               next.beginUpdate(d);
               return ReducerResult.incomplete(next);

@@ -65,7 +65,7 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.VertexStoreAdapter;
 
@@ -82,6 +82,6 @@ public interface PacemakerFactory {
       VertexStoreAdapter vertexStore,
       PacemakerTimeoutCalculator timeoutCalculator,
       SafetyRules safetyRules,
-      ViewUpdate initialViewUpdate,
+      RoundUpdate initialRoundUpdate,
       long nextEpoch);
 }

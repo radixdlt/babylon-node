@@ -77,7 +77,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -102,19 +102,19 @@ public class DifferentTimestampsCauseTimeoutTest {
             .createExecutor();
 
     executor.start();
-    executeTwoViews(executor);
+    executeTwoRounds(executor);
 
-    executor.processNext(3, 3, ViewUpdate.class);
+    executor.processNext(3, 3, RoundUpdate.class);
     executor.processNext(3, 3, Proposal.class);
     executor.processNext(3, 3, BFTInsertUpdate.class);
     executor.processNext(3, 0, Proposal.class);
-    executor.processNext(0, 0, ViewUpdate.class);
+    executor.processNext(0, 0, RoundUpdate.class);
     executor.processNext(0, 0, BFTInsertUpdate.class);
     executor.processNext(3, 1, Proposal.class);
-    executor.processNext(1, 1, ViewUpdate.class);
+    executor.processNext(1, 1, RoundUpdate.class);
     executor.processNext(1, 1, BFTInsertUpdate.class);
     executor.processNext(3, 2, Proposal.class);
-    executor.processNext(2, 2, ViewUpdate.class);
+    executor.processNext(2, 2, RoundUpdate.class);
     executor.processNext(2, 2, BFTInsertUpdate.class);
   }
 
@@ -141,7 +141,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 
     executor.start();
 
-    executeTwoViews(executor);
+    executeTwoRounds(executor);
 
     // Timeouts from nodes
     executor.processNext(0, 0, ScheduledLocalTimeout.class);
@@ -150,7 +150,7 @@ public class DifferentTimestampsCauseTimeoutTest {
     executor.processNext(3, 3, ScheduledLocalTimeout.class);
   }
 
-  private void executeTwoViews(DeterministicManualExecutor executor) {
+  private void executeTwoRounds(DeterministicManualExecutor executor) {
     // Proposal here has genesis qc, which has no timestamps
     executor.processNext(1, 1, Proposal.class);
     executor.processNext(1, 1, BFTInsertUpdate.class);
@@ -166,19 +166,19 @@ public class DifferentTimestampsCauseTimeoutTest {
     executor.processNext(0, 2, Vote.class);
     executor.processNext(3, 2, Vote.class);
 
-    // Proposal here should have timestamps from previous view
+    // Proposal here should have timestamps from previous round
     // They are mutated as required by the test
-    executor.processNext(2, 2, ViewUpdate.class);
+    executor.processNext(2, 2, RoundUpdate.class);
     executor.processNext(2, 2, Proposal.class);
     executor.processNext(2, 2, BFTInsertUpdate.class);
     executor.processNext(2, 0, Proposal.class);
-    executor.processNext(0, 0, ViewUpdate.class);
+    executor.processNext(0, 0, RoundUpdate.class);
     executor.processNext(0, 0, BFTInsertUpdate.class);
     executor.processNext(2, 1, Proposal.class);
-    executor.processNext(1, 1, ViewUpdate.class);
+    executor.processNext(1, 1, RoundUpdate.class);
     executor.processNext(1, 1, BFTInsertUpdate.class);
     executor.processNext(2, 3, Proposal.class);
-    executor.processNext(3, 3, ViewUpdate.class);
+    executor.processNext(3, 3, RoundUpdate.class);
     executor.processNext(3, 3, BFTInsertUpdate.class);
 
     executor.processNext(3, 3, Vote.class);
@@ -218,11 +218,11 @@ public class DifferentTimestampsCauseTimeoutTest {
 
   private UnverifiedVertex mutateVertex(UnverifiedVertex v, int destination) {
     var qc = v.getQC();
-    var view = v.getView();
+    var round = v.getRound();
     var txns = v.getTxns();
     var proposer = v.getProposer();
 
-    return UnverifiedVertex.create(mutateQC(qc, destination), view, txns, proposer);
+    return UnverifiedVertex.create(mutateQC(qc, destination), round, txns, proposer);
   }
 
   private QuorumCertificate mutateQC(QuorumCertificate qc, int destination) {

@@ -167,7 +167,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
       LedgerHeader ledgerHeader =
           LedgerHeader.create(
               base.getProof().getEpoch(),
-              base.getProof().getView(),
+              base.getProof().getRound(),
               accumulatorState,
               base.getProof().timestamp(),
               base.getProof().getNextValidatorSet().orElse(null));

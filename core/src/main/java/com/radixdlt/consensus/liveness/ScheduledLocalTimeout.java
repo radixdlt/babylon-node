@@ -64,40 +64,40 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import java.util.Objects;
 
 /** A potential timeout that is scheduled */
 public final class ScheduledLocalTimeout {
-  private final ViewUpdate viewUpdate;
+  private final RoundUpdate roundUpdate;
   private final long millisecondsWaitTime;
   private final int count;
 
-  private ScheduledLocalTimeout(ViewUpdate viewUpdate, long millisecondsWaitTime, int count) {
-    this.viewUpdate = viewUpdate;
+  private ScheduledLocalTimeout(RoundUpdate roundUpdate, long millisecondsWaitTime, int count) {
+    this.roundUpdate = roundUpdate;
     this.millisecondsWaitTime = millisecondsWaitTime;
     this.count = count;
   }
 
-  public static ScheduledLocalTimeout create(ViewUpdate viewUpdate, long millisecondsWaitTime) {
-    return new ScheduledLocalTimeout(viewUpdate, millisecondsWaitTime, 0);
+  public static ScheduledLocalTimeout create(RoundUpdate roundUpdate, long millisecondsWaitTime) {
+    return new ScheduledLocalTimeout(roundUpdate, millisecondsWaitTime, 0);
   }
 
   public ScheduledLocalTimeout nextRetry(long millisecondsWaitTime) {
-    return new ScheduledLocalTimeout(viewUpdate, millisecondsWaitTime, this.count + 1);
+    return new ScheduledLocalTimeout(roundUpdate, millisecondsWaitTime, this.count + 1);
   }
 
   public int count() {
     return count;
   }
 
-  public ViewUpdate viewUpdate() {
-    return viewUpdate;
+  public RoundUpdate viewUpdate() {
+    return roundUpdate;
   }
 
-  public View view() {
-    return viewUpdate.getCurrentView();
+  public Round round() {
+    return roundUpdate.getCurrentRound();
   }
 
   public long millisecondsWaitTime() {
@@ -106,7 +106,7 @@ public final class ScheduledLocalTimeout {
 
   @Override
   public int hashCode() {
-    return Objects.hash(viewUpdate, millisecondsWaitTime, count);
+    return Objects.hash(roundUpdate, millisecondsWaitTime, count);
   }
 
   @Override
@@ -116,7 +116,7 @@ public final class ScheduledLocalTimeout {
     }
 
     ScheduledLocalTimeout other = (ScheduledLocalTimeout) o;
-    return Objects.equals(other.viewUpdate, this.viewUpdate)
+    return Objects.equals(other.roundUpdate, this.roundUpdate)
         && other.millisecondsWaitTime == this.millisecondsWaitTime
         && other.count == this.count;
   }
@@ -124,6 +124,6 @@ public final class ScheduledLocalTimeout {
   @Override
   public String toString() {
     return String.format(
-        "%s{view=%s count=%s}", this.getClass().getSimpleName(), viewUpdate, count);
+        "%s{round=%s count=%s}", this.getClass().getSimpleName(), roundUpdate, count);
   }
 }

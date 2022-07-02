@@ -804,12 +804,12 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
             d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
             (d, s, r, c) -> {
               // TODO: Should move this authorization instead of checking epoch > 0
-              if (d.epoch() > 0 && s.getClosedRound().view() != maxRounds) {
+              if (d.epoch() > 0 && s.getClosedRound().round() != maxRounds) {
                 throw new ProcedureException(
                     "Must execute epoch update on end of round "
                         + maxRounds
                         + " but is "
-                        + s.getClosedRound().view());
+                        + s.getClosedRound().round());
               }
 
               return ReducerResult.incomplete(new UpdatingEpoch(d));
@@ -941,8 +941,8 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
             RoundData.class,
             u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
             (s, u, c, r) -> {
-              if (u.view() != 0) {
-                throw new ProcedureException("Epoch must start with view 0");
+              if (u.round() != 0) {
+                throw new ProcedureException("Epoch must start with round 0");
               }
 
               return ReducerResult.complete();

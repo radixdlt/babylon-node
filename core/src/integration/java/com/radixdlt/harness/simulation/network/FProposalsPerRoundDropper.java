@@ -62,46 +62,64 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation.monitors.epochs;
+package com.radixdlt.harness.simulation.network;
 
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.harness.simulation.TestInvariant;
-import com.radixdlt.harness.simulation.monitors.NodeEvents;
-import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
-import io.reactivex.rxjava3.core.Observable;
-import java.util.Objects;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Round;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
-/** Invariant which checks that a committed vertex never goes above some view */
-public class EpochViewInvariant implements TestInvariant {
-  private final NodeEvents commits;
-  private final View epochHighView;
+/** Drops one proposal per round */
+public class FProposalsPerRoundDropper implements Predicate<SimulationNetwork.MessageInTransit> {
+  private final ConcurrentHashMap<Round, Set<BFTNode>> proposalToDrop = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<Round, Integer> proposalCount = new ConcurrentHashMap<>();
+  private final ImmutableList<BFTNode> validatorSet;
+  private final Random random;
+  private final int faultySize;
 
-  public EpochViewInvariant(View epochHighView, NodeEvents commits) {
-    this.commits = commits;
-    this.epochHighView = Objects.requireNonNull(epochHighView);
+  public FProposalsPerRoundDropper(ImmutableList<BFTNode> validatorSet, Random random) {
+    this.validatorSet = validatorSet;
+    this.random = random;
+    this.faultySize = (validatorSet.size() - 1) / 3;
+  }
+
+  public FProposalsPerRoundDropper(ImmutableList<BFTNode> validatorSet) {
+    this.validatorSet = validatorSet;
+    this.random = null;
+    this.faultySize = (validatorSet.size() - 1) / 3;
   }
 
   @Override
-  public Observable<TestInvariantError> check(RunningNetwork network) {
-    return Observable.<BFTCommittedUpdate>create(
-            emitter ->
-                this.commits.addListener(
-                    (node, commit) -> emitter.onNext(commit), BFTCommittedUpdate.class))
-        .serialize()
-        .concatMap(committedUpdate -> Observable.fromStream(committedUpdate.committed().stream()))
-        .flatMap(
-            vertex -> {
-              final View view = vertex.getView();
-              if (view.compareTo(epochHighView) > 0) {
-                return Observable.just(
-                    new TestInvariantError(
-                        String.format(
-                            "Vertex committed with view %s but epochHighView is %s",
-                            view, epochHighView)));
-              }
+  public boolean test(SimulationNetwork.MessageInTransit msg) {
+    if (msg.getContent() instanceof Proposal) {
+      final Proposal proposal = (Proposal) msg.getContent();
+      final Round round = proposal.getVertex().getRound();
+      final Set<BFTNode> nodesToDrop =
+          proposalToDrop.computeIfAbsent(
+              round,
+              v -> {
+                final List<BFTNode> nodes = Lists.newArrayList(validatorSet);
+                if (random != null) {
+                  Collections.shuffle(nodes, random);
+                }
+                return ImmutableSet.copyOf(nodes.subList(0, faultySize));
+              });
+      if (proposalCount.merge(round, 1, Integer::sum).equals(validatorSet.size())) {
+        proposalToDrop.remove(round);
+        proposalCount.remove(round);
+      }
 
-              return Observable.empty();
-            });
+      return nodesToDrop.contains(msg.getReceiver());
+    }
+
+    return false;
   }
 }

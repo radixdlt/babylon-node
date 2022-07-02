@@ -66,7 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
@@ -98,7 +98,7 @@ public class RandomValidatorsTest {
               ConsensusMonitors.timestampChecker(Duration.ofSeconds(5L)),
               ConsensusMonitors.noTimeouts(),
               ConsensusMonitors.directParents(),
-              ConsensusMonitors.epochCeilingView(View.of(100)),
+              ConsensusMonitors.epochMaxRound(Round.of(100)),
               LedgerMonitors.consensusToLedger(),
               LedgerMonitors.ordered());
 
@@ -129,7 +129,7 @@ public class RandomValidatorsTest {
   public void
       given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
-        bftTestBuilder.ledgerAndEpochs(View.of(100), goodRandomEpochToNodesMapper()).build();
+        bftTestBuilder.ledgerAndEpochs(Round.of(100), goodRandomEpochToNodesMapper()).build();
 
     final var checkResults = bftTest.run().awaitCompletion();
     assertThat(checkResults)
@@ -139,7 +139,7 @@ public class RandomValidatorsTest {
   @Test
   public void given_nondeterministic_randomized_validator_sets__then_should_fail() {
     SimulationTest bftTest =
-        bftTestBuilder.ledgerAndEpochs(View.of(100), badRandomEpochToNodesMapper()).build();
+        bftTestBuilder.ledgerAndEpochs(Round.of(100), badRandomEpochToNodesMapper()).build();
 
     final var checkResults = bftTest.run().awaitCompletion();
     assertThat(checkResults).hasValueSatisfying(new Condition<>(Optional::isPresent, "Has error"));

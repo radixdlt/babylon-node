@@ -64,27 +64,61 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.HighQC;
 import java.util.Objects;
 
-/** A local event message indicating that a view quorum (either QC or TC) has been reached. */
-public final class ViewQuorumReached {
+/** Represents an internal (local) round update. */
+public final class RoundUpdate {
 
-  private final ViewVotingResult votingResult;
+  private final Round currentRound;
+  private final HighQC highQC;
 
-  // the author of the last received message that lead to forming a quorum
-  private final BFTNode lastAuthor;
+  private final BFTNode leader;
+  private final BFTNode nextLeader;
 
-  public ViewQuorumReached(ViewVotingResult votingResult, BFTNode lastAuthor) {
-    this.votingResult = Objects.requireNonNull(votingResult);
-    this.lastAuthor = Objects.requireNonNull(lastAuthor);
+  private RoundUpdate(Round currentRound, HighQC highQC, BFTNode leader, BFTNode nextLeader) {
+    this.currentRound = currentRound;
+    this.highQC = highQC;
+    this.leader = leader;
+    this.nextLeader = nextLeader;
   }
 
-  public BFTNode lastAuthor() {
-    return lastAuthor;
+  public static RoundUpdate create(
+      Round currentRound, HighQC highQC, BFTNode leader, BFTNode nextLeader) {
+    Objects.requireNonNull(currentRound);
+    Objects.requireNonNull(highQC);
+    Objects.requireNonNull(leader);
+    Objects.requireNonNull(nextLeader);
+
+    return new RoundUpdate(currentRound, highQC, leader, nextLeader);
   }
 
-  public ViewVotingResult votingResult() {
-    return votingResult;
+  public HighQC getHighQC() {
+    return highQC;
+  }
+
+  public BFTNode getLeader() {
+    return leader;
+  }
+
+  public BFTNode getNextLeader() {
+    return nextLeader;
+  }
+
+  public Round getCurrentRound() {
+    return currentRound;
+  }
+
+  public long uncommittedRoundsCount() {
+    return Math.max(
+        0L, currentRound.number() - highQC.highestCommittedQC().getRound().number() - 1);
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[%s %s leader=%s next=%s]",
+        getClass().getSimpleName(), this.currentRound, this.highQC, this.leader, this.nextLeader);
   }
 
   @Override
@@ -95,13 +129,15 @@ public final class ViewQuorumReached {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ViewQuorumReached that = (ViewQuorumReached) o;
-    return Objects.equals(votingResult, that.votingResult)
-        && Objects.equals(lastAuthor, that.lastAuthor);
+    final RoundUpdate that = (RoundUpdate) o;
+    return Objects.equals(currentRound, that.currentRound)
+        && Objects.equals(highQC, that.highQC)
+        && Objects.equals(leader, that.leader)
+        && Objects.equals(nextLeader, that.nextLeader);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(votingResult, lastAuthor);
+    return Objects.hash(currentRound, highQC, leader, nextLeader);
   }
 }

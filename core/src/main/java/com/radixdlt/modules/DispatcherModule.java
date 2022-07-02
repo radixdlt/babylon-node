@@ -79,11 +79,11 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.NoVote;
+import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.bft.RoundVotingResult;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.ViewQuorumReached;
-import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.bft.ViewVotingResult;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
@@ -210,12 +210,12 @@ public class DispatcherModule extends AbstractModule {
         .toProvider(Dispatchers.dispatcherProvider(EpochLocalTimeoutOccurrence.class))
         .in(Scopes.SINGLETON);
 
-    final var viewUpdateKey = new TypeLiteral<EventProcessor<ViewUpdate>>() {};
+    final var viewUpdateKey = new TypeLiteral<EventProcessor<RoundUpdate>>() {};
     Multibinder.newSetBinder(binder(), viewUpdateKey, ProcessOnDispatch.class);
     Multibinder.newSetBinder(binder(), viewUpdateKey);
 
-    bind(new TypeLiteral<EventDispatcher<EpochViewUpdate>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(EpochViewUpdate.class))
+    bind(new TypeLiteral<EventDispatcher<EpochRoundUpdate>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(EpochRoundUpdate.class))
         .in(Scopes.SINGLETON);
 
     bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {})
@@ -236,12 +236,12 @@ public class DispatcherModule extends AbstractModule {
     final var verticesRequestKey = new TypeLiteral<EventProcessor<GetVerticesRequest>>() {};
     Multibinder.newSetBinder(binder(), verticesRequestKey, ProcessOnDispatch.class);
 
-    bind(new TypeLiteral<EventDispatcher<ViewQuorumReached>>() {})
+    bind(new TypeLiteral<EventDispatcher<RoundQuorumReached>>() {})
         .toProvider(
             Dispatchers.dispatcherProvider(
-                ViewQuorumReached.class,
+                RoundQuorumReached.class,
                 v -> {
-                  if (v.votingResult() instanceof ViewVotingResult.FormedTC) {
+                  if (v.votingResult() instanceof RoundVotingResult.FormedTC) {
                     return CounterType.BFT_TIMEOUT_QUORUMS;
                   }
                   return CounterType.BFT_VOTE_QUORUMS;
@@ -446,9 +446,9 @@ public class DispatcherModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private EventDispatcher<ViewUpdate> viewUpdateEventDispatcher(
-      @ProcessOnDispatch Set<EventProcessor<ViewUpdate>> processors, Environment environment) {
-    var dispatcher = environment.getDispatcher(ViewUpdate.class);
+  private EventDispatcher<RoundUpdate> viewUpdateEventDispatcher(
+      @ProcessOnDispatch Set<EventProcessor<RoundUpdate>> processors, Environment environment) {
+    var dispatcher = environment.getDispatcher(RoundUpdate.class);
     return viewUpdate -> {
       processors.forEach(e -> e.process(viewUpdate));
       dispatcher.dispatch(viewUpdate);

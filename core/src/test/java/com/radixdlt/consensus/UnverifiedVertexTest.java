@@ -69,7 +69,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -86,16 +86,16 @@ public class UnverifiedVertexTest {
 
   @Before
   public void setUp() {
-    View baseView = View.of(1234567890L);
+    Round baseRound = Round.of(1234567890L);
     HashCode id = HashUtils.random256();
 
-    BFTHeader header = new BFTHeader(baseView.next(), id, mock(LedgerHeader.class));
-    BFTHeader parent = new BFTHeader(baseView, HashUtils.random256(), mock(LedgerHeader.class));
+    BFTHeader header = new BFTHeader(baseRound.next(), id, mock(LedgerHeader.class));
+    BFTHeader parent = new BFTHeader(baseRound, HashUtils.random256(), mock(LedgerHeader.class));
     VoteData voteData = new VoteData(header, parent, parent);
 
     this.qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     this.testObject =
-        UnverifiedVertex.create(this.qc, baseView.next().next(), List.of(), BFTNode.random());
+        UnverifiedVertex.create(this.qc, baseRound.next().next(), List.of(), BFTNode.random());
   }
 
   @Test
@@ -108,7 +108,7 @@ public class UnverifiedVertexTest {
   @Test
   public void testGetters() {
     assertEquals(this.qc, this.testObject.getQC());
-    assertEquals(View.of(1234567892L), this.testObject.getView());
+    assertEquals(Round.of(1234567892L), this.testObject.getRound());
   }
 
   @Test(expected = NullPointerException.class)

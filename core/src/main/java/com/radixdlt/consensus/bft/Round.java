@@ -64,89 +64,89 @@
 
 package com.radixdlt.consensus.bft;
 
-/** Represents a BFT view used by the Pacemaker of a BFT instance */
-public final class View implements Comparable<View> {
-  private static final View GENESIS_VIEW = View.of(0L);
-  private final long view;
+/** Represents a BFT round/round used by the Pacemaker of a BFT instance */
+public final class Round implements Comparable<Round> {
+  private static final Round GENESIS_ROUND = Round.of(0L);
+  private final long roundNumber;
 
-  private View(long view) {
-    if (view < 0) {
-      throw new IllegalArgumentException("view must be >= 0 but was " + view);
+  private Round(long roundNumber) {
+    if (roundNumber < 0) {
+      throw new IllegalArgumentException("roundNumber must be >= 0 but was " + roundNumber);
     }
 
-    this.view = view;
+    this.roundNumber = roundNumber;
   }
 
-  public boolean gte(View other) {
-    return this.view >= other.view;
+  public boolean gte(Round other) {
+    return this.roundNumber >= other.roundNumber;
   }
 
-  public boolean gt(View other) {
-    return this.view > other.view;
+  public boolean gt(Round other) {
+    return this.roundNumber > other.roundNumber;
   }
 
-  public boolean lt(View other) {
-    return this.view < other.view;
+  public boolean lt(Round other) {
+    return this.roundNumber < other.roundNumber;
   }
 
-  public boolean lte(View other) {
-    return this.view <= other.view;
+  public boolean lte(Round other) {
+    return this.roundNumber <= other.roundNumber;
   }
 
-  public View previous() {
-    if (this.view == 0) {
-      throw new IllegalStateException("View Underflow");
+  public Round previous() {
+    if (this.roundNumber == 0) {
+      throw new IllegalStateException("Round Underflow");
     }
 
-    return new View(view - 1);
+    return new Round(roundNumber - 1);
   }
 
-  public View next() {
-    if (this.view == Long.MAX_VALUE) {
-      throw new IllegalStateException("View Overflow");
+  public Round next() {
+    if (this.roundNumber == Long.MAX_VALUE) {
+      throw new IllegalStateException("Round Overflow");
     }
 
-    return new View(view + 1);
+    return new Round(roundNumber + 1);
   }
 
   public long number() {
-    return this.view;
+    return this.roundNumber;
   }
 
   @Override
-  public int compareTo(View otherView) {
-    return Long.compare(this.view, otherView.view);
+  public int compareTo(Round otherRound) {
+    return Long.compare(this.roundNumber, otherRound.roundNumber);
   }
 
   @Override
   public int hashCode() {
-    return Long.hashCode(view);
+    return Long.hashCode(roundNumber);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof View)) {
+    if (!(o instanceof Round)) {
       return false;
     }
 
-    View other = (View) o;
-    return other.view == this.view;
+    Round other = (Round) o;
+    return other.roundNumber == this.roundNumber;
   }
 
   @Override
   public String toString() {
-    return Long.toString(this.view);
+    return Long.toString(this.roundNumber);
   }
 
   public boolean isGenesis() {
-    return GENESIS_VIEW.equals(this);
+    return GENESIS_ROUND.equals(this);
   }
 
-  public static View genesis() {
-    return GENESIS_VIEW;
+  public static Round genesis() {
+    return GENESIS_ROUND;
   }
 
-  public static View of(long view) {
-    return new View(view);
+  public static Round of(long roundNumber) {
+    return new Round(roundNumber);
   }
 }

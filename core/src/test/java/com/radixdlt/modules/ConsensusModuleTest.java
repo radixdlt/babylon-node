@@ -95,24 +95,8 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.NoVote;
-import com.radixdlt.consensus.bft.PacemakerMaxExponent;
-import com.radixdlt.consensus.bft.PacemakerRate;
-import com.radixdlt.consensus.bft.PacemakerTimeout;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.ViewQuorumReached;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -199,7 +183,7 @@ public class ConsensusModuleTest {
 
         bind(new TypeLiteral<EventDispatcher<LocalTimeoutOccurrence>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<ViewUpdate>>() {})
+        bind(new TypeLiteral<EventDispatcher<RoundUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<BFTInsertUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
@@ -215,7 +199,7 @@ public class ConsensusModuleTest {
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<ViewQuorumReached>>() {})
+        bind(new TypeLiteral<EventDispatcher<RoundQuorumReached>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() {})
             .toInstance(rmock(RemoteEventDispatcher.class));
@@ -229,7 +213,7 @@ public class ConsensusModuleTest {
             .toInstance(errorResponseSender);
         bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<ScheduledEventDispatcher<View>>() {})
+        bind(new TypeLiteral<ScheduledEventDispatcher<Round>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
@@ -242,7 +226,7 @@ public class ConsensusModuleTest {
         bind(BFTConfiguration.class).toInstance(bftConfiguration);
         bind(BFTValidatorSet.class).toInstance(bftConfiguration.getValidatorSet());
         LedgerProof proof = mock(LedgerProof.class);
-        when(proof.getView()).thenReturn(View.genesis());
+        when(proof.getRound()).thenReturn(Round.genesis());
         bind(LedgerProof.class).annotatedWith(LastProof.class).toInstance(proof);
         bind(RateLimiter.class)
             .annotatedWith(GetVerticesRequestRateLimit.class)
@@ -257,8 +241,8 @@ public class ConsensusModuleTest {
       }
 
       @Provides
-      ViewUpdate viewUpdate(@Self BFTNode node) {
-        return ViewUpdate.create(View.of(1), mock(HighQC.class), node, node);
+      RoundUpdate viewUpdate(@Self BFTNode node) {
+        return RoundUpdate.create(Round.of(1), mock(HighQC.class), node, node);
       }
 
       @Provides
@@ -278,12 +262,12 @@ public class ConsensusModuleTest {
       QuorumCertificate parent, ECKeyPair proposerKeyPair, Transaction txn) {
     final var proposerBftNode = BFTNode.create(proposerKeyPair.getPublicKey());
     var vertex =
-        UnverifiedVertex.create(parent, View.of(1), List.of(txn), proposerBftNode).withId(hasher);
+        UnverifiedVertex.create(parent, Round.of(1), List.of(txn), proposerBftNode).withId(hasher);
     var next =
         new BFTHeader(
-            View.of(1),
+            Round.of(1),
             vertex.getId(),
-            LedgerHeader.create(1, View.of(1), new AccumulatorState(1, HashUtils.zero256()), 1));
+            LedgerHeader.create(1, Round.of(1), new AccumulatorState(1, HashUtils.zero256()), 1));
     final var voteData = new VoteData(next, parent.getProposed(), parent.getParent());
     final var timestamp = 1;
     final var voteDataHash = Vote.getHashOfData(hasher, voteData, timestamp);

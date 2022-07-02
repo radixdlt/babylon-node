@@ -84,8 +84,8 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
@@ -168,7 +168,7 @@ public class StateComputerLedgerTest {
     this.ledgerHeader =
         LedgerHeader.create(
             genesisEpoch,
-            View.of(5),
+            Round.of(5),
             new AccumulatorState(genesisStateVersion, HashUtils.zero256()),
             12345,
             endOfEpoch
@@ -197,7 +197,7 @@ public class StateComputerLedgerTest {
     when(stateComputer.prepare(any(), any(), anyLong()))
         .thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
     var proposedVertex =
-        UnverifiedVertex.create(genesisQC, View.of(1), List.of(), BFTNode.random()).withId(hasher);
+        UnverifiedVertex.create(genesisQC, Round.of(1), List.of(), BFTNode.random()).withId(hasher);
 
     // Act
     Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
@@ -220,7 +220,7 @@ public class StateComputerLedgerTest {
         .thenReturn(
             new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
     var proposedVertex =
-        UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTransaction), BFTNode.random())
+        UnverifiedVertex.create(genesisQC, Round.of(1), List.of(nextTransaction), BFTNode.random())
             .withId(hasher);
 
     // Act
@@ -246,7 +246,7 @@ public class StateComputerLedgerTest {
 
     // Act
     var proposedVertex =
-        UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTransaction), BFTNode.random())
+        UnverifiedVertex.create(genesisQC, Round.of(1), List.of(nextTransaction), BFTNode.random())
             .withId(hasher);
     Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
@@ -274,7 +274,7 @@ public class StateComputerLedgerTest {
     final AccumulatorState accumulatorState =
         new AccumulatorState(genesisStateVersion - 1, HashUtils.zero256());
     final LedgerHeader ledgerHeader =
-        LedgerHeader.create(genesisEpoch, View.of(2), accumulatorState, 1234);
+        LedgerHeader.create(genesisEpoch, Round.of(2), accumulatorState, 1234);
     final LedgerProof header =
         new LedgerProof(HashUtils.random256(), ledgerHeader, new TimestampedECDSASignatures());
     var verified = VerifiedTxnsAndProof.create(List.of(nextTransaction), header);

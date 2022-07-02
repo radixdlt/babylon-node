@@ -74,7 +74,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
@@ -118,7 +118,7 @@ public class WeightedRotatingLeadersTest {
         for (int view = 0; view < viewsToTest; view++) {
           var expectedNodeForView =
               validatorsInOrder.get(validatorSetSize - (view % validatorSetSize) - 1).getNode();
-          assertThat(weightedRotatingLeaders.getProposer(View.of(view)))
+          assertThat(weightedRotatingLeaders.getProposer(Round.of(view)))
               .isEqualTo(expectedNodeForView);
         }
       }
@@ -134,13 +134,14 @@ public class WeightedRotatingLeadersTest {
         // 2 * sizeOfCache so cache eviction occurs
         final int viewsToTest = 2 * sizeOfCache;
 
-        BFTNode expectedNodeForView0 = weightedRotatingLeaders.getProposer(View.of(0));
-        for (View view = View.of(1);
-            view.compareTo(View.of(viewsToTest)) <= 0;
-            view = view.next()) {
-          weightedRotatingLeaders.getProposer(view);
+        BFTNode expectedNodeForView0 = weightedRotatingLeaders.getProposer(Round.of(0));
+        for (Round round = Round.of(1);
+            round.compareTo(Round.of(viewsToTest)) <= 0;
+            round = round.next()) {
+          weightedRotatingLeaders.getProposer(round);
         }
-        assertThat(weightedRotatingLeaders.getProposer(View.of(0))).isEqualTo(expectedNodeForView0);
+        assertThat(weightedRotatingLeaders.getProposer(Round.of(0)))
+            .isEqualTo(expectedNodeForView0);
       }
     }
   }
@@ -155,10 +156,10 @@ public class WeightedRotatingLeadersTest {
         final int viewsToTest = 2 * sizeOfCache;
 
         for (int view = 0; view < viewsToTest; view++) {
-          weightedRotatingLeaders2.getProposer(View.of(view));
+          weightedRotatingLeaders2.getProposer(Round.of(view));
         }
-        BFTNode node1 = weightedRotatingLeaders.getProposer(View.of(viewsToTest - 1));
-        BFTNode node2 = weightedRotatingLeaders2.getProposer(View.of(viewsToTest - 1));
+        BFTNode node1 = weightedRotatingLeaders.getProposer(Round.of(viewsToTest - 1));
+        BFTNode node2 = weightedRotatingLeaders2.getProposer(Round.of(viewsToTest - 1));
         assertThat(node1).isEqualTo(node2);
       }
     }
@@ -187,7 +188,7 @@ public class WeightedRotatingLeadersTest {
     this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, sizeOfCache);
 
     Map<BFTNode, UInt256> proposerCounts =
-        Stream.iterate(View.of(0), View::next)
+        Stream.iterate(Round.of(0), Round::next)
             .limit(sumOfPower)
             .map(this.weightedRotatingLeaders::getProposer)
             .collect(groupingBy(p -> p, collectingAndThen(counting(), UInt256::from)));

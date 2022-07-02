@@ -94,7 +94,7 @@ public class BFTEventReducerTest {
   private VertexStoreAdapter vertexStore = mock(VertexStoreAdapter.class);
   private SafetyRules safetyRules = mock(SafetyRules.class);
   private Pacemaker pacemaker = mock(Pacemaker.class);
-  private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher =
+  private EventDispatcher<RoundQuorumReached> viewQuorumReachedEventDispatcher =
       rmock(EventDispatcher.class);
   private EventDispatcher<NoVote> noVoteEventDispatcher = rmock(EventDispatcher.class);
 
@@ -114,7 +114,7 @@ public class BFTEventReducerTest {
             this.safetyRules,
             this.validatorSet,
             this.pendingVotes,
-            mock(ViewUpdate.class));
+            mock(RoundUpdate.class));
   }
 
   @Test
@@ -122,11 +122,11 @@ public class BFTEventReducerTest {
     BFTInsertUpdate update = mock(BFTInsertUpdate.class);
     BFTHeader header = mock(BFTHeader.class);
     this.bftEventReducer.processViewUpdate(
-        ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), this.self));
+        RoundUpdate.create(Round.of(3), mock(HighQC.class), mock(BFTNode.class), this.self));
     verify(this.pacemaker, times(1)).processViewUpdate(any());
 
     when(update.getHeader()).thenReturn(header);
-    when(header.getView()).thenReturn(View.of(2));
+    when(header.getRound()).thenReturn(Round.of(2));
     this.bftEventReducer.processBFTUpdate(update);
 
     verifyNoMoreInteractions(this.pacemaker);
@@ -137,14 +137,14 @@ public class BFTEventReducerTest {
     BFTInsertUpdate bftUpdate = mock(BFTInsertUpdate.class);
     BFTHeader header = mock(BFTHeader.class);
     when(bftUpdate.getHeader()).thenReturn(header);
-    when(header.getView()).thenReturn(View.of(3));
+    when(header.getRound()).thenReturn(Round.of(3));
 
-    ViewUpdate viewUpdate =
-        ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), this.self);
-    this.bftEventReducer.processViewUpdate(viewUpdate);
+    RoundUpdate roundUpdate =
+        RoundUpdate.create(Round.of(3), mock(HighQC.class), mock(BFTNode.class), this.self);
+    this.bftEventReducer.processViewUpdate(roundUpdate);
     verify(this.pacemaker, times(1)).processViewUpdate(any());
 
-    this.bftEventReducer.processLocalTimeout(ScheduledLocalTimeout.create(viewUpdate, 1000));
+    this.bftEventReducer.processLocalTimeout(ScheduledLocalTimeout.create(roundUpdate, 1000));
     verify(this.pacemaker, times(1)).processLocalTimeout(any());
 
     this.bftEventReducer.processBFTUpdate(bftUpdate);
@@ -158,14 +158,14 @@ public class BFTEventReducerTest {
     BFTInsertUpdate bftUpdate = mock(BFTInsertUpdate.class);
     BFTHeader header = mock(BFTHeader.class);
     when(bftUpdate.getHeader()).thenReturn(header);
-    when(header.getView()).thenReturn(View.of(3));
+    when(header.getRound()).thenReturn(Round.of(3));
 
-    ViewUpdate viewUpdate =
-        ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), this.self);
-    this.bftEventReducer.processViewUpdate(viewUpdate);
+    RoundUpdate roundUpdate =
+        RoundUpdate.create(Round.of(3), mock(HighQC.class), mock(BFTNode.class), this.self);
+    this.bftEventReducer.processViewUpdate(roundUpdate);
     verify(this.pacemaker, times(1)).processViewUpdate(any());
 
-    when(safetyRules.getLastVote(View.of(3))).thenReturn(Optional.of(mock(Vote.class)));
+    when(safetyRules.getLastVote(Round.of(3))).thenReturn(Optional.of(mock(Vote.class)));
     this.bftEventReducer.processBFTUpdate(bftUpdate);
 
     verifyNoMoreInteractions(this.voteDispatcher);
@@ -175,9 +175,9 @@ public class BFTEventReducerTest {
   @Test
   public void when_process_vote_with_quorum_wrong_view__then_ignored() {
     Vote vote = mock(Vote.class);
-    when(vote.getView()).thenReturn(View.of(1));
+    when(vote.getRound()).thenReturn(Round.of(1));
     this.bftEventReducer.processViewUpdate(
-        ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), this.self));
+        RoundUpdate.create(Round.of(3), mock(HighQC.class), mock(BFTNode.class), this.self));
     this.bftEventReducer.processVote(vote);
     verifyNoMoreInteractions(this.pendingVotes);
   }
@@ -192,14 +192,14 @@ public class BFTEventReducerTest {
     HighQC highQc = mock(HighQC.class);
     QuorumCertificate highestCommittedQc = mock(QuorumCertificate.class);
     when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
-    when(vote.getView()).thenReturn(View.of(1));
+    when(vote.getRound()).thenReturn(Round.of(1));
 
     when(this.pendingVotes.insertVote(any(), any())).thenReturn(VoteProcessingResult.qcQuorum(qc));
     when(this.vertexStore.highQC()).thenReturn(highQc);
 
-    // Move to view 1
+    // Move to round 1
     this.bftEventReducer.processViewUpdate(
-        ViewUpdate.create(View.of(1), highQc, mock(BFTNode.class), this.self));
+        RoundUpdate.create(Round.of(1), highQc, mock(BFTNode.class), this.self));
 
     this.bftEventReducer.processVote(vote);
 

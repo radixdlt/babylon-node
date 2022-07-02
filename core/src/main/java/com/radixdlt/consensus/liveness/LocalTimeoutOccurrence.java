@@ -65,7 +65,7 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import java.util.Objects;
 
 /** An actual occurrence (as opposed to a potential) of a local timeout */
@@ -80,8 +80,8 @@ public final class LocalTimeoutOccurrence {
     return scheduledLocalTimeout;
   }
 
-  public View getView() {
-    return scheduledLocalTimeout.view();
+  public Round getRound() {
+    return scheduledLocalTimeout.round();
   }
 
   public BFTNode getLeader() {

@@ -67,59 +67,60 @@ package com.radixdlt.consensus.liveness;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.environment.EventDispatcher;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class is responsible for keeping track of current consensus view state. It sends an internal
- * ViewUpdate message on a transition to next view.
+ * This class is responsible for keeping track of current consensus round state. It sends an
+ * internal ViewUpdate message on a transition to next round.
  */
 public class PacemakerState implements PacemakerReducer {
   private static final Logger log = LogManager.getLogger();
 
-  private final EventDispatcher<ViewUpdate> viewUpdateSender;
+  private final EventDispatcher<RoundUpdate> viewUpdateSender;
   private final ProposerElection proposerElection;
 
-  private View currentView;
+  private Round currentRound;
   private HighQC highQC;
 
   @Inject
   public PacemakerState(
-      ViewUpdate viewUpdate,
+      RoundUpdate roundUpdate,
       ProposerElection proposerElection,
-      EventDispatcher<ViewUpdate> viewUpdateSender) {
+      EventDispatcher<RoundUpdate> viewUpdateSender) {
     this.proposerElection = Objects.requireNonNull(proposerElection);
     this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
-    this.highQC = viewUpdate.getHighQC();
-    this.currentView = viewUpdate.getCurrentView();
+    this.highQC = roundUpdate.getHighQC();
+    this.currentRound = roundUpdate.getCurrentRound();
   }
 
   @Override
   public void processQC(HighQC highQC) {
     log.trace("QuorumCertificate: {}", highQC);
 
-    final View view = highQC.getHighestView();
-    if (view.gte(this.currentView)) {
+    final Round round = highQC.getHighestView();
+    if (round.gte(this.currentRound)) {
       this.highQC = highQC;
-      this.updateView(view.next());
+      this.updateView(round.next());
     } else {
-      log.trace("Ignoring QC for view {}: current view is {}", view, this.currentView);
+      log.trace("Ignoring QC for round {}: current round is {}", round, this.currentRound);
     }
   }
 
   @Override
-  public void updateView(View nextView) {
-    if (nextView.lte(this.currentView)) {
+  public void updateView(Round nextRound) {
+    if (nextRound.lte(this.currentRound)) {
       return;
     }
 
-    final BFTNode leader = this.proposerElection.getProposer(nextView);
-    final BFTNode nextLeader = this.proposerElection.getProposer(nextView.next());
-    this.currentView = nextView;
-    viewUpdateSender.dispatch(ViewUpdate.create(this.currentView, this.highQC, leader, nextLeader));
+    final BFTNode leader = this.proposerElection.getProposer(nextRound);
+    final BFTNode nextLeader = this.proposerElection.getProposer(nextRound.next());
+    this.currentRound = nextRound;
+    viewUpdateSender.dispatch(
+        RoundUpdate.create(this.currentRound, this.highQC, leader, nextLeader));
   }
 }

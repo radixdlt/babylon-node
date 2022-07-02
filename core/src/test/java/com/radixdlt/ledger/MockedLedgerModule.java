@@ -82,7 +82,7 @@ import java.util.Optional;
 public class MockedLedgerModule extends AbstractModule {
   @Override
   public void configure() {
-    bind(ProposalGenerator.class).toInstance((view, aids) -> List.of());
+    bind(ProposalGenerator.class).toInstance((round, aids) -> List.of());
   }
 
   @Provides
@@ -97,7 +97,7 @@ public class MockedLedgerModule extends AbstractModule {
             vertex
                 .getParentHeader()
                 .getLedgerHeader()
-                .updateViewAndTimestamp(vertex.getView(), timestamp);
+                .updateRoundAndTimestamp(vertex.getRound(), timestamp);
 
         return Optional.of(
             vertex

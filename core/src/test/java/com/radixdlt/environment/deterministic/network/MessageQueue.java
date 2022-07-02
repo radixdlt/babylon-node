@@ -78,7 +78,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-/** Queue for messages by view. */
+/** Queue for messages by round. */
 public final class MessageQueue {
 
   private final HashMap<Long, LinkedList<ControlledMessage>> messagesByTime = Maps.newHashMap();

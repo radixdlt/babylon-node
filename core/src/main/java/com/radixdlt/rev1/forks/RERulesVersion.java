@@ -71,7 +71,7 @@ import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.construction.NextEpochConstructorV3;
-import com.radixdlt.application.system.construction.NextViewConstructorV3;
+import com.radixdlt.application.system.construction.NextRoundConstructorV3;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
@@ -173,7 +173,7 @@ public enum RERulesVersion {
                       config.minimumCompletedProposalsPercentage(),
                       config.unstakingEpochDelay(),
                       config.maxValidators()))
-              .put(NextRound.class, new NextViewConstructorV3())
+              .put(NextRound.class, new NextRoundConstructorV3())
               .put(RegisterValidator.class, new RegisterValidatorConstructor())
               .put(SplitToken.class, new SplitTokenConstructor())
               .put(

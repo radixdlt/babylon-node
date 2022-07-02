@@ -68,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
@@ -81,10 +81,10 @@ public class BFTHeaderTest {
 
   @Before
   public void setUp() {
-    View view = View.of(1234567890L);
+    Round round = Round.of(1234567890L);
     this.id = HashUtils.random256();
     this.ledgerHeader = mock(LedgerHeader.class);
-    this.testObject = new BFTHeader(view, id, ledgerHeader);
+    this.testObject = new BFTHeader(round, id, ledgerHeader);
   }
 
   @Test
@@ -96,7 +96,7 @@ public class BFTHeaderTest {
 
   @Test
   public void testGetters() {
-    assertThat(View.of(1234567890L)).isEqualTo(this.testObject.getView());
+    assertThat(Round.of(1234567890L)).isEqualTo(this.testObject.getRound());
 
     assertThat(id).isEqualTo(this.testObject.getVertexId());
     assertThat(ledgerHeader).isEqualTo(this.testObject.getLedgerHeader());

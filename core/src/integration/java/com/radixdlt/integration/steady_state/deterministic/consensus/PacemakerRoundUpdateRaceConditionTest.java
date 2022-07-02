@@ -71,13 +71,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
@@ -97,21 +92,21 @@ import java.util.function.Predicate;
 import org.junit.Test;
 
 /**
- * This test checks that when race condition is introduced (by delaying ViewUpdate and
+ * This test checks that when race condition is introduced (by delaying RoundUpdate and
  * BFTInsertUpdate messages) then the Pacemaker can form a valid timeout vote for an empty proposal.
  * Specifically, it checks whether the vertices it inserts use a correct parent.
  */
-public class PacemakerViewUpdateRaceConditionTest {
+public class PacemakerRoundUpdateRaceConditionTest {
 
   private static final Random random = new Random(123456);
 
   private static final int numNodes = 4;
-  private static final int nodeUnderTestIndex = 2; // leader for view 2
+  private static final int nodeUnderTestIndex = 2; // leader for round 2
   private static final long pacemakerTimeout = 1000L;
   private static final long additionalMessageDelay = pacemakerTimeout + 1000L;
 
   @Test
-  public void test_pacemaker_view_update_race_condition() {
+  public void test_pacemaker_round_update_race_condition() {
     final DeterministicTest test =
         DeterministicTest.builder()
             .numNodes(numNodes)
@@ -132,9 +127,9 @@ public class PacemakerViewUpdateRaceConditionTest {
 
                       maybeParent.ifPresent(
                           parent -> {
-                            if (parent.getView().equals(inserted.getView())) {
+                            if (parent.getRound().equals(inserted.getRound())) {
                               throw new IllegalStateException(
-                                  "Vertex can't have the same view as its parent.");
+                                  "Vertex can't have the same round as its parent.");
                             }
                           });
                     };
@@ -149,12 +144,12 @@ public class PacemakerViewUpdateRaceConditionTest {
                                 Comparator.comparing(
                                     BFTNode::getKey, KeyComparator.instance().reversed()))
                             .toList();
-                    return view ->
-                        sortedValidators.get(((int) view.number() - 1) % sortedValidators.size());
+                    return round ->
+                        sortedValidators.get(((int) round.number() - 1) % sortedValidators.size());
                   }
                 })
             .buildWithoutEpochs()
-            .runUntil(nodeUnderTestReachesView(View.of(3)));
+            .runUntil(nodeUnderTestReachesRound(Round.of(3)));
 
     final var counters = test.getSystemCounters(nodeUnderTestIndex);
     assertThat(counters.get(SystemCounters.CounterType.BFT_VOTE_QUORUMS))
@@ -163,15 +158,15 @@ public class PacemakerViewUpdateRaceConditionTest {
         .isEqualTo(2); // ensure that timeouts were processed
   }
 
-  private static Predicate<Timed<ControlledMessage>> nodeUnderTestReachesView(View view) {
+  private static Predicate<Timed<ControlledMessage>> nodeUnderTestReachesRound(Round round) {
     return timedMsg -> {
       final ControlledMessage message = timedMsg.value();
-      if (!(message.message() instanceof ViewUpdate)) {
+      if (!(message.message() instanceof RoundUpdate)) {
         return false;
       }
-      final ViewUpdate p = (ViewUpdate) message.message();
+      final RoundUpdate p = (RoundUpdate) message.message();
       return message.channelId().receiverIndex() == nodeUnderTestIndex
-          && p.getCurrentView().gte(view);
+          && p.getCurrentRound().gte(round);
     };
   }
 
@@ -182,20 +177,20 @@ public class PacemakerViewUpdateRaceConditionTest {
         return false;
       }
 
-      // the unlucky node doesn't receive a Proposal and its next ViewUpdate and BFTInsertUpdate
+      // the unlucky node doesn't receive a Proposal and its next RoundUpdate and BFTInsertUpdate
       // messages are delayed
       // Proposal is dropped so that the node creates an empty timeout vote, and not a timeout of a
       // previous vote
       final Object msg = message.message();
-      if (msg instanceof ViewUpdate && ((ViewUpdate) msg).getCurrentView().equals(View.of(2))) {
+      if (msg instanceof RoundUpdate && ((RoundUpdate) msg).getCurrentRound().equals(Round.of(2))) {
         queue.add(message.withAdditionalDelay(additionalMessageDelay));
         return true;
       } else if (msg instanceof BFTInsertUpdate
-          && ((BFTInsertUpdate) msg).getInserted().getView().equals(View.of(1))) {
+          && ((BFTInsertUpdate) msg).getInserted().getRound().equals(Round.of(1))) {
         queue.add(message.withAdditionalDelay(additionalMessageDelay));
         return true;
       } else {
-        return msg instanceof Proposal && ((Proposal) msg).getView().equals(View.of(1));
+        return msg instanceof Proposal && ((Proposal) msg).getRound().equals(Round.of(1));
       }
     };
   }

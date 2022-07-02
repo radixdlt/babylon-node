@@ -89,7 +89,7 @@ public class VerifiedVertexStoreStateCreationTest {
   private HashCode genesisHash;
   private Hasher hasher;
   private static final LedgerHeader MOCKED_HEADER =
-      LedgerHeader.create(0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
+      LedgerHeader.create(0, Round.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
 
   @Before
   public void setup() {
@@ -100,7 +100,7 @@ public class VerifiedVertexStoreStateCreationTest {
 
   @Test
   public void creating_vertex_store_with_root_not_committed_should_fail() {
-    BFTHeader genesisHeader = new BFTHeader(View.of(0), genesisHash, mock(LedgerHeader.class));
+    BFTHeader genesisHeader = new BFTHeader(Round.of(0), genesisHash, mock(LedgerHeader.class));
     VoteData voteData = new VoteData(genesisHeader, genesisHeader, null);
     QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     assertThatThrownBy(
@@ -112,9 +112,9 @@ public class VerifiedVertexStoreStateCreationTest {
 
   @Test
   public void creating_vertex_store_with_committed_qc_not_matching_vertex_should_fail() {
-    BFTHeader genesisHeader = new BFTHeader(View.of(0), genesisHash, mock(LedgerHeader.class));
+    BFTHeader genesisHeader = new BFTHeader(Round.of(0), genesisHash, mock(LedgerHeader.class));
     BFTHeader otherHeader =
-        new BFTHeader(View.of(0), HashUtils.random256(), mock(LedgerHeader.class));
+        new BFTHeader(Round.of(0), HashUtils.random256(), mock(LedgerHeader.class));
     VoteData voteData = new VoteData(genesisHeader, genesisHeader, otherHeader);
     QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     assertThatThrownBy(
@@ -127,7 +127,7 @@ public class VerifiedVertexStoreStateCreationTest {
   @Test
   public void creating_vertex_store_with_qc_not_matching_vertex_should_fail() {
     BFTHeader genesisHeader =
-        new BFTHeader(View.of(0), HashUtils.random256(), mock(LedgerHeader.class));
+        new BFTHeader(Round.of(0), HashUtils.random256(), mock(LedgerHeader.class));
     VoteData voteData = new VoteData(genesisHeader, genesisHeader, genesisHeader);
     QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     assertThatThrownBy(

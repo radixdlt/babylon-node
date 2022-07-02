@@ -69,7 +69,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -86,7 +86,7 @@ public class LedgerHeaderTest {
   public void setup() {
     this.timestamp = 12345678L;
     this.accumulatorState = mock(AccumulatorState.class);
-    this.ledgerHeader = LedgerHeader.create(0, View.genesis(), accumulatorState, timestamp);
+    this.ledgerHeader = LedgerHeader.create(0, Round.genesis(), accumulatorState, timestamp);
   }
 
   @Test

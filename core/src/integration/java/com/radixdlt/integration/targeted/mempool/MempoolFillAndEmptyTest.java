@@ -71,7 +71,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -133,7 +133,7 @@ public final class MempoolFillAndEmptyTest {
     while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) < 1000) {
       ControlledMessage msg = network.nextMessage().value();
       processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-      if (msg.message() instanceof EpochViewUpdate) {
+      if (msg.message() instanceof EpochRoundUpdate) {
         scheduledMempoolFillEventDispatcher.dispatch(ScheduledMempoolFill.create());
       }
     }

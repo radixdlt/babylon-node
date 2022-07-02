@@ -62,24 +62,61 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.integration.steady_state.simulation.consensus_ledger;
 
-import static org.mockito.Mockito.mock;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import nl.jqno.equalsverifier.EqualsVerifier;
+import com.radixdlt.harness.simulation.NetworkDroppers;
+import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkOrdering;
+import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.SimulationTest.Builder;
+import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
+import java.util.LongSummaryStatistics;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class ViewQuorumReachedTest {
+/**
+ * Dropping random vote and round-timeout messages should cause consensus to fork quite a bit. This
+ * is to test that safety should always be preserved even in multiple forking situations.
+ */
+public class RandomVoteAndRoundTimeoutDropperTest {
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(
+              NetworkOrdering.inOrder(),
+              NetworkLatencies.fixed(),
+              NetworkDroppers.randomVotesAndRoundTimeoutsDropped(0.4))
+          .ledger()
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered());
 
+  /**
+   * Tests a configuration of 4 nodes with a dropping proposal adversary Test should fail with
+   * GetVertices RPC disabled
+   */
   @Test
-  public void equalsTest() {
-    EqualsVerifier.forClass(ViewQuorumReached.class)
-        .withPrefabValues(
-            ViewVotingResult.class,
-            new ViewVotingResult.FormedQC(mock(QuorumCertificate.class)),
-            new ViewVotingResult.FormedTC(mock(TimeoutCertificate.class)))
-        .verify();
+  public void sanity_test() {
+    SimulationTest test = bftTestBuilder.build();
+    final var runningTest = test.run();
+    final var checkResults = runningTest.awaitCompletion();
+
+    LongSummaryStatistics statistics =
+        runningTest.getNetwork().getSystemCounters().values().stream()
+            .map(s -> s.get(CounterType.BFT_VERTEX_STORE_FORKS))
+            .mapToLong(l -> l)
+            .summaryStatistics();
+
+    System.out.println(statistics);
+
+    assertThat(checkResults)
+        .allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
   }
 }

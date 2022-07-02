@@ -66,7 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
@@ -97,15 +97,15 @@ public class MovingWindowValidatorsTest {
 
   @Test
   public void
-      given_correct_1_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
+      given_correct_1_node_bft_with_4_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
         bftTestBuilder
             .numNodes(4)
-            .ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(1, 4))
+            .ledgerAndEpochs(Round.of(100), windowedEpochToNodesMapper(1, 4))
             .pacemakerTimeout(5000)
             .addTestModules(
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
-                ConsensusMonitors.epochCeilingView(View.of(100)))
+                ConsensusMonitors.epochMaxRound(Round.of(100)))
             .build();
     final var checkResults = bftTest.run().awaitCompletion();
     assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
@@ -113,15 +113,15 @@ public class MovingWindowValidatorsTest {
 
   @Test
   public void
-      given_correct_3_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
+      given_correct_3_node_bft_with_4_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
         bftTestBuilder
             .numNodes(4)
-            .ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(3, 4))
+            .ledgerAndEpochs(Round.of(100), windowedEpochToNodesMapper(3, 4))
             .pacemakerTimeout(1000)
             .addTestModules(
                 ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-                ConsensusMonitors.epochCeilingView(View.of(100)))
+                ConsensusMonitors.epochMaxRound(Round.of(100)))
             .build();
     final var checkResults = bftTest.run().awaitCompletion();
     assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
@@ -129,16 +129,16 @@ public class MovingWindowValidatorsTest {
 
   @Test
   public void
-      given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
+      given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_100_rounds__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
         bftTestBuilder
             .numNodes(100)
-            .ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(25, 50))
+            .ledgerAndEpochs(Round.of(100), windowedEpochToNodesMapper(25, 50))
             .pacemakerTimeout(5000)
             .addTestModules(
                 ConsensusMonitors.liveness(
                     5, TimeUnit.SECONDS), // High timeout to make Travis happy
-                ConsensusMonitors.epochCeilingView(View.of(100)))
+                ConsensusMonitors.epochMaxRound(Round.of(100)))
             .build();
 
     final var checkResults = bftTest.run().awaitCompletion();
@@ -147,14 +147,14 @@ public class MovingWindowValidatorsTest {
 
   @Test
   public void
-      given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_1_view__then_should_pass_bft_and_epoch_invariants() {
+      given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_1_round__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
         bftTestBuilder
             .numNodes(100)
-            .ledgerAndEpochs(View.of(1), windowedEpochToNodesMapper(25, 50))
+            .ledgerAndEpochs(Round.of(1), windowedEpochToNodesMapper(25, 50))
             .pacemakerTimeout(5000)
             .addTestModules(
-                ConsensusMonitors.epochCeilingView(View.of(1)),
+                ConsensusMonitors.epochMaxRound(Round.of(1)),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS) // High timeout to make Travis happy
                 )
             .build();

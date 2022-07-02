@@ -154,7 +154,7 @@ public sealed interface TxAction {
   record NextEpoch(long timestamp) implements TxAction {}
 
   record NextRound(
-      long view, boolean isTimeout, long timestamp, LongFunction<ECPublicKey> leaderMapping)
+      long round, boolean isTimeout, long timestamp, LongFunction<ECPublicKey> leaderMapping)
       implements TxAction {}
 
   record RegisterValidator(ECPublicKey validatorKey) implements TxAction {

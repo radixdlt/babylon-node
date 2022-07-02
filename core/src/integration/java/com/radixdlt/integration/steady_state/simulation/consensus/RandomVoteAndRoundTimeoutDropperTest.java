@@ -64,127 +64,54 @@
 
 package com.radixdlt.integration.steady_state.simulation.consensus;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.VertexRequestTimeout;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.harness.simulation.Monitor;
 import com.radixdlt.harness.simulation.NetworkDroppers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import java.util.Arrays;
-import java.util.Collection;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
+import java.util.LongSummaryStatistics;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
 /**
- * Simulation with a communication adversary which drops a random proposal message in every round.
- *
- * <p>Dropped proposals implies that validators will need to retrieve the information originally in
- * this proposals via syncing with other nodes.
+ * Dropping random vote and round-timeout messages should cause consensus to fork quite a bit. This
+ * is to test that safety should always be preserved even in multiple forking situations.
  */
-@RunWith(Parameterized.class)
-public class FProposalsPerViewDropperTest {
-  @Parameters
-  public static Collection<Object[]> testParameters() {
-    return Arrays.asList(
-        new Object[][] {
-          {4},
-          {5} // TODO: Investigate why 5 still failing on Travis and 20 still failing on Jenkins
-        });
-  }
-
-  private final Builder bftTestBuilder;
-
-  public FProposalsPerViewDropperTest(int numNodes) {
-    bftTestBuilder =
-        SimulationTest.builder()
-            .numNodes(numNodes)
-            .networkModules(
-                NetworkOrdering.inOrder(),
-                NetworkLatencies.fixed(10),
-                NetworkDroppers.fRandomProposalsPerViewDropped())
-            .pacemakerTimeout(5000)
-            .addTestModules(
-                ConsensusMonitors.safety(),
-                ConsensusMonitors.vertexRequestRate(50), // Conservative check
-                ConsensusMonitors.noTimeouts());
-  }
+public class RandomVoteAndRoundTimeoutDropperTest {
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(
+              NetworkOrdering.inOrder(),
+              NetworkLatencies.fixed(),
+              NetworkDroppers.randomVotesAndRoundTimeoutsDropped(0.4))
+          .addTestModules(
+              ConsensusMonitors.safety(), ConsensusMonitors.liveness(20, TimeUnit.SECONDS));
 
   /**
    * Tests a configuration of 4 nodes with a dropping proposal adversary Test should fail with
    * GetVertices RPC disabled
    */
   @Test
-  public void
-      given_incorrect_module_where_vertex_sync_is_disabled__then_test_should_fail_against_drop_proposal_adversary() {
-    SimulationTest test =
-        bftTestBuilder
-            .addOverrideModuleToAllInitialNodes(
-                new AbstractModule() {
-                  @Override
-                  protected void configure() {
-                    bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() {})
-                        .toInstance((node, request) -> {});
-                  }
-                })
-            .build();
-
-    final var runningTest = test.run();
-    final var checkResults = runningTest.awaitCompletion();
-
-    assertThat(checkResults)
-        .hasEntrySatisfying(Monitor.CONSENSUS_NO_TIMEOUTS, error -> assertThat(error).isPresent());
-  }
-
-  /**
-   * Tests a configuration of 4 nodes with a dropping proposal adversary Test should fail with
-   * GetVertices RPC disabled
-   */
-  @Test
-  public void
-      given_get_vertices_enabled__then_test_should_succeed_against_drop_proposal_adversary() {
+  public void sanity_test() {
     SimulationTest test = bftTestBuilder.build();
-    final var runningTest = test.run();
-    final var checkResults = runningTest.awaitCompletion();
-    assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
-  }
 
-  @Test
-  public void dropping_sync_adversary_should_cause_no_timeouts_because_of_sync_retries() {
-    SimulationTest test =
-        bftTestBuilder.addNetworkModule(NetworkDroppers.bftSyncMessagesDropped(0.1)).build();
     final var runningTest = test.run();
     final var checkResults = runningTest.awaitCompletion();
-    assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
-  }
 
-  @Test
-  public void dropping_sync_adversary_with_no_timeout_scheduler_should_cause_timeouts() {
-    SimulationTest test =
-        bftTestBuilder
-            .addNetworkModule(NetworkDroppers.bftSyncMessagesDropped(0.1))
-            .addOverrideModuleToAllInitialNodes(
-                new AbstractModule() {
-                  @Override
-                  protected void configure() {
-                    bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() {})
-                        .toInstance((request, millis) -> {});
-                  }
-                })
-            .build();
-    final var runningTest = test.run();
-    final var checkResults = runningTest.awaitCompletion();
+    LongSummaryStatistics statistics =
+        runningTest.getNetwork().getSystemCounters().values().stream()
+            .map(s -> s.get(CounterType.BFT_VERTEX_STORE_FORKS))
+            .mapToLong(l -> l)
+            .summaryStatistics();
+    System.out.println(statistics);
+
     assertThat(checkResults)
-        .hasEntrySatisfying(Monitor.CONSENSUS_NO_TIMEOUTS, error -> assertThat(error).isPresent());
+        .allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
   }
 }

@@ -67,8 +67,8 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -110,17 +110,17 @@ public final class QuorumCertificate {
    */
   public static QuorumCertificate ofGenesis(
       VerifiedVertex genesisVertex, LedgerHeader ledgerHeader) {
-    if (!genesisVertex.getView().isGenesis()) {
+    if (!genesisVertex.getRound().isGenesis()) {
       throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", genesisVertex));
     }
 
-    BFTHeader header = new BFTHeader(genesisVertex.getView(), genesisVertex.getId(), ledgerHeader);
+    BFTHeader header = new BFTHeader(genesisVertex.getRound(), genesisVertex.getId(), ledgerHeader);
     final VoteData voteData = new VoteData(header, header, header);
     return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
   }
 
-  public View getView() {
-    return voteData.getProposed().getView();
+  public Round getRound() {
+    return voteData.getProposed().getRound();
   }
 
   public long getEpoch() {
@@ -182,6 +182,6 @@ public final class QuorumCertificate {
 
   @Override
   public String toString() {
-    return String.format("QC{%s:%s}", this.getEpoch(), this.getView());
+    return String.format("QC{%s:%s}", this.getEpoch(), this.getRound());
   }
 }

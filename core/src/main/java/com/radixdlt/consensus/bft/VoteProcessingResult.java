@@ -79,16 +79,16 @@ public sealed interface VoteProcessingResult {
     return new VoteRejected(reason);
   }
 
-  static QuorumReached quorum(ViewVotingResult result) {
+  static QuorumReached quorum(RoundVotingResult result) {
     return new QuorumReached(result);
   }
 
   static QuorumReached qcQuorum(QuorumCertificate qc) {
-    return quorum(ViewVotingResult.qc(qc));
+    return quorum(RoundVotingResult.qc(qc));
   }
 
   static QuorumReached tcQuorum(TimeoutCertificate tc) {
-    return quorum(ViewVotingResult.tc(tc));
+    return quorum(RoundVotingResult.tc(tc));
   }
 
   /** Signifies that a vote has been accepted, but the quorum hasn't been reached. */
@@ -157,19 +157,19 @@ public sealed interface VoteProcessingResult {
   /** Signifies that a vote has been accepted and quorum has been reached. */
   final class QuorumReached implements VoteProcessingResult {
 
-    private final ViewVotingResult viewVotingResult;
+    private final RoundVotingResult roundVotingResult;
 
-    public QuorumReached(ViewVotingResult viewVotingResult) {
-      this.viewVotingResult = Objects.requireNonNull(viewVotingResult);
+    public QuorumReached(RoundVotingResult roundVotingResult) {
+      this.roundVotingResult = Objects.requireNonNull(roundVotingResult);
     }
 
-    public ViewVotingResult getViewVotingResult() {
-      return this.viewVotingResult;
+    public RoundVotingResult getRoundVotingResult() {
+      return this.roundVotingResult;
     }
 
     @Override
     public String toString() {
-      return String.format("QuorumReached{votingResult=%s}", viewVotingResult);
+      return String.format("QuorumReached{votingResult=%s}", roundVotingResult);
     }
 
     @Override
@@ -181,12 +181,12 @@ public sealed interface VoteProcessingResult {
         return false;
       }
       QuorumReached that = (QuorumReached) o;
-      return Objects.equals(viewVotingResult, that.viewVotingResult);
+      return Objects.equals(roundVotingResult, that.roundVotingResult);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(viewVotingResult);
+      return Objects.hash(roundVotingResult);
     }
   }
 }

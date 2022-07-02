@@ -67,7 +67,7 @@ package com.radixdlt.integration.steady_state.deterministic.consensus;
 import static org.assertj.core.api.Assertions.*;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -84,7 +84,7 @@ import org.junit.Test;
 
 public class ProposerLoadBalancedTest {
 
-  private ImmutableList<Long> run(int numNodes, long numViews, EpochNodeWeightMapping mapping) {
+  private ImmutableList<Long> run(int numNodes, long numRounds, EpochNodeWeightMapping mapping) {
 
     DeterministicTest test =
         DeterministicTest.builder()
@@ -93,7 +93,7 @@ public class ProposerLoadBalancedTest {
             .messageMutator(mutator())
             .epochNodeWeightMapping(mapping)
             .buildWithoutEpochs()
-            .runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
+            .runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     return IntStream.range(0, numNodes)
         .mapToObj(test::getSystemCounters)
@@ -138,8 +138,8 @@ public class ProposerLoadBalancedTest {
         .hasSize(numNodes)
         .areAtLeast(
             numNodes - 1,
-            new Condition<>(l -> l == proposalsPerNode, "has as many proposals as views"))
-        // the last view in the epoch doesn't have a proposal
+            new Condition<>(l -> l == proposalsPerNode, "has as many proposals as rounds"))
+        // the last round in the epoch doesn't have a proposal
         .areAtMost(1, new Condition<>(l -> l == proposalsPerNode - 1, "has one less proposal"));
   }
 
@@ -153,8 +153,8 @@ public class ProposerLoadBalancedTest {
         .hasSize(numNodes)
         .areAtLeast(
             numNodes - 1,
-            new Condition<>(l -> l == proposalsPerNode, "has as many proposals as views"))
-        // the last view in the epoch doesn't have a proposal
+            new Condition<>(l -> l == proposalsPerNode, "has as many proposals as rounds"))
+        // the last round in the epoch doesn't have a proposal
         .areAtMost(1, new Condition<>(l -> l == proposalsPerNode - 1, "has one less proposal"));
   }
 
@@ -181,8 +181,8 @@ public class ProposerLoadBalancedTest {
             );
 
     assertThat(proposals.subList(0, 50))
-        .areAtLeast(49, new Condition<>(l -> l == proposalChunk, "has as many proposals as views"))
-        // the last view in the epoch doesn't have a proposal
+        .areAtLeast(49, new Condition<>(l -> l == proposalChunk, "has as many proposals as rounds"))
+        // the last round in the epoch doesn't have a proposal
         .areAtMost(1, new Condition<>(l -> l == proposalChunk - 1, "has one less proposal"));
 
     assertThat(proposals.subList(50, 100)).allMatch(Long.valueOf(2 * proposalChunk)::equals);
@@ -197,10 +197,10 @@ public class ProposerLoadBalancedTest {
             // Some large primes with product/LCM > 2^64 but < 2^256
             UInt256.from("941083981"), UInt256.from("961748927"), UInt256.from("982451653"));
     UInt256 sum = weights.stream().reduce(UInt256.ZERO, UInt256::add);
-    UInt256 numViews256 = UInt256.from(numProposals);
+    UInt256 numProposals256 = UInt256.from(numProposals);
     long[] values =
         weights.stream()
-            .map(w -> w.multiply(numViews256).divide(sum))
+            .map(w -> w.multiply(numProposals256).divide(sum))
             .mapToLong(v -> v.getLow().getLow())
             .toArray();
     ImmutableList<Long> proposals =
@@ -220,10 +220,10 @@ public class ProposerLoadBalancedTest {
     ImmutableList<UInt256> weights =
         generatePrimes(100).mapToObj(UInt256::from).collect(ImmutableList.toImmutableList());
     UInt256 sum = weights.stream().reduce(UInt256.ZERO, UInt256::add);
-    UInt256 numViews256 = UInt256.from(numProposals);
+    UInt256 numProposals256 = UInt256.from(numProposals);
     long[] values =
         weights.stream()
-            .map(w -> w.multiply(numViews256).divide(sum))
+            .map(w -> w.multiply(numProposals256).divide(sum))
             .mapToLong(v -> v.getLow().getLow())
             .toArray();
     ImmutableList<Long> proposals =

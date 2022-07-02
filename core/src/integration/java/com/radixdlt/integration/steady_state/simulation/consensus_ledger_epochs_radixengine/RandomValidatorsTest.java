@@ -112,7 +112,7 @@ public class RandomValidatorsTest {
                       50,
                       MSG.maxLength())),
               new ForksModule())
-          .ledgerAndRadixEngineWithEpochHighView()
+          .ledgerAndRadixEngineWithEpochMaxRound()
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

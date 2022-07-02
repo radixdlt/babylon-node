@@ -64,8 +64,8 @@
 
 package com.radixdlt.harness.simulation.monitors.consensus;
 
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -98,13 +98,13 @@ public final class TimestampChecker implements TestInvariant {
           new TestInvariantError(
               String.format(
                   "Expecting timestamp to be close to %s but was %s%+d at %s:%s with %s",
-                  now, now, diff, proof.getEpoch(), proof.getView(), update)));
+                  now, now, diff, proof.getEpoch(), proof.getRound(), update)));
     }
   }
 
-  private static boolean isFirstView(LedgerUpdate ledgerUpdate) {
+  private static boolean isFirstRoundOfFirstEpoch(LedgerUpdate ledgerUpdate) {
     return ledgerUpdate.getTail().getEpoch() == 1
-        && ledgerUpdate.getTail().getView().equals(View.of(1));
+        && ledgerUpdate.getTail().getRound().equals(Round.of(1));
   }
 
   @Override
@@ -113,8 +113,8 @@ public final class TimestampChecker implements TestInvariant {
         .ledgerUpdates()
         .map(Pair::getSecond)
         // Test on only the first ledger update in the network
-        .distinct(update -> EpochView.of(update.getTail().getEpoch(), update.getTail().getView()))
-        .filter(l -> !isFirstView(l))
+        .distinct(update -> EpochRound.of(update.getTail().getEpoch(), update.getTail().getRound()))
+        .filter(l -> !isFirstRoundOfFirstEpoch(l))
         .flatMapMaybe(this::checkCloseTimestamp);
   }
 }

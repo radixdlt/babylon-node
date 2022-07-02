@@ -120,7 +120,7 @@ public class VertexStoreTest {
   private Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 
   private static final LedgerHeader MOCKED_HEADER =
-      LedgerHeader.create(0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
+      LedgerHeader.create(0, Round.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
 
   @Before
   public void setUp() {
@@ -159,11 +159,11 @@ public class VertexStoreTest {
             committedSender);
 
     AtomicReference<BFTHeader> lastParentHeader =
-        new AtomicReference<>(new BFTHeader(View.genesis(), genesisHash, MOCKED_HEADER));
+        new AtomicReference<>(new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER));
     AtomicReference<BFTHeader> lastGrandParentHeader =
-        new AtomicReference<>(new BFTHeader(View.genesis(), genesisHash, MOCKED_HEADER));
+        new AtomicReference<>(new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER));
     AtomicReference<BFTHeader> lastGreatGrandParentHeader =
-        new AtomicReference<>(new BFTHeader(View.genesis(), genesisHash, MOCKED_HEADER));
+        new AtomicReference<>(new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER));
 
     this.nextSkippableVertex =
         (skipOne) -> {
@@ -171,7 +171,7 @@ public class VertexStoreTest {
           BFTHeader grandParentHeader = lastGrandParentHeader.get();
           BFTHeader greatGrandParentHeader = lastGreatGrandParentHeader.get();
           final QuorumCertificate qc;
-          if (!parentHeader.getView().equals(View.genesis())) {
+          if (!parentHeader.getRound().equals(Round.genesis())) {
             VoteData data =
                 new VoteData(
                     parentHeader, grandParentHeader, skipOne ? null : greatGrandParentHeader);
@@ -179,16 +179,16 @@ public class VertexStoreTest {
           } else {
             qc = rootQC;
           }
-          View view = parentHeader.getView().next();
+          Round round = parentHeader.getRound().next();
           if (skipOne) {
-            view = view.next();
+            round = round.next();
           }
 
           var vertex =
               UnverifiedVertex.create(
-                      qc, view, List.of(Transaction.create(new byte[0])), BFTNode.random())
+                      qc, round, List.of(Transaction.create(new byte[0])), BFTNode.random())
                   .withId(hasher);
-          lastParentHeader.set(new BFTHeader(view, vertex.getId(), MOCKED_HEADER));
+          lastParentHeader.set(new BFTHeader(round, vertex.getId(), MOCKED_HEADER));
           lastGrandParentHeader.set(parentHeader);
           lastGreatGrandParentHeader.set(grandParentHeader);
 
@@ -280,9 +280,9 @@ public class VertexStoreTest {
   @Test
   public void inserting_a_tc_should_only_replace_tcs_for_lower_views() {
     TimeoutCertificate initialTC =
-        new TimeoutCertificate(1, View.of(100), mock(TimestampedECDSASignatures.class));
+        new TimeoutCertificate(1, Round.of(100), mock(TimestampedECDSASignatures.class));
     TimeoutCertificate higherTC =
-        new TimeoutCertificate(1, View.of(101), mock(TimestampedECDSASignatures.class));
+        new TimeoutCertificate(1, Round.of(101), mock(TimestampedECDSASignatures.class));
 
     sut.insertTimeoutCertificate(initialTC);
     assertEquals(initialTC, sut.highQC().highestTC().orElse(null));

@@ -68,7 +68,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -77,7 +77,9 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-/** Represents a timeout certificate for given epoch and view signed by the quorum of validators. */
+/**
+ * Represents a timeout certificate for given epoch and round signed by the quorum of validators.
+ */
 @SerializerId2("consensus.tc")
 public final class TimeoutCertificate {
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)
@@ -88,7 +90,7 @@ public final class TimeoutCertificate {
   @DsonOutput(Output.ALL)
   private final long epoch;
 
-  private final View view;
+  private final Round round;
 
   @JsonProperty("signatures")
   @DsonOutput(Output.ALL)
@@ -98,19 +100,19 @@ public final class TimeoutCertificate {
   @VisibleForTesting
   static TimeoutCertificate serializerCreate(
       @JsonProperty("epoch") long epoch,
-      @JsonProperty("view") long view,
+      @JsonProperty("round") long view,
       @JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures) {
-    return new TimeoutCertificate(epoch, View.of(view), signatures);
+    return new TimeoutCertificate(epoch, Round.of(view), signatures);
   }
 
-  public TimeoutCertificate(long epoch, View view, TimestampedECDSASignatures signatures) {
+  public TimeoutCertificate(long epoch, Round round, TimestampedECDSASignatures signatures) {
     this.epoch = epoch;
 
     if (epoch < 0) {
       throw new IllegalArgumentException("Epoch can't be < 0");
     }
 
-    this.view = Objects.requireNonNull(view);
+    this.round = Objects.requireNonNull(round);
     this.signatures = Objects.requireNonNull(signatures);
   }
 
@@ -118,8 +120,8 @@ public final class TimeoutCertificate {
     return this.epoch;
   }
 
-  public View getView() {
-    return this.view;
+  public Round getRound() {
+    return this.round;
   }
 
   public TimestampedECDSASignatures getTimestampedSignatures() {
@@ -130,10 +132,10 @@ public final class TimeoutCertificate {
     return signatures.getSignatures().keySet().stream();
   }
 
-  @JsonProperty("view")
+  @JsonProperty("round")
   @DsonOutput(DsonOutput.Output.ALL)
   private Long getSerializerView() {
-    return this.view.number();
+    return this.round.number();
   }
 
   @Override
@@ -147,16 +149,16 @@ public final class TimeoutCertificate {
     TimeoutCertificate that = (TimeoutCertificate) o;
     return Objects.equals(signatures, that.signatures)
         && epoch == that.epoch
-        && Objects.equals(view, that.view);
+        && Objects.equals(round, that.round);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(signatures, epoch, view);
+    return Objects.hash(signatures, epoch, round);
   }
 
   @Override
   public String toString() {
-    return String.format("TC{view=%s epoch=%s}", view, epoch);
+    return String.format("TC{round=%s epoch=%s}", round, epoch);
   }
 }

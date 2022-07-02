@@ -72,7 +72,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.hash.HashCode;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -167,8 +167,8 @@ public final class Vote implements ConsensusEvent {
   }
 
   @Override
-  public View getView() {
-    return getVoteData().getProposed().getView();
+  public Round getRound() {
+    return getVoteData().getProposed().getRound();
   }
 
   public VoteData getVoteData() {
@@ -226,8 +226,8 @@ public final class Vote implements ConsensusEvent {
   @Override
   public String toString() {
     return String.format(
-        "%s{epoch=%s view=%s author=%s timeout?=%s %s}",
-        getClass().getSimpleName(), getEpoch(), getView(), author, isTimeout(), highQC);
+        "%s{epoch=%s round=%s author=%s timeout?=%s %s}",
+        getClass().getSimpleName(), getEpoch(), getRound(), author, isTimeout(), highQC);
   }
 
   @Override

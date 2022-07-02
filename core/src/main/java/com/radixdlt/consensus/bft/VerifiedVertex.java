@@ -107,17 +107,17 @@ public final class VerifiedVertex {
   }
 
   public boolean touchesGenesis() {
-    return this.getView().isGenesis()
-        || this.getParentHeader().getView().isGenesis()
-        || this.getGrandParentHeader().getView().isGenesis();
+    return this.getRound().isGenesis()
+        || this.getParentHeader().getRound().isGenesis()
+        || this.getGrandParentHeader().getRound().isGenesis();
   }
 
   public boolean hasDirectParent() {
-    return this.vertex.getView().equals(this.getParentHeader().getView().next());
+    return this.vertex.getRound().equals(this.getParentHeader().getRound().next());
   }
 
   public boolean parentHasDirectParent() {
-    return this.getParentHeader().getView().equals(this.getGrandParentHeader().getView().next());
+    return this.getParentHeader().getRound().equals(this.getGrandParentHeader().getRound().next());
   }
 
   public BFTHeader getParentHeader() {
@@ -128,8 +128,8 @@ public final class VerifiedVertex {
     return vertex.getQC().getParent();
   }
 
-  public View getView() {
-    return vertex.getView();
+  public Round getRound() {
+    return vertex.getRound();
   }
 
   public QuorumCertificate getQC() {
@@ -171,11 +171,11 @@ public final class VerifiedVertex {
   @Override
   public String toString() {
     return String.format(
-        "%s{epoch=%s view=%s parentView=%s id=%s}",
+        "%s{epoch=%s round=%s parentView=%s id=%s}",
         this.getClass().getSimpleName(),
         this.vertex.getQC().getProposed().getLedgerHeader().getEpoch(),
-        this.vertex.getView(),
-        this.vertex.getQC().getProposed().getView(),
+        this.vertex.getRound(),
+        this.vertex.getQC().getProposed().getRound(),
         this.id);
   }
 }

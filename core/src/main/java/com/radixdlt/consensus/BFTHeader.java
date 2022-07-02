@@ -69,7 +69,7 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -87,7 +87,7 @@ public final class BFTHeader {
   @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
   SerializerDummy serializer = SerializerDummy.DUMMY;
 
-  private final View view;
+  private final Round round;
 
   @JsonProperty("vertex_id")
   @DsonOutput(Output.ALL)
@@ -99,47 +99,47 @@ public final class BFTHeader {
 
   // TODO: Move command output to a more opaque data structure
   public BFTHeader(
-      View view, // consensus data
+      Round round, // consensus data
       HashCode vertexId, // consensus data
       LedgerHeader ledgerHeader) {
-    this.view = requireNonNull(view);
+    this.round = requireNonNull(round);
     this.vertexId = requireNonNull(vertexId);
     this.ledgerHeader = requireNonNull(ledgerHeader);
   }
 
   @JsonCreator
   public static BFTHeader create(
-      @JsonProperty("view") long number,
+      @JsonProperty("round") long roundNumber,
       @JsonProperty(value = "vertex_id", required = true) HashCode vertexId,
       @JsonProperty(value = "ledger_header", required = true) LedgerHeader ledgerHeader) {
-    return new BFTHeader(View.of(number), vertexId, ledgerHeader);
+    return new BFTHeader(Round.of(roundNumber), vertexId, ledgerHeader);
   }
 
   public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
-    return new BFTHeader(View.genesis(), HashUtils.zero256(), ledgerHeader);
+    return new BFTHeader(Round.genesis(), HashUtils.zero256(), ledgerHeader);
   }
 
   public LedgerHeader getLedgerHeader() {
     return ledgerHeader;
   }
 
-  public View getView() {
-    return view;
+  public Round getRound() {
+    return round;
   }
 
   public HashCode getVertexId() {
     return vertexId;
   }
 
-  @JsonProperty("view")
+  @JsonProperty("round")
   @DsonOutput(Output.ALL)
-  private long getSerializerView() {
-    return view.number();
+  private long getSerializerRound() {
+    return round.number();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.vertexId, this.view, this.ledgerHeader);
+    return Objects.hash(this.vertexId, this.round, this.ledgerHeader);
   }
 
   @Override
@@ -149,7 +149,7 @@ public final class BFTHeader {
     }
 
     return (o instanceof BFTHeader other)
-        && Objects.equals(this.view, other.view)
+        && Objects.equals(this.round, other.round)
         && Objects.equals(this.vertexId, other.vertexId)
         && Objects.equals(this.ledgerHeader, other.ledgerHeader);
   }
@@ -157,6 +157,6 @@ public final class BFTHeader {
   @Override
   public String toString() {
     return String.format(
-        "%s{view=%s ledger=%s}", getClass().getSimpleName(), this.view, this.ledgerHeader);
+        "%s{round=%s ledger=%s}", getClass().getSimpleName(), this.round, this.ledgerHeader);
   }
 }

@@ -87,9 +87,9 @@ public class VoteProcessingResultTest {
   public void equalsQuorumReached() {
     EqualsVerifier.forClass(VoteProcessingResult.QuorumReached.class)
         .withPrefabValues(
-            ViewVotingResult.class,
-            new ViewVotingResult.FormedQC(mock(QuorumCertificate.class)),
-            new ViewVotingResult.FormedTC(mock(TimeoutCertificate.class)))
+            RoundVotingResult.class,
+            new RoundVotingResult.FormedQC(mock(QuorumCertificate.class)),
+            new RoundVotingResult.FormedTC(mock(TimeoutCertificate.class)))
         .verify();
   }
 }

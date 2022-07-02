@@ -62,35 +62,92 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs_radixengine;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.bft.View;
-import nl.jqno.equalsverifier.EqualsVerifier;
+import com.radixdlt.harness.simulation.NetworkDroppers;
+import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkOrdering;
+import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.SimulationTest.Builder;
+import com.radixdlt.harness.simulation.application.NodeValidatorRandomRegistrator;
+import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.rev1.forks.ForksModule;
+import com.radixdlt.rev1.forks.MainnetForksModule;
+import com.radixdlt.rev1.forks.RERulesConfig;
+import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.LongSummaryStatistics;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class ViewTest {
-  @Test
-  public void testBadArgument() {
-    assertThatThrownBy(() -> View.of(-1L)).isInstanceOf(IllegalArgumentException.class);
-  }
+public class RandomVoteAndRoundTimeoutDropperTest {
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(8)
+          .networkModules(
+              NetworkOrdering.inOrder(),
+              NetworkLatencies.fixed(),
+              NetworkDroppers.randomVotesAndRoundTimeoutsDropped(0.2))
+          .addRadixEngineConfigModules(
+              new MainnetForksModule(),
+              new RadixEngineForksLatestOnlyModule(
+                  RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
+              new ForksModule())
+          .ledgerAndRadixEngineWithEpochMaxRound()
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered(),
+              RadixEngineMonitors.noInvalidProposedCommands())
+          .addActor(NodeValidatorRandomRegistrator.class);
 
   @Test
-  public void testPrevious() {
-    assertThat(View.of(2L).previous()).isEqualTo(View.of(1L));
-    assertThatThrownBy(() -> View.of(0L).previous());
+  public void when_random_validators__then_sanity_checks_should_pass() {
+    SimulationTest simulationTest = bftTestBuilder.build();
+    final var runningTest = simulationTest.run(Duration.of(2, ChronoUnit.MINUTES));
+    final var checkResults = runningTest.awaitCompletion();
+
+    List<CounterType> counterTypes =
+        List.of(
+            CounterType.BFT_VERTEX_STORE_FORKS,
+            CounterType.BFT_COMMITTED_VERTICES,
+            CounterType.BFT_PACEMAKER_TIMEOUTS_SENT,
+            CounterType.LEDGER_STATE_VERSION);
+
+    Map<CounterType, LongSummaryStatistics> statistics =
+        counterTypes.stream()
+            .collect(
+                Collectors.toMap(
+                    counterType -> counterType,
+                    counterType ->
+                        runningTest.getNetwork().getSystemCounters().values().stream()
+                            .mapToLong(s -> s.get(counterType))
+                            .summaryStatistics()));
+
+    System.out.println("statistics:\n" + print(statistics.entrySet()));
+
+    assertThat(checkResults)
+        .allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
   }
 
-  @Test
-  public void testNext() {
-    assertThat(View.of(1L).next()).isEqualTo(View.of(2L));
-    assertThatThrownBy(() -> View.of(Long.MAX_VALUE).next());
-  }
+  private String print(Set<Map.Entry<CounterType, LongSummaryStatistics>> entrySet) {
+    var builder = new StringBuilder();
 
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(View.class).verify();
+    entrySet.forEach(
+        e -> builder.append(e.getKey()).append(" = ").append(e.getValue().toString()).append('\n'));
+
+    return builder.toString();
   }
 }

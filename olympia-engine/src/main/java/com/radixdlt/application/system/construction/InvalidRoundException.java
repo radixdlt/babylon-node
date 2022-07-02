@@ -67,7 +67,7 @@ package com.radixdlt.application.system.construction;
 import com.radixdlt.atom.TxBuilderException;
 
 public class InvalidRoundException extends TxBuilderException {
-  public InvalidRoundException(long currentView, long view) {
-    super("Next view: " + view + " isn't higher than current view: " + currentView);
+  public InvalidRoundException(long currentRound, long nextRound) {
+    super("Next round: " + nextRound + " isn't higher than current round: " + currentRound);
   }
 }

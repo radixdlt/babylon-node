@@ -175,7 +175,7 @@ public final class VerifiedVertexStoreState {
       var newHeaders = stateProof.get();
       var header = newHeaders.getFirst();
 
-      if (header.getView().gt(root.getView())) {
+      if (header.getRound().gt(root.getRound())) {
         var newRoot = idToVertex.get(header.getVertexId());
         var newVertices =
             ImmutableList.of(

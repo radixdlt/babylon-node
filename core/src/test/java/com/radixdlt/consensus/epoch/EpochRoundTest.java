@@ -64,52 +64,39 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.bft.ViewUpdate;
-import java.util.Objects;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
-/** A wrapper for a ViewUpdate message that also holds epoch. */
-public final class EpochViewUpdate {
+import com.radixdlt.consensus.bft.Round;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-  private final long epoch;
-  private final ViewUpdate viewUpdate;
+public class EpochRoundTest {
 
-  public EpochViewUpdate(long epoch, ViewUpdate viewUpdate) {
-    this.epoch = epoch;
-    this.viewUpdate = Objects.requireNonNull(viewUpdate);
+  @Test
+  public void testBadArgument() {
+    assertThatThrownBy(() -> EpochRound.of(-1, Round.of(1)))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
-  public EpochView getEpochView() {
-    return new EpochView(epoch, viewUpdate.getCurrentView());
+  @Test
+  public void testGetters() {
+    Round round = mock(Round.class);
+    EpochRound epochRound = EpochRound.of(12345L, round);
+    assertThat(epochRound.getEpoch()).isEqualTo(12345L);
+    assertThat(epochRound.getRound()).isEqualTo(round);
   }
 
-  public long getEpoch() {
-    return epoch;
+  @Test
+  public void testToString() {
+    Round round = mock(Round.class);
+    EpochRound epochRound = EpochRound.of(12345L, round);
+    assertThat(epochRound.toString()).isNotNull();
   }
 
-  public ViewUpdate getViewUpdate() {
-    return viewUpdate;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    EpochViewUpdate that = (EpochViewUpdate) o;
-    return epoch == that.epoch && Objects.equals(viewUpdate, that.viewUpdate);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(epoch, viewUpdate);
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{epoch=%s view=%s}", this.getClass().getSimpleName(), epoch, viewUpdate);
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(EpochRound.class).verify();
   }
 }

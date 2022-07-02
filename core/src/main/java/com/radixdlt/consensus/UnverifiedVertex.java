@@ -69,8 +69,8 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
@@ -95,7 +95,7 @@ public final class UnverifiedVertex {
   @DsonOutput(Output.ALL)
   private final QuorumCertificate qc;
 
-  private final View view;
+  private final Round round;
 
   @JsonProperty("txns")
   @DsonOutput(Output.ALL)
@@ -109,12 +109,12 @@ public final class UnverifiedVertex {
 
   private UnverifiedVertex(
       QuorumCertificate qc,
-      View view,
+      Round round,
       List<byte[]> txns,
       BFTNode proposer,
       Boolean proposerTimedOut) {
     this.qc = requireNonNull(qc);
-    this.view = requireNonNull(view);
+    this.round = requireNonNull(round);
 
     if (proposerTimedOut != null && proposerTimedOut && !txns.isEmpty()) {
       throw new IllegalArgumentException("Txns must be empty if timeout");
@@ -132,14 +132,14 @@ public final class UnverifiedVertex {
   @JsonCreator
   public static UnverifiedVertex create(
       @JsonProperty(value = "qc", required = true) QuorumCertificate qc,
-      @JsonProperty("view") long viewId,
+      @JsonProperty("round") long viewId,
       @JsonProperty("txns") List<byte[]> txns,
       @JsonProperty("p") byte[] proposer,
       @JsonProperty("tout") Boolean proposerTimedOut)
       throws PublicKeyException {
     return new UnverifiedVertex(
         qc,
-        View.of(viewId),
+        Round.of(viewId),
         txns == null ? List.of() : txns,
         proposer != null ? BFTNode.fromPublicKeyBytes(proposer) : null,
         proposerTimedOut);
@@ -149,22 +149,23 @@ public final class UnverifiedVertex {
     BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
     final VoteData voteData = new VoteData(header, header, header);
     final QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    return new UnverifiedVertex(qc, View.genesis(), null, null, false);
+    return new UnverifiedVertex(qc, Round.genesis(), null, null, false);
   }
 
-  public static UnverifiedVertex createTimeout(QuorumCertificate qc, View view, BFTNode proposer) {
-    return new UnverifiedVertex(qc, view, List.of(), proposer, true);
+  public static UnverifiedVertex createTimeout(
+      QuorumCertificate qc, Round round, BFTNode proposer) {
+    return new UnverifiedVertex(qc, round, List.of(), proposer, true);
   }
 
   public static UnverifiedVertex create(
-      QuorumCertificate qc, View view, List<Transaction> transactions, BFTNode proposer) {
-    if (view.number() == 0) {
-      throw new IllegalArgumentException("Only genesis can have view 0.");
+      QuorumCertificate qc, Round round, List<Transaction> transactions, BFTNode proposer) {
+    if (round.number() == 0) {
+      throw new IllegalArgumentException("Only genesis can have round 0.");
     }
 
     var txnBytes = transactions.stream().map(Transaction::getPayload).toList();
 
-    return new UnverifiedVertex(qc, view, txnBytes, proposer, false);
+    return new UnverifiedVertex(qc, round, txnBytes, proposer, false);
   }
 
   @JsonProperty("p")
@@ -189,28 +190,28 @@ public final class UnverifiedVertex {
     return qc;
   }
 
-  public View getView() {
-    return view;
+  public Round getRound() {
+    return round;
   }
 
   public List<Transaction> getTxns() {
     return txns == null ? List.of() : txns.stream().map(Transaction::create).toList();
   }
 
-  @JsonProperty("view")
+  @JsonProperty("round")
   @DsonOutput(Output.ALL)
   private Long getSerializerView() {
-    return this.view == null ? null : this.view.number();
+    return this.round == null ? null : this.round.number();
   }
 
   @Override
   public String toString() {
-    return String.format("Vertex{view=%s, qc=%s, txns=%s}", view, qc, getTxns());
+    return String.format("Vertex{round=%s, qc=%s, txns=%s}", round, qc, getTxns());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(qc, proposer, view, txns, proposerTimedOut);
+    return Objects.hash(qc, proposer, round, txns, proposerTimedOut);
   }
 
   @Override
@@ -220,7 +221,7 @@ public final class UnverifiedVertex {
     }
 
     UnverifiedVertex v = (UnverifiedVertex) o;
-    return Objects.equals(v.view, this.view)
+    return Objects.equals(v.round, this.round)
         && Objects.equals(v.proposerTimedOut, this.proposerTimedOut)
         && Objects.equals(v.proposer, this.proposer)
         && Objects.equals(v.getTxns(), this.getTxns())
