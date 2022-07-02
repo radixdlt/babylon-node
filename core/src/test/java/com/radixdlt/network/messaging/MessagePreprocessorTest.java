@@ -139,7 +139,7 @@ public class MessagePreprocessorTest {
           tuple(new MempoolAddMessage(mock(List.class)), "txns"),
           tuple(new StatusResponseMessage(mock(LedgerProof.class)), "header"),
           tuple(new SyncRequestMessage(mock(DtoLedgerProof.class)), "currentHeader"),
-          tuple(new SyncResponseMessage(mock(TransactionRunDto.class)), "transactionRun"));
+          tuple(new SyncResponseMessage(mock(TransactionRunDto.class)), "run"));
 
   private static final Serialization SERIALIZATION = DefaultSerialization.getInstance();
 
