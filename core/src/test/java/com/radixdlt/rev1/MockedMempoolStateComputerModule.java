@@ -72,7 +72,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockExecuted;
@@ -151,8 +151,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       }
 
       @Override
-      public void commit(
-          VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+      public void commit(VerifiedTxnsAndProof txnsAndProof, VertexStoreState vertexStoreState) {
         mempool.handleTransactionsCommitted(txnsAndProof.getTxns());
         counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 

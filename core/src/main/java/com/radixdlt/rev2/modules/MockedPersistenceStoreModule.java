@@ -68,7 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.SerializedVertexStoreState;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import java.util.Optional;
@@ -101,7 +101,7 @@ public class MockedPersistenceStoreModule extends AbstractModule {
 
   private static class MockedPersistentVertexStore implements PersistentVertexStore {
     @Override
-    public void save(VerifiedVertexStoreState vertexStoreState) {
+    public void save(VertexStoreState vertexStoreState) {
       // Nothing to do here
     }
   }

@@ -68,7 +68,7 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.*;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
@@ -137,8 +137,7 @@ public class REv2StateComputerModule extends AbstractModule {
       }
 
       @Override
-      public void commit(
-          VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+      public void commit(VerifiedTxnsAndProof txnsAndProof, VertexStoreState vertexStoreState) {
         mempool.handleTransactionsCommitted(txnsAndProof.getTxns());
 
         var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());

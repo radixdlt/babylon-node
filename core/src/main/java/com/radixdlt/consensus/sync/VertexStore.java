@@ -72,8 +72,8 @@ import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.VertexChain;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.lang.Option;
 import java.util.List;
 
@@ -84,7 +84,7 @@ public interface VertexStore {
     record Inserted(
         HighQC newHighQc,
         // TODO: remove me once vertex store persistence and commit on the java side are gone
-        VerifiedVertexStoreState verifiedVertexStoreState,
+        VertexStoreState vertexStoreState,
         Option<CommittedUpdate> committedUpdate)
         implements InsertQcResult {}
 
@@ -104,7 +104,7 @@ public interface VertexStore {
 
   InsertVertexChainResult insertVertexChain(VertexChain vertexChain);
 
-  Option<VerifiedVertexStoreState> tryRebuild(VerifiedVertexStoreState vertexStoreState);
+  Option<VertexStoreState> tryRebuild(VertexStoreState vertexStoreState);
 
   boolean containsVertex(HashCode vertexId);
 

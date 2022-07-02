@@ -76,8 +76,8 @@ import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.VertexChain;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
 import java.util.List;
 import java.util.Objects;
@@ -106,7 +106,7 @@ public final class VertexStoreAdapter {
     this.bftCommittedDispatcher = Objects.requireNonNull(bftCommittedDispatcher);
   }
 
-  public boolean tryRebuild(VerifiedVertexStoreState vertexStoreState) {
+  public boolean tryRebuild(VertexStoreState vertexStoreState) {
     final var result = vertexStore.tryRebuild(vertexStoreState);
 
     result.onPresent(
@@ -125,8 +125,7 @@ public final class VertexStoreAdapter {
       case VertexStore.InsertQcResult.Inserted inserted -> {
         // TODO: why is this if statement needed?
         if (inserted.committedUpdate().isEmpty()) {
-          this.highQCUpdateDispatcher.dispatch(
-              BFTHighQCUpdate.create(inserted.verifiedVertexStoreState()));
+          this.highQCUpdateDispatcher.dispatch(BFTHighQCUpdate.create(inserted.vertexStoreState()));
         }
         inserted
             .committedUpdate()
@@ -134,8 +133,7 @@ public final class VertexStoreAdapter {
                 committedUpdate ->
                     this.bftCommittedDispatcher.dispatch(
                         new BFTCommittedUpdate(
-                            committedUpdate.committedVertices(),
-                            inserted.verifiedVertexStoreState())));
+                            committedUpdate.committedVertices(), inserted.vertexStoreState())));
         yield true;
       }
       case VertexStore.InsertQcResult.Ignored ignored -> true;
@@ -158,7 +156,7 @@ public final class VertexStoreAdapter {
         .forEach(
             insertedQc -> {
               this.highQCUpdateDispatcher.dispatch(
-                  BFTHighQCUpdate.create(insertedQc.verifiedVertexStoreState()));
+                  BFTHighQCUpdate.create(insertedQc.vertexStoreState()));
               insertedQc
                   .committedUpdate()
                   .onPresent(
@@ -166,7 +164,7 @@ public final class VertexStoreAdapter {
                           this.bftCommittedDispatcher.dispatch(
                               new BFTCommittedUpdate(
                                   committedUpdate.committedVertices(),
-                                  insertedQc.verifiedVertexStoreState())));
+                                  insertedQc.vertexStoreState())));
             });
     result.insertUpdates().forEach(bftUpdateDispatcher::dispatch);
   }

@@ -127,8 +127,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   }
 
   @Override
-  public void commit(
-      VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+  public void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VertexStoreState vertexStoreState) {
     this.stateComputer.commit(verifiedTxnsAndProof, vertexStoreState);
   }
 }

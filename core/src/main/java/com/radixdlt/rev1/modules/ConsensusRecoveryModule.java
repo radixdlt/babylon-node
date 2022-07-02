@@ -72,7 +72,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -83,8 +83,7 @@ import java.util.Optional;
 /** Manages consensus recovery on startup */
 public class ConsensusRecoveryModule extends AbstractModule {
   @Provides
-  private RoundUpdate view(
-      VerifiedVertexStoreState vertexStoreState, BFTConfiguration configuration) {
+  private RoundUpdate view(VertexStoreState vertexStoreState, BFTConfiguration configuration) {
     var highQC = vertexStoreState.getHighQC();
     var view = highQC.highestQC().getRound().next();
     var proposerElection = configuration.getProposerElection();
@@ -97,7 +96,7 @@ public class ConsensusRecoveryModule extends AbstractModule {
   @Provides
   @Singleton
   private BFTConfiguration initialConfig(
-      BFTValidatorSet validatorSet, VerifiedVertexStoreState vertexStoreState) {
+      BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
   }

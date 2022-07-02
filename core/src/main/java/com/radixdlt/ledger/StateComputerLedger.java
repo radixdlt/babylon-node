@@ -76,7 +76,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -141,8 +141,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     StateComputerResult prepare(
         List<ExecutedTransaction> previous, VertexWithHash vertex, long timestamp);
 
-    void commit(
-        VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState);
+    void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VertexStoreState vertexStoreState);
   }
 
   private final Comparator<LedgerProof> headerComparator;
@@ -297,7 +296,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   }
 
   private void commit(
-      VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+      VerifiedTxnsAndProof verifiedTxnsAndProof, VertexStoreState vertexStoreState) {
     synchronized (lock) {
       final LedgerProof nextHeader = verifiedTxnsAndProof.getProof();
       if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {

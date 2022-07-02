@@ -189,7 +189,7 @@ public class PacemakerTest {
     ExecutedVertex executedVertex = mock(ExecutedVertex.class);
     when(executedVertex.getRound()).thenReturn(round);
     when(executedVertex.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
-    VerifiedVertexStoreState vertexStoreState = mock(VerifiedVertexStoreState.class);
+    VertexStoreState vertexStoreState = mock(VertexStoreState.class);
     when(vertexStoreState.getHighQC()).thenReturn(highQC);
     when(bftInsertUpdate.getInserted()).thenReturn(executedVertex);
     when(bftInsertUpdate.getVertexStoreState()).thenReturn(vertexStoreState);

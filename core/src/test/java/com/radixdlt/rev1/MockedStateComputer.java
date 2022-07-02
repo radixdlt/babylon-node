@@ -75,7 +75,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.Hasher;
@@ -122,7 +122,7 @@ public final class MockedStateComputer implements StateComputer {
   }
 
   @Override
-  public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+  public void commit(VerifiedTxnsAndProof txnsAndProof, VertexStoreState vertexStoreState) {
     var output =
         txnsAndProof
             .getProof()
@@ -141,7 +141,7 @@ public final class MockedStateComputer implements StateComputer {
                   QuorumCertificate genesisQC =
                       QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
                   final var initialState =
-                      VerifiedVertexStoreState.create(
+                      VertexStoreState.create(
                           HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =

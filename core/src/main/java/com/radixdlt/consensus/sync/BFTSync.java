@@ -427,7 +427,7 @@ public final class BFTSync implements BFTSyncer {
       ImmutableList<VertexWithHash> nonRootVertices =
           syncState.fetched.stream().skip(1).collect(ImmutableList.toImmutableList());
       var vertexStoreState =
-          VerifiedVertexStoreState.create(
+          VertexStoreState.create(
               HighQC.from(syncState.highQC().highestCommittedQC()),
               syncState.fetched.get(0),
               nonRootVertices,

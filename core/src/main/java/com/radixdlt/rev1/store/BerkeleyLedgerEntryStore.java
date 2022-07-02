@@ -89,7 +89,7 @@ import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.SerializedVertexStoreState;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
@@ -594,7 +594,7 @@ public final class BerkeleyLedgerEntryStore
   }
 
   @Override
-  public void save(VerifiedVertexStoreState vertexStoreState) {
+  public void save(VertexStoreState vertexStoreState) {
     withTime(
         () -> {
           var transaction = beginTransaction();
@@ -833,8 +833,7 @@ public final class BerkeleyLedgerEntryStore
     }
   }
 
-  private void doSave(
-      com.sleepycat.je.Transaction transaction, VerifiedVertexStoreState vertexStoreState) {
+  private void doSave(com.sleepycat.je.Transaction transaction, VertexStoreState vertexStoreState) {
     var rootId = vertexStoreState.getRoot().getHash();
     var vertexKey = entry(rootId.asBytes());
     var vertexEntry = serializeAll(vertexStoreState.toSerialized());

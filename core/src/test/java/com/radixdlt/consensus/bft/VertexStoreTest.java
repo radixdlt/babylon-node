@@ -140,7 +140,7 @@ public class VertexStoreTest {
     this.sut =
         new VertexStoreAdapter(
             VertexStoreJavaImpl.create(
-                VerifiedVertexStoreState.create(
+                VertexStoreState.create(
                     HighQC.from(rootQC), genesisVertex, Optional.empty(), hasher),
                 ledger,
                 hasher),
@@ -246,8 +246,8 @@ public class VertexStoreTest {
   public void rebuilding_should_emit_updates() {
     // Arrange
     final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
-    VerifiedVertexStoreState vertexStoreState =
-        VerifiedVertexStoreState.create(
+    VertexStoreState vertexStoreState =
+        VertexStoreState.create(
             HighQC.from(vertices.get(3).getQC()),
             vertices.get(0),
             vertices.stream().skip(1).collect(ImmutableList.toImmutableList()),

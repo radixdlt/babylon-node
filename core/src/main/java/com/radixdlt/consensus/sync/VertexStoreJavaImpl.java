@@ -75,8 +75,8 @@ import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.MissingParentException;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.VertexChain;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.lang.Option;
 import java.util.ArrayList;
@@ -121,7 +121,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   public static VertexStoreJavaImpl create(
-      VerifiedVertexStoreState vertexStoreState, Ledger ledger, Hasher hasher) {
+      VertexStoreState vertexStoreState, Ledger ledger, Hasher hasher) {
     var vertexStore =
         new VertexStoreJavaImpl(
             ledger,
@@ -162,7 +162,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return rootVertex;
   }
 
-  public Option<VerifiedVertexStoreState> tryRebuild(VerifiedVertexStoreState vertexStoreState) {
+  public Option<VertexStoreState> tryRebuild(VertexStoreState vertexStoreState) {
     // FIXME: Currently this assumes vertexStoreState is a chain with no forks which is our only use
     // case at the moment.
     var executedVertices = new LinkedList<ExecutedVertex>();
@@ -240,11 +240,11 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
   }
 
-  private VerifiedVertexStoreState getState() {
+  private VertexStoreState getState() {
     // TODO: store list dynamically rather than recomputing
     ImmutableList.Builder<VertexWithHash> verticesBuilder = ImmutableList.builder();
     getChildrenVerticesList(this.rootVertex, verticesBuilder);
-    return VerifiedVertexStoreState.create(
+    return VertexStoreState.create(
         this.highQC(), this.rootVertex, verticesBuilder.build(), this.highestTC, hasher);
   }
 
@@ -321,7 +321,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
           Set<HashCode> siblings = vertexChildren.get(executedVertex.getParentId());
           siblings.add(executedVertex.getVertexHash());
 
-          VerifiedVertexStoreState vertexStoreState = getState();
+          VertexStoreState vertexStoreState = getState();
           return BFTInsertUpdate.insertedVertex(executedVertex, siblings.size(), vertexStoreState);
         });
   }

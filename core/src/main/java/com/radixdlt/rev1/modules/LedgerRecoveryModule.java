@@ -75,7 +75,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.SerializedVertexStoreState;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
@@ -124,7 +124,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
   @Singleton
   @LastProof
   LedgerProof lastProof(
-      VerifiedVertexStoreState vertexStoreState, @LastStoredProof LedgerProof lastStoredProof) {
+      VertexStoreState vertexStoreState, @LastStoredProof LedgerProof lastStoredProof) {
     if (lastStoredProof.isEndOfEpoch()) {
       return vertexStoreState.getRootHeader();
     } else {
@@ -143,7 +143,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
     return committedReader.getEpochProof(lastStoredProof.getEpoch()).orElseThrow();
   }
 
-  private static VerifiedVertexStoreState serializedToVerifiedVertexStore(
+  private static VertexStoreState serializedToVertexStoreState(
       SerializedVertexStoreState serializedVertexStoreState, Hasher hasher) {
     var rootVertex = serializedVertexStoreState.getRoot().withId(hasher);
 
@@ -152,7 +152,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
             .map(v -> v.withId(hasher))
             .collect(ImmutableList.toImmutableList());
 
-    return VerifiedVertexStoreState.create(
+    return VertexStoreState.create(
         serializedVertexStoreState.getHighQC(),
         rootVertex,
         vertices,
@@ -160,7 +160,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
         hasher);
   }
 
-  private static VerifiedVertexStoreState epochProofToGenesisVertexStore(
+  private static VertexStoreState epochProofToGenesisVertexStore(
       LedgerProof lastEpochProof, Hasher hasher) {
     var genesisVertex = Vertex.createGenesis(lastEpochProof.getRaw()).withId(hasher);
     var nextLedgerHeader =
@@ -170,13 +170,12 @@ public final class LedgerRecoveryModule extends AbstractModule {
             lastEpochProof.getAccumulatorState(),
             lastEpochProof.timestamp());
     var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
-    return VerifiedVertexStoreState.create(
-        HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+    return VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
   }
 
   @Provides
   @Singleton
-  private VerifiedVertexStoreState vertexStoreState(
+  private VertexStoreState vertexStoreState(
       @LastEpochProof LedgerProof lastEpochProof,
       Optional<SerializedVertexStoreState> serializedVertexStoreState,
       Hasher hasher) {
@@ -185,7 +184,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
             vertexStoreState ->
                 vertexStoreState.getHighQC().highestQC().getEpoch()
                     == lastEpochProof.getNextEpoch())
-        .map(state -> serializedToVerifiedVertexStore(state, hasher))
+        .map(state -> serializedToVertexStoreState(state, hasher))
         .orElseGet(() -> epochProofToGenesisVertexStore(lastEpochProof, hasher));
   }
 }

@@ -77,10 +77,19 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
 
-/** State of the vertex store which can be serialized. */
+/**
+ * The current overall state of the vertex store.
+ *
+ * <p>A snapshot of this is serialized and saved at various times (e.g. atomically at commit), to
+ * allow recovery when the node crashes, to prevent important data being lost (e.g. the content of
+ * vertices which have been voted upon).
+ *
+ * <p>In future, we'd like to move to having a separate vertex store, responsible for maintaining
+ * its own state.
+ */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @Immutable
-public final class VerifiedVertexStoreState {
+public final class VertexStoreState {
   private final VertexWithHash root;
   private final LedgerProof rootHeader;
   private final HighQC highQC;
@@ -89,7 +98,7 @@ public final class VerifiedVertexStoreState {
   private final ImmutableMap<HashCode, VertexWithHash> idToVertex;
   private Optional<TimeoutCertificate> highestTC;
 
-  private VerifiedVertexStoreState(
+  private VertexStoreState(
       HighQC highQC,
       LedgerProof rootHeader,
       VertexWithHash root,
@@ -104,12 +113,12 @@ public final class VerifiedVertexStoreState {
     this.highestTC = highestTC;
   }
 
-  public static VerifiedVertexStoreState create(
+  public static VertexStoreState create(
       HighQC highQC, VertexWithHash root, Optional<TimeoutCertificate> highestTC, Hasher hasher) {
     return create(highQC, root, ImmutableList.of(), highestTC, hasher);
   }
 
-  public static VerifiedVertexStoreState create(
+  public static VertexStoreState create(
       HighQC highQC,
       VertexWithHash root,
       ImmutableList<VertexWithHash> vertices,
@@ -166,11 +175,11 @@ public final class VerifiedVertexStoreState {
           String.format("highQC=%s highQC proposed does not have a corresponding vertex", highQC));
     }
 
-    return new VerifiedVertexStoreState(
+    return new VertexStoreState(
         highQC, headers.getSecond(), root, ImmutableMap.copyOf(seen), vertices, highestTC);
   }
 
-  public VerifiedVertexStoreState prune(Hasher hasher) {
+  public VertexStoreState prune(Hasher hasher) {
     var stateProof = highQC.highestQC().getCommittedAndLedgerStateProof(hasher);
     if (stateProof.isPresent()) {
       var newHeaders = stateProof.get();
@@ -188,7 +197,7 @@ public final class VerifiedVertexStoreState {
                 highQC.highestQC().getProposed().getVertexId(), newVertices.get(1));
         var newHighQC = HighQC.from(highQC.highestQC());
         var proof = newHeaders.getSecond();
-        return new VerifiedVertexStoreState(
+        return new VertexStoreState(
             newHighQC, proof, newRoot, idToVertexMap, newVertices, highestTC);
       }
     }
@@ -233,7 +242,7 @@ public final class VerifiedVertexStoreState {
       return true;
     }
 
-    return o instanceof VerifiedVertexStoreState other
+    return o instanceof VertexStoreState other
         && Objects.equals(this.root, other.root)
         && Objects.equals(this.rootHeader, other.rootHeader)
         && Objects.equals(this.highQC, other.highQC)

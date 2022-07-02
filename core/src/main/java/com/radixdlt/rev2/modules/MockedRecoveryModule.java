@@ -78,7 +78,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.HashUtils;
@@ -126,8 +126,7 @@ public class MockedRecoveryModule extends AbstractModule {
     return new BFTConfiguration(
         proposerElection,
         validatorSet,
-        VerifiedVertexStoreState.create(
-            HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
+        VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
   }
 
   @Provides

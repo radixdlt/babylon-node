@@ -166,7 +166,7 @@ public class EpochManagerTest {
 
         @Override
         public void commit(
-            VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+            VerifiedTxnsAndProof verifiedTxnsAndProof, VertexStoreState vertexStoreState) {
           // No-op
         }
       };
@@ -271,18 +271,17 @@ public class EpochManagerTest {
       BFTConfiguration bftConfiguration(
           @Self BFTNode self, Hasher hasher, BFTValidatorSet validatorSet) {
         var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-        var verifiedVertex =
+        var vertex =
             Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0))
                 .withId(hasher);
         var qc =
             QuorumCertificate.ofGenesis(
-                verifiedVertex, LedgerHeader.genesis(accumulatorState, validatorSet, 0));
+                vertex, LedgerHeader.genesis(accumulatorState, validatorSet, 0));
         var proposerElection = new WeightedRotatingLeaders(validatorSet);
         return new BFTConfiguration(
             proposerElection,
             validatorSet,
-            VerifiedVertexStoreState.create(
-                HighQC.from(qc), verifiedVertex, Optional.empty(), hasher));
+            VertexStoreState.create(HighQC.from(qc), vertex, Optional.empty(), hasher));
       }
     };
   }
@@ -319,7 +318,7 @@ public class EpochManagerTest {
         new BFTConfiguration(
             proposerElection,
             nextValidatorSet,
-            VerifiedVertexStoreState.create(
+            VertexStoreState.create(
                 HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty(), hasher));
     LedgerProof proof = mock(LedgerProof.class);
     when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);

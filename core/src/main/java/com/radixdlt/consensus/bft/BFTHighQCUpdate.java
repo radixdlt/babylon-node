@@ -69,13 +69,13 @@ import java.util.Objects;
 
 /** An event emitted when the high qc has been updated */
 public final class BFTHighQCUpdate {
-  private final VerifiedVertexStoreState vertexStoreState;
+  private final VertexStoreState vertexStoreState;
 
-  private BFTHighQCUpdate(VerifiedVertexStoreState vertexStoreState) {
+  private BFTHighQCUpdate(VertexStoreState vertexStoreState) {
     this.vertexStoreState = vertexStoreState;
   }
 
-  public static BFTHighQCUpdate create(VerifiedVertexStoreState vertexStoreState) {
+  public static BFTHighQCUpdate create(VertexStoreState vertexStoreState) {
     return new BFTHighQCUpdate(vertexStoreState);
   }
 
@@ -83,7 +83,7 @@ public final class BFTHighQCUpdate {
     return vertexStoreState.getHighQC();
   }
 
-  public VerifiedVertexStoreState getVertexStoreState() {
+  public VertexStoreState getVertexStoreState() {
     return vertexStoreState;
   }
 

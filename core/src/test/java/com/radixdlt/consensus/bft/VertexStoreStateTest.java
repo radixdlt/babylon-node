@@ -69,10 +69,10 @@ import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public class VerifiedVertexStoreStateTest {
+public class VertexStoreStateTest {
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(VerifiedVertexStoreState.class)
+    EqualsVerifier.forClass(VertexStoreState.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
   }

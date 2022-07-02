@@ -77,7 +77,7 @@ import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
-public class VerifiedVertexStoreStateCreationTest {
+public class VertexStoreStateCreationTest {
   private VertexWithHash genesisVertex;
   private HashCode genesisHash;
   private Hasher hasher;
@@ -98,7 +98,7 @@ public class VerifiedVertexStoreStateCreationTest {
     QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     assertThatThrownBy(
             () ->
-                VerifiedVertexStoreState.create(
+                VertexStoreState.create(
                     HighQC.from(badRootQC), genesisVertex, Optional.empty(), hasher))
         .isInstanceOf(IllegalStateException.class);
   }
@@ -112,7 +112,7 @@ public class VerifiedVertexStoreStateCreationTest {
     QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     assertThatThrownBy(
             () ->
-                VerifiedVertexStoreState.create(
+                VertexStoreState.create(
                     HighQC.from(badRootQC), genesisVertex, Optional.empty(), hasher))
         .isInstanceOf(IllegalStateException.class);
   }
@@ -125,7 +125,7 @@ public class VerifiedVertexStoreStateCreationTest {
     QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     assertThatThrownBy(
             () ->
-                VerifiedVertexStoreState.create(
+                VertexStoreState.create(
                     HighQC.from(badRootQC), genesisVertex, Optional.empty(), hasher))
         .isInstanceOf(IllegalStateException.class);
   }

@@ -68,17 +68,17 @@ import java.util.Objects;
 
 /** An update emitted when the BFT has been rebuilt */
 public final class BFTRebuildUpdate {
-  private final VerifiedVertexStoreState vertexStoreState;
+  private final VertexStoreState vertexStoreState;
 
-  private BFTRebuildUpdate(VerifiedVertexStoreState vertexStoreState) {
+  private BFTRebuildUpdate(VertexStoreState vertexStoreState) {
     this.vertexStoreState = vertexStoreState;
   }
 
-  public static BFTRebuildUpdate create(VerifiedVertexStoreState vertexStoreState) {
+  public static BFTRebuildUpdate create(VertexStoreState vertexStoreState) {
     return new BFTRebuildUpdate(vertexStoreState);
   }
 
-  public VerifiedVertexStoreState getVertexStoreState() {
+  public VertexStoreState getVertexStoreState() {
     return vertexStoreState;
   }
 

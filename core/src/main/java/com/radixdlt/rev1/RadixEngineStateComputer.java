@@ -361,7 +361,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   private RadixEngineResult<LedgerAndBFTProof> commitInternal(
-      VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+      VerifiedTxnsAndProof verifiedTxnsAndProof, VertexStoreState vertexStoreState) {
     var proof = verifiedTxnsAndProof.getProof();
 
     final RadixEngineResult<LedgerAndBFTProof> result;
@@ -409,7 +409,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   @Override
-  public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+  public void commit(VerifiedTxnsAndProof txnsAndProof, VertexStoreState vertexStoreState) {
     synchronized (lock) {
       final var radixEngineResult = commitInternal(txnsAndProof, vertexStoreState);
       final var txCommitted = radixEngineResult.getProcessedTxns();
@@ -436,7 +436,7 @@ public final class RadixEngineStateComputer implements StateComputer {
                             header.timestamp());
                     var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
                     final var initialState =
-                        VerifiedVertexStoreState.create(
+                        VertexStoreState.create(
                             HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
                     var proposerElection = new WeightedRotatingLeaders(validatorSet);
                     var bftConfiguration =
