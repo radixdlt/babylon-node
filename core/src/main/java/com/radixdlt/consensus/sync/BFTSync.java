@@ -464,7 +464,7 @@ public final class BFTSync implements BFTSyncer {
     } else {
       syncState.setSyncStage(SyncStage.LEDGER_SYNC);
       ledgerSyncing.compute(
-          syncState.committedProof.getRaw(),
+          syncState.committedProof.getHeader(),
           (header, existingList) -> {
             var list = (existingList == null) ? new ArrayList<HashCode>() : existingList;
             list.add(syncState.localSyncId);
@@ -593,7 +593,7 @@ public final class BFTSync implements BFTSyncer {
 
     this.currentLedgerHeader = ledgerUpdate.getTail();
 
-    var listeners = this.ledgerSyncing.headMap(ledgerUpdate.getTail().getRaw(), true).values();
+    var listeners = this.ledgerSyncing.headMap(ledgerUpdate.getTail().getHeader(), true).values();
     var listenersIterator = listeners.iterator();
 
     while (listenersIterator.hasNext()) {

@@ -150,7 +150,7 @@ public final class LedgerProof {
     return new DtoLedgerProof(opaque, ledgerHeader, signatures);
   }
 
-  public LedgerHeader getRaw() {
+  public LedgerHeader getHeader() {
     return ledgerHeader;
   }
 

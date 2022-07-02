@@ -68,10 +68,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.SerializedVertexStoreState;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.environment.EventProcessor;
@@ -97,7 +94,8 @@ public class PersistenceModule extends AbstractModule {
   }
 
   @Provides
-  Optional<SerializedVertexStoreState> serializedVertexStoreState(BerkeleyLedgerEntryStore store) {
+  Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState(
+      BerkeleyLedgerEntryStore store) {
     return store.loadLastVertexStoreState();
   }
 

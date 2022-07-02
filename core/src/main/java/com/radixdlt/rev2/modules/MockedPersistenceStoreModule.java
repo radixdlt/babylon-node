@@ -67,7 +67,6 @@ package com.radixdlt.rev2.modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.SerializedVertexStoreState;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
@@ -79,7 +78,7 @@ public class MockedPersistenceStoreModule extends AbstractModule {
   public void configure() {
     bind(PersistentSafetyStateStore.class).to(MockedPersistenceStore.class);
     bind(PersistentVertexStore.class).to(MockedPersistentVertexStore.class);
-    OptionalBinder.newOptionalBinder(binder(), SerializedVertexStoreState.class);
+    OptionalBinder.newOptionalBinder(binder(), VertexStoreState.SerializedVertexStoreState.class);
   }
 
   private static class MockedPersistenceStore implements PersistentSafetyStateStore {

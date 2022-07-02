@@ -131,7 +131,7 @@ public final class MockedStateComputer implements StateComputer {
                 validatorSet -> {
                   LedgerProof header = txnsAndProof.getProof();
                   VertexWithHash genesisVertex =
-                      Vertex.createGenesis(header.getRaw()).withId(hasher);
+                      Vertex.createGenesis(header.getHeader()).withId(hasher);
                   LedgerHeader nextLedgerHeader =
                       LedgerHeader.create(
                           header.getNextEpoch(),

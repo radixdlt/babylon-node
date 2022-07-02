@@ -64,7 +64,6 @@
 
 package com.radixdlt.rev1.modules;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -74,7 +73,6 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.SerializedVertexStoreState;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.Hasher;
@@ -143,26 +141,9 @@ public final class LedgerRecoveryModule extends AbstractModule {
     return committedReader.getEpochProof(lastStoredProof.getEpoch()).orElseThrow();
   }
 
-  private static VertexStoreState serializedToVertexStoreState(
-      SerializedVertexStoreState serializedVertexStoreState, Hasher hasher) {
-    var rootVertex = serializedVertexStoreState.getRoot().withId(hasher);
-
-    var vertices =
-        serializedVertexStoreState.getVertices().stream()
-            .map(v -> v.withId(hasher))
-            .collect(ImmutableList.toImmutableList());
-
-    return VertexStoreState.create(
-        serializedVertexStoreState.getHighQC(),
-        rootVertex,
-        vertices,
-        serializedVertexStoreState.getHighestTC(),
-        hasher);
-  }
-
-  private static VertexStoreState epochProofToGenesisVertexStore(
+  private static VertexStoreState genesisEpochProofToGenesisVertexStore(
       LedgerProof lastEpochProof, Hasher hasher) {
-    var genesisVertex = Vertex.createGenesis(lastEpochProof.getRaw()).withId(hasher);
+    var genesisVertex = Vertex.createGenesis(lastEpochProof.getHeader()).withId(hasher);
     var nextLedgerHeader =
         LedgerHeader.create(
             lastEpochProof.getNextEpoch(),
@@ -177,14 +158,12 @@ public final class LedgerRecoveryModule extends AbstractModule {
   @Singleton
   private VertexStoreState vertexStoreState(
       @LastEpochProof LedgerProof lastEpochProof,
-      Optional<SerializedVertexStoreState> serializedVertexStoreState,
+      Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState,
       Hasher hasher) {
+    var currentEpoch = lastEpochProof.getNextEpoch();
     return serializedVertexStoreState
-        .filter(
-            vertexStoreState ->
-                vertexStoreState.getHighQC().highestQC().getEpoch()
-                    == lastEpochProof.getNextEpoch())
-        .map(state -> serializedToVertexStoreState(state, hasher))
-        .orElseGet(() -> epochProofToGenesisVertexStore(lastEpochProof, hasher));
+        .filter(vertexStoreState -> vertexStoreState.isForEpoch(currentEpoch))
+        .map(state -> state.toVertexStoreState(hasher))
+        .orElseGet(() -> genesisEpochProofToGenesisVertexStore(lastEpochProof, hasher));
   }
 }

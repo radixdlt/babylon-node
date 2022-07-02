@@ -88,7 +88,6 @@ import com.radixdlt.atom.SubstateId;
 import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.SerializedVertexStoreState;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -568,7 +567,7 @@ public final class BerkeleyLedgerEntryStore
     return builder.build();
   }
 
-  public Optional<SerializedVertexStoreState> loadLastVertexStoreState() {
+  public Optional<VertexStoreState.SerializedVertexStoreState> loadLastVertexStoreState() {
     return withTime(
         () -> {
           try (var cursor = vertexStoreDatabase.openCursor(null, null)) {
@@ -580,7 +579,8 @@ public final class BerkeleyLedgerEntryStore
               addBytesRead(value, pKey);
               try {
                 return Optional.of(
-                    serialization.fromDson(value.getData(), SerializedVertexStoreState.class));
+                    serialization.fromDson(
+                        value.getData(), VertexStoreState.SerializedVertexStoreState.class));
               } catch (DeserializeException e) {
                 throw new IllegalStateException(e);
               }
@@ -848,7 +848,7 @@ public final class BerkeleyLedgerEntryStore
           cursor, vertexKey, vertexEntry, "Store of root vertex with ID " + rootId);
     } catch (Exception e) {
       transaction.abort();
-      fail("Commit of atom failed", e);
+      fail("Commit of vertex store state failed", e);
     }
   }
 
