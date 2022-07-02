@@ -128,15 +128,15 @@ public final class ExecutedVertex {
     return executedTransactions.stream();
   }
 
-  public Stream<Pair<Transaction, Exception>> errorCommands() {
+  public Stream<Pair<Transaction, Exception>> errorTransactions() {
     return transactionsWhichRaisedAnException.entrySet().stream()
         .map(e -> Pair.of(e.getKey(), e.getValue()));
   }
 
-  public Stream<Transaction> getTxns() {
+  public Stream<Transaction> getTransactions() {
     return Stream.concat(
         successfulTransactions().map(ExecutedTransaction::transaction),
-        errorCommands().map(Pair::getFirst));
+        errorTransactions().map(Pair::getFirst));
   }
 
   /**

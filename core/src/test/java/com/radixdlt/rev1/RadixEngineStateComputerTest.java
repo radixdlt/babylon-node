@@ -109,7 +109,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.NoOpCommittedReader;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
@@ -148,7 +148,7 @@ import org.junit.rules.TemporaryFolder;
 public class RadixEngineStateComputerTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  @Inject @Genesis private VerifiedTxnsAndProof genesisTxns;
+  @Inject @Genesis private TransactionRun genesisTxns;
 
   @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
 
@@ -198,7 +198,7 @@ public class RadixEngineStateComputerTest {
 
         bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {})
             .toInstance(TypedMocks.rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() {})
+        bind(new TypeLiteral<EventDispatcher<InvalidProposedTransaction>>() {})
             .toInstance(TypedMocks.rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<REOutput>>() {})
             .toInstance(TypedMocks.rmock(EventDispatcher.class));
@@ -214,7 +214,7 @@ public class RadixEngineStateComputerTest {
 
   private void setupGenesis() throws RadixEngineException {
     var branch = radixEngine.transientBranch();
-    var result = branch.execute(genesisTxns.getTxns(), PermissionLevel.SYSTEM);
+    var result = branch.execute(genesisTxns.getTransactions(), PermissionLevel.SYSTEM);
     var genesisValidatorSet =
         result.getProcessedTxns().get(0).getEvents().stream()
             .filter(REEvent.NextValidatorSetEvent.class::isInstance)
@@ -233,14 +233,15 @@ public class RadixEngineStateComputerTest {
 
     var genesisLedgerHeader =
         LedgerProof.genesis(
-            new AccumulatorState(0, hasher.hashDsonEncoded(genesisTxns.getTxns().get(0).getId())),
+            new AccumulatorState(
+                0, hasher.hashDsonEncoded(genesisTxns.getTransactions().get(0).getId())),
             genesisValidatorSet,
             0);
     if (!genesisLedgerHeader.isEndOfEpoch()) {
       throw new IllegalStateException("Genesis must be end of epoch");
     }
     radixEngine.execute(
-        genesisTxns.getTxns(),
+        genesisTxns.getTransactions(),
         LedgerAndBFTProof.create(genesisLedgerHeader),
         PermissionLevel.SYSTEM);
   }
@@ -260,7 +261,8 @@ public class RadixEngineStateComputerTest {
     setupGenesis();
   }
 
-  private Transaction systemUpdateTxn(long nextRound, long nextEpoch) throws TxBuilderException {
+  private Transaction systemUpdateTransaction(long nextRound, long nextEpoch)
+      throws TxBuilderException {
     TxBuilder builder;
     if (nextEpoch >= 2) {
       var request =
@@ -279,12 +281,7 @@ public class RadixEngineStateComputerTest {
     return builder.buildWithoutSignature();
   }
 
-  private Transaction systemUpdateCommand(long nextRound, long nextEpoch)
-      throws TxBuilderException {
-    return systemUpdateTxn(nextRound, nextEpoch);
-  }
-
-  private Transaction registerCommand(ECKeyPair keyPair) throws TxBuilderException {
+  private Transaction registerTransaction(ECKeyPair keyPair) throws TxBuilderException {
     return radixEngine
         .construct(new RegisterValidator(keyPair.getPublicKey()))
         .signAndBuild(keyPair::sign);
@@ -301,8 +298,8 @@ public class RadixEngineStateComputerTest {
     var result = sut.prepare(List.of(), vertex, 0);
 
     // Assert
-    assertThat(result.getSuccessfulCommands()).hasSize(1);
-    assertThat(result.getFailedCommands()).isEmpty();
+    assertThat(result.getSuccessfullyExecutedTransactions()).hasSize(1);
+    assertThat(result.getFailedTransactions()).isEmpty();
     assertThat(result.getNextValidatorSet()).isEmpty();
   }
 
@@ -320,8 +317,8 @@ public class RadixEngineStateComputerTest {
     StateComputerResult result = sut.prepare(List.of(), vertex, 0);
 
     // Assert
-    assertThat(result.getSuccessfulCommands()).hasSize(1);
-    assertThat(result.getFailedCommands()).isEmpty();
+    assertThat(result.getSuccessfullyExecutedTransactions()).hasSize(1);
+    assertThat(result.getFailedTransactions()).isEmpty();
     assertThat(result.getNextValidatorSet())
         .hasValueSatisfying(
             set ->
@@ -339,7 +336,7 @@ public class RadixEngineStateComputerTest {
       throws Exception {
     // Arrange
     ECKeyPair keyPair = ECKeyPair.generateNew();
-    var txn = registerCommand(keyPair);
+    var txn = registerTransaction(keyPair);
     BFTNode node = BFTNode.create(keyPair.getPublicKey());
     var qc = mock(QuorumCertificate.class);
     var parentHeader = mock(BFTHeader.class);
@@ -353,8 +350,8 @@ public class RadixEngineStateComputerTest {
     StateComputerResult result = sut.prepare(List.of(), vertex, 0);
 
     // Assert
-    assertThat(result.getSuccessfulCommands())
-        .hasSize(1); // since high round, command is not executed
+    assertThat(result.getSuccessfullyExecutedTransactions())
+        .hasSize(1); // since max round, transaction is not executed
     assertThat(result.getNextValidatorSet())
         .hasValueSatisfying(
             s -> {
@@ -390,8 +387,8 @@ public class RadixEngineStateComputerTest {
     var result = sut.prepare(ImmutableList.of(), vertex, 0);
 
     // Assert
-    assertThat(result.getSuccessfulCommands()).hasSize(1);
-    assertThat(result.getFailedCommands())
+    assertThat(result.getSuccessfullyExecutedTransactions()).hasSize(1);
+    assertThat(result.getFailedTransactions())
         .hasValueSatisfying(
             new Condition<>(
                 e -> {
@@ -409,17 +406,17 @@ public class RadixEngineStateComputerTest {
   @Ignore("FIXME: Reinstate when upper bound on epoch round is in place.")
   public void committing_epoch_max_rounds_should_fail() throws TxBuilderException {
     // Arrange
-    var cmd0 = systemUpdateCommand(10, 1);
+    var cmd0 = systemUpdateTransaction(10, 1);
     var ledgerProof =
         new LedgerProof(
             HashUtils.random256(),
             LedgerHeader.create(0, Round.of(11), new AccumulatorState(3, HashUtils.zero256()), 0),
             new TimestampedECDSASignatures());
-    var commandsAndProof = VerifiedTxnsAndProof.create(ImmutableList.of(cmd0), ledgerProof);
+    var transactionRun = TransactionRun.create(ImmutableList.of(cmd0), ledgerProof);
 
     // Act
     // Assert
-    assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
+    assertThatThrownBy(() -> sut.commit(transactionRun, null))
         .isInstanceOf(ByzantineQuorumException.class);
   }
 
@@ -428,18 +425,18 @@ public class RadixEngineStateComputerTest {
   public void committing_epoch_change_with_additional_cmds_should_fail() throws Exception {
     // Arrange
     var keyPair = ECKeyPair.generateNew();
-    var cmd0 = systemUpdateCommand(0, 2);
-    var cmd1 = registerCommand(keyPair);
+    var cmd0 = systemUpdateTransaction(0, 2);
+    var cmd1 = registerTransaction(keyPair);
     var ledgerProof =
         new LedgerProof(
             HashUtils.random256(),
             LedgerHeader.create(0, Round.of(9), new AccumulatorState(3, HashUtils.zero256()), 0),
             new TimestampedECDSASignatures());
-    var commandsAndProof = VerifiedTxnsAndProof.create(ImmutableList.of(cmd0, cmd1), ledgerProof);
+    var transactionRun = TransactionRun.create(ImmutableList.of(cmd0, cmd1), ledgerProof);
 
     // Act
     // Assert
-    assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
+    assertThatThrownBy(() -> sut.commit(transactionRun, null))
         .isInstanceOf(ByzantineQuorumException.class);
   }
 
@@ -448,7 +445,7 @@ public class RadixEngineStateComputerTest {
   public void committing_epoch_change_with_different_validator_signed_should_fail()
       throws Exception {
     // Arrange
-    var cmd1 = systemUpdateCommand(0, 2);
+    var cmd1 = systemUpdateTransaction(0, 2);
     var ledgerProof =
         new LedgerProof(
             HashUtils.random256(),
@@ -459,11 +456,11 @@ public class RadixEngineStateComputerTest {
                 0,
                 BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))),
             new TimestampedECDSASignatures());
-    var commandsAndProof = VerifiedTxnsAndProof.create(ImmutableList.of(cmd1), ledgerProof);
+    var transactionRun = TransactionRun.create(ImmutableList.of(cmd1), ledgerProof);
 
     // Act
     // Assert
-    assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
+    assertThatThrownBy(() -> sut.commit(transactionRun, null))
         .isInstanceOf(ByzantineQuorumException.class);
   }
 
@@ -472,7 +469,7 @@ public class RadixEngineStateComputerTest {
   public void committing_epoch_change_when_there_shouldnt_be_one__should_fail()
       throws TxBuilderException {
     // Arrange
-    var cmd0 = systemUpdateCommand(1, 1);
+    var cmd0 = systemUpdateTransaction(1, 1);
     var ledgerProof =
         new LedgerProof(
             HashUtils.random256(),
@@ -483,11 +480,11 @@ public class RadixEngineStateComputerTest {
                 0,
                 BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))),
             new TimestampedECDSASignatures());
-    var commandsAndProof = VerifiedTxnsAndProof.create(ImmutableList.of(cmd0), ledgerProof);
+    var transactionRun = TransactionRun.create(ImmutableList.of(cmd0), ledgerProof);
 
     // Act
     // Assert
-    assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
+    assertThatThrownBy(() -> sut.commit(transactionRun, null))
         .isInstanceOf(ByzantineQuorumException.class);
   }
 
@@ -495,7 +492,7 @@ public class RadixEngineStateComputerTest {
   public void add_to_mempool__should_forward_the_origin_to_the_event() throws TxBuilderException {
     // Arrange
     final var origin = BFTNode.random();
-    var txn = registerCommand(ECKeyPair.generateNew());
+    var txn = registerTransaction(ECKeyPair.generateNew());
 
     // Act
     sut.addToMempool(MempoolAdd.create(txn), origin);

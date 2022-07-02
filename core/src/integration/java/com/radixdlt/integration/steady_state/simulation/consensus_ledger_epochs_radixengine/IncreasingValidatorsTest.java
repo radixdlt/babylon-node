@@ -103,7 +103,7 @@ public class IncreasingValidatorsTest {
               ConsensusMonitors.directParents(),
               LedgerMonitors.consensusToLedger(),
               LedgerMonitors.ordered(),
-              RadixEngineMonitors.noInvalidProposedCommands(),
+              RadixEngineMonitors.noInvalidProposedTransactions(),
               ApplicationMonitors.registeredNodeToEpoch())
           .addActor(NodeValidatorRegistrator.class);
 

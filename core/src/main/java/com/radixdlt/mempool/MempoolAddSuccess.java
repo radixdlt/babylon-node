@@ -69,7 +69,7 @@ import com.radixdlt.transactions.Transaction;
 import java.util.Objects;
 import java.util.Optional;
 
-/** Message indicating that a command was successfully added to the mempool */
+/** Message indicating that a transaction was successfully added to the mempool */
 public final class MempoolAddSuccess {
   private final Transaction transaction;
   private final Object processedTxn;

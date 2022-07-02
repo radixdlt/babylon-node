@@ -62,75 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.monitoring;
+package com.radixdlt.ledger;
 
-import static org.mockito.Mockito.*;
+import com.google.inject.AbstractModule;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 
-public class InMemorySystemInfoTest {
-
-  /*
-  @Test
-  public void if_validator_data_missing_then_retrieved_via_radix_engine() {
-    var self = BFTNode.random();
-    var radixEngine = TypedMocks.cmock(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {});
-    var systemInfo = new InMemorySystemInfo(null, null, self);
-    var validatorBFTData = Optional.of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
-
-    when(radixEngine.read(any())).thenReturn(validatorBFTData);
-
-    var result = systemInfo.getValidatorBFTData();
-    var expected = Optional.of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
-
-    assertEquals(expected, result);
+/** Module which provides a random transaction generator */
+public class RandomTransactionGeneratorModule extends AbstractModule {
+  @Override
+  protected void configure() {
+    bind(ProposalGenerator.class).to(RandomTransactionGenerator.class);
   }
-
-  @Test
-  public void radix_engine_is_not_invoked_on_subsequent_request() {
-    var self = BFTNode.random();
-    var radixEngine = TypedMocks.cmock(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {});
-    var systemInfo = new InMemorySystemInfo(null, null, self);
-    var validatorBFTData = Optional.of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
-
-    System.out.println(new TxAction.CreateSystem(1L));
-
-    when(radixEngine.read(any())).thenReturn(validatorBFTData);
-
-    var result1 = systemInfo.getValidatorBFTData();
-    var expected = Optional.of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
-
-    assertEquals(expected, result1);
-
-    var result2 = systemInfo.getValidatorBFTData();
-
-    assertEquals(result1, result2);
-
-    verify(radixEngine).read(any());
-  }
-
-  @Test
-  public void if_validator_data_present_then_radix_engine_is_not_invoked() {
-    var self = BFTNode.random();
-    var radixEngine = TypedMocks.cmock(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {});
-    var systemInfo = new InMemorySystemInfo(null, null, self);
-
-    systemInfo.ledgerUpdateEventProcessor().process(createLedgerUpdate(self));
-
-    var result = systemInfo.getValidatorBFTData();
-    var expected = Optional.of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
-
-    assertEquals(expected, result);
-
-    verifyNoInteractions(radixEngine);
-  }
-
-  private LedgerUpdate createLedgerUpdate(BFTNode self) {
-    var events = List.<REEvent>of(new ValidatorBFTDataEvent(self.getKey(), 10, 1));
-    var txn = new REProcessedTxn(null, null, null, events);
-    var output =
-        ImmutableClassToInstanceMap.<Object, REOutput>of(
-            REOutput.class, REOutput.create(List.of(txn)));
-
-    return new LedgerUpdate(mock(VerifiedTxnsAndProof.class), output);
-  }
-   */
 }

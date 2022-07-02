@@ -81,7 +81,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.lang.Tuple.Tuple2;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.DtoTxnsAndProof;
+import com.radixdlt.ledger.TransactionRunDto;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.network.Message;
 import com.radixdlt.network.capability.Capabilities;
@@ -139,7 +139,7 @@ public class MessagePreprocessorTest {
           tuple(new MempoolAddMessage(mock(List.class)), "txns"),
           tuple(new StatusResponseMessage(mock(LedgerProof.class)), "header"),
           tuple(new SyncRequestMessage(mock(DtoLedgerProof.class)), "currentHeader"),
-          tuple(new SyncResponseMessage(mock(DtoTxnsAndProof.class)), "commands"));
+          tuple(new SyncResponseMessage(mock(TransactionRunDto.class)), "transactionRun"));
 
   private static final Serialization SERIALIZATION = DefaultSerialization.getInstance();
 

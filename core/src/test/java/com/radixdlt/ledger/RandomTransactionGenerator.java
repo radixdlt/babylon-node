@@ -71,8 +71,8 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
 
-/** Generates new random hash commands */
-public final class RandomHashTxnsGenerator implements ProposalGenerator {
+/** Generates new transactions with content of random hashes */
+public final class RandomTransactionGenerator implements ProposalGenerator {
   @Override
   public List<Transaction> getTransactionsForProposal(Round round, List<ExecutedVertex> prepared) {
     return List.of(Transaction.create(HashUtils.random256().asBytes()));

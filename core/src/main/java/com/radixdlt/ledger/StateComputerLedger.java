@@ -102,34 +102,34 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   public static class StateComputerResult {
     private final List<ExecutedTransaction> executedTransactions;
-    private final Map<Transaction, Exception> failedCommands;
+    private final Map<Transaction, Exception> failedTransactions;
     private final BFTValidatorSet nextValidatorSet;
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<Transaction, Exception> failedCommands,
+        Map<Transaction, Exception> failedTransactions,
         BFTValidatorSet nextValidatorSet) {
       this.executedTransactions = Objects.requireNonNull(executedTransactions);
-      this.failedCommands = Objects.requireNonNull(failedCommands);
+      this.failedTransactions = Objects.requireNonNull(failedTransactions);
       this.nextValidatorSet = nextValidatorSet;
     }
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<Transaction, Exception> failedCommands) {
-      this(executedTransactions, failedCommands, null);
+        Map<Transaction, Exception> failedTransactions) {
+      this(executedTransactions, failedTransactions, null);
     }
 
     public Optional<BFTValidatorSet> getNextValidatorSet() {
       return Optional.ofNullable(nextValidatorSet);
     }
 
-    public List<ExecutedTransaction> getSuccessfulCommands() {
+    public List<ExecutedTransaction> getSuccessfullyExecutedTransactions() {
       return executedTransactions;
     }
 
-    public Map<Transaction, Exception> getFailedCommands() {
-      return failedCommands;
+    public Map<Transaction, Exception> getFailedTransactions() {
+      return failedTransactions;
     }
   }
 
@@ -141,7 +141,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     StateComputerResult prepare(
         List<ExecutedTransaction> previous, VertexWithHash vertex, long timestamp);
 
-    void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VertexStoreState vertexStoreState);
+    void commit(TransactionRun transactionRun, VertexStoreState vertexStoreState);
   }
 
   private final Comparator<LedgerProof> headerComparator;
@@ -204,7 +204,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       LinkedList<ExecutedVertex> previous, VertexWithHash vertex) {
     final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
     final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
-    final ImmutableList<ExecutedTransaction> prevCommands =
+    final ImmutableList<ExecutedTransaction> prevTransactions =
         previous.stream()
             .flatMap(ExecutedVertex::successfulTransactions)
             .collect(ImmutableList.toImmutableList());
@@ -234,28 +234,29 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
                 timeSupplier.currentTime()));
       }
 
-      final var maybeCommands =
+      final var executedTransactionsOptional =
           this.verifier.verifyAndGetExtension(
               this.currentLedgerHeader.getAccumulatorState(),
-              prevCommands,
+              prevTransactions,
               p -> p.transaction().getId().asHashCode(),
               parentAccumulatorState);
 
       // TODO: Write a test to get here
       // Can possibly get here without maliciousness if parent vertex isn't locked by everyone else
-      if (maybeCommands.isEmpty()) {
+      if (executedTransactionsOptional.isEmpty()) {
         return Optional.empty();
       }
 
-      final var concatenatedCommands = maybeCommands.get();
+      final var executedTransactions = executedTransactionsOptional.get();
 
       final StateComputerResult result =
-          stateComputer.prepare(concatenatedCommands, vertex, quorumTimestamp);
+          stateComputer.prepare(executedTransactions, vertex, quorumTimestamp);
 
       AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
-      for (ExecutedTransaction txn : result.getSuccessfulCommands()) {
+      for (ExecutedTransaction transaction : result.getSuccessfullyExecutedTransactions()) {
         accumulatorState =
-            this.accumulator.accumulate(accumulatorState, txn.transaction().getId().asHashCode());
+            this.accumulator.accumulate(
+                accumulatorState, transaction.transaction().getId().asHashCode());
       }
 
       final LedgerHeader ledgerHeader =
@@ -270,8 +271,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
           new ExecutedVertex(
               vertex,
               ledgerHeader,
-              result.getSuccessfulCommands(),
-              result.getFailedCommands(),
+              result.getSuccessfullyExecutedTransactions(),
+              result.getFailedTransactions(),
               timeSupplier.currentTime()));
     }
   }
@@ -284,21 +285,20 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               .map(ExecutedTransaction::transaction)
               .collect(ImmutableList.toImmutableList());
       var proof = committedUpdate.vertexStoreState().getRootHeader();
-      var verifiedTxnsAndProof = VerifiedTxnsAndProof.create(transactions, proof);
+      var transactionRun = TransactionRun.create(transactions, proof);
 
       // TODO: Make these two atomic (RPNV1-827)
-      this.commit(verifiedTxnsAndProof, committedUpdate.vertexStoreState());
+      this.commit(transactionRun, committedUpdate.vertexStoreState());
     };
   }
 
-  public EventProcessor<VerifiedTxnsAndProof> syncEventProcessor() {
+  public EventProcessor<TransactionRun> syncEventProcessor() {
     return p -> this.commit(p, null);
   }
 
-  private void commit(
-      VerifiedTxnsAndProof verifiedTxnsAndProof, VertexStoreState vertexStoreState) {
+  private void commit(TransactionRun transactionRun, VertexStoreState vertexStoreState) {
     synchronized (lock) {
-      final LedgerProof nextHeader = verifiedTxnsAndProof.getProof();
+      final LedgerProof nextHeader = transactionRun.getProof();
       if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {
         return;
       }
@@ -306,26 +306,26 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       var verifiedExtension =
           verifier.verifyAndGetExtension(
               this.currentLedgerHeader.getAccumulatorState(),
-              verifiedTxnsAndProof.getTxns(),
-              txn -> txn.getId().asHashCode(),
-              verifiedTxnsAndProof.getProof().getAccumulatorState());
+              transactionRun.getTransactions(),
+              transaction -> transaction.getId().asHashCode(),
+              transactionRun.getProof().getAccumulatorState());
 
       if (verifiedExtension.isEmpty()) {
         throw new ByzantineQuorumException(
-            "Accumulator failure " + currentLedgerHeader + " " + verifiedTxnsAndProof);
+            "Accumulator failure " + currentLedgerHeader + " " + transactionRun);
       }
 
-      var txns = verifiedExtension.get();
+      var transactions = verifiedExtension.get();
       if (vertexStoreState == null) {
-        this.counters.add(CounterType.LEDGER_SYNC_COMMANDS_PROCESSED, txns.size());
+        this.counters.add(CounterType.LEDGER_SYNC_TRANSACTIONS_PROCESSED, transactions.size());
       } else {
-        this.counters.add(CounterType.LEDGER_BFT_COMMANDS_PROCESSED, txns.size());
+        this.counters.add(CounterType.LEDGER_BFT_TRANSACTIONS_PROCESSED, transactions.size());
       }
 
-      var txnsAndProof = VerifiedTxnsAndProof.create(txns, verifiedTxnsAndProof.getProof());
+      var extensionToCommit = TransactionRun.create(transactions, transactionRun.getProof());
 
       // persist
-      this.stateComputer.commit(txnsAndProof, vertexStoreState);
+      this.stateComputer.commit(extensionToCommit, vertexStoreState);
 
       // TODO: move all of the following to post-persist event handling
       this.currentLedgerHeader = nextHeader;

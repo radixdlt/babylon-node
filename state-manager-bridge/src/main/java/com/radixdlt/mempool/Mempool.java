@@ -82,7 +82,7 @@ public interface Mempool<T> {
    * @param count the number of transactions to retrieve
    * @param preparedTransactions transactions used in the prepared vertex ahead of the proposal
    *     which will need to be taken into account when choosing transactions
-   * @return A list of commands for processing by consensus
+   * @return A list of transactions for processing by consensus
    */
   List<Transaction> getTransactionsForProposal(int count, List<T> preparedTransactions);
 

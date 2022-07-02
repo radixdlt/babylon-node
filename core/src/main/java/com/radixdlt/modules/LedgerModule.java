@@ -80,7 +80,7 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import java.util.Comparator;
 
 /** Module which manages ledger state and synchronization of updates to ledger state */
@@ -103,7 +103,7 @@ public class LedgerModule extends AbstractModule {
 
   @ProvidesIntoSet
   @ProcessOnDispatch
-  private EventProcessor<VerifiedTxnsAndProof> syncToLedgerCommittor(
+  private EventProcessor<TransactionRun> syncToLedgerCommittor(
       StateComputerLedger stateComputerLedger) {
     return stateComputerLedger.syncEventProcessor();
   }

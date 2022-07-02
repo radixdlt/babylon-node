@@ -104,7 +104,7 @@ public final class VertexWithHash {
     return vertex;
   }
 
-  public List<Transaction> getTxns() {
+  public List<Transaction> getTransactions() {
     return vertex.getTransactions();
   }
 

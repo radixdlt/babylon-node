@@ -76,7 +76,7 @@ import com.radixdlt.ledger.MockExecuted;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
@@ -115,7 +115,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
       List<ExecutedTransaction> previous, VertexWithHash vertex, long timestamp) {
     var round = vertex.getRound();
     var epoch = vertex.getParentHeader().getLedgerHeader().getEpoch();
-    var next = vertex.getTxns();
+    var next = vertex.getTransactions();
     if (round.compareTo(epochMaxRound) >= 0) {
       return new StateComputerResult(
           next.stream().map(MockExecuted::new).collect(Collectors.toList()),
@@ -127,7 +127,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   }
 
   @Override
-  public void commit(VerifiedTxnsAndProof verifiedTxnsAndProof, VertexStoreState vertexStoreState) {
-    this.stateComputer.commit(verifiedTxnsAndProof, vertexStoreState);
+  public void commit(TransactionRun transactionRun, VertexStoreState vertexStoreState) {
+    this.stateComputer.commit(transactionRun, vertexStoreState);
   }
 }

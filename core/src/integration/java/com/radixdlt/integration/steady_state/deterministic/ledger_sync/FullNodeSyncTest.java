@@ -75,7 +75,7 @@ import java.util.stream.IntStream;
 import org.junit.Test;
 
 public class FullNodeSyncTest {
-  /* maximum state lag is a single command */
+  /* maximum state lag is a single transaction */
   private static final int FULL_NODE_MAX_BEHIND_STATE_VER = 1;
 
   private void run(int numNodes, int numValidators, Round highRound, long targetStateVersion) {

@@ -79,7 +79,11 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
-/** The bft header which gets voted upon by consensus. */
+/**
+ * The bft header which gets voted upon by consensus.
+ *
+ * <p>Includes the ledger header, which captures the resultant engine/transaction state.
+ */
 @Immutable
 @SerializerId2("consensus.bft_header")
 public final class BFTHeader {
@@ -97,7 +101,6 @@ public final class BFTHeader {
   @DsonOutput(Output.ALL)
   private final LedgerHeader ledgerHeader;
 
-  // TODO: Move command output to a more opaque data structure
   public BFTHeader(
       Round round, // consensus data
       HashCode vertexId, // consensus data

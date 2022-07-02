@@ -89,7 +89,7 @@ import com.radixdlt.sync.CommittedReader;
 import java.util.Map;
 import java.util.OptionalInt;
 
-/** Module which manages execution of commands */
+/** Module which manages execution of transactions */
 public class RadixEngineModule extends AbstractModule {
   @Provides
   @Singleton

@@ -97,7 +97,7 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
             .<Set<Transaction>>scan(
                 new HashSet<>(),
                 (set, next) -> {
-                  set.addAll(next.getSecond().getNewTxns());
+                  set.addAll(next.getSecond().getNewTransactions());
                   return set;
                 })
             .subscribe(committedTxns::onNext);
@@ -122,8 +122,8 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
                     .onErrorReturn(
                         e ->
                             new TestInvariantError(
-                                "Committed command in vertex has not been inserted into the ledger"
-                                    + " after 10 seconds")))
+                                "Committed transaction in vertex has not been inserted into the"
+                                    + " ledger after 10 seconds")))
         .doFinally(d::dispose);
   }
 }

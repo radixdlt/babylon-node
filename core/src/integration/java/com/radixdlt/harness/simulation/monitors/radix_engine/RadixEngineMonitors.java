@@ -72,7 +72,7 @@ import com.radixdlt.harness.simulation.MonitorKey;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.EventNeverOccursInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
-import com.radixdlt.rev1.InvalidProposedTxn;
+import com.radixdlt.rev1.InvalidProposedTransaction;
 
 /** Monitors which check for radix engine related functionality */
 public final class RadixEngineMonitors {
@@ -80,12 +80,13 @@ public final class RadixEngineMonitors {
     throw new IllegalStateException("Cannot instantiate.");
   }
 
-  public static Module noInvalidProposedCommands() {
+  public static Module noInvalidProposedTransactions() {
     return new AbstractModule() {
       @ProvidesIntoMap
-      @MonitorKey(Monitor.RADIX_ENGINE_NO_INVALID_PROPOSED_COMMANDS)
+      @MonitorKey(Monitor.RADIX_ENGINE_NO_INVALID_PROPOSED_TRANSACTIONS)
       TestInvariant registeredValidator(NodeEvents nodeEvents) {
-        return new EventNeverOccursInvariant<>(nodeEvents, InvalidProposedTxn.class, txn -> true);
+        return new EventNeverOccursInvariant<>(
+            nodeEvents, InvalidProposedTransaction.class, txn -> true);
       }
     };
   }

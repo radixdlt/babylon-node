@@ -96,9 +96,9 @@ public class SimpleLedgerAccumulatorAndVerifier
 
   @Override
   public boolean verify(
-      AccumulatorState start, ImmutableList<HashCode> hashes, AccumulatorState end) {
+      AccumulatorState start, ImmutableList<HashCode> transactions, AccumulatorState end) {
     AccumulatorState accumulatorState = start;
-    for (HashCode hash : hashes) {
+    for (HashCode hash : transactions) {
       accumulatorState = this.accumulate(accumulatorState, hash);
     }
     return Objects.equals(accumulatorState, end);
@@ -107,7 +107,7 @@ public class SimpleLedgerAccumulatorAndVerifier
   @Override
   public <T> Optional<List<T>> verifyAndGetExtension(
       AccumulatorState current,
-      List<T> commands,
+      List<T> transactions,
       Function<T, HashCode> hashCodeMapper,
       AccumulatorState tail) {
     if (tail.getStateVersion() < current.getStateVersion()) {
@@ -115,18 +115,18 @@ public class SimpleLedgerAccumulatorAndVerifier
           String.format("Tail %s is has lower state version than current %s", tail, current));
     }
 
-    final long firstVersion = tail.getStateVersion() - commands.size() + 1;
+    final long firstVersion = tail.getStateVersion() - transactions.size() + 1;
     if (current.getStateVersion() + 1 < firstVersion) {
       // Missing versions
       return Optional.empty();
     }
 
-    if (commands.isEmpty()) {
+    if (transactions.isEmpty()) {
       return Objects.equals(current, tail) ? Optional.of(ImmutableList.of()) : Optional.empty();
     }
 
     final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
-    final List<T> extension = commands.subList(startIndex, commands.size());
+    final List<T> extension = transactions.subList(startIndex, transactions.size());
     final ImmutableList<HashCode> hashes =
         extension.stream().map(hashCodeMapper::apply).collect(ImmutableList.toImmutableList());
     if (!verify(current, hashes, tail)) {

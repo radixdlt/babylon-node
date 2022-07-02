@@ -77,7 +77,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockExecuted;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -146,13 +146,13 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
           VertexWithHash vertex,
           long timestamp) {
         return new StateComputerLedger.StateComputerResult(
-            vertex.getTxns().stream().map(MockExecuted::new).collect(Collectors.toList()),
+            vertex.getTransactions().stream().map(MockExecuted::new).collect(Collectors.toList()),
             Map.of());
       }
 
       @Override
-      public void commit(VerifiedTxnsAndProof txnsAndProof, VertexStoreState vertexStoreState) {
-        mempool.handleTransactionsCommitted(txnsAndProof.getTxns());
+      public void commit(TransactionRun txnsAndProof, VertexStoreState vertexStoreState) {
+        mempool.handleTransactionsCommitted(txnsAndProof.getTransactions());
         counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 
         var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());

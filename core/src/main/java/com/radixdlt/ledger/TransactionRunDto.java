@@ -79,10 +79,14 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
-/** A commands and proof which has not been verified */
+/**
+ * A data transfer object for a TransactionRun, including a proof at the start of the run.
+ *
+ * <p>This may not have been verified yet.
+ */
 @Immutable
-@SerializerId2("ledger.commands_and_proof")
-public final class DtoTxnsAndProof {
+@SerializerId2("ledger.transaction_run")
+public final class TransactionRunDto {
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)
   @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
   SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -100,7 +104,7 @@ public final class DtoTxnsAndProof {
   private final DtoLedgerProof tail;
 
   @JsonCreator
-  public DtoTxnsAndProof(
+  public TransactionRunDto(
       @JsonProperty("txns") List<Transaction> transactions,
       @JsonProperty(value = "head", required = true) DtoLedgerProof head,
       @JsonProperty(value = "tail", required = true) DtoLedgerProof tail) {
@@ -111,7 +115,7 @@ public final class DtoTxnsAndProof {
     this.transactions.forEach(Objects::requireNonNull);
   }
 
-  public List<Transaction> getTxns() {
+  public List<Transaction> getTransactions() {
     return transactions;
   }
 
@@ -134,7 +138,7 @@ public final class DtoTxnsAndProof {
       return true;
     }
 
-    return (o instanceof DtoTxnsAndProof that)
+    return (o instanceof TransactionRunDto that)
         && Objects.equals(transactions, that.transactions)
         && Objects.equals(head, that.head)
         && Objects.equals(tail, that.tail);

@@ -64,30 +64,30 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.ledger.DtoTxnsAndProof;
+import com.radixdlt.ledger.TransactionRunDto;
 import java.util.Objects;
 
 /** A response to the SyncRequest message. */
 public final class SyncResponse {
 
-  private final DtoTxnsAndProof commandsAndProof;
+  private final TransactionRunDto transactionRunDto;
 
-  public static SyncResponse create(DtoTxnsAndProof commandsAndProof) {
-    return new SyncResponse(commandsAndProof);
+  public static SyncResponse create(TransactionRunDto transactionRunDto) {
+    return new SyncResponse(transactionRunDto);
   }
 
-  private SyncResponse(DtoTxnsAndProof commandsAndProof) {
-    this.commandsAndProof = Objects.requireNonNull(commandsAndProof);
+  private SyncResponse(TransactionRunDto transactionRunDto) {
+    this.transactionRunDto = Objects.requireNonNull(transactionRunDto);
   }
 
-  public DtoTxnsAndProof getTxnsAndProof() {
-    return commandsAndProof;
+  public TransactionRunDto getTransactionRunDto() {
+    return transactionRunDto;
   }
 
   @Override
   public String toString() {
     return String.format(
-        "%s{commandsAndProof=%s}", this.getClass().getSimpleName(), commandsAndProof);
+        "%s{transactionRun=%s}", this.getClass().getSimpleName(), transactionRunDto);
   }
 
   @Override
@@ -99,11 +99,11 @@ public final class SyncResponse {
       return false;
     }
     SyncResponse that = (SyncResponse) o;
-    return Objects.equals(commandsAndProof, that.commandsAndProof);
+    return Objects.equals(transactionRunDto, that.transactionRunDto);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(commandsAndProof);
+    return Objects.hash(transactionRunDto);
   }
 }

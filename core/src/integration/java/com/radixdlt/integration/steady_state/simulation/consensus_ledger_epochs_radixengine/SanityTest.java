@@ -100,7 +100,7 @@ public class SanityTest {
               ConsensusMonitors.directParents(),
               LedgerMonitors.consensusToLedger(),
               LedgerMonitors.ordered(),
-              RadixEngineMonitors.noInvalidProposedCommands(),
+              RadixEngineMonitors.noInvalidProposedTransactions(),
               ApplicationMonitors.mempoolCommitted())
           .addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
 

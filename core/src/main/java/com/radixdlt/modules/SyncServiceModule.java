@@ -78,7 +78,7 @@ import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.ScheduledEventProducerOnRunner;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.p2p.NodeId;
@@ -146,9 +146,9 @@ public class SyncServiceModule extends AbstractModule {
 
   @Provides
   private VerifiedSyncResponseHandler verifiedSyncResponseHandler(
-      EventDispatcher<VerifiedTxnsAndProof> syncCommandsDispatcher) {
+      EventDispatcher<TransactionRun> syncedTransactionRunDispatcher) {
     return resp -> {
-      var txnsAndProof = resp.getTxnsAndProof();
+      var txnsAndProof = resp.getTransactionRunDto();
       // TODO: Stateful ledger header verification:
       // TODO: -verify rootHash matches
       var nextHeader =
@@ -157,9 +157,9 @@ public class SyncServiceModule extends AbstractModule {
               txnsAndProof.getTail().getLedgerHeader(),
               txnsAndProof.getTail().getSignatures());
 
-      var verified = VerifiedTxnsAndProof.create(txnsAndProof.getTxns(), nextHeader);
+      var verified = TransactionRun.create(txnsAndProof.getTransactions(), nextHeader);
 
-      syncCommandsDispatcher.dispatch(verified);
+      syncedTransactionRunDispatcher.dispatch(verified);
     };
   }
 

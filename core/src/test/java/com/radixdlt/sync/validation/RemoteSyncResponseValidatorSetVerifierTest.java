@@ -74,7 +74,7 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.DtoTxnsAndProof;
+import com.radixdlt.ledger.TransactionRunDto;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import org.junit.Before;
 import org.junit.Test;
@@ -82,18 +82,18 @@ import org.junit.Test;
 public class RemoteSyncResponseValidatorSetVerifierTest {
   private BFTValidatorSet validatorSet;
   private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
-  private DtoTxnsAndProof commandsAndProof;
+  private TransactionRunDto transactionRunDto;
 
   @Before
   public void setup() {
     this.validatorSet = mock(BFTValidatorSet.class);
     this.validatorSetVerifier = new RemoteSyncResponseValidatorSetVerifier(validatorSet);
-    commandsAndProof = mock(DtoTxnsAndProof.class);
+    transactionRunDto = mock(TransactionRunDto.class);
     DtoLedgerProof headerAndProof = mock(DtoLedgerProof.class);
     TimestampedECDSASignatures signatures = mock(TimestampedECDSASignatures.class);
     when(signatures.getSignatures()).thenReturn(ImmutableMap.of());
     when(headerAndProof.getSignatures()).thenReturn(signatures);
-    when(commandsAndProof.getTail()).thenReturn(headerAndProof);
+    when(transactionRunDto.getTail()).thenReturn(headerAndProof);
   }
 
   @Test
@@ -102,7 +102,7 @@ public class RemoteSyncResponseValidatorSetVerifierTest {
     when(validatorSet.newValidationState()).thenReturn(validationState);
     when(validationState.complete()).thenReturn(true);
 
-    assertTrue(validatorSetVerifier.verifyValidatorSet(SyncResponse.create(commandsAndProof)));
+    assertTrue(validatorSetVerifier.verifyValidatorSet(SyncResponse.create(transactionRunDto)));
   }
 
   @Test
@@ -111,6 +111,6 @@ public class RemoteSyncResponseValidatorSetVerifierTest {
     when(validatorSet.newValidationState()).thenReturn(validationState);
     when(validationState.complete()).thenReturn(false);
 
-    assertFalse(validatorSetVerifier.verifyValidatorSet(SyncResponse.create(commandsAndProof)));
+    assertFalse(validatorSetVerifier.verifyValidatorSet(SyncResponse.create(transactionRunDto)));
   }
 }

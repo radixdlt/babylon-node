@@ -79,7 +79,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Ledger-side safety check. Checks that commands and the order getting persisted are the same
+ * Ledger-side safety check. Checks that transactions and their order are persisted identically
  * across all nodes.
  */
 public class LedgerInOrderInvariant implements TestInvariant {
@@ -87,19 +87,20 @@ public class LedgerInOrderInvariant implements TestInvariant {
 
   @Override
   public Observable<TestInvariantError> check(RunningNetwork network) {
-    Map<BFTNode, List<Transaction>> commandsPerNode = new HashMap<>();
-    network.getNodes().forEach(n -> commandsPerNode.put(n, new ArrayList<>()));
+    Map<BFTNode, List<Transaction>> transactionsPerNode = new HashMap<>();
+    network.getNodes().forEach(n -> transactionsPerNode.put(n, new ArrayList<>()));
 
     return network
         .ledgerUpdates()
         .flatMap(
-            nodeAndCommand -> {
-              final var node = nodeAndCommand.getFirst();
-              final var ledgerUpdate = nodeAndCommand.getSecond();
-              final var nodeTxns = commandsPerNode.computeIfAbsent(node, k -> new ArrayList<>());
-              nodeTxns.addAll(ledgerUpdate.getNewTxns());
+            nodeAndLedgerUpdate -> {
+              final var node = nodeAndLedgerUpdate.getFirst();
+              final var ledgerUpdate = nodeAndLedgerUpdate.getSecond();
+              final var nodeTxns =
+                  transactionsPerNode.computeIfAbsent(node, k -> new ArrayList<>());
+              nodeTxns.addAll(ledgerUpdate.getNewTransactions());
 
-              return commandsPerNode.entrySet().stream()
+              return transactionsPerNode.entrySet().stream()
                   .filter(e -> nodeTxns != e.getValue())
                   .filter(e -> e.getValue().size() >= nodeTxns.size())
                   .findFirst() // Only need to check one node, if passes, guaranteed to pass the
@@ -110,14 +111,14 @@ public class LedgerInOrderInvariant implements TestInvariant {
                         var otherNodeTxns = e.getValue();
                         if (Collections.indexOfSubList(otherNodeTxns, nodeTxns) != 0) {
                           log.info(
-                              "Two nodes don't agree on commands. Node {} has commands {} but node"
-                                  + " {} has {}",
+                              "Two nodes don't agree on transactions. Node {} has transactions {}"
+                                  + " but node {} has {}",
                               node,
                               nodeTxns,
                               otherNode,
                               otherNodeTxns);
                           final var err =
-                              new TestInvariantError("Two nodes don't agree on commands");
+                              new TestInvariantError("Two nodes don't agree on transactions");
                           return Optional.of(Observable.just(err));
                         }
                         return Optional.empty();

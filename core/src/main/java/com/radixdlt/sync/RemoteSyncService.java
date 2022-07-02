@@ -73,9 +73,9 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
+import com.radixdlt.ledger.TransactionRunDto;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.p2p.PeersView;
@@ -141,9 +141,9 @@ public final class RemoteSyncService {
 
   private void processSyncRequest(BFTNode sender, SyncRequest syncRequest) {
     final var remoteCurrentHeader = syncRequest.getHeader();
-    final var committedCommands = getCommittedCommandsForSyncRequest(remoteCurrentHeader);
+    final var transactionRun = getTransactionRunForSyncRequest(remoteCurrentHeader);
 
-    if (committedCommands == null) {
+    if (transactionRun == null) {
       log.warn(
           "REMOTE_SYNC_REQUEST: Unable to serve sync request {} from sender {}.",
           remoteCurrentHeader,
@@ -152,8 +152,10 @@ public final class RemoteSyncService {
     }
 
     final var verifiable =
-        new DtoTxnsAndProof(
-            committedCommands.getTxns(), remoteCurrentHeader, committedCommands.getProof().toDto());
+        new TransactionRunDto(
+            transactionRun.getTransactions(),
+            remoteCurrentHeader,
+            transactionRun.getProof().toDto());
 
     log.trace(
         "REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}",
@@ -165,8 +167,8 @@ public final class RemoteSyncService {
     syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
   }
 
-  private VerifiedTxnsAndProof getCommittedCommandsForSyncRequest(DtoLedgerProof startHeader) {
-    return committedReader.getNextCommittedTxns(startHeader);
+  private TransactionRun getTransactionRunForSyncRequest(DtoLedgerProof startHeader) {
+    return committedReader.getNextTransactionRun(startHeader);
   }
 
   public RemoteEventProcessor<StatusRequest> statusRequestEventProcessor() {

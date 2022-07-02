@@ -94,7 +94,7 @@ import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.rev1.InvalidProposedTxn;
+import com.radixdlt.rev1.InvalidProposedTransaction;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
@@ -187,7 +187,7 @@ public abstract class DeterministicActorsTest {
         reConfig,
         new PersistedNodeForTestingModule(),
         new LastEventsModule(LedgerUpdate.class),
-        FailOnEvent.asModule(InvalidProposedTxn.class),
+        FailOnEvent.asModule(InvalidProposedTransaction.class),
         new AbstractModule() {
           @Override
           protected void configure() {

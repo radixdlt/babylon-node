@@ -69,24 +69,25 @@ import com.radixdlt.transactions.Transaction;
 import java.util.Objects;
 
 /**
- * An event which signifies that a command has been proposed but which does not pass verification.
+ * An event which signifies that a transaction has been proposed but which does not pass
+ * verification.
  */
-public final class InvalidProposedTxn {
+public final class InvalidProposedTransaction {
   private final ECPublicKey proposer;
   private final Transaction transaction;
   private final Exception e;
 
-  private InvalidProposedTxn(ECPublicKey proposer, Transaction transaction, Exception e) {
+  private InvalidProposedTransaction(ECPublicKey proposer, Transaction transaction, Exception e) {
     this.proposer = proposer;
     this.transaction = transaction;
     this.e = e;
   }
 
-  public static InvalidProposedTxn create(
+  public static InvalidProposedTransaction create(
       ECPublicKey proposer, Transaction transaction, Exception e) {
     Objects.requireNonNull(transaction);
     Objects.requireNonNull(e);
-    return new InvalidProposedTxn(proposer, transaction, e);
+    return new InvalidProposedTransaction(proposer, transaction, e);
   }
 
   public ECPublicKey getProposer() {
@@ -111,11 +112,11 @@ public final class InvalidProposedTxn {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof InvalidProposedTxn)) {
+    if (!(o instanceof InvalidProposedTransaction)) {
       return false;
     }
 
-    InvalidProposedTxn other = (InvalidProposedTxn) o;
+    InvalidProposedTransaction other = (InvalidProposedTransaction) o;
     return Objects.equals(this.proposer, other.proposer)
         && Objects.equals(this.e, other.e)
         && Objects.equals(this.transaction, other.transaction);

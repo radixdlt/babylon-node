@@ -125,7 +125,7 @@ public class MempoolFillTest {
               ConsensusMonitors.directParents(),
               LedgerMonitors.consensusToLedger(),
               LedgerMonitors.ordered(),
-              RadixEngineMonitors.noInvalidProposedCommands())
+              RadixEngineMonitors.noInvalidProposedTransactions())
           .addActor(MempoolFillerStarter.class);
 
   @Test
@@ -139,12 +139,12 @@ public class MempoolFillTest {
     // Post conditions
     assertThat(results)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    long invalidCommandsCount =
+    long invalidTransactionsCount =
         runningTest.getNetwork().getSystemCounters().values().stream()
-            .map(s -> s.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
+            .map(s -> s.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
             .mapToLong(l -> l)
             .sum();
-    assertThat(invalidCommandsCount).isZero();
+    assertThat(invalidTransactionsCount).isZero();
   }
 
   @Test

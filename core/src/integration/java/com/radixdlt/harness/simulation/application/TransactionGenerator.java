@@ -66,7 +66,7 @@ package com.radixdlt.harness.simulation.application;
 
 import com.radixdlt.transactions.Transaction;
 
-/** Generator of commands for consensus processing */
-public interface TxnGenerator {
-  Transaction nextTxn();
+/** Generator of transactions for consensus processing */
+public interface TransactionGenerator {
+  Transaction nextTransaction();
 }

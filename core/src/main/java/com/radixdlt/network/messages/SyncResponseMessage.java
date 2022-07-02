@@ -66,7 +66,7 @@ package com.radixdlt.network.messages;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.ledger.DtoTxnsAndProof;
+import com.radixdlt.ledger.TransactionRunDto;
 import com.radixdlt.network.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -76,23 +76,23 @@ import java.util.Objects;
 /** Message with sync atoms as a response to sync request */
 @SerializerId2("message.sync.sync_response")
 public final class SyncResponseMessage extends Message {
-  @JsonProperty("commands")
+  @JsonProperty("run")
   @DsonOutput(Output.ALL)
-  private final DtoTxnsAndProof commands;
+  private final TransactionRunDto transactionRunDto;
 
   @JsonCreator
   public SyncResponseMessage(
-      @JsonProperty(value = "commands", required = true) DtoTxnsAndProof commands) {
-    this.commands = Objects.requireNonNull(commands);
+      @JsonProperty(value = "run", required = true) TransactionRunDto transactionRunDto) {
+    this.transactionRunDto = Objects.requireNonNull(transactionRunDto);
   }
 
-  public DtoTxnsAndProof getCommands() {
-    return commands;
+  public TransactionRunDto getTransactions() {
+    return transactionRunDto;
   }
 
   @Override
   public String toString() {
-    return String.format("%s{commands=%s}", getClass().getSimpleName(), commands);
+    return String.format("%s{run=%s}", getClass().getSimpleName(), transactionRunDto);
   }
 
   @Override
@@ -102,12 +102,12 @@ public final class SyncResponseMessage extends Message {
     }
 
     return (o instanceof SyncResponseMessage that)
-        && Objects.equals(commands, that.commands)
+        && Objects.equals(transactionRunDto, that.transactionRunDto)
         && Objects.equals(getTimestamp(), that.getTimestamp());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(commands, getTimestamp());
+    return Objects.hash(transactionRunDto, getTimestamp());
   }
 }

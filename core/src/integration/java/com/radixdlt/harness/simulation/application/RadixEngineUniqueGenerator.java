@@ -77,10 +77,10 @@ import com.radixdlt.transactions.Transaction;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Generates a new unique rri consumer command. Because new addresses are used on every call, the
- * command should never fail when executed on a radix engine.
+ * Generates a new unique rri consumer transaction. Because new addresses are used on every call,
+ * the transaction should never fail when executed on a radix engine.
  */
-public class RadixEngineUniqueGenerator implements TxnGenerator {
+public class RadixEngineUniqueGenerator implements TransactionGenerator {
   @Inject private REParser parser;
 
   @Inject private CurrentForkView currentForkView;
@@ -88,7 +88,7 @@ public class RadixEngineUniqueGenerator implements TxnGenerator {
   @Inject @Genesis private Transaction genesis;
 
   @Override
-  public Transaction nextTxn() {
+  public Transaction nextTransaction() {
     var keyPair = ECKeyPair.generateNew();
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "smthng");
     var builder =

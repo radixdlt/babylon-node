@@ -231,7 +231,7 @@ public final class GenerateUniverses {
                 })
             .getInstance(GenesisProvider.class);
 
-    var genesis = genesisProvider.get().getTxns().get(0);
+    var genesis = genesisProvider.get().getTransactions().get(0);
     IntStream.range(0, generatedValidatorKeys.size())
         .forEach(
             i -> {

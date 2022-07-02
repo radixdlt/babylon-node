@@ -80,7 +80,7 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
@@ -102,11 +102,11 @@ import org.apache.logging.log4j.Logger;
 public class MockedSyncServiceModule extends AbstractModule {
   private static final Logger logger = LogManager.getLogger();
 
-  private final ConcurrentMap<Long, Transaction> sharedCommittedCommands;
+  private final ConcurrentMap<Long, Transaction> sharedCommittedTransactions;
   private final ConcurrentMap<Long, LedgerProof> sharedEpochProofs;
 
   public MockedSyncServiceModule() {
-    this.sharedCommittedCommands = new ConcurrentHashMap<>();
+    this.sharedCommittedTransactions = new ConcurrentHashMap<>();
     this.sharedEpochProofs = new ConcurrentHashMap<>();
   }
 
@@ -130,9 +130,9 @@ public class MockedSyncServiceModule extends AbstractModule {
         update -> {
           final LedgerProof headerAndProof = update.getTail();
           long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
-          long firstVersion = stateVersion - update.getNewTxns().size() + 1;
-          for (int i = 0; i < update.getNewTxns().size(); i++) {
-            sharedCommittedCommands.put(firstVersion + i, update.getNewTxns().get(i));
+          long firstVersion = stateVersion - update.getNewTransactions().size() + 1;
+          for (int i = 0; i < update.getNewTransactions().size(); i++) {
+            sharedCommittedTransactions.put(firstVersion + i, update.getNewTransactions().get(i));
           }
 
           if (update.getTail().isEndOfEpoch()) {
@@ -147,17 +147,17 @@ public class MockedSyncServiceModule extends AbstractModule {
   @ProcessOnDispatch
   EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
       @LastEpochProof LedgerProof genesis,
-      EventDispatcher<VerifiedTxnsAndProof> syncCommandsDispatcher) {
+      EventDispatcher<TransactionRun> syncedTransactionRunDispatcher) {
     return new EventProcessor<>() {
       long currentVersion = genesis.getStateVersion();
       long currentEpoch = genesis.getNextEpoch();
 
       private void syncTo(LedgerProof proof) {
-        var txns =
+        var transactions =
             LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
-                .mapToObj(sharedCommittedCommands::get)
+                .mapToObj(sharedCommittedTransactions::get)
                 .collect(ImmutableList.toImmutableList());
-        syncCommandsDispatcher.dispatch(VerifiedTxnsAndProof.create(txns, proof));
+        syncedTransactionRunDispatcher.dispatch(TransactionRun.create(transactions, proof));
         currentVersion = proof.getStateVersion();
         currentEpoch = proof.isEndOfEpoch() ? proof.getNextEpoch() : proof.getEpoch();
       }
@@ -177,10 +177,10 @@ public class MockedSyncServiceModule extends AbstractModule {
         final long targetVersion = request.getTarget().getStateVersion();
         var txns =
             LongStream.range(currentVersion + 1, targetVersion + 1)
-                .mapToObj(sharedCommittedCommands::get)
+                .mapToObj(sharedCommittedTransactions::get)
                 .collect(ImmutableList.toImmutableList());
 
-        syncCommandsDispatcher.dispatch(VerifiedTxnsAndProof.create(txns, request.getTarget()));
+        syncedTransactionRunDispatcher.dispatch(TransactionRun.create(txns, request.getTarget()));
         currentVersion = targetVersion;
         currentEpoch = request.getTarget().getEpoch();
       }

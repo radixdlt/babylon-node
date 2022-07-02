@@ -101,7 +101,7 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRelayTrigger;
@@ -230,7 +230,7 @@ public class DispatcherModule extends AbstractModule {
     final var committedUpdateKey = new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() {};
     Multibinder.newSetBinder(binder(), committedUpdateKey);
     Multibinder.newSetBinder(binder(), committedUpdateKey, ProcessOnDispatch.class);
-    final var syncUpdateKey = new TypeLiteral<EventProcessor<VerifiedTxnsAndProof>>() {};
+    final var syncUpdateKey = new TypeLiteral<EventProcessor<TransactionRun>>() {};
     Multibinder.newSetBinder(binder(), syncUpdateKey, ProcessOnDispatch.class);
 
     final var verticesRequestKey = new TypeLiteral<EventProcessor<GetVerticesRequest>>() {};
@@ -383,11 +383,12 @@ public class DispatcherModule extends AbstractModule {
   }
 
   @Provides
-  private EventDispatcher<VerifiedTxnsAndProof> syncUpdateEventDispatcher(
-      @ProcessOnDispatch Set<EventProcessor<VerifiedTxnsAndProof>> processors,
+  private EventDispatcher<TransactionRun> syncUpdateEventDispatcher(
+      @ProcessOnDispatch Set<EventProcessor<TransactionRun>> processors,
       SystemCounters systemCounters) {
     return commit -> {
-      systemCounters.add(CounterType.SYNC_VALID_RESPONSES_RECEIVED, commit.getTxns().size());
+      systemCounters.add(
+          CounterType.SYNC_VALID_RESPONSES_RECEIVED, commit.getTransactions().size());
       processors.forEach(e -> e.process(commit));
     };
   }

@@ -64,37 +64,69 @@
 
 package com.radixdlt.ledger;
 
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.mock;
-
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.transactions.Transaction;
 import java.util.List;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import java.util.Objects;
 
-public class DtoTxnsAndProofTest {
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(DtoTxnsAndProof.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+/**
+ * A verified run of transactions, with a known-valid LedgerProof pointing at the last transaction.
+ *
+ * <p>The run of transactions will reside in a single epoch, so that it can be validated as
+ * correctly signed by the validator set in that epoch. The LedgerProof contains a transaction
+ * accumulator, which can be cross-checked against the list of transactions. This allows
+ * verification of the transaction run, if the parent accumulator of the first transaction is known.
+ *
+ * <p>Whenever transactions are committed, the latest proof for that epoch is overwritten, but we
+ * ensure that we keep occasional proofs, every X transactions or so (for Olympia, X = 1000). This
+ * enables trustless syncing of X transactions at a time.
+ *
+ * <p>NB: Used to be called VerifiedTxnsAndProof
+ */
+public final class TransactionRun {
+  private final List<Transaction> transactions;
+  private final LedgerProof proof;
+
+  private TransactionRun(List<Transaction> transactions, LedgerProof proof) {
+    this.transactions = Objects.requireNonNull(transactions);
+    this.proof = Objects.requireNonNull(proof);
   }
 
-  @Test(expected = NullPointerException.class)
-  public void deserializationWithNullHeadThrowsException() {
-    new DtoTxnsAndProof(List.of(), null, mock(DtoLedgerProof.class));
+  public static TransactionRun create(List<Transaction> transactions, LedgerProof proof) {
+    return new TransactionRun(transactions, proof);
   }
 
-  @Test(expected = NullPointerException.class)
-  public void deserializationWithNullTailThrowsException() {
-    new DtoTxnsAndProof(List.of(), mock(DtoLedgerProof.class), null);
+  public List<Transaction> getTransactions() {
+    return transactions;
   }
 
-  @Test
-  public void deserializationWithNullTxnListIsSafe() {
-    var dto = new DtoTxnsAndProof(null, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
+  public boolean contains(Transaction transaction) {
+    return transactions.contains(transaction);
+  }
 
-    assertNotNull(dto.getTxns());
+  public LedgerProof getProof() {
+    return proof;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(transactions, proof);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof TransactionRun)) {
+      return false;
+    }
+
+    TransactionRun other = (TransactionRun) o;
+    return Objects.equals(this.transactions, other.transactions)
+        && Objects.equals(this.proof, other.proof);
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{txns=%s proof=%s}", this.getClass().getSimpleName(), transactions, proof);
   }
 }

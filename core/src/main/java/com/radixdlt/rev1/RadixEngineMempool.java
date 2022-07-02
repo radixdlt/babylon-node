@@ -129,7 +129,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 
     if (this.data.containsKey(transaction.getId())) {
       throw new MempoolDuplicateException(
-          String.format("Mempool already has command %s", transaction.getId()));
+          String.format("Mempool already has transaction with id %s", transaction.getId()));
     }
 
     final RadixEngineResult<LedgerAndBFTProof> result;

@@ -77,7 +77,7 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.atom.TxAction;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -104,7 +104,7 @@ public final class MockedGenesisModule extends AbstractModule {
     bind(new TypeLiteral<Set<ECPublicKey>>() {})
         .annotatedWith(Genesis.class)
         .toInstance(validators);
-    bind(new TypeLiteral<VerifiedTxnsAndProof>() {})
+    bind(new TypeLiteral<TransactionRun>() {})
         .annotatedWith(Genesis.class)
         .toProvider(GenesisProvider.class)
         .in(Scopes.SINGLETON);

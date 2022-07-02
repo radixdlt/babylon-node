@@ -110,7 +110,7 @@ public class RandomVoteAndRoundTimeoutDropperTest {
               ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
               LedgerMonitors.consensusToLedger(),
               LedgerMonitors.ordered(),
-              RadixEngineMonitors.noInvalidProposedCommands())
+              RadixEngineMonitors.noInvalidProposedTransactions())
           .addActor(NodeValidatorRandomRegistrator.class);
 
   @Test

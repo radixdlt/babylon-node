@@ -76,18 +76,19 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.concurrent.TimeUnit;
 
-/** Contributes to steady state by submitting commands to the mempool every few seconds */
+/** Contributes to steady state by submitting transactions to the mempool every few seconds */
 public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
 
-  private final PublishSubject<Pair<Transaction, BFTNode>> txns;
-  private final TxnGenerator txnGenerator;
+  private final PublishSubject<Pair<Transaction, BFTNode>> transactionsSubject;
+  private final TransactionGenerator transactionGenerator;
   private final NodeSelector nodeSelector;
 
-  private Disposable commandsDisposable;
+  private Disposable transactionsDisposable;
 
-  public LocalMempoolPeriodicSubmitter(TxnGenerator txnGenerator, NodeSelector nodeSelector) {
-    this.txns = PublishSubject.create();
-    this.txnGenerator = txnGenerator;
+  public LocalMempoolPeriodicSubmitter(
+      TransactionGenerator transactionGenerator, NodeSelector nodeSelector) {
+    this.transactionsSubject = PublishSubject.create();
+    this.transactionGenerator = transactionGenerator;
     this.nodeSelector = nodeSelector;
   }
 
@@ -95,27 +96,27 @@ public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
     network.getDispatcher(MempoolAdd.class, node).dispatch(MempoolAdd.create(transaction));
   }
 
-  public Observable<Pair<Transaction, BFTNode>> issuedTxns() {
-    return txns.observeOn(Schedulers.io());
+  public Observable<Pair<Transaction, BFTNode>> issuedTransactions() {
+    return transactionsSubject.observeOn(Schedulers.io());
   }
 
   @Override
   public void start(RunningNetwork network) {
-    if (commandsDisposable != null) {
+    if (transactionsDisposable != null) {
       return;
     }
 
-    commandsDisposable =
+    transactionsDisposable =
         Observable.interval(1, 10, TimeUnit.SECONDS)
-            .map(i -> txnGenerator.nextTxn())
+            .map(i -> transactionGenerator.nextTransaction())
             .flatMapSingle(cmd -> nodeSelector.nextNode(network).map(node -> Pair.of(cmd, node)))
             .doOnNext(p -> this.act(network, p.getFirst(), p.getSecond()))
-            .subscribe(txns::onNext);
+            .subscribe(transactionsSubject::onNext);
   }
 
   @Override
   public void stop() {
-    commandsDisposable.dispose();
-    txns.onComplete();
+    transactionsDisposable.dispose();
+    transactionsSubject.onComplete();
   }
 }

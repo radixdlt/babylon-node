@@ -96,7 +96,7 @@ import com.radixdlt.harness.simulation.application.BFTValidatorSetNodeSelector;
 import com.radixdlt.harness.simulation.application.EpochsNodeSelector;
 import com.radixdlt.harness.simulation.application.LocalMempoolPeriodicSubmitter;
 import com.radixdlt.harness.simulation.application.NodeSelector;
-import com.radixdlt.harness.simulation.application.TxnGenerator;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
@@ -106,7 +106,7 @@ import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.NoOpCommittedReader;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent;
@@ -424,7 +424,7 @@ public final class SimulationTest {
             CommittedReader committedReader() {
               return new CommittedReader() {
                 @Override
-                public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+                public TransactionRun getNextTransactionRun(DtoLedgerProof start) {
                   return null;
                 }
 
@@ -462,7 +462,7 @@ public final class SimulationTest {
     }
 
     public Builder addMempoolSubmissionsSteadyState(
-        Class<? extends TxnGenerator> txnGeneratorClass) {
+        Class<? extends TransactionGenerator> txnGeneratorClass) {
       NodeSelector nodeSelector =
           this.ledgerType.hasComponent(EPOCHS)
               ? new EpochsNodeSelector()
@@ -473,13 +473,14 @@ public final class SimulationTest {
             public void configure() {
               var multibinder = Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
               multibinder.addBinding().to(LocalMempoolPeriodicSubmitter.class);
-              bind(TxnGenerator.class).to(txnGeneratorClass);
+              bind(TransactionGenerator.class).to(txnGeneratorClass);
             }
 
             @Provides
             @Singleton
-            LocalMempoolPeriodicSubmitter mempoolSubmittor(TxnGenerator txnGenerator) {
-              return new LocalMempoolPeriodicSubmitter(txnGenerator, nodeSelector);
+            LocalMempoolPeriodicSubmitter mempoolSubmittor(
+                TransactionGenerator transactionGenerator) {
+              return new LocalMempoolPeriodicSubmitter(transactionGenerator, nodeSelector);
             }
           });
 
@@ -561,8 +562,8 @@ public final class SimulationTest {
 
               @Genesis
               @Provides
-              Transaction genesis(@Genesis VerifiedTxnsAndProof txnsAndProof) {
-                return txnsAndProof.getTxns().get(0);
+              Transaction genesis(@Genesis TransactionRun txnsAndProof) {
+                return txnsAndProof.getTransactions().get(0);
               }
             });
       } else {

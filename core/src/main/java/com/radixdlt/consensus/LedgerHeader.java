@@ -83,7 +83,12 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
 
-/** Ledger accumulator which gets voted and agreed upon */
+/**
+ * Ledger header which gets voted and agreed upon, as part of the BFT header.
+ *
+ * <p>This header is kept around alongside the committed transactions, inside the LedgerProof. The
+ * rest of the BFT Header, for contrast, is reduced to only a hash (mostly for size reasons).
+ */
 @Immutable
 @SerializerId2("consensus.ledger_header")
 public final class LedgerHeader {
@@ -103,13 +108,12 @@ public final class LedgerHeader {
 
   @JsonProperty("timestamp")
   @DsonOutput(Output.ALL)
-  private final long timestamp; // TODO: Move into command accumulator
+  private final long timestamp;
 
   @JsonProperty("next_validators")
   @DsonOutput(Output.ALL)
   private final ImmutableSet<BFTValidator> nextValidators;
 
-  // TODO: Replace isEndOfEpoch with nextValidatorSet
   @JsonCreator
   @VisibleForTesting
   LedgerHeader(

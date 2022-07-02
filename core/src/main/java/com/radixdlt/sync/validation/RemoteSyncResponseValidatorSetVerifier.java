@@ -81,10 +81,10 @@ public class RemoteSyncResponseValidatorSetVerifier {
   }
 
   public boolean verifyValidatorSet(SyncResponse syncResponse) {
-    final var dtoCommandsAndProof = syncResponse.getTxnsAndProof();
+    final var transactionRunDto = syncResponse.getTransactionRunDto();
     final var validationState = validatorSet.newValidationState();
 
-    dtoCommandsAndProof
+    transactionRunDto
         .getTail()
         .getSignatures()
         .getSignatures()

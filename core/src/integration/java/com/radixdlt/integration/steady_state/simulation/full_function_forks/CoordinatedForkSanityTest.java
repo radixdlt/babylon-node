@@ -124,7 +124,7 @@ public final class CoordinatedForkSanityTest {
                 ConsensusMonitors.directParents(),
                 LedgerMonitors.consensusToLedger(),
                 LedgerMonitors.ordered(),
-                RadixEngineMonitors.noInvalidProposedCommands());
+                RadixEngineMonitors.noInvalidProposedTransactions());
   }
 
   @Test

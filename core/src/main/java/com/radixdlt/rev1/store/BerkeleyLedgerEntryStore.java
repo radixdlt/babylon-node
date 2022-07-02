@@ -102,7 +102,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.rev1.LedgerAndBFTProof;
@@ -1151,7 +1151,7 @@ public final class BerkeleyLedgerEntryStore
   }
 
   @Override
-  public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+  public TransactionRun getNextTransactionRun(DtoLedgerProof start) {
 
     long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
     final var startTime = System.nanoTime();
@@ -1189,7 +1189,7 @@ public final class BerkeleyLedgerEntryStore
         count++;
       } while (count < atomCount);
 
-      return VerifiedTxnsAndProof.create(txns.build(), nextHeader);
+      return TransactionRun.create(txns.build(), nextHeader);
     } catch (IOException e) {
       throw new BerkeleyStoreException("Unable to read from atom store.", e);
     } finally {

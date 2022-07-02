@@ -77,11 +77,12 @@ import java.util.function.Function;
  */
 public interface LedgerAccumulatorVerifier {
   // TODO: use stream instead of list
-  boolean verify(AccumulatorState head, ImmutableList<HashCode> commands, AccumulatorState tail);
+  boolean verify(
+      AccumulatorState head, ImmutableList<HashCode> transactions, AccumulatorState tail);
 
   <T> Optional<List<T>> verifyAndGetExtension(
       AccumulatorState current,
-      List<T> commands,
+      List<T> transactions,
       Function<T, HashCode> hashCodeMapper,
       AccumulatorState tail);
 }

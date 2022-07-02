@@ -76,7 +76,7 @@ import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
@@ -89,7 +89,7 @@ import org.apache.logging.log4j.Logger;
 
 /** Generates a genesis atom */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
+public final class GenesisProvider implements Provider<TransactionRun> {
   private static final Logger logger = LogManager.getLogger();
   private final ImmutableList<TokenIssuance> tokenIssuances;
   private final Set<ECPublicKey> validatorKeys;
@@ -115,7 +115,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
   }
 
   @Override
-  public VerifiedTxnsAndProof get() {
+  public TransactionRun get() {
     // Check that issuances are sufficient for delegations
     final var issuances =
         tokenIssuances.stream()
@@ -158,7 +158,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
       logger.info("gen_create{tx_id={}}", genesis.getId());
 
       var proof = genesisBuilder.generateGenesisProof(genesis);
-      return VerifiedTxnsAndProof.create(List.of(genesis), proof);
+      return TransactionRun.create(List.of(genesis), proof);
     } catch (TxBuilderException | RadixEngineException e) {
       throw new IllegalStateException(e);
     }

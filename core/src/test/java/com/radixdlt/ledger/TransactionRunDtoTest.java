@@ -64,56 +64,37 @@
 
 package com.radixdlt.ledger;
 
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.transactions.Transaction;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
+
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
 import java.util.List;
-import java.util.Objects;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/** Commands along with proof that they have been committed on ledger. */
-public final class VerifiedTxnsAndProof {
-  private final List<Transaction> transactions;
-  private final LedgerProof proof;
-
-  private VerifiedTxnsAndProof(List<Transaction> transactions, LedgerProof proof) {
-    this.transactions = Objects.requireNonNull(transactions);
-    this.proof = Objects.requireNonNull(proof);
+public class TransactionRunDtoTest {
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(TransactionRunDto.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
   }
 
-  public static VerifiedTxnsAndProof create(List<Transaction> transactions, LedgerProof proof) {
-    return new VerifiedTxnsAndProof(transactions, proof);
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullHeadThrowsException() {
+    new TransactionRunDto(List.of(), null, mock(DtoLedgerProof.class));
   }
 
-  public List<Transaction> getTxns() {
-    return transactions;
+  @Test(expected = NullPointerException.class)
+  public void deserializationWithNullTailThrowsException() {
+    new TransactionRunDto(List.of(), mock(DtoLedgerProof.class), null);
   }
 
-  public boolean contains(Transaction transaction) {
-    return transactions.contains(transaction);
-  }
+  @Test
+  public void deserializationWithNullTxnListIsSafe() {
+    var dto = new TransactionRunDto(null, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
 
-  public LedgerProof getProof() {
-    return proof;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(transactions, proof);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof VerifiedTxnsAndProof)) {
-      return false;
-    }
-
-    VerifiedTxnsAndProof other = (VerifiedTxnsAndProof) o;
-    return Objects.equals(this.transactions, other.transactions)
-        && Objects.equals(this.proof, other.proof);
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{txns=%s proof=%s}", this.getClass().getSimpleName(), transactions, proof);
+    assertNotNull(dto.getTransactions());
   }
 }

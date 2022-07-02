@@ -95,7 +95,7 @@ public class REv2Mempool implements Mempool<Transaction> {
     }
     if (!this.data.add(transaction)) {
       throw new MempoolDuplicateException(
-          String.format("Mempool already has command %s", transaction));
+          String.format("Mempool already has transaction %s", transaction));
     }
 
     updateCounts();
@@ -119,18 +119,18 @@ public class REv2Mempool implements Mempool<Transaction> {
       int count, List<Transaction> preparedTransactions) {
     int size = Math.min(count, this.data.size());
     if (size > 0) {
-      List<Transaction> commands = Lists.newArrayList();
+      List<Transaction> transactions = Lists.newArrayList();
       var values = new ArrayList<>(this.data);
       Collections.shuffle(values, random);
 
       Iterator<Transaction> i = values.iterator();
-      while (commands.size() < size && i.hasNext()) {
+      while (transactions.size() < size && i.hasNext()) {
         var a = i.next();
         if (!preparedTransactions.contains(a)) {
-          commands.add(a);
+          transactions.add(a);
         }
       }
-      return commands;
+      return transactions;
     } else {
       return Collections.emptyList();
     }

@@ -73,8 +73,10 @@ import java.util.List;
 public interface ProposalGenerator {
 
   /**
-   * Generates transactions for a proposal in the given round TODO: Update interface to return an
-   * error if already generated a command for a given round
+   * Generates transactions for a proposal in the given round
+   *
+   * <p>TODO: Update interface to return an error if already generated a transaction for a given
+   * round
    *
    * @param round the round to create the vertex for
    * @param prepared vertices with transactions which have already been prepared

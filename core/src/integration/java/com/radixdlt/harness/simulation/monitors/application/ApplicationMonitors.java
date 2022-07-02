@@ -98,7 +98,8 @@ public final class ApplicationMonitors {
       @MonitorKey(Monitor.MEMPOOL_COMMITTED)
       TestInvariant mempoolCommitted(
           LocalMempoolPeriodicSubmitter mempoolSubmitter, NodeEvents nodeEvents) {
-        return new CommittedChecker(mempoolSubmitter.issuedTxns().map(Pair::getFirst), nodeEvents);
+        return new CommittedChecker(
+            mempoolSubmitter.issuedTransactions().map(Pair::getFirst), nodeEvents);
       }
     };
   }

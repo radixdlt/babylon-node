@@ -161,7 +161,8 @@ public final class MempoolFillAndEmptyTest {
     }
 
     assertThat(
-            systemCounters.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
+            systemCounters.get(
+                SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
         .isZero();
   }
 }

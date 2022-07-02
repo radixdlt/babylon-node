@@ -120,7 +120,7 @@ public class RandomValidatorsTest {
               ConsensusMonitors.directParents(),
               LedgerMonitors.consensusToLedger(),
               LedgerMonitors.ordered(),
-              RadixEngineMonitors.noInvalidProposedCommands())
+              RadixEngineMonitors.noInvalidProposedTransactions())
           .addActor(NodeValidatorRandomRegistrator.class);
 
   @Test

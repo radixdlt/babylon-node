@@ -105,7 +105,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.modules.ConsensusModule;
@@ -165,8 +165,7 @@ public class EpochManagerTest {
         }
 
         @Override
-        public void commit(
-            VerifiedTxnsAndProof verifiedTxnsAndProof, VertexStoreState vertexStoreState) {
+        public void commit(TransactionRun transactionRun, VertexStoreState vertexStoreState) {
           // No-op
         }
       };
@@ -326,7 +325,7 @@ public class EpochManagerTest {
     var epochChange = new EpochChange(proof, bftConfiguration);
     var ledgerUpdate =
         new LedgerUpdate(
-            mock(VerifiedTxnsAndProof.class),
+            mock(TransactionRun.class),
             ImmutableClassToInstanceMap.of(EpochChange.class, epochChange));
 
     // Act

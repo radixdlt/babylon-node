@@ -84,7 +84,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockExecuted;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
@@ -118,11 +118,12 @@ public final class MockedStateComputer implements StateComputer {
       VertexWithHash vertex,
       long timestamp) {
     return new StateComputerLedger.StateComputerResult(
-        vertex.getTxns().stream().map(MockExecuted::new).collect(Collectors.toList()), Map.of());
+        vertex.getTransactions().stream().map(MockExecuted::new).collect(Collectors.toList()),
+        Map.of());
   }
 
   @Override
-  public void commit(VerifiedTxnsAndProof txnsAndProof, VertexStoreState vertexStoreState) {
+  public void commit(TransactionRun txnsAndProof, VertexStoreState vertexStoreState) {
     var output =
         txnsAndProof
             .getProof()

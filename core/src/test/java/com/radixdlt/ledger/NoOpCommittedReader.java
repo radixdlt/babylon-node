@@ -70,7 +70,7 @@ import java.util.Optional;
 
 public final class NoOpCommittedReader implements CommittedReader {
   @Override
-  public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+  public TransactionRun getNextTransactionRun(DtoLedgerProof start) {
     return null;
   }
 

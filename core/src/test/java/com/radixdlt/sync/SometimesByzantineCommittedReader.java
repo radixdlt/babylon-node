@@ -75,7 +75,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.rev2.InMemoryCommittedReader;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
@@ -85,7 +85,7 @@ import java.util.Random;
 import java.util.function.UnaryOperator;
 import org.junit.Ignore;
 
-/** A reader which sometimes returns erroneous commands. */
+/** A reader which sometimes returns erroneous transactions. */
 public final class SometimesByzantineCommittedReader implements CommittedReader {
   private final InMemoryCommittedReader correctReader;
   private final LedgerAccumulator accumulator;
@@ -108,50 +108,52 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
     return this.correctReader.updateProcessor();
   }
 
-  private static class ByzantineVerifiedCommandsAndProofBuilder {
+  private static class ByzantineTransactionRunBuilder {
     private DtoLedgerProof request;
-    private UnaryOperator<Transaction> commandMapper;
-    private VerifiedTxnsAndProof base;
+    private UnaryOperator<Transaction> transactionMapper;
+    private TransactionRun base;
     private TimestampedECDSASignatures overwriteSignatures;
     private LedgerAccumulator accumulator;
     private Hasher hasher;
 
-    public ByzantineVerifiedCommandsAndProofBuilder hasher(Hasher hasher) {
+    public ByzantineTransactionRunBuilder hasher(Hasher hasher) {
       this.hasher = hasher;
       return this;
     }
 
-    public ByzantineVerifiedCommandsAndProofBuilder accumulator(
+    public ByzantineTransactionRunBuilder accumulator(
         DtoLedgerProof request, LedgerAccumulator accumulator) {
       this.request = request;
       this.accumulator = accumulator;
       return this;
     }
 
-    public ByzantineVerifiedCommandsAndProofBuilder base(VerifiedTxnsAndProof base) {
+    public ByzantineTransactionRunBuilder base(TransactionRun base) {
       this.base = base;
       return this;
     }
 
-    public ByzantineVerifiedCommandsAndProofBuilder replaceCommands(
-        UnaryOperator<Transaction> commandMapper) {
-      this.commandMapper = commandMapper;
+    public ByzantineTransactionRunBuilder replaceTransactions(
+        UnaryOperator<Transaction> transactionMapper) {
+      this.transactionMapper = transactionMapper;
       return this;
     }
 
-    public ByzantineVerifiedCommandsAndProofBuilder overwriteSignatures(
+    public ByzantineTransactionRunBuilder overwriteSignatures(
         TimestampedECDSASignatures overwriteSignatures) {
       this.overwriteSignatures = overwriteSignatures;
       return this;
     }
 
-    public VerifiedTxnsAndProof build() {
+    public TransactionRun build() {
       List<Transaction> transactions;
-      if (commandMapper != null) {
+      if (transactionMapper != null) {
         transactions =
-            base.getTxns().stream().map(commandMapper).collect(ImmutableList.toImmutableList());
+            base.getTransactions().stream()
+                .map(transactionMapper)
+                .collect(ImmutableList.toImmutableList());
       } else {
-        transactions = base.getTxns();
+        transactions = base.getTransactions();
       }
 
       AccumulatorState accumulatorState;
@@ -176,7 +178,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
       var headerAndProof =
           new LedgerProof(base.getProof().toDto().getOpaque(), ledgerHeader, signatures);
 
-      return VerifiedTxnsAndProof.create(transactions, headerAndProof);
+      return TransactionRun.create(transactions, headerAndProof);
     }
   }
 
@@ -184,39 +186,39 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
   private enum ReadType {
     GOOD {
       @Override
-      VerifiedTxnsAndProof transform(
+      TransactionRun transform(
           DtoLedgerProof request,
-          VerifiedTxnsAndProof correctCommands,
+          TransactionRun correctTransactionRun,
           LedgerAccumulator ledgerAccumulator,
           Hasher hasher) {
-        return correctCommands;
+        return correctTransactionRun;
       }
     },
-    BAD_COMMANDS {
+    BAD_TRANSACTIONS {
       @Override
-      VerifiedTxnsAndProof transform(
+      TransactionRun transform(
           DtoLedgerProof request,
-          VerifiedTxnsAndProof correctCommands,
+          TransactionRun correctTransactionRun,
           LedgerAccumulator ledgerAccumulator,
           Hasher hasher) {
-        return new ByzantineVerifiedCommandsAndProofBuilder()
+        return new ByzantineTransactionRunBuilder()
             .hasher(hasher)
-            .base(correctCommands)
-            .replaceCommands(cmd -> Transaction.create(new byte[] {0}))
+            .base(correctTransactionRun)
+            .replaceTransactions(cmd -> Transaction.create(new byte[] {0}))
             .build();
       }
     },
     NO_SIGNATURES {
       @Override
-      VerifiedTxnsAndProof transform(
+      TransactionRun transform(
           DtoLedgerProof request,
-          VerifiedTxnsAndProof correctCommands,
+          TransactionRun correctTransactionRun,
           LedgerAccumulator accumulator,
           Hasher hasher) {
-        return new ByzantineVerifiedCommandsAndProofBuilder()
+        return new ByzantineTransactionRunBuilder()
             .hasher(hasher)
-            .base(correctCommands)
-            .replaceCommands(cmd -> Transaction.create(new byte[] {0}))
+            .base(correctTransactionRun)
+            .replaceTransactions(cmd -> Transaction.create(new byte[] {0}))
             .accumulator(request, accumulator)
             .overwriteSignatures(new TimestampedECDSASignatures())
             .build();
@@ -224,30 +226,30 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
     },
     BAD_SIGNATURES {
       @Override
-      VerifiedTxnsAndProof transform(
+      TransactionRun transform(
           DtoLedgerProof request,
-          VerifiedTxnsAndProof correctCommands,
+          TransactionRun correctTransactionRun,
           LedgerAccumulator accumulator,
           Hasher hasher) {
-        return new ByzantineVerifiedCommandsAndProofBuilder()
+        return new ByzantineTransactionRunBuilder()
             .hasher(hasher)
-            .base(correctCommands)
-            .replaceCommands(cmd -> Transaction.create(new byte[] {0}))
+            .base(correctTransactionRun)
+            .replaceTransactions(cmd -> Transaction.create(new byte[] {0}))
             .accumulator(request, accumulator)
             .build();
       }
     };
 
-    abstract VerifiedTxnsAndProof transform(
+    abstract TransactionRun transform(
         DtoLedgerProof request,
-        VerifiedTxnsAndProof correctCommands,
+        TransactionRun correctTransactionRun,
         LedgerAccumulator ledgerAccumulator,
         Hasher hasher);
   }
 
   @Override
-  public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
-    VerifiedTxnsAndProof correctResult = correctReader.getNextCommittedTxns(start);
+  public TransactionRun getNextTransactionRun(DtoLedgerProof start) {
+    TransactionRun correctResult = correctReader.getNextTransactionRun(start);
     // TODO: Make epoch sync byzantine as well
     if (start.getLedgerHeader().isEndOfEpoch()) {
       return correctResult;

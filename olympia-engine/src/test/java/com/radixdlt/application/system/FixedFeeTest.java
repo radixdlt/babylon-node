@@ -136,7 +136,7 @@ public class FixedFeeTest {
                 .build(),
             cm,
             store);
-    var txn =
+    var transaction =
         this.engine
             .construct(
                 TxnConstructionRequest.create()
@@ -146,7 +146,7 @@ public class FixedFeeTest {
                             REAddr.ofNativeToken(), "xrd", "xrd", "", "", "", null))
                     .action(new MintToken(REAddr.ofNativeToken(), accountAddr, UInt256.TEN)))
             .buildWithoutSignature();
-    this.engine.execute(List.of(txn), null, PermissionLevel.SYSTEM);
+    this.engine.execute(List.of(transaction), null, PermissionLevel.SYSTEM);
   }
 
   @Test

@@ -64,13 +64,40 @@
 
 package com.radixdlt.ledger;
 
-import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-/** Module which provides a random hash command generator */
-public class MockedCommandGeneratorModule extends AbstractModule {
-  @Override
-  protected void configure() {
-    bind(ProposalGenerator.class).to(RandomHashTxnsGenerator.class);
+import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Before;
+import org.junit.Test;
+
+public class TransactionRunTest {
+  private LedgerProof stateAndProof;
+  private TransactionRun emptyTransactionRun;
+  private final long stateVersion = 232L;
+
+  @Before
+  public void setUp() {
+    this.stateAndProof = mock(LedgerProof.class);
+    when(stateAndProof.getStateVersion()).thenReturn(stateVersion);
+
+    this.emptyTransactionRun = TransactionRun.create(ImmutableList.of(), stateAndProof);
+  }
+
+  @Test
+  public void testGetters() {
+    assertThat(this.emptyTransactionRun.getProof()).isEqualTo(stateAndProof);
+  }
+
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(TransactionRun.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
   }
 }

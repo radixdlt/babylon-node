@@ -174,8 +174,8 @@ public interface SystemCounters {
     HASHED_BYTES("hashed.bytes"),
 
     LEDGER_STATE_VERSION("ledger.state_version"),
-    LEDGER_SYNC_COMMANDS_PROCESSED("ledger.sync_commands_processed"),
-    LEDGER_BFT_COMMANDS_PROCESSED("ledger.bft_commands_processed"),
+    LEDGER_SYNC_TRANSACTIONS_PROCESSED("ledger.sync_transactions_processed"),
+    LEDGER_BFT_TRANSACTIONS_PROCESSED("ledger.bft_transactions_processed"),
 
     SYNC_INVALID_RESPONSES_RECEIVED("sync.invalid_responses_received"),
     SYNC_VALID_RESPONSES_RECEIVED("sync.valid_responses_received"),
@@ -188,7 +188,7 @@ public interface SystemCounters {
     MEMPOOL_ADD_SUCCESS("mempool.add_success"),
     MEMPOOL_ADD_FAILURE("mempool.add_failure"),
 
-    RADIX_ENGINE_INVALID_PROPOSED_COMMANDS("radix_engine.invalid_proposed_commands"),
+    RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS("radix_engine.invalid_proposed_transactions"),
     RADIX_ENGINE_USER_TRANSACTIONS("radix_engine.user_transactions"),
     RADIX_ENGINE_SYSTEM_TRANSACTIONS("radix_engine.system_transactions"),
 
