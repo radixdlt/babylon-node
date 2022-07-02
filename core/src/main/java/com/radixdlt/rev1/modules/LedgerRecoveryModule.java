@@ -72,7 +72,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.SerializedVertexStoreState;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -162,7 +162,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
 
   private static VerifiedVertexStoreState epochProofToGenesisVertexStore(
       LedgerProof lastEpochProof, Hasher hasher) {
-    var genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw()).withId(hasher);
+    var genesisVertex = Vertex.createGenesis(lastEpochProof.getRaw()).withId(hasher);
     var nextLedgerHeader =
         LedgerHeader.create(
             lastEpochProof.getNextEpoch(),

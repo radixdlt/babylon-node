@@ -69,7 +69,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -88,11 +88,11 @@ public final class SerializedVertexStoreState {
 
   @JsonProperty("root")
   @DsonOutput(Output.ALL)
-  private final UnverifiedVertex root;
+  private final Vertex root;
 
   @JsonProperty("vertices")
   @DsonOutput(Output.ALL)
-  private final ImmutableList<UnverifiedVertex> vertices;
+  private final ImmutableList<Vertex> vertices;
 
   @JsonProperty("high_qc")
   @DsonOutput(Output.ALL)
@@ -105,8 +105,8 @@ public final class SerializedVertexStoreState {
   @JsonCreator
   public SerializedVertexStoreState(
       @JsonProperty(value = "high_qc", required = true) HighQC highQC,
-      @JsonProperty(value = "root", required = true) UnverifiedVertex root,
-      @JsonProperty(value = "vertices", required = true) ImmutableList<UnverifiedVertex> vertices,
+      @JsonProperty(value = "root", required = true) Vertex root,
+      @JsonProperty(value = "vertices", required = true) ImmutableList<Vertex> vertices,
       @JsonProperty("highest_tc") TimeoutCertificate highestTC) {
     this.root = Objects.requireNonNull(root);
     this.vertices = Objects.requireNonNull(vertices);
@@ -114,11 +114,11 @@ public final class SerializedVertexStoreState {
     this.highestTC = highestTC;
   }
 
-  public UnverifiedVertex getRoot() {
+  public Vertex getRoot() {
     return root;
   }
 
-  public ImmutableList<UnverifiedVertex> getVertices() {
+  public ImmutableList<Vertex> getVertices() {
     return vertices;
   }
 

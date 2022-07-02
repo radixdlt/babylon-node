@@ -92,7 +92,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.*;
@@ -154,7 +154,7 @@ public class ConsensusModuleTest {
   public void setup() {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     var genesisVertex =
-        UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, null, 0))
+        Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, null, 0))
             .withId(ZeroHasher.INSTANCE);
     var qc =
         QuorumCertificate.ofGenesis(genesisVertex, LedgerHeader.genesis(accumulatorState, null, 0));
@@ -261,8 +261,7 @@ public class ConsensusModuleTest {
   private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(
       QuorumCertificate parent, ECKeyPair proposerKeyPair, Transaction txn) {
     final var proposerBftNode = BFTNode.create(proposerKeyPair.getPublicKey());
-    var vertex =
-        UnverifiedVertex.create(parent, Round.of(1), List.of(txn), proposerBftNode).withId(hasher);
+    var vertex = Vertex.create(parent, Round.of(1), List.of(txn), proposerBftNode).withId(hasher);
     var next =
         new BFTHeader(
             Round.of(1),

@@ -66,7 +66,7 @@ package com.radixdlt.network.messages;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.network.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -79,16 +79,16 @@ import java.util.Objects;
 public final class GetVerticesResponseMessage extends Message {
   @JsonProperty("vertices")
   @DsonOutput(Output.ALL)
-  private final List<UnverifiedVertex> vertices;
+  private final List<Vertex> vertices;
 
   @JsonCreator
   public GetVerticesResponseMessage(
-      @JsonProperty(value = "vertices", required = true) List<UnverifiedVertex> vertices) {
+      @JsonProperty(value = "vertices", required = true) List<Vertex> vertices) {
     this.vertices = Objects.requireNonNull(vertices);
     vertices.forEach(Objects::requireNonNull);
   }
 
-  public List<UnverifiedVertex> getVertices() {
+  public List<Vertex> getVertices() {
     return vertices;
   }
 

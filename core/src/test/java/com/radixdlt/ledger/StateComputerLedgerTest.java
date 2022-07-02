@@ -79,7 +79,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -148,7 +148,7 @@ public class StateComputerLedgerTest {
 
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     this.ledgerHeader = LedgerHeader.genesis(accumulatorState, null, 0);
-    this.genesisVertex = UnverifiedVertex.createGenesis(ledgerHeader).withId(hasher);
+    this.genesisVertex = Vertex.createGenesis(ledgerHeader).withId(hasher);
     this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
     this.currentLedgerHeader =
         this.genesisQC.getCommittedAndLedgerStateProof(hasher).map(Pair::getSecond).orElseThrow();
@@ -174,7 +174,7 @@ public class StateComputerLedgerTest {
             endOfEpoch
                 ? BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
                 : null);
-    this.genesisVertex = UnverifiedVertex.createGenesis(ledgerHeader).withId(hasher);
+    this.genesisVertex = Vertex.createGenesis(ledgerHeader).withId(hasher);
     this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
     this.currentLedgerHeader =
         this.genesisQC.getCommittedAndLedgerStateProof(hasher).map(Pair::getSecond).orElseThrow();
@@ -197,7 +197,7 @@ public class StateComputerLedgerTest {
     when(stateComputer.prepare(any(), any(), anyLong()))
         .thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
     var proposedVertex =
-        UnverifiedVertex.create(genesisQC, Round.of(1), List.of(), BFTNode.random()).withId(hasher);
+        Vertex.create(genesisQC, Round.of(1), List.of(), BFTNode.random()).withId(hasher);
 
     // Act
     Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
@@ -220,7 +220,7 @@ public class StateComputerLedgerTest {
         .thenReturn(
             new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
     var proposedVertex =
-        UnverifiedVertex.create(genesisQC, Round.of(1), List.of(nextTransaction), BFTNode.random())
+        Vertex.create(genesisQC, Round.of(1), List.of(nextTransaction), BFTNode.random())
             .withId(hasher);
 
     // Act
@@ -246,7 +246,7 @@ public class StateComputerLedgerTest {
 
     // Act
     var proposedVertex =
-        UnverifiedVertex.create(genesisQC, Round.of(1), List.of(nextTransaction), BFTNode.random())
+        Vertex.create(genesisQC, Round.of(1), List.of(nextTransaction), BFTNode.random())
             .withId(hasher);
     Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 

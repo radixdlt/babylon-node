@@ -67,7 +67,7 @@ package com.radixdlt.network.messages;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
@@ -85,8 +85,7 @@ public class GetVerticesErrorResponseMessageSerializeTest
   private static GetVerticesErrorResponseMessage get() {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     LedgerHeader ledgerHeader = LedgerHeaderMock.get();
-    VerifiedVertex verifiedVertex =
-        UnverifiedVertex.createGenesis(ledgerHeader).withId(ZeroHasher.INSTANCE);
+    VerifiedVertex verifiedVertex = Vertex.createGenesis(ledgerHeader).withId(ZeroHasher.INSTANCE);
     QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, ledgerHeader);
     HighQC highQC = HighQC.from(qc, qc, Optional.empty());
     final var request = new GetVerticesRequestMessage(HashUtils.random256(), 3);

@@ -76,7 +76,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -431,8 +431,7 @@ public final class RadixEngineStateComputer implements StateComputer {
                   validatorSet -> {
                     var header = txnsAndProof.getProof();
                     // TODO: Move vertex stuff somewhere else
-                    var genesisVertex =
-                        UnverifiedVertex.createGenesis(header.getRaw()).withId(hasher);
+                    var genesisVertex = Vertex.createGenesis(header.getRaw()).withId(hasher);
                     var nextLedgerHeader =
                         LedgerHeader.create(
                             header.getNextEpoch(),

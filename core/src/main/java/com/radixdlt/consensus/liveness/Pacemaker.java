@@ -70,7 +70,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -220,7 +220,7 @@ public final class Pacemaker {
     }
 
     final VerifiedVertex proposedVertex =
-        UnverifiedVertex.create(highestQC, round, nextTransactions, self).withId(hasher);
+        Vertex.create(highestQC, round, nextTransactions, self).withId(hasher);
     return safetyRules.signProposal(
         proposedVertex, highQC.highestCommittedQC(), highQC.highestTC());
   }
@@ -267,7 +267,7 @@ public final class Pacemaker {
 
     final var highQC = this.latestRoundUpdate.getHighQC();
     final var vertex =
-        UnverifiedVertex.createTimeout(
+        Vertex.createTimeout(
                 highQC.highestQC(), roundUpdate.getCurrentRound(), roundUpdate.getLeader())
             .withId(hasher);
     this.timeoutVoteVertexId = Optional.of(vertex.getId());

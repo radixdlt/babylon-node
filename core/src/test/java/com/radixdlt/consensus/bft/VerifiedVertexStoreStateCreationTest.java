@@ -74,7 +74,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
@@ -94,7 +94,7 @@ public class VerifiedVertexStoreStateCreationTest {
   @Before
   public void setup() {
     this.hasher = new Sha256Hasher(DefaultSerialization.getInstance());
-    this.genesisVertex = UnverifiedVertex.createGenesis(MOCKED_HEADER).withId(hasher);
+    this.genesisVertex = Vertex.createGenesis(MOCKED_HEADER).withId(hasher);
     this.genesisHash = genesisVertex.getId();
   }
 

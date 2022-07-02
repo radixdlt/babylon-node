@@ -70,7 +70,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
@@ -100,7 +100,7 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 
     // add a particle to ensure atom is valid and has at least one shard
     BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-    UnverifiedVertex vertex = UnverifiedVertex.create(qc, round, List.of(txn), author);
+    Vertex vertex = Vertex.create(qc, round, List.of(txn), author);
     return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
   }
 }

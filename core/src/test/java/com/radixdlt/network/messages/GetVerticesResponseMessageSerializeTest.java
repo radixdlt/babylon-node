@@ -66,7 +66,7 @@ package com.radixdlt.network.messages;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.serialization.SerializeMessageObject;
 import com.radixdlt.utils.LedgerHeaderMock;
 
@@ -78,7 +78,7 @@ public class GetVerticesResponseMessageSerializeTest
 
   private static GetVerticesResponseMessage get() {
     LedgerHeader ledgerHeader = LedgerHeaderMock.get();
-    UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(ledgerHeader);
+    Vertex genesisVertex = Vertex.createGenesis(ledgerHeader);
     return new GetVerticesResponseMessage(ImmutableList.of(genesisVertex));
   }
 }

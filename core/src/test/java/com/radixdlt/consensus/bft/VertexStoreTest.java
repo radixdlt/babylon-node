@@ -85,7 +85,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.consensus.sync.VertexStoreJavaImpl;
@@ -143,7 +143,7 @@ public class VertexStoreTest {
     this.bftHighQCUpdateEventDispatcher = rmock(EventDispatcher.class);
     this.committedSender = rmock(EventDispatcher.class);
 
-    this.genesisVertex = UnverifiedVertex.createGenesis(MOCKED_HEADER).withId(ZeroHasher.INSTANCE);
+    this.genesisVertex = Vertex.createGenesis(MOCKED_HEADER).withId(ZeroHasher.INSTANCE);
     this.genesisHash = genesisVertex.getId();
     this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
     this.sut =
@@ -185,8 +185,7 @@ public class VertexStoreTest {
           }
 
           var vertex =
-              UnverifiedVertex.create(
-                      qc, round, List.of(Transaction.create(new byte[0])), BFTNode.random())
+              Vertex.create(qc, round, List.of(Transaction.create(new byte[0])), BFTNode.random())
                   .withId(hasher);
           lastParentHeader.set(new BFTHeader(round, vertex.getId(), MOCKED_HEADER));
           lastGrandParentHeader.set(parentHeader);

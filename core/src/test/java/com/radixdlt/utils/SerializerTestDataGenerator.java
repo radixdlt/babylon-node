@@ -75,7 +75,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -117,7 +117,7 @@ public class SerializerTestDataGenerator {
     var qc = randomQC();
     var txn = Transaction.create(new byte[] {0, 1, 2, 3});
     var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-    var vertex = UnverifiedVertex.create(qc, randomRound(), List.of(txn), author);
+    var vertex = Vertex.create(qc, randomRound(), List.of(txn), author);
     return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
   }
 

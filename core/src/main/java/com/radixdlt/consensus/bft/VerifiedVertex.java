@@ -68,7 +68,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
 import com.radixdlt.transactions.Transaction;
@@ -78,15 +78,15 @@ import java.util.Objects;
 
 /** A vertex which has been verified with hash id */
 public final class VerifiedVertex {
-  private final UnverifiedVertex vertex;
+  private final Vertex vertex;
   private final HashCode id;
 
-  private VerifiedVertex(UnverifiedVertex vertex, HashCode id) {
+  private VerifiedVertex(Vertex vertex, HashCode id) {
     this.vertex = Objects.requireNonNull(vertex);
     this.id = Objects.requireNonNull(id);
   }
 
-  public static VerifiedVertex from(UnverifiedVertex vertex, Hasher hasher) {
+  public static VerifiedVertex from(Vertex vertex, Hasher hasher) {
     return new VerifiedVertex(vertex, hasher.hashDsonEncoded(vertex));
   }
 
@@ -98,12 +98,12 @@ public final class VerifiedVertex {
     return vertex.isTimeout();
   }
 
-  public UnverifiedVertex toSerializable() {
+  public Vertex toSerializable() {
     return vertex;
   }
 
   public List<Transaction> getTxns() {
-    return vertex.getTxns();
+    return vertex.getTransactions();
   }
 
   public boolean touchesGenesis() {

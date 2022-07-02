@@ -87,7 +87,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -280,7 +280,7 @@ public class EpochManagerTest {
           @Self BFTNode self, Hasher hasher, BFTValidatorSet validatorSet) {
         var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
         var verifiedVertex =
-            UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0))
+            Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0))
                 .withId(hasher);
         var qc =
             QuorumCertificate.ofGenesis(
@@ -314,7 +314,7 @@ public class EpochManagerTest {
         BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     LedgerHeader header = LedgerHeader.genesis(accumulatorState, nextValidatorSet, 0);
-    VerifiedVertex verifiedGenesisVertex = UnverifiedVertex.createGenesis(header).withId(hasher);
+    VerifiedVertex verifiedGenesisVertex = Vertex.createGenesis(header).withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
             header.getEpoch() + 1,

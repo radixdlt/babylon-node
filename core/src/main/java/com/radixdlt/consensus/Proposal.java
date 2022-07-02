@@ -91,7 +91,7 @@ public final class Proposal implements ConsensusEvent {
 
   @JsonProperty("vertex")
   @DsonOutput(Output.ALL)
-  private final UnverifiedVertex vertex;
+  private final Vertex vertex;
 
   @JsonProperty("signature")
   @DsonOutput(Output.ALL)
@@ -107,7 +107,7 @@ public final class Proposal implements ConsensusEvent {
 
   @JsonCreator
   Proposal(
-      @JsonProperty(value = "vertex", required = true) UnverifiedVertex vertex,
+      @JsonProperty(value = "vertex", required = true) Vertex vertex,
       @JsonProperty(value = "committedQC", required = true) QuorumCertificate committedQC,
       @JsonProperty(value = "signature", required = true) ECDSASignature signature,
       @JsonProperty("highestTC") TimeoutCertificate highestTC) {
@@ -115,7 +115,7 @@ public final class Proposal implements ConsensusEvent {
   }
 
   public Proposal(
-      UnverifiedVertex vertex,
+      Vertex vertex,
       QuorumCertificate committedQC,
       ECDSASignature signature,
       Optional<TimeoutCertificate> highestTC) {
@@ -147,7 +147,7 @@ public final class Proposal implements ConsensusEvent {
     return vertex.getProposer();
   }
 
-  public UnverifiedVertex getVertex() {
+  public Vertex getVertex() {
     return vertex;
   }
 

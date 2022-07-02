@@ -83,10 +83,18 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
-/** Vertex in a Vertex graph */
+/**
+ * A vertex representing a possible future committed round of transactions.
+ *
+ * <p>Note that this vertex class is a DTO and could have been sent from a peer, as such its content
+ * is potentially untrusted.
+ *
+ * <p>This Vertex class should very rarely be used raw, and generally should be converted to a
+ * VerifiedVertex.
+ */
 @Immutable
 @SerializerId2("consensus.vertex")
-public final class UnverifiedVertex {
+public final class Vertex {
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)
   @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
   SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -95,82 +103,83 @@ public final class UnverifiedVertex {
   @DsonOutput(Output.ALL)
   private final QuorumCertificate qc;
 
+  // This is serialized in getSerializerRound below
   private final Round round;
 
   @JsonProperty("txns")
   @DsonOutput(Output.ALL)
-  private final List<byte[]> txns;
+  private final List<byte[]> transactions;
 
   @JsonProperty("tout")
   @DsonOutput(Output.ALL)
   private final Boolean proposerTimedOut;
 
+  // This is serialized in getProposerBytes below
   private final BFTNode proposer;
 
-  private UnverifiedVertex(
+  private Vertex(
       QuorumCertificate qc,
       Round round,
-      List<byte[]> txns,
+      List<byte[]> transactions,
       BFTNode proposer,
       Boolean proposerTimedOut) {
     this.qc = requireNonNull(qc);
     this.round = requireNonNull(round);
 
-    if (proposerTimedOut != null && proposerTimedOut && !txns.isEmpty()) {
-      throw new IllegalArgumentException("Txns must be empty if timeout");
+    if (proposerTimedOut != null && proposerTimedOut && !transactions.isEmpty()) {
+      throw new IllegalArgumentException("Transactions must be empty if timeout");
     }
 
-    if (txns != null) {
-      txns.forEach(Objects::requireNonNull);
+    if (transactions != null) {
+      transactions.forEach(Objects::requireNonNull);
     }
 
-    this.txns = txns;
+    this.transactions = transactions;
     this.proposer = proposer;
     this.proposerTimedOut = proposerTimedOut;
   }
 
   @JsonCreator
-  public static UnverifiedVertex create(
+  public static Vertex create(
       @JsonProperty(value = "qc", required = true) QuorumCertificate qc,
-      @JsonProperty("round") long viewId,
-      @JsonProperty("txns") List<byte[]> txns,
+      @JsonProperty("round") long roundNumber,
+      @JsonProperty("txns") List<byte[]> transactions,
       @JsonProperty("p") byte[] proposer,
       @JsonProperty("tout") Boolean proposerTimedOut)
       throws PublicKeyException {
-    return new UnverifiedVertex(
+    return new Vertex(
         qc,
-        Round.of(viewId),
-        txns == null ? List.of() : txns,
+        Round.of(roundNumber),
+        transactions == null ? List.of() : transactions,
         proposer != null ? BFTNode.fromPublicKeyBytes(proposer) : null,
         proposerTimedOut);
   }
 
-  public static UnverifiedVertex createGenesis(LedgerHeader ledgerHeader) {
+  public static Vertex createGenesis(LedgerHeader ledgerHeader) {
     BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
     final VoteData voteData = new VoteData(header, header, header);
     final QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    return new UnverifiedVertex(qc, Round.genesis(), null, null, false);
+    return new Vertex(qc, Round.genesis(), null, null, false);
   }
 
-  public static UnverifiedVertex createTimeout(
-      QuorumCertificate qc, Round round, BFTNode proposer) {
-    return new UnverifiedVertex(qc, round, List.of(), proposer, true);
+  public static Vertex createTimeout(QuorumCertificate qc, Round round, BFTNode proposer) {
+    return new Vertex(qc, round, List.of(), proposer, true);
   }
 
-  public static UnverifiedVertex create(
+  public static Vertex create(
       QuorumCertificate qc, Round round, List<Transaction> transactions, BFTNode proposer) {
     if (round.number() == 0) {
       throw new IllegalArgumentException("Only genesis can have round 0.");
     }
 
-    var txnBytes = transactions.stream().map(Transaction::getPayload).toList();
+    var transactionBytes = transactions.stream().map(Transaction::getPayload).toList();
 
-    return new UnverifiedVertex(qc, round, txnBytes, proposer, false);
+    return new Vertex(qc, round, transactionBytes, proposer, false);
   }
 
   @JsonProperty("p")
   @DsonOutput(Output.ALL)
-  private byte[] getProposerJson() {
+  private byte[] getProposerBytes() {
     return proposer == null ? null : proposer.getKey().getCompressedBytes();
   }
 
@@ -194,37 +203,39 @@ public final class UnverifiedVertex {
     return round;
   }
 
-  public List<Transaction> getTxns() {
-    return txns == null ? List.of() : txns.stream().map(Transaction::create).toList();
+  public List<Transaction> getTransactions() {
+    return transactions == null
+        ? List.of()
+        : transactions.stream().map(Transaction::create).toList();
   }
 
   @JsonProperty("round")
   @DsonOutput(Output.ALL)
-  private Long getSerializerView() {
+  private Long getSerializerRound() {
     return this.round == null ? null : this.round.number();
   }
 
   @Override
   public String toString() {
-    return String.format("Vertex{round=%s, qc=%s, txns=%s}", round, qc, getTxns());
+    return String.format("Vertex{round=%s, qc=%s, txns=%s}", round, qc, getTransactions());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(qc, proposer, round, txns, proposerTimedOut);
+    return Objects.hash(qc, proposer, round, transactions, proposerTimedOut);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof UnverifiedVertex)) {
+    if (!(o instanceof Vertex)) {
       return false;
     }
 
-    UnverifiedVertex v = (UnverifiedVertex) o;
+    Vertex v = (Vertex) o;
     return Objects.equals(v.round, this.round)
         && Objects.equals(v.proposerTimedOut, this.proposerTimedOut)
         && Objects.equals(v.proposer, this.proposer)
-        && Objects.equals(v.getTxns(), this.getTxns())
+        && Objects.equals(v.getTransactions(), this.getTransactions())
         && Objects.equals(v.qc, this.qc);
   }
 }

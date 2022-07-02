@@ -87,7 +87,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -294,9 +294,7 @@ public class RadixEngineStateComputerTest {
   @Ignore("Ignore for now given need for more refactoring to get this test to work")
   public void executing_non_epoch_max_round_should_return_no_validator_set() {
     // Arrange
-    var v =
-        UnverifiedVertex.create(
-            mock(QuorumCertificate.class), Round.of(9), List.of(), BFTNode.random());
+    var v = Vertex.create(mock(QuorumCertificate.class), Round.of(9), List.of(), BFTNode.random());
     var vertex = v.withId(RandomHasher.INSTANCE);
 
     // Action
@@ -315,7 +313,7 @@ public class RadixEngineStateComputerTest {
     var parentHeader = mock(BFTHeader.class);
     when(parentHeader.getRound()).thenReturn(Round.of(0));
     when(qc.getProposed()).thenReturn(parentHeader);
-    var unverified = UnverifiedVertex.create(qc, Round.of(11), List.of(), BFTNode.random());
+    var unverified = Vertex.create(qc, Round.of(11), List.of(), BFTNode.random());
     var vertex = unverified.withId(RandomHasher.INSTANCE);
 
     // Act
@@ -348,7 +346,7 @@ public class RadixEngineStateComputerTest {
     when(parentHeader.getRound()).thenReturn(Round.of(0));
     when(qc.getProposed()).thenReturn(parentHeader);
     var vertex =
-        UnverifiedVertex.create(qc, Round.of(11), List.of(txn), BFTNode.random())
+        Vertex.create(qc, Round.of(11), List.of(txn), BFTNode.random())
             .withId(RandomHasher.INSTANCE);
 
     // Act
@@ -381,7 +379,7 @@ public class RadixEngineStateComputerTest {
             .end()
             .build();
     var v =
-        UnverifiedVertex.create(
+        Vertex.create(
             mock(QuorumCertificate.class),
             Round.of(1),
             List.of(illegalTxn),

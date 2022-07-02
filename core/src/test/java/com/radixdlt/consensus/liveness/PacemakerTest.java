@@ -79,7 +79,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -202,7 +202,7 @@ public class PacemakerTest {
     when(bftInsertUpdate.getVertexStoreState()).thenReturn(vertexStoreState);
     var node = BFTNode.random();
     when(preparedVertex.getId())
-        .thenReturn(hasher.hashDsonEncoded(UnverifiedVertex.createTimeout(highestQc, round, node)));
+        .thenReturn(hasher.hashDsonEncoded(Vertex.createTimeout(highestQc, round, node)));
 
     when(this.safetyRules.getLastVote(round)).thenReturn(Optional.empty());
     when(this.safetyRules.createVote(any(), any(), anyLong(), any())).thenReturn(emptyVote);

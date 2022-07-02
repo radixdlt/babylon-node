@@ -72,7 +72,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
@@ -209,20 +209,20 @@ public class DifferentTimestampsCauseTimeoutTest {
 
   private Proposal mutateProposal(Proposal p, int destination) {
     QuorumCertificate committedQC = p.highQC().highestCommittedQC();
-    UnverifiedVertex vertex = p.getVertex();
+    Vertex vertex = p.getVertex();
     ECDSASignature signature = p.getSignature();
 
     return new Proposal(
         mutateVertex(vertex, destination), committedQC, signature, Optional.empty());
   }
 
-  private UnverifiedVertex mutateVertex(UnverifiedVertex v, int destination) {
+  private Vertex mutateVertex(Vertex v, int destination) {
     var qc = v.getQC();
     var round = v.getRound();
-    var txns = v.getTxns();
+    var txns = v.getTransactions();
     var proposer = v.getProposer();
 
-    return UnverifiedVertex.create(mutateQC(qc, destination), round, txns, proposer);
+    return Vertex.create(mutateQC(qc, destination), round, txns, proposer);
   }
 
   private QuorumCertificate mutateQC(QuorumCertificate qc, int destination) {

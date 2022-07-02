@@ -71,7 +71,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -131,7 +131,7 @@ public final class MockedStateComputer implements StateComputer {
                 validatorSet -> {
                   LedgerProof header = txnsAndProof.getProof();
                   VerifiedVertex genesisVertex =
-                      UnverifiedVertex.createGenesis(header.getRaw()).withId(hasher);
+                      Vertex.createGenesis(header.getRaw()).withId(hasher);
                   LedgerHeader nextLedgerHeader =
                       LedgerHeader.create(
                           header.getNextEpoch(),
