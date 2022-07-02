@@ -81,7 +81,13 @@ import java.util.Objects;
  * ensure that we keep occasional proofs, every X transactions or so (for Olympia, X = 1000). This
  * enables trustless syncing of X transactions at a time.
  *
- * <p>NB: Used to be called VerifiedTxnsAndProof
+ * <p>Notes:
+ *
+ * <ul>
+ *   <li>"Run" is used to mean an ordered list of consecutive items, as in the expression "A run of
+ *       cards"
+ *   <li>This class has previous been known by "VerifiedTxnsAndProof" and "CommandsAndProof"
+ * </ul>
  */
 public final class TransactionRun {
   private final List<Transaction> transactions;
