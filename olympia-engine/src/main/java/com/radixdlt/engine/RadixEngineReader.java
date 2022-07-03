@@ -65,7 +65,7 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.utils.UInt384;
@@ -78,7 +78,7 @@ import java.util.function.Predicate;
 public interface RadixEngineReader<M> {
   M getMetadata();
 
-  Optional<Particle> get(SystemMapKey mapKey);
+  Optional<RawSubstate> get(SystemMapKey mapKey);
 
   <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
       Class<T> c, Function<T, K> keyMapper);
@@ -86,5 +86,5 @@ public interface RadixEngineReader<M> {
   <K, T extends ResourceInBucket> Map<K, UInt384> reduceResources(
       SubstateIndex<T> index, Function<T, K> keyMapper, Predicate<T> predicate);
 
-  <U, T extends Particle> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator);
+  <U, T extends RawSubstate> U reduce(Class<T> c, U identity, BiFunction<U, T, U> accumulator);
 }

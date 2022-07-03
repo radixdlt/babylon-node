@@ -72,12 +72,8 @@ import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.SystemMapKey;
+import com.radixdlt.constraintmachine.*;
+import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -147,9 +143,9 @@ public final class TxBuilder {
     lowLevelBuilder.end();
   }
 
-  public void up(Particle particle) {
-    lowLevelBuilder.up(particle);
-    if (particle instanceof TokenResource) {
+  public void up(RawSubstate rawSubstate) {
+    lowLevelBuilder.up(rawSubstate);
+    if (rawSubstate instanceof TokenResource) {
       numResourcesCreated++;
     }
   }
@@ -178,7 +174,7 @@ public final class TxBuilder {
   }
 
   private CloseableCursor<RawSubstateBytes> createRemoteSubstateCursor(
-      Class<? extends Particle> c) {
+      Class<? extends RawSubstate> c) {
     var b = deserialization.classToByte(c);
     return createRemoteSubstateCursor(SubstateIndex.create(new byte[] {b}, c));
   }
@@ -188,10 +184,10 @@ public final class TxBuilder {
         Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
   }
 
-  private Substate deserialize(RawSubstateBytes rawSubstateBytes) {
+  private com.radixdlt.atom.Substate deserialize(RawSubstateBytes rawSubstateBytes) {
     try {
       var raw = deserialization.deserialize(rawSubstateBytes.getData());
-      return Substate.create(raw, SubstateId.fromBytes(rawSubstateBytes.getId()));
+      return com.radixdlt.atom.Substate.create(raw, SubstateId.fromBytes(rawSubstateBytes.getId()));
     } catch (DeserializeException e) {
       throw new IllegalStateException(e);
     }
@@ -199,24 +195,24 @@ public final class TxBuilder {
 
   // For mempool filler
   @SuppressWarnings("unchecked")
-  public <T extends Particle> T downSubstate(Class<T> particleClass, Predicate<T> particlePredicate)
-      throws TxBuilderException {
+  public <T extends RawSubstate> T downSubstate(
+      Class<T> rawSubstateClass, Predicate<T> rawSubstatePredicate) throws TxBuilderException {
     var localSubstate =
         lowLevelBuilder.localUpSubstate().stream()
-            .filter(s -> particleClass.isInstance(s.getParticle()))
-            .filter(s -> particlePredicate.test((T) s.getParticle()))
+            .filter(s -> rawSubstateClass.isInstance(s.getSubstate()))
+            .filter(s -> rawSubstatePredicate.test((T) s.getSubstate()))
             .findFirst();
 
     if (localSubstate.isPresent()) {
       localDown(localSubstate.get().getIndex());
-      return (T) localSubstate.get().getParticle();
+      return (T) localSubstate.get().getSubstate();
     }
 
-    try (var cursor = createRemoteSubstateCursor(particleClass)) {
+    try (var cursor = createRemoteSubstateCursor(rawSubstateClass)) {
       var substateRead =
           iteratorToStream(cursor)
               .map(this::deserialize)
-              .filter(s -> particlePredicate.test(particleClass.cast(s.getParticle())))
+              .filter(s -> rawSubstatePredicate.test(rawSubstateClass.cast(s.getSubstate())))
               .findFirst();
 
       if (substateRead.isEmpty()) {
@@ -225,17 +221,17 @@ public final class TxBuilder {
 
       down(substateRead.get().getId());
 
-      return (T) substateRead.get().getParticle();
+      return (T) substateRead.get().getSubstate();
     }
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends Particle> T findSystem(Class<T> substateClass) {
+  public <T extends RawSubstate> T findSystem(Class<T> substateClass) {
     var typeByte = deserialization.classToByte(substateClass);
     var mapKey = SystemMapKey.ofSystem(typeByte);
     var localMaybe = lowLevelBuilder.get(mapKey);
     if (localMaybe.isPresent()) {
-      return (T) localMaybe.get().getParticle();
+      return (T) localMaybe.get().getSubstate();
     }
     return remoteSubstate
         .get(mapKey)
@@ -251,13 +247,14 @@ public final class TxBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends Particle> T find(Class<T> substateClass, Object key) throws TxBuilderException {
+  public <T extends RawSubstate> T find(Class<T> substateClass, Object key)
+      throws TxBuilderException {
     var keyBytes = serialization.serializeKey(substateClass, key);
     var typeByte = deserialization.classToByte(substateClass);
     var mapKey = SystemMapKey.ofSystem(typeByte, keyBytes);
     var localMaybe = lowLevelBuilder.get(mapKey);
     if (localMaybe.isPresent()) {
-      return (T) localMaybe.get().getParticle();
+      return (T) localMaybe.get().getSubstate();
     }
     var raw = remoteSubstate.get(mapKey);
 
@@ -294,7 +291,7 @@ public final class TxBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  private <T extends Particle> T readDownInternal(
+  private <T extends RawSubstate> T readDownInternal(
       Class<T> substateClass, Object key, boolean down) {
     var keyBytes = serialization.serializeKey(substateClass, key);
     var typeByte = deserialization.classToByte(substateClass);
@@ -307,7 +304,7 @@ public final class TxBuilder {
       } else {
         lowLevelBuilder.localRead(local.getIndex());
       }
-      return (T) local.getParticle();
+      return (T) local.getSubstate();
     }
 
     var raw = remoteSubstate.get(mapKey);
@@ -330,23 +327,23 @@ public final class TxBuilder {
     }
   }
 
-  public <T extends Particle> T down(Class<T> substateClass, Object key) {
+  public <T extends RawSubstate> T down(Class<T> substateClass, Object key) {
     return readDownInternal(substateClass, key, true);
   }
 
-  public <T extends Particle> T read(Class<T> substateClass, Object key) {
+  public <T extends RawSubstate> T read(Class<T> substateClass, Object key) {
     return readDownInternal(substateClass, key, false);
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends Particle> T downSystem(Class<T> substateClass) {
+  public <T extends RawSubstate> T downSystem(Class<T> substateClass) {
     var typeByte = deserialization.classToByte(substateClass);
     var mapKey = SystemMapKey.ofSystem(typeByte);
     var localMaybe = lowLevelBuilder.get(mapKey);
     if (localMaybe.isPresent()) {
       var local = localMaybe.get();
       lowLevelBuilder.localDown(local.getIndex());
-      return (T) local.getParticle();
+      return (T) local.getSubstate();
     }
 
     var rawSubstate = remoteSubstate.get(mapKey).orElseThrow();
@@ -359,14 +356,14 @@ public final class TxBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends Particle> T readSystem(Class<T> substateClass) {
+  public <T extends RawSubstate> T readSystem(Class<T> substateClass) {
     var typeByte = deserialization.classToByte(substateClass);
     var mapKey = SystemMapKey.ofSystem(typeByte);
     var localMaybe = lowLevelBuilder.get(mapKey);
     if (localMaybe.isPresent()) {
       var local = localMaybe.get();
       lowLevelBuilder.localRead(local.getIndex());
-      return (T) local.getParticle();
+      return (T) local.getSubstate();
     }
 
     var rawSubstate = remoteSubstate.get(mapKey).orElseThrow();
@@ -393,21 +390,21 @@ public final class TxBuilder {
     return serialization.mapVirtual(UnclaimedREAddr.class, addr);
   }
 
-  public <T extends Particle, U> U shutdownAll(
-      Class<T> particleClass, Function<Iterator<T>, U> mapper) {
-    var typeByte = deserialization.classToByte(particleClass);
-    return shutdownAll(SubstateIndex.create(typeByte, particleClass), mapper);
+  public <T extends RawSubstate, U> U shutdownAll(
+      Class<T> rawSubstateClass, Function<Iterator<T>, U> mapper) {
+    var typeByte = deserialization.classToByte(rawSubstateClass);
+    return shutdownAll(SubstateIndex.create(typeByte, rawSubstateClass), mapper);
   }
 
   // FIXME: programmedInTxn is just a hack
   @SuppressWarnings("unchecked")
-  public <T extends Particle> CloseableCursor<T> readIndex(
+  public <T extends RawSubstate> CloseableCursor<T> readIndex(
       SubstateIndex<T> index, boolean programmedInTxn) {
     var comparator = UnsignedBytes.lexicographicalComparator().reversed();
     var cursor = createRemoteSubstateCursor(index);
     var localIterator =
         lowLevelBuilder.localUpSubstate().stream()
-            .map(LocalSubstate::getParticle)
+            .map(LocalSubstate::getSubstate)
             .filter(index.getSubstateClass()::isInstance)
             .map(p -> (T) p)
             .map(p -> Pair.of(p, serialization.serialize(p)))
@@ -466,17 +463,17 @@ public final class TxBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends Particle, U> U shutdownAll(
+  public <T extends RawSubstate, U> U shutdownAll(
       SubstateIndex<T> index, Function<Iterator<T>, U> mapper) {
     try (var cursor = createRemoteSubstateCursor(index)) {
       var localIterator =
           lowLevelBuilder.localUpSubstate().stream()
-              .map(LocalSubstate::getParticle)
+              .map(LocalSubstate::getSubstate)
               .filter(index.getSubstateClass()::isInstance)
               .map(p -> (T) p)
               .filter(p -> index.test(serialization.serialize(p)))
               .iterator();
-      var remoteIterator = Iterators.transform(cursor, s -> (T) this.deserialize(s).getParticle());
+      var remoteIterator = Iterators.transform(cursor, s -> (T) this.deserialize(s).getSubstate());
       var result = mapper.apply(Iterators.concat(localIterator, remoteIterator));
       lowLevelBuilder.downIndex(index);
       return result;
@@ -486,14 +483,14 @@ public final class TxBuilder {
   @SuppressWarnings("unchecked")
   public <T extends ResourceInBucket, X extends Exception> UInt256 downFungible(
       SubstateIndex<T> index,
-      Predicate<T> particlePredicate,
+      Predicate<T> rawSubstatePredicate,
       UInt256 amount,
       Function<UInt256, X> exceptionSupplier)
       throws X {
     var spent = UInt256.ZERO;
     for (var l : lowLevelBuilder.localUpSubstate()) {
-      var p = l.getParticle();
-      if (!index.getSubstateClass().isInstance(p) || !particlePredicate.test((T) p)) {
+      var p = l.getSubstate();
+      if (!index.getSubstateClass().isInstance(p) || !rawSubstatePredicate.test((T) p)) {
         continue;
       }
       var resource = (T) p;
@@ -511,7 +508,7 @@ public final class TxBuilder {
         var raw = cursor.next();
         try {
           var resource = (T) deserialization.deserialize(raw.getData());
-          if (!particlePredicate.test(resource)) {
+          if (!rawSubstatePredicate.test(resource)) {
             continue;
           }
           spent = spent.add(resource.amount());

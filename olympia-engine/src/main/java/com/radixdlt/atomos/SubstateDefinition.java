@@ -66,20 +66,20 @@ package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.KeyDeserializer;
 import com.radixdlt.constraintmachine.KeySerializer;
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.constraintmachine.SubstateDeserializer;
 import com.radixdlt.constraintmachine.SubstateSerializer;
 import com.radixdlt.constraintmachine.VirtualMapper;
 import com.radixdlt.serialization.DeserializeException;
 
 /**
- * Defines how to retrieve important properties from a given particle type.
+ * Defines how to retrieve important properties from a given substate type.
  *
- * @param <T> the particle class
+ * @param <T> the substate class
  */
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
-public final class SubstateDefinition<T extends Particle> {
+public final class SubstateDefinition<T extends RawSubstate> {
   private final Class<T> substateClass;
   private final byte typeByte;
   private final SubstateDeserializer<T> deserializer;

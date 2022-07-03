@@ -94,12 +94,12 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 
   @Override
   public void main(Loader os) {
-    registerParticles(os);
+    registerSubstates(os);
     defineTokenCreation(os);
     defineMintTransferBurn(os);
   }
 
-  private void registerParticles(Loader os) {
+  private void registerSubstates(Loader os) {
     os.substate(
         new SubstateDefinition<>(
             TokenResource.class,

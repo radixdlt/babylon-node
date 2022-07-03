@@ -66,7 +66,7 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
-public interface IndexedReducer<D extends Particle, S extends ReducerState> {
+public interface IndexedReducer<D extends RawSubstate, S extends ReducerState> {
   ReducerResult reduce(
       S reducerState,
       IndexedSubstateIterator<D> inputState,

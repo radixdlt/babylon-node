@@ -64,10 +64,10 @@
 
 package com.radixdlt.application.tokens;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.utils.UInt256;
 
-public interface ResourceInBucket extends Particle {
+public interface ResourceInBucket extends RawSubstate {
   UInt256 amount();
 
   Bucket bucket();

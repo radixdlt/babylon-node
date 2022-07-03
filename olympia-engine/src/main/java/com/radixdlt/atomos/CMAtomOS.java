@@ -65,16 +65,13 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Procedures;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.VirtualSubstateDeserialization;
+import com.radixdlt.constraintmachine.*;
+import com.radixdlt.constraintmachine.RawSubstate;
 import java.util.HashMap;
 import java.util.Map;
 
 public final class CMAtomOS {
-  private final Map<Class<? extends Particle>, SubstateDefinition<? extends Particle>>
+  private final Map<Class<? extends RawSubstate>, SubstateDefinition<? extends RawSubstate>>
       substateDefinitions = new HashMap<>();
   private Procedures procedures = Procedures.empty();
 
@@ -83,7 +80,7 @@ public final class CMAtomOS {
   public void load(ConstraintScrypt constraintScrypt) {
     var constraintScryptEnv = new ConstraintScryptEnv(ImmutableMap.copyOf(substateDefinitions));
     constraintScrypt.main(constraintScryptEnv);
-    substateDefinitions.putAll(constraintScryptEnv.getScryptParticleDefinitions());
+    substateDefinitions.putAll(constraintScryptEnv.getScryptSubstateDefinitions());
     procedures = procedures.combine(constraintScryptEnv.getProcedures());
   }
 

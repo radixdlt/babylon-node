@@ -39,7 +39,7 @@ If no violation is found, a list of parsed instructions, an optional message dat
 
 #### Substate Static Check
 
-If a substate is created by one instruction, its content must be statically checked:
+If a rawSubstate is created by one instruction, its content must be statically checked:
 
 | **Substate Type**                 | **Static Rules**                                                                                                                               |
 |-----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -67,7 +67,7 @@ Each transaction must include at least one instruction group and incomplete inst
 
 After a transaction passes the stateless validation, it's validated against the ledger state, which consists of:
 - **Transactions:** Committed transactions, indexed by transaction ID.
-- **Substates:** A map of substates, indexed by substate ID.
+- **Substates:** A map of substates, indexed by rawSubstate ID.
 - **Proofs:** Block headers, containing accumulator hashes, validator set and quorum certificate.
 
 The program that enforces stateful validation is called Radix Constraint Machine (CM). Constraint machines are stateful and can run at different permission levels.
@@ -91,8 +91,8 @@ Validation state is the internal state of the constraint machine, which includes
 | **Variable**                  | **Description**                                                                       |
 |-------------------------------|---------------------------------------------------------------------------------------|
 | `procedures`                  | All registered state transition procedures, ***immutable***                           |
-| `virtual_substate_predicate`  | A predicate which tells if a particle can be virtually shut down, ***immutable***     |
-| `cm_store`                    | A reference to the substate storage, ***immutable***                                  |
+| `virtual_substate_predicate`  | A predicate which tells if a rawSubstate can be virtually shut down, ***immutable***     |
+| `cm_store`                    | A reference to the rawSubstate storage, ***immutable***                                  |
 | `permission_level`            | The permission level, ***immutable***                                                 |
 | `signer`                      | The transaction signer, ***immutable*** and ***optional***                            |
 | `resource_mint_burn_disabled` | A flag indicates if resource allocation and deallocation is disabled, ***immutable*** |
@@ -101,8 +101,8 @@ Validation state is the internal state of the constraint machine, which includes
 | `up_instruction_count`        | The number of `UP` instruction processed so far                                       |
 | `current_state`               | The current current state                                                             |
 | `end_expected`                | A flag indicates if an `END` instruction is expected                                  |
-| `local_up_substates`          | A map of substates created locally, keyed off the substate index                      |
-| `remote_down_substates`       | A set of substate IDs that are spun down remotely                                     |
+| `local_up_substates`          | A map of substates created locally, keyed off the rawSubstate index                      |
+| `remote_down_substates`       | A set of rawSubstate IDs that are spun down remotely                                     |
 | `meters`                      | Transaction execution meters                                                          |
 
 The `meters` keep track of how many signature validations are left within the current proposal and bill transactions based on its usage.
@@ -114,7 +114,7 @@ A procedure decides whether a transition is allowed and how. It contains three p
 - Defines how authorization should be performed
 - Defines how to compute the next current state, given the current current state and instruction
 
-A procedure is registered to a procedure key, which is tuple of `<current_state, operation, substate>`.
+A procedure is registered to a procedure key, which is tuple of `<current_state, operation, rawSubstate>`.
 
 At mainnet, we have the following procedures.
 

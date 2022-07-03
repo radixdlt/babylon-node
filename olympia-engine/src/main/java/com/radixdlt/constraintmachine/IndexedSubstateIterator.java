@@ -68,7 +68,7 @@ import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.utils.Bytes;
 import java.util.Iterator;
 
-public final class IndexedSubstateIterator<D extends Particle> {
+public final class IndexedSubstateIterator<D extends RawSubstate> {
   private SubstateIndex index;
   private final Iterator<D> iterator;
 

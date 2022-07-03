@@ -71,8 +71,8 @@ import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.state.SystemData;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.validators.state.ValidatorData;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.REInstruction;
+import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
@@ -102,7 +102,7 @@ public final class TxLowLevelBuilder {
   private final Set<SubstateId> remoteDownSubstate = new HashSet<>();
   private final SubstateSerialization serialization;
   private final OptionalInt maxMessageLen;
-  private int upParticleCount = 0;
+  private int upSubstateCount = 0;
 
   private TxLowLevelBuilder(
       SubstateSerialization serialization,
@@ -190,36 +190,36 @@ public final class TxLowLevelBuilder {
                 "Attempt to add message without providing message length limit"));
   }
 
-  public TxLowLevelBuilder up(Particle substate) {
-    Objects.requireNonNull(substate, "substate is required");
+  public TxLowLevelBuilder up(RawSubstate rawSubstate) {
+    Objects.requireNonNull(rawSubstate, "substate is required");
 
-    var localSubstate = LocalSubstate.create(upParticleCount, substate);
+    var localSubstate = LocalSubstate.create(upSubstateCount, rawSubstate);
 
-    if (substate instanceof ValidatorData validatorData) {
+    if (rawSubstate instanceof ValidatorData validatorData) {
       var b = serialization.classToByte(validatorData.getClass());
       var k = SystemMapKey.ofSystem(b, validatorData.validatorKey().getCompressedBytes());
       this.localMapValues.put(k, localSubstate);
-    } else if (substate instanceof SystemData) {
-      var b = serialization.classToByte(substate.getClass());
+    } else if (rawSubstate instanceof SystemData) {
+      var b = serialization.classToByte(rawSubstate.getClass());
       var k = SystemMapKey.ofSystem(b);
       this.localMapValues.put(k, localSubstate);
-    } else if (substate instanceof VirtualParent virtualParent) {
+    } else if (rawSubstate instanceof VirtualParent virtualParent) {
       var typeByte = virtualParent.data()[0];
       var k = SystemMapKey.ofSystem(typeByte);
       this.localMapValues.put(k, localSubstate);
     }
 
-    this.localUpSubstates.put(upParticleCount, localSubstate);
+    this.localUpSubstates.put(upSubstateCount, localSubstate);
 
     var buf = ByteBuffer.allocate(1024);
     buf.putShort((short) 0);
-    serialization.serialize(substate, buf);
+    serialization.serialize(rawSubstate, buf);
     var limit = buf.position();
     buf.putShort(0, (short) (limit - 2));
     buf.position(0);
     buf.limit(limit);
     instruction(REInstruction.REMicroOp.UP, buf);
-    upParticleCount++;
+    upSubstateCount++;
     return this;
   }
 

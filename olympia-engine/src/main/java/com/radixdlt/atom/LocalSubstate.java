@@ -64,28 +64,28 @@
 
 package com.radixdlt.atom;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstate;
 import java.util.Objects;
 
 /**
- * A particle which only has a local identifier since it's enclosing transaction has not yet
+ * A substate which only has a local identifier since it's enclosing transaction has not yet
  * finished being constructed.
  */
 public final class LocalSubstate {
   private final int index;
-  private final Particle particle;
+  private final RawSubstate rawSubstate;
 
-  private LocalSubstate(int index, Particle particle) {
+  private LocalSubstate(int index, RawSubstate rawSubstate) {
     this.index = index;
-    this.particle = particle;
+    this.rawSubstate = rawSubstate;
   }
 
-  public static LocalSubstate create(int index, Particle particle) {
-    return new LocalSubstate(index, particle);
+  public static LocalSubstate create(int index, RawSubstate rawSubstate) {
+    return new LocalSubstate(index, rawSubstate);
   }
 
-  public Particle getParticle() {
-    return particle;
+  public RawSubstate getSubstate() {
+    return rawSubstate;
   }
 
   public int getIndex() {
@@ -94,7 +94,7 @@ public final class LocalSubstate {
 
   @Override
   public int hashCode() {
-    return Objects.hash(index, particle);
+    return Objects.hash(index, rawSubstate);
   }
 
   @Override
@@ -104,6 +104,6 @@ public final class LocalSubstate {
     }
 
     var other = (LocalSubstate) o;
-    return this.index == other.index && Objects.equals(this.particle, other.particle);
+    return this.index == other.index && Objects.equals(this.rawSubstate, other.rawSubstate);
   }
 }

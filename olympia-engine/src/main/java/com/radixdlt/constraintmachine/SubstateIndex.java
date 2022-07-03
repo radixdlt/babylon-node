@@ -71,7 +71,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class SubstateIndex<T extends Particle> {
+public final class SubstateIndex<T extends RawSubstate> {
   private final byte[] index;
   private final Class<? extends T> substateClass;
 
@@ -84,12 +84,12 @@ public final class SubstateIndex<T extends Particle> {
     return new SubstateIndex<>(prefix, SubstateTypeId.valueOf(prefix[0]).getSubstateClass());
   }
 
-  public static <T extends Particle> SubstateIndex<T> create(
+  public static <T extends RawSubstate> SubstateIndex<T> create(
       byte[] prefix, Class<? extends T> substateClass) {
     return new SubstateIndex<>(prefix, substateClass);
   }
 
-  public static <T extends Particle> SubstateIndex<T> create(
+  public static <T extends RawSubstate> SubstateIndex<T> create(
       byte typeByte, Class<? extends T> substateClass) {
     return new SubstateIndex<>(new byte[] {typeByte}, substateClass);
   }
@@ -130,7 +130,8 @@ public final class SubstateIndex<T extends Particle> {
     return substateClass;
   }
 
-  public <U extends Particle> Optional<SubstateIndex<U>> toSubstateIndex(Class<U> substateClass) {
+  public <U extends RawSubstate> Optional<SubstateIndex<U>> toSubstateIndex(
+      Class<U> substateClass) {
     if (this.substateClass.equals(substateClass)) {
       return Optional.of(new SubstateIndex<>(this.index, substateClass));
     }

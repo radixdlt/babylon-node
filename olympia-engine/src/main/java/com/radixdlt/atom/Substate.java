@@ -64,38 +64,38 @@
 
 package com.radixdlt.atom;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstate;
 import java.util.Objects;
 
 /**
  * Application substate which can be booted up or shut down in radix engine through transactions.
  */
 public final class Substate {
-  private final Particle particle;
+  private final RawSubstate rawSubstate;
   private final SubstateId substateId;
 
-  private Substate(Particle particle, SubstateId substateId) {
-    this.particle = particle;
+  private Substate(RawSubstate rawSubstate, SubstateId substateId) {
+    this.rawSubstate = rawSubstate;
     this.substateId = substateId;
   }
 
-  public static Substate create(Particle particle, SubstateId substateId) {
-    Objects.requireNonNull(particle);
+  public static Substate create(RawSubstate rawSubstate, SubstateId substateId) {
+    Objects.requireNonNull(rawSubstate);
     Objects.requireNonNull(substateId);
-    return new Substate(particle, substateId);
+    return new Substate(rawSubstate, substateId);
   }
 
   public SubstateId getId() {
     return substateId;
   }
 
-  public Particle getParticle() {
-    return particle;
+  public RawSubstate getSubstate() {
+    return rawSubstate;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(particle, substateId);
+    return Objects.hash(rawSubstate, substateId);
   }
 
   @Override
@@ -105,13 +105,13 @@ public final class Substate {
     }
 
     var other = (Substate) o;
-    return Objects.equals(this.particle, other.particle)
+    return Objects.equals(this.rawSubstate, other.rawSubstate)
         && Objects.equals(this.substateId, other.substateId);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "%s{raw=%s id=%s}", this.getClass().getSimpleName(), this.particle, this.substateId);
+        "%s{raw=%s id=%s}", this.getClass().getSimpleName(), this.rawSubstate, this.substateId);
   }
 }

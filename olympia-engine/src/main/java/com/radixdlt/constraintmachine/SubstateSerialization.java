@@ -71,12 +71,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class SubstateSerialization {
-  private final Map<Class<? extends Particle>, SubstateSerializer<Particle>> classToSerializer;
-  private final Map<Class<? extends Particle>, VirtualMapper> classToVirtualSerializer;
-  private final Map<Class<? extends Particle>, KeySerializer> classToKeySerializer;
-  private final Map<Class<? extends Particle>, Byte> classToTypeByte;
+  private final Map<Class<? extends RawSubstate>, SubstateSerializer<RawSubstate>>
+      classToSerializer;
+  private final Map<Class<? extends RawSubstate>, VirtualMapper> classToVirtualSerializer;
+  private final Map<Class<? extends RawSubstate>, KeySerializer> classToKeySerializer;
+  private final Map<Class<? extends RawSubstate>, Byte> classToTypeByte;
 
-  public SubstateSerialization(Collection<SubstateDefinition<? extends Particle>> definitions) {
+  public SubstateSerialization(Collection<SubstateDefinition<? extends RawSubstate>> definitions) {
     this.classToTypeByte =
         definitions.stream()
             .collect(
@@ -89,7 +90,8 @@ public final class SubstateSerialization {
                     SubstateDefinition::getSubstateClass,
                     d ->
                         (s, buf) ->
-                            ((SubstateSerializer<Particle>) d.getSerializer()).serialize(s, buf)));
+                            ((SubstateSerializer<RawSubstate>) d.getSerializer())
+                                .serialize(s, buf)));
     this.classToKeySerializer =
         definitions.stream()
             .collect(
@@ -102,7 +104,7 @@ public final class SubstateSerialization {
                     SubstateDefinition::getSubstateClass, SubstateDefinition::getVirtualMapper));
   }
 
-  public byte classToByte(Class<? extends Particle> substateClass) {
+  public byte classToByte(Class<? extends RawSubstate> substateClass) {
     var b = this.classToTypeByte.get(substateClass);
     if (b == null) {
       throw new IllegalStateException("No serializer for substate: " + substateClass);
@@ -110,10 +112,10 @@ public final class SubstateSerialization {
     return b;
   }
 
-  public byte[] serialize(Particle p) {
+  public byte[] serialize(RawSubstate p) {
     var serializer = classToSerializer.get(p.getClass());
     if (serializer == null) {
-      throw new IllegalStateException("No serializer for particle: " + p);
+      throw new IllegalStateException("No serializer for substate: " + p);
     }
 
     // TODO: Remove buf allocation
@@ -127,13 +129,13 @@ public final class SubstateSerialization {
     return bytes;
   }
 
-  public void serialize(Particle p, ByteBuffer buffer) {
+  public void serialize(RawSubstate p, ByteBuffer buffer) {
     buffer.put(classToTypeByte.get(p.getClass()));
     var serializer = classToSerializer.get(p.getClass());
     serializer.serialize(p, buffer);
   }
 
-  public <T extends Particle> byte[] serializeKey(Class<T> substateClass, Object key) {
+  public <T extends RawSubstate> byte[] serializeKey(Class<T> substateClass, Object key) {
     var serializer = classToKeySerializer.get(substateClass);
     // TODO: Remove buf allocation
     var buf = ByteBuffer.allocate(1024);
@@ -145,7 +147,7 @@ public final class SubstateSerialization {
     return bytes;
   }
 
-  public <T extends Particle> T mapVirtual(Class<T> substateClass, Object key) {
+  public <T extends RawSubstate> T mapVirtual(Class<T> substateClass, Object key) {
     var serializer = classToVirtualSerializer.get(substateClass);
     return (T) serializer.map(key);
   }

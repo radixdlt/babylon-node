@@ -954,23 +954,23 @@ public final class BerkeleyLedgerEntryStore
     return cursor;
   }
 
-  private void upParticle(
+  private void upSubstate(
       com.sleepycat.je.Transaction transaction, ByteBuffer bytes, SubstateId substateId) {
-    byte[] particleKey = substateId.asBytes();
+    var substateKey = substateId.asBytes();
     var value = new DatabaseEntry(bytes.array(), bytes.position(), bytes.remaining());
-    substatesDatabase.putNoOverwrite(transaction, entry(particleKey), value);
+    substatesDatabase.putNoOverwrite(transaction, entry(substateKey), value);
   }
 
   private void downVirtualSubstate(
       com.sleepycat.je.Transaction transaction, SubstateId substateId) {
-    var particleKey = substateId.asBytes();
-    substatesDatabase.putNoOverwrite(transaction, entry(particleKey), downEntry());
+    var substateKey = substateId.asBytes();
+    substatesDatabase.putNoOverwrite(transaction, entry(substateKey), downEntry());
   }
 
   private void downSubstate(com.sleepycat.je.Transaction transaction, SubstateId substateId) {
     var status = substatesDatabase.delete(transaction, entry(substateId.asBytes()));
     if (status != SUCCESS) {
-      throw new IllegalStateException("Downing particle does not exist " + substateId);
+      throw new IllegalStateException("Downing substate does not exist " + substateId);
     }
   }
 
@@ -1012,7 +1012,7 @@ public final class BerkeleyLedgerEntryStore
       com.sleepycat.je.Transaction transaction, REStateUpdate stateUpdate) {
     if (stateUpdate.isBootUp()) {
       var buf = stateUpdate.getStateBuf();
-      upParticle(transaction, buf, stateUpdate.getId());
+      upSubstate(transaction, buf, stateUpdate.getId());
 
       // FIXME: Superhack
       if (stateUpdate.getParsed() instanceof TokenResource) {
@@ -1064,7 +1064,7 @@ public final class BerkeleyLedgerEntryStore
         }
       }
     } else {
-      throw new IllegalStateException("Must bootup or shutdown to update particle: " + stateUpdate);
+      throw new IllegalStateException("Must bootup or shutdown to update substate: " + stateUpdate);
     }
   }
 

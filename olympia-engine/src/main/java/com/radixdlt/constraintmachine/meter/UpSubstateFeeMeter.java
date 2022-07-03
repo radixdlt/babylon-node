@@ -65,22 +65,22 @@
 package com.radixdlt.constraintmachine.meter;
 
 import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.ProcedureKey;
 import com.radixdlt.constraintmachine.REOp;
+import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.utils.UInt256;
 import java.util.Map;
 
 public final class UpSubstateFeeMeter implements Meter {
-  private final Map<Class<? extends Particle>, UInt256> perUpSubstateFee;
+  private final Map<Class<? extends RawSubstate>, UInt256> perUpSubstateFee;
 
-  private UpSubstateFeeMeter(Map<Class<? extends Particle>, UInt256> perUpSubstateFee) {
+  private UpSubstateFeeMeter(Map<Class<? extends RawSubstate>, UInt256> perUpSubstateFee) {
     this.perUpSubstateFee = perUpSubstateFee;
   }
 
   public static UpSubstateFeeMeter create(
-      Map<Class<? extends Particle>, UInt256> perUpSubstateFee) {
+      Map<Class<? extends RawSubstate>, UInt256> perUpSubstateFee) {
     return new UpSubstateFeeMeter(perUpSubstateFee);
   }
 
@@ -93,8 +93,8 @@ public final class UpSubstateFeeMeter implements Meter {
   public void onUserProcedure(ProcedureKey procedureKey, Object param, ExecutionContext context)
       throws Exception {
     // TODO: Clean this up
-    if (procedureKey.opSignature().op() == REOp.UP && param instanceof Particle) {
-      var substate = (Particle) param;
+    if (procedureKey.opSignature().op() == REOp.UP && param instanceof RawSubstate) {
+      var substate = (RawSubstate) param;
       var c = substate.getClass();
       var fee = perUpSubstateFee.get(c);
       if (fee != null) {

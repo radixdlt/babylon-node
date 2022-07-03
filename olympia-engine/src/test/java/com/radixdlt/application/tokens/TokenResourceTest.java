@@ -144,14 +144,14 @@ public class TokenResourceTest {
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
     var tokenResource = TokenResource.createFixedSupplyResource(addr);
     var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-    var tokensParticle = new TokensInAccount(holdingAddress, addr, UInt256.TEN);
+    var tokensSubstate = new TokensInAccount(holdingAddress, addr, UInt256.TEN);
 
     var builder =
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
             .up(tokenResource)
-            .up(tokensParticle)
+            .up(tokensSubstate)
             .up(TokenResourceMetadata.empty(addr, "test"))
             .end();
     var sig = keyPair.sign(builder.hashToSign().asBytes());
@@ -169,14 +169,14 @@ public class TokenResourceTest {
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "xrd");
     var tokenResource = TokenResource.createFixedSupplyResource(addr);
     var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-    var tokensParticle = new TokensInAccount(holdingAddress, addr, UInt256.TEN);
+    var tokensSubstate = new TokensInAccount(holdingAddress, addr, UInt256.TEN);
 
     var builder =
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "xrd".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
             .up(tokenResource)
-            .up(tokensParticle)
+            .up(tokensSubstate)
             .up(TokenResourceMetadata.empty(addr, "xrd"))
             .end();
     var sig = keyPair.sign(builder.hashToSign().asBytes());
@@ -196,14 +196,14 @@ public class TokenResourceTest {
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "xrd");
     var tokenResource = TokenResource.createFixedSupplyResource(addr);
     var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-    var tokensParticle = new TokensInAccount(holdingAddress, addr, UInt256.TEN);
+    var tokensSubstate = new TokensInAccount(holdingAddress, addr, UInt256.TEN);
 
     var builder =
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "xrd".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
             .up(tokenResource)
-            .up(tokensParticle)
+            .up(tokensSubstate)
             .up(TokenResourceMetadata.empty(addr, "xrd"))
             .end();
     var txn = builder.build();
@@ -218,12 +218,12 @@ public class TokenResourceTest {
     // Arrange
     var keyPair = ECKeyPair.generateNew();
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-    var tokenDefinitionParticle = TokenResource.createFixedSupplyResource(addr);
+    var tokenDefinitionSubstate = TokenResource.createFixedSupplyResource(addr);
     var builder =
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
-            .up(tokenDefinitionParticle)
+            .up(tokenDefinitionSubstate)
             .end();
     var sig = keyPair.sign(builder.hashToSign().asBytes());
     var txn = builder.sig(sig).build();
@@ -239,14 +239,14 @@ public class TokenResourceTest {
     var keyPair = ECKeyPair.generateNew();
     // Arrange
     var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
-    var tokenDefinitionParticle =
+    var tokenDefinitionSubstate =
         TokenResource.createMutableSupplyResource(addr, keyPair.getPublicKey());
     var builder =
         TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization, 255)
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
-            .up(tokenDefinitionParticle)
+            .up(tokenDefinitionSubstate)
             .end();
     var sig = keyPair.sign(builder.hashToSign());
     var txn = builder.sig(sig).build();

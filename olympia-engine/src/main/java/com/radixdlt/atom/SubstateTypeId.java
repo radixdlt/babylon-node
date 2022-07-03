@@ -83,7 +83,7 @@ import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.application.validators.state.ValidatorSystemMetadata;
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstate;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -110,7 +110,7 @@ public enum SubstateTypeId {
   VALIDATOR_SYSTEM_META_DATA((byte) 0x12, ValidatorSystemMetadata.class);
 
   private final byte id;
-  private final Class<? extends Particle> substateClass;
+  private final Class<? extends RawSubstate> substateClass;
 
   private static final Map<Byte, SubstateTypeId> substateTypes;
 
@@ -119,7 +119,7 @@ public enum SubstateTypeId {
         Arrays.stream(SubstateTypeId.values()).collect(Collectors.toMap(e -> e.id, e -> e));
   }
 
-  SubstateTypeId(byte id, Class<? extends Particle> substateClass) {
+  SubstateTypeId(byte id, Class<? extends RawSubstate> substateClass) {
     this.id = id;
     this.substateClass = substateClass;
   }
@@ -132,7 +132,7 @@ public enum SubstateTypeId {
     return substateType;
   }
 
-  public static SubstateTypeId valueOf(Class<? extends Particle> substateClass) {
+  public static SubstateTypeId valueOf(Class<? extends RawSubstate> substateClass) {
     for (var substateType : SubstateTypeId.values()) {
       if (substateType.substateClass.equals(substateClass)) {
         return substateType;
@@ -145,7 +145,7 @@ public enum SubstateTypeId {
     return id;
   }
 
-  public Class<? extends Particle> getSubstateClass() {
+  public Class<? extends RawSubstate> getSubstateClass() {
     return substateClass;
   }
 }

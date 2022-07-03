@@ -73,8 +73,8 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 /**
- * A particle which represents an amount of transferrable fungible tokens owned by some key owner
- * and stored in an account.
+ * A substate which represents an amount of transferable fungible tokens owned by some key owner and
+ * stored in an account.
  */
 public record TokensInAccount(REAddr holdingAddress, REAddr resourceAddr, UInt256 amount)
     implements ResourceInBucket {

@@ -96,11 +96,10 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
     BFTHeader parent = new BFTHeader(Round.of(1234567890L), HashUtils.random256(), ledgerHeader);
     VoteData voteData = new VoteData(header, parent, null);
     QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    var txn = Transaction.create(new byte[] {0, 1, 2, 3});
+    var transaction = Transaction.create(new byte[] {0, 1, 2, 3});
 
-    // add a particle to ensure atom is valid and has at least one shard
     BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-    Vertex vertex = Vertex.create(qc, round, List.of(txn), author);
+    Vertex vertex = Vertex.create(qc, round, List.of(transaction), author);
     return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
   }
 }

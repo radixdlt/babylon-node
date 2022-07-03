@@ -77,18 +77,8 @@ import com.radixdlt.atom.TxAction;
 import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.ConstraintMachineConfig;
-import com.radixdlt.constraintmachine.ExecutionContext;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.constraintmachine.RawSubstateBytes;
-import com.radixdlt.constraintmachine.SubstateDeserialization;
-import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.constraintmachine.SubstateSerialization;
-import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.constraintmachine.VirtualSubstateDeserialization;
+import com.radixdlt.constraintmachine.*;
+import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -583,7 +573,7 @@ public final class RadixEngine<M> {
             }
 
             @Override
-            public Optional<Particle> get(SystemMapKey mapKey) {
+            public Optional<RawSubstate> get(SystemMapKey mapKey) {
               var deserialization = constraintMachine.getDeserialization();
               return engineStore
                   .get(mapKey)
@@ -625,7 +615,7 @@ public final class RadixEngine<M> {
             }
 
             @SuppressWarnings("unchecked")
-            private <U, T extends Particle> U reduce(
+            private <U, T extends RawSubstate> U reduce(
                 SubstateIndex<T> i, U identity, BiFunction<U, T, U> accumulator) {
               var deserialization = constraintMachine.getDeserialization();
               var u = identity;
@@ -643,7 +633,7 @@ public final class RadixEngine<M> {
             }
 
             @Override
-            public <U, T extends Particle> U reduce(
+            public <U, T extends RawSubstate> U reduce(
                 Class<T> c, U identity, BiFunction<U, T, U> accumulator) {
               var deserialization = constraintMachine.getDeserialization();
               var index = deserialization.index(c);

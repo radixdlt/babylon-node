@@ -65,10 +65,10 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Procedure;
 import com.radixdlt.constraintmachine.ProcedureKey;
 import com.radixdlt.constraintmachine.Procedures;
+import com.radixdlt.constraintmachine.RawSubstate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -76,43 +76,44 @@ import java.util.Map;
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintScryptEnv implements Loader {
-  private final ImmutableMap<Class<? extends Particle>, SubstateDefinition<? extends Particle>>
-      particleDefinitions;
+  private final ImmutableMap<
+          Class<? extends RawSubstate>, SubstateDefinition<? extends RawSubstate>>
+      rawSubstateDefinitions;
 
-  private final Map<Class<? extends Particle>, SubstateDefinition<? extends Particle>>
-      scryptParticleDefinitions;
+  private final Map<Class<? extends RawSubstate>, SubstateDefinition<? extends RawSubstate>>
+      scryptSubstateDefinitions;
   private final Map<ProcedureKey, Procedure> procedures;
 
   ConstraintScryptEnv(
-      ImmutableMap<Class<? extends Particle>, SubstateDefinition<? extends Particle>>
-          particleDefinitions) {
-    this.particleDefinitions = particleDefinitions;
-    this.scryptParticleDefinitions = new HashMap<>();
+      ImmutableMap<Class<? extends RawSubstate>, SubstateDefinition<? extends RawSubstate>>
+          rawSubstateDefinitions) {
+    this.rawSubstateDefinitions = rawSubstateDefinitions;
+    this.scryptSubstateDefinitions = new HashMap<>();
     this.procedures = new HashMap<>();
   }
 
-  public Map<Class<? extends Particle>, SubstateDefinition<? extends Particle>>
-      getScryptParticleDefinitions() {
-    return scryptParticleDefinitions;
+  public Map<Class<? extends RawSubstate>, SubstateDefinition<? extends RawSubstate>>
+      getScryptSubstateDefinitions() {
+    return scryptSubstateDefinitions;
   }
 
   public Procedures getProcedures() {
     return new Procedures(procedures);
   }
 
-  private <T extends Particle> boolean particleDefinitionExists(Class<T> particleClass) {
-    return particleDefinitions.containsKey(particleClass)
-        || scryptParticleDefinitions.containsKey(particleClass);
+  private <T extends RawSubstate> boolean substateDefinitionExists(Class<T> rawSubstateClass) {
+    return rawSubstateDefinitions.containsKey(rawSubstateClass)
+        || scryptSubstateDefinitions.containsKey(rawSubstateClass);
   }
 
   @Override
-  public <T extends Particle> void substate(SubstateDefinition<T> substateDefinition) {
+  public <T extends RawSubstate> void substate(SubstateDefinition<T> substateDefinition) {
     var substateClass = substateDefinition.getSubstateClass();
-    if (particleDefinitionExists(substateClass)) {
+    if (substateDefinitionExists(substateClass)) {
       throw new IllegalStateException("Substate " + substateClass + " is already registered");
     }
 
-    scryptParticleDefinitions.put(substateClass, substateDefinition);
+    scryptSubstateDefinitions.put(substateClass, substateDefinition);
   }
 
   @Override

@@ -90,7 +90,7 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
     var upSubstateFeeTable = feeTable.getPerUpSubstateFee();
     var substateCost =
         builder.toLowLevelBuilder().localUpSubstate().stream()
-            .map(s -> s.getParticle().getClass())
+            .map(s -> s.getSubstate().getClass())
             .map(upSubstateFeeTable::get)
             .filter(Objects::nonNull)
             .reduce(UInt256::add)
