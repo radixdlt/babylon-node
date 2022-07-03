@@ -249,10 +249,10 @@ public final class RadixEngineStateComputer implements StateComputer {
   private RadixEngineTransaction executeSystemUpdate(
       RadixEngineBranch<LedgerAndBFTProof> branch, VertexWithHash vertex, long timestamp) {
     var systemActions = TxnConstructionRequest.create();
-    var view = vertex.getRound();
-    if (view.compareTo(epochCeilingRound) <= 0) {
+    var round = vertex.getRound();
+    if (round.compareTo(epochCeilingRound) <= 0) {
       systemActions.action(
-          new NextRound(view.number(), vertex.isTimeout(), timestamp, getValidatorMapping()));
+          new NextRound(round.number(), vertex.isTimeout(), timestamp, getValidatorMapping()));
     } else {
       if (vertex.getParentHeader().getRound().compareTo(epochCeilingRound) < 0) {
         systemActions.action(

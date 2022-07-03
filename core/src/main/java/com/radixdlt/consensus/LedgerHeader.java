@@ -118,11 +118,11 @@ public final class LedgerHeader {
   @VisibleForTesting
   LedgerHeader(
       @JsonProperty("epoch") long epoch,
-      @JsonProperty("round") long view,
+      @JsonProperty("round") long roundNumber,
       @JsonProperty(value = "accumulator_state", required = true) AccumulatorState accumulatorState,
       @JsonProperty("timestamp") long timestamp,
       @JsonProperty("next_validators") ImmutableSet<BFTValidator> nextValidators) {
-    this(epoch, Round.of(view), accumulatorState, timestamp, nextValidators);
+    this(epoch, Round.of(roundNumber), accumulatorState, timestamp, nextValidators);
   }
 
   private LedgerHeader(
@@ -179,7 +179,7 @@ public final class LedgerHeader {
 
   @JsonProperty("round")
   @DsonOutput(Output.ALL)
-  private long getSerializerView() {
+  private long getSerializerForRoundNumber() {
     return round.number();
   }
 

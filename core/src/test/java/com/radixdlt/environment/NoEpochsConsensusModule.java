@@ -139,9 +139,9 @@ public class NoEpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private EventProcessorOnRunner<?> viewUpdateProcessor(BFTEventProcessor processor) {
+  private EventProcessorOnRunner<?> roundUpdateProcessor(BFTEventProcessor processor) {
     return new EventProcessorOnRunner<>(
-        Runners.CONSENSUS, RoundUpdate.class, processor::processViewUpdate);
+        Runners.CONSENSUS, RoundUpdate.class, processor::processRoundUpdate);
   }
 
   @ProvidesIntoSet

@@ -197,7 +197,7 @@ public final class MessageQueue {
       if (msgs != null && msgs.remove(message)) {
         if (msgs.isEmpty()) {
           this.messagesByTime.remove(entry.getKey());
-          // Can't affect minimumView if we are here
+          // Can't affect minimumRound if we are here
         }
         return;
       }
@@ -205,7 +205,7 @@ public final class MessageQueue {
     throw new NoSuchElementException();
   }
 
-  // Believe it or not, this is faster, when coupled with minimumView
+  // Believe it or not, this is faster, when coupled with minimumRound
   // caching, than using a TreeMap for nodes == 100.
   private static long minimumKey(Set<Long> eavs) {
     if (eavs.isEmpty()) {

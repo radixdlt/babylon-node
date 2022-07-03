@@ -115,7 +115,7 @@ public class LedgerHeaderTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void deserializationWithWrongViewThrowsException() {
+  public void deserializationWithWrongRoundThrowsException() {
     new LedgerHeader(1L, -1L, mock(AccumulatorState.class), 1L, ImmutableSet.of());
   }
 

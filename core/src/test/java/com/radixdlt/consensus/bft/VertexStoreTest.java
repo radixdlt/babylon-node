@@ -268,7 +268,7 @@ public class VertexStoreTest {
   }
 
   @Test
-  public void inserting_a_tc_should_only_replace_tcs_for_lower_views() {
+  public void inserting_a_tc_should_only_replace_tcs_for_lower_rounds() {
     TimeoutCertificate initialTC =
         new TimeoutCertificate(1, Round.of(100), mock(TimestampedECDSASignatures.class));
     TimeoutCertificate higherTC =

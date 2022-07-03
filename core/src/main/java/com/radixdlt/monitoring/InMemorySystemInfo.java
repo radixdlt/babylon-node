@@ -82,7 +82,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /** Manages system information to be consumed by clients such as the api. */
 public final class InMemorySystemInfo {
   private final AtomicReference<EpochLocalTimeoutOccurrence> lastTimeout = new AtomicReference<>();
-  private final AtomicReference<EpochRound> currentView =
+  private final AtomicReference<EpochRound> currentEpochRound =
       new AtomicReference<>(EpochRound.of(0L, Round.genesis()));
   private final AtomicReference<QuorumCertificate> highQC = new AtomicReference<>();
   /* BAB-TODO: Add back in missed proposal tracking
@@ -110,8 +110,8 @@ public final class InMemorySystemInfo {
     lastTimeout.set(timeout);
   }
 
-  public void processView(EpochRound epochRound) {
-    currentView.set(epochRound);
+  public void processEpochRound(EpochRound epochRound) {
+    currentEpochRound.set(epochRound);
   }
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
@@ -179,7 +179,7 @@ public final class InMemorySystemInfo {
   }
 
   public EpochRound getCurrentRound() {
-    return this.currentView.get();
+    return this.currentEpochRound.get();
   }
 
   public EpochLocalTimeoutOccurrence getLastTimeout() {

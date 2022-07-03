@@ -117,7 +117,7 @@ public class VertexTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void deserializationWithInvalidViewThrowsException() throws PublicKeyException {
+  public void deserializationWithInvalidRoundThrowsException() throws PublicKeyException {
     var proposer = ECKeyPair.generateNew().getPublicKey().getBytes();
     Vertex.create(mock(QuorumCertificate.class), -1, List.of(), proposer, false);
   }

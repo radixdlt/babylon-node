@@ -165,7 +165,7 @@ public final class HighQC {
     return this.highestQC;
   }
 
-  public Round getHighestView() {
+  public Round getHighestRound() {
     if (this.highestTC != null && this.highestTC.getRound().gt(this.highestQC.getRound())) {
       return this.highestTC.getRound();
     } else {

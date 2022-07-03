@@ -182,7 +182,7 @@ public class PacemakerTest {
   }
 
   @Test
-  public void on_view_timeout_quorum_pacemaker_should_move_to_next_view() {
+  public void on_round_timeout_quorum_pacemaker_should_move_to_next_round() {
     // Arrange
     createRunner().injectMembers(this);
     processor.start();
@@ -199,11 +199,11 @@ public class PacemakerTest {
     processor.handleMessage(bftUpdateMsg.origin(), bftUpdateMsg.message(), null);
 
     // Act
-    ControlledMessage viewTimeout =
+    ControlledMessage roundTimeout =
         network
             .nextMessage(e -> (e.message() instanceof Vote) && ((Vote) e.message()).isTimeout())
             .value();
-    processor.handleMessage(viewTimeout.origin(), viewTimeout.message(), null);
+    processor.handleMessage(roundTimeout.origin(), roundTimeout.message(), null);
 
     // Assert
     assertThat(network.allMessages())

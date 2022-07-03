@@ -69,8 +69,8 @@ public interface PacemakerTimeoutCalculator {
   /**
    * Calculates the pacemaker round timeout.
    *
-   * @param uncommittedViews the number of uncommitted views
+   * @param consecutiveUncommittedRounds the number of consecutive uncommitted rounds
    * @return pacemaker round timeout in milliseconds
    */
-  long calculateTimeoutMs(long uncommittedViews);
+  long calculateTimeoutMs(long consecutiveUncommittedRounds);
 }

@@ -75,13 +75,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class is responsible for keeping track of current consensus round state. It sends an
- * internal ViewUpdate message on a transition to next round.
+ * This class is responsible for keeping track of current consensus round state.
+ *
+ * <p>It sends an internal RoundUpdate message on a transition to next round.
  */
 public class PacemakerState implements PacemakerReducer {
   private static final Logger log = LogManager.getLogger();
 
-  private final EventDispatcher<RoundUpdate> viewUpdateSender;
+  private final EventDispatcher<RoundUpdate> roundUpdateSender;
   private final ProposerElection proposerElection;
 
   private Round currentRound;
@@ -91,9 +92,9 @@ public class PacemakerState implements PacemakerReducer {
   public PacemakerState(
       RoundUpdate roundUpdate,
       ProposerElection proposerElection,
-      EventDispatcher<RoundUpdate> viewUpdateSender) {
+      EventDispatcher<RoundUpdate> roundUpdateSender) {
     this.proposerElection = Objects.requireNonNull(proposerElection);
-    this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
+    this.roundUpdateSender = Objects.requireNonNull(roundUpdateSender);
     this.highQC = roundUpdate.getHighQC();
     this.currentRound = roundUpdate.getCurrentRound();
   }
@@ -102,17 +103,17 @@ public class PacemakerState implements PacemakerReducer {
   public void processQC(HighQC highQC) {
     log.trace("QuorumCertificate: {}", highQC);
 
-    final Round round = highQC.getHighestView();
+    final Round round = highQC.getHighestRound();
     if (round.gte(this.currentRound)) {
       this.highQC = highQC;
-      this.updateView(round.next());
+      this.updateRound(round.next());
     } else {
       log.trace("Ignoring QC for round {}: current round is {}", round, this.currentRound);
     }
   }
 
   @Override
-  public void updateView(Round nextRound) {
+  public void updateRound(Round nextRound) {
     if (nextRound.lte(this.currentRound)) {
       return;
     }
@@ -120,7 +121,7 @@ public class PacemakerState implements PacemakerReducer {
     final BFTNode leader = this.proposerElection.getProposer(nextRound);
     final BFTNode nextLeader = this.proposerElection.getProposer(nextRound.next());
     this.currentRound = nextRound;
-    viewUpdateSender.dispatch(
+    roundUpdateSender.dispatch(
         RoundUpdate.create(this.currentRound, this.highQC, leader, nextLeader));
   }
 }

@@ -165,7 +165,7 @@ public class PrometheusService {
 
     appendCounter(
         builder, "info_epochmanager_currentround_round", currentEpochRound.getRound().number());
-    appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpochRound.getEpoch());
+    appendCounter(builder, "info_epochmanager_currentround_epoch", currentEpochRound.getEpoch());
     appendCounter(builder, "total_peers", peersView.peers().count());
 
     var totalValidators =

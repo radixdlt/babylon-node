@@ -116,11 +116,11 @@ public final class SafetyRules {
 
   private boolean checkLastVoted(VertexWithHash proposedVertex) {
     // ensure vertex does not violate earlier votes
-    if (proposedVertex.getRound().lte(this.state.getLastVotedView())) {
+    if (proposedVertex.getRound().lte(this.state.getLastVotedRound())) {
       logger.warn(
           "Safety warning: Vertex {} violates earlier vote at round {}",
           proposedVertex,
-          this.state.getLastVotedView());
+          this.state.getLastVotedRound());
       return false;
     } else {
       return true;
@@ -128,18 +128,18 @@ public final class SafetyRules {
   }
 
   private boolean checkLocked(VertexWithHash proposedVertex, Builder nextStateBuilder) {
-    if (proposedVertex.getParentHeader().getRound().lt(this.state.getLockedView())) {
+    if (proposedVertex.getParentHeader().getRound().lt(this.state.getLockedRound())) {
       logger.warn(
           "Safety warning: Vertex {} does not respect locked round {}",
           proposedVertex,
-          this.state.getLockedView());
+          this.state.getLockedRound());
       return false;
     }
 
     // pre-commit phase on consecutive qc's proposed vertex
-    if (proposedVertex.getGrandParentHeader().getRound().compareTo(this.state.getLockedView())
+    if (proposedVertex.getGrandParentHeader().getRound().compareTo(this.state.getLockedRound())
         > 0) {
-      nextStateBuilder.lockedView(proposedVertex.getGrandParentHeader().getRound());
+      nextStateBuilder.lockedRound(proposedVertex.getGrandParentHeader().getRound());
     }
     return true;
   }
@@ -305,9 +305,9 @@ public final class SafetyRules {
                 committed -> qc.getProposed().equals(committed) && qc.getParent().equals(committed))
             .orElse(false);
 
-    final var isGenesisView = qc.getProposed().getRound().isGenesis();
+    final var isGenesisRound = qc.getProposed().getRound().isGenesis();
 
-    return committedAndParentAndProposedAreTheSame && isGenesisView;
+    return committedAndParentAndProposedAreTheSame && isGenesisRound;
   }
 
   private boolean areAllQcTimestampedSignaturesValid(QuorumCertificate qc) {

@@ -148,16 +148,16 @@ public final class ConsensusModule extends AbstractModule {
   private BFTFactory bftFactory(
       Hasher hasher,
       HashVerifier verifier,
-      EventDispatcher<RoundQuorumReached> viewQuorumReachedEventDispatcher,
+      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher) {
     return (self,
         pacemaker,
         vertexStore,
         bftSyncer,
-        viewQuorumReachedEventProcessor,
+        roundQuorumReachedEventProcessor,
         validatorSet,
-        viewUpdate,
+        roundUpdate,
         safetyRules) ->
         BFTBuilder.create()
             .self(self)
@@ -167,14 +167,14 @@ public final class ConsensusModule extends AbstractModule {
             .safetyRules(safetyRules)
             .pacemaker(pacemaker)
             .vertexStore(vertexStore)
-            .viewQuorumReachedEventDispatcher(
-                viewQuorumReached -> {
+            .roundQuorumReachedEventDispatcher(
+                roundQuorumReached -> {
                   // FIXME: a hack for now until replacement of epochmanager factories
-                  viewQuorumReachedEventProcessor.process(viewQuorumReached);
-                  viewQuorumReachedEventDispatcher.dispatch(viewQuorumReached);
+                  roundQuorumReachedEventProcessor.process(roundQuorumReached);
+                  roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
                 })
             .noVoteEventDispatcher(noVoteEventDispatcher)
-            .viewUpdate(viewUpdate)
+            .roundUpdate(roundUpdate)
             .bftSyncer(bftSyncer)
             .validatorSet(validatorSet)
             .build();
@@ -202,7 +202,7 @@ public final class ConsensusModule extends AbstractModule {
         pacemaker,
         vertexStore,
         bftSync,
-        bftSync.viewQuorumReachedEventProcessor(),
+        bftSync.roundQuorumReachedEventProcessor(),
         config.getValidatorSet(),
         roundUpdate,
         safetyRules);

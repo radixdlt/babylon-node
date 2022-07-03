@@ -78,10 +78,10 @@ public interface SystemCounters {
     BFT_NO_VOTES_SENT("bft.no_votes_sent"),
     /** Number of vote quorums formed. */
     BFT_VOTE_QUORUMS("bft.vote_quorums"),
-    /** Number of view-timeout quorums formed. */
+    /** Number of round-timeout quorums formed. */
     BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
 
-    /** Number of times a view-timeout message was broadcast. */
+    /** Number of times a round-timeout message was broadcast. */
     BFT_PACEMAKER_TIMEOUTS_SENT("bft.pacemaker.timeouts_sent"),
     BFT_PACEMAKER_ROUND("bft.pacemaker.round"),
     BFT_PACEMAKER_PROPOSED_TRANSACTIONS("bft.pacemaker.proposed_transactions"),
@@ -92,7 +92,6 @@ public interface SystemCounters {
     BFT_SYNC_REQUESTS_RECEIVED("bft.sync.requests_received"),
     BFT_SYNC_REQUEST_TIMEOUTS("bft.sync.request_timeouts"),
 
-    /** Number of views that timed out. Rescheduled timeouts of the same view are not counted */
     BFT_VERTEX_STORE_SIZE("bft.vertex_store.size"),
     BFT_VERTEX_STORE_FORKS("bft.vertex_store.forks"),
     BFT_VERTEX_STORE_REBUILDS("bft.vertex_store.rebuilds"),

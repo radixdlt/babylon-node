@@ -121,11 +121,11 @@ public class SafetyRulesTest {
   }
 
   @Test
-  public void when_vote_on_same_view__then_exception_is_thrown() {
-    Round round = mock(Round.class);
+  public void when_vote_on_same_round__then_exception_is_thrown() {
+    var round = mock(Round.class);
     when(round.lte(round)).thenReturn(true);
-    when(safetyState.getLastVotedView()).thenReturn(round);
-    VertexWithHash vertex = mock(VertexWithHash.class);
+    when(safetyState.getLastVotedRound()).thenReturn(round);
+    var vertex = mock(VertexWithHash.class);
     when(vertex.getRound()).thenReturn(round);
 
     assertThat(this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
@@ -133,7 +133,7 @@ public class SafetyRulesTest {
   }
 
   @Test
-  public void when_vote_with_qc_on_different_locked_view__then_exception_is_thrown() {
+  public void when_vote_with_qc_on_different_locked_round__then_exception_is_thrown() {
     Hasher hasher = mock(Hasher.class);
     when(hasher.hashDsonEncoded(any())).thenReturn(mock(HashCode.class));
     HashSigner hashSigner = mock(HashSigner.class);
@@ -167,8 +167,8 @@ public class SafetyRulesTest {
 
   @Test
   public void when_vote_on_proposal_after_genesis__then_returned_vote_has_no_commit() {
-    when(safetyState.getLastVotedView()).thenReturn(Round.of(0));
-    when(safetyState.getLockedView()).thenReturn(Round.of(0));
+    when(safetyState.getLastVotedRound()).thenReturn(Round.of(0));
+    when(safetyState.getLockedRound()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
     VertexWithHash vertex = mock(VertexWithHash.class);
     when(vertex.hasDirectParent()).thenReturn(true);
@@ -192,8 +192,8 @@ public class SafetyRulesTest {
 
   @Test
   public void when_vote_on_proposal_two_after_genesis__then_returned_vote_has_no_commit() {
-    when(safetyState.getLastVotedView()).thenReturn(Round.of(1));
-    when(safetyState.getLockedView()).thenReturn(Round.of(0));
+    when(safetyState.getLastVotedRound()).thenReturn(Round.of(1));
+    when(safetyState.getLockedRound()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
     VertexWithHash proposal = mock(VertexWithHash.class);
     when(proposal.touchesGenesis()).thenReturn(true);
@@ -215,8 +215,8 @@ public class SafetyRulesTest {
 
   @Test
   public void when_vote_on_proposal_three_after_genesis__then_returned_vote_has_commit() {
-    when(safetyState.getLastVotedView()).thenReturn(Round.of(1));
-    when(safetyState.getLockedView()).thenReturn(Round.of(0));
+    when(safetyState.getLastVotedRound()).thenReturn(Round.of(1));
+    when(safetyState.getLockedRound()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
 
     VertexWithHash proposal = mock(VertexWithHash.class);
@@ -241,8 +241,8 @@ public class SafetyRulesTest {
   @Test
   public void
       when_vote_on_proposal_three_after_genesis_with_skip__then_returned_vote_has_no_commit() {
-    when(safetyState.getLastVotedView()).thenReturn(Round.of(1));
-    when(safetyState.getLockedView()).thenReturn(Round.of(0));
+    when(safetyState.getLastVotedRound()).thenReturn(Round.of(1));
+    when(safetyState.getLockedRound()).thenReturn(Round.of(0));
     when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
 
     VertexWithHash proposal = mock(VertexWithHash.class);

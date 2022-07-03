@@ -74,5 +74,5 @@ public interface PacemakerStateFactory {
    *
    * @return a new pacemaker state
    */
-  PacemakerState create(RoundUpdate initialView, long epoch, ProposerElection proposerElection);
+  PacemakerState create(RoundUpdate initialRound, long epoch, ProposerElection proposerElection);
 }

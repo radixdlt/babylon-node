@@ -90,8 +90,8 @@ public final class VoteTimeout {
   private final long epoch;
 
   @JsonCreator
-  public VoteTimeout(@JsonProperty("round") long view, @JsonProperty("epoch") long epoch) {
-    this(Round.of(view), epoch);
+  public VoteTimeout(@JsonProperty("round") long roundNumber, @JsonProperty("epoch") long epoch) {
+    this(Round.of(roundNumber), epoch);
   }
 
   public VoteTimeout(Round round, long epoch) {
@@ -117,7 +117,7 @@ public final class VoteTimeout {
 
   @JsonProperty("round")
   @DsonOutput(DsonOutput.Output.ALL)
-  private Long getSerializerView() {
+  private Long getRoundNumberSerializer() {
     return this.round.number();
   }
 

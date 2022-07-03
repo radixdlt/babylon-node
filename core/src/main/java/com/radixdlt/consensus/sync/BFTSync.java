@@ -209,23 +209,23 @@ public final class BFTSync implements BFTSyncer {
     this.systemCounters = Objects.requireNonNull(systemCounters);
   }
 
-  public EventProcessor<RoundQuorumReached> viewQuorumReachedEventProcessor() {
-    return viewQuorumReached -> {
+  public EventProcessor<RoundQuorumReached> roundQuorumReachedEventProcessor() {
+    return roundQuorumReached -> {
       this.runOnThreads.add(Thread.currentThread().getName());
 
       final var highQC =
-          switch (viewQuorumReached.votingResult()) {
+          switch (roundQuorumReached.votingResult()) {
             case FormedQC formedQc -> HighQC.from(
-                ((FormedQC) viewQuorumReached.votingResult()).getQC(),
+                ((FormedQC) roundQuorumReached.votingResult()).getQC(),
                 this.vertexStore.highQC().highestCommittedQC(),
                 this.vertexStore.highQC().highestTC());
             case FormedTC formedTc -> HighQC.from(
                 this.vertexStore.highQC().highestQC(),
                 this.vertexStore.highQC().highestCommittedQC(),
-                Optional.of(((FormedTC) viewQuorumReached.votingResult()).getTC()));
+                Optional.of(((FormedTC) roundQuorumReached.votingResult()).getTC()));
           };
 
-      syncToQC(highQC, viewQuorumReached.lastAuthor());
+      syncToQC(highQC, roundQuorumReached.lastAuthor());
     };
   }
 
@@ -311,7 +311,7 @@ public final class BFTSync implements BFTSyncer {
 
   private void doCommittedSync(SyncState syncState) {
     final var committedQCId = syncState.highQC().highestCommittedQC().getProposed().getVertexId();
-    final var commitedView = syncState.highQC().highestCommittedQC().getRound();
+    final var commitedRound = syncState.highQC().highestCommittedQC().getRound();
 
     syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
     log.debug(
@@ -329,7 +329,7 @@ public final class BFTSync implements BFTSyncer {
             .filter(not(n -> n.equals(this.self)))
             .collect(ImmutableList.toImmutableList());
 
-    this.sendBFTSyncRequest(commitedView, committedQCId, 3, authors, syncState.localSyncId);
+    this.sendBFTSyncRequest(commitedRound, committedQCId, 3, authors, syncState.localSyncId);
   }
 
   public EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor() {
@@ -450,7 +450,7 @@ public final class BFTSync implements BFTSyncer {
   private void processVerticesResponseForCommittedSync(
       SyncState syncState, BFTNode sender, GetVerticesResponse response) {
     log.debug(
-        "SYNC_STATE: Processing vertices {} View {} From {} CurrentLedgerHeader {}",
+        "SYNC_STATE: Processing vertices {} Round {} From {} CurrentLedgerHeader {}",
         syncState,
         response.getVertices().get(0).getRound(),
         sender,

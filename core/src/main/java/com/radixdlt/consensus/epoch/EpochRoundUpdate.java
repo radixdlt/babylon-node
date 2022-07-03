@@ -67,7 +67,7 @@ package com.radixdlt.consensus.epoch;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import java.util.Objects;
 
-/** A wrapper for a ViewUpdate message that also holds epoch. */
+/** A wrapper for a RoundUpdate message that also holds epoch. */
 public final class EpochRoundUpdate {
 
   private final long epoch;

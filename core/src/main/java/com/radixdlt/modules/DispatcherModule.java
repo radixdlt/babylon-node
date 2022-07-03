@@ -210,9 +210,9 @@ public class DispatcherModule extends AbstractModule {
         .toProvider(Dispatchers.dispatcherProvider(EpochLocalTimeoutOccurrence.class))
         .in(Scopes.SINGLETON);
 
-    final var viewUpdateKey = new TypeLiteral<EventProcessor<RoundUpdate>>() {};
-    Multibinder.newSetBinder(binder(), viewUpdateKey, ProcessOnDispatch.class);
-    Multibinder.newSetBinder(binder(), viewUpdateKey);
+    final var roundUpdateKey = new TypeLiteral<EventProcessor<RoundUpdate>>() {};
+    Multibinder.newSetBinder(binder(), roundUpdateKey, ProcessOnDispatch.class);
+    Multibinder.newSetBinder(binder(), roundUpdateKey);
 
     bind(new TypeLiteral<EventDispatcher<EpochRoundUpdate>>() {})
         .toProvider(Dispatchers.dispatcherProvider(EpochRoundUpdate.class))
@@ -342,7 +342,7 @@ public class DispatcherModule extends AbstractModule {
   }
 
   @Provides
-  private EventDispatcher<BFTInsertUpdate> viewEventDispatcher(
+  private EventDispatcher<BFTInsertUpdate> bftInsertUpdateEventDispatcher(
       @ProcessOnDispatch Set<EventProcessor<BFTInsertUpdate>> processors,
       Environment environment,
       SystemCounters systemCounters) {
@@ -422,7 +422,7 @@ public class DispatcherModule extends AbstractModule {
       Set<EventProcessor<LocalTimeoutOccurrence>> asyncProcessors,
       Environment environment) {
     if (asyncProcessors.isEmpty()) {
-      return viewTimeout -> syncProcessors.forEach(e -> e.process(viewTimeout));
+      return roundTimeout -> syncProcessors.forEach(e -> e.process(roundTimeout));
     } else {
       var dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
       return timeout -> {
@@ -447,12 +447,12 @@ public class DispatcherModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private EventDispatcher<RoundUpdate> viewUpdateEventDispatcher(
+  private EventDispatcher<RoundUpdate> roundUpdateEventDispatcher(
       @ProcessOnDispatch Set<EventProcessor<RoundUpdate>> processors, Environment environment) {
     var dispatcher = environment.getDispatcher(RoundUpdate.class);
-    return viewUpdate -> {
-      processors.forEach(e -> e.process(viewUpdate));
-      dispatcher.dispatch(viewUpdate);
+    return roundUpdate -> {
+      processors.forEach(e -> e.process(roundUpdate));
+      dispatcher.dispatch(roundUpdate);
     };
   }
 }

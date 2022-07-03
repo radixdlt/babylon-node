@@ -118,7 +118,7 @@ public class BFTHeaderTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void deserializationWithInvalidViewThrowsException() {
+  public void deserializationWithInvalidRoundThrowsException() {
     BFTHeader.create(-1L, mock(HashCode.class), mock(LedgerHeader.class));
   }
 }

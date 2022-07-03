@@ -97,8 +97,8 @@ public final class SafetyState {
 
   @JsonCreator
   public SafetyState(
-      @JsonProperty("locked_view") Long lockedView, @JsonProperty("last_vote") Vote lastVote) {
-    this(Round.of(lockedView), Optional.ofNullable(lastVote));
+      @JsonProperty("locked_round") Long lockedRound, @JsonProperty("last_vote") Vote lastVote) {
+    this(Round.of(lockedRound), Optional.ofNullable(lastVote));
   }
 
   public SafetyState(Round lockedRound, Optional<Vote> lastVote) {
@@ -116,7 +116,7 @@ public final class SafetyState {
       this.original = safetyState;
     }
 
-    public Builder lockedView(Round lockedRound) {
+    public Builder lockedRound(Round lockedRound) {
       this.lockedRound = lockedRound;
       this.changed = true;
       return this;
@@ -166,14 +166,14 @@ public final class SafetyState {
 
   @Override
   public String toString() {
-    return String.format("SafetyState{lockedView=%s, lastVote=%s}", lockedRound, lastVote);
+    return String.format("SafetyState{lockedRound=%s, lastVote=%s}", lockedRound, lastVote);
   }
 
-  public Round getLastVotedView() {
+  public Round getLastVotedRound() {
     return getLastVote().map(Vote::getRound).orElse(Round.genesis());
   }
 
-  public Round getLockedView() {
+  public Round getLockedRound() {
     return lockedRound;
   }
 
@@ -181,9 +181,9 @@ public final class SafetyState {
     return lastVote;
   }
 
-  @JsonProperty("locked_view")
+  @JsonProperty("locked_round")
   @DsonOutput(DsonOutput.Output.ALL)
-  private Long getSerializerLockedView() {
+  private Long getSerializerLockedRound() {
     return this.lockedRound == null ? null : this.lockedRound.number();
   }
 

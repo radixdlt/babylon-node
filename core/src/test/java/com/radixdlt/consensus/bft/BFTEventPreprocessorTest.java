@@ -96,7 +96,7 @@ public class BFTEventPreprocessorTest {
   }
 
   @Test
-  public void when_view_update__then_should_process_cached_events() {
+  public void when_round_update__then_should_process_cached_events() {
     final var proposal = mock(Proposal.class);
     final var proposalHighQc = mock(HighQC.class);
     final var proposalHighestCommittedQc = mock(QuorumCertificate.class);
@@ -114,12 +114,12 @@ public class BFTEventPreprocessorTest {
     // we're at v2, proposal for v4 should get cached as sync returns IN_PROGRESS
     this.bftEventPreprocessor.processProposal(proposal);
 
-    final var newViewUpdate = mock(RoundUpdate.class);
-    when(newViewUpdate.getCurrentRound()).thenReturn(Round.of(4));
+    final var newRoundUpdate = mock(RoundUpdate.class);
+    when(newRoundUpdate.getCurrentRound()).thenReturn(Round.of(4));
     when(bftSyncer.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
 
     // we're going straight to v4, cached proposal should get processed
-    this.bftEventPreprocessor.processViewUpdate(newViewUpdate);
+    this.bftEventPreprocessor.processRoundUpdate(newRoundUpdate);
     verify(forwardTo, times(1)).processProposal(proposal);
   }
 }

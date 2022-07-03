@@ -85,5 +85,5 @@ public interface PacemakerReducer {
    *
    * @param nextRound the round to move to
    */
-  void updateView(Round nextRound);
+  void updateRound(Round nextRound);
 }

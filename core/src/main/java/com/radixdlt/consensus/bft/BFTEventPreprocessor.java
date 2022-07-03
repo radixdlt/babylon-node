@@ -100,7 +100,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
   private final BFTEventProcessor forwardTo;
   private final BFTSyncer bftSyncer;
   private final Set<ConsensusEvent> syncingEvents = new HashSet<>();
-  private final Map<Round, List<ConsensusEvent>> viewQueues = new HashMap<>();
+  private final Map<Round, List<ConsensusEvent>> roundQueues = new HashMap<>();
   private RoundUpdate latestRoundUpdate;
 
   public BFTEventPreprocessor(
@@ -111,18 +111,18 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
   }
 
   @Override
-  public void processViewUpdate(RoundUpdate roundUpdate) {
+  public void processRoundUpdate(RoundUpdate roundUpdate) {
     final Round previousRound = this.latestRoundUpdate.getCurrentRound();
-    log.trace("Processing viewUpdate {} cur {}", roundUpdate, previousRound);
+    log.trace("Processing roundUpdate {} cur {}", roundUpdate, previousRound);
 
     // FIXME: Check is required for now since Deterministic tests can randomize local messages
     if (roundUpdate.getCurrentRound().gt(previousRound)) {
       this.latestRoundUpdate = roundUpdate;
-      forwardTo.processViewUpdate(roundUpdate);
-      viewQueues
+      forwardTo.processRoundUpdate(roundUpdate);
+      roundQueues
           .getOrDefault(roundUpdate.getCurrentRound(), new LinkedList<>())
-          .forEach(this::processViewCachedEvent);
-      viewQueues.keySet().removeIf(v -> v.lte(roundUpdate.getCurrentRound()));
+          .forEach(this::processRoundCachedEvent);
+      roundQueues.keySet().removeIf(v -> v.lte(roundUpdate.getCurrentRound()));
 
       syncingEvents.stream()
           .filter(e -> e.getRound().equals(roundUpdate.getCurrentRound()))
@@ -132,7 +132,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
     }
   }
 
-  private void processViewCachedEvent(ConsensusEvent event) {
+  private void processRoundCachedEvent(ConsensusEvent event) {
     if (event instanceof Proposal) {
       log.trace("Processing cached proposal {}", event);
       processProposal((Proposal) event);
@@ -234,7 +234,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
       return syncUp(
           vote.highQC(),
           vote.getAuthor(),
-          () -> processOnCurrentViewOrCache(vote, forwardTo::processVote));
+          () -> processOnCurrentRoundOrCache(vote, forwardTo::processVote));
     } else {
       log.trace("Vote: Ignoring for past round {}, current round is {}", vote, currentRound);
       return true;
@@ -248,7 +248,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
       return syncUp(
           proposal.highQC(),
           proposal.getAuthor(),
-          () -> processOnCurrentViewOrCache(proposal, forwardTo::processProposal));
+          () -> processOnCurrentRoundOrCache(proposal, forwardTo::processProposal));
     } else {
       log.trace(
           "Proposal: Ignoring for past round {}, current round is {}", proposal, currentRound);
@@ -256,14 +256,14 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
     }
   }
 
-  private <T extends ConsensusEvent> void processOnCurrentViewOrCache(
+  private <T extends ConsensusEvent> void processOnCurrentRoundOrCache(
       T event, Consumer<T> processFn) {
     if (latestRoundUpdate.getCurrentRound().equals(event.getRound())) {
       processFn.accept(event);
     } else if (latestRoundUpdate.getCurrentRound().lt(event.getRound())) {
       log.trace("Caching {}, current round is {}", event, latestRoundUpdate.getCurrentRound());
-      viewQueues.putIfAbsent(event.getRound(), new LinkedList<>());
-      viewQueues.get(event.getRound()).add(event);
+      roundQueues.putIfAbsent(event.getRound(), new LinkedList<>());
+      roundQueues.get(event.getRound()).add(event);
     } else {
       log.debug("Ignoring {} for past round", event);
     }

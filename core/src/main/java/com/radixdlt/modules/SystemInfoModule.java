@@ -109,7 +109,7 @@ public class SystemInfoModule extends AbstractModule {
     return new EventProcessorOnRunner<>(
         Runners.SYSTEM_INFO,
         EpochRoundUpdate.class,
-        v -> inMemorySystemInfo.processView(v.getEpochRound()));
+        v -> inMemorySystemInfo.processEpochRound(v.getEpochRound()));
   }
 
   @ProvidesIntoSet

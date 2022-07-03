@@ -113,13 +113,15 @@ public class WeightedRotatingLeadersTest {
         setUp(validatorSetSize, sizeOfCache);
 
         // 2 round robins
-        final int viewsToTest = 2 * validatorSetSize;
+        final int roundsToTest = 2 * validatorSetSize;
 
-        for (int view = 0; view < viewsToTest; view++) {
-          var expectedNodeForView =
-              validatorsInOrder.get(validatorSetSize - (view % validatorSetSize) - 1).getNode();
-          assertThat(weightedRotatingLeaders.getProposer(Round.of(view)))
-              .isEqualTo(expectedNodeForView);
+        for (int roundNumber = 0; roundNumber < roundsToTest; roundNumber++) {
+          var expectedNodeForRound =
+              validatorsInOrder
+                  .get(validatorSetSize - (roundNumber % validatorSetSize) - 1)
+                  .getNode();
+          assertThat(weightedRotatingLeaders.getProposer(Round.of(roundNumber)))
+              .isEqualTo(expectedNodeForRound);
         }
       }
     }
@@ -132,34 +134,34 @@ public class WeightedRotatingLeadersTest {
         setUp(validatorSetSize, sizeOfCache);
 
         // 2 * sizeOfCache so cache eviction occurs
-        final int viewsToTest = 2 * sizeOfCache;
+        final int roundsToTest = 2 * sizeOfCache;
 
-        BFTNode expectedNodeForView0 = weightedRotatingLeaders.getProposer(Round.of(0));
+        BFTNode expectedNodeForRound0 = weightedRotatingLeaders.getProposer(Round.of(0));
         for (Round round = Round.of(1);
-            round.compareTo(Round.of(viewsToTest)) <= 0;
+            round.compareTo(Round.of(roundsToTest)) <= 0;
             round = round.next()) {
           weightedRotatingLeaders.getProposer(round);
         }
         assertThat(weightedRotatingLeaders.getProposer(Round.of(0)))
-            .isEqualTo(expectedNodeForView0);
+            .isEqualTo(expectedNodeForRound0);
       }
     }
   }
 
   @Test
-  public void when_get_proposer_skipping_views__then_should_return_same_result_as_in_order() {
+  public void when_get_proposer_skipping_rounds__then_should_return_same_result_as_in_order() {
     for (int validatorSetSize = 1; validatorSetSize <= 128; validatorSetSize *= 2) {
       for (int sizeOfCache = 1; sizeOfCache <= 128; sizeOfCache *= 2) {
         setUp(validatorSetSize, sizeOfCache);
 
         // 2 * sizeOfCache so cache eviction occurs
-        final int viewsToTest = 2 * sizeOfCache;
+        final int roundsToTest = 2 * sizeOfCache;
 
-        for (int view = 0; view < viewsToTest; view++) {
-          weightedRotatingLeaders2.getProposer(Round.of(view));
+        for (int roundNumber = 0; roundNumber < roundsToTest; roundNumber++) {
+          weightedRotatingLeaders2.getProposer(Round.of(roundNumber));
         }
-        BFTNode node1 = weightedRotatingLeaders.getProposer(Round.of(viewsToTest - 1));
-        BFTNode node2 = weightedRotatingLeaders2.getProposer(Round.of(viewsToTest - 1));
+        BFTNode node1 = weightedRotatingLeaders.getProposer(Round.of(roundsToTest - 1));
+        BFTNode node2 = weightedRotatingLeaders2.getProposer(Round.of(roundsToTest - 1));
         assertThat(node1).isEqualTo(node2);
       }
     }

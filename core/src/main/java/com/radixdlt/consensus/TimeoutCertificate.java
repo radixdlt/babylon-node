@@ -100,9 +100,9 @@ public final class TimeoutCertificate {
   @VisibleForTesting
   static TimeoutCertificate serializerCreate(
       @JsonProperty("epoch") long epoch,
-      @JsonProperty("round") long view,
+      @JsonProperty("round") long round,
       @JsonProperty(value = "signatures", required = true) TimestampedECDSASignatures signatures) {
-    return new TimeoutCertificate(epoch, Round.of(view), signatures);
+    return new TimeoutCertificate(epoch, Round.of(round), signatures);
   }
 
   public TimeoutCertificate(long epoch, Round round, TimestampedECDSASignatures signatures) {
@@ -134,7 +134,7 @@ public final class TimeoutCertificate {
 
   @JsonProperty("round")
   @DsonOutput(DsonOutput.Output.ALL)
-  private Long getSerializerView() {
+  private Long getSerializerForRoundNumber() {
     return this.round.number();
   }
 

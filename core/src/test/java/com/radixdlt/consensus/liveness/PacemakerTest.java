@@ -165,19 +165,20 @@ public class PacemakerTest {
 
   @Test
   public void when_local_timeout__then_send_empty_vote_if_no_previous() {
-    HighQC viewUpdateHighQc = mock(HighQC.class);
+    HighQC roundUpdateHighQc = mock(HighQC.class);
     QuorumCertificate committedQc = mock(QuorumCertificate.class);
     QuorumCertificate highestQc = mock(QuorumCertificate.class);
-    when(viewUpdateHighQc.highestCommittedQC()).thenReturn(committedQc);
-    when(viewUpdateHighQc.highestQC()).thenReturn(highestQc);
+    when(roundUpdateHighQc.highestCommittedQC()).thenReturn(committedQc);
+    when(roundUpdateHighQc.highestQC()).thenReturn(highestQc);
     BFTHeader highestQcProposed = mock(BFTHeader.class);
     HashCode highQcParentVertexId = mock(HashCode.class);
     when(highestQcProposed.getVertexId()).thenReturn(highQcParentVertexId);
     when(highestQc.getProposed()).thenReturn(highestQcProposed);
     when(committedQc.getRound()).thenReturn(Round.of(0));
     RoundUpdate roundUpdate =
-        RoundUpdate.create(Round.of(1), viewUpdateHighQc, mock(BFTNode.class), mock(BFTNode.class));
-    this.pacemaker.processViewUpdate(roundUpdate);
+        RoundUpdate.create(
+            Round.of(1), roundUpdateHighQc, mock(BFTNode.class), mock(BFTNode.class));
+    this.pacemaker.processRoundUpdate(roundUpdate);
     Round round = Round.of(1);
     Vote emptyVote = mock(Vote.class);
     Vote emptyVoteWithTimeout = mock(Vote.class);
@@ -227,7 +228,7 @@ public class PacemakerTest {
   }
 
   @Test
-  public void when_local_timeout_for_non_current_view__then_ignored() {
+  public void when_local_timeout_for_non_current_round__then_ignored() {
     this.pacemaker.processLocalTimeout(
         ScheduledLocalTimeout.create(
             RoundUpdate.create(

@@ -112,8 +112,8 @@ public final class BFTEventVerifier implements BFTEventProcessor {
   }
 
   @Override
-  public void processViewUpdate(RoundUpdate roundUpdate) {
-    forwardTo.processViewUpdate(roundUpdate);
+  public void processRoundUpdate(RoundUpdate roundUpdate) {
+    forwardTo.processRoundUpdate(roundUpdate);
   }
 
   @Override

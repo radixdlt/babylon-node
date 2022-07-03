@@ -86,7 +86,7 @@ public interface BFTFactory {
       Pacemaker pacemaker,
       VertexStoreAdapter vertexStore,
       BFTSyncer bftSyncer,
-      EventProcessor<RoundQuorumReached> viewQuorumReachedEventProcessor,
+      EventProcessor<RoundQuorumReached> roundQuorumReachedEventProcessor,
       BFTValidatorSet validatorSet,
       RoundUpdate roundUpdate,
       SafetyRules safetyRules);

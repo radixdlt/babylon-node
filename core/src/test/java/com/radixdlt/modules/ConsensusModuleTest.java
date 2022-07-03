@@ -227,7 +227,7 @@ public class ConsensusModuleTest {
       }
 
       @Provides
-      RoundUpdate viewUpdate(@Self BFTNode node) {
+      RoundUpdate initialRoundUpdate(@Self BFTNode node) {
         return RoundUpdate.create(Round.of(1), mock(HighQC.class), node, node);
       }
 

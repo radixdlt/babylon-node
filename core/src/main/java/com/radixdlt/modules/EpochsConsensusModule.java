@@ -253,7 +253,7 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @ProvidesIntoSet
   @ProcessOnDispatch
-  private EventProcessor<RoundUpdate> initialViewUpdateSender(
+  private EventProcessor<RoundUpdate> initialRoundUpdateToEpochRoundUpdateConverter(
       EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher, EpochChange initialEpoch) {
     return roundUpdate -> {
       EpochRoundUpdate epochRoundUpdate =
@@ -265,12 +265,12 @@ public class EpochsConsensusModule extends AbstractModule {
   @Provides
   private PacemakerStateFactory pacemakerStateFactory(
       EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher) {
-    return (initialView, epoch, proposerElection) ->
+    return (initialRound, epoch, proposerElection) ->
         new PacemakerState(
-            initialView,
+            initialRound,
             proposerElection,
-            viewUpdate -> {
-              EpochRoundUpdate epochRoundUpdate = new EpochRoundUpdate(epoch, viewUpdate);
+            roundUpdate -> {
+              EpochRoundUpdate epochRoundUpdate = new EpochRoundUpdate(epoch, roundUpdate);
               epochRoundUpdateEventDispatcher.dispatch(epochRoundUpdate);
             });
   }
@@ -295,7 +295,7 @@ public class EpochsConsensusModule extends AbstractModule {
       RemoteEventDispatcher<Proposal> proposalDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
       TimeSupplier timeSupplier) {
-    return (validatorSet, vertexStore, timeoutCalculator, safetyRules, initialViewUpdate, epoch) ->
+    return (validatorSet, vertexStore, timeoutCalculator, safetyRules, initialRoundUpdate, epoch) ->
         new Pacemaker(
             self,
             counters,
@@ -312,7 +312,7 @@ public class EpochsConsensusModule extends AbstractModule {
             voteDispatcher,
             hasher,
             timeSupplier,
-            initialViewUpdate,
+            initialRoundUpdate,
             counters);
   }
 

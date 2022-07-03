@@ -79,7 +79,7 @@ import org.junit.Test;
 
 public class PacemakerStateTest {
 
-  private EventDispatcher<RoundUpdate> viewUpdateSender = rmock(EventDispatcher.class);
+  private EventDispatcher<RoundUpdate> roundUpdateSender = rmock(EventDispatcher.class);
   private ProposerElection proposerElection = mock(ProposerElection.class);
 
   private PacemakerState pacemakerState;
@@ -90,55 +90,55 @@ public class PacemakerStateTest {
     RoundUpdate roundUpdate =
         RoundUpdate.create(Round.genesis(), mock(HighQC.class), BFTNode.random(), BFTNode.random());
     this.pacemakerState =
-        new PacemakerState(roundUpdate, this.proposerElection, this.viewUpdateSender);
+        new PacemakerState(roundUpdate, this.proposerElection, this.roundUpdateSender);
   }
 
   @Test
-  public void when_process_qc_for_wrong_view__then_ignored() {
+  public void when_process_qc_for_wrong_round__then_ignored() {
     HighQC highQC = mock(HighQC.class);
-    when(highQC.getHighestView()).thenReturn(Round.of(1));
+    when(highQC.getHighestRound()).thenReturn(Round.of(1));
 
     // Move ahead for a bit so we can send in a QC for a lower round
     this.pacemakerState.processQC(highQCFor(Round.of(0)));
     this.pacemakerState.processQC(highQCFor(Round.of(1)));
     this.pacemakerState.processQC(highQCFor(Round.of(2)));
 
-    verify(viewUpdateSender, times(1))
+    verify(roundUpdateSender, times(1))
         .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(1))));
-    verify(viewUpdateSender, times(1))
+    verify(roundUpdateSender, times(1))
         .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(2))));
-    verify(viewUpdateSender, times(1))
+    verify(roundUpdateSender, times(1))
         .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(3))));
 
     this.pacemakerState.processQC(highQC);
-    verifyNoMoreInteractions(viewUpdateSender);
+    verifyNoMoreInteractions(roundUpdateSender);
   }
 
   @Test
-  public void when_process_qc_for_current_view__then_processed() {
+  public void when_process_qc_for_current_round__then_processed() {
     HighQC highQC = mock(HighQC.class);
-    when(highQC.getHighestView()).thenReturn(Round.of(0));
+    when(highQC.getHighestRound()).thenReturn(Round.of(0));
 
     this.pacemakerState.processQC(highQC);
-    verify(viewUpdateSender, times(1))
+    verify(roundUpdateSender, times(1))
         .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(1))));
 
-    when(highQC.getHighestView()).thenReturn(Round.of(1));
+    when(highQC.getHighestRound()).thenReturn(Round.of(1));
     this.pacemakerState.processQC(highQC);
-    verify(viewUpdateSender, times(1))
+    verify(roundUpdateSender, times(1))
         .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(2))));
   }
 
   @Test
-  public void when_process_qc_with_a_high_tc__then_should_move_to_tc_view() {
+  public void when_process_qc_with_a_high_tc__then_should_move_to_tc_round() {
     HighQC highQC = mock(HighQC.class);
     QuorumCertificate qc = mock(QuorumCertificate.class);
     when(qc.getRound()).thenReturn(Round.of(3));
-    when(highQC.getHighestView()).thenReturn(Round.of(5));
+    when(highQC.getHighestRound()).thenReturn(Round.of(5));
     when(highQC.highestCommittedQC()).thenReturn(qc);
 
     this.pacemakerState.processQC(highQC);
-    verify(viewUpdateSender, times(1))
+    verify(roundUpdateSender, times(1))
         .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(6))));
   }
 
@@ -150,7 +150,7 @@ public class PacemakerStateTest {
     when(cqc.getRound()).thenReturn(Round.of(0));
     when(highQC.highestQC()).thenReturn(hqc);
     when(highQC.highestCommittedQC()).thenReturn(cqc);
-    when(highQC.getHighestView()).thenReturn(round);
+    when(highQC.getHighestRound()).thenReturn(round);
     return highQC;
   }
 }

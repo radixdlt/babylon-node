@@ -93,7 +93,7 @@ public class RandomValidatorsTest {
           .ledgerAndEpochsAndSync(
               Round.of(3),
               goodRandomEpochToNodesMapper(),
-              syncConfig) // TODO: investigate why this fails with View.of(10)
+              syncConfig) // TODO: investigate why this fails with Round.of(10)
           .pacemakerTimeout(5000)
           .numNodes(numNodes)
           .addTestModules(

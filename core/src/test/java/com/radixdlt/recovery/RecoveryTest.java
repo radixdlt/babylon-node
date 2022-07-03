@@ -309,8 +309,8 @@ public class RecoveryTest {
     // Assert
     SafetyState safetyState = currentInjector.getInstance(SafetyState.class);
     assertThat(
-            safetyState.getLastVotedView().equals(vote.getRound())
-                || (safetyState.getLastVotedView().equals(Round.genesis())
+            safetyState.getLastVotedRound().equals(vote.getRound())
+                || (safetyState.getLastVotedRound().equals(Round.genesis())
                     && vote.getRound().equals(Round.of(epochMaxRound + 3))))
         .isTrue();
   }

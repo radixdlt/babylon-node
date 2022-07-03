@@ -86,7 +86,7 @@ public final class BFTBuilder {
   private Pacemaker pacemaker;
   private VertexStoreAdapter vertexStore;
   private BFTSyncer bftSyncer;
-  private EventDispatcher<RoundQuorumReached> viewQuorumReachedEventDispatcher;
+  private EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher;
   private EventDispatcher<NoVote> noVoteEventDispatcher;
 
   // Instance specific objects
@@ -109,7 +109,7 @@ public final class BFTBuilder {
     return this;
   }
 
-  public BFTBuilder viewUpdate(RoundUpdate roundUpdate) {
+  public BFTBuilder roundUpdate(RoundUpdate roundUpdate) {
     this.roundUpdate = roundUpdate;
     return this;
   }
@@ -154,9 +154,9 @@ public final class BFTBuilder {
     return this;
   }
 
-  public BFTBuilder viewQuorumReachedEventDispatcher(
-      EventDispatcher<RoundQuorumReached> viewQuorumReachedEventDispatcher) {
-    this.viewQuorumReachedEventDispatcher = viewQuorumReachedEventDispatcher;
+  public BFTBuilder roundQuorumReachedEventDispatcher(
+      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher) {
+    this.roundQuorumReachedEventDispatcher = roundQuorumReachedEventDispatcher;
     return this;
   }
 
@@ -176,7 +176,7 @@ public final class BFTBuilder {
             self,
             pacemaker,
             vertexStore,
-            viewQuorumReachedEventDispatcher,
+            roundQuorumReachedEventDispatcher,
             noVoteEventDispatcher,
             voteDispatcher,
             hasher,

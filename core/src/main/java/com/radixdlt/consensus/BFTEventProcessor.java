@@ -86,7 +86,7 @@ public interface BFTEventProcessor {
    *
    * @param roundUpdate the round update message
    */
-  void processViewUpdate(RoundUpdate roundUpdate);
+  void processRoundUpdate(RoundUpdate roundUpdate);
 
   /**
    * Process a consensus vote message.

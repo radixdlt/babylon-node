@@ -146,8 +146,8 @@ public final class Pacemaker {
   }
 
   /** Processes a local round update message * */
-  public void processViewUpdate(RoundUpdate roundUpdate) {
-    log.trace("View Update: {}", roundUpdate);
+  public void processRoundUpdate(RoundUpdate roundUpdate) {
+    log.trace("Round Update: {}", roundUpdate);
 
     final var previousRound = this.latestRoundUpdate.getCurrentRound();
     if (roundUpdate.getCurrentRound().lte(previousRound)) {

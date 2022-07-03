@@ -83,14 +83,15 @@ import java.util.Optional;
 /** Manages consensus recovery on startup */
 public class ConsensusRecoveryModule extends AbstractModule {
   @Provides
-  private RoundUpdate view(VertexStoreState vertexStoreState, BFTConfiguration configuration) {
+  private RoundUpdate initialRoundUpdate(
+      VertexStoreState vertexStoreState, BFTConfiguration configuration) {
     var highQC = vertexStoreState.getHighQC();
-    var view = highQC.highestQC().getRound().next();
+    var round = highQC.highestQC().getRound().next();
     var proposerElection = configuration.getProposerElection();
-    var leader = proposerElection.getProposer(view);
-    var nextLeader = proposerElection.getProposer(view.next());
+    var leader = proposerElection.getProposer(round);
+    var nextLeader = proposerElection.getProposer(round.next());
 
-    return RoundUpdate.create(view, highQC, leader, nextLeader);
+    return RoundUpdate.create(round, highQC, leader, nextLeader);
   }
 
   @Provides
@@ -102,7 +103,7 @@ public class ConsensusRecoveryModule extends AbstractModule {
   }
 
   @Provides
-  private BFTValidatorSet validatorSet(@LastEpochProof LedgerProof lastEpochProof) {
+  private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
     return lastEpochProof
         .getNextValidatorSet()
         .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
@@ -110,7 +111,7 @@ public class ConsensusRecoveryModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private SafetyState safetyState(
+  private SafetyState initialSafetyState(
       EpochChange initialEpoch, PersistentSafetyStateStore safetyStore) {
     return safetyStore
         .get()

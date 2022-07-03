@@ -85,10 +85,10 @@ import java.util.Map.Entry;
  * <p>Calculation of the next leader is dependent on the weight state of the previous round and thus
  * computing the leader for an arbitrary round can be quite expensive.
  *
- * <p>We resolve this by keeping a cache of some given size of the previous views closest to the
+ * <p>We resolve this by keeping a cache of some given size of the previous rounds closest to the
  * highest round calculated.
  *
- * <p>This class stateful and is NOT thread-safe.
+ * <p>This class is stateful and is NOT thread-safe.
  */
 public final class WeightedRotatingLeaders implements ProposerElection {
   private static final int DEFAULT_CACHE_SIZE = 10;
@@ -137,7 +137,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
       UInt256 lcm256 = UInt256s.cappedLCM(UInt256.from(Long.MAX_VALUE), powerArray);
       this.lcm = lcm256 == null ? null : lcm256.getLow().getLow();
 
-      this.resetToView(Round.of(0));
+      this.resetToRound(Round.of(0));
     }
 
     private BFTValidator computeHeaviest() {
@@ -174,13 +174,13 @@ public final class WeightedRotatingLeaders implements ProposerElection {
       return null;
     }
 
-    private void computeToView(Round round) {
+    private void computeToRound(Round round) {
       while (round.compareTo(curRound) > 0) {
         computeNext();
       }
     }
 
-    private BFTValidator resetToView(Round round) {
+    private BFTValidator resetToRound(Round round) {
       // reset if round isn't in cache
       if (curRound == null || round.number() < curRound.number() - cache.length) {
         if (lcm == null || lcm > round.number()) {
@@ -197,7 +197,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
       }
 
       // compute to round
-      computeToView(round);
+      computeToRound(round);
 
       // guaranteed to return non-null;
       return cache[(int) (round.number() % cache.length)];
@@ -211,7 +211,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 
   @Override
   public BFTNode getProposer(Round round) {
-    nextLeaderComputer.computeToView(round);
+    nextLeaderComputer.computeToRound(round);
 
     // validator will only be null if the round supplied is before the cache
     // window
@@ -223,7 +223,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
       // cache doesn't have value, do the expensive operation
       CachingNextLeaderComputer computer =
           new CachingNextLeaderComputer(validatorSet, weightsComparator, 1);
-      return computer.resetToView(round).getNode();
+      return computer.resetToRound(round).getNode();
     }
   }
 

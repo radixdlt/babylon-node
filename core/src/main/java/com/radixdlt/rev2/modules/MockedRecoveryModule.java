@@ -102,7 +102,8 @@ public class MockedRecoveryModule extends AbstractModule {
   }
 
   @Provides
-  private RoundUpdate view(BFTConfiguration configuration, ProposerElection proposerElection) {
+  private RoundUpdate initialRoundUpdate(
+      BFTConfiguration configuration, ProposerElection proposerElection) {
     HighQC highQC = configuration.getVertexStoreState().getHighQC();
     Round round = highQC.highestQC().getRound().next();
     final BFTNode leader = proposerElection.getProposer(round);
