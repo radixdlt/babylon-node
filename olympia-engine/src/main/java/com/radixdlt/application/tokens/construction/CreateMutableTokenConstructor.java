@@ -64,14 +64,14 @@
 
 package com.radixdlt.application.tokens.construction;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.substate.ActionConstructor;
+import com.radixdlt.substate.TxBuilder;
+import com.radixdlt.substate.TxBuilderException;
 import java.nio.charset.StandardCharsets;
 
 public record CreateMutableTokenConstructor(int maxSymbolLength)

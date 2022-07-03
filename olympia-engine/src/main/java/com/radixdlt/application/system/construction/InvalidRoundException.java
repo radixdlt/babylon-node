@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.system.construction;
 
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.substate.TxBuilderException;
 
 public class InvalidRoundException extends TxBuilderException {
   public InvalidRoundException(long currentRound, long nextRound) {

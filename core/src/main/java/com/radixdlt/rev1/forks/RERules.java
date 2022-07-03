@@ -64,13 +64,13 @@
 
 package com.radixdlt.rev1.forks;
 
-import com.radixdlt.atom.REConstructor;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.rev1.LedgerAndBFTProof;
+import com.radixdlt.substate.REConstructor;
 import java.util.OptionalInt;
 
 public final record RERules(

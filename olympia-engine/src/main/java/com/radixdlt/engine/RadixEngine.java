@@ -64,19 +64,11 @@
 
 package com.radixdlt.engine;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.google.common.base.Stopwatch;
 import com.radixdlt.application.system.construction.FeeReserveCompleteException;
 import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateStore;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.constraintmachine.*;
 import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
@@ -89,6 +81,14 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.TransientEngineStore;
+import com.radixdlt.substate.CloseableCursor;
+import com.radixdlt.substate.REConstructor;
+import com.radixdlt.substate.SubstateId;
+import com.radixdlt.substate.SubstateStore;
+import com.radixdlt.substate.TxAction;
+import com.radixdlt.substate.TxBuilder;
+import com.radixdlt.substate.TxBuilderException;
+import com.radixdlt.substate.TxnConstructionRequest;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -313,8 +313,10 @@ public final class RadixEngine<M> {
   }
 
   /**
-   * Atomically stores the given atom into the store. If the atom has any conflicts or dependency
-   * issues the atom will not be stored.
+   * Atomically executes and stores the given list of transactions into the store.
+   *
+   * <p>If any transactions have any conflicts or dependency issues, the whole list of transactions
+   * will not be stored.
    *
    * @param transactions transactions to execute
    * @param permissionLevel permission level to execute on
@@ -331,7 +333,7 @@ public final class RadixEngine<M> {
         throw new IllegalStateException(
             String.format(
                 "%s transient branches still exist. Must delete branches before storing additional"
-                    + " atoms.",
+                    + " transactions.",
                 branches.size()));
       }
       return engineStore.transaction(
@@ -374,7 +376,7 @@ public final class RadixEngine<M> {
       try {
         engineStoreInTransaction.storeTxn(processedTxn);
       } catch (Exception e) {
-        logger.error("Store of atom failed: " + processedTxn, e);
+        logger.error("Store of transaction failed: " + processedTxn, e);
         throw e;
       }
       storageStopwatch.stop();

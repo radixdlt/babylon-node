@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.system;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -81,8 +81,7 @@ import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atom.*;
-import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.cmos.ConstraintMachineOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REInstruction;
@@ -99,6 +98,7 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.substate.*;
 import com.radixdlt.utils.UInt256;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -136,17 +136,17 @@ public class TransactionSizeFeeTest {
 
   @Before
   public void setup() throws Exception {
-    var cmAtomOS = new CMAtomOS();
-    cmAtomOS.load(new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")));
-    cmAtomOS.load(new SystemConstraintScrypt());
+    var cmOS = new ConstraintMachineOS();
+    cmOS.load(new TokensConstraintScryptV3(Set.of(), Pattern.compile("[a-z0-9]+")));
+    cmOS.load(new SystemConstraintScrypt());
     var cm =
         new ConstraintMachine(
-            cmAtomOS.getProcedures(),
-            cmAtomOS.buildSubstateDeserialization(),
-            cmAtomOS.buildVirtualSubstateDeserialization(),
+            cmOS.getProcedures(),
+            cmOS.buildSubstateDeserialization(),
+            cmOS.buildVirtualSubstateDeserialization(),
             TxnSizeFeeMeter.create(costPerByte.toSubunits(), MAX_SIZE));
-    var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
-    var serialization = cmAtomOS.buildSubstateSerialization();
+    var parser = new REParser(cmOS.buildSubstateDeserialization());
+    var serialization = cmOS.buildSubstateSerialization();
     this.store = new InMemoryEngineStore<>();
     this.engine =
         new RadixEngine<>(

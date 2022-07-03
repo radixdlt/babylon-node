@@ -66,11 +66,9 @@ package com.radixdlt.application.system.scrypt;
 
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
-import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.cmos.ConstraintScrypt;
+import com.radixdlt.cmos.Loader;
+import com.radixdlt.cmos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -80,6 +78,8 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.substate.REFieldSerialization;
+import com.radixdlt.substate.SubstateTypeId;
 import com.radixdlt.utils.KeyComparator;
 import java.util.TreeMap;
 

@@ -64,7 +64,7 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.SubstateTypeId;
+import com.radixdlt.substate.SubstateTypeId;
 import com.radixdlt.utils.Bytes;
 import java.nio.ByteBuffer;
 import java.util.Arrays;

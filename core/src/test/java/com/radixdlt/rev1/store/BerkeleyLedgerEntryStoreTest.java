@@ -71,7 +71,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -89,6 +88,7 @@ import com.radixdlt.rev1.forks.ForkVotingResult;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.substate.CloseableCursor;
 import com.radixdlt.transactions.Transaction;
 import java.io.IOException;
 import java.util.ArrayList;

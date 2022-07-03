@@ -67,31 +67,33 @@ package com.radixdlt.mempool;
 import java.util.Objects;
 import java.util.OptionalLong;
 
-/** An atom with additional information stored in a mempool. */
+/** Metadata for a transaction about its status in the mempool. */
 public final class MempoolMetadata {
 
-  private final long inserted;
-  private long lastRelayed;
+  private final long insertedTimestampMs;
+  private long lastRelayedTimestampMs;
 
-  private MempoolMetadata(long inserted, long lastRelayed) {
-    this.inserted = inserted;
-    this.lastRelayed = lastRelayed;
+  private MempoolMetadata(long insertedTimestampMs, long lastRelayedTimestampMs) {
+    this.insertedTimestampMs = insertedTimestampMs;
+    this.lastRelayedTimestampMs = lastRelayedTimestampMs;
   }
 
-  public static MempoolMetadata create(long inserted) {
-    return new MempoolMetadata(inserted, -1);
+  public static MempoolMetadata create(long insertedTimestampMs) {
+    return new MempoolMetadata(insertedTimestampMs, -1);
   }
 
-  public long getInserted() {
-    return inserted;
+  public long getInsertedTimestampMs() {
+    return insertedTimestampMs;
   }
 
-  public OptionalLong getLastRelayed() {
-    return lastRelayed < 0 ? OptionalLong.empty() : OptionalLong.of(lastRelayed);
+  public OptionalLong getLastRelayedTimestampMs() {
+    return lastRelayedTimestampMs < 0
+        ? OptionalLong.empty()
+        : OptionalLong.of(lastRelayedTimestampMs);
   }
 
-  public void setLastRelayed(long lastRelayed) {
-    this.lastRelayed = lastRelayed;
+  public void setLastRelayedTimestampMs(long lastRelayedTimestampMs) {
+    this.lastRelayedTimestampMs = lastRelayedTimestampMs;
   }
 
   @Override
@@ -103,18 +105,19 @@ public final class MempoolMetadata {
       return false;
     }
     final var that = (MempoolMetadata) o;
-    return inserted == that.inserted && lastRelayed == that.lastRelayed;
+    return insertedTimestampMs == that.insertedTimestampMs
+        && lastRelayedTimestampMs == that.lastRelayedTimestampMs;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(inserted, lastRelayed);
+    return Objects.hash(insertedTimestampMs, lastRelayedTimestampMs);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "%s{inserted=%s lastRelayed=%s}",
-        getClass().getSimpleName(), this.inserted, this.lastRelayed);
+        "%s{insertedTimestampMs=%s lastRelayedTimestampMs=%s}",
+        getClass().getSimpleName(), this.insertedTimestampMs, this.lastRelayedTimestampMs);
   }
 }

@@ -342,7 +342,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   /**
-   * Commit a vertex. Executes the atom and prunes the tree.
+   * Commit a vertex. Executes the transactions and prunes the tree.
    *
    * @param header the header to be committed
    * @param commitQC the proof of commit

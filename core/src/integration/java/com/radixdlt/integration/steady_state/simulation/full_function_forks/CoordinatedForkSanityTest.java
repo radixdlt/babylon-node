@@ -69,8 +69,6 @@ import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Key;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.crypto.ECKeyPair;
@@ -94,6 +92,8 @@ import com.radixdlt.rev1.forks.ForkConfig;
 import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.forks.ForksModule;
+import com.radixdlt.substate.TxBuilderException;
+import com.radixdlt.substate.TxnConstructionRequest;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.UInt256;
 import java.time.Duration;

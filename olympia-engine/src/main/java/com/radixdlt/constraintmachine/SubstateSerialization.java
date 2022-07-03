@@ -64,7 +64,7 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.cmos.SubstateDefinition;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;

@@ -64,12 +64,12 @@
 
 package com.radixdlt.application.validators.construction;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.radixdlt.application.validators.state.ValidatorMetaData;
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.substate.ActionConstructor;
+import com.radixdlt.substate.TxBuilder;
+import com.radixdlt.substate.TxBuilderException;
 
 public final class UpdateValidatorMetadataConstructor
     implements ActionConstructor<UpdateValidatorMetadata> {

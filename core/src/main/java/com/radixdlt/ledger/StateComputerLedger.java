@@ -223,7 +223,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         return Optional.empty();
       }
 
-      // Don't execute atom if in process of epoch change
+      // Don't execute any transactions if in the process of an epoch change
       if (parentHeader.isEndOfEpoch()) {
         return Optional.of(
             new ExecutedVertex(

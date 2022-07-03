@@ -64,8 +64,8 @@
 
 package com.radixdlt.integration.targeted.statemachine;
 
-import static com.radixdlt.atom.TxAction.*;
 import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.google.common.base.Stopwatch;
 import com.google.inject.AbstractModule;
@@ -82,7 +82,6 @@ import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -108,6 +107,7 @@ import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
+import com.radixdlt.substate.TxnConstructionRequest;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;

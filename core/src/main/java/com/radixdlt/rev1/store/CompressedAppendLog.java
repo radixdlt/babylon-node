@@ -64,8 +64,8 @@
 
 package com.radixdlt.rev1.store;
 
-import static com.radixdlt.monitoring.SystemCounters.CounterType.PERSISTENCE_ATOM_LOG_WRITE_BYTES;
-import static com.radixdlt.monitoring.SystemCounters.CounterType.PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED;
+import static com.radixdlt.monitoring.SystemCounters.CounterType.PERSISTENCE_TRANSACTION_LOG_WRITE_BYTES;
+import static com.radixdlt.monitoring.SystemCounters.CounterType.PERSISTENCE_TRANSACTION_LOG_WRITE_COMPRESSED;
 
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.utils.Compress;
@@ -100,8 +100,8 @@ public class CompressedAppendLog implements AppendLog {
   public long write(final byte[] data, long expectedOffset) throws IOException {
     byte[] compressedData = Compress.compress(data);
 
-    counters.add(PERSISTENCE_ATOM_LOG_WRITE_BYTES, data.length);
-    counters.add(PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED, compressedData.length);
+    counters.add(PERSISTENCE_TRANSACTION_LOG_WRITE_BYTES, data.length);
+    counters.add(PERSISTENCE_TRANSACTION_LOG_WRITE_COMPRESSED, compressedData.length);
 
     return delegate.write(compressedData, expectedOffset);
   }

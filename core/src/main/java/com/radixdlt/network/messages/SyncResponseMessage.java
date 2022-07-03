@@ -73,7 +73,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 
-/** Message with sync atoms as a response to sync request */
+/** Message with sync transactions as a response to sync request */
 @SerializerId2("message.sync.sync_response")
 public final class SyncResponseMessage extends Message {
   @JsonProperty("run")

@@ -64,7 +64,7 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.cmos.SubstateDefinition;
 import com.radixdlt.engine.parser.exceptions.SubstateDeserializationException;
 import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.serialization.DeserializeException;

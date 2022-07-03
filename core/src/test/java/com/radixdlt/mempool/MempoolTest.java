@@ -74,8 +74,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
@@ -101,6 +99,8 @@ import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.substate.SubstateId;
+import com.radixdlt.substate.TxLowLevelBuilder;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.nio.charset.StandardCharsets;
@@ -153,21 +153,21 @@ public class MempoolTest {
   }
 
   private Transaction createTxn(ECKeyPair keyPair, int numMutexes) throws Exception {
-    final var atomBuilder =
+    final var transactionBuilder =
         TxLowLevelBuilder.newBuilder(
             currentForkView.currentForkConfig().engineRules().serialization());
     for (int i = 0; i < numMutexes; i++) {
       var symbol = "test" + (char) ('c' + i);
       var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
-      atomBuilder
+      transactionBuilder
           .syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8))
           .virtualDown(
               SubstateId.ofSubstate(genesisTxns.getTransactions().get(0).getId(), 0),
               addr.getBytes())
           .end();
     }
-    var signature = keyPair.sign(atomBuilder.hashToSign());
-    return atomBuilder.sig(signature).build();
+    var signature = keyPair.sign(transactionBuilder.hashToSign());
+    return transactionBuilder.sig(signature).build();
   }
 
   private Transaction createTxn(ECKeyPair keyPair) throws Exception {

@@ -66,13 +66,13 @@ package com.radixdlt.harness.simulation.application;
 
 import com.google.inject.Inject;
 import com.radixdlt.application.system.scrypt.Syscall;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.TxBuilder;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.rev1.forks.CurrentForkView;
+import com.radixdlt.substate.SubstateId;
+import com.radixdlt.substate.TxBuilder;
 import com.radixdlt.transactions.Transaction;
 import java.nio.charset.StandardCharsets;
 

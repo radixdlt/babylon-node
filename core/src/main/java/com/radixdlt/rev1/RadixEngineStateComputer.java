@@ -64,14 +64,13 @@
 
 package com.radixdlt.rev1;
 
-import static com.radixdlt.atom.TxAction.*;
 import static com.radixdlt.monitoring.SystemCounters.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.atom.*;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -102,6 +101,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.forks.Forks;
+import com.radixdlt.substate.*;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Objects;

@@ -66,8 +66,6 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
@@ -86,6 +84,8 @@ import com.radixdlt.engine.parser.exceptions.TxnParseException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.CMStore;
+import com.radixdlt.substate.CloseableCursor;
+import com.radixdlt.substate.SubstateId;
 import com.radixdlt.utils.Pair;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -99,7 +99,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-/** An implementation of a UTXO based constraint machine which uses Radix's atom structure. */
+/** An implementation of a UTXO based constraint machine which uses Radix's substate structure. */
 // FIXME: unchecked, rawtypes
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintMachine {
@@ -136,7 +136,7 @@ public final class ConstraintMachine {
 
   private static final class CMValidationState {
     private final Map<REAddr, TokenResource> localResources = new HashMap<>();
-    private final Map<Integer, Pair<com.radixdlt.atom.Substate, Supplier<ByteBuffer>>>
+    private final Map<Integer, Pair<com.radixdlt.substate.Substate, Supplier<ByteBuffer>>>
         localUpSubstates = new HashMap<>();
     private final Set<SubstateId> remoteDownSubstates = new HashSet<>();
     private final CMStore store;
@@ -198,7 +198,7 @@ public final class ConstraintMachine {
           });
     }
 
-    public void bootUp(com.radixdlt.atom.Substate substate, Supplier<ByteBuffer> buffer) {
+    public void bootUp(com.radixdlt.substate.Substate substate, Supplier<ByteBuffer> buffer) {
       localUpSubstates.put(bootupCount, Pair.of(substate, buffer));
       if (substate.getSubstate() instanceof TokenResource) {
         var resource = (TokenResource) substate.getSubstate();
@@ -287,7 +287,7 @@ public final class ConstraintMachine {
       return substate;
     }
 
-    public CloseableCursor<com.radixdlt.atom.Substate> getIndexedCursor(SubstateIndex index) {
+    public CloseableCursor<com.radixdlt.substate.Substate> getIndexedCursor(SubstateIndex index) {
       return CloseableCursor.wrapIterator(
               localUpSubstates.values().stream()
                   .filter(s -> index.test(s.getSecond().get()))
@@ -301,7 +301,7 @@ public final class ConstraintMachine {
                           r -> {
                             try {
                               var substate = deserialization.deserialize(r.getData());
-                              return com.radixdlt.atom.Substate.create(
+                              return com.radixdlt.substate.Substate.create(
                                   substate, SubstateId.fromBytes(r.getId()));
                             } catch (DeserializeException e) {
                               throw new IllegalStateException();
@@ -467,7 +467,7 @@ public final class ConstraintMachine {
             substateId = upSubstate.getSubstateId();
             substateBuffer = upSubstate::getSubstateBuffer;
             validationState.bootUp(
-                com.radixdlt.atom.Substate.create(nextRawSubstate, substateId),
+                com.radixdlt.substate.Substate.create(nextRawSubstate, substateId),
                 upSubstate::getSubstateBuffer);
           } else if (inst.getMicroOp() == REInstruction.REMicroOp.VDOWN) {
             substateId = inst.getData();

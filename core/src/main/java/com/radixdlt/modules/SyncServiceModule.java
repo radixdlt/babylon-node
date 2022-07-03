@@ -97,7 +97,7 @@ import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import java.time.Duration;
 
-/** Module which manages synchronization of committed atoms across of nodes */
+/** Module which manages synchronization of committed transactions across nodes */
 public class SyncServiceModule extends AbstractModule {
 
   @Override

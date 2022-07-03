@@ -64,19 +64,19 @@
 
 package com.radixdlt.rev1.checkpoint;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.TransactionRun;
+import com.radixdlt.substate.TxAction;
+import com.radixdlt.substate.TxBuilderException;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
@@ -87,7 +87,7 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Generates a genesis atom */
+/** Generates a genesis transaction */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public final class GenesisProvider implements Provider<TransactionRun> {
   private static final Logger logger = LogManager.getLogger();

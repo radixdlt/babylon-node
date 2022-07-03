@@ -65,7 +65,7 @@
 package com.radixdlt.application.system.construction;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.google.common.collect.Streams;
 import com.google.common.primitives.UnsignedBytes;
@@ -81,10 +81,10 @@ import com.radixdlt.application.validators.state.ValidatorData;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.atom.*;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.substate.*;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;

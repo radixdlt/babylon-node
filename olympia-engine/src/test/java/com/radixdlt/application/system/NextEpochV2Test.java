@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.system;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
@@ -86,10 +86,8 @@ import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atomos.CMAtomOS;
-import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.cmos.ConstraintMachineOS;
+import com.radixdlt.cmos.ConstraintScrypt;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REEvent;
@@ -98,6 +96,8 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.substate.REConstructor;
+import com.radixdlt.substate.TxnConstructionRequest;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.Collection;
 import java.util.List;
@@ -156,17 +156,17 @@ public class NextEpochV2Test {
 
   @Before
   public void setup() {
-    var cmAtomOS = new CMAtomOS();
-    cmAtomOS.load(new SystemConstraintScrypt());
-    scrypts.forEach(cmAtomOS::load);
-    cmAtomOS.load(new MutexConstraintScrypt()); // For v1 start
+    var cmOS = new ConstraintMachineOS();
+    cmOS.load(new SystemConstraintScrypt());
+    scrypts.forEach(cmOS::load);
+    cmOS.load(new MutexConstraintScrypt()); // For v1 start
     var cm =
         new ConstraintMachine(
-            cmAtomOS.getProcedures(),
-            cmAtomOS.buildSubstateDeserialization(),
-            cmAtomOS.buildVirtualSubstateDeserialization());
-    this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
-    var serialization = cmAtomOS.buildSubstateSerialization();
+            cmOS.getProcedures(),
+            cmOS.buildSubstateDeserialization(),
+            cmOS.buildVirtualSubstateDeserialization());
+    this.parser = new REParser(cmOS.buildSubstateDeserialization());
+    var serialization = cmOS.buildSubstateSerialization();
     this.store = new InMemoryEngineStore<>();
     this.sut = new RadixEngine<>(parser, serialization, constructors, cm, store);
   }
