@@ -72,5 +72,5 @@ public interface PacemakerTimeoutCalculator {
    * @param uncommittedViews the number of uncommitted views
    * @return pacemaker round timeout in milliseconds
    */
-  long timeout(long uncommittedViews);
+  long calculateTimeoutMs(long uncommittedViews);
 }

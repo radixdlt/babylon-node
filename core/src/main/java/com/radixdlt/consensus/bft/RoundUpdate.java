@@ -109,7 +109,7 @@ public final class RoundUpdate {
     return currentRound;
   }
 
-  public long uncommittedRoundsCount() {
+  public long consecutiveUncommittedRoundsCount() {
     return Math.max(
         0L, currentRound.number() - highQC.highestCommittedQC().getRound().number() - 1);
   }

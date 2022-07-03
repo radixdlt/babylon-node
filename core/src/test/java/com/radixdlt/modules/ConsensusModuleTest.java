@@ -218,8 +218,8 @@ public class ConsensusModuleTest {
             .annotatedWith(GetVerticesRequestRateLimit.class)
             .toInstance(RateLimiter.create(Double.MAX_VALUE));
         bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
-        bindConstant().annotatedWith(PacemakerTimeout.class).to(1000L);
-        bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
+        bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(1000L);
+        bindConstant().annotatedWith(PacemakerMultiplierRate.class).to(2.0);
         bindConstant().annotatedWith(PacemakerMaxExponent.class).to(6);
 
         ECKeyPair ecKeyPair = ECKeyPair.generateNew();

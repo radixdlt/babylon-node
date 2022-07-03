@@ -97,7 +97,8 @@ public class ExponentialPacemakerTimeoutCalculatorTest {
 
     expectedTimeouts.forEach(
         (uncommittedViews, expectedResult) ->
-            assertEquals(expectedResult.longValue(), calculator.timeout(uncommittedViews)));
+            assertEquals(
+                expectedResult.longValue(), calculator.calculateTimeoutMs(uncommittedViews)));
   }
 
   private void checkConstructionParams(

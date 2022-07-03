@@ -246,8 +246,8 @@ public final class DeterministicTest {
             public void configure() {
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
               bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
-              bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
-              bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
+              bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(pacemakerTimeout);
+              bindConstant().annotatedWith(PacemakerMultiplierRate.class).to(2.0);
               // Use constant timeout for now
               bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
               bind(TimeSupplier.class).toInstance(System::currentTimeMillis);

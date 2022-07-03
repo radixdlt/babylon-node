@@ -509,8 +509,8 @@ public final class SimulationTest {
               bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
               bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
-              bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
-              bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
+              bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(pacemakerTimeout);
+              bindConstant().annotatedWith(PacemakerMultiplierRate.class).to(2.0);
               bindConstant()
                   .annotatedWith(PacemakerMaxExponent.class)
                   .to(0); // Use constant timeout for now

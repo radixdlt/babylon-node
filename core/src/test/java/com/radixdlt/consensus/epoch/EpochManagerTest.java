@@ -232,8 +232,8 @@ public class EpochManagerTest {
             .annotatedWith(GetVerticesRequestRateLimit.class)
             .toInstance(RateLimiter.create(Double.MAX_VALUE));
         bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
-        bindConstant().annotatedWith(PacemakerTimeout.class).to(10L);
-        bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
+        bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(10L);
+        bindConstant().annotatedWith(PacemakerMultiplierRate.class).to(2.0);
         bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 

@@ -73,8 +73,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-/** The rate at which the pacemaker increases timeout */
+/** The rate at which the pacemaker increases its timeout for each consecutive uncommitted round */
 @Qualifier
 @Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface PacemakerRate {}
+public @interface PacemakerMultiplierRate {}

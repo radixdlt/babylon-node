@@ -85,11 +85,11 @@ public final class LocalTimeoutOccurrence {
   }
 
   public BFTNode getLeader() {
-    return scheduledLocalTimeout.viewUpdate().getLeader();
+    return scheduledLocalTimeout.roundUpdate().getLeader();
   }
 
   public BFTNode getNextLeader() {
-    return scheduledLocalTimeout.viewUpdate().getNextLeader();
+    return scheduledLocalTimeout.roundUpdate().getNextLeader();
   }
 
   @Override

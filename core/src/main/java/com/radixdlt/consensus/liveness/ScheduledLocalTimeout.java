@@ -92,7 +92,7 @@ public final class ScheduledLocalTimeout {
     return count;
   }
 
-  public RoundUpdate viewUpdate() {
+  public RoundUpdate roundUpdate() {
     return roundUpdate;
   }
 

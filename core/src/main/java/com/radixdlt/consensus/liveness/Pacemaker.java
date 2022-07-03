@@ -65,7 +65,6 @@
 package com.radixdlt.consensus.liveness;
 
 import com.google.common.hash.HashCode;
-import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -87,10 +86,7 @@ import org.apache.logging.log4j.Logger;
 
 /** Manages the pacemaker driver. */
 public final class Pacemaker {
-
   private static final Logger log = LogManager.getLogger();
-
-  private final RateLimiter logLimiter = RateLimiter.create(1.0);
 
   private final BFTNode self;
   private final SystemCounters counters;
@@ -108,7 +104,7 @@ public final class Pacemaker {
   private final SystemCounters systemCounters;
 
   private RoundUpdate latestRoundUpdate;
-  private boolean isViewTimedOut = false;
+  private boolean isRoundTimedOut = false;
   private Optional<HashCode> timeoutVoteVertexId = Optional.empty();
 
   public Pacemaker(
@@ -146,14 +142,14 @@ public final class Pacemaker {
 
   public void start() {
     log.info("Pacemaker Start: {}", latestRoundUpdate);
-    this.startView();
+    this.startRound();
   }
 
   /** Processes a local round update message * */
   public void processViewUpdate(RoundUpdate roundUpdate) {
     log.trace("View Update: {}", roundUpdate);
 
-    final Round previousRound = this.latestRoundUpdate.getCurrentRound();
+    final var previousRound = this.latestRoundUpdate.getCurrentRound();
     if (roundUpdate.getCurrentRound().lte(previousRound)) {
       return;
     }
@@ -161,13 +157,13 @@ public final class Pacemaker {
     this.systemCounters.set(
         CounterType.BFT_PACEMAKER_ROUND, roundUpdate.getCurrentRound().number());
 
-    this.startView();
+    this.startRound();
   }
 
   /** Processes a local BFTInsertUpdate message */
   public void processBFTUpdate(BFTInsertUpdate update) {
     /* we only process the insertion of an empty vertex used for timeout vote (see: processLocalTimeout) */
-    if (!this.isViewTimedOut
+    if (!this.isRoundTimedOut
         || this.timeoutVoteVertexId
             .filter(update.getInserted().getVertexHash()::equals)
             .isEmpty()) {
@@ -177,17 +173,17 @@ public final class Pacemaker {
     this.createAndSendTimeoutVote(update.getInserted());
   }
 
-  private void startView() {
-    this.isViewTimedOut = false;
+  private void startRound() {
+    this.isRoundTimedOut = false;
     this.timeoutVoteVertexId = Optional.empty();
 
-    long timeout = timeoutCalculator.timeout(latestRoundUpdate.uncommittedRoundsCount());
-    ScheduledLocalTimeout scheduledLocalTimeout =
-        ScheduledLocalTimeout.create(latestRoundUpdate, timeout);
-    this.timeoutSender.dispatch(scheduledLocalTimeout, timeout);
+    final var timeoutMs =
+        timeoutCalculator.calculateTimeoutMs(latestRoundUpdate.consecutiveUncommittedRoundsCount());
+    final var timeoutEvent = ScheduledLocalTimeout.create(latestRoundUpdate, timeoutMs);
+    this.timeoutSender.dispatch(timeoutEvent, timeoutMs);
 
-    final BFTNode currentViewProposer = latestRoundUpdate.getLeader();
-    if (this.self.equals(currentViewProposer)) {
+    final var currentRoundProposer = latestRoundUpdate.getLeader();
+    if (this.self.equals(currentRoundProposer)) {
       Optional<Proposal> proposalMaybe = generateProposal(latestRoundUpdate.getCurrentRound());
       proposalMaybe.ifPresent(
           proposal -> {
@@ -199,27 +195,31 @@ public final class Pacemaker {
   }
 
   private Optional<Proposal> generateProposal(Round round) {
-    final HighQC highQC = this.latestRoundUpdate.getHighQC();
-    final QuorumCertificate highestQC = highQC.highestQC();
+    final var highQC = this.latestRoundUpdate.getHighQC();
+    final var highestQC = highQC.highestQC();
 
-    final List<Transaction> nextTransactions;
+    final var nextTransactions = getTransactionsForProposal(round, highestQC);
 
-    // Propose null atom in the case that we are at the end of the epoch
-    // TODO: Remove isEndOfEpoch knowledge from consensus
-    if (highestQC.getProposed().getLedgerHeader().isEndOfEpoch()) {
-      nextTransactions = List.of();
-    } else {
-      final List<ExecutedVertex> executedVertices =
-          vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
-      nextTransactions = proposalGenerator.getTransactionsForProposal(round, executedVertices);
-      systemCounters.add(
-          SystemCounters.CounterType.BFT_PACEMAKER_PROPOSED_TRANSACTIONS, nextTransactions.size());
-    }
-
-    final VertexWithHash proposedVertex =
+    final var proposedVertex =
         Vertex.create(highestQC, round, nextTransactions, self).withId(hasher);
     return safetyRules.signProposal(
         proposedVertex, highQC.highestCommittedQC(), highQC.highestTC());
+  }
+
+  private List<Transaction> getTransactionsForProposal(Round round, QuorumCertificate highestQC) {
+    // If we're at the end of an epoch, we need to generate an empty proposal
+    // - these transactions will get ignored at vertex preparation time anyway
+    // TODO: Remove isEndOfEpoch knowledge from consensus
+    if (highestQC.getProposed().getLedgerHeader().isEndOfEpoch()) {
+      return List.of();
+    }
+
+    final var alreadyExecutedVertices =
+        vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
+    final var nextTransactions =
+        proposalGenerator.getTransactionsForProposal(round, alreadyExecutedVertices);
+    systemCounters.add(CounterType.BFT_PACEMAKER_PROPOSED_TRANSACTIONS, nextTransactions.size());
+    return nextTransactions;
   }
 
   /**
@@ -228,9 +228,9 @@ public final class Pacemaker {
    * a timeout signature, which can later be used to form a timeout certificate.
    */
   public void processLocalTimeout(ScheduledLocalTimeout scheduledTimeout) {
-    final var view = scheduledTimeout.round();
+    final var round = scheduledTimeout.round();
 
-    if (!view.equals(this.latestRoundUpdate.getCurrentRound())) {
+    if (!round.equals(this.latestRoundUpdate.getCurrentRound())) {
       log.trace(
           "LocalTimeout: Ignoring timeout {}, current is {}",
           scheduledTimeout,
@@ -240,19 +240,19 @@ public final class Pacemaker {
 
     log.trace("LocalTimeout: {}", scheduledTimeout);
 
-    this.isViewTimedOut = true;
+    this.isRoundTimedOut = true;
 
     updateTimeoutCounters(scheduledTimeout);
 
     this.safetyRules
-        .getLastVote(view)
+        .getLastVote(round)
         .map(this.safetyRules::timeoutVote)
         .ifPresentOrElse(
             /* if there is a previously sent vote, we time it out and broadcast to all nodes */
             vote -> this.voteDispatcher.dispatch(this.validatorSet.nodes(), vote),
             /* otherwise, we asynchronously insert an empty vertex and, when done,
             we send a timeout vote on it (see processBFTUpdate) */
-            () -> createTimeoutVertexAndSendVote(scheduledTimeout.viewUpdate()));
+            () -> createTimeoutVertexAndSendVote(scheduledTimeout.roundUpdate()));
 
     rescheduleTimeout(scheduledTimeout);
   }
@@ -289,20 +289,20 @@ public final class Pacemaker {
   }
 
   private void createAndSendTimeoutVote(ExecutedVertex executedVertex) {
-    final BFTHeader bftHeader =
+    final var bftHeader =
         new BFTHeader(
             executedVertex.getRound(),
             executedVertex.getVertexHash(),
             executedVertex.getLedgerHeader());
 
-    final Vote baseVote =
+    final var baseVote =
         this.safetyRules.createVote(
             executedVertex.getVertex(),
             bftHeader,
             this.timeSupplier.currentTime(),
             this.latestRoundUpdate.getHighQC());
 
-    final Vote timeoutVote = this.safetyRules.timeoutVote(baseVote);
+    final var timeoutVote = this.safetyRules.timeoutVote(baseVote);
 
     this.voteDispatcher.dispatch(this.validatorSet.nodes(), timeoutVote);
   }
@@ -315,12 +315,12 @@ public final class Pacemaker {
   }
 
   private void rescheduleTimeout(ScheduledLocalTimeout scheduledTimeout) {
-    final LocalTimeoutOccurrence localTimeoutOccurrence =
-        new LocalTimeoutOccurrence(scheduledTimeout);
+    final var localTimeoutOccurrence = new LocalTimeoutOccurrence(scheduledTimeout);
     this.timeoutDispatcher.dispatch(localTimeoutOccurrence);
 
-    final long timeout = timeoutCalculator.timeout(latestRoundUpdate.uncommittedRoundsCount());
-    final ScheduledLocalTimeout nextTimeout = scheduledTimeout.nextRetry(timeout);
+    final var timeout =
+        timeoutCalculator.calculateTimeoutMs(latestRoundUpdate.consecutiveUncommittedRoundsCount());
+    final var nextTimeout = scheduledTimeout.nextRetry(timeout);
     this.timeoutSender.dispatch(nextTimeout, timeout);
   }
 }
