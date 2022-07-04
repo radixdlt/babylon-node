@@ -98,7 +98,7 @@ import com.radixdlt.harness.deterministic.NodeEventsModule;
 import com.radixdlt.harness.deterministic.SafetyCheckerModule;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
-import com.radixdlt.p2p.MockedP2PModule;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
@@ -242,7 +242,7 @@ public class OneNodeAlwaysAliveSafetyTest {
                 MSG.maxLength())),
         new ForksModule(),
         new PersistedNodeForTestingModule(),
-        new MockedP2PModule.Builder().build(),
+        new TestP2PModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {

@@ -100,7 +100,7 @@ import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.MockedP2PModule;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochCeilingView;
 import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
@@ -258,7 +258,7 @@ public final class DeterministicTest {
       modules.add(new MockedCryptoModule());
       modules.add(new MockedPersistenceStoreModule());
       modules.add(new MockedRecoveryModule());
-      modules.add(new MockedP2PModule.Builder().withAllNodes(nodes).build());
+      modules.add(new TestP2PModule.Builder().withAllNodes(nodes).build());
 
       return new DeterministicTest(
           this.nodes,

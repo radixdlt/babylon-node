@@ -79,11 +79,11 @@ import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import java.util.List;
 
-public class MockedP2PModule extends AbstractModule {
+public class TestP2PModule extends AbstractModule {
 
   private final Builder builder;
 
-  private MockedP2PModule(Builder builder) {
+  private TestP2PModule(Builder builder) {
     this.builder = builder;
   }
 
@@ -144,8 +144,8 @@ public class MockedP2PModule extends AbstractModule {
       return this;
     }
 
-    public MockedP2PModule build() {
-      return new MockedP2PModule(this);
+    public TestP2PModule build() {
+      return new TestP2PModule(this);
     }
   }
 

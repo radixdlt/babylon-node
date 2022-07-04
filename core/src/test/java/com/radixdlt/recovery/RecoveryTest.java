@@ -98,7 +98,7 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
-import com.radixdlt.p2p.MockedP2PModule;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -213,7 +213,7 @@ public class RecoveryTest {
           }
         },
         new PersistedNodeForTestingModule(),
-        new MockedP2PModule.Builder().build());
+        new TestP2PModule.Builder().build());
   }
 
   private RadixEngine<LedgerAndBFTProof> getRadixEngine() {

@@ -89,7 +89,7 @@ import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.p2p.MockedP2PModule;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.REOutput;
 import com.radixdlt.rev1.RadixEngineStateComputer;
@@ -157,7 +157,7 @@ public class UnstakingLockedTokensTest {
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(110), Amount.ofTokens(100)),
-        new MockedP2PModule.Builder().build(),
+        new TestP2PModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {

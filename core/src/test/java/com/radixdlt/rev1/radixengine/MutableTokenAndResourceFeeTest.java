@@ -86,7 +86,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.p2p.MockedP2PModule;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -129,7 +129,7 @@ public class MutableTokenAndResourceFeeTest {
                         Amount.zero(), Map.of(TokenResource.class, Amount.ofTokens(1))))),
         new ForksModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
-        new MockedP2PModule.Builder().build(),
+        new TestP2PModule.Builder().build(),
         new MockedGenesisModule(
             Set.of(VALIDATOR_KEY.getPublicKey()), Amount.ofTokens(101), Amount.ofTokens(100)),
         new AbstractModule() {

@@ -92,7 +92,7 @@ import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import com.radixdlt.p2p.MockedP2PModule;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.InvalidProposedTxn;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -199,7 +199,7 @@ public abstract class DeterministicActorsTest {
             bindConstant().annotatedWith(NetworkId.class).to(Network.LOCALNET.getId());
           }
         },
-        new MockedP2PModule.Builder().withAllNodes(allNodes).build());
+        new TestP2PModule.Builder().withAllNodes(allNodes).build());
   }
 
   private static class RunningActor {

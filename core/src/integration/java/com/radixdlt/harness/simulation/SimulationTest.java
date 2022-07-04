@@ -119,7 +119,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.MockedP2PModule;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochCeilingView;
 import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
@@ -522,8 +522,8 @@ public final class SimulationTest {
       modules.add(new MockedSystemModule());
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
-      MockedP2PModule.Builder mockedP2PModuleBuilder =
-          new MockedP2PModule.Builder().withDefaultRateLimit();
+      TestP2PModule.Builder mockedP2PModuleBuilder =
+          new TestP2PModule.Builder().withDefaultRateLimit();
       // There are two ways we can define the peers a node is aware of. 1 - Using all nodes in the
       // network. 2
       // - Creating an address book.
