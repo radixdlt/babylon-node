@@ -62,66 +62,94 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness;
+package com.radixdlt.p2p;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.network.capability.LedgerSyncCapability;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.network.GetVerticesRequestRateLimit;
+import com.radixdlt.network.p2p.NoOpPeerControl;
+import com.radixdlt.network.p2p.PeerControl;
+import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
-public class MockedPeersViewModule extends AbstractModule {
-  private final ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNode;
-  private final List<BFTNode> allNodes;
+public class TestP2PModule extends AbstractModule {
 
-  /**
-   * @param peersByNodeOrNull - If passed a null map, then each node is assumed to have each other
-   *     node as a peer.
-   */
-  public MockedPeersViewModule(
-      ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNodeOrNull,
-      List<BFTNode> allNodes) {
-    this.peersByNode = peersByNodeOrNull != null ? peersByNodeOrNull : ImmutableMap.of();
-    this.allNodes = allNodes;
+  private final Builder builder;
+
+  private TestP2PModule(Builder builder) {
+    this.builder = builder;
   }
 
-  @Provides
-  public PeersView peersView(@Self BFTNode self) {
-    final var peersForNode =
-        peersByNode.containsKey(self.getKey())
-            ? peersByNode // Use a specific set of peers for the given node, if defined
-                .get(self.getKey())
-                .stream()
-                .map(BFTNode::create)
-                .collect(ImmutableList.toImmutableList())
-            : allNodes; // Else return all the nodes in the network
+  @Override
+  protected void configure() {
+    bind(RateLimiter.class)
+        .annotatedWith(GetVerticesRequestRateLimit.class)
+        .toInstance(this.builder.rateLimiter);
 
-    var peerChannelInfo =
-        PeersView.PeerChannelInfo.create(
-            Optional.empty(),
-            "",
-            0,
-            true,
-            Set.of(LedgerSyncCapability.Builder.asDefault().build().toRemotePeerCapability()));
-    var channels = ImmutableList.of(peerChannelInfo);
+    bind(PeerControl.class).toInstance(builder.peerControl);
 
-    final var peersForNodeWithoutSelf =
-        peersForNode.stream()
-            .filter(n -> !n.equals(self))
-            .map(it -> PeersView.PeerInfo.create(NodeId.fromPublicKey(it.getKey()), channels))
-            .collect(ImmutableList.toImmutableList());
+    // Not adding a method to customize it for now as all tests use this version
+    var addressBookPersistence = mock(AddressBookPersistence.class);
+    when(addressBookPersistence.getAllEntries()).thenReturn(ImmutableList.of());
+    bind(AddressBookPersistence.class).toInstance(addressBookPersistence);
 
-    // PeersView is a functional interface, so we're actually returning an implementation of
-    // PeersView.peers. To avoid exceptions from multiple iterations of a stream,
-    // each call to PeersView.peers returns a new stream
-    return peersForNodeWithoutSelf::stream;
+    MockedPeersViewModule mockedPeersViewModule;
+    if (builder.peersByNode != null) {
+      mockedPeersViewModule = new MockedPeersViewModule(this.builder.peersByNode);
+    } else if (this.builder.allNodes != null) {
+      mockedPeersViewModule = new MockedPeersViewModule(this.builder.allNodes);
+    } else {
+      mockedPeersViewModule = new MockedPeersViewModule(List.of());
+    }
+
+    install(mockedPeersViewModule);
+  }
+
+  public static class Builder {
+    private RateLimiter rateLimiter;
+    private ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNode;
+    private List<BFTNode> allNodes;
+    private PeerControl peerControl;
+
+    public Builder() {
+      this.rateLimiter = unlimitedRateLimiter();
+      this.peerControl = new NoOpPeerControl();
+    }
+
+    public Builder withDefaultRateLimit() {
+      this.rateLimiter = RateLimiter.create(50.0);
+      return this;
+    }
+
+    public Builder withRateLimit(double permitsPerSecond) {
+      this.rateLimiter = RateLimiter.create(permitsPerSecond);
+      return this;
+    }
+
+    public Builder withPeersByNode(
+        ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNode) {
+      this.peersByNode = peersByNode;
+      return this;
+    }
+
+    public Builder withAllNodes(List<BFTNode> allNodes) {
+      this.allNodes = allNodes;
+      return this;
+    }
+
+    public TestP2PModule build() {
+      return new TestP2PModule(this);
+    }
+  }
+
+  private static RateLimiter unlimitedRateLimiter() {
+    return RateLimiter.create(Double.MAX_VALUE);
   }
 }

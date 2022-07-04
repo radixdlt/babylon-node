@@ -64,7 +64,6 @@
 
 package com.radixdlt.modules;
 
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
@@ -74,9 +73,6 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.network.GetVerticesRequestRateLimit;
-import com.radixdlt.network.p2p.NoOpPeerControl;
-import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
@@ -97,9 +93,6 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
     bind(Long.class).annotatedWith(PacemakerBaseTimeoutMs.class).toInstance(1000L);
     bind(Double.class).annotatedWith(PacemakerMultiplierRate.class).toInstance(2.0);
     bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
-    bind(RateLimiter.class)
-        .annotatedWith(GetVerticesRequestRateLimit.class)
-        .toInstance(RateLimiter.create(Double.MAX_VALUE));
     bindConstant()
         .annotatedWith(DatabaseCacheSize.class)
         .to((long) (Runtime.getRuntime().maxMemory() * 0.125));
@@ -107,9 +100,6 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
     // System
     bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
     bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
-    // P2P
-    bind(PeerControl.class).toInstance(new NoOpPeerControl());
 
     install(new InMemoryBFTKeyModule());
     install(new CryptoModule());

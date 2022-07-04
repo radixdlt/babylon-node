@@ -66,7 +66,6 @@ package com.radixdlt.harness.deterministic;
 
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -87,13 +86,13 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.FailOnEvent;
-import com.radixdlt.harness.MockedPeersViewModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.InvalidProposedTransaction;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -200,7 +199,7 @@ public abstract class DeterministicActorsTest {
             bindConstant().annotatedWith(NetworkId.class).to(Network.LOCALNET.getId());
           }
         },
-        new MockedPeersViewModule(ImmutableMap.of(), allNodes));
+        new TestP2PModule.Builder().withAllNodes(allNodes).build());
   }
 
   private static class RunningActor {

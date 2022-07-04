@@ -98,7 +98,7 @@ import com.radixdlt.harness.deterministic.NodeEventsModule;
 import com.radixdlt.harness.deterministic.SafetyCheckerModule;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
@@ -242,12 +242,11 @@ public class OneNodeAlwaysAliveSafetyTest {
                 MSG.maxLength())),
         new ForksModule(),
         new PersistedNodeForTestingModule(),
+        new TestP2PModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {
             bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-            bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(allNodes);
-            bind(PeersView.class).toInstance(Stream::of);
             bind(Environment.class)
                 .toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
             bindConstant()

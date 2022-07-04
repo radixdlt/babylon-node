@@ -64,7 +64,6 @@
 
 package com.radixdlt.modules;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -75,7 +74,6 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.network.p2p.NodeId;
 import com.radixdlt.network.p2p.PeersView;
 import java.util.List;
 import java.util.stream.Stream;
@@ -83,31 +81,15 @@ import java.util.stream.Stream;
 /** Module which injects a full one node network */
 public final class SingleNodeAndPeersDeterministicNetworkModule extends AbstractModule {
   private final ECKeyPair self;
-  private final int numPeers;
 
-  public SingleNodeAndPeersDeterministicNetworkModule(ECKeyPair self, int numPeers) {
+  public SingleNodeAndPeersDeterministicNetworkModule(ECKeyPair self) {
     this.self = self;
-    this.numPeers = numPeers;
   }
 
   @Override
   protected void configure() {
     bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(self);
     install(new PersistedNodeForTestingModule());
-  }
-
-  @Provides
-  @Singleton
-  public PeersView peers() {
-    final var peers =
-        Stream.generate(BFTNode::random)
-            .limit(numPeers)
-            .map(
-                it ->
-                    PeersView.PeerInfo.create(
-                        NodeId.fromPublicKey(it.getKey()), ImmutableList.of()))
-            .collect(ImmutableList.toImmutableList());
-    return peers::stream;
   }
 
   @Provides

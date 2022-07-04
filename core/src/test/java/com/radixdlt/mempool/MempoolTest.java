@@ -90,6 +90,7 @@ import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.RadixEngineStateComputer;
 import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
@@ -106,6 +107,7 @@ import com.radixdlt.utils.PrivateKeys;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -135,9 +137,12 @@ public class MempoolTest {
             RERulesConfig.testingDefault().removeSigsPerRoundLimit()),
         new ForksModule(),
         MempoolConfig.asModule(10, 10, 200, 500, 10),
-        new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY, NUM_PEERS),
+        new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
         new MockedGenesisModule(
             Set.of(VALIDATOR_KEY.getPublicKey()), Amount.ofTokens(1000), Amount.ofTokens(100)),
+        new TestP2PModule.Builder()
+            .withAllNodes(Stream.generate(BFTNode::random).limit(NUM_PEERS).toList())
+            .build(),
         new AbstractModule() {
           @Override
           protected void configure() {
