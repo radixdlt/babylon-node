@@ -146,7 +146,7 @@ public class RadixEngineModule extends AbstractModule {
   @Provides
   @Singleton
   @EpochMaxRound
-  private Round epochCeilingHighView(CurrentForkView currentForkView) {
+  private Round maxRoundsInEpoch(CurrentForkView currentForkView) {
     return currentForkView.currentForkConfig().engineRules().maxRounds();
   }
 

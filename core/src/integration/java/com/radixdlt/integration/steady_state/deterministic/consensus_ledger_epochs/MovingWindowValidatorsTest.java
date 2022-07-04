@@ -94,15 +94,16 @@ public class MovingWindowValidatorsTest {
             .map(index -> (int) (epoch - 1 + index) % totalValidatorCount);
   }
 
-  private void run(int numNodes, int windowSize, long maxEpoch, Round highRound) {
+  private void run(int numNodes, int windowSize, long maxEpoch, Round epochMaxRound) {
     DeterministicTest bftTest =
         DeterministicTest.builder()
             .numNodes(numNodes)
             .messageMutator(mutator())
             .messageSelector(firstSelector())
             .epochNodeIndexesMapping(windowedEpochToNodesMapper(windowSize, numNodes))
-            .buildWithEpochs(highRound)
-            .runUntil(DeterministicTest.hasReachedEpochRound(EpochRound.of(maxEpoch, highRound)));
+            .buildWithEpochs(epochMaxRound)
+            .runUntil(
+                DeterministicTest.hasReachedEpochRound(EpochRound.of(maxEpoch, epochMaxRound)));
 
     LinkedList<SystemCounters> testCounters = systemCounters(bftTest);
     assertThat(testCounters)
@@ -112,7 +113,7 @@ public class MovingWindowValidatorsTest {
         .extracting(sc -> sc.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT))
         .containsOnly(0L);
 
-    long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, highRound.number());
+    long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, epochMaxRound.number());
 
     assertThat(testCounters)
         .extracting(sc -> sc.get(CounterType.BFT_COMMITTED_VERTICES))
