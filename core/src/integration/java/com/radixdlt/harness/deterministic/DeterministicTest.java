@@ -67,8 +67,6 @@ package com.radixdlt.harness.deterministic;
 import static com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent.*;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provides;
@@ -92,7 +90,6 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.MockedPeersViewModule;
 import com.radixdlt.harness.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.harness.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -101,11 +98,9 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.network.GetVerticesRequestRateLimit;
-import com.radixdlt.network.p2p.NoOpPeerControl;
-import com.radixdlt.network.p2p.PeerControl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochCeilingView;
 import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
@@ -234,7 +229,6 @@ public final class DeterministicTest {
               return syncConfig;
             }
           });
-      modules.add(new MockedPeersViewModule(ImmutableMap.of(), nodes));
       addEpochedConsensusProcessorModule(epochHighView);
       return build();
     }
@@ -258,16 +252,13 @@ public final class DeterministicTest {
               bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
               bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
               bind(Random.class).toInstance(new Random(123456));
-              bind(RateLimiter.class)
-                  .annotatedWith(GetVerticesRequestRateLimit.class)
-                  .toInstance(unlimitedRateLimiter());
-              bind(PeerControl.class).toInstance(new NoOpPeerControl());
             }
           });
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
       modules.add(new MockedPersistenceStoreModule());
       modules.add(new MockedRecoveryModule());
+      modules.add(new TestP2PModule.Builder().withAllNodes(nodes).build());
 
       return new DeterministicTest(
           this.nodes,
@@ -330,10 +321,6 @@ public final class DeterministicTest {
 
     private static Stream<NodeIndexAndWeight> equalWeight(IntStream indexes) {
       return indexes.mapToObj(i -> NodeIndexAndWeight.from(i, UInt256.ONE));
-    }
-
-    private static RateLimiter unlimitedRateLimiter() {
-      return RateLimiter.create(Double.MAX_VALUE);
     }
   }
 

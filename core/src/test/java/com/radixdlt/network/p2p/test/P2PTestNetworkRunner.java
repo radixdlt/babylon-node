@@ -91,8 +91,6 @@ import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.network.capability.LedgerSyncCapability;
 import com.radixdlt.network.p2p.P2PConfig;
 import com.radixdlt.network.p2p.P2PModule;
-import com.radixdlt.network.p2p.PeerDiscoveryModule;
-import com.radixdlt.network.p2p.PeerLivenessMonitorModule;
 import com.radixdlt.network.p2p.PeerManager;
 import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.network.p2p.addressbook.AddressBook;
@@ -190,8 +188,6 @@ public final class P2PTestNetworkRunner {
                     };
                   }
                 }),
-        new PeerDiscoveryModule(),
-        new PeerLivenessMonitorModule(),
         new DispatcherModule(),
         new AbstractModule() {
           @Override
