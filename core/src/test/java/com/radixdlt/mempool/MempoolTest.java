@@ -89,7 +89,7 @@ import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.RadixEngineStateComputer;
 import com.radixdlt.rev1.checkpoint.Genesis;

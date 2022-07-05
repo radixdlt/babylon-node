@@ -71,7 +71,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.PeersView;
 import com.radixdlt.transactions.Transaction;
 import java.util.Collections;
 import java.util.List;

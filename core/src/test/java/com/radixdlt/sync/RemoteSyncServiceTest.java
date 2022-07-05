@@ -87,7 +87,7 @@ import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.PeersView;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;

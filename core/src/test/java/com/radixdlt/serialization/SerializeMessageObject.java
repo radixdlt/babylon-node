@@ -64,7 +64,7 @@
 
 package com.radixdlt.serialization;
 
-import com.radixdlt.network.Message;
+import com.radixdlt.messaging.core.Message;
 import java.util.function.Supplier;
 
 /**

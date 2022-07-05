@@ -81,7 +81,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.RadixEngineStateComputer;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;

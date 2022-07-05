@@ -73,10 +73,8 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.network.GetVerticesRequestRateLimit;
-import com.radixdlt.network.p2p.NoOpPeerControl;
-import com.radixdlt.network.p2p.PeerControl;
-import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
+import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
+import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import java.util.List;
 
 public class TestP2PModule extends AbstractModule {
