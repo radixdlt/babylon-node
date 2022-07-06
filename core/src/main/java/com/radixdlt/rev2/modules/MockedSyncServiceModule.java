@@ -79,8 +79,8 @@ import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
@@ -147,7 +147,7 @@ public class MockedSyncServiceModule extends AbstractModule {
   @ProcessOnDispatch
   EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
       @LastEpochProof LedgerProof genesis,
-      EventDispatcher<TransactionRun> syncedTransactionRunDispatcher) {
+      EventDispatcher<CommittedTransactionsWithProof> syncedTransactionRunDispatcher) {
     return new EventProcessor<>() {
       long currentVersion = genesis.getStateVersion();
       long currentEpoch = genesis.getNextEpoch();
@@ -157,7 +157,8 @@ public class MockedSyncServiceModule extends AbstractModule {
             LongStream.range(currentVersion + 1, proof.getStateVersion() + 1)
                 .mapToObj(sharedCommittedTransactions::get)
                 .collect(ImmutableList.toImmutableList());
-        syncedTransactionRunDispatcher.dispatch(TransactionRun.create(transactions, proof));
+        syncedTransactionRunDispatcher.dispatch(
+            CommittedTransactionsWithProof.create(transactions, proof));
         currentVersion = proof.getStateVersion();
         currentEpoch = proof.isEndOfEpoch() ? proof.getNextEpoch() : proof.getEpoch();
       }
@@ -180,7 +181,8 @@ public class MockedSyncServiceModule extends AbstractModule {
                 .mapToObj(sharedCommittedTransactions::get)
                 .collect(ImmutableList.toImmutableList());
 
-        syncedTransactionRunDispatcher.dispatch(TransactionRun.create(txns, request.getTarget()));
+        syncedTransactionRunDispatcher.dispatch(
+            CommittedTransactionsWithProof.create(txns, request.getTarget()));
         currentVersion = targetVersion;
         currentEpoch = request.getTarget().getEpoch();
       }

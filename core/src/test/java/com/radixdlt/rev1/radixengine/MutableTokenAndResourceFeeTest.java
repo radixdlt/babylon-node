@@ -176,7 +176,7 @@ public class MutableTokenAndResourceFeeTest {
   }
 
   @Test
-  public void token_creation_with_fees_and_spend_should_succeed() throws Exception {
+  public void atomic_token_creation_with_fees_and_spend_should_succeed() throws Exception {
     // Arrange
     createInjector().injectMembers(this);
     var tokDef =

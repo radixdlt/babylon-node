@@ -80,11 +80,11 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockExecuted;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
@@ -123,7 +123,8 @@ public final class MockedStateComputer implements StateComputer {
   }
 
   @Override
-  public void commit(TransactionRun txnsAndProof, VertexStoreState vertexStoreState) {
+  public void commit(
+      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
     var output =
         txnsAndProof
             .getProof()

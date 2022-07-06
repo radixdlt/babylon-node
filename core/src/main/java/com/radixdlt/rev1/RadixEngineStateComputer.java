@@ -90,11 +90,11 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.RadixEngineResult;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.ByzantineQuorumException;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
@@ -363,18 +363,19 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   private RadixEngineResult<LedgerAndBFTProof> commitInternal(
-      TransactionRun transactionRun, VertexStoreState vertexStoreState) {
-    var proof = transactionRun.getProof();
+      CommittedTransactionsWithProof committedTransactionsWithProof,
+      VertexStoreState vertexStoreState) {
+    var proof = committedTransactionsWithProof.getProof();
 
     final RadixEngineResult<LedgerAndBFTProof> result;
     try {
       result =
           this.radixEngine.execute(
-              transactionRun.getTransactions(),
+              committedTransactionsWithProof.getTransactions(),
               LedgerAndBFTProof.create(proof, vertexStoreState),
               PermissionLevel.SUPER_USER);
     } catch (RadixEngineException e) {
-      throw new CommittedBadTxnException(transactionRun, e);
+      throw new CommittedBadTxnException(committedTransactionsWithProof, e);
     } catch (PostProcessorException e) {
       throw new ByzantineQuorumException(e.getMessage(), e);
     }
@@ -411,7 +412,8 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   @Override
-  public void commit(TransactionRun txnsAndProof, VertexStoreState vertexStoreState) {
+  public void commit(
+      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
     synchronized (lock) {
       final var radixEngineResult = commitInternal(txnsAndProof, vertexStoreState);
       final var txCommitted = radixEngineResult.getProcessedTxns();

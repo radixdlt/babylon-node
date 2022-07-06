@@ -274,7 +274,7 @@ public class StateComputerLedgerTest {
         LedgerHeader.create(genesisEpoch, Round.of(2), accumulatorState, 1234);
     final LedgerProof header =
         new LedgerProof(HashUtils.random256(), ledgerHeader, new TimestampedECDSASignatures());
-    var verified = TransactionRun.create(List.of(nextTransaction), header);
+    var verified = CommittedTransactionsWithProof.create(List.of(nextTransaction), header);
 
     // Act
     sut.syncEventProcessor().process(verified);

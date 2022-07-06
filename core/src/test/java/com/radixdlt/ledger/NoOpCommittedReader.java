@@ -70,7 +70,7 @@ import java.util.Optional;
 
 public final class NoOpCommittedReader implements CommittedReader {
   @Override
-  public TransactionRun getNextTransactionRun(DtoLedgerProof start) {
+  public CommittedTransactionsWithProof getNextCommittedTransactionRun(DtoLedgerProof start) {
     return null;
   }
 

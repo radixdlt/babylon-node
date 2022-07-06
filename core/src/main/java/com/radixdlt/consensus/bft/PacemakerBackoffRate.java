@@ -62,39 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.consensus.bft;
 
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.mock;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import java.util.List;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-public class TransactionRunDtoTest {
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(TransactionRunDto.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
-  }
-
-  @Test(expected = NullPointerException.class)
-  public void deserializationWithNullHeadThrowsException() {
-    new TransactionRunDto(List.of(), null, mock(DtoLedgerProof.class));
-  }
-
-  @Test(expected = NullPointerException.class)
-  public void deserializationWithNullTailThrowsException() {
-    new TransactionRunDto(List.of(), mock(DtoLedgerProof.class), null);
-  }
-
-  @Test
-  public void deserializationWithNullTxnListIsSafe() {
-    var dto = new TransactionRunDto(null, mock(DtoLedgerProof.class), mock(DtoLedgerProof.class));
-
-    assertNotNull(dto.getTransactions());
-  }
-}
+/**
+ * The multiplicative rate at which the pacemaker increases its timeout for each consecutive
+ * uncommitted round
+ */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface PacemakerBackoffRate {}

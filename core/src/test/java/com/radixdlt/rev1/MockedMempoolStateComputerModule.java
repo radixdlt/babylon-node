@@ -74,10 +74,10 @@ import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockExecuted;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolMaxSize;
@@ -151,7 +151,8 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       }
 
       @Override
-      public void commit(TransactionRun txnsAndProof, VertexStoreState vertexStoreState) {
+      public void commit(
+          CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
         mempool.handleTransactionsCommitted(txnsAndProof.getTransactions());
         counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 

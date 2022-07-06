@@ -64,40 +64,75 @@
 
 package com.radixdlt.ledger;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
-import org.junit.Test;
+import com.radixdlt.transactions.Transaction;
+import java.util.List;
+import java.util.Objects;
 
-public class TransactionRunTest {
-  private LedgerProof stateAndProof;
-  private TransactionRun emptyTransactionRun;
-  private final long stateVersion = 232L;
+/**
+ * A run of committed transactions, with a known-valid LedgerProof pointing at the last transaction.
+ *
+ * <p>The run of transactions will reside in a single epoch, so that it can be validated as
+ * correctly signed by the validator set in that epoch. The LedgerProof contains a transaction
+ * accumulator, which can be cross-checked against the list of transactions. This allows
+ * verification of the transaction run, if the parent accumulator of the first transaction is known.
+ *
+ * <p>Whenever transactions are committed, the latest proof for that epoch is overwritten, but we
+ * ensure that we keep occasional proofs, every X transactions or so (for Olympia, X = 1000). This
+ * enables trustless syncing of X transactions at a time.
+ *
+ * <p>Notes:
+ *
+ * <ul>
+ *   <li>This class has previous been known by "CommandsAndProof", "VerifiedTxnsAndProof" and
+ *       "TransactionRun"
+ * </ul>
+ */
+public final class CommittedTransactionsWithProof {
+  private final List<Transaction> transactions;
+  private final LedgerProof proof;
 
-  @Before
-  public void setUp() {
-    this.stateAndProof = mock(LedgerProof.class);
-    when(stateAndProof.getStateVersion()).thenReturn(stateVersion);
-
-    this.emptyTransactionRun = TransactionRun.create(ImmutableList.of(), stateAndProof);
+  private CommittedTransactionsWithProof(List<Transaction> transactions, LedgerProof proof) {
+    this.transactions = Objects.requireNonNull(transactions);
+    this.proof = Objects.requireNonNull(proof);
   }
 
-  @Test
-  public void testGetters() {
-    assertThat(this.emptyTransactionRun.getProof()).isEqualTo(stateAndProof);
+  public static CommittedTransactionsWithProof create(
+      List<Transaction> transactions, LedgerProof proof) {
+    return new CommittedTransactionsWithProof(transactions, proof);
   }
 
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(TransactionRun.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+  public List<Transaction> getTransactions() {
+    return transactions;
+  }
+
+  public boolean contains(Transaction transaction) {
+    return transactions.contains(transaction);
+  }
+
+  public LedgerProof getProof() {
+    return proof;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(transactions, proof);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof CommittedTransactionsWithProof)) {
+      return false;
+    }
+
+    CommittedTransactionsWithProof other = (CommittedTransactionsWithProof) o;
+    return Objects.equals(this.transactions, other.transactions)
+        && Objects.equals(this.proof, other.proof);
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{transactions=%s proof=%s}", this.getClass().getSimpleName(), transactions, proof);
   }
 }

@@ -86,11 +86,11 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.TransactionRun;
-import com.radixdlt.ledger.TransactionRunDto;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.capability.LedgerSyncCapability;
 import com.radixdlt.network.p2p.NodeId;
@@ -655,7 +655,7 @@ public class LocalSyncServiceTest {
     when(respHead.getLedgerHeader()).thenReturn(respHeadLedgerHeader);
     final var respTail = mock(DtoLedgerProof.class);
     when(respTail.getLedgerHeader()).thenReturn(respTailLedgerHeader);
-    final var response = mock(TransactionRunDto.class);
+    final var response = mock(CommittedTransactionsWithProofDto.class);
     final var txn = mock(Transaction.class);
     when(txn.getId()).thenReturn(TID.ZERO);
     when(response.getTransactions()).thenReturn(ImmutableList.of(txn));
@@ -675,7 +675,8 @@ public class LocalSyncServiceTest {
 
   private LedgerUpdate ledgerUpdateAtStateVersion(long stateVersion) {
     return new LedgerUpdate(
-        TransactionRun.create(ImmutableList.of(), createHeaderAtStateVersion(stateVersion)),
+        CommittedTransactionsWithProof.create(
+            ImmutableList.of(), createHeaderAtStateVersion(stateVersion)),
         ImmutableClassToInstanceMap.of());
   }
 

@@ -74,7 +74,7 @@ import com.google.inject.Provider;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.TransactionRun;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.substate.TxAction;
 import com.radixdlt.substate.TxBuilderException;
 import com.radixdlt.utils.KeyComparator;
@@ -89,7 +89,7 @@ import org.apache.logging.log4j.Logger;
 
 /** Generates a genesis transaction */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public final class GenesisProvider implements Provider<TransactionRun> {
+public final class GenesisProvider implements Provider<CommittedTransactionsWithProof> {
   private static final Logger logger = LogManager.getLogger();
   private final ImmutableList<TokenIssuance> tokenIssuances;
   private final Set<ECPublicKey> validatorKeys;
@@ -115,7 +115,7 @@ public final class GenesisProvider implements Provider<TransactionRun> {
   }
 
   @Override
-  public TransactionRun get() {
+  public CommittedTransactionsWithProof get() {
     // Check that issuances are sufficient for delegations
     final var issuances =
         tokenIssuances.stream()
@@ -158,7 +158,7 @@ public final class GenesisProvider implements Provider<TransactionRun> {
       logger.info("gen_create{tx_id={}}", genesis.getId());
 
       var proof = genesisBuilder.generateGenesisProof(genesis);
-      return TransactionRun.create(List.of(genesis), proof);
+      return CommittedTransactionsWithProof.create(List.of(genesis), proof);
     } catch (TxBuilderException | RadixEngineException e) {
       throw new IllegalStateException(e);
     }

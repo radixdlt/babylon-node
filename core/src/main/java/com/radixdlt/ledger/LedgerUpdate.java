@@ -73,12 +73,14 @@ import java.util.Objects;
 import java.util.Optional;
 
 public final class LedgerUpdate {
-  private final TransactionRun transactionRun;
+  private final CommittedTransactionsWithProof committedTransactionsWithProof;
   // FIXME: Easiest way to implement this part for now
   private final ClassToInstanceMap<Object> output;
 
-  public LedgerUpdate(TransactionRun transactionRun, ClassToInstanceMap<Object> output) {
-    this.transactionRun = Objects.requireNonNull(transactionRun);
+  public LedgerUpdate(
+      CommittedTransactionsWithProof committedTransactionsWithProof,
+      ClassToInstanceMap<Object> output) {
+    this.committedTransactionsWithProof = Objects.requireNonNull(committedTransactionsWithProof);
     this.output = Objects.requireNonNull(output);
   }
 
@@ -87,25 +89,26 @@ public final class LedgerUpdate {
   }
 
   public List<Transaction> getNewTransactions() {
-    return transactionRun.getTransactions();
+    return committedTransactionsWithProof.getTransactions();
   }
 
   public LedgerProof getTail() {
-    return transactionRun.getProof();
+    return committedTransactionsWithProof.getProof();
   }
 
   public Optional<BFTValidatorSet> getNextValidatorSet() {
-    return transactionRun.getProof().getNextValidatorSet();
+    return committedTransactionsWithProof.getProof().getNextValidatorSet();
   }
 
   @Override
   public String toString() {
-    return String.format("%s{transactions=%s}", this.getClass().getSimpleName(), transactionRun);
+    return String.format(
+        "%s{transactions=%s}", this.getClass().getSimpleName(), committedTransactionsWithProof);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(transactionRun, output);
+    return Objects.hash(committedTransactionsWithProof, output);
   }
 
   @Override
@@ -115,7 +118,7 @@ public final class LedgerUpdate {
     }
 
     LedgerUpdate other = (LedgerUpdate) o;
-    return Objects.equals(other.transactionRun, this.transactionRun)
+    return Objects.equals(other.committedTransactionsWithProof, this.committedTransactionsWithProof)
         && Objects.equals(other.output, this.output);
   }
 }

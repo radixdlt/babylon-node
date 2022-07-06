@@ -65,13 +65,13 @@
 package com.radixdlt.sync;
 
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.TransactionRun;
 import java.util.Optional;
 
 /** Reader of committed transactions */
 public interface CommittedReader {
-  TransactionRun getNextTransactionRun(DtoLedgerProof start);
+  CommittedTransactionsWithProof getNextCommittedTransactionRun(DtoLedgerProof start);
 
   Optional<LedgerProof> getEpochProof(long epoch);
 

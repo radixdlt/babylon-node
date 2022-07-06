@@ -85,7 +85,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.TransactionRun;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
@@ -120,7 +120,7 @@ public class MempoolTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   @Inject @Self private BFTNode self;
-  @Inject @Genesis private TransactionRun genesisTxns;
+  @Inject @Genesis private CommittedTransactionsWithProof genesisTxns;
   @Inject private DeterministicProcessor processor;
   @Inject private DeterministicNetwork network;
   @Inject private RadixEngineStateComputer stateComputer;
@@ -303,8 +303,8 @@ public class MempoolTest {
             new AccumulatorState(genesisTxns.getTransactions().size() + 1, HashUtils.random256()));
     when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTransactions().size() + 1);
     when(proof.getRound()).thenReturn(Round.of(1));
-    var transactionRun = TransactionRun.create(List.of(txn), proof);
-    stateComputer.commit(transactionRun, null);
+    var transactionsWithProof = CommittedTransactionsWithProof.create(List.of(txn), proof);
+    stateComputer.commit(transactionsWithProof, null);
 
     // Act
     MempoolAdd mempoolAdd = MempoolAdd.create(txn);
@@ -331,8 +331,8 @@ public class MempoolTest {
             new AccumulatorState(genesisTxns.getTransactions().size() + 1, HashUtils.random256()));
     when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTransactions().size() + 1);
     when(proof.getRound()).thenReturn(Round.of(1));
-    var transactionRun = TransactionRun.create(List.of(txn2), proof);
-    stateComputer.commit(transactionRun, null);
+    var transactionsWithProof = CommittedTransactionsWithProof.create(List.of(txn2), proof);
+    stateComputer.commit(transactionsWithProof, null);
 
     // Assert
     assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
@@ -357,8 +357,8 @@ public class MempoolTest {
             new AccumulatorState(genesisTxns.getTransactions().size() + 1, HashUtils.random256()));
     when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTransactions().size() + 1);
     when(proof.getRound()).thenReturn(Round.of(1));
-    var transactionRun = TransactionRun.create(List.of(txn3), proof);
-    stateComputer.commit(transactionRun, null);
+    var transactionsWithProof = CommittedTransactionsWithProof.create(List.of(txn3), proof);
+    stateComputer.commit(transactionsWithProof, null);
 
     // Assert
     assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();

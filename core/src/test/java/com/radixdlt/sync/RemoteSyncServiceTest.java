@@ -83,9 +83,9 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
@@ -144,11 +144,12 @@ public class RemoteSyncServiceTest {
     when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
     when(request.getHeader()).thenReturn(header);
     BFTNode node = mock(BFTNode.class);
-    TransactionRun transactionRun = mock(TransactionRun.class);
+    CommittedTransactionsWithProof committedTransactionsWithProof =
+        mock(CommittedTransactionsWithProof.class);
     LedgerProof verifiedHeader = mock(LedgerProof.class);
     when(verifiedHeader.toDto()).thenReturn(header);
-    when(transactionRun.getProof()).thenReturn(verifiedHeader);
-    when(reader.getNextTransactionRun(any())).thenReturn(transactionRun);
+    when(committedTransactionsWithProof.getProof()).thenReturn(verifiedHeader);
+    when(reader.getNextCommittedTransactionRun(any())).thenReturn(committedTransactionsWithProof);
     processor.syncRequestEventProcessor().process(node, SyncRequest.create(header));
     verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
   }
@@ -156,10 +157,10 @@ public class RemoteSyncServiceTest {
   @Test(expected = NullPointerException.class)
   public void when_bad_remote_sync_request__then_throw_NPE() {
     var node = mock(BFTNode.class);
-    var transactionRun = mock(TransactionRun.class);
+    var transactionsWithProof = mock(CommittedTransactionsWithProof.class);
     var verifiedHeader = mock(LedgerProof.class);
-    when(transactionRun.getProof()).thenReturn(verifiedHeader);
-    when(reader.getNextTransactionRun(any())).thenReturn(transactionRun);
+    when(transactionsWithProof.getProof()).thenReturn(verifiedHeader);
+    when(reader.getNextCommittedTransactionRun(any())).thenReturn(transactionsWithProof);
 
     processor.syncRequestEventProcessor().process(node, SyncRequest.create(null));
     verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
@@ -184,7 +185,7 @@ public class RemoteSyncServiceTest {
     when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
     when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
     processor.syncRequestEventProcessor().process(BFTNode.random(), SyncRequest.create(header));
-    when(reader.getNextTransactionRun(any())).thenReturn(null);
+    when(reader.getNextCommittedTransactionRun(any())).thenReturn(null);
     verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
   }
 

@@ -141,7 +141,9 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     StateComputerResult prepare(
         List<ExecutedTransaction> previous, VertexWithHash vertex, long timestamp);
 
-    void commit(TransactionRun transactionRun, VertexStoreState vertexStoreState);
+    void commit(
+        CommittedTransactionsWithProof committedTransactionsWithProof,
+        VertexStoreState vertexStoreState);
   }
 
   private final Comparator<LedgerProof> headerComparator;
@@ -285,20 +287,22 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               .map(ExecutedTransaction::transaction)
               .collect(ImmutableList.toImmutableList());
       var proof = committedUpdate.vertexStoreState().getRootHeader();
-      var transactionRun = TransactionRun.create(transactions, proof);
+      var transactionsWithProof = CommittedTransactionsWithProof.create(transactions, proof);
 
       // TODO: Make these two atomic (RPNV1-827)
-      this.commit(transactionRun, committedUpdate.vertexStoreState());
+      this.commit(transactionsWithProof, committedUpdate.vertexStoreState());
     };
   }
 
-  public EventProcessor<TransactionRun> syncEventProcessor() {
+  public EventProcessor<CommittedTransactionsWithProof> syncEventProcessor() {
     return p -> this.commit(p, null);
   }
 
-  private void commit(TransactionRun transactionRun, VertexStoreState vertexStoreState) {
+  private void commit(
+      CommittedTransactionsWithProof committedTransactionsWithProof,
+      VertexStoreState vertexStoreState) {
     synchronized (lock) {
-      final LedgerProof nextHeader = transactionRun.getProof();
+      final LedgerProof nextHeader = committedTransactionsWithProof.getProof();
       if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {
         return;
       }
@@ -306,13 +310,13 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       var verifiedExtension =
           verifier.verifyAndGetExtension(
               this.currentLedgerHeader.getAccumulatorState(),
-              transactionRun.getTransactions(),
+              committedTransactionsWithProof.getTransactions(),
               transaction -> transaction.getId().asHashCode(),
-              transactionRun.getProof().getAccumulatorState());
+              committedTransactionsWithProof.getProof().getAccumulatorState());
 
       if (verifiedExtension.isEmpty()) {
         throw new ByzantineQuorumException(
-            "Accumulator failure " + currentLedgerHeader + " " + transactionRun);
+            "Accumulator failure " + currentLedgerHeader + " " + committedTransactionsWithProof);
       }
 
       var transactions = verifiedExtension.get();
@@ -322,7 +326,9 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         this.counters.add(CounterType.LEDGER_BFT_TRANSACTIONS_PROCESSED, transactions.size());
       }
 
-      var extensionToCommit = TransactionRun.create(transactions, transactionRun.getProof());
+      var extensionToCommit =
+          CommittedTransactionsWithProof.create(
+              transactions, committedTransactionsWithProof.getProof());
 
       // persist
       this.stateComputer.commit(extensionToCommit, vertexStoreState);

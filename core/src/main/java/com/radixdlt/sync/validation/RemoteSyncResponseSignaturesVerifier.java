@@ -87,8 +87,8 @@ public final class RemoteSyncResponseSignaturesVerifier {
   }
 
   public boolean verifyResponseSignatures(SyncResponse syncResponse) {
-    var transactionRunDto = syncResponse.getTransactionRunDto();
-    var endHeader = transactionRunDto.getTail();
+    var transactionsWithProofDto = syncResponse.getTransactionsWithProofDto();
+    var endHeader = transactionsWithProofDto.getTail();
 
     var opaque = endHeader.getOpaque();
     var header = endHeader.getLedgerHeader();

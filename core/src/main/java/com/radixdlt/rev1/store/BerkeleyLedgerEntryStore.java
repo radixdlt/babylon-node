@@ -98,8 +98,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.TID;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.rev1.LedgerAndBFTProof;
@@ -1153,7 +1153,7 @@ public final class BerkeleyLedgerEntryStore
   }
 
   @Override
-  public TransactionRun getNextTransactionRun(DtoLedgerProof start) {
+  public CommittedTransactionsWithProof getNextCommittedTransactionRun(DtoLedgerProof start) {
 
     long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
     final var startTime = System.nanoTime();
@@ -1193,7 +1193,7 @@ public final class BerkeleyLedgerEntryStore
         count++;
       } while (count < transactionCount);
 
-      return TransactionRun.create(transactions.build(), nextHeader);
+      return CommittedTransactionsWithProof.create(transactions.build(), nextHeader);
     } catch (IOException e) {
       throw new BerkeleyStoreException("Unable to read from transaction store.", e);
     } finally {

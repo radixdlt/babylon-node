@@ -77,7 +77,6 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolMetadata;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.substate.SubstateId;
 import com.radixdlt.transactions.Transaction;
