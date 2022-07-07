@@ -64,14 +64,17 @@
 
 package com.radixdlt.ledger;
 
-import com.google.inject.AbstractModule;
+import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.modules.RandomTransactionGenerator;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.transactions.Transaction;
+import java.util.List;
 
-/** Module which provides a random transaction generator */
-public class RandomTransactionGeneratorModule extends AbstractModule {
+/** Generates new transactions with content of random hashes */
+public final class RandomTransactionGenerator implements ProposalGenerator {
   @Override
-  protected void configure() {
-    bind(ProposalGenerator.class).to(RandomTransactionGenerator.class);
+  public List<Transaction> getTransactionsForProposal(Round round, List<ExecutedVertex> prepared) {
+    return List.of(Transaction.create(HashUtils.random256().asBytes()));
   }
 }

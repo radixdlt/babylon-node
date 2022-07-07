@@ -96,9 +96,9 @@ sourceSets {
         java {
             compileClasspath += main.output
             runtimeClasspath += main.output
-            srcDir file('src/testcore/java')
+            srcDir file('src/test-core/java')
         }
-        resources.srcDir file('src/testcore/resources')
+        resources.srcDir file('src/test-core/resources')
     }
 }
 configurations {
