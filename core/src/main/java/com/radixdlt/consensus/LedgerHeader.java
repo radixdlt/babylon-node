@@ -87,7 +87,11 @@ import javax.annotation.concurrent.Immutable;
  * Ledger header which gets voted and agreed upon, as part of the BFT header.
  *
  * <p>This header is kept around alongside the committed transactions, inside the LedgerProof. The
- * rest of the BFT Header, for contrast, is reduced to only a hash (mostly for size reasons).
+ * rest of the BFT Header, for contrast, is reduced to only a hash (for size reasons, and for
+ * "hiding" unimportant BFT information, so the ledger part of the node doesn't need to deserialize
+ * BFT data).
+ *
+ * @see Vote for more information.
  */
 @Immutable
 @SerializerId2("consensus.ledger_header")

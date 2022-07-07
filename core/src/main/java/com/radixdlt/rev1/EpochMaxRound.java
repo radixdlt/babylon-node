@@ -73,7 +73,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
-/** Identifies the highest round per epoch until an epoch change must occur. */
+/** Identifies the highest round per epoch when an epoch change must occur. */
 @Qualifier
 @Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)

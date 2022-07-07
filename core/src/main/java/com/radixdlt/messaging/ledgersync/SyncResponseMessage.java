@@ -66,7 +66,7 @@ package com.radixdlt.messaging.ledgersync;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.ledger.TransactionRunDto;
+import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -78,21 +78,22 @@ import java.util.Objects;
 public final class SyncResponseMessage extends Message {
   @JsonProperty("run")
   @DsonOutput(Output.ALL)
-  private final TransactionRunDto transactionRunDto;
+  private final CommittedTransactionsWithProofDto transactionsWithProofDto;
 
   @JsonCreator
   public SyncResponseMessage(
-      @JsonProperty(value = "run", required = true) TransactionRunDto transactionRunDto) {
-    this.transactionRunDto = Objects.requireNonNull(transactionRunDto);
+      @JsonProperty(value = "run", required = true)
+          CommittedTransactionsWithProofDto transactionsWithProofDto) {
+    this.transactionsWithProofDto = Objects.requireNonNull(transactionsWithProofDto);
   }
 
-  public TransactionRunDto getTransactions() {
-    return transactionRunDto;
+  public CommittedTransactionsWithProofDto getTransactions() {
+    return transactionsWithProofDto;
   }
 
   @Override
   public String toString() {
-    return String.format("%s{run=%s}", getClass().getSimpleName(), transactionRunDto);
+    return String.format("%s{run=%s}", getClass().getSimpleName(), transactionsWithProofDto);
   }
 
   @Override
@@ -102,12 +103,12 @@ public final class SyncResponseMessage extends Message {
     }
 
     return (o instanceof SyncResponseMessage that)
-        && Objects.equals(transactionRunDto, that.transactionRunDto)
+        && Objects.equals(transactionsWithProofDto, that.transactionsWithProofDto)
         && Objects.equals(getTimestamp(), that.getTimestamp());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(transactionRunDto, getTimestamp());
+    return Objects.hash(transactionsWithProofDto, getTimestamp());
   }
 }

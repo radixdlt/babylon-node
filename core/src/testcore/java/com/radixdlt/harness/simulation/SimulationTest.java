@@ -99,11 +99,11 @@ import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.NoOpCommittedReader;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -422,7 +422,8 @@ public final class SimulationTest {
             CommittedReader committedReader() {
               return new CommittedReader() {
                 @Override
-                public TransactionRun getNextTransactionRun(DtoLedgerProof start) {
+                public CommittedTransactionsWithProof getNextCommittedTransactionRun(
+                    DtoLedgerProof start) {
                   return null;
                 }
 
@@ -508,7 +509,7 @@ public final class SimulationTest {
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
               bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
               bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(pacemakerTimeout);
-              bindConstant().annotatedWith(PacemakerMultiplierRate.class).to(2.0);
+              bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
               bindConstant()
                   .annotatedWith(PacemakerMaxExponent.class)
                   .to(0); // Use constant timeout for now
@@ -566,7 +567,7 @@ public final class SimulationTest {
 
               @Genesis
               @Provides
-              Transaction genesis(@Genesis TransactionRun txnsAndProof) {
+              Transaction genesis(@Genesis CommittedTransactionsWithProof txnsAndProof) {
                 return txnsAndProof.getTransactions().get(0);
               }
             });

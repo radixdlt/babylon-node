@@ -79,7 +79,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.TransactionRun;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.REOutput;
 import com.radixdlt.rev1.checkpoint.Genesis;
@@ -98,7 +98,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
       // TODO: Remove this by moving the genesis committedDispatcher.dispatch to getRadixEngine
       RadixEngine<LedgerAndBFTProof> radixEngine,
       CommittedReader committedReader,
-      @Genesis TransactionRun genesis,
+      @Genesis CommittedTransactionsWithProof genesis,
       EventDispatcher<REOutput> committedDispatcher // FIXME: this is hack so client can get genesis
       ) {
     return committedReader

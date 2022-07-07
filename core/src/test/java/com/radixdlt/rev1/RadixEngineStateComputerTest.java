@@ -103,12 +103,12 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.ByzantineQuorumException;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.NoOpCommittedReader;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
@@ -148,7 +148,7 @@ import org.junit.rules.TemporaryFolder;
 public class RadixEngineStateComputerTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  @Inject @Genesis private TransactionRun genesisTxns;
+  @Inject @Genesis private CommittedTransactionsWithProof genesisTxns;
 
   @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
 
@@ -412,11 +412,12 @@ public class RadixEngineStateComputerTest {
             HashUtils.random256(),
             LedgerHeader.create(0, Round.of(11), new AccumulatorState(3, HashUtils.zero256()), 0),
             new TimestampedECDSASignatures());
-    var transactionRun = TransactionRun.create(ImmutableList.of(cmd0), ledgerProof);
+    var transactionsWithProof =
+        CommittedTransactionsWithProof.create(ImmutableList.of(cmd0), ledgerProof);
 
     // Act
     // Assert
-    assertThatThrownBy(() -> sut.commit(transactionRun, null))
+    assertThatThrownBy(() -> sut.commit(transactionsWithProof, null))
         .isInstanceOf(ByzantineQuorumException.class);
   }
 
@@ -432,11 +433,12 @@ public class RadixEngineStateComputerTest {
             HashUtils.random256(),
             LedgerHeader.create(0, Round.of(9), new AccumulatorState(3, HashUtils.zero256()), 0),
             new TimestampedECDSASignatures());
-    var transactionRun = TransactionRun.create(ImmutableList.of(cmd0, cmd1), ledgerProof);
+    var transactionsWithProof =
+        CommittedTransactionsWithProof.create(ImmutableList.of(cmd0, cmd1), ledgerProof);
 
     // Act
     // Assert
-    assertThatThrownBy(() -> sut.commit(transactionRun, null))
+    assertThatThrownBy(() -> sut.commit(transactionsWithProof, null))
         .isInstanceOf(ByzantineQuorumException.class);
   }
 
@@ -456,11 +458,12 @@ public class RadixEngineStateComputerTest {
                 0,
                 BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))),
             new TimestampedECDSASignatures());
-    var transactionRun = TransactionRun.create(ImmutableList.of(cmd1), ledgerProof);
+    var transactionsWithProof =
+        CommittedTransactionsWithProof.create(ImmutableList.of(cmd1), ledgerProof);
 
     // Act
     // Assert
-    assertThatThrownBy(() -> sut.commit(transactionRun, null))
+    assertThatThrownBy(() -> sut.commit(transactionsWithProof, null))
         .isInstanceOf(ByzantineQuorumException.class);
   }
 
@@ -480,11 +483,12 @@ public class RadixEngineStateComputerTest {
                 0,
                 BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))),
             new TimestampedECDSASignatures());
-    var transactionRun = TransactionRun.create(ImmutableList.of(cmd0), ledgerProof);
+    var transactionsWithProof =
+        CommittedTransactionsWithProof.create(ImmutableList.of(cmd0), ledgerProof);
 
     // Act
     // Assert
-    assertThatThrownBy(() -> sut.commit(transactionRun, null))
+    assertThatThrownBy(() -> sut.commit(transactionsWithProof, null))
         .isInstanceOf(ByzantineQuorumException.class);
   }
 

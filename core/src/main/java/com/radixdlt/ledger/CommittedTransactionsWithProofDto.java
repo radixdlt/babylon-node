@@ -64,75 +64,89 @@
 
 package com.radixdlt.ledger;
 
-import com.radixdlt.consensus.LedgerProof;
+import static java.util.Objects.requireNonNull;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
 /**
- * A verified run of transactions, with a known-valid LedgerProof pointing at the last transaction.
+ * A data transfer object for a CommittedTransactionsWithProof, including a proof at the start of
+ * the run.
  *
- * <p>The run of transactions will reside in a single epoch, so that it can be validated as
- * correctly signed by the validator set in that epoch. The LedgerProof contains a transaction
- * accumulator, which can be cross-checked against the list of transactions. This allows
- * verification of the transaction run, if the parent accumulator of the first transaction is known.
- *
- * <p>Whenever transactions are committed, the latest proof for that epoch is overwritten, but we
- * ensure that we keep occasional proofs, every X transactions or so (for Olympia, X = 1000). This
- * enables trustless syncing of X transactions at a time.
- *
- * <p>Notes:
- *
- * <ul>
- *   <li>"Run" is used to mean an ordered list of consecutive items, as in the expression "A run of
- *       cards"
- *   <li>This class has previous been known by "VerifiedTxnsAndProof" and "CommandsAndProof"
- * </ul>
+ * <p>This may not have been verified yet.
  */
-public final class TransactionRun {
+@Immutable
+@SerializerId2("ledger.committed_transactions_with_proof")
+public final class CommittedTransactionsWithProofDto {
+  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
+  @DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+  SerializerDummy serializer = SerializerDummy.DUMMY;
+
+  @JsonProperty("txns")
+  @DsonOutput(Output.ALL)
   private final List<Transaction> transactions;
-  private final LedgerProof proof;
 
-  private TransactionRun(List<Transaction> transactions, LedgerProof proof) {
-    this.transactions = Objects.requireNonNull(transactions);
-    this.proof = Objects.requireNonNull(proof);
-  }
+  @JsonProperty("head")
+  @DsonOutput(Output.ALL)
+  private final DtoLedgerProof head;
 
-  public static TransactionRun create(List<Transaction> transactions, LedgerProof proof) {
-    return new TransactionRun(transactions, proof);
+  @JsonProperty("tail")
+  @DsonOutput(Output.ALL)
+  private final DtoLedgerProof tail;
+
+  @JsonCreator
+  public CommittedTransactionsWithProofDto(
+      @JsonProperty("txns") List<Transaction> transactions,
+      @JsonProperty(value = "head", required = true) DtoLedgerProof head,
+      @JsonProperty(value = "tail", required = true) DtoLedgerProof tail) {
+    this.transactions = transactions == null ? ImmutableList.of() : transactions;
+    this.head = requireNonNull(head);
+    this.tail = requireNonNull(tail);
+
+    this.transactions.forEach(Objects::requireNonNull);
   }
 
   public List<Transaction> getTransactions() {
     return transactions;
   }
 
-  public boolean contains(Transaction transaction) {
-    return transactions.contains(transaction);
+  public DtoLedgerProof getHead() {
+    return head;
   }
 
-  public LedgerProof getProof() {
-    return proof;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(transactions, proof);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof TransactionRun)) {
-      return false;
-    }
-
-    TransactionRun other = (TransactionRun) o;
-    return Objects.equals(this.transactions, other.transactions)
-        && Objects.equals(this.proof, other.proof);
+  public DtoLedgerProof getTail() {
+    return tail;
   }
 
   @Override
   public String toString() {
-    return String.format(
-        "%s{txns=%s proof=%s}", this.getClass().getSimpleName(), transactions, proof);
+    return String.format("%s{head=%s tail=%s}", this.getClass().getSimpleName(), head, tail);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    return (o instanceof CommittedTransactionsWithProofDto that)
+        && Objects.equals(transactions, that.transactions)
+        && Objects.equals(head, that.head)
+        && Objects.equals(tail, that.tail);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(transactions, head, tail);
   }
 }

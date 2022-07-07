@@ -80,8 +80,8 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.lang.Tuple.Tuple2;
+import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.TransactionRunDto;
 import com.radixdlt.messaging.consensus.ConsensusEventMessage;
 import com.radixdlt.messaging.consensus.GetVerticesErrorResponseMessage;
 import com.radixdlt.messaging.consensus.GetVerticesRequestMessage;
@@ -138,7 +138,9 @@ public class MessagePreprocessorTest {
           tuple(new MempoolAddMessage(mock(List.class)), "txns"),
           tuple(new StatusResponseMessage(mock(LedgerProof.class)), "header"),
           tuple(new SyncRequestMessage(mock(DtoLedgerProof.class)), "currentHeader"),
-          tuple(new SyncResponseMessage(mock(TransactionRunDto.class)), "transactionRunDto"));
+          tuple(
+              new SyncResponseMessage(mock(CommittedTransactionsWithProofDto.class)),
+              "transactionsWithProofDto"));
 
   private static final Serialization SERIALIZATION = DefaultSerialization.getInstance();
 

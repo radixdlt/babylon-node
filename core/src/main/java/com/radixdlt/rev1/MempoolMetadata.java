@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.rev1;
 
 import java.util.Objects;
 import java.util.OptionalLong;

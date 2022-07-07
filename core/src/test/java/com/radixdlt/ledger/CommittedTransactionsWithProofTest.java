@@ -62,19 +62,43 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.ledger;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Before;
+import org.junit.Test;
 
-/** The rate at which the pacemaker increases its timeout for each consecutive uncommitted round */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface PacemakerMultiplierRate {}
+public class CommittedTransactionsWithProofTest {
+  private LedgerProof stateAndProof;
+  private CommittedTransactionsWithProof emptyCommittedTransactionsWithProof;
+  private final long stateVersion = 232L;
+
+  @Before
+  public void setUp() {
+    this.stateAndProof = mock(LedgerProof.class);
+    when(stateAndProof.getStateVersion()).thenReturn(stateVersion);
+
+    this.emptyCommittedTransactionsWithProof =
+        CommittedTransactionsWithProof.create(ImmutableList.of(), stateAndProof);
+  }
+
+  @Test
+  public void testGetters() {
+    assertThat(this.emptyCommittedTransactionsWithProof.getProof()).isEqualTo(stateAndProof);
+  }
+
+  @Test
+  public void equalsContract() {
+    EqualsVerifier.forClass(CommittedTransactionsWithProof.class)
+        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+        .verify();
+  }
+}

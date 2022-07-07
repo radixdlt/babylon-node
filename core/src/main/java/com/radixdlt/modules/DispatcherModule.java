@@ -100,8 +100,8 @@ import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRelayTrigger;
@@ -230,7 +230,7 @@ public class DispatcherModule extends AbstractModule {
     final var committedUpdateKey = new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() {};
     Multibinder.newSetBinder(binder(), committedUpdateKey);
     Multibinder.newSetBinder(binder(), committedUpdateKey, ProcessOnDispatch.class);
-    final var syncUpdateKey = new TypeLiteral<EventProcessor<TransactionRun>>() {};
+    final var syncUpdateKey = new TypeLiteral<EventProcessor<CommittedTransactionsWithProof>>() {};
     Multibinder.newSetBinder(binder(), syncUpdateKey, ProcessOnDispatch.class);
 
     final var verticesRequestKey = new TypeLiteral<EventProcessor<GetVerticesRequest>>() {};
@@ -383,8 +383,8 @@ public class DispatcherModule extends AbstractModule {
   }
 
   @Provides
-  private EventDispatcher<TransactionRun> syncUpdateEventDispatcher(
-      @ProcessOnDispatch Set<EventProcessor<TransactionRun>> processors,
+  private EventDispatcher<CommittedTransactionsWithProof> syncUpdateEventDispatcher(
+      @ProcessOnDispatch Set<EventProcessor<CommittedTransactionsWithProof>> processors,
       SystemCounters systemCounters) {
     return commit -> {
       systemCounters.add(

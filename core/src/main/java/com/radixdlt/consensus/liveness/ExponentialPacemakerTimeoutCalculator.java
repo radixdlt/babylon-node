@@ -65,9 +65,9 @@
 package com.radixdlt.consensus.liveness;
 
 import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.PacemakerBackoffRate;
 import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
-import com.radixdlt.consensus.bft.PacemakerMultiplierRate;
 
 /** Timeout calculator which exponentially increases based on number of uncommitted rounds. */
 public final class ExponentialPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
@@ -79,7 +79,7 @@ public final class ExponentialPacemakerTimeoutCalculator implements PacemakerTim
   @Inject
   public ExponentialPacemakerTimeoutCalculator(
       @PacemakerBaseTimeoutMs long baseTimeoutMilliseconds,
-      @PacemakerMultiplierRate double rate,
+      @PacemakerBackoffRate double rate,
       @PacemakerMaxExponent int maxExponent) {
     if (baseTimeoutMilliseconds <= 0) {
       throw new IllegalArgumentException(

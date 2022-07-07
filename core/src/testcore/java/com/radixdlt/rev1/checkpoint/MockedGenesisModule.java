@@ -76,7 +76,7 @@ import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.TransactionRun;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.substate.TxAction;
 import java.util.Comparator;
 import java.util.List;
@@ -104,7 +104,7 @@ public final class MockedGenesisModule extends AbstractModule {
     bind(new TypeLiteral<Set<ECPublicKey>>() {})
         .annotatedWith(Genesis.class)
         .toInstance(validators);
-    bind(new TypeLiteral<TransactionRun>() {})
+    bind(new TypeLiteral<CommittedTransactionsWithProof>() {})
         .annotatedWith(Genesis.class)
         .toProvider(GenesisProvider.class)
         .in(Scopes.SINGLETON);

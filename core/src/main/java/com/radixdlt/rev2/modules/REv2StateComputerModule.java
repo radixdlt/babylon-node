@@ -70,9 +70,9 @@ import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRejectedException;
@@ -137,7 +137,8 @@ public class REv2StateComputerModule extends AbstractModule {
       }
 
       @Override
-      public void commit(TransactionRun txnsAndProof, VertexStoreState vertexStoreState) {
+      public void commit(
+          CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
         mempool.handleTransactionsCommitted(txnsAndProof.getTransactions());
 
         var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());

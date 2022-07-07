@@ -330,14 +330,14 @@ public final class EpochManager {
     // Execute any queued up consensus events
     final List<ConsensusEvent> queuedEventsForEpoch =
         queuedEvents.getOrDefault(epochChange.getNextEpoch(), Collections.emptyList());
-    var highRound =
+    var highestSeenRound =
         queuedEventsForEpoch.stream()
             .map(ConsensusEvent::getRound)
             .max(Comparator.naturalOrder())
             .orElse(Round.genesis());
 
     queuedEventsForEpoch.stream()
-        .filter(e -> e.getRound().equals(highRound))
+        .filter(e -> e.getRound().equals(highestSeenRound))
         .forEach(this::processConsensusEventInternal);
 
     queuedEvents.remove(epochChange.getNextEpoch());

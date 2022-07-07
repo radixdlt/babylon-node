@@ -101,11 +101,11 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
@@ -165,7 +165,9 @@ public class EpochManagerTest {
         }
 
         @Override
-        public void commit(TransactionRun transactionRun, VertexStoreState vertexStoreState) {
+        public void commit(
+            CommittedTransactionsWithProof committedTransactionsWithProof,
+            VertexStoreState vertexStoreState) {
           // No-op
         }
       };
@@ -233,7 +235,7 @@ public class EpochManagerTest {
             .toInstance(RateLimiter.create(Double.MAX_VALUE));
         bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
         bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(10L);
-        bindConstant().annotatedWith(PacemakerMultiplierRate.class).to(2.0);
+        bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
         bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
@@ -325,7 +327,7 @@ public class EpochManagerTest {
     var epochChange = new EpochChange(proof, bftConfiguration);
     var ledgerUpdate =
         new LedgerUpdate(
-            mock(TransactionRun.class),
+            mock(CommittedTransactionsWithProof.class),
             ImmutableClassToInstanceMap.of(EpochChange.class, epochChange));
 
     // Act

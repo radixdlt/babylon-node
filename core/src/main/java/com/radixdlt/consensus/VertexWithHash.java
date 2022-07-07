@@ -83,7 +83,7 @@ public final class VertexWithHash {
   private final Vertex vertex;
   private final HashCode vertexHash;
 
-  private VertexWithHash(Vertex vertex, HashCode vertexHash) {
+  public VertexWithHash(Vertex vertex, HashCode vertexHash) {
     this.vertex = Objects.requireNonNull(vertex);
     this.vertexHash = Objects.requireNonNull(vertexHash);
   }

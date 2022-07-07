@@ -161,7 +161,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendSyncResponse(BFTNode node, SyncResponse syncResponse) {
-    final var msg = new SyncResponseMessage(syncResponse.getTransactionRunDto());
+    final var msg = new SyncResponseMessage(syncResponse.getTransactionsWithProofDto());
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }
 

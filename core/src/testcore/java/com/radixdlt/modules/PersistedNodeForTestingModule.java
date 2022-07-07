@@ -66,9 +66,9 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
+import com.radixdlt.consensus.bft.PacemakerBackoffRate;
 import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
-import com.radixdlt.consensus.bft.PacemakerMultiplierRate;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.monitoring.SystemCounters;
@@ -91,7 +91,7 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
     bind(SyncConfig.class).toInstance(SyncConfig.of(500, 10, 3000, 10, Long.MAX_VALUE));
     bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
     bind(Long.class).annotatedWith(PacemakerBaseTimeoutMs.class).toInstance(1000L);
-    bind(Double.class).annotatedWith(PacemakerMultiplierRate.class).toInstance(2.0);
+    bind(Double.class).annotatedWith(PacemakerBackoffRate.class).toInstance(2.0);
     bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
     bindConstant()
         .annotatedWith(DatabaseCacheSize.class)

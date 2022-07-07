@@ -452,7 +452,7 @@ public final class LocalSyncService {
       return currentState;
     }
 
-    if (syncResponse.getTransactionRunDto().getTransactions().isEmpty()) {
+    if (syncResponse.getTransactionsWithProofDto().getTransactions().isEmpty()) {
       log.warn("LocalSync: Received empty sync response from {}", sender);
       // didn't receive any transactions, remove from candidate peers and processSync
       return this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
@@ -470,11 +470,11 @@ public final class LocalSyncService {
   }
 
   private boolean verifySyncResponse(SyncResponse syncResponse) {
-    final var transactionRunDto = syncResponse.getTransactionRunDto();
-    final var start = transactionRunDto.getHead().getLedgerHeader().getAccumulatorState();
-    final var end = transactionRunDto.getTail().getLedgerHeader().getAccumulatorState();
+    final var transactionsWithProofDto = syncResponse.getTransactionsWithProofDto();
+    final var start = transactionsWithProofDto.getHead().getLedgerHeader().getAccumulatorState();
+    final var end = transactionsWithProofDto.getTail().getLedgerHeader().getAccumulatorState();
     final var hashes =
-        transactionRunDto.getTransactions().stream()
+        transactionsWithProofDto.getTransactions().stream()
             .map(txn -> txn.getId().asHashCode())
             .collect(ImmutableList.toImmutableList());
 
