@@ -82,6 +82,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.messaging.consensus.MessageCentralBFTNetwork;
 import com.radixdlt.messaging.consensus.MessageCentralValidatorSync;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
+import com.radixdlt.messaging.core.MessageCentralModule;
 import com.radixdlt.messaging.ledgersync.MessageCentralLedgerSync;
 import com.radixdlt.messaging.mempool.MessageCentralMempool;
 import com.radixdlt.messaging.p2p.MessageCentralPeerDiscovery;
@@ -95,9 +96,16 @@ import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
+import com.radixdlt.utils.properties.RuntimeProperties;
 import io.reactivex.rxjava3.core.Flowable;
 
 public final class MessagingModule extends AbstractModule {
+
+  private RuntimeProperties properties;
+
+  public MessagingModule(RuntimeProperties properties) {
+    this.properties = properties;
+  }
 
   @Override
   protected void configure() {
@@ -113,6 +121,8 @@ public final class MessagingModule extends AbstractModule {
 
     // Network BFT messages
     bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
+
+    install(new MessageCentralModule(this.properties));
   }
 
   @ProvidesIntoSet

@@ -62,92 +62,71 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.mempool;
+package com.radixdlt.harness.simulation.network;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.MempoolFillerUpdate;
-import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.p2p.PeersView;
-import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.RadixEngineStateComputer;
-import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.utils.PrivateKeys;
-import java.util.Set;
-import org.assertj.core.api.Condition;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Timed;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
-/**
- * Technically this is a unit test for MempoolFiller, but MempoolFiller is used only for integration
- * tests.
- */
-public class MempoolFillerTest {
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+public final class InOrderChannels implements SimulationNetwork.ChannelCommunication {
+  private final LatencyProvider latencyProvider;
+  private final Map<
+          Class<?>,
+          Function<SimulationNetwork.MessageInTransit, SimulationNetwork.MessageInTransit>>
+      messageModifiers;
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  @Inject @Self private BFTNode self;
-  @Inject private Hasher hasher;
-  @Inject private DeterministicProcessor processor;
-  @Inject private DeterministicNetwork network;
-  @Inject private RadixEngineStateComputer stateComputer;
-  @Inject private SystemCounters systemCounters;
-  @Inject private PeersView peersView;
-
-  private Injector getInjector() {
-    return Guice.createInjector(
-        new MainnetForksModule(),
-        new RadixEngineForksLatestOnlyModule(),
-        new ForksModule(),
-        MempoolConfig.asModule(10, 10),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
-        new MockedGenesisModule(
-            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(100)),
-        new TestP2PModule.Builder().build(),
-        new TestMessagingModule.Builder().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            install(new MempoolFillerModule());
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath());
-          }
-        });
+  @Inject
+  public InOrderChannels(
+      LatencyProvider latencyProvider,
+      Map<
+              Class<?>,
+              Function<SimulationNetwork.MessageInTransit, SimulationNetwork.MessageInTransit>>
+          messageModifiers) {
+    this.latencyProvider = Objects.requireNonNull(latencyProvider);
+    this.messageModifiers = Objects.requireNonNull(messageModifiers);
   }
 
-  @Test
-  public void mempool_fill_starts_filling_mempool() {
-    // Arrange
-    getInjector().injectMembers(this);
+  private SimulationNetwork.MessageInTransit addLatencyIfNotToSelf(
+      SimulationNetwork.MessageInTransit msg, BFTNode receiver) {
+    if (msg.getSender().equals(receiver)) {
+      return msg;
+    } else {
+      return msg.delayed(latencyProvider.nextLatency(msg));
+    }
+  }
 
-    // Act
-    processor.handleMessage(self, MempoolFillerUpdate.enable(15, true), null);
-    processor.handleMessage(self, ScheduledMempoolFill.create(), null);
+  public static Timed<SimulationNetwork.MessageInTransit> delayCarryover(
+      Timed<SimulationNetwork.MessageInTransit> prev,
+      Timed<SimulationNetwork.MessageInTransit> next) {
+    int delayCarryover = (int) Math.max(prev.time() + prev.value().getDelay() - next.time(), 0);
+    int additionalDelay = (int) (next.value().getDelay() - delayCarryover);
+    if (additionalDelay > 0) {
+      return new Timed<>(
+          next.value().delayAfterPrevious(additionalDelay), next.time(), next.unit());
+    } else {
+      return next;
+    }
+  }
 
-    // Assert
-    assertThat(network.allMessages())
-        .areAtLeast(1, new Condition<>(m -> m.message() instanceof MempoolAdd, "Has mempool add"));
+  @Override
+  public Observable<SimulationNetwork.MessageInTransit> transform(
+      BFTNode sender, BFTNode receiver, Observable<SimulationNetwork.MessageInTransit> messages) {
+    return messages
+        .map(msg -> addLatencyIfNotToSelf(msg, receiver))
+        .filter(msg -> msg.getDelay() >= 0)
+        .map(
+            msg ->
+                this.messageModifiers.getOrDefault(msg.getContent().getClass(), m -> m).apply(msg))
+        .timestamp(TimeUnit.MILLISECONDS)
+        .scan(InOrderChannels::delayCarryover)
+        .concatMap(
+            p ->
+                Observable.just(p.value())
+                    .delay(p.value().getDelayAfterPrevious(), TimeUnit.MILLISECONDS));
   }
 }

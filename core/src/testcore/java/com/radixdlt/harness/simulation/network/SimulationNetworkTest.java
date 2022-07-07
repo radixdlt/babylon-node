@@ -62,92 +62,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.mempool;
+package com.radixdlt.harness.simulation.network;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.radixdlt.application.tokens.Amount;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.MempoolFillerUpdate;
-import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.p2p.PeersView;
-import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.RadixEngineStateComputer;
-import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.utils.PrivateKeys;
-import java.util.Set;
-import org.assertj.core.api.Condition;
-import org.junit.Rule;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.environment.rx.RemoteEvent;
+import io.reactivex.rxjava3.observers.TestObserver;
+import java.util.Map;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-/**
- * Technically this is a unit test for MempoolFiller, but MempoolFiller is used only for integration
- * tests.
- */
-public class MempoolFillerTest {
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+public class SimulationNetworkTest {
+  private BFTNode node1;
+  private BFTNode node2;
+  private SimulationNetwork.ChannelCommunication channelCommunication;
+  private SimulationNetwork network;
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  @Inject @Self private BFTNode self;
-  @Inject private Hasher hasher;
-  @Inject private DeterministicProcessor processor;
-  @Inject private DeterministicNetwork network;
-  @Inject private RadixEngineStateComputer stateComputer;
-  @Inject private SystemCounters systemCounters;
-  @Inject private PeersView peersView;
-
-  private Injector getInjector() {
-    return Guice.createInjector(
-        new MainnetForksModule(),
-        new RadixEngineForksLatestOnlyModule(),
-        new ForksModule(),
-        MempoolConfig.asModule(10, 10),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
-        new MockedGenesisModule(
-            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(100)),
-        new TestP2PModule.Builder().build(),
-        new TestMessagingModule.Builder().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            install(new MempoolFillerModule());
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath());
-          }
-        });
+  @Before
+  public void setup() {
+    node1 = mock(BFTNode.class);
+    node2 = mock(BFTNode.class);
+    this.channelCommunication = new InOrderChannels(msg -> 50, Map.of());
+    this.network = new SimulationNetwork(channelCommunication);
   }
 
   @Test
-  public void mempool_fill_starts_filling_mempool() {
-    // Arrange
-    getInjector().injectMembers(this);
+  public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
+    HashCode vertexId = mock(HashCode.class);
 
-    // Act
-    processor.handleMessage(self, MempoolFillerUpdate.enable(15, true), null);
-    processor.handleMessage(self, ScheduledMempoolFill.create(), null);
+    TestObserver<RemoteEvent<GetVerticesRequest>> rpcRequestListener =
+        network.getNetwork(node2).remoteEvents(GetVerticesRequest.class).toObservable().test();
 
-    // Assert
-    assertThat(network.allMessages())
-        .areAtLeast(1, new Condition<>(m -> m.message() instanceof MempoolAdd, "Has mempool add"));
+    network
+        .getNetwork(node1)
+        .remoteEventDispatcher(GetVerticesRequest.class)
+        .dispatch(node2, new GetVerticesRequest(vertexId, 1));
+
+    rpcRequestListener.awaitCount(1);
+    rpcRequestListener.assertValueAt(0, r -> r.getEvent().getVertexId().equals(vertexId));
   }
 }

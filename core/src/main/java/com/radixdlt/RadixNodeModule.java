@@ -75,7 +75,6 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.messaging.MessagingModule;
-import com.radixdlt.messaging.core.MessageCentralModule;
 import com.radixdlt.modules.*;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
@@ -200,8 +199,7 @@ public final class RadixNodeModule extends AbstractModule {
     // System Info
     install(new SystemInfoModule());
 
-    install(new MessagingModule());
-    install(new MessageCentralModule(properties));
+    install(new MessagingModule(properties));
 
     install(new P2PModule(properties));
 

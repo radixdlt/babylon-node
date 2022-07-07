@@ -97,6 +97,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.LedgerAndBFTProof;
@@ -213,7 +214,8 @@ public class RecoveryTest {
           }
         },
         new PersistedNodeForTestingModule(),
-        new TestP2PModule.Builder().build());
+        new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build());
   }
 
   private RadixEngine<LedgerAndBFTProof> getRadixEngine() {

@@ -62,92 +62,45 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.mempool;
-
-import static org.assertj.core.api.Assertions.assertThat;
+package com.radixdlt.harness.simulation;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.MempoolFillerUpdate;
-import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.p2p.PeersView;
-import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.RadixEngineStateComputer;
-import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.utils.PrivateKeys;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.harness.simulation.network.LatencyProvider;
+import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import java.util.Set;
-import org.assertj.core.api.Condition;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-/**
- * Technically this is a unit test for MempoolFiller, but MempoolFiller is used only for integration
- * tests.
- */
-public class MempoolFillerTest {
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  @Inject @Self private BFTNode self;
-  @Inject private Hasher hasher;
-  @Inject private DeterministicProcessor processor;
-  @Inject private DeterministicNetwork network;
-  @Inject private RadixEngineStateComputer stateComputer;
-  @Inject private SystemCounters systemCounters;
-  @Inject private PeersView peersView;
-
-  private Injector getInjector() {
-    return Guice.createInjector(
-        new MainnetForksModule(),
-        new RadixEngineForksLatestOnlyModule(),
-        new ForksModule(),
-        MempoolConfig.asModule(10, 10),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
-        new MockedGenesisModule(
-            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(100)),
-        new TestP2PModule.Builder().build(),
-        new TestMessagingModule.Builder().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            install(new MempoolFillerModule());
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath());
-          }
-        });
+public class SimulationNetworkModule extends AbstractModule {
+  @Override
+  protected void configure() {
+    Multibinder.newSetBinder(
+        binder(), new TypeLiteral<Predicate<SimulationNetwork.MessageInTransit>>() {});
+    MapBinder.newMapBinder(
+        binder(),
+        new TypeLiteral<Class<?>>() {},
+        new TypeLiteral<
+            Function<SimulationNetwork.MessageInTransit, SimulationNetwork.MessageInTransit>>() {});
+    bind(SimulationNetwork.class).in(Scopes.SINGLETON);
   }
 
-  @Test
-  public void mempool_fill_starts_filling_mempool() {
-    // Arrange
-    getInjector().injectMembers(this);
+  @Provides
+  @Singleton
+  private LatencyProvider latencyProvider(
+      @LatencyProviderBase LatencyProvider base,
+      Set<Predicate<SimulationNetwork.MessageInTransit>> droppers) {
+    return msg -> {
+      if (droppers.stream().anyMatch(f -> f.test(msg))) {
+        return -1; // -1 Drops the message
+      }
 
-    // Act
-    processor.handleMessage(self, MempoolFillerUpdate.enable(15, true), null);
-    processor.handleMessage(self, ScheduledMempoolFill.create(), null);
-
-    // Assert
-    assertThat(network.allMessages())
-        .areAtLeast(1, new Condition<>(m -> m.message() instanceof MempoolAdd, "Has mempool add"));
+      return base.nextLatency(msg);
+    };
   }
 }

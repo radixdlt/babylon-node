@@ -62,92 +62,71 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.mempool;
+package com.radixdlt.p2p;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.MempoolFillerUpdate;
-import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.p2p.PeersView;
-import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.RadixEngineStateComputer;
-import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.utils.PrivateKeys;
-import java.util.Set;
-import org.assertj.core.api.Condition;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.p2p.addressbook.AddressBookPersistence;
+import java.util.List;
 
-/**
- * Technically this is a unit test for MempoolFiller, but MempoolFiller is used only for integration
- * tests.
- */
-public class MempoolFillerTest {
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+public class TestP2PModule extends AbstractModule {
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
+  private final Builder builder;
 
-  @Inject @Self private BFTNode self;
-  @Inject private Hasher hasher;
-  @Inject private DeterministicProcessor processor;
-  @Inject private DeterministicNetwork network;
-  @Inject private RadixEngineStateComputer stateComputer;
-  @Inject private SystemCounters systemCounters;
-  @Inject private PeersView peersView;
-
-  private Injector getInjector() {
-    return Guice.createInjector(
-        new MainnetForksModule(),
-        new RadixEngineForksLatestOnlyModule(),
-        new ForksModule(),
-        MempoolConfig.asModule(10, 10),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
-        new MockedGenesisModule(
-            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(100)),
-        new TestP2PModule.Builder().build(),
-        new TestMessagingModule.Builder().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            install(new MempoolFillerModule());
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath());
-          }
-        });
+  private TestP2PModule(Builder builder) {
+    this.builder = builder;
   }
 
-  @Test
-  public void mempool_fill_starts_filling_mempool() {
-    // Arrange
-    getInjector().injectMembers(this);
+  @Override
+  protected void configure() {
 
-    // Act
-    processor.handleMessage(self, MempoolFillerUpdate.enable(15, true), null);
-    processor.handleMessage(self, ScheduledMempoolFill.create(), null);
+    bind(PeerControl.class).toInstance(builder.peerControl);
 
-    // Assert
-    assertThat(network.allMessages())
-        .areAtLeast(1, new Condition<>(m -> m.message() instanceof MempoolAdd, "Has mempool add"));
+    // Not adding a method to customize it for now as all tests use this version
+    var addressBookPersistence = mock(AddressBookPersistence.class);
+    when(addressBookPersistence.getAllEntries()).thenReturn(ImmutableList.of());
+    bind(AddressBookPersistence.class).toInstance(addressBookPersistence);
+
+    MockedPeersViewModule mockedPeersViewModule;
+    if (builder.peersByNode != null) {
+      mockedPeersViewModule = new MockedPeersViewModule(this.builder.peersByNode);
+    } else if (this.builder.allNodes != null) {
+      mockedPeersViewModule = new MockedPeersViewModule(this.builder.allNodes);
+    } else {
+      mockedPeersViewModule = new MockedPeersViewModule(List.of());
+    }
+
+    install(mockedPeersViewModule);
+  }
+
+  public static class Builder {
+    private ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNode;
+    private List<BFTNode> allNodes;
+    private PeerControl peerControl;
+
+    public Builder() {
+      this.peerControl = new NoOpPeerControl();
+    }
+
+    public Builder withPeersByNode(
+        ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNode) {
+      this.peersByNode = peersByNode;
+      return this;
+    }
+
+    public Builder withAllNodes(List<BFTNode> allNodes) {
+      this.allNodes = allNodes;
+      return this;
+    }
+
+    public TestP2PModule build() {
+      return new TestP2PModule(this);
+    }
   }
 }

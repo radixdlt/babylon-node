@@ -93,6 +93,7 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
@@ -293,7 +294,8 @@ public class RecoveryLivenessTest {
                 .to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
           }
         },
-        new TestP2PModule.Builder().withAllNodes(allNodes).build());
+        new TestP2PModule.Builder().withAllNodes(allNodes).build(),
+        new TestMessagingModule.Builder().build());
   }
 
   private void restartNode(int index) {

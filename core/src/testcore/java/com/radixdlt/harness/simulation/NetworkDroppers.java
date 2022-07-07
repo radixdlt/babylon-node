@@ -62,92 +62,119 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.mempool;
+package com.radixdlt.harness.simulation;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.radixdlt.application.tokens.Amount;
+import com.google.inject.Module;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.MempoolFillerUpdate;
-import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.p2p.PeersView;
-import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.RadixEngineStateComputer;
-import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.utils.PrivateKeys;
-import java.util.Set;
-import org.assertj.core.api.Condition;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
+import com.radixdlt.harness.simulation.network.FProposalsPerRoundDropper;
+import com.radixdlt.harness.simulation.network.MessageDropper;
+import com.radixdlt.harness.simulation.network.OneNodePerEpochLedgerStatusUpdateDropper;
+import com.radixdlt.harness.simulation.network.SimulationNetwork;
+import java.util.Random;
+import java.util.function.Predicate;
 
-/**
- * Technically this is a unit test for MempoolFiller, but MempoolFiller is used only for integration
- * tests.
- */
-public class MempoolFillerTest {
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  @Inject @Self private BFTNode self;
-  @Inject private Hasher hasher;
-  @Inject private DeterministicProcessor processor;
-  @Inject private DeterministicNetwork network;
-  @Inject private RadixEngineStateComputer stateComputer;
-  @Inject private SystemCounters systemCounters;
-  @Inject private PeersView peersView;
-
-  private Injector getInjector() {
-    return Guice.createInjector(
-        new MainnetForksModule(),
-        new RadixEngineForksLatestOnlyModule(),
-        new ForksModule(),
-        MempoolConfig.asModule(10, 10),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
-        new MockedGenesisModule(
-            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(100)),
-        new TestP2PModule.Builder().build(),
-        new TestMessagingModule.Builder().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            install(new MempoolFillerModule());
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath());
-          }
-        });
+public final class NetworkDroppers {
+  // TODO: This doesn't work with epochs yet
+  public static Module fRandomProposalsPerRoundDropped() {
+    return new AbstractModule() {
+      @ProvidesIntoSet
+      Predicate<SimulationNetwork.MessageInTransit> dropper(
+          ImmutableList<BFTNode> nodes, Random random) {
+        return new FProposalsPerRoundDropper(nodes, random);
+      }
+    };
   }
 
-  @Test
-  public void mempool_fill_starts_filling_mempool() {
-    // Arrange
-    getInjector().injectMembers(this);
+  // TODO: This doesn't work with epochs yet
+  public static Module fNodesAllReceivedProposalsDropped() {
+    return new AbstractModule() {
+      @ProvidesIntoSet
+      Predicate<SimulationNetwork.MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
+        return new FProposalsPerRoundDropper(nodes);
+      }
+    };
+  }
 
-    // Act
-    processor.handleMessage(self, MempoolFillerUpdate.enable(15, true), null);
-    processor.handleMessage(self, ScheduledMempoolFill.create(), null);
+  public static Module dropAllMessagesForOneNode(long durationMillis, long timeBetweenMillis) {
+    return new AbstractModule() {
+      @ProvidesIntoSet
+      Predicate<SimulationNetwork.MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
+        return msg -> {
+          if (msg.getSender().equals(msg.getReceiver())) {
+            return false;
+          }
 
-    // Assert
-    assertThat(network.allMessages())
-        .areAtLeast(1, new Condition<>(m -> m.message() instanceof MempoolAdd, "Has mempool add"));
+          if (!msg.getSender().equals(nodes.get(0)) && !msg.getReceiver().equals(nodes.get(0))) {
+            return false;
+          }
+
+          long current = System.currentTimeMillis() % (durationMillis + timeBetweenMillis);
+          return current < durationMillis;
+        };
+      }
+    };
+  }
+
+  public static Module randomVotesAndRoundTimeoutsDropped(double drops) {
+    return new AbstractModule() {
+      @ProvidesIntoSet
+      Predicate<SimulationNetwork.MessageInTransit> dropper(Random random) {
+        return new MessageDropper(random, drops, Vote.class);
+      }
+    };
+  }
+
+  public static Module oneNodePerEpochLedgerStatusUpdateDropped() {
+    return new AbstractModule() {
+      @ProvidesIntoSet
+      Predicate<SimulationNetwork.MessageInTransit> dropper() {
+        return new OneNodePerEpochLedgerStatusUpdateDropper();
+      }
+    };
+  }
+
+  public static Module bftSyncMessagesDropped(double dropRate) {
+    return new AbstractModule() {
+      @ProvidesIntoSet
+      Predicate<SimulationNetwork.MessageInTransit> dropper(Random random) {
+        return new MessageDropper(
+            random,
+            dropRate,
+            GetVerticesResponse.class,
+            GetVerticesErrorResponse.class,
+            GetVerticesRequest.class);
+      }
+    };
+  }
+
+  public static Module bftSyncMessagesDropped() {
+    return new AbstractModule() {
+      @ProvidesIntoSet
+      Predicate<SimulationNetwork.MessageInTransit> dropper() {
+        return new MessageDropper(
+            GetVerticesResponse.class, GetVerticesErrorResponse.class, GetVerticesRequest.class);
+      }
+    };
+  }
+
+  public static Module dropAllProposals() {
+    return new AbstractModule() {
+      @ProvidesIntoSet
+      Predicate<SimulationNetwork.MessageInTransit> dropper() {
+        return new MessageDropper(Proposal.class);
+      }
+    };
+  }
+
+  private NetworkDroppers() {
+    throw new UnsupportedOperationException("Cannot instantiate.");
   }
 }

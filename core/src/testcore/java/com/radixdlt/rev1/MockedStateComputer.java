@@ -62,92 +62,97 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.mempool;
+package com.radixdlt.rev1;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.ledger.TransactionRun;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.MempoolFillerUpdate;
-import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.p2p.PeersView;
-import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.RadixEngineStateComputer;
-import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.utils.PrivateKeys;
-import java.util.Set;
-import org.assertj.core.api.Condition;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import com.radixdlt.modules.MockExecuted;
+import com.radixdlt.transactions.Transaction;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
-/**
- * Technically this is a unit test for MempoolFiller, but MempoolFiller is used only for integration
- * tests.
- */
-public class MempoolFillerTest {
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+public final class MockedStateComputer implements StateComputer {
+  private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
+  private final Hasher hasher;
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  @Inject @Self private BFTNode self;
-  @Inject private Hasher hasher;
-  @Inject private DeterministicProcessor processor;
-  @Inject private DeterministicNetwork network;
-  @Inject private RadixEngineStateComputer stateComputer;
-  @Inject private SystemCounters systemCounters;
-  @Inject private PeersView peersView;
-
-  private Injector getInjector() {
-    return Guice.createInjector(
-        new MainnetForksModule(),
-        new RadixEngineForksLatestOnlyModule(),
-        new ForksModule(),
-        MempoolConfig.asModule(10, 10),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
-        new MockedGenesisModule(
-            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(100)),
-        new TestP2PModule.Builder().build(),
-        new TestMessagingModule.Builder().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            install(new MempoolFillerModule());
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath());
-          }
-        });
+  @Inject
+  public MockedStateComputer(EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher, Hasher hasher) {
+    this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
+    this.hasher = hasher;
   }
 
-  @Test
-  public void mempool_fill_starts_filling_mempool() {
-    // Arrange
-    getInjector().injectMembers(this);
+  @Override
+  public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
 
-    // Act
-    processor.handleMessage(self, MempoolFillerUpdate.enable(15, true), null);
-    processor.handleMessage(self, ScheduledMempoolFill.create(), null);
+  @Override
+  public List<Transaction> getTransactionsForProposal(
+      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
+    return List.of();
+  }
 
-    // Assert
-    assertThat(network.allMessages())
-        .areAtLeast(1, new Condition<>(m -> m.message() instanceof MempoolAdd, "Has mempool add"));
+  @Override
+  public StateComputerLedger.StateComputerResult prepare(
+      List<StateComputerLedger.ExecutedTransaction> previous,
+      VertexWithHash vertex,
+      long timestamp) {
+    return new StateComputerLedger.StateComputerResult(
+        vertex.getTransactions().stream().map(MockExecuted::new).collect(Collectors.toList()),
+        Map.of());
+  }
+
+  @Override
+  public void commit(TransactionRun txnsAndProof, VertexStoreState vertexStoreState) {
+    var output =
+        txnsAndProof
+            .getProof()
+            .getNextValidatorSet()
+            .map(
+                validatorSet -> {
+                  LedgerProof header = txnsAndProof.getProof();
+                  VertexWithHash genesisVertex =
+                      Vertex.createGenesis(header.getHeader()).withId(hasher);
+                  LedgerHeader nextLedgerHeader =
+                      LedgerHeader.create(
+                          header.getNextEpoch(),
+                          Round.genesis(),
+                          header.getAccumulatorState(),
+                          header.timestamp());
+                  QuorumCertificate genesisQC =
+                      QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                  final var initialState =
+                      VertexStoreState.create(
+                          HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+                  var proposerElection = new WeightedRotatingLeaders(validatorSet);
+                  var bftConfiguration =
+                      new BFTConfiguration(proposerElection, validatorSet, initialState);
+                  return new EpochChange(header, bftConfiguration);
+                })
+            .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
+            .orElse(ImmutableClassToInstanceMap.of());
+
+    var ledgerUpdate = new LedgerUpdate(txnsAndProof, output);
+    ledgerUpdateDispatcher.dispatch(ledgerUpdate);
   }
 }

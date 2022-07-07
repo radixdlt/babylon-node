@@ -79,6 +79,8 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolFillerUpdate;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.p2p.TestP2PModule;
@@ -121,6 +123,7 @@ public final class MempoolFillAndEmptyTest {
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(1000)),
         new MempoolFillerModule(),
         new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {

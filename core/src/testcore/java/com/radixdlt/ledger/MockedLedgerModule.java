@@ -62,92 +62,54 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.mempool;
-
-import static org.assertj.core.api.Assertions.assertThat;
+package com.radixdlt.ledger;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.MempoolFillerUpdate;
-import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.p2p.PeersView;
-import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.RadixEngineStateComputer;
-import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.utils.PrivateKeys;
-import java.util.Set;
-import org.assertj.core.api.Condition;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
+import com.radixdlt.modules.MockExecuted;
+import com.radixdlt.utils.TimeSupplier;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-/**
- * Technically this is a unit test for MempoolFiller, but MempoolFiller is used only for integration
- * tests.
- */
-public class MempoolFillerTest {
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  @Inject @Self private BFTNode self;
-  @Inject private Hasher hasher;
-  @Inject private DeterministicProcessor processor;
-  @Inject private DeterministicNetwork network;
-  @Inject private RadixEngineStateComputer stateComputer;
-  @Inject private SystemCounters systemCounters;
-  @Inject private PeersView peersView;
-
-  private Injector getInjector() {
-    return Guice.createInjector(
-        new MainnetForksModule(),
-        new RadixEngineForksLatestOnlyModule(),
-        new ForksModule(),
-        MempoolConfig.asModule(10, 10),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
-        new MockedGenesisModule(
-            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(100)),
-        new TestP2PModule.Builder().build(),
-        new TestMessagingModule.Builder().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            install(new MempoolFillerModule());
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath());
-          }
-        });
+public class MockedLedgerModule extends AbstractModule {
+  @Override
+  public void configure() {
+    bind(ProposalGenerator.class).toInstance((round, aids) -> List.of());
   }
 
-  @Test
-  public void mempool_fill_starts_filling_mempool() {
-    // Arrange
-    getInjector().injectMembers(this);
+  @Provides
+  @Singleton
+  Ledger syncedLedger(TimeSupplier timeSupplier) {
+    return new Ledger() {
+      @Override
+      public Optional<ExecutedVertex> prepare(
+          LinkedList<ExecutedVertex> previous, VertexWithHash vertex) {
+        final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
+        final LedgerHeader ledgerHeader =
+            vertex
+                .getParentHeader()
+                .getLedgerHeader()
+                .updateRoundAndTimestamp(vertex.getRound(), timestamp);
 
-    // Act
-    processor.handleMessage(self, MempoolFillerUpdate.enable(15, true), null);
-    processor.handleMessage(self, ScheduledMempoolFill.create(), null);
-
-    // Assert
-    assertThat(network.allMessages())
-        .areAtLeast(1, new Condition<>(m -> m.message() instanceof MempoolAdd, "Has mempool add"));
+        return Optional.of(
+            new ExecutedVertex(
+                vertex,
+                ledgerHeader,
+                vertex.getTransactions().stream()
+                    .<ExecutedTransaction>map(MockExecuted::new)
+                    .toList(),
+                Map.of(),
+                timeSupplier.currentTime()));
+      }
+    };
   }
 }
