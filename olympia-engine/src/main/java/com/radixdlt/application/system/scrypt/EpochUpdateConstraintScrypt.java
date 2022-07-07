@@ -81,11 +81,9 @@ import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
-import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.cmos.ConstraintScrypt;
+import com.radixdlt.cmos.Loader;
+import com.radixdlt.cmos.SubstateDefinition;
 import com.radixdlt.constraintmachine.*;
 import com.radixdlt.constraintmachine.REEvent.NextValidatorSetEvent;
 import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
@@ -93,6 +91,8 @@ import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.substate.REFieldSerialization;
+import com.radixdlt.substate.SubstateTypeId;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.UInt256;
@@ -804,12 +804,12 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
             d -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
             (d, s, r, c) -> {
               // TODO: Should move this authorization instead of checking epoch > 0
-              if (d.epoch() > 0 && s.getClosedRound().view() != maxRounds) {
+              if (d.epoch() > 0 && s.getClosedRound().round() != maxRounds) {
                 throw new ProcedureException(
                     "Must execute epoch update on end of round "
                         + maxRounds
                         + " but is "
-                        + s.getClosedRound().view());
+                        + s.getClosedRound().round());
               }
 
               return ReducerResult.incomplete(new UpdatingEpoch(d));
@@ -941,8 +941,8 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
             RoundData.class,
             u -> new Authorization(PermissionLevel.SUPER_USER, (r, c) -> {}),
             (s, u, c, r) -> {
-              if (u.view() != 0) {
-                throw new ProcedureException("Epoch must start with view 0");
+              if (u.round() != 0) {
+                throw new ProcedureException("Epoch must start with round 0");
               }
 
               return ReducerResult.complete();

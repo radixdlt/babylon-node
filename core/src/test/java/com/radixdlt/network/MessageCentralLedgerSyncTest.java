@@ -70,8 +70,8 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.network.messages.*;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageCentralMockProvider;
@@ -116,11 +116,13 @@ public class MessageCentralLedgerSyncTest {
         this.messageCentralLedgerSync.syncResponses().test();
     final var peer = createPeer();
     SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
-    DtoTxnsAndProof commands = mock(DtoTxnsAndProof.class);
-    when(syncResponseMessage.getCommands()).thenReturn(commands);
+    CommittedTransactionsWithProofDto transactionsWithProofDto =
+        mock(CommittedTransactionsWithProofDto.class);
+    when(syncResponseMessage.getTransactions()).thenReturn(transactionsWithProofDto);
     messageCentral.send(peer, syncResponseMessage);
     testObserver.awaitCount(1);
-    testObserver.assertValue(resp -> resp.getEvent().getTxnsAndProof().equals(commands));
+    testObserver.assertValue(
+        resp -> resp.getEvent().getTransactionsWithProofDto().equals(transactionsWithProofDto));
   }
 
   @Test

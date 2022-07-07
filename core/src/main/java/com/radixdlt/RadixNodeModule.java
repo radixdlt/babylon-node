@@ -140,10 +140,10 @@ public final class RadixNodeModule extends AbstractModule {
         .annotatedWith(BFTSyncPatienceMillis.class)
         .to(properties.get("bft.sync.patience", 200));
 
-    // Default values mean that pacemakers will sync if they are within 5 views of each other.
-    // 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
-    bindConstant().annotatedWith(PacemakerTimeout.class).to(3000L);
-    bindConstant().annotatedWith(PacemakerRate.class).to(1.1);
+    // Default values mean that pacemakers will sync if they are within 5 rounds of each other.
+    // 5 consecutive failing rounds will take 1*(2^6)-1 seconds = 63 seconds.
+    bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(3000L);
+    bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.1);
     bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
 
     // Mempool configuration

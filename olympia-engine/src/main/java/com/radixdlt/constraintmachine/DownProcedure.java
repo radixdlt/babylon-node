@@ -67,7 +67,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import java.util.function.Function;
 
-public class DownProcedure<D extends Particle, S extends ReducerState> implements Procedure {
+public class DownProcedure<D extends RawSubstate, S extends ReducerState> implements Procedure {
   private final Class<D> downClass;
   private final Class<S> reducerStateClass;
   private final DownReducer<D, S> downReducer;

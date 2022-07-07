@@ -64,7 +64,7 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.atom.SubstateId;
+import com.radixdlt.substate.SubstateId;
 
 public class VirtualSubstateAlreadyDownException extends SubstateNotFoundException {
   public VirtualSubstateAlreadyDownException(SubstateId substateId) {

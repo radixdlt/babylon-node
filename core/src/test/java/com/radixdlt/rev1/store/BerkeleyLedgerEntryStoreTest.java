@@ -71,11 +71,10 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.CloseableCursor;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngineException;
@@ -89,6 +88,7 @@ import com.radixdlt.rev1.forks.ForkVotingResult;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.substate.CloseableCursor;
 import com.radixdlt.transactions.Transaction;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -239,7 +239,7 @@ public final class BerkeleyLedgerEntryStoreTest {
                     HashUtils.random256(),
                     LedgerHeader.create(
                         epoch,
-                        View.of(0L),
+                        Round.of(0L),
                         new AccumulatorState(
                             epoch /* using same state version as epoch */,
                             HashCode.fromInt(1) /* unused */),

@@ -64,7 +64,7 @@
 
 package com.radixdlt.engine;
 
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.substate.TxBuilderException;
 
 public final class FeeConstructionException extends TxBuilderException {
   private final int attempts;

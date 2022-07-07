@@ -67,6 +67,6 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.serialization.DeserializeException;
 import java.nio.ByteBuffer;
 
-public interface SubstateDeserializer<T extends Particle> {
+public interface SubstateDeserializer<T extends RawSubstate> {
   T deserialize(ByteBuffer buf) throws DeserializeException;
 }

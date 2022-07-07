@@ -73,7 +73,7 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
@@ -86,12 +86,12 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
   }
 
   private static Vote get() {
-    View view = View.of(1234567891L);
+    Round round = Round.of(1234567891L);
     HashCode id = HashUtils.random256();
 
     LedgerHeader ledgerHeader = LedgerHeaderMock.get();
-    BFTHeader header = new BFTHeader(view, id, ledgerHeader);
-    BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
+    BFTHeader header = new BFTHeader(round, id, ledgerHeader);
+    BFTHeader parent = new BFTHeader(Round.of(1234567890L), HashUtils.random256(), ledgerHeader);
     VoteData voteData = new VoteData(header, parent, null);
     BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
     QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());

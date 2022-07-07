@@ -82,30 +82,30 @@ public class IncorrectAlwaysAcceptingAccumulatorVerifierModule extends AbstractM
     return new LedgerAccumulatorVerifier() {
       @Override
       public boolean verify(
-          AccumulatorState head, ImmutableList<HashCode> commands, AccumulatorState tail) {
+          AccumulatorState head, ImmutableList<HashCode> transactions, AccumulatorState tail) {
         return true;
       }
 
       @Override
       public <T> Optional<List<T>> verifyAndGetExtension(
           AccumulatorState current,
-          List<T> commands,
+          List<T> transactions,
           Function<T, HashCode> hashCodeMapper,
           AccumulatorState tail) {
-        final long firstVersion = tail.getStateVersion() - commands.size() + 1;
+        final long firstVersion = tail.getStateVersion() - transactions.size() + 1;
         if (current.getStateVersion() + 1 < firstVersion) {
           // Missing versions
           return Optional.empty();
         }
 
-        if (commands.isEmpty()) {
+        if (transactions.isEmpty()) {
           return (Objects.equals(current, tail))
               ? Optional.of(ImmutableList.of())
               : Optional.empty();
         }
 
         final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
-        return Optional.of(commands.subList(startIndex, commands.size()));
+        return Optional.of(transactions.subList(startIndex, transactions.size()));
       }
     };
   }

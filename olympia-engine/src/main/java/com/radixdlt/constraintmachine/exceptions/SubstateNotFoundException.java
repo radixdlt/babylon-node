@@ -64,7 +64,7 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.atom.SubstateId;
+import com.radixdlt.substate.SubstateId;
 
 public class SubstateNotFoundException extends Exception {
   private final SubstateId substateId;

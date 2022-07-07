@@ -67,10 +67,10 @@ package com.radixdlt.consensus.liveness;
 public interface PacemakerTimeoutCalculator {
 
   /**
-   * Calculates the pacemaker view timeout.
+   * Calculates the pacemaker round timeout.
    *
-   * @param uncommittedViews the number of uncommitted views
-   * @return pacemaker view timeout in milliseconds
+   * @param consecutiveUncommittedRounds the number of consecutive uncommitted rounds
+   * @return pacemaker round timeout in milliseconds
    */
-  long timeout(long uncommittedViews);
+  long calculateTimeoutMs(long consecutiveUncommittedRounds);
 }

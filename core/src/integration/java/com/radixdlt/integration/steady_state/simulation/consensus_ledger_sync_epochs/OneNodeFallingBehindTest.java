@@ -66,7 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus_ledger_sync_e
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.NetworkDroppers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -99,7 +99,7 @@ public class OneNodeFallingBehindTest {
               NetworkLatencies.fixed(),
               NetworkDroppers.dropAllMessagesForOneNode(10000, 10000))
           .pacemakerTimeout(3000)
-          .ledgerAndEpochsAndSync(View.of(100), epoch -> IntStream.range(0, 10), syncConfig)
+          .ledgerAndEpochsAndSync(Round.of(100), epoch -> IntStream.range(0, 10), syncConfig)
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(30, TimeUnit.SECONDS),

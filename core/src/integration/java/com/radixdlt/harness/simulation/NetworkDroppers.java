@@ -74,7 +74,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.harness.simulation.network.FProposalsPerViewDropper;
+import com.radixdlt.harness.simulation.network.FProposalsPerRoundDropper;
 import com.radixdlt.harness.simulation.network.MessageDropper;
 import com.radixdlt.harness.simulation.network.OneNodePerEpochLedgerStatusUpdateDropper;
 import com.radixdlt.harness.simulation.network.SimulationNetwork.MessageInTransit;
@@ -83,11 +83,11 @@ import java.util.function.Predicate;
 
 public final class NetworkDroppers {
   // TODO: This doesn't work with epochs yet
-  public static Module fRandomProposalsPerViewDropped() {
+  public static Module fRandomProposalsPerRoundDropped() {
     return new AbstractModule() {
       @ProvidesIntoSet
       Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes, Random random) {
-        return new FProposalsPerViewDropper(nodes, random);
+        return new FProposalsPerRoundDropper(nodes, random);
       }
     };
   }
@@ -97,7 +97,7 @@ public final class NetworkDroppers {
     return new AbstractModule() {
       @ProvidesIntoSet
       Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
-        return new FProposalsPerViewDropper(nodes);
+        return new FProposalsPerRoundDropper(nodes);
       }
     };
   }
@@ -122,7 +122,7 @@ public final class NetworkDroppers {
     };
   }
 
-  public static Module randomVotesAndViewTimeoutsDropped(double drops) {
+  public static Module randomVotesAndRoundTimeoutsDropped(double drops) {
     return new AbstractModule() {
       @ProvidesIntoSet
       Predicate<MessageInTransit> dropper(Random random) {

@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.validators.construction;
 
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.substate.TxBuilderException;
 
 public final class InvalidRakeIncreaseException extends TxBuilderException {
   private final int maxRakeIncrease;

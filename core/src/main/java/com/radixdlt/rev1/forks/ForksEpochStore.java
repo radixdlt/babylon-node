@@ -67,7 +67,7 @@ package com.radixdlt.rev1.forks;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.radixdlt.atom.CloseableCursor;
+import com.radixdlt.substate.CloseableCursor;
 
 public interface ForksEpochStore {
   ImmutableMap<Long, String> getStoredForks();

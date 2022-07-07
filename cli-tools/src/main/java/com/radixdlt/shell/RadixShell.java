@@ -83,7 +83,7 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.network.Message;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -381,7 +381,8 @@ public final class RadixShell {
       LedgerFileSync.restoreFromFile(
           fileName,
           getInstance(Serialization.class),
-          getInstance(Key.get(new TypeLiteral<EventDispatcher<VerifiedTxnsAndProof>>() {})));
+          getInstance(
+              Key.get(new TypeLiteral<EventDispatcher<CommittedTransactionsWithProof>>() {})));
       final var time = System.currentTimeMillis() - start;
       System.out.printf("Restore finished. Took %ss%n", time / 1000);
     }

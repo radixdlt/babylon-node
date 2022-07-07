@@ -68,11 +68,11 @@ import com.google.common.primitives.Longs;
 import com.radixdlt.transactions.Transaction;
 
 /** Submits unique bytes (incrementally) to a network */
-public class IncrementalBytes implements TxnGenerator {
-  private long commandId = 0;
+public class IncrementalBytes implements TransactionGenerator {
+  private long transactionNumber = 0;
 
   @Override
-  public Transaction nextTxn() {
-    return Transaction.create(Longs.toByteArray(commandId++));
+  public Transaction nextTransaction() {
+    return Transaction.create(Longs.toByteArray(transactionNumber++));
   }
 }

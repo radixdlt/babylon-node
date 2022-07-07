@@ -68,12 +68,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.harness.simulation.TestInvariant.TestInvariantError;
 import java.util.HashMap;
 import java.util.Map;
@@ -86,8 +86,8 @@ import javax.annotation.concurrent.NotThreadSafe;
 /** Processes committed vertices and verifies that it forms a single chain without any forks. */
 @NotThreadSafe
 public final class SafetyChecker {
-  private final TreeMap<EpochView, VerifiedVertex> committedVertices = new TreeMap<>();
-  private final Map<BFTNode, EpochView> lastCommittedByNode = new HashMap<>();
+  private final TreeMap<EpochRound, VertexWithHash> committedVertices = new TreeMap<>();
+  private final Map<BFTNode, EpochRound> lastCommittedByNode = new HashMap<>();
   private final ImmutableSet<BFTNode> nodes;
 
   @Inject
@@ -96,67 +96,67 @@ public final class SafetyChecker {
   }
 
   private static Optional<TestInvariantError> conflictingVerticesError(
-      VerifiedVertex vertex, VerifiedVertex currentVertex) {
+      VertexWithHash vertex, VertexWithHash currentVertex) {
     return Optional.of(
         new TestInvariantError(
             String.format(
-                "Conflicting vertices [%s, %s] committed at same view: %s",
-                vertex, currentVertex, vertex.getView())));
+                "Conflicting vertices [%s, %s] committed at same round: %s",
+                vertex, currentVertex, vertex.getRound())));
   }
 
   private static Optional<TestInvariantError> brokenChainError(
-      VerifiedVertex vertex, VerifiedVertex closeVertex) {
+      VertexWithHash vertex, VertexWithHash closeVertex) {
     return Optional.of(
         new TestInvariantError(String.format("Broken Chain [%s, %s]", vertex, closeVertex)));
   }
 
-  private Optional<TestInvariantError> process(BFTNode node, VerifiedVertex vertex) {
-    final EpochView epochView =
-        EpochView.of(vertex.getParentHeader().getLedgerHeader().getEpoch(), vertex.getView());
+  private Optional<TestInvariantError> process(BFTNode node, VertexWithHash vertex) {
+    final EpochRound epochRound =
+        EpochRound.of(vertex.getParentHeader().getLedgerHeader().getEpoch(), vertex.getRound());
 
-    final VerifiedVertex currentVertexAtView = committedVertices.get(epochView);
-    if (currentVertexAtView != null) {
-      if (!currentVertexAtView.getId().equals(vertex.getId())) {
-        return conflictingVerticesError(vertex, currentVertexAtView);
+    final VertexWithHash currentVertexAtRound = committedVertices.get(epochRound);
+    if (currentVertexAtRound != null) {
+      if (!currentVertexAtRound.getHash().equals(vertex.getHash())) {
+        return conflictingVerticesError(vertex, currentVertexAtRound);
       }
     } else {
-      EpochView parentEpochView =
-          EpochView.of(
+      EpochRound parentEpochRound =
+          EpochRound.of(
               vertex.getParentHeader().getLedgerHeader().getEpoch(),
-              vertex.getParentHeader().getView());
-      VerifiedVertex parent = committedVertices.get(parentEpochView);
+              vertex.getParentHeader().getRound());
+      VertexWithHash parent = committedVertices.get(parentEpochRound);
       if (parent == null) {
-        Entry<EpochView, VerifiedVertex> higherCommitted =
-            committedVertices.higherEntry(parentEpochView);
+        Entry<EpochRound, VertexWithHash> higherCommitted =
+            committedVertices.higherEntry(parentEpochRound);
         if (higherCommitted != null) {
           BFTHeader higherParentHeader = higherCommitted.getValue().getParentHeader();
-          EpochView higherCommittedParentEpochView =
-              EpochView.of(
-                  higherParentHeader.getLedgerHeader().getEpoch(), higherParentHeader.getView());
-          if (epochView.compareTo(higherCommittedParentEpochView) > 0) {
+          EpochRound higherCommittedParentEpochRound =
+              EpochRound.of(
+                  higherParentHeader.getLedgerHeader().getEpoch(), higherParentHeader.getRound());
+          if (epochRound.compareTo(higherCommittedParentEpochRound) > 0) {
             return brokenChainError(vertex, higherCommitted.getValue());
           }
         }
       }
 
-      committedVertices.put(epochView, vertex);
+      committedVertices.put(epochRound, vertex);
     }
 
     // Clean up old vertices so that we avoid consuming too much memory
-    lastCommittedByNode.put(node, epochView);
-    final EpochView lowest =
+    lastCommittedByNode.put(node, epochRound);
+    final EpochRound lowest =
         nodes.stream()
-            .map(n -> lastCommittedByNode.getOrDefault(n, EpochView.of(0, View.genesis())))
+            .map(n -> lastCommittedByNode.getOrDefault(n, EpochRound.of(0, Round.genesis())))
             .reduce((v0, v1) -> v0.compareTo(v1) < 0 ? v0 : v1)
-            .orElse(EpochView.of(0, View.genesis()));
+            .orElse(EpochRound.of(0, Round.genesis()));
     committedVertices.headMap(lowest).clear();
 
     return Optional.empty();
   }
 
   public Optional<TestInvariantError> process(BFTNode node, BFTCommittedUpdate committedUpdate) {
-    ImmutableList<PreparedVertex> vertices = committedUpdate.committed();
-    for (PreparedVertex vertex : vertices) {
+    ImmutableList<ExecutedVertex> vertices = committedUpdate.committed();
+    for (ExecutedVertex vertex : vertices) {
       Optional<TestInvariantError> maybeError = process(node, vertex.getVertex());
       if (maybeError.isPresent()) {
         return maybeError;

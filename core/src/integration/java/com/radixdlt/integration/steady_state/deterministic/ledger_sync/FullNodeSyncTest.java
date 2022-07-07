@@ -67,7 +67,7 @@ package com.radixdlt.integration.steady_state.deterministic.ledger_sync;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static org.junit.Assert.assertTrue;
 
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SyncConfig;
@@ -75,10 +75,10 @@ import java.util.stream.IntStream;
 import org.junit.Test;
 
 public class FullNodeSyncTest {
-  /* maximum state lag is a single command */
+  /* maximum state lag is a single transaction */
   private static final int FULL_NODE_MAX_BEHIND_STATE_VER = 1;
 
-  private void run(int numNodes, int numValidators, View highView, long targetStateVersion) {
+  private void run(int numNodes, int numValidators, Round epochMaxRound, long targetStateVersion) {
     final var syncConfig =
         SyncConfig.of(
             500L,
@@ -92,7 +92,7 @@ public class FullNodeSyncTest {
             .numNodes(numNodes)
             .messageSelector(firstSelector())
             .epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
-            .buildWithEpochsAndSync(highView, syncConfig)
+            .buildWithEpochsAndSync(epochMaxRound, syncConfig)
             .runUntil(DeterministicTest.ledgerStateVersionOnNode(targetStateVersion, numNodes - 1));
 
     final var validatorsCounters =
@@ -117,16 +117,16 @@ public class FullNodeSyncTest {
 
   @Test
   public void total_five_nodes_and_a_single_full_node() {
-    this.run(5, 4, View.of(100), 1000L);
+    this.run(5, 4, Round.of(100), 1000L);
   }
 
   @Test
-  public void total_50_nodes_and_just_4_validators_two_views_per_epoch() {
-    this.run(50, 4, View.of(2), 500L);
+  public void total_50_nodes_and_just_4_validators_two_rounds_per_epoch() {
+    this.run(50, 4, Round.of(2), 500L);
   }
 
   @Test
-  public void total_three_nodes_and_a_single_full_node_10k_views_per_epoch() {
-    this.run(3, 2, View.of(10000), 1000L);
+  public void total_three_nodes_and_a_single_full_node_10k_rounds_per_epoch() {
+    this.run(3, 2, Round.of(10000), 1000L);
   }
 }

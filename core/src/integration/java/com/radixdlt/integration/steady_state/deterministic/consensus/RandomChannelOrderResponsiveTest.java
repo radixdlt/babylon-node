@@ -68,7 +68,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -81,8 +81,8 @@ import org.junit.Test;
 
 public class RandomChannelOrderResponsiveTest {
 
-  private void run(int numNodes, long viewsToRun) {
-    assertEquals(0, viewsToRun % numNodes);
+  private void run(int numNodes, long roundsToRun) {
+    assertEquals(0, roundsToRun % numNodes);
 
     final Random random = new Random(12345);
 
@@ -92,7 +92,7 @@ public class RandomChannelOrderResponsiveTest {
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(MessageMutator.dropTimeouts())
             .buildWithoutEpochs()
-            .runUntil(DeterministicTest.hasReachedView(View.of(viewsToRun)));
+            .runUntil(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
 
     List<Long> proposalsMade =
         IntStream.range(0, numNodes)
@@ -100,14 +100,14 @@ public class RandomChannelOrderResponsiveTest {
             .map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
             .collect(ImmutableList.toImmutableList());
 
-    final long numViews = viewsToRun / numNodes;
+    final long numRounds = roundsToRun / numNodes;
 
     assertThat(proposalsMade)
         .hasSize(numNodes)
         .areAtLeast(
-            numNodes - 1, new Condition<>(l -> l == numViews, "has as many proposals as views"))
-        // the last view in the epoch doesn't have a proposal
-        .areAtMost(1, new Condition<>(l -> l == numViews - 1, "has one less proposal"));
+            numNodes - 1, new Condition<>(l -> l == numRounds, "has as many proposals as rounds"))
+        // the last round in the epoch doesn't have a proposal
+        .areAtMost(1, new Condition<>(l -> l == numRounds - 1, "has one less proposal"));
   }
 
   @Test

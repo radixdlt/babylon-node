@@ -71,7 +71,7 @@ import com.radixdlt.network.p2p.transport.PeerChannel;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 
-/** A Peers view using PeersManager */
+/** A Peers round using PeersManager */
 public final class PeerManagerPeersView implements PeersView {
   private final PeerManager peerManager;
 

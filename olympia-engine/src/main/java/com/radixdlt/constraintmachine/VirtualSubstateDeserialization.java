@@ -64,7 +64,7 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.cmos.SubstateDefinition;
 import com.radixdlt.engine.parser.exceptions.SubstateDeserializationException;
 import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.serialization.DeserializeException;
@@ -74,20 +74,20 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class VirtualSubstateDeserialization {
-  private final Map<Byte, SubstateDefinition<? extends Particle>> byteToDeserializer;
+  private final Map<Byte, SubstateDefinition<? extends RawSubstate>> byteToDeserializer;
 
   public VirtualSubstateDeserialization(
-      Collection<SubstateDefinition<? extends Particle>> definitions) {
+      Collection<SubstateDefinition<? extends RawSubstate>> definitions) {
     this.byteToDeserializer =
         definitions.stream().collect(Collectors.toMap(SubstateDefinition::getTypeByte, d -> d));
   }
 
-  public Particle keyToSubstate(byte typeByte, ByteBuffer buf) throws DeserializeException {
+  public RawSubstate keyToSubstate(byte typeByte, ByteBuffer buf) throws DeserializeException {
     var deserializer = byteToDeserializer.get(typeByte);
     if (deserializer == null) {
       throw new DeserializeException("Unknown byte type: " + typeByte);
     }
-    Particle rawSubstate;
+    RawSubstate rawSubstate;
     try {
       var key = deserializer.getKeyDeserializer().deserialize(buf);
       rawSubstate = deserializer.getVirtualMapper().map(key);

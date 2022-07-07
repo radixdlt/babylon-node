@@ -69,7 +69,7 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -121,8 +121,8 @@ public final class HighQC {
       this.highestCommittedQC = highestCommittedQC;
     }
 
-    // only relevant if it's for a higher view than QC
-    if (highestTC != null && highestTC.getView().gt(highestQC.getView())) {
+    // only relevant if it's for a higher round than QC
+    if (highestTC != null && highestTC.getRound().gt(highestQC.getRound())) {
       this.highestTC = highestTC;
     } else {
       this.highestTC = null;
@@ -165,11 +165,11 @@ public final class HighQC {
     return this.highestQC;
   }
 
-  public View getHighestView() {
-    if (this.highestTC != null && this.highestTC.getView().gt(this.highestQC.getView())) {
-      return this.highestTC.getView();
+  public Round getHighestRound() {
+    if (this.highestTC != null && this.highestTC.getRound().gt(this.highestQC.getRound())) {
+      return this.highestTC.getRound();
     } else {
-      return this.highestQC.getView();
+      return this.highestQC.getRound();
     }
   }
 

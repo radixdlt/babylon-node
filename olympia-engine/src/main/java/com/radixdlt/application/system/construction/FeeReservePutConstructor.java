@@ -64,11 +64,11 @@
 
 package com.radixdlt.application.system.construction;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.radixdlt.application.tokens.state.AccountBucket;
-import com.radixdlt.atom.*;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.substate.*;
 
 public class FeeReservePutConstructor implements ActionConstructor<FeeReservePut> {
   @Override

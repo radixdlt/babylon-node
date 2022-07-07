@@ -68,7 +68,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.DtoTxnsAndProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
 import com.radixdlt.serialization.SerializeMessageObject;
 
 public class SyncResponseMessageSerializeTest extends SerializeMessageObject<SyncResponseMessage> {
@@ -79,7 +79,7 @@ public class SyncResponseMessageSerializeTest extends SerializeMessageObject<Syn
   private static SyncResponseMessage get() {
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     return new SyncResponseMessage(
-        new DtoTxnsAndProof(
+        new CommittedTransactionsWithProofDto(
             ImmutableList.of(),
             LedgerProof.genesis(accumulatorState, null, 0).toDto(),
             LedgerProof.genesis(accumulatorState, null, 0).toDto()));

@@ -64,14 +64,14 @@
 
 package com.radixdlt.application.system.construction;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.VirtualParent;
-import com.radixdlt.atom.*;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.substate.*;
 import java.nio.charset.StandardCharsets;
 
 public class CreateSystemConstructorV2 implements ActionConstructor<CreateSystem> {

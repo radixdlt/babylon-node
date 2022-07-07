@@ -68,10 +68,10 @@ import com.radixdlt.identifiers.TID;
 
 public class TIDSerializeTest extends SerializeMessageObject<TID> {
   public TIDSerializeTest() {
-    super(TID.class, TIDSerializeTest::getAID);
+    super(TID.class, TIDSerializeTest::getTID);
   }
 
-  private static TID getAID() {
+  private static TID getTID() {
     byte[] bytes = new byte[TID.BYTES];
     for (int i = 0; i < bytes.length; i++) {
       bytes[i] = (byte) i;
@@ -81,6 +81,6 @@ public class TIDSerializeTest extends SerializeMessageObject<TID> {
 
   @Override
   public void testNONEIsEmpty() {
-    // Not applicable to Atom IDs
+    // Not applicable to Transaction IDs
   }
 }

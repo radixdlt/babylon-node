@@ -73,7 +73,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
 /**
- * A particle which represents an amount of staked fungible tokens owned by some key owner, stored
+ * A substate which represents an amount of staked fungible tokens owned by some key owner, stored
  * in an account and staked to a delegate address.
  */
 public record PreparedStake(UInt256 amount, REAddr owner, ECPublicKey delegateKey)

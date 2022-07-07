@@ -104,7 +104,7 @@ public enum EmptyBFTEventProcessor implements BFTEventProcessor {
   }
 
   @Override
-  public void processViewUpdate(ViewUpdate viewUpdate) {
+  public void processRoundUpdate(RoundUpdate roundUpdate) {
     // No-op
   }
 }

@@ -71,20 +71,20 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.MockPrepared;
+import com.radixdlt.ledger.MockExecuted;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
@@ -108,21 +108,23 @@ public final class MockedStateComputer implements StateComputer {
 
   @Override
   public List<Transaction> getTransactionsForProposal(
-      List<StateComputerLedger.PreparedTransaction> preparedTransactions) {
+      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
     return List.of();
   }
 
   @Override
   public StateComputerLedger.StateComputerResult prepare(
-      List<StateComputerLedger.PreparedTransaction> previous,
-      VerifiedVertex vertex,
+      List<StateComputerLedger.ExecutedTransaction> previous,
+      VertexWithHash vertex,
       long timestamp) {
     return new StateComputerLedger.StateComputerResult(
-        vertex.getTxns().stream().map(MockPrepared::new).collect(Collectors.toList()), Map.of());
+        vertex.getTransactions().stream().map(MockExecuted::new).collect(Collectors.toList()),
+        Map.of());
   }
 
   @Override
-  public void commit(VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
+  public void commit(
+      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
     var output =
         txnsAndProof
             .getProof()
@@ -130,18 +132,18 @@ public final class MockedStateComputer implements StateComputer {
             .map(
                 validatorSet -> {
                   LedgerProof header = txnsAndProof.getProof();
-                  VerifiedVertex genesisVertex =
-                      UnverifiedVertex.createGenesis(header.getRaw()).withId(hasher);
+                  VertexWithHash genesisVertex =
+                      Vertex.createGenesis(header.getHeader()).withId(hasher);
                   LedgerHeader nextLedgerHeader =
                       LedgerHeader.create(
                           header.getNextEpoch(),
-                          View.genesis(),
+                          Round.genesis(),
                           header.getAccumulatorState(),
                           header.timestamp());
                   QuorumCertificate genesisQC =
                       QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
                   final var initialState =
-                      VerifiedVertexStoreState.create(
+                      VertexStoreState.create(
                           HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
                   var proposerElection = new WeightedRotatingLeaders(validatorSet);
                   var bftConfiguration =

@@ -66,19 +66,17 @@ package com.radixdlt.rev1;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.MockPrepared;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
+import com.radixdlt.ledger.MockExecuted;
+import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
@@ -89,17 +87,17 @@ import javax.annotation.Nullable;
 
 public final class MockedStateComputerWithEpochs implements StateComputer {
   private final Function<Long, BFTValidatorSet> validatorSetMapping;
-  private final View epochHighView;
+  private final Round epochMaxRound;
   private final MockedStateComputer stateComputer;
 
   @Inject
   public MockedStateComputerWithEpochs(
-      @EpochCeilingView View epochHighView,
+      @EpochMaxRound Round epochMaxRound,
       Function<Long, BFTValidatorSet> validatorSetMapping,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
       Hasher hasher) {
     this.validatorSetMapping = Objects.requireNonNull(validatorSetMapping);
-    this.epochHighView = Objects.requireNonNull(epochHighView);
+    this.epochMaxRound = Objects.requireNonNull(epochMaxRound);
     this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
   }
 
@@ -108,19 +106,19 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
   @Override
   public List<Transaction> getTransactionsForProposal(
-      List<PreparedTransaction> preparedTransactions) {
+      List<ExecutedTransaction> executedTransactions) {
     return List.of();
   }
 
   @Override
   public StateComputerResult prepare(
-      List<PreparedTransaction> previous, VerifiedVertex vertex, long timestamp) {
-    var view = vertex.getView();
+      List<ExecutedTransaction> previous, VertexWithHash vertex, long timestamp) {
+    var round = vertex.getRound();
     var epoch = vertex.getParentHeader().getLedgerHeader().getEpoch();
-    var next = vertex.getTxns();
-    if (view.compareTo(epochHighView) >= 0) {
+    var next = vertex.getTransactions();
+    if (round.compareTo(epochMaxRound) >= 0) {
       return new StateComputerResult(
-          next.stream().map(MockPrepared::new).collect(Collectors.toList()),
+          next.stream().map(MockExecuted::new).collect(Collectors.toList()),
           ImmutableMap.of(),
           validatorSetMapping.apply(epoch + 1));
     } else {
@@ -130,7 +128,8 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
   @Override
   public void commit(
-      VerifiedTxnsAndProof verifiedTxnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-    this.stateComputer.commit(verifiedTxnsAndProof, vertexStoreState);
+      CommittedTransactionsWithProof committedTransactionsWithProof,
+      VertexStoreState vertexStoreState) {
+    this.stateComputer.commit(committedTransactionsWithProof, vertexStoreState);
   }
 }

@@ -75,13 +75,13 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.AccumulatorState;
@@ -117,7 +117,7 @@ public class SerializerTestDataGenerator {
     var qc = randomQC();
     var txn = Transaction.create(new byte[] {0, 1, 2, 3});
     var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-    var vertex = UnverifiedVertex.create(qc, randomView(), List.of(txn), author);
+    var vertex = Vertex.create(qc, randomRound(), List.of(txn), author);
     return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
   }
 
@@ -127,11 +127,11 @@ public class SerializerTestDataGenerator {
 
   public static BFTHeader randomBFTHeader() {
     return new BFTHeader(
-        randomView(),
+        randomRound(),
         HashCode.fromLong(random.nextLong()),
         LedgerHeader.create(
             Math.abs(random.nextLong()),
-            randomView(),
+            randomRound(),
             new AccumulatorState(
                 Math.abs(random.nextLong()) + 1, HashCode.fromLong(random.nextLong())),
             Math.abs(random.nextLong()) + 1,
@@ -165,10 +165,10 @@ public class SerializerTestDataGenerator {
 
   public static TimeoutCertificate randomTimeoutCertificate() {
     return new TimeoutCertificate(
-        Math.abs(random.nextLong()), randomView(), randomTimestampedECDSASignatures());
+        Math.abs(random.nextLong()), randomRound(), randomTimestampedECDSASignatures());
   }
 
-  public static View randomView() {
-    return View.of(Math.abs(random.nextLong()));
+  public static Round randomRound() {
+    return Round.of(Math.abs(random.nextLong()));
   }
 }

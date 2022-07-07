@@ -67,7 +67,7 @@ package com.radixdlt.serialization;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.LedgerHeaderMock;
 
@@ -77,11 +77,11 @@ public class VoteDataSerializeTest extends SerializeObject<VoteData> {
   }
 
   private static VoteData get() {
-    View view = View.of(1234567890L);
+    Round round = Round.of(1234567890L);
     LedgerHeader ledgerHeader = LedgerHeaderMock.get();
-    BFTHeader committed = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
-    BFTHeader parent = new BFTHeader(view.next(), HashUtils.random256(), ledgerHeader);
-    BFTHeader proposed = new BFTHeader(view.next().next(), HashUtils.random256(), ledgerHeader);
+    BFTHeader committed = new BFTHeader(round, HashUtils.random256(), ledgerHeader);
+    BFTHeader parent = new BFTHeader(round.next(), HashUtils.random256(), ledgerHeader);
+    BFTHeader proposed = new BFTHeader(round.next().next(), HashUtils.random256(), ledgerHeader);
     return new VoteData(proposed, parent, committed);
   }
 }

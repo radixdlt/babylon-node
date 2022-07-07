@@ -70,8 +70,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
-import com.radixdlt.ledger.MockedCommandGeneratorModule;
 import com.radixdlt.ledger.MockedLedgerModule;
+import com.radixdlt.ledger.RandomTransactionGeneratorModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.rev1.MockedMempoolStateComputerModule;
@@ -141,7 +141,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       install(new LedgerModule());
 
       if (!hasComponent(MEMPOOL)) {
-        install(new MockedCommandGeneratorModule());
+        install(new RandomTransactionGeneratorModule());
 
         if (!hasComponent(EPOCHS)) {
           install(new MockedStateComputerModule());

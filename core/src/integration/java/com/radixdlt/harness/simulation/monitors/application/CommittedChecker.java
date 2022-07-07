@@ -65,7 +65,7 @@
 package com.radixdlt.harness.simulation.monitors.application;
 
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
@@ -77,23 +77,23 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Checks to make sure that commands have been committed in a certain amount of time */
+/** Checks to make sure that transactions have been committed in a certain amount of time */
 public class CommittedChecker implements TestInvariant {
   private static final Logger log = LogManager.getLogger();
-  private final Observable<Transaction> submittedTxns;
+  private final Observable<Transaction> submittedTransactions;
   private final NodeEvents commits;
 
-  public CommittedChecker(Observable<Transaction> submittedTxns, NodeEvents commits) {
-    this.submittedTxns = Objects.requireNonNull(submittedTxns);
+  public CommittedChecker(Observable<Transaction> submittedTransactions, NodeEvents commits) {
+    this.submittedTransactions = Objects.requireNonNull(submittedTransactions);
     this.commits = Objects.requireNonNull(commits);
   }
 
   @Override
   public Observable<TestInvariantError> check(RunningNetwork network) {
-    return submittedTxns
-        .doOnNext(txn -> log.debug("Submitted txn: {}", txn))
+    return submittedTransactions
+        .doOnNext(txn -> log.debug("Submitted transaction: {}", txn))
         .flatMapMaybe(
-            txn ->
+            transaction ->
                 Observable.<BFTCommittedUpdate>create(
                         emitter ->
                             commits.addListener(
@@ -102,14 +102,16 @@ public class CommittedChecker implements TestInvariant {
                     .filter(
                         e ->
                             e.committed().stream()
-                                .flatMap(PreparedVertex::getTxns)
-                                .anyMatch(c -> Arrays.equals(c.getPayload(), txn.getPayload())))
+                                .flatMap(ExecutedVertex::getTransactions)
+                                .anyMatch(
+                                    c -> Arrays.equals(c.getPayload(), transaction.getPayload())))
                     .timeout(10, TimeUnit.SECONDS)
                     .firstOrError()
                     .ignoreElement()
                     .onErrorReturn(
                         e ->
                             new TestInvariantError(
-                                "Submitted txn has not been committed in 10 seconds: " + txn)));
+                                "Submitted transaction has not been committed in 10 seconds: "
+                                    + transaction)));
   }
 }

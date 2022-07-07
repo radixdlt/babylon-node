@@ -75,9 +75,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -115,9 +115,9 @@ public class MessageCentralValidatorSyncTest {
 
   @Test
   public void when_send_response__then_message_central_will_send_response() {
-    VerifiedVertex vertex = mock(VerifiedVertex.class);
-    when(vertex.toSerializable()).thenReturn(mock(UnverifiedVertex.class));
-    ImmutableList<VerifiedVertex> vertices = ImmutableList.of(vertex);
+    VertexWithHash vertex = mock(VertexWithHash.class);
+    when(vertex.toSerializable()).thenReturn(mock(Vertex.class));
+    ImmutableList<VertexWithHash> vertices = ImmutableList.of(vertex);
 
     BFTNode node = mock(BFTNode.class);
     ECPublicKey ecPublicKey = mock(ECPublicKey.class);

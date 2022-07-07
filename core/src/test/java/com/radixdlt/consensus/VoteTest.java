@@ -70,7 +70,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
@@ -89,7 +89,7 @@ public class VoteTest {
   @Before
   public void setUp() {
     BFTHeader parent =
-        new BFTHeader(View.of(1234567890L), HashUtils.random256(), mock(LedgerHeader.class));
+        new BFTHeader(Round.of(1234567890L), HashUtils.random256(), mock(LedgerHeader.class));
     this.voteData =
         new VoteData(BFTHeader.ofGenesisAncestor(mock(LedgerHeader.class)), parent, null);
     this.author = mock(BFTNode.class);
@@ -125,7 +125,7 @@ public class VoteTest {
         .isNotNull()
         .contains(Vote.class.getSimpleName())
         .contains("epoch=0")
-        .contains("view=0")
+        .contains("round=0")
         .contains(this.author.toString());
   }
 

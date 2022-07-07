@@ -66,7 +66,7 @@ package com.radixdlt.serialization;
 
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.LedgerHeaderMock;
 
@@ -76,8 +76,8 @@ public class BFTHeaderSerializeTest extends SerializeObject<BFTHeader> {
   }
 
   private static BFTHeader get() {
-    View view = View.of(1234567890L);
+    Round round = Round.of(1234567890L);
     LedgerHeader ledgerHeader = LedgerHeaderMock.get();
-    return new BFTHeader(view, HashUtils.random256(), ledgerHeader);
+    return new BFTHeader(round, HashUtils.random256(), ledgerHeader);
   }
 }

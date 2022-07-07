@@ -80,10 +80,11 @@ public class ReV1DispatcherModule extends AbstractModule {
         .toProvider(Dispatchers.dispatcherProvider(REOutput.class))
         .in(Scopes.SINGLETON);
 
-    bind(new TypeLiteral<EventDispatcher<InvalidProposedTxn>>() {})
+    bind(new TypeLiteral<EventDispatcher<InvalidProposedTransaction>>() {})
         .toProvider(
             Dispatchers.dispatcherProvider(
-                InvalidProposedTxn.class, v -> CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
+                InvalidProposedTransaction.class,
+                v -> CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
         .in(Scopes.SINGLETON);
   }
 }

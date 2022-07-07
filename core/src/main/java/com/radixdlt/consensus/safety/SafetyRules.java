@@ -66,21 +66,9 @@ package com.radixdlt.consensus.safety;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.ValidationState;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
@@ -126,31 +114,32 @@ public final class SafetyRules {
     this.validatorSet = Objects.requireNonNull(validatorSet);
   }
 
-  private boolean checkLastVoted(VerifiedVertex proposedVertex) {
+  private boolean checkLastVoted(VertexWithHash proposedVertex) {
     // ensure vertex does not violate earlier votes
-    if (proposedVertex.getView().lte(this.state.getLastVotedView())) {
+    if (proposedVertex.getRound().lte(this.state.getLastVotedRound())) {
       logger.warn(
-          "Safety warning: Vertex {} violates earlier vote at view {}",
+          "Safety warning: Vertex {} violates earlier vote at round {}",
           proposedVertex,
-          this.state.getLastVotedView());
+          this.state.getLastVotedRound());
       return false;
     } else {
       return true;
     }
   }
 
-  private boolean checkLocked(VerifiedVertex proposedVertex, Builder nextStateBuilder) {
-    if (proposedVertex.getParentHeader().getView().lt(this.state.getLockedView())) {
+  private boolean checkLocked(VertexWithHash proposedVertex, Builder nextStateBuilder) {
+    if (proposedVertex.getParentHeader().getRound().lt(this.state.getLockedRound())) {
       logger.warn(
-          "Safety warning: Vertex {} does not respect locked view {}",
+          "Safety warning: Vertex {} does not respect locked round {}",
           proposedVertex,
-          this.state.getLockedView());
+          this.state.getLockedRound());
       return false;
     }
 
     // pre-commit phase on consecutive qc's proposed vertex
-    if (proposedVertex.getGrandParentHeader().getView().compareTo(this.state.getLockedView()) > 0) {
-      nextStateBuilder.lockedView(proposedVertex.getGrandParentHeader().getView());
+    if (proposedVertex.getGrandParentHeader().getRound().compareTo(this.state.getLockedRound())
+        > 0) {
+      nextStateBuilder.lockedRound(proposedVertex.getGrandParentHeader().getRound());
     }
     return true;
   }
@@ -164,7 +153,7 @@ public final class SafetyRules {
    * @return signed proposal object for consensus
    */
   public Optional<Proposal> signProposal(
-      VerifiedVertex proposedVertex,
+      VertexWithHash proposedVertex,
       QuorumCertificate highestCommittedQC,
       Optional<TimeoutCertificate> highestTC) {
     final Builder safetyStateBuilder = this.state.toBuilder();
@@ -174,13 +163,13 @@ public final class SafetyRules {
 
     this.state = safetyStateBuilder.build();
 
-    final ECDSASignature signature = this.signer.sign(proposedVertex.getId());
+    final ECDSASignature signature = this.signer.sign(proposedVertex.getHash());
     return Optional.of(
         new Proposal(proposedVertex.toSerializable(), highestCommittedQC, signature, highestTC));
   }
 
   private static VoteData constructVoteData(
-      VerifiedVertex proposedVertex, BFTHeader proposedHeader) {
+      VertexWithHash proposedVertex, BFTHeader proposedHeader) {
     final BFTHeader parent = proposedVertex.getParentHeader();
 
     // Add a vertex to commit if creating a quorum for the proposed vertex would
@@ -207,7 +196,7 @@ public final class SafetyRules {
    * @return A vote result containing the vote and any committed vertices
    */
   public Optional<Vote> voteFor(
-      VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
+      VertexWithHash proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
     Builder safetyStateBuilder = this.state.toBuilder();
 
     if (!checkLastVoted(proposedVertex)) {
@@ -246,7 +235,7 @@ public final class SafetyRules {
   }
 
   public Vote createVote(
-      VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
+      VertexWithHash proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
     final VoteData voteData = constructVoteData(proposedVertex, proposedHeader);
     final var voteHash = Vote.getHashOfData(hasher, voteData, timestamp);
 
@@ -255,8 +244,8 @@ public final class SafetyRules {
     return new Vote(this.self, voteData, timestamp, signature, highQC, Optional.empty());
   }
 
-  public Optional<Vote> getLastVote(View view) {
-    return this.state.getLastVote().filter(lastVote -> lastVote.getView().equals(view));
+  public Optional<Vote> getLastVote(Round round) {
+    return this.state.getLastVote().filter(lastVote -> lastVote.getRound().equals(round));
   }
 
   public boolean verifyHighQcAgainstTheValidatorSet(HighQC highQC) {
@@ -316,9 +305,9 @@ public final class SafetyRules {
                 committed -> qc.getProposed().equals(committed) && qc.getParent().equals(committed))
             .orElse(false);
 
-    final var isGenesisView = qc.getProposed().getView().isGenesis();
+    final var isGenesisRound = qc.getProposed().getRound().isGenesis();
 
-    return committedAndParentAndProposedAreTheSame && isGenesisView;
+    return committedAndParentAndProposedAreTheSame && isGenesisRound;
   }
 
   private boolean areAllQcTimestampedSignaturesValid(QuorumCertificate qc) {
@@ -351,7 +340,7 @@ public final class SafetyRules {
   }
 
   private boolean areAllTcTimestampedSignaturesValid(TimeoutCertificate tc) {
-    final var voteTimeout = new VoteTimeout(tc.getView(), tc.getEpoch());
+    final var voteTimeout = new VoteTimeout(tc.getRound(), tc.getEpoch());
     final var voteTimeoutHash = hasher.hashDsonEncoded(voteTimeout);
     return tc.getTimestampedSignatures().getSignatures().entrySet().parallelStream()
         .allMatch(

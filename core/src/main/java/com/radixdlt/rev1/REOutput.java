@@ -68,7 +68,7 @@ import com.radixdlt.constraintmachine.REProcessedTxn;
 import java.util.List;
 import java.util.Objects;
 
-/** Event signifying that an atom was committed to ledger successfully */
+/** Event signifying that some transactions were committed to ledger successfully */
 public final class REOutput {
   private final List<REProcessedTxn> processed;
 

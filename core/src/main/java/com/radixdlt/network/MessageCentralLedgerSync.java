@@ -132,7 +132,7 @@ public final class MessageCentralLedgerSync {
             m -> {
               final var node = BFTNode.create(m.source().getPublicKey());
               final var msg = m.message();
-              return RemoteEvent.create(node, SyncResponse.create(msg.getCommands()));
+              return RemoteEvent.create(node, SyncResponse.create(msg.getTransactions()));
             });
   }
 
@@ -162,7 +162,7 @@ public final class MessageCentralLedgerSync {
   }
 
   private void sendSyncResponse(BFTNode node, SyncResponse syncResponse) {
-    final var msg = new SyncResponseMessage(syncResponse.getTxnsAndProof());
+    final var msg = new SyncResponseMessage(syncResponse.getTransactionsWithProofDto());
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }
 

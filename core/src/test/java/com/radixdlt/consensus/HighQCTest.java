@@ -68,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.SerializeObject;
 import com.radixdlt.utils.LedgerHeaderMock;
@@ -82,12 +82,12 @@ public class HighQCTest extends SerializeObject<HighQC> {
   }
 
   private static HighQC get() {
-    View view = View.of(1234567891L);
+    Round round = Round.of(1234567891L);
     HashCode id = HashUtils.random256();
     LedgerHeader ledgerHeader = LedgerHeaderMock.get();
-    BFTHeader header = new BFTHeader(view, id, ledgerHeader);
-    BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
-    BFTHeader commit = new BFTHeader(View.of(1234567889L), HashUtils.random256(), ledgerHeader);
+    BFTHeader header = new BFTHeader(round, id, ledgerHeader);
+    BFTHeader parent = new BFTHeader(Round.of(1234567890L), HashUtils.random256(), ledgerHeader);
+    BFTHeader commit = new BFTHeader(Round.of(1234567889L), HashUtils.random256(), ledgerHeader);
     VoteData voteData = new VoteData(header, parent, commit);
     QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     return HighQC.from(qc, qc, Optional.empty());

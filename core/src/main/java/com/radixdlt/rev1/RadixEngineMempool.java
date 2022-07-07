@@ -67,7 +67,6 @@ package com.radixdlt.rev1;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.engine.RadixEngine;
@@ -78,8 +77,8 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolMetadata;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.substate.SubstateId;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
@@ -129,7 +128,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 
     if (this.data.containsKey(transaction.getId())) {
       throw new MempoolDuplicateException(
-          String.format("Mempool already has command %s", transaction.getId()));
+          String.format("Mempool already has transaction with id %s", transaction.getId()));
     }
 
     final RadixEngineResult<LedgerAndBFTProof> result;
@@ -137,14 +136,14 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
       RadixEngine.RadixEngineBranch<LedgerAndBFTProof> checker = radixEngine.transientBranch();
       result = checker.execute(List.of(transaction));
     } catch (RadixEngineException e) {
-      // TODO: allow missing dependency atoms to live for a certain amount of time
+      // TODO: allow transactions with missing dependencies to live for a certain amount of time
       throw new MempoolRejectedException(e);
     } finally {
       radixEngine.deleteBranches();
     }
 
-    var mempoolTxn = MempoolMetadata.create(System.currentTimeMillis());
-    var data = Pair.of(result.getProcessedTxn(), mempoolTxn);
+    var mempoolMetadata = MempoolMetadata.create(System.currentTimeMillis());
+    var data = Pair.of(result.getProcessedTxn(), mempoolMetadata);
     this.data.put(transaction.getId(), data);
     result
         .getProcessedTxn()
@@ -232,10 +231,10 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
     return scanUpdateAndGet(
         m ->
             // Don't relay recently added
-            m.getInserted() <= recentlyAddedCutoff
+            m.getInsertedTimestampMs() <= recentlyAddedCutoff
                 // Don't relay recently relayed
-                && m.getLastRelayed().orElse(0L) <= lastRelayedCutoff,
-        m -> m.setLastRelayed(now));
+                && m.getLastRelayedTimestampMs().orElse(0L) <= lastRelayedCutoff,
+        m -> m.setLastRelayedTimestampMs(now));
   }
 
   private List<Transaction> scanUpdateAndGet(

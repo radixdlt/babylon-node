@@ -66,10 +66,10 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.atom.SubstateId;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.identifiers.TID;
+import com.radixdlt.substate.SubstateId;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.UInt256;
 import java.util.List;

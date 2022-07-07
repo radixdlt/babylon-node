@@ -66,7 +66,7 @@ package com.radixdlt.integration.steady_state.deterministic.consensus;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -86,7 +86,7 @@ public class FProposalDropperResponsiveTest {
   private final Random random = new Random(123456789);
 
   private void runFProposalDropperResponsiveTest(
-      int numNodes, Function<View, Set<Integer>> nodesToDropFunction) {
+      int numNodes, Function<Round, Set<Integer>> nodesToDropFunction) {
     DeterministicTest.builder()
         .numNodes(numNodes)
         .messageSelector(MessageSelector.randomSelector(random))
@@ -97,18 +97,19 @@ public class FProposalDropperResponsiveTest {
   }
 
   private static MessageMutator dropNodes(
-      int numNodes, Function<View, Set<Integer>> nodesToDropFunction) {
-    final Map<View, Set<Integer>> proposalsToDrop = new HashMap<>();
-    final Map<View, Integer> proposalCount = new HashMap<>();
+      int numNodes, Function<Round, Set<Integer>> nodesToDropFunction) {
+    final Map<Round, Set<Integer>> proposalsToDrop = new HashMap<>();
+    final Map<Round, Integer> proposalCount = new HashMap<>();
     return (message, queue) -> {
       Object msg = message.message();
       if (msg instanceof Proposal) {
         final Proposal proposal = (Proposal) msg;
-        final View view = proposal.getVertex().getView();
-        final Set<Integer> nodesToDrop = proposalsToDrop.computeIfAbsent(view, nodesToDropFunction);
-        if (proposalCount.merge(view, 1, Integer::sum).equals(numNodes)) {
-          proposalsToDrop.remove(view);
-          proposalCount.remove(view);
+        final Round round = proposal.getVertex().getRound();
+        final Set<Integer> nodesToDrop =
+            proposalsToDrop.computeIfAbsent(round, nodesToDropFunction);
+        if (proposalCount.merge(round, 1, Integer::sum).equals(numNodes)) {
+          proposalsToDrop.remove(round);
+          proposalCount.remove(round);
         }
         return nodesToDrop.contains(message.channelId().receiverIndex());
       }

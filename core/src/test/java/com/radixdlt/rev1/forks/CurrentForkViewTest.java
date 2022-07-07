@@ -69,8 +69,8 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import java.util.Optional;
 import java.util.Set;
@@ -94,7 +94,7 @@ public final class CurrentForkViewTest {
             mock(LedgerProof.class), null, Optional.of("fork2"), Optional.empty());
     final var ledgerUpdate =
         new LedgerUpdate(
-            mock(VerifiedTxnsAndProof.class),
+            mock(CommittedTransactionsWithProof.class),
             ImmutableClassToInstanceMap.of(LedgerAndBFTProof.class, ledgerAndBftProof));
     currentForkView.ledgerUpdateEventProcessor().process(ledgerUpdate);
 

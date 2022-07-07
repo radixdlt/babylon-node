@@ -73,15 +73,9 @@ import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PacemakerMaxExponent;
-import com.radixdlt.consensus.bft.PacemakerRate;
-import com.radixdlt.consensus.bft.PacemakerTimeout;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
@@ -101,7 +95,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.EpochCeilingView;
+import com.radixdlt.rev1.EpochMaxRound;
 import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.rev2.modules.MockedRecoveryModule;
@@ -211,15 +205,15 @@ public final class DeterministicTest {
       return this;
     }
 
-    public DeterministicTest buildWithEpochs(View epochHighView) {
-      Objects.requireNonNull(epochHighView);
+    public DeterministicTest buildWithEpochs(Round epochMaxRound) {
+      Objects.requireNonNull(epochMaxRound);
       modules.add(new FunctionalRadixNodeModule(EnumSet.of(LEDGER, EPOCHS)));
-      addEpochedConsensusProcessorModule(epochHighView);
+      addEpochedConsensusProcessorModule(epochMaxRound);
       return build();
     }
 
-    public DeterministicTest buildWithEpochsAndSync(View epochHighView, SyncConfig syncConfig) {
-      Objects.requireNonNull(epochHighView);
+    public DeterministicTest buildWithEpochsAndSync(Round epochMaxRound, SyncConfig syncConfig) {
+      Objects.requireNonNull(epochMaxRound);
       modules.add(new FunctionalRadixNodeModule(EnumSet.of(LEDGER, EPOCHS, SYNC)));
       modules.add(new InMemoryCommittedReaderModule());
       modules.add(
@@ -229,7 +223,7 @@ public final class DeterministicTest {
               return syncConfig;
             }
           });
-      addEpochedConsensusProcessorModule(epochHighView);
+      addEpochedConsensusProcessorModule(epochMaxRound);
       return build();
     }
 
@@ -246,8 +240,8 @@ public final class DeterministicTest {
             public void configure() {
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
               bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
-              bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
-              bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
+              bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(pacemakerTimeout);
+              bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
               // Use constant timeout for now
               bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
               bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
@@ -279,7 +273,7 @@ public final class DeterministicTest {
           });
     }
 
-    private void addEpochedConsensusProcessorModule(View epochHighView) {
+    private void addEpochedConsensusProcessorModule(Round epochMaxRound) {
       // TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet>
       // shouldn't be needed
       Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping()::apply;
@@ -287,9 +281,9 @@ public final class DeterministicTest {
           new AbstractModule() {
             @Override
             public void configure() {
-              bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
+              bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
               bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
-              bind(new TypeLiteral<EventProcessor<EpochView>>() {}).toInstance(epochView -> {});
+              bind(new TypeLiteral<EventProcessor<EpochRound>>() {}).toInstance(epochRound -> {});
               bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() {})
                   .toInstance(t -> {});
             }
@@ -391,50 +385,50 @@ public final class DeterministicTest {
 
   /**
    * Returns a predicate that stops processing messages after a specified number of epochs and
-   * views.
+   * rounds.
    *
-   * @param maxEpochView the last epoch and view to process
-   * @return a predicate that halts processing after the specified number of epochs and views
+   * @param maxEpochRound the last epoch and round to process
+   * @return a predicate that halts processing after the specified number of epochs and rounds
    */
-  public static Predicate<Timed<ControlledMessage>> hasReachedEpochView(EpochView maxEpochView) {
+  public static Predicate<Timed<ControlledMessage>> hasReachedEpochRound(EpochRound maxEpochRound) {
     return timedMsg -> {
       ControlledMessage message = timedMsg.value();
       if (!(message.message() instanceof Proposal)) {
         return false;
       }
       Proposal proposal = (Proposal) message.message();
-      EpochView nev = EpochView.of(proposal.getEpoch(), proposal.getView());
-      return (nev.compareTo(maxEpochView) > 0);
+      EpochRound nev = EpochRound.of(proposal.getEpoch(), proposal.getRound());
+      return (nev.compareTo(maxEpochRound) > 0);
     };
   }
 
   /**
-   * Returns a predicate that stops processing messages after a specified number of views.
+   * Returns a predicate that stops processing messages after a specified number of rounds.
    *
-   * @param view the last view to process
-   * @return a predicate that return true after the specified number of views
+   * @param round the last round to process
+   * @return a predicate that return true after the specified number of rounds
    */
-  public static Predicate<Timed<ControlledMessage>> hasReachedView(View view) {
-    final long maxViewNumber = view.previous().number();
+  public static Predicate<Timed<ControlledMessage>> hasReachedRound(Round round) {
+    final long maxRoundNumber = round.previous().number();
     return timedMsg -> {
       ControlledMessage message = timedMsg.value();
       if (!(message.message() instanceof Proposal)) {
         return false;
       }
       Proposal p = (Proposal) message.message();
-      return (p.getView().number() > maxViewNumber);
+      return (p.getRound().number() > maxRoundNumber);
     };
   }
 
-  public static Predicate<Timed<ControlledMessage>> viewUpdateOnNode(View view, int nodeIndex) {
+  public static Predicate<Timed<ControlledMessage>> roundUpdateOnNode(Round round, int nodeIndex) {
     return timedMsg -> {
       final var message = timedMsg.value();
-      if (!(message.message() instanceof ViewUpdate)) {
+      if (!(message.message() instanceof RoundUpdate)) {
         return false;
       }
-      final var viewUpdate = (ViewUpdate) message.message();
+      final var roundUpdate = (RoundUpdate) message.message();
       return message.channelId().receiverIndex() == nodeIndex
-          && viewUpdate.getCurrentView().gte(view);
+          && roundUpdate.getCurrentRound().gte(round);
     };
   }
 

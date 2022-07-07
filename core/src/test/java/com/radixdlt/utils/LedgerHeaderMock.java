@@ -65,12 +65,12 @@
 package com.radixdlt.utils;
 
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 
 public class LedgerHeaderMock {
   public static LedgerHeader get() {
-    return LedgerHeader.create(0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
+    return LedgerHeader.create(0, Round.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
   }
 }

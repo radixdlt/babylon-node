@@ -78,14 +78,14 @@ import org.junit.Test;
 
 public class ProposalTest {
   private Proposal proposal;
-  private UnverifiedVertex vertex;
+  private Vertex vertex;
   private ECDSASignature signature;
   private QuorumCertificate qc;
   private QuorumCertificate commitQc;
 
   @Before
   public void setUp() {
-    this.vertex = mock(UnverifiedVertex.class);
+    this.vertex = mock(Vertex.class);
     this.signature = mock(ECDSASignature.class);
     this.commitQc = mock(QuorumCertificate.class);
     this.qc = mock(QuorumCertificate.class);
@@ -132,18 +132,12 @@ public class ProposalTest {
   @Test(expected = NullPointerException.class)
   public void deserializeWithNullThrowsException2() {
     new Proposal(
-        mock(UnverifiedVertex.class),
-        null,
-        mock(ECDSASignature.class),
-        mock(TimeoutCertificate.class));
+        mock(Vertex.class), null, mock(ECDSASignature.class), mock(TimeoutCertificate.class));
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializeWithNullThrowsException3() {
     new Proposal(
-        mock(UnverifiedVertex.class),
-        mock(QuorumCertificate.class),
-        null,
-        mock(TimeoutCertificate.class));
+        mock(Vertex.class), mock(QuorumCertificate.class), null, mock(TimeoutCertificate.class));
   }
 }

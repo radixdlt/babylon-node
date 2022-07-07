@@ -67,7 +67,7 @@ package com.radixdlt.integration.steady_state.deterministic.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -77,7 +77,7 @@ import java.util.Random;
 import org.junit.Test;
 
 /**
- * When original votes (to next view leader, non timed out) are dropped, nodes should be able to
+ * When original votes (to next round leader, non timed out) are dropped, nodes should be able to
  * resend those votes to each other (with timeout) and form the quorum themselves. As a result,
  * there should be no timeout (non-QC) quorums and no indirect parents.
  */
@@ -85,14 +85,14 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
 
   private final Random random = new Random(123456);
 
-  private void run(int numNodes, long numViews) {
+  private void run(int numNodes, long numRounds) {
     final DeterministicTest test =
         DeterministicTest.builder()
             .numNodes(numNodes)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropAllNonTimeoutVotes())
             .buildWithoutEpochs()
-            .runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
+            .runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
       final SystemCounters counters = test.getSystemCounters(nodeIndex);
@@ -103,9 +103,9 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
       final long totalNumberOfVoteQuorums = counters.get(CounterType.BFT_VOTE_QUORUMS);
       assertThat(totalNumberOfTimeoutQuorums).isEqualTo(0); // no TCs
       assertThat(numberOfIndirectParents).isEqualTo(0); // no indirect parents
-      assertThat(totalNumberOfTimeouts).isEqualTo(numViews - 1); // a timeout for each view
+      assertThat(totalNumberOfTimeouts).isEqualTo(numRounds - 1); // a timeout for each round
       assertThat(totalNumberOfVoteQuorums)
-          .isBetween(numViews - 2, numViews); // quorum count matches views
+          .isBetween(numRounds - 2, numRounds); // quorum count matches rounds
     }
   }
 
@@ -121,17 +121,17 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
   }
 
   @Test
-  public void when_run_3_correct_nodes_for_50k_views__then_bft_should_be_responsive() {
+  public void when_run_3_correct_nodes_for_50k_rounds__then_bft_should_be_responsive() {
     this.run(3, 50_000);
   }
 
   @Test
-  public void when_run_10_correct_nodes_with_for_2k_views__then_bft_should_be_responsive() {
+  public void when_run_10_correct_nodes_with_for_2k_rounds__then_bft_should_be_responsive() {
     this.run(10, 2000);
   }
 
   @Test
-  public void when_run_100_correct_nodes_with_for_50_views__then_bft_should_be_responsive() {
+  public void when_run_100_correct_nodes_with_for_50_rounds__then_bft_should_be_responsive() {
     this.run(100, 50);
   }
 }

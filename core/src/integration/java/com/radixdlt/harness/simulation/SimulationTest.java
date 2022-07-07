@@ -83,13 +83,8 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PacemakerMaxExponent;
-import com.radixdlt.consensus.bft.PacemakerRate;
-import com.radixdlt.consensus.bft.PacemakerTimeout;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -99,17 +94,17 @@ import com.radixdlt.harness.simulation.application.BFTValidatorSetNodeSelector;
 import com.radixdlt.harness.simulation.application.EpochsNodeSelector;
 import com.radixdlt.harness.simulation.application.LocalMempoolPeriodicSubmitter;
 import com.radixdlt.harness.simulation.application.NodeSelector;
-import com.radixdlt.harness.simulation.application.TxnGenerator;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.NoOpCommittedReader;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent;
@@ -120,7 +115,7 @@ import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.EpochCeilingView;
+import com.radixdlt.rev1.EpochMaxRound;
 import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksEpochStore;
@@ -323,13 +318,13 @@ public final class SimulationTest {
     }
 
     public Builder ledgerAndEpochs(
-        View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
+        Round epochMaxRound, Function<Long, IntStream> epochToNodeIndexMapper) {
       this.ledgerType = LedgerType.LEDGER_AND_EPOCHS;
       this.modules.add(
           new AbstractModule() {
             @Override
             protected void configure() {
-              bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
+              bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
             }
 
             @Provides
@@ -380,7 +375,7 @@ public final class SimulationTest {
     }
 
     public Builder ledgerAndEpochsAndSync(
-        View epochHighView,
+        Round epochMaxRound,
         Function<Long, IntStream> epochToNodeIndexMapper,
         SyncConfig syncConfig) {
       this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
@@ -388,7 +383,7 @@ public final class SimulationTest {
           new AbstractModule() {
             @Override
             protected void configure() {
-              bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
+              bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
               bind(SyncConfig.class).toInstance(syncConfig);
             }
 
@@ -413,7 +408,7 @@ public final class SimulationTest {
       return this;
     }
 
-    public Builder ledgerAndRadixEngineWithEpochHighView() {
+    public Builder ledgerAndRadixEngineWithEpochMaxRound() {
       this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE;
       this.modules.add(
           new AbstractModule() {
@@ -427,7 +422,8 @@ public final class SimulationTest {
             CommittedReader committedReader() {
               return new CommittedReader() {
                 @Override
-                public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+                public CommittedTransactionsWithProof getNextCommittedTransactionRun(
+                    DtoLedgerProof start) {
                   return null;
                 }
 
@@ -465,7 +461,7 @@ public final class SimulationTest {
     }
 
     public Builder addMempoolSubmissionsSteadyState(
-        Class<? extends TxnGenerator> txnGeneratorClass) {
+        Class<? extends TransactionGenerator> txnGeneratorClass) {
       NodeSelector nodeSelector =
           this.ledgerType.hasComponent(EPOCHS)
               ? new EpochsNodeSelector()
@@ -476,13 +472,14 @@ public final class SimulationTest {
             public void configure() {
               var multibinder = Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
               multibinder.addBinding().to(LocalMempoolPeriodicSubmitter.class);
-              bind(TxnGenerator.class).to(txnGeneratorClass);
+              bind(TransactionGenerator.class).to(txnGeneratorClass);
             }
 
             @Provides
             @Singleton
-            LocalMempoolPeriodicSubmitter mempoolSubmittor(TxnGenerator txnGenerator) {
-              return new LocalMempoolPeriodicSubmitter(txnGenerator, nodeSelector);
+            LocalMempoolPeriodicSubmitter mempoolSubmittor(
+                TransactionGenerator transactionGenerator) {
+              return new LocalMempoolPeriodicSubmitter(transactionGenerator, nodeSelector);
             }
           });
 
@@ -511,8 +508,8 @@ public final class SimulationTest {
               bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
               bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
-              bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
-              bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
+              bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(pacemakerTimeout);
+              bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
               bindConstant()
                   .annotatedWith(PacemakerMaxExponent.class)
                   .to(0); // Use constant timeout for now
@@ -570,8 +567,8 @@ public final class SimulationTest {
 
               @Genesis
               @Provides
-              Transaction genesis(@Genesis VerifiedTxnsAndProof txnsAndProof) {
-                return txnsAndProof.getTxns().get(0);
+              Transaction genesis(@Genesis CommittedTransactionsWithProof txnsAndProof) {
+                return txnsAndProof.getTransactions().get(0);
               }
             });
       } else {

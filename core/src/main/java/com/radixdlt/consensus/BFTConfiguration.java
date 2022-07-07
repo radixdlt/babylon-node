@@ -65,7 +65,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import java.util.Objects;
 
@@ -73,12 +73,12 @@ import java.util.Objects;
 public final class BFTConfiguration {
   private final ProposerElection proposerElection;
   private final BFTValidatorSet validatorSet;
-  private final VerifiedVertexStoreState vertexStoreState;
+  private final VertexStoreState vertexStoreState;
 
   public BFTConfiguration(
       ProposerElection proposerElection,
       BFTValidatorSet validatorSet,
-      VerifiedVertexStoreState vertexStoreState) {
+      VertexStoreState vertexStoreState) {
     this.proposerElection = Objects.requireNonNull(proposerElection);
     this.validatorSet = Objects.requireNonNull(validatorSet);
     this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
@@ -92,7 +92,7 @@ public final class BFTConfiguration {
     return validatorSet;
   }
 
-  public VerifiedVertexStoreState getVertexStoreState() {
+  public VertexStoreState getVertexStoreState() {
     return vertexStoreState;
   }
 

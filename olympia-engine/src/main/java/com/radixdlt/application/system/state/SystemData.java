@@ -64,6 +64,6 @@
 
 package com.radixdlt.application.system.state;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstate;
 
-public interface SystemData extends Particle {}
+public interface SystemData extends RawSubstate {}

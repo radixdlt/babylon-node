@@ -64,12 +64,12 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.atom.SubstateId;
 import com.radixdlt.constraintmachine.RawSubstateBytes;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
+import com.radixdlt.substate.CloseableCursor;
+import com.radixdlt.substate.SubstateId;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 

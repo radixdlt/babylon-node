@@ -64,7 +64,6 @@
 
 package com.radixdlt.rev1.modules;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -72,16 +71,15 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.bft.SerializedVertexStoreState;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.REOutput;
 import com.radixdlt.rev1.checkpoint.Genesis;
@@ -100,14 +98,14 @@ public final class LedgerRecoveryModule extends AbstractModule {
       // TODO: Remove this by moving the genesis committedDispatcher.dispatch to getRadixEngine
       RadixEngine<LedgerAndBFTProof> radixEngine,
       CommittedReader committedReader,
-      @Genesis VerifiedTxnsAndProof genesis,
+      @Genesis CommittedTransactionsWithProof genesis,
       EventDispatcher<REOutput> committedDispatcher // FIXME: this is hack so client can get genesis
       ) {
     return committedReader
         .getLastProof()
         .orElseGet(
             () -> {
-              var txns = genesis.getTxns();
+              var txns = genesis.getTransactions();
               var proof = LedgerAndBFTProof.create(genesis.getProof());
               try {
                 var result = radixEngine.execute(txns, proof, PermissionLevel.SYSTEM);
@@ -124,7 +122,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
   @Singleton
   @LastProof
   LedgerProof lastProof(
-      VerifiedVertexStoreState vertexStoreState, @LastStoredProof LedgerProof lastStoredProof) {
+      VertexStoreState vertexStoreState, @LastStoredProof LedgerProof lastStoredProof) {
     if (lastStoredProof.isEndOfEpoch()) {
       return vertexStoreState.getRootHeader();
     } else {
@@ -143,49 +141,29 @@ public final class LedgerRecoveryModule extends AbstractModule {
     return committedReader.getEpochProof(lastStoredProof.getEpoch()).orElseThrow();
   }
 
-  private static VerifiedVertexStoreState serializedToVerifiedVertexStore(
-      SerializedVertexStoreState serializedVertexStoreState, Hasher hasher) {
-    var rootVertex = serializedVertexStoreState.getRoot().withId(hasher);
-
-    var vertices =
-        serializedVertexStoreState.getVertices().stream()
-            .map(v -> v.withId(hasher))
-            .collect(ImmutableList.toImmutableList());
-
-    return VerifiedVertexStoreState.create(
-        serializedVertexStoreState.getHighQC(),
-        rootVertex,
-        vertices,
-        serializedVertexStoreState.getHighestTC(),
-        hasher);
-  }
-
-  private static VerifiedVertexStoreState epochProofToGenesisVertexStore(
+  private static VertexStoreState genesisEpochProofToGenesisVertexStore(
       LedgerProof lastEpochProof, Hasher hasher) {
-    var genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw()).withId(hasher);
+    var genesisVertex = Vertex.createGenesis(lastEpochProof.getHeader()).withId(hasher);
     var nextLedgerHeader =
         LedgerHeader.create(
             lastEpochProof.getNextEpoch(),
-            View.genesis(),
+            Round.genesis(),
             lastEpochProof.getAccumulatorState(),
             lastEpochProof.timestamp());
     var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
-    return VerifiedVertexStoreState.create(
-        HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+    return VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
   }
 
   @Provides
   @Singleton
-  private VerifiedVertexStoreState vertexStoreState(
+  private VertexStoreState vertexStoreState(
       @LastEpochProof LedgerProof lastEpochProof,
-      Optional<SerializedVertexStoreState> serializedVertexStoreState,
+      Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState,
       Hasher hasher) {
+    var currentEpoch = lastEpochProof.getNextEpoch();
     return serializedVertexStoreState
-        .filter(
-            vertexStoreState ->
-                vertexStoreState.getHighQC().highestQC().getEpoch()
-                    == lastEpochProof.getNextEpoch())
-        .map(state -> serializedToVerifiedVertexStore(state, hasher))
-        .orElseGet(() -> epochProofToGenesisVertexStore(lastEpochProof, hasher));
+        .filter(vertexStoreState -> vertexStoreState.isForEpoch(currentEpoch))
+        .map(state -> state.toVertexStoreState(hasher))
+        .orElseGet(() -> genesisEpochProofToGenesisVertexStore(lastEpochProof, hasher));
   }
 }

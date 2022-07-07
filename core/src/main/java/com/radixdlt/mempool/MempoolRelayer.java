@@ -79,7 +79,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 
-/** Relays commands from the local mempool to node neighbors. */
+/** Relays transactions from the local mempool to node neighbors. */
 @Singleton
 public final class MempoolRelayer {
   private final PeersView peersView;

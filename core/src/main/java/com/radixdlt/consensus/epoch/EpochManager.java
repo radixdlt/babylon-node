@@ -226,15 +226,15 @@ public final class EpochManager {
     final var bftConfiguration = this.lastEpochChange.getBFTConfiguration();
     final var proposerElection = bftConfiguration.getProposerElection();
     final var highQC = bftConfiguration.getVertexStoreState().getHighQC();
-    final var view = highQC.highestQC().getView().next();
-    final var leader = proposerElection.getProposer(view);
-    final var nextLeader = proposerElection.getProposer(view.next());
-    final var initialViewUpdate = ViewUpdate.create(view, highQC, leader, nextLeader);
+    final var round = highQC.highestQC().getRound().next();
+    final var leader = proposerElection.getProposer(round);
+    final var nextLeader = proposerElection.getProposer(round.next());
+    final var initialRoundUpdate = RoundUpdate.create(round, highQC, leader, nextLeader);
 
     // Mutable Consensus State
     final var vertexStore = vertexStoreFactory.create(bftConfiguration.getVertexStoreState());
     final var pacemakerState =
-        pacemakerStateFactory.create(initialViewUpdate, nextEpoch, proposerElection);
+        pacemakerStateFactory.create(initialRoundUpdate, nextEpoch, proposerElection);
 
     // Consensus Drivers
     final var safetyRules =
@@ -252,7 +252,7 @@ public final class EpochManager {
             vertexStore,
             timeoutCalculator,
             safetyRules,
-            initialViewUpdate,
+            initialRoundUpdate,
             nextEpoch);
     final var bftSync =
         bftSyncFactory.create(safetyRules, vertexStore, pacemakerState, bftConfiguration);
@@ -266,9 +266,9 @@ public final class EpochManager {
             pacemaker,
             vertexStore,
             bftSync,
-            bftSync.viewQuorumReachedEventProcessor(),
+            bftSync.roundQuorumReachedEventProcessor(),
             validatorSet,
-            initialViewUpdate,
+            initialRoundUpdate,
             safetyRules);
 
     this.syncResponseProcessors = Set.of(bftSync.responseProcessor());
@@ -330,14 +330,14 @@ public final class EpochManager {
     // Execute any queued up consensus events
     final List<ConsensusEvent> queuedEventsForEpoch =
         queuedEvents.getOrDefault(epochChange.getNextEpoch(), Collections.emptyList());
-    var highView =
+    var highestSeenRound =
         queuedEventsForEpoch.stream()
-            .map(ConsensusEvent::getView)
+            .map(ConsensusEvent::getRound)
             .max(Comparator.naturalOrder())
-            .orElse(View.genesis());
+            .orElse(Round.genesis());
 
     queuedEventsForEpoch.stream()
-        .filter(e -> e.getView().equals(highView))
+        .filter(e -> e.getRound().equals(highestSeenRound))
         .forEach(this::processConsensusEventInternal);
 
     queuedEvents.remove(epochChange.getNextEpoch());
@@ -390,14 +390,14 @@ public final class EpochManager {
     bftEventProcessor.processLocalTimeout(localTimeout.event());
   }
 
-  public EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor() {
-    return epochViewUpdate -> {
-      if (epochViewUpdate.getEpoch() != this.currentEpoch()) {
+  public EventProcessor<EpochRoundUpdate> epochRoundUpdateEventProcessor() {
+    return epochRoundUpdate -> {
+      if (epochRoundUpdate.getEpoch() != this.currentEpoch()) {
         return;
       }
 
-      log.trace("Processing ViewUpdate: {}", epochViewUpdate);
-      bftEventProcessor.processViewUpdate(epochViewUpdate.getViewUpdate());
+      log.trace("Processing RoundUpdate: {}", epochRoundUpdate);
+      bftEventProcessor.processRoundUpdate(epochRoundUpdate.getRoundUpdate());
     };
   }
 

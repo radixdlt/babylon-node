@@ -78,7 +78,7 @@ import org.junit.Test;
 public class SafetyStateTest {
 
   @Test
-  public void when_build_with_no_new_views__then_should_return_the_same_object() {
+  public void when_build_with_no_new_rounds__then_should_return_the_same_object() {
     SafetyState safetyState = SafetyState.initialState();
     Builder builder = safetyState.toBuilder();
     assertThat(builder.build()).isSameAs(safetyState);
@@ -92,7 +92,7 @@ public class SafetyStateTest {
     builder.lastVote(vote);
     SafetyState nextSafetyState = builder.build();
     assertThat(nextSafetyState.getLastVote()).isEqualTo(Optional.of(vote));
-    assertThat(nextSafetyState.getLockedView()).isEqualTo(safetyState.getLockedView());
+    assertThat(nextSafetyState.getLockedRound()).isEqualTo(safetyState.getLockedRound());
   }
 
   @Test

@@ -64,11 +64,11 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateId;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.engine.parser.exceptions.REInstructionDataDeserializeException;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.substate.REFieldSerialization;
+import com.radixdlt.substate.SubstateId;
 import com.radixdlt.utils.Bytes;
 import java.nio.ByteBuffer;
 

@@ -139,7 +139,7 @@ public class OneOutOfBoundsTest {
                 ConsensusMonitors.liveness(10000, TimeUnit.SECONDS),
                 LedgerMonitors.consensusToLedger(),
                 LedgerMonitors.ordered(),
-                RadixEngineMonitors.noInvalidProposedCommands())
+                RadixEngineMonitors.noInvalidProposedTransactions())
             .addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
   }
 

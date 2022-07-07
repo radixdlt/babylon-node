@@ -66,8 +66,8 @@ package com.radixdlt.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -114,7 +114,7 @@ public class MessageCentralValidatorSync {
   }
 
   private void sendGetVerticesResponse(BFTNode node, GetVerticesResponse response) {
-    var rawVertices = response.getVertices().stream().map(VerifiedVertex::toSerializable).toList();
+    var rawVertices = response.getVertices().stream().map(VertexWithHash::toSerializable).toList();
     var msg = new GetVerticesResponseMessage(rawVertices);
     this.messageCentral.send(NodeId.fromPublicKey(node.getKey()), msg);
   }
@@ -142,7 +142,7 @@ public class MessageCentralValidatorSync {
         (src, msg) -> {
           BFTNode node = BFTNode.create(src.getPublicKey());
           // TODO: Move hasher to a more appropriate place
-          ImmutableList<VerifiedVertex> hashedVertices =
+          ImmutableList<VertexWithHash> hashedVertices =
               msg.getVertices().stream()
                   .map(v -> v.withId(hasher))
                   .collect(ImmutableList.toImmutableList());

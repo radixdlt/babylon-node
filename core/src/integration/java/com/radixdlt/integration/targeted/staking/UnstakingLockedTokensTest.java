@@ -64,7 +64,7 @@
 
 package com.radixdlt.integration.targeted.staking;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.inject.AbstractModule;
@@ -72,9 +72,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -99,6 +96,9 @@ import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.substate.TxAction;
+import com.radixdlt.substate.TxBuilderException;
+import com.radixdlt.substate.TxnConstructionRequest;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.Collection;
 import java.util.List;

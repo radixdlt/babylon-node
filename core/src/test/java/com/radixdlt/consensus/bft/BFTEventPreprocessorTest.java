@@ -88,21 +88,21 @@ public class BFTEventPreprocessorTest {
 
   private final BFTEventProcessor forwardTo = mock(BFTEventProcessor.class);
   private final BFTSyncer bftSyncer = mock(BFTSyncer.class);
-  private final ViewUpdate initialViewUpdate = mock(ViewUpdate.class);
+  private final RoundUpdate initialRoundUpdate = mock(RoundUpdate.class);
 
   @Before
   public void setUp() {
-    this.bftEventPreprocessor = new BFTEventPreprocessor(forwardTo, bftSyncer, initialViewUpdate);
+    this.bftEventPreprocessor = new BFTEventPreprocessor(forwardTo, bftSyncer, initialRoundUpdate);
   }
 
   @Test
-  public void when_view_update__then_should_process_cached_events() {
+  public void when_round_update__then_should_process_cached_events() {
     final var proposal = mock(Proposal.class);
     final var proposalHighQc = mock(HighQC.class);
     final var proposalHighestCommittedQc = mock(QuorumCertificate.class);
     final var proposalLedgerProof = mock(LedgerProof.class);
-    when(initialViewUpdate.getCurrentView()).thenReturn(View.of(2));
-    when(proposal.getView()).thenReturn(View.of(4));
+    when(initialRoundUpdate.getCurrentRound()).thenReturn(Round.of(2));
+    when(proposal.getRound()).thenReturn(Round.of(4));
     when(proposal.highQC()).thenReturn(proposalHighQc);
     when(proposalHighQc.highestCommittedQC()).thenReturn(proposalHighestCommittedQc);
     var header = mock(BFTHeader.class);
@@ -114,12 +114,12 @@ public class BFTEventPreprocessorTest {
     // we're at v2, proposal for v4 should get cached as sync returns IN_PROGRESS
     this.bftEventPreprocessor.processProposal(proposal);
 
-    final var newViewUpdate = mock(ViewUpdate.class);
-    when(newViewUpdate.getCurrentView()).thenReturn(View.of(4));
+    final var newRoundUpdate = mock(RoundUpdate.class);
+    when(newRoundUpdate.getCurrentRound()).thenReturn(Round.of(4));
     when(bftSyncer.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
 
     // we're going straight to v4, cached proposal should get processed
-    this.bftEventPreprocessor.processViewUpdate(newViewUpdate);
+    this.bftEventPreprocessor.processRoundUpdate(newRoundUpdate);
     verify(forwardTo, times(1)).processProposal(proposal);
   }
 }

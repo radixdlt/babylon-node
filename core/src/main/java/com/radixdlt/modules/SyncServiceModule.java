@@ -77,8 +77,8 @@ import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.RemoteEventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.ScheduledEventProducerOnRunner;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.network.p2p.NodeId;
@@ -97,7 +97,7 @@ import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
 import java.time.Duration;
 
-/** Module which manages synchronization of committed atoms across of nodes */
+/** Module which manages synchronization of committed transactions across nodes */
 public class SyncServiceModule extends AbstractModule {
 
   @Override
@@ -146,9 +146,10 @@ public class SyncServiceModule extends AbstractModule {
 
   @Provides
   private VerifiedSyncResponseHandler verifiedSyncResponseHandler(
-      EventDispatcher<VerifiedTxnsAndProof> syncCommandsDispatcher) {
+      EventDispatcher<CommittedTransactionsWithProof>
+          syncedCommittedTransactionsWithProofDispatcher) {
     return resp -> {
-      var txnsAndProof = resp.getTxnsAndProof();
+      var txnsAndProof = resp.getTransactionsWithProofDto();
       // TODO: Stateful ledger header verification:
       // TODO: -verify rootHash matches
       var nextHeader =
@@ -157,9 +158,10 @@ public class SyncServiceModule extends AbstractModule {
               txnsAndProof.getTail().getLedgerHeader(),
               txnsAndProof.getTail().getSignatures());
 
-      var verified = VerifiedTxnsAndProof.create(txnsAndProof.getTxns(), nextHeader);
+      var verified =
+          CommittedTransactionsWithProof.create(txnsAndProof.getTransactions(), nextHeader);
 
-      syncCommandsDispatcher.dispatch(verified);
+      syncedCommittedTransactionsWithProofDispatcher.dispatch(verified);
     };
   }
 

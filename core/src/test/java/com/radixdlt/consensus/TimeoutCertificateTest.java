@@ -97,7 +97,7 @@ public class TimeoutCertificateTest extends SerializeMessageObject<TimeoutCertif
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void deserializationWithInvalidViewThrowsException() {
+  public void deserializationWithInvalidRoundThrowsException() {
     TimeoutCertificate.serializerCreate(1, -1, mock(TimestampedECDSASignatures.class));
   }
 }

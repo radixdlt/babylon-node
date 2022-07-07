@@ -64,7 +64,7 @@
 
 package com.radixdlt.rev1.checkpoint;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
@@ -74,18 +74,18 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.TxAction;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.substate.TxAction;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Genesis atom to be used with tests. Given a set of parameters the genesis transaction generated
- * should be deterministic.
+ * Genesis transaction to be used with tests. Given a set of parameters the genesis transaction
+ * generated should be deterministic.
  */
 public final class MockedGenesisModule extends AbstractModule {
   private final Set<ECPublicKey> validators;
@@ -104,7 +104,7 @@ public final class MockedGenesisModule extends AbstractModule {
     bind(new TypeLiteral<Set<ECPublicKey>>() {})
         .annotatedWith(Genesis.class)
         .toInstance(validators);
-    bind(new TypeLiteral<VerifiedTxnsAndProof>() {})
+    bind(new TypeLiteral<CommittedTransactionsWithProof>() {})
         .annotatedWith(Genesis.class)
         .toProvider(GenesisProvider.class)
         .in(Scopes.SINGLETON);

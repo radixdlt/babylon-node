@@ -86,7 +86,7 @@ public final class ConsensusHasher {
         outputStream.write(header.getAccumulatorState().getAccumulatorHash().asBytes()); // 32 bytes
         outputStream.writeLong(header.getAccumulatorState().getStateVersion()); // 8 bytes
         outputStream.writeLong(header.getEpoch()); // 8 bytes
-        outputStream.writeLong(header.getView().number()); // 8 bytes
+        outputStream.writeLong(header.getRound().number()); // 8 bytes
         outputStream.writeLong(header.timestamp()); // 8 bytes
         if (header.getNextValidatorSet().isPresent()) {
           var vset = header.getNextValidatorSet().get();

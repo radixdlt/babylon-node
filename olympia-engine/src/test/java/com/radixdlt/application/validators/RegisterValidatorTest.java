@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.validators;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
@@ -78,9 +78,7 @@ import com.radixdlt.application.validators.construction.UpdateValidatorSystemMet
 import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.cmos.ConstraintMachineOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.SubstateSerialization;
@@ -91,6 +89,8 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.substate.REConstructor;
+import com.radixdlt.substate.TxnConstructionRequest;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
 import org.junit.Before;
@@ -103,20 +103,20 @@ public class RegisterValidatorTest {
 
   @Before
   public void setup() throws Exception {
-    var cmAtomOS = new CMAtomOS();
-    cmAtomOS.load(new SystemConstraintScrypt());
-    cmAtomOS.load(new RoundUpdateConstraintScrypt(2));
-    cmAtomOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
-    cmAtomOS.load(new ValidatorConstraintScryptV2());
-    cmAtomOS.load(new ValidatorRegisterConstraintScrypt());
-    cmAtomOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
+    var cmOS = new ConstraintMachineOS();
+    cmOS.load(new SystemConstraintScrypt());
+    cmOS.load(new RoundUpdateConstraintScrypt(2));
+    cmOS.load(new EpochUpdateConstraintScrypt(2, UInt256.NINE, 1, 1, 100));
+    cmOS.load(new ValidatorConstraintScryptV2());
+    cmOS.load(new ValidatorRegisterConstraintScrypt());
+    cmOS.load(new ValidatorUpdateRakeConstraintScrypt(2));
     var cm =
         new ConstraintMachine(
-            cmAtomOS.getProcedures(),
-            cmAtomOS.buildSubstateDeserialization(),
-            cmAtomOS.buildVirtualSubstateDeserialization());
-    var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
-    this.serialization = cmAtomOS.buildSubstateSerialization();
+            cmOS.getProcedures(),
+            cmOS.buildSubstateDeserialization(),
+            cmOS.buildVirtualSubstateDeserialization());
+    var parser = new REParser(cmOS.buildSubstateDeserialization());
+    this.serialization = cmOS.buildSubstateSerialization();
     this.store = new InMemoryEngineStore<>();
     this.engine =
         new RadixEngine<>(

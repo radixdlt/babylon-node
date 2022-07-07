@@ -74,12 +74,10 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.application.system.scrypt.Syscall;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.TxLowLevelBuilder;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -87,7 +85,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
@@ -102,6 +100,8 @@ import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.substate.SubstateId;
+import com.radixdlt.substate.TxLowLevelBuilder;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.nio.charset.StandardCharsets;
@@ -120,7 +120,7 @@ public class MempoolTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   @Inject @Self private BFTNode self;
-  @Inject @Genesis private VerifiedTxnsAndProof genesisTxns;
+  @Inject @Genesis private CommittedTransactionsWithProof genesisTxns;
   @Inject private DeterministicProcessor processor;
   @Inject private DeterministicNetwork network;
   @Inject private RadixEngineStateComputer stateComputer;
@@ -158,20 +158,21 @@ public class MempoolTest {
   }
 
   private Transaction createTxn(ECKeyPair keyPair, int numMutexes) throws Exception {
-    final var atomBuilder =
+    final var transactionBuilder =
         TxLowLevelBuilder.newBuilder(
             currentForkView.currentForkConfig().engineRules().serialization());
     for (int i = 0; i < numMutexes; i++) {
       var symbol = "test" + (char) ('c' + i);
       var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), symbol);
-      atomBuilder
+      transactionBuilder
           .syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8))
           .virtualDown(
-              SubstateId.ofSubstate(genesisTxns.getTxns().get(0).getId(), 0), addr.getBytes())
+              SubstateId.ofSubstate(genesisTxns.getTransactions().get(0).getId(), 0),
+              addr.getBytes())
           .end();
     }
-    var signature = keyPair.sign(atomBuilder.hashToSign());
-    return atomBuilder.sig(signature).build();
+    var signature = keyPair.sign(transactionBuilder.hashToSign());
+    return transactionBuilder.sig(signature).build();
   }
 
   private Transaction createTxn(ECKeyPair keyPair) throws Exception {
@@ -179,7 +180,7 @@ public class MempoolTest {
   }
 
   @Test
-  public void add_local_command_to_mempool() throws Exception {
+  public void add_local_transaction_to_mempool() throws Exception {
     // Arrange
     getInjector().injectMembers(this);
     ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -197,7 +198,7 @@ public class MempoolTest {
   }
 
   @Test
-  public void add_remote_command_to_mempool() throws Exception {
+  public void add_remote_transaction_to_mempool() throws Exception {
     // Arrange
     getInjector().injectMembers(this);
     ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -243,7 +244,7 @@ public class MempoolTest {
   }
 
   @Test
-  public void add_same_command_to_mempool() throws Exception {
+  public void add_same_transaction_to_mempool() throws Exception {
     // Arrange
     getInjector().injectMembers(this);
     ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -259,7 +260,7 @@ public class MempoolTest {
   }
 
   @Test
-  public void add_conflicting_commands_to_mempool() throws Exception {
+  public void add_conflicting_transactions_to_mempool() throws Exception {
     // Arrange
     getInjector().injectMembers(this);
     ECKeyPair keyPair = ECKeyPair.generateNew();
@@ -277,7 +278,7 @@ public class MempoolTest {
   }
 
   @Test
-  public void add_bad_command_to_mempool() {
+  public void add_bad_transaction_to_mempool() {
     // Arrange
     getInjector().injectMembers(this);
     final var txn = Transaction.create(new byte[0]);
@@ -291,18 +292,19 @@ public class MempoolTest {
   }
 
   @Test
-  public void replay_command_to_mempool() throws Exception {
+  public void replay_transaction_to_mempool() throws Exception {
     // Arrange
     getInjector().injectMembers(this);
     ECKeyPair keyPair = ECKeyPair.generateNew();
     var txn = createTxn(keyPair);
     var proof = mock(LedgerProof.class);
     when(proof.getAccumulatorState())
-        .thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
-    when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
-    when(proof.getView()).thenReturn(View.of(1));
-    var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn), proof);
-    stateComputer.commit(commandsAndProof, null);
+        .thenReturn(
+            new AccumulatorState(genesisTxns.getTransactions().size() + 1, HashUtils.random256()));
+    when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTransactions().size() + 1);
+    when(proof.getRound()).thenReturn(Round.of(1));
+    var transactionsWithProof = CommittedTransactionsWithProof.create(List.of(txn), proof);
+    stateComputer.commit(transactionsWithProof, null);
 
     // Act
     MempoolAdd mempoolAdd = MempoolAdd.create(txn);
@@ -325,11 +327,12 @@ public class MempoolTest {
     var txn2 = createTxn(keyPair, 1);
     var proof = mock(LedgerProof.class);
     when(proof.getAccumulatorState())
-        .thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
-    when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
-    when(proof.getView()).thenReturn(View.of(1));
-    var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn2), proof);
-    stateComputer.commit(commandsAndProof, null);
+        .thenReturn(
+            new AccumulatorState(genesisTxns.getTransactions().size() + 1, HashUtils.random256()));
+    when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTransactions().size() + 1);
+    when(proof.getRound()).thenReturn(Round.of(1));
+    var transactionsWithProof = CommittedTransactionsWithProof.create(List.of(txn2), proof);
+    stateComputer.commit(transactionsWithProof, null);
 
     // Assert
     assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
@@ -350,11 +353,12 @@ public class MempoolTest {
     var txn3 = createTxn(keyPair, 1);
     var proof = mock(LedgerProof.class);
     when(proof.getAccumulatorState())
-        .thenReturn(new AccumulatorState(genesisTxns.getTxns().size() + 1, HashUtils.random256()));
-    when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTxns().size() + 1);
-    when(proof.getView()).thenReturn(View.of(1));
-    var commandsAndProof = VerifiedTxnsAndProof.create(List.of(txn3), proof);
-    stateComputer.commit(commandsAndProof, null);
+        .thenReturn(
+            new AccumulatorState(genesisTxns.getTransactions().size() + 1, HashUtils.random256()));
+    when(proof.getStateVersion()).thenReturn((long) genesisTxns.getTransactions().size() + 1);
+    when(proof.getRound()).thenReturn(Round.of(1));
+    var transactionsWithProof = CommittedTransactionsWithProof.create(List.of(txn3), proof);
+    stateComputer.commit(transactionsWithProof, null);
 
     // Assert
     assertThat(systemCounters.get(CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
@@ -362,7 +366,7 @@ public class MempoolTest {
 
   @Test
   @Ignore("Added hack which requires genesis to be sent as message. Reenable when fixed.")
-  public void mempool_should_relay_commands_respecting_delay_config_params() throws Exception {
+  public void mempool_should_relay_transactions_respecting_delay_config_params() throws Exception {
     // Arrange
     getInjector().injectMembers(this);
     final var keyPair = ECKeyPair.generateNew();

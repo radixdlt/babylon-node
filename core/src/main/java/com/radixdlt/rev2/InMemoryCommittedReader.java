@@ -67,10 +67,10 @@ package com.radixdlt.rev2;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
@@ -82,7 +82,7 @@ import java.util.TreeMap;
 /** A correct in memory committed reader used for testing */
 public final class InMemoryCommittedReader implements CommittedReader {
   public static final class Store {
-    final TreeMap<Long, VerifiedTxnsAndProof> commandsAndProof = new TreeMap<>();
+    final TreeMap<Long, CommittedTransactionsWithProof> committedTransactionRuns = new TreeMap<>();
     final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
   }
 
@@ -100,16 +100,16 @@ public final class InMemoryCommittedReader implements CommittedReader {
   public EventProcessor<LedgerUpdate> updateProcessor() {
     return update -> {
       synchronized (lock) {
-        var commands = update.getNewTxns();
-        long firstVersion = update.getTail().getStateVersion() - commands.size() + 1;
+        var transactions = update.getNewTransactions();
+        long firstVersion = update.getTail().getStateVersion() - transactions.size() + 1;
         for (long version = firstVersion;
             version <= update.getTail().getStateVersion();
             version++) {
           int index = (int) (version - firstVersion);
-          store.commandsAndProof.put(
+          store.committedTransactionRuns.put(
               version,
-              VerifiedTxnsAndProof.create(
-                  commands.subList(index, commands.size()), update.getTail()));
+              CommittedTransactionsWithProof.create(
+                  transactions.subList(index, transactions.size()), update.getTail()));
         }
 
         if (update.getTail().isEndOfEpoch()) {
@@ -121,22 +121,23 @@ public final class InMemoryCommittedReader implements CommittedReader {
   }
 
   @Override
-  public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+  public CommittedTransactionsWithProof getNextCommittedTransactionRun(DtoLedgerProof start) {
     synchronized (lock) {
       final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-      Entry<Long, VerifiedTxnsAndProof> entry = store.commandsAndProof.higherEntry(stateVersion);
+      Entry<Long, CommittedTransactionsWithProof> entry =
+          store.committedTransactionRuns.higherEntry(stateVersion);
 
       if (entry != null) {
         List<Transaction> transactions =
             accumulatorVerifier
                 .verifyAndGetExtension(
                     start.getLedgerHeader().getAccumulatorState(),
-                    entry.getValue().getTxns(),
+                    entry.getValue().getTransactions(),
                     txn -> txn.getId().asHashCode(),
                     entry.getValue().getProof().getAccumulatorState())
                 .orElseThrow(() -> new RuntimeException());
 
-        return VerifiedTxnsAndProof.create(transactions, entry.getValue().getProof());
+        return CommittedTransactionsWithProof.create(transactions, entry.getValue().getProof());
       }
 
       return null;
@@ -152,7 +153,7 @@ public final class InMemoryCommittedReader implements CommittedReader {
 
   @Override
   public Optional<LedgerProof> getLastProof() {
-    return Optional.ofNullable(store.commandsAndProof.lastEntry())
+    return Optional.ofNullable(store.committedTransactionRuns.lastEntry())
         .map(p -> p.getValue().getProof());
   }
 

@@ -99,7 +99,7 @@ public class SimpleLedgerAccumulatorAndVerifierTest {
   }
 
   @Test
-  public void when_empty_command_truncate_from_bad_version__then_should_throw_exception() {
+  public void when_empty_round_truncate_from_bad_version__then_should_throw_exception() {
     AccumulatorState curState = mock(AccumulatorState.class);
     when(curState.getStateVersion()).thenReturn(1234L);
     AccumulatorState nextState = mock(AccumulatorState.class);
@@ -112,7 +112,7 @@ public class SimpleLedgerAccumulatorAndVerifierTest {
   }
 
   @Test
-  public void when_empty_command_truncate_from_perfect_version__then_should_return_empty_list() {
+  public void when_empty_round_truncate_from_perfect_version__then_should_return_empty_list() {
     AccumulatorState state = mock(AccumulatorState.class);
     when(state.getStateVersion()).thenReturn(1234L);
     when(state.getAccumulatorHash()).thenReturn(mock(HashCode.class));
@@ -124,7 +124,7 @@ public class SimpleLedgerAccumulatorAndVerifierTest {
   }
 
   @Test
-  public void when_single_command_truncate_from_perfect_version__then_should_return_equivalent() {
+  public void when_single_round_truncate_from_perfect_version__then_should_return_equivalent() {
     var txn = Transaction.create(new byte[] {0});
     AccumulatorState headState = new AccumulatorState(345, HashUtils.zero256());
     AccumulatorState nextState =

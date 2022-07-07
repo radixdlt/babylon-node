@@ -66,33 +66,34 @@ package com.radixdlt.network.messages;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.ledger.DtoTxnsAndProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
 import com.radixdlt.network.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 
-/** Message with sync atoms as a response to sync request */
+/** Message with sync transactions as a response to sync request */
 @SerializerId2("message.sync.sync_response")
 public final class SyncResponseMessage extends Message {
-  @JsonProperty("commands")
+  @JsonProperty("run")
   @DsonOutput(Output.ALL)
-  private final DtoTxnsAndProof commands;
+  private final CommittedTransactionsWithProofDto transactionsWithProofDto;
 
   @JsonCreator
   public SyncResponseMessage(
-      @JsonProperty(value = "commands", required = true) DtoTxnsAndProof commands) {
-    this.commands = Objects.requireNonNull(commands);
+      @JsonProperty(value = "run", required = true)
+          CommittedTransactionsWithProofDto transactionsWithProofDto) {
+    this.transactionsWithProofDto = Objects.requireNonNull(transactionsWithProofDto);
   }
 
-  public DtoTxnsAndProof getCommands() {
-    return commands;
+  public CommittedTransactionsWithProofDto getTransactions() {
+    return transactionsWithProofDto;
   }
 
   @Override
   public String toString() {
-    return String.format("%s{commands=%s}", getClass().getSimpleName(), commands);
+    return String.format("%s{run=%s}", getClass().getSimpleName(), transactionsWithProofDto);
   }
 
   @Override
@@ -102,12 +103,12 @@ public final class SyncResponseMessage extends Message {
     }
 
     return (o instanceof SyncResponseMessage that)
-        && Objects.equals(commands, that.commands)
+        && Objects.equals(transactionsWithProofDto, that.transactionsWithProofDto)
         && Objects.equals(getTimestamp(), that.getTimestamp());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(commands, getTimestamp());
+    return Objects.hash(transactionsWithProofDto, getTimestamp());
   }
 }

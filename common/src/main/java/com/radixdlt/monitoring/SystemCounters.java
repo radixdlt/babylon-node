@@ -78,10 +78,10 @@ public interface SystemCounters {
     BFT_NO_VOTES_SENT("bft.no_votes_sent"),
     /** Number of vote quorums formed. */
     BFT_VOTE_QUORUMS("bft.vote_quorums"),
-    /** Number of view-timeout quorums formed. */
+    /** Number of round-timeout quorums formed. */
     BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
 
-    /** Number of times a view-timeout message was broadcast. */
+    /** Number of times a round-timeout message was broadcast. */
     BFT_PACEMAKER_TIMEOUTS_SENT("bft.pacemaker.timeouts_sent"),
     BFT_PACEMAKER_ROUND("bft.pacemaker.round"),
     BFT_PACEMAKER_PROPOSED_TRANSACTIONS("bft.pacemaker.proposed_transactions"),
@@ -92,7 +92,6 @@ public interface SystemCounters {
     BFT_SYNC_REQUESTS_RECEIVED("bft.sync.requests_received"),
     BFT_SYNC_REQUEST_TIMEOUTS("bft.sync.request_timeouts"),
 
-    /** Number of views that timed out. Rescheduled timeouts of the same view are not counted */
     BFT_VERTEX_STORE_SIZE("bft.vertex_store.size"),
     BFT_VERTEX_STORE_FORKS("bft.vertex_store.forks"),
     BFT_VERTEX_STORE_REBUILDS("bft.vertex_store.rebuilds"),
@@ -164,8 +163,8 @@ public interface SystemCounters {
     PERSISTENCE_VERTEX_STORE_SAVES("persistence.vertex_store_saves"),
     PERSISTENCE_SAFETY_STORE_SAVES("persistence.safety_store_saves"),
 
-    PERSISTENCE_ATOM_LOG_WRITE_BYTES("persistence.atom_log.write_bytes"),
-    PERSISTENCE_ATOM_LOG_WRITE_COMPRESSED("persistence.atom_log.write_compressed"),
+    PERSISTENCE_TRANSACTION_LOG_WRITE_BYTES("persistence.transaction_log.write_bytes"),
+    PERSISTENCE_TRANSACTION_LOG_WRITE_COMPRESSED("persistence.transaction_log.write_compressed"),
 
     EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 
@@ -174,8 +173,8 @@ public interface SystemCounters {
     HASHED_BYTES("hashed.bytes"),
 
     LEDGER_STATE_VERSION("ledger.state_version"),
-    LEDGER_SYNC_COMMANDS_PROCESSED("ledger.sync_commands_processed"),
-    LEDGER_BFT_COMMANDS_PROCESSED("ledger.bft_commands_processed"),
+    LEDGER_SYNC_TRANSACTIONS_PROCESSED("ledger.sync_transactions_processed"),
+    LEDGER_BFT_TRANSACTIONS_PROCESSED("ledger.bft_transactions_processed"),
 
     SYNC_INVALID_RESPONSES_RECEIVED("sync.invalid_responses_received"),
     SYNC_VALID_RESPONSES_RECEIVED("sync.valid_responses_received"),
@@ -188,7 +187,7 @@ public interface SystemCounters {
     MEMPOOL_ADD_SUCCESS("mempool.add_success"),
     MEMPOOL_ADD_FAILURE("mempool.add_failure"),
 
-    RADIX_ENGINE_INVALID_PROPOSED_COMMANDS("radix_engine.invalid_proposed_commands"),
+    RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS("radix_engine.invalid_proposed_transactions"),
     RADIX_ENGINE_USER_TRANSACTIONS("radix_engine.user_transactions"),
     RADIX_ENGINE_SYSTEM_TRANSACTIONS("radix_engine.system_transactions"),
 

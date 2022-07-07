@@ -66,7 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.NetworkDroppers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -100,7 +100,7 @@ public class OneNodeNeverSendEpochResponseTest {
               NetworkDroppers.oneNodePerEpochLedgerStatusUpdateDropped())
           .pacemakerTimeout(1000)
           .numNodes(numNodes)
-          .ledgerAndEpochs(View.of(4), randomEpochToNodesMapper())
+          .ledgerAndEpochs(Round.of(4), randomEpochToNodesMapper())
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5, TimeUnit.SECONDS),

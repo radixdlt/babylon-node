@@ -64,19 +64,19 @@
 
 package com.radixdlt.rev1.checkpoint;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilderException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.substate.TxAction;
+import com.radixdlt.substate.TxBuilderException;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
@@ -87,9 +87,9 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Generates a genesis atom */
+/** Generates a genesis transaction */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
+public final class GenesisProvider implements Provider<CommittedTransactionsWithProof> {
   private static final Logger logger = LogManager.getLogger();
   private final ImmutableList<TokenIssuance> tokenIssuances;
   private final Set<ECPublicKey> validatorKeys;
@@ -115,7 +115,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
   }
 
   @Override
-  public VerifiedTxnsAndProof get() {
+  public CommittedTransactionsWithProof get() {
     // Check that issuances are sufficient for delegations
     final var issuances =
         tokenIssuances.stream()
@@ -158,7 +158,7 @@ public final class GenesisProvider implements Provider<VerifiedTxnsAndProof> {
       logger.info("gen_create{tx_id={}}", genesis.getId());
 
       var proof = genesisBuilder.generateGenesisProof(genesis);
-      return VerifiedTxnsAndProof.create(List.of(genesis), proof);
+      return CommittedTransactionsWithProof.create(List.of(genesis), proof);
     } catch (TxBuilderException | RadixEngineException e) {
       throw new IllegalStateException(e);
     }

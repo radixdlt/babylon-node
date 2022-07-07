@@ -82,13 +82,13 @@ import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.BFTSyncFactory;
 import com.radixdlt.consensus.epoch.BFTSyncRequestProcessorFactory;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.epoch.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -136,7 +136,7 @@ public class EpochsConsensusModule extends AbstractModule {
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
-    eventBinder.addBinding().toInstance(EpochViewUpdate.class);
+    eventBinder.addBinding().toInstance(EpochRoundUpdate.class);
     eventBinder.addBinding().toInstance(VertexRequestTimeout.class);
     eventBinder.addBinding().toInstance(LedgerUpdate.class);
     eventBinder.addBinding().toInstance(Epoched.class);
@@ -228,9 +228,9 @@ public class EpochsConsensusModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private EventProcessorOnRunner<?> epochViewUpdateEventProcessor(EpochManager epochManager) {
+  private EventProcessorOnRunner<?> epochRoundUpdateEventProcessor(EpochManager epochManager) {
     return new EventProcessorOnRunner<>(
-        Runners.CONSENSUS, EpochViewUpdate.class, epochManager.epochViewUpdateEventProcessor());
+        Runners.CONSENSUS, EpochRoundUpdate.class, epochManager.epochRoundUpdateEventProcessor());
   }
 
   @Provides
@@ -253,25 +253,25 @@ public class EpochsConsensusModule extends AbstractModule {
 
   @ProvidesIntoSet
   @ProcessOnDispatch
-  private EventProcessor<ViewUpdate> initialViewUpdateSender(
-      EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher, EpochChange initialEpoch) {
-    return viewUpdate -> {
-      EpochViewUpdate epochViewUpdate =
-          new EpochViewUpdate(initialEpoch.getNextEpoch(), viewUpdate);
-      epochViewUpdateEventDispatcher.dispatch(epochViewUpdate);
+  private EventProcessor<RoundUpdate> initialRoundUpdateToEpochRoundUpdateConverter(
+      EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher, EpochChange initialEpoch) {
+    return roundUpdate -> {
+      EpochRoundUpdate epochRoundUpdate =
+          new EpochRoundUpdate(initialEpoch.getNextEpoch(), roundUpdate);
+      epochRoundUpdateEventDispatcher.dispatch(epochRoundUpdate);
     };
   }
 
   @Provides
   private PacemakerStateFactory pacemakerStateFactory(
-      EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher) {
-    return (initialView, epoch, proposerElection) ->
+      EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher) {
+    return (initialRound, epoch, proposerElection) ->
         new PacemakerState(
-            initialView,
+            initialRound,
             proposerElection,
-            viewUpdate -> {
-              EpochViewUpdate epochViewUpdate = new EpochViewUpdate(epoch, viewUpdate);
-              epochViewUpdateEventDispatcher.dispatch(epochViewUpdate);
+            roundUpdate -> {
+              EpochRoundUpdate epochRoundUpdate = new EpochRoundUpdate(epoch, roundUpdate);
+              epochRoundUpdateEventDispatcher.dispatch(epochRoundUpdate);
             });
   }
 
@@ -295,7 +295,7 @@ public class EpochsConsensusModule extends AbstractModule {
       RemoteEventDispatcher<Proposal> proposalDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
       TimeSupplier timeSupplier) {
-    return (validatorSet, vertexStore, timeoutCalculator, safetyRules, initialViewUpdate, epoch) ->
+    return (validatorSet, vertexStore, timeoutCalculator, safetyRules, initialRoundUpdate, epoch) ->
         new Pacemaker(
             self,
             counters,
@@ -312,7 +312,7 @@ public class EpochsConsensusModule extends AbstractModule {
             voteDispatcher,
             hasher,
             timeSupplier,
-            initialViewUpdate,
+            initialRoundUpdate,
             counters);
   }
 

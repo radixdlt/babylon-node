@@ -80,55 +80,55 @@ public class InterfaceSerializationTest {
 
   @Test
   public void one_subclass_can_be_serialized_and_deserialized_via_interface() throws Exception {
-    final var clientAtom = TestClientAtom.create("metadata");
+    final var clientTransaction = TestClientTransaction.create("metadata");
 
-    final var json = serialization.toDson(clientAtom, Output.ALL);
-    final var obj = serialization.fromDson(json, TestLedgerAtom.class);
+    final var json = serialization.toDson(clientTransaction, Output.ALL);
+    final var obj = serialization.fromDson(json, TestLedgerTransaction.class);
 
-    assertEquals(obj, clientAtom);
+    assertEquals(obj, clientTransaction);
   }
 
   @Test
   public void sibling_class_can_be_serialized_and_deserialized_via_interface() throws Exception {
-    final var clientAtom = TestDifferentClientAtom.create("datameta");
+    final var clientTransaction = TestDifferentClientTransaction.create("datameta");
 
-    final var json = serialization.toDson(clientAtom, Output.ALL);
-    final var obj = serialization.fromDson(json, TestLedgerAtom.class);
+    final var json = serialization.toDson(clientTransaction, Output.ALL);
+    final var obj = serialization.fromDson(json, TestLedgerTransaction.class);
 
-    assertEquals(obj, clientAtom);
+    assertEquals(obj, clientTransaction);
   }
 
   @Test
   public void deeper_inherited_class_can_be_serialized_and_deserialized_via_interface()
       throws Exception {
-    final var clientAtom = TestExtendedClientAtom.create("meta", "extra");
+    final var clientTransaction = TestExtendedClientTransaction.create("meta", "extra");
 
-    final var json = serialization.toDson(clientAtom, Output.ALL);
-    final var obj = serialization.fromDson(json, TestLedgerAtom.class);
+    final var json = serialization.toDson(clientTransaction, Output.ALL);
+    final var obj = serialization.fromDson(json, TestLedgerTransaction.class);
 
-    assertEquals(obj, clientAtom);
+    assertEquals(obj, clientTransaction);
   }
 
   @Test(expected = DeserializeException.class)
   public void deeper_inherited_class_with_null_can_be_serialized_and_deserialized_via_interface()
       throws Exception {
-    final var clientAtom = new TestExtendedClientAtom("meta");
+    final var clientTransaction = new TestExtendedClientTransaction("meta");
 
-    final var json = serialization.toDson(clientAtom, Output.ALL);
-    final var obj = serialization.fromDson(json, TestLedgerAtom.class);
+    final var json = serialization.toDson(clientTransaction, Output.ALL);
+    final var obj = serialization.fromDson(json, TestLedgerTransaction.class);
 
-    assertEquals(obj, clientAtom);
+    assertEquals(obj, clientTransaction);
   }
 
   @Test
   public void embedded_interface_can_be_serialized_and_deserialized() throws Exception {
-    final var clientAtom = TestExtendedClientAtom.create("meta", "extra");
-    final var container = TestEmbeddedInterfaceAtom.create(clientAtom);
+    final var clientTransaction = TestExtendedClientTransaction.create("meta", "extra");
+    final var container = TestEmbeddedInterfaceTransaction.create(clientTransaction);
 
     final var json = serialization.toDson(container, Output.ALL);
-    final var obj = serialization.fromDson(json, TestEmbeddedInterfaceAtom.class);
+    final var obj = serialization.fromDson(json, TestEmbeddedInterfaceTransaction.class);
 
     assertEquals(obj, container);
-    assertEquals(obj.ledgerAtom(), clientAtom);
+    assertEquals(obj.ledgerTransaction(), clientTransaction);
   }
 }

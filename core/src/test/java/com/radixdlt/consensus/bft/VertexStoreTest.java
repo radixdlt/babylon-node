@@ -77,16 +77,7 @@ import static org.mockito.Mockito.verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.consensus.TimeoutCertificate;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.consensus.sync.VertexStoreJavaImpl;
 import com.radixdlt.crypto.HashUtils;
@@ -106,9 +97,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class VertexStoreTest {
-  private VerifiedVertex genesisVertex;
-  private Supplier<VerifiedVertex> nextVertex;
-  private Function<Boolean, VerifiedVertex> nextSkippableVertex;
+  private VertexWithHash genesisVertex;
+  private Supplier<VertexWithHash> nextVertex;
+  private Function<Boolean, VertexWithHash> nextSkippableVertex;
   private HashCode genesisHash;
   private QuorumCertificate rootQC;
   private VertexStoreAdapter sut;
@@ -120,7 +111,7 @@ public class VertexStoreTest {
   private Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 
   private static final LedgerHeader MOCKED_HEADER =
-      LedgerHeader.create(0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
+      LedgerHeader.create(0, Round.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0);
 
   @Before
   public void setUp() {
@@ -130,10 +121,10 @@ public class VertexStoreTest {
     // TODO: replace mock with the real thing
     doAnswer(
             invocation -> {
-              VerifiedVertex verifiedVertex = invocation.getArgument(1);
+              VertexWithHash vertexWithHash = invocation.getArgument(1);
               return Optional.of(
-                  new PreparedVertex(
-                      verifiedVertex, MOCKED_HEADER, ImmutableList.of(), ImmutableMap.of(), 1L));
+                  new ExecutedVertex(
+                      vertexWithHash, MOCKED_HEADER, ImmutableList.of(), ImmutableMap.of(), 1L));
             })
         .when(ledger)
         .prepare(any(), any());
@@ -143,13 +134,13 @@ public class VertexStoreTest {
     this.bftHighQCUpdateEventDispatcher = rmock(EventDispatcher.class);
     this.committedSender = rmock(EventDispatcher.class);
 
-    this.genesisVertex = UnverifiedVertex.createGenesis(MOCKED_HEADER).withId(ZeroHasher.INSTANCE);
-    this.genesisHash = genesisVertex.getId();
+    this.genesisVertex = Vertex.createGenesis(MOCKED_HEADER).withId(ZeroHasher.INSTANCE);
+    this.genesisHash = genesisVertex.getHash();
     this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
     this.sut =
         new VertexStoreAdapter(
             VertexStoreJavaImpl.create(
-                VerifiedVertexStoreState.create(
+                VertexStoreState.create(
                     HighQC.from(rootQC), genesisVertex, Optional.empty(), hasher),
                 ledger,
                 hasher),
@@ -159,11 +150,11 @@ public class VertexStoreTest {
             committedSender);
 
     AtomicReference<BFTHeader> lastParentHeader =
-        new AtomicReference<>(new BFTHeader(View.genesis(), genesisHash, MOCKED_HEADER));
+        new AtomicReference<>(new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER));
     AtomicReference<BFTHeader> lastGrandParentHeader =
-        new AtomicReference<>(new BFTHeader(View.genesis(), genesisHash, MOCKED_HEADER));
+        new AtomicReference<>(new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER));
     AtomicReference<BFTHeader> lastGreatGrandParentHeader =
-        new AtomicReference<>(new BFTHeader(View.genesis(), genesisHash, MOCKED_HEADER));
+        new AtomicReference<>(new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER));
 
     this.nextSkippableVertex =
         (skipOne) -> {
@@ -171,7 +162,7 @@ public class VertexStoreTest {
           BFTHeader grandParentHeader = lastGrandParentHeader.get();
           BFTHeader greatGrandParentHeader = lastGreatGrandParentHeader.get();
           final QuorumCertificate qc;
-          if (!parentHeader.getView().equals(View.genesis())) {
+          if (!parentHeader.getRound().equals(Round.genesis())) {
             VoteData data =
                 new VoteData(
                     parentHeader, grandParentHeader, skipOne ? null : greatGrandParentHeader);
@@ -179,16 +170,15 @@ public class VertexStoreTest {
           } else {
             qc = rootQC;
           }
-          View view = parentHeader.getView().next();
+          Round round = parentHeader.getRound().next();
           if (skipOne) {
-            view = view.next();
+            round = round.next();
           }
 
           var vertex =
-              UnverifiedVertex.create(
-                      qc, view, List.of(Transaction.create(new byte[0])), BFTNode.random())
+              Vertex.create(qc, round, List.of(Transaction.create(new byte[0])), BFTNode.random())
                   .withId(hasher);
-          lastParentHeader.set(new BFTHeader(view, vertex.getId(), MOCKED_HEADER));
+          lastParentHeader.set(new BFTHeader(round, vertex.getHash(), MOCKED_HEADER));
           lastGrandParentHeader.set(parentHeader);
           lastGreatGrandParentHeader.set(grandParentHeader);
 
@@ -229,7 +219,7 @@ public class VertexStoreTest {
     assertThat(success).isTrue();
     assertThat(sut.highQC().highestQC()).isEqualTo(qc);
     assertThat(sut.highQC().highestCommittedQC()).isEqualTo(qc);
-    assertThat(sut.getVertices(vertices.get(2).getId(), 3))
+    assertThat(sut.getVertices(vertices.get(2).getHash(), 3))
         .hasValue(ImmutableList.of(vertices.get(2), vertices.get(1), vertices.get(0)));
     verify(committedSender, times(1))
         .dispatch(
@@ -256,8 +246,8 @@ public class VertexStoreTest {
   public void rebuilding_should_emit_updates() {
     // Arrange
     final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
-    VerifiedVertexStoreState vertexStoreState =
-        VerifiedVertexStoreState.create(
+    VertexStoreState vertexStoreState =
+        VertexStoreState.create(
             HighQC.from(vertices.get(3).getQC()),
             vertices.get(0),
             vertices.stream().skip(1).collect(ImmutableList.toImmutableList()),
@@ -272,17 +262,17 @@ public class VertexStoreTest {
         .dispatch(
             argThat(
                 u -> {
-                  List<VerifiedVertex> sentVertices = u.getVertexStoreState().getVertices();
+                  List<VertexWithHash> sentVertices = u.getVertexStoreState().getVertices();
                   return sentVertices.equals(vertices.subList(1, vertices.size()));
                 }));
   }
 
   @Test
-  public void inserting_a_tc_should_only_replace_tcs_for_lower_views() {
+  public void inserting_a_tc_should_only_replace_tcs_for_lower_rounds() {
     TimeoutCertificate initialTC =
-        new TimeoutCertificate(1, View.of(100), mock(TimestampedECDSASignatures.class));
+        new TimeoutCertificate(1, Round.of(100), mock(TimestampedECDSASignatures.class));
     TimeoutCertificate higherTC =
-        new TimeoutCertificate(1, View.of(101), mock(TimestampedECDSASignatures.class));
+        new TimeoutCertificate(1, Round.of(101), mock(TimestampedECDSASignatures.class));
 
     sut.insertTimeoutCertificate(initialTC);
     assertEquals(initialTC, sut.highQC().highestTC().orElse(null));

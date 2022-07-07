@@ -67,7 +67,7 @@ package com.radixdlt.integration.steady_state.deterministic.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -79,21 +79,21 @@ import org.junit.Test;
 public class OneProposalTimeoutResponsiveTest {
   private final Random random = new Random(123456);
 
-  private void run(int numNodes, long numViews, long dropPeriod) {
+  private void run(int numNodes, long numRounds, long dropPeriod) {
     DeterministicTest test =
         DeterministicTest.builder()
             .numNodes(numNodes)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropSomeProposals(dropPeriod))
             .buildWithoutEpochs()
-            .runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
+            .runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     long requiredIndirectParents =
         numNodes <= 3
             ? 0 // there are no indirect parents for 3 nodes (QC is always formed)
-            : (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
+            : (numRounds - 1) / dropPeriod; // Edge case if dropPeriod a factor of numRounds
 
-    long requiredTimeouts = numViews / dropPeriod * 2;
+    long requiredTimeouts = numRounds / dropPeriod * 2;
 
     long timeoutQuorums =
         numNodes <= 3
@@ -116,10 +116,10 @@ public class OneProposalTimeoutResponsiveTest {
       Object msg = message.message();
       if (msg instanceof Proposal) {
         final Proposal proposal = (Proposal) msg;
-        final View view = proposal.getVertex().getView();
-        final long viewNumber = view.number();
+        final Round round = proposal.getVertex().getRound();
+        final long roundNumber = round.number();
 
-        return viewNumber % dropPeriod == 0;
+        return roundNumber % dropPeriod == 0;
       }
       return false;
     };

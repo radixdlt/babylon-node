@@ -72,13 +72,13 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.HashUtils;
@@ -102,32 +102,32 @@ public class MockedRecoveryModule extends AbstractModule {
   }
 
   @Provides
-  private ViewUpdate view(BFTConfiguration configuration, ProposerElection proposerElection) {
+  private RoundUpdate initialRoundUpdate(
+      BFTConfiguration configuration, ProposerElection proposerElection) {
     HighQC highQC = configuration.getVertexStoreState().getHighQC();
-    View view = highQC.highestQC().getView().next();
-    final BFTNode leader = proposerElection.getProposer(view);
-    final BFTNode nextLeader = proposerElection.getProposer(view.next());
+    Round round = highQC.highestQC().getRound().next();
+    final BFTNode leader = proposerElection.getProposer(round);
+    final BFTNode nextLeader = proposerElection.getProposer(round.next());
 
-    return ViewUpdate.create(view, highQC, leader, nextLeader);
+    return RoundUpdate.create(round, highQC, leader, nextLeader);
   }
 
   @Provides
   private BFTConfiguration configuration(
       @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
     var accumulatorState = new AccumulatorState(0, preGenesisAccumulatorHash);
-    VerifiedVertex genesisVertex =
-        UnverifiedVertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0))
+    VertexWithHash genesisVertex =
+        Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0))
             .withId(hasher);
     LedgerHeader nextLedgerHeader =
         LedgerHeader.create(
-            proof.getNextEpoch(), View.genesis(), proof.getAccumulatorState(), proof.timestamp());
+            proof.getNextEpoch(), Round.genesis(), proof.getAccumulatorState(), proof.timestamp());
     var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     return new BFTConfiguration(
         proposerElection,
         validatorSet,
-        VerifiedVertexStoreState.create(
-            HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
+        VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
   }
 
   @Provides

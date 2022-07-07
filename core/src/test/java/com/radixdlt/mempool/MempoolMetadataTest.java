@@ -66,6 +66,7 @@ package com.radixdlt.mempool;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.rev1.MempoolMetadata;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 

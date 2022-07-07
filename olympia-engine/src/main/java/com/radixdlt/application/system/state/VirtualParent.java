@@ -64,11 +64,11 @@
 
 package com.radixdlt.application.system.state;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstate;
 import java.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
-public record VirtualParent(byte[] data) implements Particle {
+public record VirtualParent(byte[] data) implements RawSubstate {
 
   // Primitive array member requires explicit hashCode() and equals()
   @Override

@@ -64,11 +64,10 @@
 
 package com.radixdlt.harness.simulation.application;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.engine.RadixEngine;
@@ -78,6 +77,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.RadixEngineStateComputer;
+import com.radixdlt.substate.TxnConstructionRequest;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;

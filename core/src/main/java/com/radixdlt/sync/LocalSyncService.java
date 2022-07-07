@@ -118,7 +118,7 @@ import org.apache.logging.log4j.Logger;
 public final class LocalSyncService {
 
   public interface VerifiedSyncResponseHandler {
-    void handleVerifiedSyncResponse(SyncResponse syncResponse);
+    void handleSyncResponse(SyncResponse syncResponse);
   }
 
   public interface InvalidSyncResponseHandler {
@@ -452,12 +452,11 @@ public final class LocalSyncService {
       return currentState;
     }
 
-    // TODO: check validity of response
-    if (syncResponse.getTxnsAndProof().getTxns().isEmpty()) {
+    if (syncResponse.getTransactionsWithProofDto().getTransactions().isEmpty()) {
       log.warn("LocalSync: Received empty sync response from {}", sender);
-      // didn't receive any commands, remove from candidate peers and processSync
+      // didn't receive any transactions, remove from candidate peers and processSync
       return this.processSync(currentState.clearPendingRequest().removeCandidate(sender));
-    } else if (!this.verifyResponse(syncResponse)) {
+    } else if (!this.verifySyncResponse(syncResponse)) {
       log.warn("LocalSync: Received invalid sync response {} from {}", syncResponse, sender);
       // validation failed, remove from candidate peers and processSync
       invalidSyncResponseHandler.handleInvalidSyncResponse(sender, syncResponse);
@@ -465,17 +464,17 @@ public final class LocalSyncService {
     } else {
       this.syncLedgerUpdateTimeoutDispatcher.dispatch(
           SyncLedgerUpdateTimeout.create(currentState.getCurrentHeader().getStateVersion()), 1000L);
-      this.verifiedSyncResponseHandler.handleVerifiedSyncResponse(syncResponse);
+      this.verifiedSyncResponseHandler.handleSyncResponse(syncResponse);
       return currentState.clearPendingRequest();
     }
   }
 
-  private boolean verifyResponse(SyncResponse syncResponse) {
-    final var commandsAndProof = syncResponse.getTxnsAndProof();
-    final var start = commandsAndProof.getHead().getLedgerHeader().getAccumulatorState();
-    final var end = commandsAndProof.getTail().getLedgerHeader().getAccumulatorState();
+  private boolean verifySyncResponse(SyncResponse syncResponse) {
+    final var transactionsWithProofDto = syncResponse.getTransactionsWithProofDto();
+    final var start = transactionsWithProofDto.getHead().getLedgerHeader().getAccumulatorState();
+    final var end = transactionsWithProofDto.getTail().getLedgerHeader().getAccumulatorState();
     final var hashes =
-        commandsAndProof.getTxns().stream()
+        transactionsWithProofDto.getTransactions().stream()
             .map(txn -> txn.getId().asHashCode())
             .collect(ImmutableList.toImmutableList());
 

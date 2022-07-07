@@ -69,7 +69,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.HashUtils;
 import java.util.ArrayList;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -79,7 +79,7 @@ import org.junit.Test;
 public class GetVerticesResponseMessageTest {
   @Test
   public void sensibleToString() {
-    UnverifiedVertex genesisVertex = mock(UnverifiedVertex.class);
+    Vertex genesisVertex = mock(Vertex.class);
     GetVerticesResponseMessage msg1 =
         new GetVerticesResponseMessage(ImmutableList.of(genesisVertex));
     String s1 = msg1.toString();
@@ -104,7 +104,7 @@ public class GetVerticesResponseMessageTest {
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullListThrowsException() {
-    var list = new ArrayList<UnverifiedVertex>();
+    var list = new ArrayList<Vertex>();
     list.add(null);
     new GetVerticesResponseMessage(list);
   }

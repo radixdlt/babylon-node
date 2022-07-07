@@ -90,11 +90,11 @@ Optional fields are encoded as:
 
 ## Substate
 
-A substate is an object that is stored in the ledger state, which can be viewed as a map of substates indexed by substate ID.
+A rawSubstate is an object that is stored in the ledger state, which can be viewed as a map of substates indexed by rawSubstate ID.
 
 ### Substate ID
 
-For physical substate, the ID is the concatenation of transaction ID and substate index (where the substate is defined).
+For physical rawSubstate, the ID is the concatenation of transaction ID and rawSubstate index (where the rawSubstate is defined).
 
 ```
 +--------------+--------------+
@@ -102,13 +102,13 @@ For physical substate, the ID is the concatenation of transaction ID and substat
 +--------------+--------------+
 ```
 
-Note that substate index is the number of the `UP` instruction in the transaction (e.g., if `index == 1`, it means the substate is created by the 2nd `UP` instruction)
+Note that rawSubstate index is the number of the `UP` instruction in the transaction (e.g., if `index == 1`, it means the rawSubstate is created by the 2nd `UP` instruction)
 
-For virtual substate, the ID is the hash of the serialization.
+For virtual rawSubstate, the ID is the hash of the serialization.
 
 ### Substate Type
 
-Each substate is of a particular type and, when serialized, the first byte encodes the type info.
+Each rawSubstate is of a particular type and, when serialized, the first byte encodes the type info.
 
 Currently, we have the following types:
 
@@ -137,7 +137,7 @@ Currently, we have the following types:
 ### Substate Schema
 
 Substates are serialized and deserialized based on the following protocol:
-- The first byte indicates the substate type
+- The first byte indicates the rawSubstate type
 - The following bytes are the fields based on the order they appear on the tables below.
 
 #### `VIRTUAL_PARENT`
@@ -159,7 +159,7 @@ Substates are serialized and deserialized based on the following protocol:
 | **Name**    | **Type** | **Description**      |
 |-------------|----------|----------------------|
 | `reserved`  | `u8`     | Reserved, always `0` |
-| `view`      | `u64`    | The new view         |
+| `round`     | `u64`    | The new round        |
 | `timestamp` | `u64`    | The new timestamp    |
 
 #### `EPOCH_DATA`
@@ -324,15 +324,15 @@ The table below summarizes all opcodes.
 |-------------|----------------|-----------------------------|-----------------------------------------------|
 | `END`       | `0x00`         | None                        | Mark the end of an action                     |
 | `SYSCALL`   | `0x01`         | `call_data`                 | Make a system call                            |
-| `UP`        | `0x02`         | `substate`                  | Boot up a new substate                        |
-| `READ`      | `0x03`         | `substate_id`               | Read a remote substate                        |
-| `LREAD`     | `0x04`         | `substate_index`            | Read a local substate                         |
-| `VREAD`     | `0x05`         | `virtual_substate_id`       | Read a virtual substate                       |
-| `LVREAD`    | `0x06`         | `local_virtual_substate_id` | Read a local virtual substate                 |
-| `DOWN`      | `0x07`         | `substate_id`               | Spin down a remote substate                   |
-| `LDOWN`     | `0x08`         | `substate_index`            | Spin down a local substate                    |
-| `VDOWN`     | `0x09`         | `virtual_substate_id`       | Spin down a virtual substate                  |
-| `LVDOWN`    | `0x0A`         | `local_virtual_substate_id` | Spin down a local virtual substate            |
+| `UP`        | `0x02`         | `rawSubstate`                  | Boot up a new rawSubstate                        |
+| `READ`      | `0x03`         | `substate_id`               | Read a remote rawSubstate                        |
+| `LREAD`     | `0x04`         | `substate_index`            | Read a local rawSubstate                         |
+| `VREAD`     | `0x05`         | `virtual_substate_id`       | Read a virtual rawSubstate                       |
+| `LVREAD`    | `0x06`         | `local_virtual_substate_id` | Read a local virtual rawSubstate                 |
+| `DOWN`      | `0x07`         | `substate_id`               | Spin down a remote rawSubstate                   |
+| `LDOWN`     | `0x08`         | `substate_index`            | Spin down a local rawSubstate                    |
+| `VDOWN`     | `0x09`         | `virtual_substate_id`       | Spin down a virtual rawSubstate                  |
+| `LVDOWN`    | `0x0A`         | `local_virtual_substate_id` | Spin down a local virtual rawSubstate            |
 | `SIG`       | `0x0B`         | `signature`                 | Provide a signature for prior instructions    |
 | `MSG`       | `0x0C`         | `msg`                       | Record a message                              |
 | `HEADER`    | `0x0D`         | `version + flags`           | Specify headers                               |
@@ -344,12 +344,12 @@ The table below summarizes all opcodes.
 | **Name**                    | **Description**                                                             |
 |-----------------------------|-----------------------------------------------------------------------------|
 | `call_data`                 | System call data (`bytes`) and the content must match function requirements |
-| `substate`                  | Serialized substate                                                         |
+| `rawSubstate`                  | Serialized rawSubstate                                                         |
 | `substate_id`               | Substate ID                                                                 |
 | `substate_index`            | Substate index (`u16`)                                                      |
-| `virtual_substate_id`       | Virtual substate index (`bytes`)                                            |
-| `local_virtual_substate_id` | Local virtual substate index (`bytes`)                                      |
-| `substate`                  | Spin down a virtual substate                                                |
+| `virtual_substate_id`       | Virtual rawSubstate index (`bytes`)                                            |
+| `local_virtual_substate_id` | Local virtual rawSubstate index (`bytes`)                                      |
+| `rawSubstate`                  | Spin down a virtual rawSubstate                                                |
 | `signature`                 | ECDSA Signature                                                             |
 | `msg`                       | Message (`bytes`)                                                           |
 | `version`                   | Header version (`u8`)                                                       |

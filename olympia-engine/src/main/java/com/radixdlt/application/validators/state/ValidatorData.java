@@ -64,9 +64,9 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.crypto.ECPublicKey;
 
-public interface ValidatorData extends Particle {
+public interface ValidatorData extends RawSubstate {
   ECPublicKey validatorKey();
 }

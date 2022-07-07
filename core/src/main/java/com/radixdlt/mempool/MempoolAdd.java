@@ -68,7 +68,7 @@ import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Objects;
 
-/** Message to attempt to add commands to the mempool */
+/** Message to attempt to add transactions to the mempool */
 public record MempoolAdd(List<Transaction> transactions) {
   public static MempoolAdd create(Transaction transaction) {
     Objects.requireNonNull(transaction);

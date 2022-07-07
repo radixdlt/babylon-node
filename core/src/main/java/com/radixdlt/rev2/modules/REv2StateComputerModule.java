@@ -66,17 +66,17 @@ package com.radixdlt.rev2.modules;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.*;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.rev2.REv2PreparedTransaction;
+import com.radixdlt.rev2.REv2ExecutedTransaction;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Map;
@@ -116,30 +116,30 @@ public class REv2StateComputerModule extends AbstractModule {
 
       @Override
       public List<Transaction> getTransactionsForProposal(
-          List<StateComputerLedger.PreparedTransaction> preparedTransactions) {
+          List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
         var transactionsNotToInclude =
-            preparedTransactions.stream()
-                .map(StateComputerLedger.PreparedTransaction::transaction)
+            executedTransactions.stream()
+                .map(StateComputerLedger.ExecutedTransaction::transaction)
                 .toList();
         return mempool.getTransactionsForProposal(1, transactionsNotToInclude);
       }
 
       @Override
       public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.PreparedTransaction> previous,
-          VerifiedVertex vertex,
+          List<StateComputerLedger.ExecutedTransaction> previous,
+          VertexWithHash vertex,
           long timestamp) {
         return new StateComputerLedger.StateComputerResult(
-            vertex.getTxns().stream()
-                .map(REv2PreparedTransaction::new)
+            vertex.getTransactions().stream()
+                .map(REv2ExecutedTransaction::new)
                 .collect(Collectors.toList()),
             Map.of());
       }
 
       @Override
       public void commit(
-          VerifiedTxnsAndProof txnsAndProof, VerifiedVertexStoreState vertexStoreState) {
-        mempool.handleTransactionsCommitted(txnsAndProof.getTxns());
+          CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
+        mempool.handleTransactionsCommitted(txnsAndProof.getTransactions());
 
         var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
         ledgerUpdateDispatcher.dispatch(ledgerUpdate);

@@ -79,9 +79,9 @@ import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.RoundVotingResult.FormedQC;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.ViewQuorumReached;
-import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.ECKeyPair;
@@ -182,10 +182,10 @@ public class OneNodeAlwaysAliveSafetyTest {
               @ProvidesIntoSet
               public NodeEventProcessor<?> updateChecker() {
                 return new NodeEventProcessor<>(
-                    ViewQuorumReached.class,
-                    (node, viewQuorumReached) -> {
-                      if (viewQuorumReached.votingResult() instanceof FormedQC
-                          && ((FormedQC) viewQuorumReached.votingResult())
+                    RoundQuorumReached.class,
+                    (node, roundQuorumReached) -> {
+                      if (roundQuorumReached.votingResult() instanceof FormedQC
+                          && ((FormedQC) roundQuorumReached.votingResult())
                               .getQC()
                               .getCommitted()
                               .isPresent()) {
@@ -262,8 +262,8 @@ public class OneNodeAlwaysAliveSafetyTest {
           }
 
           @ProvidesIntoSet
-          private EventProcessorOnDispatch<?> viewQuorumReachedEventProcessor(@Self BFTNode node) {
-            return nodeEvents.processorOnDispatch(node, ViewQuorumReached.class);
+          private EventProcessorOnDispatch<?> roundQuorumReachedEventProcessor(@Self BFTNode node) {
+            return nodeEvents.processorOnDispatch(node, RoundQuorumReached.class);
           }
         });
   }
@@ -321,10 +321,10 @@ public class OneNodeAlwaysAliveSafetyTest {
       this.startNode(i);
     }
 
-    // Drop first proposal so view 2 will be committed
+    // Drop first proposal so round 2 will be committed
     this.network.dropMessages(m -> m.message() instanceof Proposal);
 
-    // process until view 2 committed
+    // process until round 2 committed
     this.processUntilNextCommittedUpdate();
 
     // Restart all except last committed
@@ -340,7 +340,7 @@ public class OneNodeAlwaysAliveSafetyTest {
       }
     }
 
-    // If nodes restart with correct safety precautions then view 1 should be skipped
+    // If nodes restart with correct safety precautions then round 1 should be skipped
     // otherwise, this will cause failure
     this.processForCount(5000);
   }

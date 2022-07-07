@@ -126,7 +126,7 @@ public final class InvalidQcIsIgnoredTest {
 
   private static TimeoutCertificate replaceSignaturesWithZero(TimeoutCertificate tc) {
     return new TimeoutCertificate(
-        tc.getEpoch(), tc.getView(), replaceSignaturesWithZero(tc.getTimestampedSignatures()));
+        tc.getEpoch(), tc.getRound(), replaceSignaturesWithZero(tc.getTimestampedSignatures()));
   }
 
   private static QuorumCertificate replaceSignaturesWithZero(QuorumCertificate qc) {
