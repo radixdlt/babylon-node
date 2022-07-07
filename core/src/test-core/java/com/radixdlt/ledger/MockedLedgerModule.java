@@ -73,7 +73,6 @@ import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
-import com.radixdlt.modules.MockExecuted;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.LinkedList;
 import java.util.List;

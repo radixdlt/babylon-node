@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.ledger;
 
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.transactions.Transaction;
