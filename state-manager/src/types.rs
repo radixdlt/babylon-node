@@ -65,6 +65,7 @@
 use crate::jni::dtos::*;
 
 impl JavaStructure for i32 {}
+impl JavaStructure for u64 {}
 impl JavaStructure for Vec<Transaction> {}
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]
@@ -82,22 +83,51 @@ pub struct Transaction {
 
 impl JavaStructure for Transaction {}
 
+#[derive(Debug, Clone, Decode, Encode, TypeId)]
+pub struct LedgerProof {
+    pub state_version: TransactionStateVersion,
+    pub new_epoch: Option<u64>,
+    pub serialized: Vec<u8>,
+}
 
-pub type TransactionStateVersion = u64;
+impl LedgerProof {
+    pub fn new(
+        state_version: TransactionStateVersion,
+        new_epoch: Option<EpochId>,
+        serialized: Vec<u8>,
+    ) -> LedgerProof {
+        LedgerProof {
+            state_version,
+            new_epoch,
+            serialized,
+        }
+    }
+    pub fn new_epoch(&self) -> Option<EpochId> {
+        self.new_epoch
+    }
+
+    pub fn state_version(&self) -> TransactionStateVersion {
+        self.state_version
+    }
+}
+
+impl JavaStructure for LedgerProof {}
+
+pub type EpochId = u64;
 
 pub trait TransactionStateVersionTrait: Sized {
     fn prev(&self) -> Option<Self>;
     fn next(&self) -> Option<Self>;
 }
 
+pub type TransactionStateVersion = u64;
+
 impl TransactionStateVersionTrait for TransactionStateVersion {
     fn prev(&self) -> Option<TransactionStateVersion> {
-	self.checked_sub(1)
+        self.checked_sub(1)
     }
 
     fn next(&self) -> Option<TransactionStateVersion> {
-	self.checked_add(1)
+        self.checked_add(1)
     }
 }
-
-impl JavaStructure for TransactionStateVersion {}

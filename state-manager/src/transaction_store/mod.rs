@@ -65,15 +65,27 @@
 use crate::types::*;
 
 #[derive(Debug, PartialEq)]
-pub enum TransactionStoreError {
+pub enum TransactionStoreStoreError {
     ExhaustedStateVersions,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum TransactionStoreGetError {
     NotFound(TransactionStateVersion),
 }
 
+#[derive(Debug, PartialEq)]
+pub enum TransactionStoreLastVersionError {
+    Empty,
+}
+
 pub trait TransactionStore {
-    fn store_transaction(&mut self, transaction: Transaction) -> Result<TransactionStateVersion, TransactionStoreError>;
-    fn get_transaction(&self, state: TransactionStateVersion) -> Result<Transaction, TransactionStoreError>;
+    fn store(
+        &mut self,
+        transaction: Transaction,
+    ) -> Result<TransactionStateVersion, TransactionStoreStoreError>;
+    fn get(&self, state: TransactionStateVersion) -> Result<Transaction, TransactionStoreGetError>;
+    fn last_version(&self) -> Result<TransactionStateVersion, TransactionStoreLastVersionError>;
 }
 
 pub mod in_memory;
-

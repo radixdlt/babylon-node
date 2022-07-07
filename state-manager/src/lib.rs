@@ -64,6 +64,7 @@
 
 mod jni;
 mod mempool;
+mod proof_store;
 mod result;
 mod state_manager;
 mod transaction_store;

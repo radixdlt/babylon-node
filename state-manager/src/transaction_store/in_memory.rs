@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
+use crate::transaction_store::*;
 use crate::types::*;
-use crate::transaction_store::{TransactionStore, TransactionStoreError};
 use std::collections::BTreeMap;
 
 #[derive(Debug, PartialEq)]
@@ -75,33 +75,48 @@ pub struct InMemoryTransactionStore {
 impl InMemoryTransactionStore {
     pub fn new() -> InMemoryTransactionStore {
         InMemoryTransactionStore {
-	    next_state: 0,
+            next_state: 0,
             in_memory_store: BTreeMap::new(),
         }
     }
 
-    pub fn alloc_state(&mut self) -> Result<TransactionStateVersion, TransactionStoreError> {
-	let state = self.next_state;
-	let try_next = state.next();
+    pub fn alloc_state(&mut self) -> Option<TransactionStateVersion> {
+        let state = self.next_state;
+        let try_next = state.next();
 
-	if let Some(next_state) = try_next {
-	    self.next_state = next_state;
-	    Ok(state)
-	} else {
-	    Err(TransactionStoreError::ExhaustedStateVersions)
-	}
+        if let Some(next_state) = try_next {
+            self.next_state = next_state;
+            Some(state)
+        } else {
+            None
+        }
     }
 }
 
 impl TransactionStore for InMemoryTransactionStore {
-    fn store_transaction(&mut self, transaction: Transaction) -> Result<TransactionStateVersion, TransactionStoreError> {
-	let state = self.alloc_state()?;
-	self.in_memory_store.insert(state, transaction);
-	Ok(state)
+    fn store(
+        &mut self,
+        transaction: Transaction,
+    ) -> Result<TransactionStateVersion, TransactionStoreStoreError> {
+        let state = self
+            .alloc_state()
+            .ok_or(TransactionStoreStoreError::ExhaustedStateVersions)?;
+        self.in_memory_store.insert(state, transaction);
+
+        Ok(state)
     }
 
-    fn get_transaction(&self, state: TransactionStateVersion) -> Result<Transaction, TransactionStoreError> {
-	self.in_memory_store.get(&state).cloned().ok_or(TransactionStoreError::NotFound(state))
+    fn get(&self, state: TransactionStateVersion) -> Result<Transaction, TransactionStoreGetError> {
+        self.in_memory_store
+            .get(&state)
+            .cloned()
+            .ok_or(TransactionStoreGetError::NotFound(state))
+    }
+
+    fn last_version(&self) -> Result<TransactionStateVersion, TransactionStoreLastVersionError> {
+        self.next_state
+            .prev()
+            .ok_or(TransactionStoreLastVersionError::Empty)
     }
 }
 
@@ -110,68 +125,99 @@ mod tests {
     use crate::transaction_store::in_memory::*;
     use crate::types::*;
 
+    // GIANLUCA: Move to types.rs
     #[test]
     fn state_test() {
-	let v: TransactionStateVersion = 0;
-	assert_eq!(v.prev(), None);
-	assert_eq!(v.next(), Some(1));
+        let v: TransactionStateVersion = 0;
+        assert_eq!(v.prev(), None);
+        assert_eq!(v.next(), Some(1));
 
-	let v: TransactionStateVersion = u64::MAX;
-	assert_eq!(v.prev(), Some(u64::MAX - 1));
-	assert_eq!(v.next(), None);
+        let v: TransactionStateVersion = u64::MAX;
+        assert_eq!(v.prev(), Some(u64::MAX - 1));
+        assert_eq!(v.next(), None);
     }
 
     #[test]
     fn alloc_test() {
-	let mut ts = InMemoryTransactionStore::new();
+        let mut ts = InMemoryTransactionStore::new();
 
-	assert_eq!(ts.next_state, 0);
-	let ret = ts.alloc_state();
-	assert_eq!(ret, Ok(0));
-	assert_eq!(ts.next_state, 1);
-	let ret = ts.alloc_state();
-	assert_eq!(ret, Ok(1));
-	assert_eq!(ts.next_state, 2);
+        assert_eq!(ts.next_state, 0);
+        let ret = ts.alloc_state();
+        assert_eq!(ret, Some(0));
+        assert_eq!(ts.next_state, 1);
+        let ret = ts.alloc_state();
+        assert_eq!(ret, Some(1));
+        assert_eq!(ts.next_state, 2);
 
-	ts.next_state = u64::MAX;
-	let ret = ts.alloc_state();
-	assert_eq!(ret, Err(TransactionStoreError::ExhaustedStateVersions));
+        ts.next_state = u64::MAX;
+        let ret = ts.alloc_state();
+        assert_eq!(ret, None);
     }
 
     #[test]
     fn store_test() {
-        let pl1 = vec![1u8; 32];
-        let pl2 = vec![2u8; 32];
-        let pl3 = vec![3u8; 32];
-
-        let tv1 = Transaction {
-            payload: pl1.clone(),
-            id: TId { bytes: pl1 },
+        let v1 = vec![1u8; 32];
+        let v2 = vec![2u8; 32];
+        let v3 = vec![3u8; 32];
+        let t1 = Transaction {
+            payload: v1.clone(),
+            id: TId { bytes: v1 },
         };
-        let tv2 = Transaction {
-            payload: pl2.clone(),
-            id: TId { bytes: pl2 },
+        let t2 = Transaction {
+            payload: v2.clone(),
+            id: TId { bytes: v2 },
         };
-        let tv3 = Transaction {
-            payload: pl3.clone(),
-            id: TId { bytes: pl3 },
+        let t3 = Transaction {
+            payload: v3.clone(),
+            id: TId { bytes: v3 },
         };
 
-	let mut ts = InMemoryTransactionStore::new();
-	let rc = ts.store_transaction(tv1.clone());
-	assert_eq!(rc, Ok(0));
-	let rc = ts.store_transaction(tv2.clone());
-	assert_eq!(rc, Ok(1));
-	let rc = ts.store_transaction(tv3.clone());
-	assert_eq!(rc, Ok(2));
+        let mut ts = InMemoryTransactionStore::new();
+        let rc = ts.store(t1.clone());
+        assert_eq!(rc, Ok(0));
+        let rc = ts.store(t2.clone());
+        assert_eq!(rc, Ok(1));
+        let rc = ts.store(t3.clone());
+        assert_eq!(rc, Ok(2));
 
-	let rc = ts.get_transaction(0);
-	assert_eq!(rc, Ok(tv1.clone()));
-	let rc = ts.get_transaction(1);
-	assert_eq!(rc, Ok(tv2.clone()));
-	let rc = ts.get_transaction(2);
-	assert_eq!(rc, Ok(tv3.clone()));
-	let rc = ts.get_transaction(3);
-	assert_eq!(rc, Err(TransactionStoreError::NotFound(3)));
+        ts.next_state = u64::MAX;
+        let rc = ts.store(t3.clone());
+        assert_eq!(rc, Err(TransactionStoreStoreError::ExhaustedStateVersions));
+    }
+
+    #[test]
+    fn get_test() {
+        let v1 = vec![1u8; 32];
+        let v2 = vec![2u8; 32];
+        let v3 = vec![3u8; 32];
+        let t1 = Transaction {
+            payload: v1.clone(),
+            id: TId { bytes: v1 },
+        };
+        let t2 = Transaction {
+            payload: v2.clone(),
+            id: TId { bytes: v2 },
+        };
+        let t3 = Transaction {
+            payload: v3.clone(),
+            id: TId { bytes: v3 },
+        };
+
+        let mut ts = InMemoryTransactionStore::new();
+        let rc = ts.store(t1.clone());
+        assert_eq!(rc, Ok(0));
+        let rc = ts.store(t2.clone());
+        assert_eq!(rc, Ok(1));
+        let rc = ts.store(t3.clone());
+        assert_eq!(rc, Ok(2));
+
+        let rc = ts.get(0);
+        assert_eq!(rc, Ok(t1.clone()));
+        let rc = ts.get(1);
+        assert_eq!(rc, Ok(t2.clone()));
+        let rc = ts.get(2);
+        assert_eq!(rc, Ok(t3.clone()));
+        let rc = ts.get(3);
+        assert_eq!(rc, Err(TransactionStoreGetError::NotFound(3)));
     }
 }
