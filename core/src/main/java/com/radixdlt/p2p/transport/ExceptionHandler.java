@@ -83,7 +83,7 @@ public class ExceptionHandler extends ChannelDuplexHandler {
   }
 
   @Override
-  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
     logAndCloseChannel(ctx, cause);
   }
 

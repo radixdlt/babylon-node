@@ -62,106 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.networks;
+package com.radixdlt.p2ptest;
 
-import com.radixdlt.identifiers.AccountAddressing;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.identifiers.ResourceAddressing;
-import com.radixdlt.identifiers.ValidatorAddressing;
-import java.util.Optional;
-import org.bitcoinj.core.AddressFormatException;
-import org.bitcoinj.core.Bech32;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Stream;
 
-public final class Addressing {
+public final class JavaProcess {
 
-  public static String accountHrp(int networkId) {
-    return Network.ofId(networkId)
-        .map(Network::getAccountHrp)
-        .orElse(Network.MAINNET.getAccountHrp() + networkId);
-  }
+  private JavaProcess() {}
 
-  public static String validatorHrp(int networkId) {
-    return Network.ofId(networkId)
-        .map(Network::getValidatorHrp)
-        .orElse(Network.MAINNET.getValidatorHrp() + networkId);
-  }
+  public static Process exec(Class<?> clazz, String xmx, List<String> args) throws IOException {
+    final var javaBin =
+        System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
 
-  public static String resourceHrpSuffix(int networkId) {
-    return Network.ofId(networkId)
-        .map(Network::getResourceHrpSuffix)
-        .orElse(Network.MAINNET.getResourceHrpSuffix() + networkId);
-  }
+    final var baseCommand =
+        List.of(
+            javaBin,
+            "-Xmx" + xmx,
+            "--enable-preview",
+            "-Djava.net.preferIPv4Stack=true",
+            "-cp",
+            System.getProperty("java.class.path"),
+            "-Djava.library.path=" + System.getProperty("java.library.path"),
+            clazz.getName());
 
-  public static String nodeHrp(int networkId) {
-    return Network.ofId(networkId)
-        .map(Network::getNodeHrp)
-        .orElse(Network.MAINNET.getNodeHrp() + networkId);
-  }
+    final var commandWithArgs = Stream.of(baseCommand, args).flatMap(List::stream).toList();
 
-  private final ValidatorAddressing validatorAddressing;
-  private final AccountAddressing accountAddressing;
-  private final ResourceAddressing resourceAddressing;
-  private final NodeAddressing nodeAddressing;
-
-  private Addressing(
-      ValidatorAddressing validatorAddressing,
-      AccountAddressing accountAddressing,
-      ResourceAddressing resourceAddressing,
-      NodeAddressing nodeAddressing) {
-    this.validatorAddressing = validatorAddressing;
-    this.accountAddressing = accountAddressing;
-    this.resourceAddressing = resourceAddressing;
-    this.nodeAddressing = nodeAddressing;
-  }
-
-  public static Addressing ofNetwork(Network network) {
-    return ofNetworkId(network.getId());
-  }
-
-  public static Addressing ofNetworkId(int networkId) {
-    return new Addressing(
-        ValidatorAddressing.bech32(validatorHrp(networkId)),
-        AccountAddressing.bech32(accountHrp(networkId)),
-        ResourceAddressing.bech32(resourceHrpSuffix(networkId)),
-        NodeAddressing.bech32(nodeHrp(networkId)));
-  }
-
-  public Optional<AddressType> getAddressType(String address) {
-    Bech32.Bech32Data data;
-    try {
-      data = Bech32.decode(address);
-    } catch (AddressFormatException e) {
-      return Optional.empty();
-    }
-
-    if (data.hrp.startsWith(validatorAddressing.getHrp())) {
-      return Optional.of(AddressType.VALIDATOR);
-    }
-    if (data.hrp.startsWith(accountAddressing.getHrp())) {
-      return Optional.of(AddressType.ACCOUNT);
-    }
-    if (data.hrp.endsWith(resourceAddressing.getHrpSuffix())) {
-      return Optional.of(AddressType.RESOURCE);
-    }
-    if (data.hrp.startsWith(nodeAddressing.getHrp())) {
-      return Optional.of(AddressType.NODE);
-    }
-    return Optional.empty();
-  }
-
-  public ValidatorAddressing forValidators() {
-    return validatorAddressing;
-  }
-
-  public AccountAddressing forAccounts() {
-    return accountAddressing;
-  }
-
-  public ResourceAddressing forResources() {
-    return resourceAddressing;
-  }
-
-  public NodeAddressing forNodes() {
-    return nodeAddressing;
+    final var processBuilder = new ProcessBuilder(commandWithArgs);
+    return processBuilder.inheritIO().start();
   }
 }
