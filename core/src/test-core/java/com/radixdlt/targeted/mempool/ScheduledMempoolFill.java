@@ -62,91 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.targeted.mempool;
 
-import com.google.common.collect.Lists;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.transactions.Transaction;
-import java.util.*;
+/** Scheduled event for filling the mempool */
+public enum ScheduledMempoolFill {
+  INSTANCE;
 
-/** Simple mempool which performs no validation and removes on commit. */
-public final class SimpleMempool implements Mempool<Transaction> {
-  private final Set<Transaction> data = new HashSet<>();
-  private final SystemCounters counters;
-  private final Random random;
-  private final int maxSize;
-
-  public SimpleMempool(SystemCounters counters, int maxSize, Random random) {
-    if (maxSize <= 0) {
-      throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
-    }
-    this.counters = Objects.requireNonNull(counters);
-    this.maxSize = maxSize;
-    this.random = Objects.requireNonNull(random);
-  }
-
-  @Override
-  public Transaction addTransaction(Transaction transaction)
-      throws MempoolFullException, MempoolDuplicateException {
-    if (this.data.size() >= maxSize) {
-      throw new MempoolFullException(this.data.size(), maxSize);
-    }
-    if (!this.data.add(transaction)) {
-      throw new MempoolDuplicateException(
-          String.format("Mempool already has transaction %s", transaction));
-    }
-
-    updateCounts();
-
-    return transaction;
-  }
-
-  @Override
-  public void handleTransactionsCommitted(List<Transaction> transactions) {
-    transactions.forEach(this.data::remove);
-    updateCounts();
-  }
-
-  @Override
-  public int getCount() {
-    return data.size();
-  }
-
-  @Override
-  public List<Transaction> getTransactionsForProposal(
-      int count, List<Transaction> preparedTransactions) {
-    int size = Math.min(count, this.data.size());
-    if (size > 0) {
-      List<Transaction> transactions = Lists.newArrayList();
-      var values = new ArrayList<>(this.data);
-      Collections.shuffle(values, random);
-
-      Iterator<Transaction> i = values.iterator();
-      while (transactions.size() < size && i.hasNext()) {
-        var a = i.next();
-        if (!preparedTransactions.contains(a)) {
-          transactions.add(a);
-        }
-      }
-      return transactions;
-    } else {
-      return Collections.emptyList();
-    }
-  }
-
-  @Override
-  public List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis) {
-    return List.of();
-  }
-
-  private void updateCounts() {
-    this.counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, this.data.size());
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s[%x:%s/%s]",
-        getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), maxSize);
+  public static ScheduledMempoolFill create() {
+    return INSTANCE;
   }
 }

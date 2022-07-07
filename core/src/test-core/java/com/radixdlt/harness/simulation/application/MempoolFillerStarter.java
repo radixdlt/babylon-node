@@ -67,7 +67,7 @@ package com.radixdlt.harness.simulation.application;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
-import com.radixdlt.mempool.MempoolFillerUpdate;
+import com.radixdlt.targeted.mempool.MempoolFillerUpdate;
 
 /** Starts a mempool filler */
 public final class MempoolFillerStarter implements SimulationTest.SimulationNetworkActor {
