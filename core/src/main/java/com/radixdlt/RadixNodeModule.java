@@ -74,13 +74,12 @@ import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
+import com.radixdlt.messaging.MessagingModule;
 import com.radixdlt.modules.*;
-import com.radixdlt.network.capability.LedgerSyncCapability;
-import com.radixdlt.network.messaging.MessageCentralModule;
-import com.radixdlt.network.messaging.MessagingModule;
-import com.radixdlt.network.p2p.P2PModule;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.p2p.P2PModule;
+import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.rev2.modules.MockedRecoveryModule;
@@ -200,8 +199,7 @@ public final class RadixNodeModule extends AbstractModule {
     // System Info
     install(new SystemInfoModule());
 
-    install(new MessagingModule());
-    install(new MessageCentralModule(properties));
+    install(new MessagingModule(properties));
 
     install(new P2PModule(properties));
 

@@ -76,7 +76,7 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.sync.SyncConfig;
 
 public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfigurationResponse> {

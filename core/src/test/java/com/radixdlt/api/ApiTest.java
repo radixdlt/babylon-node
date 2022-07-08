@@ -82,12 +82,13 @@ import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.network.p2p.P2PConfig;
-import com.radixdlt.network.p2p.RadixNodeUri;
-import com.radixdlt.network.p2p.addressbook.AddressBook;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.p2p.P2PConfig;
+import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.TestP2PModule;
+import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.rev1.REOutput;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -147,6 +148,7 @@ public abstract class ApiTest {
             new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
             new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),
             new TestP2PModule.Builder().build(),
+            new TestMessagingModule.Builder().build(),
             new AbstractModule() {
               @Override
               protected void configure() {

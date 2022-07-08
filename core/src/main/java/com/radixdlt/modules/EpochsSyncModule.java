@@ -80,7 +80,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.PeersView;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
 import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseHandler;

@@ -75,6 +75,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.LedgerAndBFTProof;
@@ -115,6 +116,7 @@ public class RandomTransactionTest {
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(100000), Amount.ofTokens(1000)),
         new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {

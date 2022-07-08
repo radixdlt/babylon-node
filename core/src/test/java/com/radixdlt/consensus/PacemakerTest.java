@@ -81,6 +81,7 @@ import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
@@ -117,6 +118,7 @@ public class PacemakerTest {
             Amount.ofTokens(100)),
         new SingleNodeAndPeersDeterministicNetworkModule(PrivateKeys.ofNumeric(1)),
         new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {

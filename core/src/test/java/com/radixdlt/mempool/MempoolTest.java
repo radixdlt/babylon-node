@@ -86,10 +86,11 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.RadixEngineStateComputer;
 import com.radixdlt.rev1.checkpoint.Genesis;
@@ -143,6 +144,7 @@ public class MempoolTest {
         new TestP2PModule.Builder()
             .withAllNodes(Stream.generate(BFTNode::random).limit(NUM_PEERS).toList())
             .build(),
+        new TestMessagingModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {

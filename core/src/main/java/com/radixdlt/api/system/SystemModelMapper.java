@@ -84,12 +84,12 @@ import com.radixdlt.api.system.generated.models.SyncConfiguration;
 import com.radixdlt.api.system.generated.models.SyncMetrics;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.network.p2p.P2PConfig;
-import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.network.p2p.RadixNodeUri;
-import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
-import com.radixdlt.network.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.p2p.P2PConfig;
+import com.radixdlt.p2p.PeersView;
+import com.radixdlt.p2p.RadixNodeUri;
+import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
+import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.sync.SyncConfig;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -237,8 +237,7 @@ public final class SystemModelMapper {
                     .orElse("UNKNOWN")));
   }
 
-  public AddressBookEntry addressBookEntry(
-      com.radixdlt.network.p2p.addressbook.AddressBookEntry entry) {
+  public AddressBookEntry addressBookEntry(com.radixdlt.p2p.addressbook.AddressBookEntry entry) {
     var addressBookEntry =
         new AddressBookEntry()
             .peerId(addressing.forNodes().of(entry.getNodeId().getPublicKey()))

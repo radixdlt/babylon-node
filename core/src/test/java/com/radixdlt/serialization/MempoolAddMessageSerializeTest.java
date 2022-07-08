@@ -64,7 +64,7 @@
 
 package com.radixdlt.serialization;
 
-import com.radixdlt.network.messages.MempoolAddMessage;
+import com.radixdlt.messaging.mempool.MempoolAddMessage;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
 
