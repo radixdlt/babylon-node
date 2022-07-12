@@ -231,7 +231,7 @@ tasks.getByName("createGenerateNodeKeyScripts") {
 }
 tasks.getByName("startScripts").dependsOn createGenerateNodeKeyScripts
 
-task runTargetedIntegrationTestsUsingCliTools(type: Test) {
+task runTargetedIntegrationTests(type: Test) {
     filter {
         includeTestsMatching "com.radixdlt.integration.targeted.*"
     }
@@ -241,7 +241,7 @@ task runTargetedIntegrationTestsUsingCliTools(type: Test) {
     classpath = sourceSets.integration.runtimeClasspath
 }
 
-task runAllIntegrationTestsUsingCliTools(type: Test) {
+task runAllIntegrationTests(type: Test) {
     environment "RADIX_NODE_KEYSTORE_PASSWORD", System.getenv('supersecret')
     testClassesDirs = sourceSets.integration.output.classesDirs
     classpath = sourceSets.integration.runtimeClasspath
