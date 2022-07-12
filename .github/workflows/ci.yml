@@ -109,4 +109,4 @@ jobs:
         #   In this case, the node calls System.exit(X), which appear in the integration test logs
         #   as something like:
         # "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
-        run: ./gradlew runTargetedIntegrationTests --refresh-dependencies
+        run: ./gradlew runTargetedIntegrationTests --refresh-dependencies --parallel
