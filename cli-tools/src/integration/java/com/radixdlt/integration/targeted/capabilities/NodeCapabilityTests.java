@@ -394,7 +394,7 @@ public class NodeCapabilityTests {
   private void connectNodes(RadixShell.Node node1, RadixShell.Node node2)
       throws InterruptedException {
     node1.connectTo(node2.self());
-    Boolean connected = false;
+    var connected = false;
     var node2Port = node2.self().getPort();
     for (int lc = 0; lc < 5; lc++) {
       try {
