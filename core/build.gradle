@@ -90,11 +90,35 @@ startScripts {
     }
 }
 
+
+sourceSets {
+    testcore {
+        java {
+            compileClasspath += main.output
+            runtimeClasspath += main.output
+            srcDir file('src/test-core/java')
+        }
+        resources.srcDir file('src/test-core/resources')
+    }
+}
+configurations {
+    testcoreImplementation.extendsFrom testImplementation
+}
+
+sourceSets {
+    test {
+        java {
+            compileClasspath += testcore.output
+            runtimeClasspath += testcore.output
+        }
+    }
+}
+
 sourceSets {
     integration {
         java {
-            compileClasspath += main.output + test.output
-            runtimeClasspath += main.output + test.output
+            compileClasspath += main.output + testcore.output
+            runtimeClasspath += main.output + testcore.output
             srcDir file('src/integration/java')
         }
         resources.srcDir file('src/integration/resources')
@@ -130,6 +154,7 @@ task runTargetedIntegrationTests(type: Test) {
     // We're using all available processors here for now because we want to run all classes at the same time and they don't seem to be cpu intensive
     maxParallelForks = Runtime.runtime.availableProcessors()
     mustRunAfter(test)
+    finalizedBy(":cli-tools:runTargetedIntegrationTestsUsingCliTools")
 }
 
 task runAllIntegrationTests(type: Test) {
@@ -138,6 +163,7 @@ task runAllIntegrationTests(type: Test) {
     // Use half of available processors. A greater number was tried, but the tests either failed or there was no gain in performance.
     maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
     mustRunAfter(test)
+    finalizedBy(":cli-tools:runAllIntegrationTestsUsingCliTools")
 }
 
 versionFile {

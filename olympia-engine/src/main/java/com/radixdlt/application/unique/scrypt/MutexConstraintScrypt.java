@@ -65,8 +65,8 @@
 package com.radixdlt.application.unique.scrypt;
 
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
+import com.radixdlt.cmos.ConstraintScrypt;
+import com.radixdlt.cmos.Loader;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.EndProcedure;
 import com.radixdlt.constraintmachine.PermissionLevel;

@@ -67,8 +67,8 @@ package com.radixdlt.ledger;
 import com.google.common.hash.HashCode;
 
 /**
- * Accumulates commands into a single version hash which represents all commands which have been
- * committed in a certain order.
+ * Accumulates transactions into a single version hash which represents all transactions which have
+ * been committed in a certain order.
  *
  * <p>All implementations should be functional and stateless.
  */

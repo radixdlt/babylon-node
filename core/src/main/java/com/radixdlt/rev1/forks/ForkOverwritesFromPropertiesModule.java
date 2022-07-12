@@ -104,18 +104,18 @@ public class ForkOverwritesFromPropertiesModule extends AbstractModule {
                   c = c.atFixedEpoch(epoch);
                 }
 
-                final var viewOverwrite =
-                    properties.get(PROPERTIES_PREFIX + c.getName() + ".views", "");
-                if (!viewOverwrite.isBlank()) {
-                  final var view = Long.parseLong(viewOverwrite);
+                final var roundOverwrite =
+                    properties.get(PROPERTIES_PREFIX + c.getName() + ".rounds", "");
+                if (!roundOverwrite.isBlank()) {
+                  final var round = Long.parseLong(roundOverwrite);
                   logger.warn(
-                      "Overwriting views of "
+                      "Overwriting rounds of "
                           + c.getName()
                           + " from "
                           + c.getEngineRulesConfig().maxRounds()
                           + " to "
-                          + view);
-                  c = c.withEngineRulesConfig(c.getEngineRulesConfig().overrideMaxRounds(view));
+                          + round);
+                  c = c.withEngineRulesConfig(c.getEngineRulesConfig().overrideMaxRounds(round));
                 }
 
                 return Optional.of(c);

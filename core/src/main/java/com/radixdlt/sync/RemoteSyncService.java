@@ -72,13 +72,13 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.PeersView;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
@@ -141,9 +141,9 @@ public final class RemoteSyncService {
 
   private void processSyncRequest(BFTNode sender, SyncRequest syncRequest) {
     final var remoteCurrentHeader = syncRequest.getHeader();
-    final var committedCommands = getCommittedCommandsForSyncRequest(remoteCurrentHeader);
+    final var transactionsWithProof = getTransactionsWithProofForSyncRequest(remoteCurrentHeader);
 
-    if (committedCommands == null) {
+    if (transactionsWithProof == null) {
       log.warn(
           "REMOTE_SYNC_REQUEST: Unable to serve sync request {} from sender {}.",
           remoteCurrentHeader,
@@ -152,8 +152,10 @@ public final class RemoteSyncService {
     }
 
     final var verifiable =
-        new DtoTxnsAndProof(
-            committedCommands.getTxns(), remoteCurrentHeader, committedCommands.getProof().toDto());
+        new CommittedTransactionsWithProofDto(
+            transactionsWithProof.getTransactions(),
+            remoteCurrentHeader,
+            transactionsWithProof.getProof().toDto());
 
     log.trace(
         "REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}",
@@ -165,8 +167,9 @@ public final class RemoteSyncService {
     syncResponseDispatcher.dispatch(sender, SyncResponse.create(verifiable));
   }
 
-  private VerifiedTxnsAndProof getCommittedCommandsForSyncRequest(DtoLedgerProof startHeader) {
-    return committedReader.getNextCommittedTxns(startHeader);
+  private CommittedTransactionsWithProof getTransactionsWithProofForSyncRequest(
+      DtoLedgerProof startHeader) {
+    return committedReader.getNextCommittedTransactionRun(startHeader);
   }
 
   public RemoteEventProcessor<StatusRequest> statusRequestEventProcessor() {

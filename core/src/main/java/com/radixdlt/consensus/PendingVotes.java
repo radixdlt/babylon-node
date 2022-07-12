@@ -71,8 +71,8 @@ import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.ValidationState;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.VoteProcessingResult;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected.VoteRejectedReason;
 import com.radixdlt.consensus.liveness.VoteTimeout;
@@ -97,13 +97,13 @@ public final class PendingVotes {
   @VisibleForTesting
   // Make sure equals tester can access.
   static final class PreviousVote {
-    private final View view;
+    private final Round round;
     private final long epoch;
     private final HashCode hash;
     private final boolean isTimeout;
 
-    PreviousVote(View view, long epoch, HashCode hash, boolean isTimeout) {
-      this.view = view;
+    PreviousVote(Round round, long epoch, HashCode hash, boolean isTimeout) {
+      this.round = round;
       this.epoch = epoch;
       this.hash = hash;
       this.isTimeout = isTimeout;
@@ -111,14 +111,14 @@ public final class PendingVotes {
 
     @Override
     public int hashCode() {
-      return Objects.hash(this.view, this.epoch, this.hash, this.isTimeout);
+      return Objects.hash(this.round, this.epoch, this.hash, this.isTimeout);
     }
 
     @Override
     public boolean equals(Object obj) {
       if (obj instanceof PreviousVote) {
         PreviousVote that = (PreviousVote) obj;
-        return Objects.equals(this.view, that.view)
+        return Objects.equals(this.round, that.round)
             && Objects.equals(this.hash, that.hash)
             && this.epoch == that.epoch
             && this.isTimeout == that.isTimeout;
@@ -202,7 +202,7 @@ public final class PendingVotes {
     if (signatureAdded && validationState.complete()) {
       return Optional.of(
           new TimeoutCertificate(
-              voteTimeout.getEpoch(), voteTimeout.getView(), validationState.signatures()));
+              voteTimeout.getEpoch(), voteTimeout.getRound(), validationState.signatures()));
     } else {
       return Optional.empty();
     }
@@ -212,7 +212,7 @@ public final class PendingVotes {
   // TODO: Could be causing quorum formation to slow down
   private boolean replacePreviousVote(BFTNode author, Vote vote, HashCode voteHash) {
     final PreviousVote thisVote =
-        new PreviousVote(vote.getView(), vote.getEpoch(), voteHash, vote.isTimeout());
+        new PreviousVote(vote.getRound(), vote.getEpoch(), voteHash, vote.isTimeout());
     final PreviousVote previousVote = this.previousVotes.put(author, thisVote);
     if (previousVote == null) {
       // No previous vote for this author, all good here
@@ -236,7 +236,7 @@ public final class PendingVotes {
     }
 
     if (previousVote.isTimeout) {
-      final var voteTimeout = new VoteTimeout(previousVote.view, previousVote.epoch);
+      final var voteTimeout = new VoteTimeout(previousVote.round, previousVote.epoch);
       final var voteTimeoutHash = this.hasher.hashDsonEncoded(voteTimeout);
 
       var timeoutValidationState = this.timeoutVoteState.get(voteTimeoutHash);
@@ -248,13 +248,13 @@ public final class PendingVotes {
       }
     }
 
-    if (vote.getView().equals(previousVote.view)) {
-      // If the validator already voted in this view for something else,
+    if (vote.getRound().equals(previousVote.round)) {
+      // If the validator already voted in this round for something else,
       // then the only valid possibility is a non-timeout vote being replaced by a timeout vote
       // on the same vote data, or a byzantine node
       return vote.isTimeout() && !previousVote.isTimeout && thisVote.hash.equals(previousVote.hash);
     } else {
-      // all good if vote is for a different view
+      // all good if vote is for a different round
       return true;
     }
   }

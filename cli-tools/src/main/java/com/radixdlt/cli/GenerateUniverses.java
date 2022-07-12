@@ -64,7 +64,7 @@
 
 package com.radixdlt.cli;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
@@ -75,7 +75,6 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.atom.TxAction;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
@@ -96,6 +95,7 @@ import com.radixdlt.rev1.forks.ForkConfig;
 import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.NewestForkConfig;
+import com.radixdlt.substate.TxAction;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -231,7 +231,7 @@ public final class GenerateUniverses {
                 })
             .getInstance(GenesisProvider.class);
 
-    var genesis = genesisProvider.get().getTxns().get(0);
+    var genesis = genesisProvider.get().getTransactions().get(0);
     IntStream.range(0, generatedValidatorKeys.size())
         .forEach(
             i -> {

@@ -92,7 +92,7 @@ public class SanityTest {
               new MainnetForksModule(),
               new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
               new ForksModule())
-          .ledgerAndRadixEngineWithEpochHighView()
+          .ledgerAndRadixEngineWithEpochMaxRound()
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
@@ -100,7 +100,7 @@ public class SanityTest {
               ConsensusMonitors.directParents(),
               LedgerMonitors.consensusToLedger(),
               LedgerMonitors.ordered(),
-              RadixEngineMonitors.noInvalidProposedCommands(),
+              RadixEngineMonitors.noInvalidProposedTransactions(),
               ApplicationMonitors.mempoolCommitted())
           .addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
 

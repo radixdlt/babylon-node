@@ -69,7 +69,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -78,10 +77,10 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
@@ -93,9 +92,10 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.MockedPeersViewModule;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
@@ -152,8 +152,8 @@ public class RecoveryLivenessTest {
       return List.of(new Object[][] {{2, 88L}});
     }
 
-    public RecoveryLivenessTest2(int numNodes, long epochCeilingView) {
-      super(numNodes, epochCeilingView);
+    public RecoveryLivenessTest2(int numNodes, long epochMaxRound) {
+      super(numNodes, epochMaxRound);
     }
   }
 
@@ -164,8 +164,8 @@ public class RecoveryLivenessTest {
       return List.of(new Object[][] {{2, 88L}});
     }
 
-    public RecoveryLivenessTest3(int numNodes, long epochCeilingView) {
-      super(numNodes, epochCeilingView);
+    public RecoveryLivenessTest3(int numNodes, long epochMaxRound) {
+      super(numNodes, epochMaxRound);
     }
   }
 
@@ -176,8 +176,8 @@ public class RecoveryLivenessTest {
       return List.of(new Object[][] {{4, 88L}});
     }
 
-    public RecoveryLivenessTest4(int numNodes, long epochCeilingView) {
-      super(numNodes, epochCeilingView);
+    public RecoveryLivenessTest4(int numNodes, long epochMaxRound) {
+      super(numNodes, epochMaxRound);
     }
   }
 
@@ -188,8 +188,8 @@ public class RecoveryLivenessTest {
       return List.of(new Object[][] {{2, 1L}});
     }
 
-    public RecoveryLivenessTest5(int numNodes, long epochCeilingView) {
-      super(numNodes, epochCeilingView);
+    public RecoveryLivenessTest5(int numNodes, long epochMaxRound) {
+      super(numNodes, epochMaxRound);
     }
   }
 
@@ -200,8 +200,8 @@ public class RecoveryLivenessTest {
       return List.of(new Object[][] {{10, 100L}});
     }
 
-    public RecoveryLivenessTest6(int numNodes, long epochCeilingView) {
-      super(numNodes, epochCeilingView);
+    public RecoveryLivenessTest6(int numNodes, long epochMaxRound) {
+      super(numNodes, epochMaxRound);
     }
   }
 
@@ -210,16 +210,16 @@ public class RecoveryLivenessTest {
   private List<Supplier<Injector>> nodeCreators;
   private List<Injector> nodes = new ArrayList<>();
   private final ImmutableList<ECKeyPair> nodeKeys;
-  private final long epochCeilingView;
+  private final long epochMaxRound;
   private MessageMutator messageMutator;
 
-  public RecoveryLivenessTest(int numNodes, long epochCeilingView) {
+  public RecoveryLivenessTest(int numNodes, long epochMaxRound) {
     this.nodeKeys =
         Stream.generate(ECKeyPair::generateNew)
             .limit(numNodes)
             .sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
             .collect(ImmutableList.toImmutableList());
-    this.epochCeilingView = epochCeilingView;
+    this.epochMaxRound = epochMaxRound;
   }
 
   @Before
@@ -272,7 +272,7 @@ public class RecoveryLivenessTest {
                 FeeTable.noFees(),
                 1024 * 1024,
                 OptionalInt.of(50),
-                epochCeilingView,
+                epochMaxRound,
                 2,
                 Amount.ofTokens(10),
                 1,
@@ -282,7 +282,7 @@ public class RecoveryLivenessTest {
                 MSG.maxLength())),
         new ForksModule(),
         new PersistedNodeForTestingModule(),
-        new LastEventsModule(EpochViewUpdate.class),
+        new LastEventsModule(EpochRoundUpdate.class),
         new AbstractModule() {
           @Override
           protected void configure() {
@@ -294,7 +294,8 @@ public class RecoveryLivenessTest {
                 .to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
           }
         },
-        new MockedPeersViewModule(ImmutableMap.of(), allNodes));
+        new TestP2PModule.Builder().withAllNodes(allNodes).build(),
+        new TestMessagingModule.Builder().build());
   }
 
   private void restartNode(int index) {
@@ -345,30 +346,31 @@ public class RecoveryLivenessTest {
     return msg;
   }
 
-  private Optional<EpochView> lastCommitViewEmitted() {
+  private Optional<EpochRound> lastEpochRoundUpdateEmitted() {
     return network.allMessages().stream()
-        .filter(msg -> msg.message() instanceof EpochViewUpdate)
-        .map(msg -> (EpochViewUpdate) msg.message())
+        .filter(msg -> msg.message() instanceof EpochRoundUpdate)
+        .map(msg -> (EpochRoundUpdate) msg.message())
         .map(
             e ->
-                new EpochView(
-                    e.getEpoch(), e.getViewUpdate().getHighQC().highestCommittedQC().getView()))
+                new EpochRound(
+                    e.getEpoch(), e.getRoundUpdate().getHighQC().highestCommittedQC().getRound()))
         .max(Comparator.naturalOrder());
   }
 
-  private EpochView latestEpochView() {
+  private EpochRound latestEpochRound() {
     return this.nodes.stream()
         .map(
             i ->
                 i.getInstance(Key.get(new TypeLiteral<ClassToInstanceMap<Object>>() {}))
-                    .getInstance(EpochViewUpdate.class))
-        .map(e -> e == null ? new EpochView(0, View.genesis()) : e.getEpochView())
+                    .getInstance(EpochRoundUpdate.class))
+        .map(e -> e == null ? new EpochRound(0, Round.genesis()) : e.getEpochRound())
         .max(Comparator.naturalOrder())
-        .orElse(new EpochView(0, View.genesis()));
+        .orElse(new EpochRound(0, Round.genesis()));
   }
 
   private int processUntilNextCommittedEmitted(int maxSteps) {
-    var lastCommitted = this.lastCommitViewEmitted().orElse(new EpochView(0, View.genesis()));
+    var lastCommitted =
+        this.lastEpochRoundUpdateEmitted().orElse(new EpochRound(0, Round.genesis()));
     int count = 0;
     int senderIndex;
     do {
@@ -379,7 +381,8 @@ public class RecoveryLivenessTest {
       var msg = processNext();
       senderIndex = msg.value().channelId().senderIndex();
       count++;
-    } while (this.lastCommitViewEmitted().stream().noneMatch(v -> v.compareTo(lastCommitted) > 0));
+    } while (this.lastEpochRoundUpdateEmitted().stream()
+        .noneMatch(v -> v.compareTo(lastCommitted) > 0));
 
     return senderIndex;
   }
@@ -396,14 +399,14 @@ public class RecoveryLivenessTest {
    */
   @Test
   public void liveness_check_when_restart_all_but_one_node() {
-    var epochView = this.latestEpochView();
+    var epochRound = this.latestEpochRound();
 
     for (int restart = 0; restart < 5; restart++) {
       processForCount(5000);
 
-      var nextEpochView = latestEpochView();
-      assertThat(nextEpochView).isGreaterThan(epochView);
-      epochView = nextEpochView;
+      var nextEpochRound = latestEpochRound();
+      assertThat(nextEpochRound).isGreaterThan(epochRound);
+      epochRound = nextEpochRound;
 
       logger.info("Restarting " + restart);
       for (int nodeIndex = 1; nodeIndex < nodes.size(); nodeIndex++) {
@@ -412,19 +415,19 @@ public class RecoveryLivenessTest {
       initSync();
     }
 
-    assertThat(epochView.getEpoch()).isGreaterThan(1);
+    assertThat(epochRound.getEpoch()).isGreaterThan(1);
   }
 
   @Test
-  public void liveness_check_when_restart_node_on_view_update_with_commit() {
-    var epochView = this.latestEpochView();
+  public void liveness_check_when_restart_node_on_round_update_with_commit() {
+    var epochRound = this.latestEpochRound();
 
     for (int restart = 0; restart < 5; restart++) {
       processForCount(5000);
 
-      var nextEpochView = latestEpochView();
-      assertThat(nextEpochView).isGreaterThan(epochView);
-      epochView = nextEpochView;
+      var nextEpochRound = latestEpochRound();
+      assertThat(nextEpochRound).isGreaterThan(epochRound);
+      epochRound = nextEpochRound;
 
       int nodeToRestart = processUntilNextCommittedEmitted(5000);
 
@@ -437,19 +440,19 @@ public class RecoveryLivenessTest {
       initSync();
     }
 
-    assertThat(epochView.getEpoch()).isGreaterThan(1);
+    assertThat(epochRound.getEpoch()).isGreaterThan(1);
   }
 
   @Test
   public void liveness_check_when_restart_all_nodes() {
-    var epochView = this.latestEpochView();
+    var epochRound = this.latestEpochRound();
 
     for (int restart = 0; restart < 5; restart++) {
       processForCount(5000);
 
-      var nextEpochView = latestEpochView();
-      assertThat(nextEpochView).isGreaterThan(epochView);
-      epochView = nextEpochView;
+      var nextEpochRound = latestEpochRound();
+      assertThat(nextEpochRound).isGreaterThan(epochRound);
+      epochRound = nextEpochRound;
 
       logger.info("Restarting " + restart);
       for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
@@ -458,7 +461,7 @@ public class RecoveryLivenessTest {
       initSync();
     }
 
-    assertThat(epochView.getEpoch()).isGreaterThan(1);
+    assertThat(epochRound.getEpoch()).isGreaterThan(1);
   }
 
   /**
@@ -477,14 +480,14 @@ public class RecoveryLivenessTest {
         (message, queue) ->
             message.channelId().receiverIndex() < f || message.channelId().senderIndex() < f;
 
-    var epochView = this.latestEpochView();
+    var epochRound = this.latestEpochRound();
 
     for (int restart = 0; restart < 5; restart++) {
       processForCount(5000);
 
-      var nextEpochView = latestEpochView();
-      assertThat(nextEpochView).isGreaterThan(epochView);
-      epochView = nextEpochView;
+      var nextEpochRound = latestEpochRound();
+      assertThat(nextEpochRound).isGreaterThan(epochRound);
+      epochRound = nextEpochRound;
 
       logger.info("Restarting " + restart);
       for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
@@ -493,6 +496,6 @@ public class RecoveryLivenessTest {
       initSync();
     }
 
-    assertThat(epochView.getEpoch()).isGreaterThan(1);
+    assertThat(epochRound.getEpoch()).isGreaterThan(1);
   }
 }

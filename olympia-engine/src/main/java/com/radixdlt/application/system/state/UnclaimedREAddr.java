@@ -66,13 +66,13 @@ package com.radixdlt.application.system.state;
 
 import static com.radixdlt.identifiers.REAddr.HASHED_KEY_BYTES;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import java.util.Arrays;
 
-public record UnclaimedREAddr(REAddr addr) implements Particle {
+public record UnclaimedREAddr(REAddr addr) implements RawSubstate {
 
   public void verifyHashedKey(ECPublicKey publicKey, byte[] arg) throws InvalidHashedKeyException {
     if (addr.getType() != REAddr.REAddrType.HASHED_KEY) {

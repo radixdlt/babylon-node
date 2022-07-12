@@ -65,22 +65,23 @@
 package com.radixdlt.integration.targeted.capabilities;
 
 import static com.radixdlt.shell.RadixShell.nodeBuilder;
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;
 
+import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
+import com.radixdlt.messaging.ledgersync.StatusResponseMessage;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.network.messages.StatusRequestMessage;
-import com.radixdlt.network.messages.StatusResponseMessage;
 import com.radixdlt.shell.RadixShell;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.Test;
 
 public class NodeCapabilityTests {
-
-  static int nextNodePort = 30301;
 
   @Test
   public void ensure_a_disabled_capability_can_still_send_messages() {
@@ -89,10 +90,9 @@ public class NodeCapabilityTests {
     try {
       var expectedResultMap = new HashMap<String, Boolean>();
       // Contains capability messages and whether they are expected or not
-      expectedResultMap.put("node2-StatusRequestMessage", true);
+      expectedResultMap.put("node2-StatusRequestMessage", false);
 
       var messagesReceived = new HashSet<String>();
-
       var n1Port = 30301;
       var n2Port = 30302;
 
@@ -107,7 +107,7 @@ public class NodeCapabilityTests {
           m -> messagesReceived.add("node2-" + m.message().getClass().getSimpleName()));
 
       // Has the expected message been received?
-      Result result = waitForMessagesReceived(expectedResultMap, messagesReceived, 3);
+      var result = waitForMessagesReceived(expectedResultMap, messagesReceived, 3);
 
       assertTrue(result.message, result.testOk);
     } catch (Exception ex) {
@@ -199,7 +199,6 @@ public class NodeCapabilityTests {
     try {
       var capabilityName = "ledger-sync";
       var peerCapabilityFound = false;
-      var messagesReceived = new HashSet<String>();
       var n1Port = 30301;
       var n2Port = 30302;
 
@@ -272,7 +271,7 @@ public class NodeCapabilityTests {
           m -> messagesReceived.add("node3-" + m.message().getClass().getSimpleName()));
 
       // Have the expected messages been received?
-      Result result = waitForMessagesReceived(expectedResultMap, messagesReceived, 2);
+      var result = waitForMessagesReceived(expectedResultMap, messagesReceived, 2);
       assertTrue(result.message, result.testOk);
 
       var node3Counters = node2.getInstance(SystemCounters.class);
@@ -282,6 +281,7 @@ public class NodeCapabilityTests {
       result =
           waitForCounterValueEquals(
               node3Counters, SystemCounters.CounterType.MESSAGES_INBOUND_DISCARDED, 0, 1);
+      assertTrue(result.message, result.testOk);
 
     } catch (Exception ex) {
       fail(String.format("Exception %s", ex.getMessage()));
@@ -304,17 +304,16 @@ public class NodeCapabilityTests {
   // Check whether the expected messages have been received / not received.
   private Result checkMessages(
       HashMap<String, Boolean> expectedResultMap, HashSet<String> messagesReceived) {
-    Result result = new Result();
+    var result = new Result();
     result.testOk = true;
     Iterator it = expectedResultMap.entrySet().iterator();
     while (it.hasNext()) {
-      Map.Entry pair = (Map.Entry) it.next();
-      String message = pair.getKey().toString();
-      Boolean shouldBeReceived = Boolean.valueOf(pair.getValue().toString());
+      var pair = (Map.Entry) it.next();
+      var message = pair.getKey().toString();
+      var shouldBeReceived = Boolean.valueOf(pair.getValue().toString());
       if (!messagesReceived.contains(message) && shouldBeReceived) {
         result.testOk = false;
         result.message += String.format("%s was NOT received but should have been; ", message);
-
       } else if (messagesReceived.contains(message) && !shouldBeReceived) {
         result.testOk = false;
         result.message += String.format("%s was received but should NOT have been; ", message);
@@ -336,34 +335,25 @@ public class NodeCapabilityTests {
       HashSet<String> messagesReceived,
       int maxWaitTimeSecs)
       throws InterruptedException {
-    Result result = new Result();
-    result.testOk = false;
-    boolean maxWaitTimeIsActualWaitTime = false;
+    var result = new Result();
+    result.testOk = true;
 
     // Are there any messages we want to ensure do not arrive? If so, the maxWaitTimeSecs becomes
     // the actual time to wait.
-    if (expectedResultMap.containsValue(false)) {
-      maxWaitTimeIsActualWaitTime = true;
-    }
+    var maxWaitTimeIsActualWaitTime = expectedResultMap.containsValue(false);
 
-    int currentWaitTimeMs = 0;
-    int sleepIntervalMs = 100;
-    while (true) {
-      result = checkMessages(expectedResultMap, messagesReceived);
-
-      // If maxWaitTimeIsActualWaitTime is true, we want to ignore the result and only verify the
-      // message(s) do not exist after the wait period.
-      if (result.testOk && !maxWaitTimeIsActualWaitTime) {
-        break;
-      } else {
-        if (currentWaitTimeMs >= (maxWaitTimeSecs * 1000)) {
-          if (!maxWaitTimeIsActualWaitTime) {
-            result.message = "Max duration (%s seconds) exceeded. " + result.message;
-          }
-          break;
-        }
-        Thread.sleep(sleepIntervalMs);
-        currentWaitTimeMs += sleepIntervalMs;
+    try {
+      await()
+          .atMost(Duration.ofSeconds(maxWaitTimeSecs))
+          .pollInterval(Duration.ofMillis(99))
+          .until(
+              () ->
+                  checkMessages(expectedResultMap, messagesReceived).testOk
+                      && !maxWaitTimeIsActualWaitTime);
+    } catch (ConditionTimeoutException e) {
+      if (!maxWaitTimeIsActualWaitTime) {
+        // One more call to checkMessages, to get the result (failure) string.
+        result = checkMessages(expectedResultMap, messagesReceived);
       }
     }
 
@@ -378,27 +368,22 @@ public class NodeCapabilityTests {
       long expectedValue,
       int maxWaitTimeSecs)
       throws InterruptedException {
-    Result result = new Result();
+    var result = new Result();
     result.testOk = false;
-    int currentWaitTimeMs = 0;
-    int sleepIntervalMs = 100;
-    while (true) {
-      if (counters.get(counterType) == expectedValue) {
-        result.testOk = true;
-        result.message =
-            String.format("%s equals expected value: %s", counterType.name(), expectedValue);
-        break;
-      } else {
-        if (currentWaitTimeMs >= (maxWaitTimeSecs * 1000)) {
-          result.message =
-              String.format(
-                  "%s (%d) does NOT equal expected value: %d within the specified time %d seconds",
-                  counterType.name(), counters.get(counterType), expectedValue, maxWaitTimeSecs);
-          break;
-        }
-        Thread.sleep(sleepIntervalMs);
-        currentWaitTimeMs += sleepIntervalMs;
-      }
+
+    try {
+      await()
+          .atMost(Duration.ofSeconds(maxWaitTimeSecs))
+          .pollInterval(Duration.ofMillis(100))
+          .until(() -> counters.get(counterType) == expectedValue);
+      result.testOk = true;
+      result.message =
+          String.format("%s equals expected value: %s", counterType.name(), expectedValue);
+    } catch (ConditionTimeoutException e) {
+      result.message =
+          String.format(
+              "%s (%d) does NOT equal expected value: %d within the specified time %d seconds",
+              counterType.name(), counters.get(counterType), expectedValue, maxWaitTimeSecs);
     }
 
     return result;

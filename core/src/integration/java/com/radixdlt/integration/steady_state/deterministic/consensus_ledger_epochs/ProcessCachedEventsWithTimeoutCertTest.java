@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -92,11 +92,11 @@ public class ProcessCachedEventsWithTimeoutCertTest {
             .numNodes(5)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutators(
-                dropProposalToNodes(View.of(1), ImmutableList.of(TEST_NODE)),
-                dropProposalToNodes(View.of(2), ImmutableList.of(2, 3, TEST_NODE)),
+                dropProposalToNodes(Round.of(1), ImmutableList.of(TEST_NODE)),
+                dropProposalToNodes(Round.of(2), ImmutableList.of(2, 3, TEST_NODE)),
                 dropVotesForNode(TEST_NODE))
-            .buildWithEpochs(View.of(100))
-            .runUntil(nodeVotesForView(View.of(3), TEST_NODE));
+            .buildWithEpochs(Round.of(100))
+            .runUntil(nodeVotesForRound(Round.of(3), TEST_NODE));
 
     // just to check if the node indeed needed to sync
     final var counters = test.getSystemCounters(TEST_NODE);
@@ -104,12 +104,12 @@ public class ProcessCachedEventsWithTimeoutCertTest {
     assertThat(counters.get(SystemCounters.CounterType.BFT_VOTE_QUORUMS)).isEqualTo(0);
   }
 
-  private static MessageMutator dropProposalToNodes(View view, ImmutableList<Integer> nodes) {
+  private static MessageMutator dropProposalToNodes(Round round, ImmutableList<Integer> nodes) {
     return (message, queue) -> {
       final var msg = message.message();
       if (msg instanceof Proposal) {
         final Proposal proposal = (Proposal) msg;
-        return proposal.getView().equals(view)
+        return proposal.getRound().equals(round)
             && nodes.contains(message.channelId().receiverIndex());
       }
       return false;
@@ -126,14 +126,14 @@ public class ProcessCachedEventsWithTimeoutCertTest {
     };
   }
 
-  public static Predicate<Timed<ControlledMessage>> nodeVotesForView(View view, int node) {
+  public static Predicate<Timed<ControlledMessage>> nodeVotesForRound(Round round, int node) {
     return timedMsg -> {
       final var message = timedMsg.value();
       if (!(message.message() instanceof Vote)) {
         return false;
       }
       final var vote = (Vote) message.message();
-      return vote.getView().equals(view) && message.channelId().senderIndex() == node;
+      return vote.getRound().equals(round) && message.channelId().senderIndex() == node;
     };
   }
 }

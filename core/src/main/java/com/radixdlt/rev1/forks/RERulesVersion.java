@@ -64,14 +64,14 @@
 
 package com.radixdlt.rev1.forks;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.radixdlt.application.misc.SplitTokenConstructor;
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
 import com.radixdlt.application.system.construction.FeeReserveCompleteConstructor;
 import com.radixdlt.application.system.construction.FeeReservePutConstructor;
 import com.radixdlt.application.system.construction.NextEpochConstructorV3;
-import com.radixdlt.application.system.construction.NextViewConstructorV3;
+import com.radixdlt.application.system.construction.NextRoundConstructorV3;
 import com.radixdlt.application.system.scrypt.EpochUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.RoundUpdateConstraintScrypt;
 import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
@@ -97,8 +97,7 @@ import com.radixdlt.application.validators.scrypt.ValidatorConstraintScryptV2;
 import com.radixdlt.application.validators.scrypt.ValidatorRegisterConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateOwnerConstraintScrypt;
 import com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt;
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.cmos.ConstraintMachineOS;
 import com.radixdlt.constraintmachine.ConstraintMachineConfig;
 import com.radixdlt.constraintmachine.meter.Meter;
 import com.radixdlt.constraintmachine.meter.Meters;
@@ -109,6 +108,7 @@ import com.radixdlt.engine.PostProcessor;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.rev1.CandidateForkVotesPostProcessor;
 import com.radixdlt.rev1.EpochProofVerifierV2;
+import com.radixdlt.substate.REConstructor;
 
 public enum RERulesVersion {
   OLYMPIA_V1 {
@@ -120,7 +120,7 @@ public enum RERulesVersion {
       var rakeIncreaseDebouncerEpochLength = config.rakeIncreaseDebouncerEpochLength();
       var tokenSymbolPattern = config.tokenSymbolPattern();
 
-      final CMAtomOS v4 = new CMAtomOS();
+      final ConstraintMachineOS v4 = new ConstraintMachineOS();
       v4.load(new ValidatorConstraintScryptV2());
       v4.load(new ValidatorUpdateRakeConstraintScrypt(rakeIncreaseDebouncerEpochLength));
       v4.load(new ValidatorRegisterConstraintScrypt());
@@ -173,7 +173,7 @@ public enum RERulesVersion {
                       config.minimumCompletedProposalsPercentage(),
                       config.unstakingEpochDelay(),
                       config.maxValidators()))
-              .put(NextRound.class, new NextViewConstructorV3())
+              .put(NextRound.class, new NextRoundConstructorV3())
               .put(RegisterValidator.class, new RegisterValidatorConstructor())
               .put(SplitToken.class, new SplitTokenConstructor())
               .put(

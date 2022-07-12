@@ -69,7 +69,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.environment.EventProcessor;
@@ -82,8 +82,8 @@ import java.util.concurrent.atomic.AtomicReference;
 /** Manages system information to be consumed by clients such as the api. */
 public final class InMemorySystemInfo {
   private final AtomicReference<EpochLocalTimeoutOccurrence> lastTimeout = new AtomicReference<>();
-  private final AtomicReference<EpochView> currentView =
-      new AtomicReference<>(EpochView.of(0L, View.genesis()));
+  private final AtomicReference<EpochRound> currentEpochRound =
+      new AtomicReference<>(EpochRound.of(0L, Round.genesis()));
   private final AtomicReference<QuorumCertificate> highQC = new AtomicReference<>();
   /* BAB-TODO: Add back in missed proposal tracking
   private final AtomicMarkableReference<Optional<ValidatorBFTDataEvent>> missedProposals =
@@ -110,8 +110,8 @@ public final class InMemorySystemInfo {
     lastTimeout.set(timeout);
   }
 
-  public void processView(EpochView epochView) {
-    currentView.set(epochView);
+  public void processEpochRound(EpochRound epochRound) {
+    currentEpochRound.set(epochRound);
   }
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
@@ -178,8 +178,8 @@ public final class InMemorySystemInfo {
     return epochsLedgerProof.get();
   }
 
-  public EpochView getCurrentView() {
-    return this.currentView.get();
+  public EpochRound getCurrentRound() {
+    return this.currentEpochRound.get();
   }
 
   public EpochLocalTimeoutOccurrence getLastTimeout() {

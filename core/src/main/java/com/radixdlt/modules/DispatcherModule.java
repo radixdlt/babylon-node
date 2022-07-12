@@ -79,11 +79,11 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.NoVote;
+import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.bft.RoundVotingResult;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.ViewQuorumReached;
-import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.bft.ViewVotingResult;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
@@ -100,22 +100,22 @@ import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.network.p2p.PeerEvent;
-import com.radixdlt.network.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
-import com.radixdlt.network.p2p.discovery.DiscoverPeers;
-import com.radixdlt.network.p2p.discovery.GetPeers;
-import com.radixdlt.network.p2p.discovery.PeersResponse;
-import com.radixdlt.network.p2p.liveness.PeerPingTimeout;
-import com.radixdlt.network.p2p.liveness.PeersLivenessCheckTrigger;
-import com.radixdlt.network.p2p.liveness.Ping;
-import com.radixdlt.network.p2p.liveness.Pong;
+import com.radixdlt.p2p.PeerEvent;
+import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
+import com.radixdlt.p2p.discovery.DiscoverPeers;
+import com.radixdlt.p2p.discovery.GetPeers;
+import com.radixdlt.p2p.discovery.PeersResponse;
+import com.radixdlt.p2p.liveness.PeerPingTimeout;
+import com.radixdlt.p2p.liveness.PeersLivenessCheckTrigger;
+import com.radixdlt.p2p.liveness.Ping;
+import com.radixdlt.p2p.liveness.Pong;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
@@ -210,12 +210,12 @@ public class DispatcherModule extends AbstractModule {
         .toProvider(Dispatchers.dispatcherProvider(EpochLocalTimeoutOccurrence.class))
         .in(Scopes.SINGLETON);
 
-    final var viewUpdateKey = new TypeLiteral<EventProcessor<ViewUpdate>>() {};
-    Multibinder.newSetBinder(binder(), viewUpdateKey, ProcessOnDispatch.class);
-    Multibinder.newSetBinder(binder(), viewUpdateKey);
+    final var roundUpdateKey = new TypeLiteral<EventProcessor<RoundUpdate>>() {};
+    Multibinder.newSetBinder(binder(), roundUpdateKey, ProcessOnDispatch.class);
+    Multibinder.newSetBinder(binder(), roundUpdateKey);
 
-    bind(new TypeLiteral<EventDispatcher<EpochViewUpdate>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(EpochViewUpdate.class))
+    bind(new TypeLiteral<EventDispatcher<EpochRoundUpdate>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(EpochRoundUpdate.class))
         .in(Scopes.SINGLETON);
 
     bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {})
@@ -230,18 +230,18 @@ public class DispatcherModule extends AbstractModule {
     final var committedUpdateKey = new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() {};
     Multibinder.newSetBinder(binder(), committedUpdateKey);
     Multibinder.newSetBinder(binder(), committedUpdateKey, ProcessOnDispatch.class);
-    final var syncUpdateKey = new TypeLiteral<EventProcessor<VerifiedTxnsAndProof>>() {};
+    final var syncUpdateKey = new TypeLiteral<EventProcessor<CommittedTransactionsWithProof>>() {};
     Multibinder.newSetBinder(binder(), syncUpdateKey, ProcessOnDispatch.class);
 
     final var verticesRequestKey = new TypeLiteral<EventProcessor<GetVerticesRequest>>() {};
     Multibinder.newSetBinder(binder(), verticesRequestKey, ProcessOnDispatch.class);
 
-    bind(new TypeLiteral<EventDispatcher<ViewQuorumReached>>() {})
+    bind(new TypeLiteral<EventDispatcher<RoundQuorumReached>>() {})
         .toProvider(
             Dispatchers.dispatcherProvider(
-                ViewQuorumReached.class,
+                RoundQuorumReached.class,
                 v -> {
-                  if (v.votingResult() instanceof ViewVotingResult.FormedTC) {
+                  if (v.votingResult() instanceof RoundVotingResult.FormedTC) {
                     return CounterType.BFT_TIMEOUT_QUORUMS;
                   }
                   return CounterType.BFT_VOTE_QUORUMS;
@@ -342,7 +342,7 @@ public class DispatcherModule extends AbstractModule {
   }
 
   @Provides
-  private EventDispatcher<BFTInsertUpdate> viewEventDispatcher(
+  private EventDispatcher<BFTInsertUpdate> bftInsertUpdateEventDispatcher(
       @ProcessOnDispatch Set<EventProcessor<BFTInsertUpdate>> processors,
       Environment environment,
       SystemCounters systemCounters) {
@@ -383,11 +383,12 @@ public class DispatcherModule extends AbstractModule {
   }
 
   @Provides
-  private EventDispatcher<VerifiedTxnsAndProof> syncUpdateEventDispatcher(
-      @ProcessOnDispatch Set<EventProcessor<VerifiedTxnsAndProof>> processors,
+  private EventDispatcher<CommittedTransactionsWithProof> syncUpdateEventDispatcher(
+      @ProcessOnDispatch Set<EventProcessor<CommittedTransactionsWithProof>> processors,
       SystemCounters systemCounters) {
     return commit -> {
-      systemCounters.add(CounterType.SYNC_VALID_RESPONSES_RECEIVED, commit.getTxns().size());
+      systemCounters.add(
+          CounterType.SYNC_VALID_RESPONSES_RECEIVED, commit.getTransactions().size());
       processors.forEach(e -> e.process(commit));
     };
   }
@@ -421,7 +422,7 @@ public class DispatcherModule extends AbstractModule {
       Set<EventProcessor<LocalTimeoutOccurrence>> asyncProcessors,
       Environment environment) {
     if (asyncProcessors.isEmpty()) {
-      return viewTimeout -> syncProcessors.forEach(e -> e.process(viewTimeout));
+      return roundTimeout -> syncProcessors.forEach(e -> e.process(roundTimeout));
     } else {
       var dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
       return timeout -> {
@@ -446,12 +447,12 @@ public class DispatcherModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private EventDispatcher<ViewUpdate> viewUpdateEventDispatcher(
-      @ProcessOnDispatch Set<EventProcessor<ViewUpdate>> processors, Environment environment) {
-    var dispatcher = environment.getDispatcher(ViewUpdate.class);
-    return viewUpdate -> {
-      processors.forEach(e -> e.process(viewUpdate));
-      dispatcher.dispatch(viewUpdate);
+  private EventDispatcher<RoundUpdate> roundUpdateEventDispatcher(
+      @ProcessOnDispatch Set<EventProcessor<RoundUpdate>> processors, Environment environment) {
+    var dispatcher = environment.getDispatcher(RoundUpdate.class);
+    return roundUpdate -> {
+      processors.forEach(e -> e.process(roundUpdate));
+      dispatcher.dispatch(roundUpdate);
     };
   }
 }

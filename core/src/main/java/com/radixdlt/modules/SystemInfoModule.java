@@ -71,7 +71,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
@@ -90,7 +90,7 @@ public class SystemInfoModule extends AbstractModule {
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
-    eventBinder.addBinding().toInstance(EpochViewUpdate.class);
+    eventBinder.addBinding().toInstance(EpochRoundUpdate.class);
     eventBinder.addBinding().toInstance(EpochLocalTimeoutOccurrence.class);
     eventBinder.addBinding().toInstance(BFTCommittedUpdate.class);
     eventBinder.addBinding().toInstance(BFTHighQCUpdate.class);
@@ -104,11 +104,12 @@ public class SystemInfoModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private EventProcessorOnRunner<?> epochViewEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
+  private EventProcessorOnRunner<?> epochRoundUpdateEventProcessor(
+      InMemorySystemInfo inMemorySystemInfo) {
     return new EventProcessorOnRunner<>(
         Runners.SYSTEM_INFO,
-        EpochViewUpdate.class,
-        v -> inMemorySystemInfo.processView(v.getEpochView()));
+        EpochRoundUpdate.class,
+        v -> inMemorySystemInfo.processEpochRound(v.getEpochRound()));
   }
 
   @ProvidesIntoSet

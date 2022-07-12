@@ -66,7 +66,7 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 
 /**
@@ -82,11 +82,11 @@ public interface BFTEventProcessor {
   void start();
 
   /**
-   * Process a local view update message.
+   * Process a local round update message.
    *
-   * @param viewUpdate the view update message
+   * @param roundUpdate the round update message
    */
-  void processViewUpdate(ViewUpdate viewUpdate);
+  void processRoundUpdate(RoundUpdate roundUpdate);
 
   /**
    * Process a consensus vote message.
@@ -105,7 +105,7 @@ public interface BFTEventProcessor {
   /**
    * Process a local consensus timeout message.
    *
-   * @param scheduledLocalTimeout the view corresponding to the timeout
+   * @param scheduledLocalTimeout the round corresponding to the timeout
    */
   void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout);
 

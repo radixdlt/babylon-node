@@ -75,7 +75,7 @@ import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
+import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.store.BerkeleyAddressBookStore;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.MemoryLeakDetector;

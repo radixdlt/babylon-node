@@ -95,7 +95,7 @@ public class IncreasingValidatorsTest {
               new RadixEngineForksLatestOnlyModule(
                   RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
               new ForksModule())
-          .ledgerAndRadixEngineWithEpochHighView()
+          .ledgerAndRadixEngineWithEpochMaxRound()
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
@@ -103,7 +103,7 @@ public class IncreasingValidatorsTest {
               ConsensusMonitors.directParents(),
               LedgerMonitors.consensusToLedger(),
               LedgerMonitors.ordered(),
-              RadixEngineMonitors.noInvalidProposedCommands(),
+              RadixEngineMonitors.noInvalidProposedTransactions(),
               ApplicationMonitors.registeredNodeToEpoch())
           .addActor(NodeValidatorRegistrator.class);
 

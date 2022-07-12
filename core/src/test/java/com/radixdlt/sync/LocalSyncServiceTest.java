@@ -86,16 +86,16 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.DtoTxnsAndProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.network.capability.LedgerSyncCapability;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.PeersView;
-import com.radixdlt.network.p2p.PeersView.PeerInfo;
+import com.radixdlt.p2p.NodeId;
+import com.radixdlt.p2p.PeersView;
+import com.radixdlt.p2p.PeersView.PeerInfo;
+import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
 import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseHandler;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
@@ -433,7 +433,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService.syncResponseEventProcessor().process(peer1, syncResponse);
 
-    verify(verifiedSyncResponseHandler, times(1)).handleVerifiedSyncResponse(syncResponse);
+    verify(verifiedSyncResponseHandler, times(1)).handleSyncResponse(syncResponse);
     verify(syncLedgerUpdateTimeoutDispatcher, times(1)).dispatch(any(), anyLong());
     verifyNoMoreInteractions(syncRequestDispatcher);
   }
@@ -655,10 +655,10 @@ public class LocalSyncServiceTest {
     when(respHead.getLedgerHeader()).thenReturn(respHeadLedgerHeader);
     final var respTail = mock(DtoLedgerProof.class);
     when(respTail.getLedgerHeader()).thenReturn(respTailLedgerHeader);
-    final var response = mock(DtoTxnsAndProof.class);
+    final var response = mock(CommittedTransactionsWithProofDto.class);
     final var txn = mock(Transaction.class);
     when(txn.getId()).thenReturn(TID.ZERO);
-    when(response.getTxns()).thenReturn(ImmutableList.of(txn));
+    when(response.getTransactions()).thenReturn(ImmutableList.of(txn));
     when(response.getHead()).thenReturn(respHead);
     when(response.getTail()).thenReturn(respTail);
 
@@ -675,7 +675,8 @@ public class LocalSyncServiceTest {
 
   private LedgerUpdate ledgerUpdateAtStateVersion(long stateVersion) {
     return new LedgerUpdate(
-        VerifiedTxnsAndProof.create(ImmutableList.of(), createHeaderAtStateVersion(stateVersion)),
+        CommittedTransactionsWithProof.create(
+            ImmutableList.of(), createHeaderAtStateVersion(stateVersion)),
         ImmutableClassToInstanceMap.of());
   }
 

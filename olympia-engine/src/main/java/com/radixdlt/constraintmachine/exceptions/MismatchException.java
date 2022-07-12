@@ -64,11 +64,11 @@
 
 package com.radixdlt.constraintmachine.exceptions;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstate;
 
 public class MismatchException extends Exception {
 
-  public MismatchException(Particle expected, Particle actual) {
+  public MismatchException(RawSubstate expected, RawSubstate actual) {
     super("Expected substate " + expected + " but was " + actual);
   }
 

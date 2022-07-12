@@ -64,11 +64,11 @@
 
 package com.radixdlt.application.system.construction;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
-import com.radixdlt.atom.ActionConstructor;
-import com.radixdlt.atom.TxBuilder;
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.substate.ActionConstructor;
+import com.radixdlt.substate.TxBuilder;
+import com.radixdlt.substate.TxBuilderException;
 
 public class FeeReserveTakeConstructor implements ActionConstructor<FeeReserveTake> {
   @Override

@@ -83,19 +83,19 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.messaging.core.Message;
+import com.radixdlt.messaging.core.MessageCentral;
+import com.radixdlt.messaging.core.MessageFromPeer;
 import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.network.Message;
-import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageFromPeer;
-import com.radixdlt.network.p2p.NodeId;
-import com.radixdlt.network.p2p.PeerManager;
-import com.radixdlt.network.p2p.RadixNodeUri;
-import com.radixdlt.network.p2p.transport.PeerChannel;
-import com.radixdlt.network.p2p.transport.PeerOutboundBootstrap;
-import com.radixdlt.network.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.NodeId;
+import com.radixdlt.p2p.PeerManager;
+import com.radixdlt.p2p.RadixNodeUri;
+import com.radixdlt.p2p.transport.PeerChannel;
+import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
+import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.CommittedReader;
@@ -205,7 +205,7 @@ public final class RadixShell {
       if (network.genesisTxn().isEmpty() && properties.get("network.genesis_txn", "").isEmpty()) {
         properties.set(
             "network.genesis_txn",
-            Network.STOKENET.genesisTxn().get()); // default to stokenet genesis
+            Network.MAINNET.genesisTxn().get()); // Default to mainnet genesis
       }
 
       final var injector = Guice.createInjector(new RadixNodeModule(properties));
@@ -381,7 +381,8 @@ public final class RadixShell {
       LedgerFileSync.restoreFromFile(
           fileName,
           getInstance(Serialization.class),
-          getInstance(Key.get(new TypeLiteral<EventDispatcher<VerifiedTxnsAndProof>>() {})));
+          getInstance(
+              Key.get(new TypeLiteral<EventDispatcher<CommittedTransactionsWithProof>>() {})));
       final var time = System.currentTimeMillis() - start;
       System.out.printf("Restore finished. Took %ss%n", time / 1000);
     }

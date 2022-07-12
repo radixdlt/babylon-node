@@ -71,7 +71,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -79,14 +79,19 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.targeted.mempool.MempoolFillerModule;
+import com.radixdlt.targeted.mempool.MempoolFillerUpdate;
+import com.radixdlt.targeted.mempool.ScheduledMempoolFill;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.Set;
 import org.junit.Rule;
@@ -115,10 +120,12 @@ public final class MempoolFillAndEmptyTest {
         new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
         new ForksModule(),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
+        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(1000)),
         new MempoolFillerModule(),
+        new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {
@@ -133,7 +140,7 @@ public final class MempoolFillAndEmptyTest {
     while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) < 1000) {
       ControlledMessage msg = network.nextMessage().value();
       processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-      if (msg.message() instanceof EpochViewUpdate) {
+      if (msg.message() instanceof EpochRoundUpdate) {
         scheduledMempoolFillEventDispatcher.dispatch(ScheduledMempoolFill.create());
       }
     }
@@ -161,7 +168,8 @@ public final class MempoolFillAndEmptyTest {
     }
 
     assertThat(
-            systemCounters.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
+            systemCounters.get(
+                SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
         .isZero();
   }
 }

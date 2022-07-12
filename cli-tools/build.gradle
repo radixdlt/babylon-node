@@ -82,6 +82,21 @@ compileTestJava {
     options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 }
 
+sourceSets {
+    p2pTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/p2pTest/java')
+        }
+        resources.srcDir file('src/p2pTest/resources')
+    }
+}
+
+configurations {
+    p2pTestImplementation.extendsFrom testImplementation
+}
+
 dependencies {
     implementation project(':core')
     implementation project(':common')
@@ -94,8 +109,8 @@ dependencies {
 
     testImplementation 'junit:junit'
     testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.awaitility:awaitility:3.0.0'
     testImplementation project(':cli-tools')
-
 }
 
 configurations {
@@ -221,7 +236,20 @@ task runTargetedIntegrationTestsUsingCliTools(type: Test) {
         includeTestsMatching "com.radixdlt.integration.targeted.*"
     }
 
-    environment "RADIX_NODE_KEYSTORE_PASSWORD",  System.getenv('supersecret')
+    environment "RADIX_NODE_KEYSTORE_PASSWORD", System.getenv('supersecret')
     testClassesDirs = sourceSets.integration.output.classesDirs
     classpath = sourceSets.integration.runtimeClasspath
+}
+
+task runAllIntegrationTestsUsingCliTools(type: Test) {
+    environment "RADIX_NODE_KEYSTORE_PASSWORD", System.getenv('supersecret')
+    testClassesDirs = sourceSets.integration.output.classesDirs
+    classpath = sourceSets.integration.runtimeClasspath
+}
+
+task runP2pTests(type: JavaExec) {
+    classpath = sourceSets.p2pTest.runtimeClasspath
+    systemProperty "java.library.path", "${project(':state-manager').projectDir}/target/debug/"
+    main = "com.radixdlt.p2ptest.LargeMessageTest"
+
 }

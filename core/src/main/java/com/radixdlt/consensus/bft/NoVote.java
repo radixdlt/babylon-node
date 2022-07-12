@@ -64,21 +64,22 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.VertexWithHash;
 import java.util.Objects;
 
-/** An event emitted when the node decides not to vote for a view */
+/** An event emitted when the node decides not to vote for a round */
 public final class NoVote {
-  private final VerifiedVertex vertex;
+  private final VertexWithHash vertex;
 
-  private NoVote(VerifiedVertex vertex) {
+  private NoVote(VertexWithHash vertex) {
     this.vertex = vertex;
   }
 
-  public static NoVote create(VerifiedVertex vertex) {
+  public static NoVote create(VertexWithHash vertex) {
     return new NoVote(vertex);
   }
 
-  public VerifiedVertex getVertex() {
+  public VertexWithHash getVertex() {
     return vertex;
   }
 

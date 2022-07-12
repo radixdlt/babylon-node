@@ -69,7 +69,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -82,11 +81,10 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.network.p2p.P2PConfig;
-import com.radixdlt.network.p2p.RadixNodeUri;
-import com.radixdlt.network.p2p.addressbook.AddressBook;
-import com.radixdlt.network.p2p.addressbook.AddressBookPersistence;
 import com.radixdlt.networks.NetworkId;
+import com.radixdlt.p2p.P2PConfig;
+import com.radixdlt.p2p.RadixNodeUri;
+import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
@@ -135,7 +133,7 @@ public abstract class AbstractRadixEngineTest {
                             Map.of(ValidatorRegisteredCopy.class, Amount.ofSubunits(UInt256.ONE))))
                     .overrideMaxMessageLen(maxMessageLen)),
             new ForksModule(),
-            new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 1),
+            new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
             new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),
             new AbstractModule() {
               @Override
@@ -150,9 +148,6 @@ public abstract class AbstractRadixEngineTest {
                     RadixNodeUri.fromPubKeyAndAddress(
                         99, TEST_KEY.getPublicKey(), "localhost", 23456);
                 bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
-                var addressBookPersistence = mock(AddressBookPersistence.class);
-                when(addressBookPersistence.getAllEntries()).thenReturn(ImmutableList.of());
-                bind(AddressBookPersistence.class).toInstance(addressBookPersistence);
                 var runtimeProperties = mock(RuntimeProperties.class);
                 when(runtimeProperties.get(eq("api.transactions.enable"), anyBoolean()))
                     .thenReturn(true);

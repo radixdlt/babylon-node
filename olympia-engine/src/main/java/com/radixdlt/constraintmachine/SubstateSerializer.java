@@ -66,6 +66,6 @@ package com.radixdlt.constraintmachine;
 
 import java.nio.ByteBuffer;
 
-public interface SubstateSerializer<T extends Particle> {
+public interface SubstateSerializer<T extends RawSubstate> {
   void serialize(T substate, ByteBuffer buf);
 }

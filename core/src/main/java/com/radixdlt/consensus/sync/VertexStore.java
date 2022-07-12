@@ -69,22 +69,22 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexChain;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.consensus.bft.VertexChain;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.lang.Option;
 import java.util.List;
 
 public interface VertexStore {
-  record CommittedUpdate(ImmutableList<PreparedVertex> committedVertices) {}
+  record CommittedUpdate(ImmutableList<ExecutedVertex> committedVertices) {}
 
   sealed interface InsertQcResult {
     record Inserted(
         HighQC newHighQc,
         // TODO: remove me once vertex store persistence and commit on the java side are gone
-        VerifiedVertexStoreState verifiedVertexStoreState,
+        VertexStoreState vertexStoreState,
         Option<CommittedUpdate> committedUpdate)
         implements InsertQcResult {}
 
@@ -100,21 +100,21 @@ public interface VertexStore {
 
   void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate);
 
-  Option<BFTInsertUpdate> insertVertex(VerifiedVertex vertex);
+  Option<BFTInsertUpdate> insertVertex(VertexWithHash vertex);
 
-  InsertVertexChainResult insertVertexChain(VerifiedVertexChain verifiedVertexChain);
+  InsertVertexChainResult insertVertexChain(VertexChain vertexChain);
 
-  Option<VerifiedVertexStoreState> tryRebuild(VerifiedVertexStoreState vertexStoreState);
+  Option<VertexStoreState> tryRebuild(VertexStoreState vertexStoreState);
 
   boolean containsVertex(HashCode vertexId);
 
   HighQC highQC();
 
-  VerifiedVertex getRoot();
+  VertexWithHash getRoot();
 
-  List<PreparedVertex> getPathFromRoot(HashCode vertexId);
+  List<ExecutedVertex> getPathFromRoot(HashCode vertexId);
 
-  Option<PreparedVertex> getPreparedVertex(HashCode id);
+  Option<ExecutedVertex> getExecutedVertex(HashCode vertexHash);
 
-  Option<ImmutableList<VerifiedVertex>> getVertices(HashCode vertexId, int count);
+  Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count);
 }

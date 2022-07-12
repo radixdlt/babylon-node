@@ -69,7 +69,7 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -78,18 +78,18 @@ import java.util.Random;
 import org.junit.Test;
 
 /**
- * If quorum is formed on a timeout (timeout certificate), and there's a node that's a single view
+ * If quorum is formed on a timeout (timeout certificate), and there's a node that's a single round
  * behind (i.e. it didn't participate in forming of TC). Then it should be able to sync up (move to
- * next view) as soon as it receives a proposal (with a TC). BFTSync should then immediately switch
- * to next view without any additional sync requests. The setup is as follows: 1. there are 4 nodes
+ * next round) as soon as it receives a proposal (with a TC). BFTSync should then immediately switch
+ * to next round without any additional sync requests. The setup is as follows: 1. there are 4 nodes
  * 2. proposal is sent by the leader (0) but only received by 2 nodes (including the leader): 0 and
  * 1 3. two nodes vote on a proposal (0 and 1) 4. two nodes vote on an empty timeout vertex and
  * broadcast the vote (2 and 3) 5. nodes 0 and 1 resend (broadcast) their vote with a timeout flag
  * 6. node 0 doesn't receive any of the above votes 7. nodes 1, 2 and 3 can form a valid TC out of
- * the votes they received, and they switch to the next view 8. next leader (node 1) sends out a
- * proposal 9. proposal (with a valid TC) is received by node 0 (which is still on previous view)
- * 10. node 0 is able to move to the next view just by processing the proposal's TC (no additional
- * sync requests) Expected result: node 0 is at view 2 and no sync requests have been sent
+ * the votes they received, and they switch to the next round 8. next leader (node 1) sends out a
+ * proposal 9. proposal (with a valid TC) is received by node 0 (which is still on previous round)
+ * 10. node 0 is able to move to the next round just by processing the proposal's TC (no additional
+ * sync requests) Expected result: node 0 is at round 2 and no sync requests have been sent
  */
 public class SyncToTimeoutQcTest {
 
@@ -104,8 +104,8 @@ public class SyncToTimeoutQcTest {
             .numNodes(NUM_NODES)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropProposalsToNodes(ImmutableSet.of(2, 3)).andThen(dropVotesToNode(0)))
-            .buildWithEpochs(View.of(10))
-            .runUntil(DeterministicTest.viewUpdateOnNode(View.of(2), 0));
+            .buildWithEpochs(Round.of(10))
+            .runUntil(DeterministicTest.roundUpdateOnNode(Round.of(2), 0));
 
     for (int nodeIndex = 0; nodeIndex < NUM_NODES; ++nodeIndex) {
       final var counters = test.getSystemCounters(nodeIndex);

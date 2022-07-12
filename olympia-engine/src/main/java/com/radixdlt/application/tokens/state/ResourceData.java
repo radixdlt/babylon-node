@@ -64,9 +64,9 @@
 
 package com.radixdlt.application.tokens.state;
 
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.identifiers.REAddr;
 
-public interface ResourceData extends Particle {
+public interface ResourceData extends RawSubstate {
   REAddr addr();
 }

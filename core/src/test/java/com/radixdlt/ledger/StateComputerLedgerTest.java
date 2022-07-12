@@ -79,16 +79,16 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.ledger.StateComputerLedger.PreparedTransaction;
+import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
@@ -119,18 +119,12 @@ public class StateComputerLedgerTest {
   private LedgerAccumulatorVerifier accumulatorVerifier;
 
   private LedgerHeader ledgerHeader;
-  private VerifiedVertex genesisVertex;
+  private VertexWithHash genesisVertex;
   private QuorumCertificate genesisQC;
 
   private final Transaction nextTransaction = Transaction.create(new byte[] {0});
   private final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
-  private final PreparedTransaction successfulNextCommand =
-      new PreparedTransaction() {
-        @Override
-        public Transaction transaction() {
-          return nextTransaction;
-        }
-      };
+  private final ExecutedTransaction successfulNextTransaction = () -> nextTransaction;
 
   private final long genesisEpoch = 3L;
   private final long genesisStateVersion = 123L;
@@ -148,7 +142,7 @@ public class StateComputerLedgerTest {
 
     var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
     this.ledgerHeader = LedgerHeader.genesis(accumulatorState, null, 0);
-    this.genesisVertex = UnverifiedVertex.createGenesis(ledgerHeader).withId(hasher);
+    this.genesisVertex = Vertex.createGenesis(ledgerHeader).withId(hasher);
     this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
     this.currentLedgerHeader =
         this.genesisQC.getCommittedAndLedgerStateProof(hasher).map(Pair::getSecond).orElseThrow();
@@ -168,13 +162,13 @@ public class StateComputerLedgerTest {
     this.ledgerHeader =
         LedgerHeader.create(
             genesisEpoch,
-            View.of(5),
+            Round.of(5),
             new AccumulatorState(genesisStateVersion, HashUtils.zero256()),
             12345,
             endOfEpoch
                 ? BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
                 : null);
-    this.genesisVertex = UnverifiedVertex.createGenesis(ledgerHeader).withId(hasher);
+    this.genesisVertex = Vertex.createGenesis(ledgerHeader).withId(hasher);
     this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
     this.currentLedgerHeader =
         this.genesisQC.getCommittedAndLedgerStateProof(hasher).map(Pair::getSecond).orElseThrow();
@@ -191,16 +185,16 @@ public class StateComputerLedgerTest {
   }
 
   @Test
-  public void should_not_change_accumulator_when_there_is_no_command() {
+  public void should_not_change_accumulator_when_there_is_no_transaction() {
     // Arrange
     genesisIsEndOfEpoch(false);
     when(stateComputer.prepare(any(), any(), anyLong()))
         .thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
     var proposedVertex =
-        UnverifiedVertex.create(genesisQC, View.of(1), List.of(), BFTNode.random()).withId(hasher);
+        Vertex.create(genesisQC, Round.of(1), List.of(), BFTNode.random()).withId(hasher);
 
     // Act
-    Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
+    Optional<ExecutedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
     // Assert
     assertThat(nextPrepared)
@@ -213,18 +207,19 @@ public class StateComputerLedgerTest {
   }
 
   @Test
-  public void should_not_change_header_when_past_end_of_epoch_even_with_command() {
+  public void should_not_change_header_when_past_end_of_epoch_even_with_transaction() {
     // Arrange
     genesisIsEndOfEpoch(true);
     when(stateComputer.prepare(any(), any(), anyLong()))
         .thenReturn(
-            new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
+            new StateComputerResult(
+                ImmutableList.of(successfulNextTransaction), ImmutableMap.of()));
     var proposedVertex =
-        UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTransaction), BFTNode.random())
+        Vertex.create(genesisQC, Round.of(1), List.of(nextTransaction), BFTNode.random())
             .withId(hasher);
 
     // Act
-    Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
+    Optional<ExecutedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
     // Assert
     assertThat(nextPrepared)
@@ -237,18 +232,19 @@ public class StateComputerLedgerTest {
   }
 
   @Test
-  public void should_accumulate_when_next_command_valid() {
+  public void should_accumulate_when_next_transaction_valid() {
     // Arrange
     genesisIsEndOfEpoch(false);
     when(stateComputer.prepare(any(), any(), anyLong()))
         .thenReturn(
-            new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
+            new StateComputerResult(
+                ImmutableList.of(successfulNextTransaction), ImmutableMap.of()));
 
     // Act
     var proposedVertex =
-        UnverifiedVertex.create(genesisQC, View.of(1), List.of(nextTransaction), BFTNode.random())
+        Vertex.create(genesisQC, Round.of(1), List.of(nextTransaction), BFTNode.random())
             .withId(hasher);
-    Optional<PreparedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
+    Optional<ExecutedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
     // Assert
     assertThat(nextPrepared)
@@ -270,14 +266,15 @@ public class StateComputerLedgerTest {
     genesisIsEndOfEpoch(false);
     when(stateComputer.prepare(any(), any(), anyLong()))
         .thenReturn(
-            new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
+            new StateComputerResult(
+                ImmutableList.of(successfulNextTransaction), ImmutableMap.of()));
     final AccumulatorState accumulatorState =
         new AccumulatorState(genesisStateVersion - 1, HashUtils.zero256());
     final LedgerHeader ledgerHeader =
-        LedgerHeader.create(genesisEpoch, View.of(2), accumulatorState, 1234);
+        LedgerHeader.create(genesisEpoch, Round.of(2), accumulatorState, 1234);
     final LedgerProof header =
         new LedgerProof(HashUtils.random256(), ledgerHeader, new TimestampedECDSASignatures());
-    var verified = VerifiedTxnsAndProof.create(List.of(nextTransaction), header);
+    var verified = CommittedTransactionsWithProof.create(List.of(nextTransaction), header);
 
     // Act
     sut.syncEventProcessor().process(verified);

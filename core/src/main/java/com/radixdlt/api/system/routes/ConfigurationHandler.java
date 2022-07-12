@@ -70,13 +70,13 @@ import com.radixdlt.api.system.SystemModelMapper;
 import com.radixdlt.api.system.generated.models.BFTConfiguration;
 import com.radixdlt.api.system.generated.models.MempoolConfiguration;
 import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.network.p2p.P2PConfig;
+import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.sync.SyncConfig;
 
 public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfigurationResponse> {
@@ -93,7 +93,7 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
   @Inject
   ConfigurationHandler(
       @Self ECPublicKey self,
-      @PacemakerTimeout long pacemakerTimeout,
+      @PacemakerBaseTimeoutMs long pacemakerTimeout,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       @MempoolMaxSize int mempoolMaxSize,
       @MempoolThrottleMs long mempoolThrottleMs,

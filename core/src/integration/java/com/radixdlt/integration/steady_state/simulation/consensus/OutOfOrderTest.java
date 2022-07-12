@@ -108,7 +108,7 @@ public final class OutOfOrderTest {
             .networkModules(
                 NetworkOrdering.outOfOrder(),
                 NetworkLatencies.random(minLatency, maxLatency),
-                NetworkDroppers.fRandomProposalsPerViewDropped())
+                NetworkDroppers.fRandomProposalsPerRoundDropped())
             .pacemakerTimeout(5000)
             .addTestModules(
                 ConsensusMonitors.safety(),

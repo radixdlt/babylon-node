@@ -66,7 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus_ledger_sync_e
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
@@ -91,9 +91,9 @@ public class RandomValidatorsTest {
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .ledgerAndEpochsAndSync(
-              View.of(3),
+              Round.of(3),
               goodRandomEpochToNodesMapper(),
-              syncConfig) // TODO: investigate why this fails with View.of(10)
+              syncConfig) // TODO: investigate why this fails with Round.of(10)
           .pacemakerTimeout(5000)
           .numNodes(numNodes)
           .addTestModules(
@@ -102,7 +102,7 @@ public class RandomValidatorsTest {
               ConsensusMonitors.vertexRequestRate(50), // Conservative check
               ConsensusMonitors.noTimeouts(),
               ConsensusMonitors.directParents(),
-              ConsensusMonitors.epochCeilingView(View.of(100)),
+              ConsensusMonitors.epochMaxRound(Round.of(100)),
               LedgerMonitors.consensusToLedger(),
               LedgerMonitors.ordered());
 

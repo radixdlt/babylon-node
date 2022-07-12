@@ -64,13 +64,13 @@
 
 package com.radixdlt.application.tokens.construction;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.radixdlt.application.tokens.state.AccountBucket;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atom.*;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.substate.*;
 import java.nio.ByteBuffer;
 
 public final class BurnTokenConstructor implements ActionConstructor<BurnToken> {

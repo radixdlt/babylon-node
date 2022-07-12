@@ -66,7 +66,7 @@ package com.radixdlt.consensus.safety;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.serialization.DeserializeException;
@@ -267,11 +267,12 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
   private byte[] keyFor(SafetyState safetyState) {
     long epoch = safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
-    long view = safetyState.getLastVote().map(Vote::getView).orElse(View.genesis()).number();
+    long roundNumber =
+        safetyState.getLastVote().map(Vote::getRound).orElse(Round.genesis()).number();
 
     byte[] keyBytes = new byte[Long.BYTES * 2];
     Longs.copyTo(epoch, keyBytes, 0);
-    Longs.copyTo(view, keyBytes, Long.BYTES);
+    Longs.copyTo(roundNumber, keyBytes, Long.BYTES);
 
     return keyBytes;
   }

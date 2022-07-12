@@ -66,7 +66,7 @@ package com.radixdlt.application.system.state;
 
 import java.time.Instant;
 
-public record RoundData(long view, long timestamp) implements SystemData {
+public record RoundData(long round, long timestamp) implements SystemData {
   public Instant asInstant() {
     return Instant.ofEpochMilli(timestamp);
   }

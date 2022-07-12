@@ -79,8 +79,8 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.monitoring.InMemorySystemInfo;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.p2p.PeersView;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -161,11 +161,11 @@ public class PrometheusService {
   }
 
   private void exportSystemInfo(StringBuilder builder) {
-    var currentEpochView = inMemorySystemInfo.getCurrentView();
+    var currentEpochRound = inMemorySystemInfo.getCurrentRound();
 
     appendCounter(
-        builder, "info_epochmanager_currentview_view", currentEpochView.getView().number());
-    appendCounter(builder, "info_epochmanager_currentview_epoch", currentEpochView.getEpoch());
+        builder, "info_epochmanager_currentround_round", currentEpochRound.getRound().number());
+    appendCounter(builder, "info_epochmanager_currentround_epoch", currentEpochRound.getEpoch());
     appendCounter(builder, "total_peers", peersView.peers().count());
 
     var totalValidators =

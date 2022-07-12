@@ -65,23 +65,23 @@
 package com.radixdlt.application.system;
 
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.utils.UInt256;
 import java.util.HashMap;
 import java.util.Map;
 
 public final class FeeTable {
   private final Amount perByteFee;
-  private final Map<Class<? extends Particle>, UInt256> perUpSubstateFee;
+  private final Map<Class<? extends RawSubstate>, UInt256> perUpSubstateFee;
 
-  private FeeTable(Amount perByteFee, Map<Class<? extends Particle>, UInt256> perUpSubstateFee) {
+  private FeeTable(Amount perByteFee, Map<Class<? extends RawSubstate>, UInt256> perUpSubstateFee) {
     this.perByteFee = perByteFee;
     this.perUpSubstateFee = perUpSubstateFee;
   }
 
   public static FeeTable create(
-      Amount perByteFee, Map<Class<? extends Particle>, Amount> perUpSubstateFee) {
-    var map = new HashMap<Class<? extends Particle>, UInt256>();
+      Amount perByteFee, Map<Class<? extends RawSubstate>, Amount> perUpSubstateFee) {
+    var map = new HashMap<Class<? extends RawSubstate>, UInt256>();
     perUpSubstateFee.forEach((k, v) -> map.put(k, v.toSubunits()));
     return new FeeTable(perByteFee, map);
   }
@@ -94,7 +94,7 @@ public final class FeeTable {
     return perByteFee.toSubunits();
   }
 
-  public Map<Class<? extends Particle>, UInt256> getPerUpSubstateFee() {
+  public Map<Class<? extends RawSubstate>, UInt256> getPerUpSubstateFee() {
     return perUpSubstateFee;
   }
 }

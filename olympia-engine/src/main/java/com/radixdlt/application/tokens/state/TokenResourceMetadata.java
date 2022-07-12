@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.tokens.state;
 
-import static com.radixdlt.atom.REFieldSerialization.requireValidUrl;
+import static com.radixdlt.substate.REFieldSerialization.requireValidUrl;
 import static java.util.Objects.requireNonNull;
 
 import com.radixdlt.identifiers.REAddr;

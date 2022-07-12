@@ -131,7 +131,7 @@ public final class OutdatedNodeForksTest {
                 ConsensusMonitors.directParents(),
                 LedgerMonitors.consensusToLedger(),
                 LedgerMonitors.ordered(),
-                RadixEngineMonitors.noInvalidProposedCommands());
+                RadixEngineMonitors.noInvalidProposedTransactions());
   }
 
   @Test

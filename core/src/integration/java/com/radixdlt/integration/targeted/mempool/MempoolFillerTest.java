@@ -77,17 +77,21 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.*;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.PeersView;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.RadixEngineStateComputer;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.targeted.mempool.MempoolFillerModule;
+import com.radixdlt.targeted.mempool.MempoolFillerUpdate;
+import com.radixdlt.targeted.mempool.ScheduledMempoolFill;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.Set;
 import org.assertj.core.api.Condition;
@@ -118,9 +122,11 @@ public class MempoolFillerTest {
         new RadixEngineForksLatestOnlyModule(),
         new ForksModule(),
         MempoolConfig.asModule(10, 10),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
+        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(100)),
+        new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {

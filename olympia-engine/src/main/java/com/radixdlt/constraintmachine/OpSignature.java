@@ -80,8 +80,9 @@ public final class OpSignature {
     return op;
   }
 
-  public static OpSignature ofSubstateUpdate(REOp op, Class<? extends Particle> particleClass) {
-    return new OpSignature(op, particleClass);
+  public static OpSignature ofSubstateUpdate(
+      REOp op, Class<? extends RawSubstate> rawSubstateClass) {
+    return new OpSignature(op, rawSubstateClass);
   }
 
   public static OpSignature ofMethod(REOp op, REAddr addr) {

@@ -73,15 +73,17 @@ import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
@@ -100,7 +102,7 @@ public class PacemakerTest {
 
   @Inject private DeterministicProcessor processor;
 
-  @Inject private ViewUpdate initialViewUpdate;
+  @Inject private RoundUpdate initialRoundUpdate;
 
   @Inject private DeterministicNetwork network;
 
@@ -114,7 +116,9 @@ public class PacemakerTest {
             Set.of(PrivateKeys.ofNumeric(1).getPublicKey()),
             Amount.ofTokens(1000),
             Amount.ofTokens(100)),
-        new SingleNodeAndPeersDeterministicNetworkModule(PrivateKeys.ofNumeric(1), 0),
+        new SingleNodeAndPeersDeterministicNetworkModule(PrivateKeys.ofNumeric(1)),
+        new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {
@@ -182,7 +186,7 @@ public class PacemakerTest {
   }
 
   @Test
-  public void on_view_timeout_quorum_pacemaker_should_move_to_next_view() {
+  public void on_round_timeout_quorum_pacemaker_should_move_to_next_round() {
     // Arrange
     createRunner().injectMembers(this);
     processor.start();
@@ -199,27 +203,27 @@ public class PacemakerTest {
     processor.handleMessage(bftUpdateMsg.origin(), bftUpdateMsg.message(), null);
 
     // Act
-    ControlledMessage viewTimeout =
+    ControlledMessage roundTimeout =
         network
             .nextMessage(e -> (e.message() instanceof Vote) && ((Vote) e.message()).isTimeout())
             .value();
-    processor.handleMessage(viewTimeout.origin(), viewTimeout.message(), null);
+    processor.handleMessage(roundTimeout.origin(), roundTimeout.message(), null);
 
     // Assert
     assertThat(network.allMessages())
         .haveExactly(
             1,
             new Condition<>(
-                msg -> msg.message() instanceof EpochViewUpdate,
-                "A remote view timeout has been emitted"));
-    EpochViewUpdate nextEpochViewUpdate =
+                msg -> msg.message() instanceof EpochRoundUpdate,
+                "A remote round timeout has been emitted"));
+    EpochRoundUpdate nextEpochRoundUpdate =
         network.allMessages().stream()
-            .filter(msg -> msg.message() instanceof EpochViewUpdate)
+            .filter(msg -> msg.message() instanceof EpochRoundUpdate)
             .map(ControlledMessage::message)
-            .map(EpochViewUpdate.class::cast)
+            .map(EpochRoundUpdate.class::cast)
             .findAny()
             .orElseThrow();
-    assertThat(nextEpochViewUpdate.getViewUpdate().getCurrentView())
-        .isEqualTo(initialViewUpdate.getCurrentView().next());
+    assertThat(nextEpochRoundUpdate.getRoundUpdate().getCurrentRound())
+        .isEqualTo(initialRoundUpdate.getCurrentRound().next());
   }
 }

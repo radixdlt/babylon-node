@@ -68,16 +68,16 @@ import com.radixdlt.application.system.scrypt.SystemConstraintScrypt;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
-import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.cmos.ConstraintScrypt;
+import com.radixdlt.cmos.Loader;
+import com.radixdlt.cmos.SubstateDefinition;
 import com.radixdlt.constraintmachine.*;
 import com.radixdlt.constraintmachine.REEvent.ResourceCreatedEvent;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.substate.REFieldSerialization;
+import com.radixdlt.substate.SubstateTypeId;
 import com.radixdlt.utils.UInt256;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
@@ -94,12 +94,12 @@ public final class TokensConstraintScryptV3 implements ConstraintScrypt {
 
   @Override
   public void main(Loader os) {
-    registerParticles(os);
+    registerSubstates(os);
     defineTokenCreation(os);
     defineMintTransferBurn(os);
   }
 
-  private void registerParticles(Loader os) {
+  private void registerSubstates(Loader os) {
     os.substate(
         new SubstateDefinition<>(
             TokenResource.class,

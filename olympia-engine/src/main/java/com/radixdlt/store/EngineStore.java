@@ -64,9 +64,9 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.atom.SubstateStore;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.substate.SubstateStore;
 
 public interface EngineStore<M> extends SubstateStore {
   /** For verification */

@@ -69,16 +69,16 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 
 public class StartNextRound implements ReducerState {
-  private final long expectedView;
+  private final long expectedRound;
 
-  public StartNextRound(long expectedView) {
-    this.expectedView = expectedView;
+  public StartNextRound(long expectedRound) {
+    this.expectedRound = expectedRound;
   }
 
   public void update(RoundData next) throws ProcedureException {
-    if (this.expectedView != next.view()) {
+    if (this.expectedRound != next.round()) {
       throw new ProcedureException(
-          "Expected view " + this.expectedView + " but was " + next.view());
+          "Expected round " + this.expectedRound + " but was " + next.round());
     }
   }
 }

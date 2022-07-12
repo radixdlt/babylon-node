@@ -64,8 +64,8 @@
 
 package com.radixdlt.integration.targeted.statemachine;
 
-import static com.radixdlt.atom.TxAction.*;
 import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.google.common.base.Stopwatch;
 import com.google.inject.AbstractModule;
@@ -82,14 +82,13 @@ import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorMetaData;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.crypto.ECKeyPair;
@@ -99,7 +98,9 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -108,6 +109,7 @@ import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
+import com.radixdlt.substate.TxnConstructionRequest;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -171,9 +173,11 @@ public class LargeEpochChangeTest {
                 100, // 100 max validators
                 MSG.maxLength())),
         new ForksModule(),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY, 0),
+        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(100000), Amount.ofTokens(1000)),
+        new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {
@@ -213,7 +217,7 @@ public class LargeEpochChangeTest {
     var proof =
         new LedgerProof(
             HashUtils.zero256(),
-            LedgerHeader.create(1, View.of(1), accumulator, 0),
+            LedgerHeader.create(1, Round.of(1), accumulator, 0),
             new TimestampedECDSASignatures());
     sut.execute(List.of(mint), LedgerAndBFTProof.create(proof), PermissionLevel.SYSTEM);
 
@@ -264,7 +268,7 @@ public class LargeEpochChangeTest {
       var proof2 =
           new LedgerProof(
               HashUtils.zero256(),
-              LedgerHeader.create(1, View.of(1), acc, 0),
+              LedgerHeader.create(1, Round.of(1), acc, 0),
               new TimestampedECDSASignatures());
       execution.start();
       var result = sut.execute(txns, LedgerAndBFTProof.create(proof2), PermissionLevel.SUPER_USER);
@@ -316,7 +320,7 @@ public class LargeEpochChangeTest {
     construction.start();
     logger.info("executing epoch...");
     var acc = new AccumulatorState(2 + 1 + NUM_ROUNDS * (1 + numTxnsPerRound), HashUtils.zero256());
-    var header = LedgerHeader.create(1, View.of(10), acc, 0, nextValidatorSet.orElseThrow());
+    var header = LedgerHeader.create(1, Round.of(10), acc, 0, nextValidatorSet.orElseThrow());
     var proof2 = new LedgerProof(HashUtils.zero256(), header, new TimestampedECDSASignatures());
     var executionResult =
         this.sut.execute(

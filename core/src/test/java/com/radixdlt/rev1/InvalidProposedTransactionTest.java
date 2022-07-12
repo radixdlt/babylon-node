@@ -72,7 +72,7 @@ import org.junit.Test;
 public class InvalidProposedTransactionTest {
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(InvalidProposedTxn.class)
+    EqualsVerifier.forClass(InvalidProposedTransaction.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
   }

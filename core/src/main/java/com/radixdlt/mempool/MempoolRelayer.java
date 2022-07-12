@@ -71,7 +71,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.PeersView;
 import com.radixdlt.transactions.Transaction;
 import java.util.Collections;
 import java.util.List;
@@ -79,7 +79,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 
-/** Relays commands from the local mempool to node neighbors. */
+/** Relays transactions from the local mempool to node neighbors. */
 @Singleton
 public final class MempoolRelayer {
   private final PeersView peersView;

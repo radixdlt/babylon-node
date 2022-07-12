@@ -68,7 +68,7 @@ import com.google.inject.Inject;
 import com.radixdlt.api.system.SystemGetJsonHandler;
 import com.radixdlt.api.system.SystemModelMapper;
 import com.radixdlt.api.system.generated.models.SystemPeersResponse;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.PeersView;
 
 public final class PeersHandler extends SystemGetJsonHandler<SystemPeersResponse> {
 

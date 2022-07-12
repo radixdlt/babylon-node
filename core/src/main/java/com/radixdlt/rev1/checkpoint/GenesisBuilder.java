@@ -64,12 +64,9 @@
 
 package com.radixdlt.rev1.checkpoint;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.google.inject.Inject;
-import com.radixdlt.atom.TxAction;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -85,6 +82,9 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.substate.TxAction;
+import com.radixdlt.substate.TxBuilderException;
+import com.radixdlt.substate.TxnConstructionRequest;
 import com.radixdlt.transactions.Transaction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;

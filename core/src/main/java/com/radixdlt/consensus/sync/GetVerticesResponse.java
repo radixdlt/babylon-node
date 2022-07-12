@@ -64,19 +64,19 @@
 
 package com.radixdlt.consensus.sync;
 
-import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.VertexWithHash;
 import java.util.List;
 import java.util.Objects;
 
 /** An RPC response */
 public final class GetVerticesResponse {
-  private final List<VerifiedVertex> vertices;
+  private final List<VertexWithHash> vertices;
 
-  public GetVerticesResponse(List<VerifiedVertex> vertices) {
+  public GetVerticesResponse(List<VertexWithHash> vertices) {
     this.vertices = Objects.requireNonNull(vertices);
   }
 
-  public List<VerifiedVertex> getVertices() {
+  public List<VertexWithHash> getVertices() {
     return vertices;
   }
 

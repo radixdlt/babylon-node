@@ -83,13 +83,9 @@ import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.state.ResourceData;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.validators.state.ValidatorData;
-import com.radixdlt.atom.CloseableCursor;
-import com.radixdlt.atom.SubstateId;
-import com.radixdlt.atom.SubstateTypeId;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.SerializedVertexStoreState;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.constraintmachine.REStateUpdate;
@@ -102,8 +98,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.TID;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.rev1.LedgerAndBFTProof;
@@ -118,6 +114,9 @@ import com.radixdlt.store.BerkeleyStoreException;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.ResourceStore;
+import com.radixdlt.substate.CloseableCursor;
+import com.radixdlt.substate.SubstateId;
+import com.radixdlt.substate.SubstateTypeId;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.Longs;
@@ -190,8 +189,8 @@ public final class BerkeleyLedgerEntryStore
   private static final String PROOF_DB_NAME = "radix.proof_db";
   private static final String EPOCH_PROOF_DB_NAME = "radix.epoch_proof_db";
   private static final String LEDGER_NAME = "radix.ledger";
-  private Database txnDatabase; // Txns by state version; Append-only
-  private AppendLog txnLog; // Atom data append only log
+  private Database txnDatabase; // Transactions by state version; Append-only
+  private AppendLog txnLog; // Transaction data append only log
 
   private final Set<BerkeleyAdditionalStore> additionalStores;
 
@@ -347,11 +346,11 @@ public final class BerkeleyLedgerEntryStore
       com.sleepycat.je.Transaction dbTransaction, LedgerAndBFTProof ledgerAndBFTProof) {
     var proof = ledgerAndBFTProof.getProof();
 
-    try (var atomCursor = txnDatabase.openCursor(dbTransaction, null)) {
+    try (var transactionCursor = txnDatabase.openCursor(dbTransaction, null)) {
       var key = entry();
-      var status = atomCursor.getLast(key, null, DEFAULT);
+      var status = transactionCursor.getLast(key, null, DEFAULT);
       if (status == NOTFOUND) {
-        throw new IllegalStateException("No atom found before storing proof.");
+        throw new IllegalStateException("No transaction found before storing proof.");
       }
 
       long lastVersion = Longs.fromByteArray(key.getData());
@@ -568,7 +567,7 @@ public final class BerkeleyLedgerEntryStore
     return builder.build();
   }
 
-  public Optional<SerializedVertexStoreState> loadLastVertexStoreState() {
+  public Optional<VertexStoreState.SerializedVertexStoreState> loadLastVertexStoreState() {
     return withTime(
         () -> {
           try (var cursor = vertexStoreDatabase.openCursor(null, null)) {
@@ -580,7 +579,8 @@ public final class BerkeleyLedgerEntryStore
               addBytesRead(value, pKey);
               try {
                 return Optional.of(
-                    serialization.fromDson(value.getData(), SerializedVertexStoreState.class));
+                    serialization.fromDson(
+                        value.getData(), VertexStoreState.SerializedVertexStoreState.class));
               } catch (DeserializeException e) {
                 throw new IllegalStateException(e);
               }
@@ -594,7 +594,7 @@ public final class BerkeleyLedgerEntryStore
   }
 
   @Override
-  public void save(VerifiedVertexStoreState vertexStoreState) {
+  public void save(VertexStoreState vertexStoreState) {
     withTime(
         () -> {
           var transaction = beginTransaction();
@@ -833,9 +833,8 @@ public final class BerkeleyLedgerEntryStore
     }
   }
 
-  private void doSave(
-      com.sleepycat.je.Transaction transaction, VerifiedVertexStoreState vertexStoreState) {
-    var rootId = vertexStoreState.getRoot().getId();
+  private void doSave(com.sleepycat.je.Transaction transaction, VertexStoreState vertexStoreState) {
+    var rootId = vertexStoreState.getRoot().getHash();
     var vertexKey = entry(rootId.asBytes());
     var vertexEntry = serializeAll(vertexStoreState.toSerialized());
 
@@ -849,7 +848,7 @@ public final class BerkeleyLedgerEntryStore
           cursor, vertexKey, vertexEntry, "Store of root vertex with ID " + rootId);
     } catch (Exception e) {
       transaction.abort();
-      fail("Commit of atom failed", e);
+      fail("Commit of vertex store state failed", e);
     }
   }
 
@@ -955,23 +954,23 @@ public final class BerkeleyLedgerEntryStore
     return cursor;
   }
 
-  private void upParticle(
+  private void upSubstate(
       com.sleepycat.je.Transaction transaction, ByteBuffer bytes, SubstateId substateId) {
-    byte[] particleKey = substateId.asBytes();
+    var substateKey = substateId.asBytes();
     var value = new DatabaseEntry(bytes.array(), bytes.position(), bytes.remaining());
-    substatesDatabase.putNoOverwrite(transaction, entry(particleKey), value);
+    substatesDatabase.putNoOverwrite(transaction, entry(substateKey), value);
   }
 
   private void downVirtualSubstate(
       com.sleepycat.je.Transaction transaction, SubstateId substateId) {
-    var particleKey = substateId.asBytes();
-    substatesDatabase.putNoOverwrite(transaction, entry(particleKey), downEntry());
+    var substateKey = substateId.asBytes();
+    substatesDatabase.putNoOverwrite(transaction, entry(substateKey), downEntry());
   }
 
   private void downSubstate(com.sleepycat.je.Transaction transaction, SubstateId substateId) {
     var status = substatesDatabase.delete(transaction, entry(substateId.asBytes()));
     if (status != SUCCESS) {
-      throw new IllegalStateException("Downing particle does not exist " + substateId);
+      throw new IllegalStateException("Downing substate does not exist " + substateId);
     }
   }
 
@@ -1013,7 +1012,7 @@ public final class BerkeleyLedgerEntryStore
       com.sleepycat.je.Transaction transaction, REStateUpdate stateUpdate) {
     if (stateUpdate.isBootUp()) {
       var buf = stateUpdate.getStateBuf();
-      upParticle(transaction, buf, stateUpdate.getId());
+      upSubstate(transaction, buf, stateUpdate.getId());
 
       // FIXME: Superhack
       if (stateUpdate.getParsed() instanceof TokenResource) {
@@ -1065,7 +1064,7 @@ public final class BerkeleyLedgerEntryStore
         }
       }
     } else {
-      throw new IllegalStateException("Must bootup or shutdown to update particle: " + stateUpdate);
+      throw new IllegalStateException("Must bootup or shutdown to update substate: " + stateUpdate);
     }
   }
 
@@ -1090,14 +1089,16 @@ public final class BerkeleyLedgerEntryStore
     try {
       // Transaction / Syncing database
       var aid = txn.getTxn().getId();
-      // Write atom data as soon as possible
+      // Write transaction data as soon as possible
       var storedSize = txnLog.write(txn.getTxn().getPayload(), expectedOffset);
-      // Store atom indices
+      // Store transaction indices
       var pKey = toPKey(stateVersion);
-      var atomPosData = txnEntry(expectedOffset, storedSize, aid);
+      var transactionPosData = txnEntry(expectedOffset, storedSize, aid);
       failIfNotSuccess(
-          txnDatabase.putNoOverwrite(dbTransaction, pKey, atomPosData), "Atom write for", aid);
-      addBytesWrite(atomPosData, pKey);
+          txnDatabase.putNoOverwrite(dbTransaction, pKey, transactionPosData),
+          "Transaction write for",
+          aid);
+      addBytesWrite(transactionPosData, pKey);
       systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
 
       // State database
@@ -1135,7 +1136,7 @@ public final class BerkeleyLedgerEntryStore
       if (dbTransaction != null) {
         dbTransaction.abort();
       }
-      throw new BerkeleyStoreException("Unable to store atom:\n" + txn, e);
+      throw new BerkeleyStoreException("Unable to store transaction:\n" + txn, e);
     }
   }
 
@@ -1152,7 +1153,7 @@ public final class BerkeleyLedgerEntryStore
   }
 
   @Override
-  public VerifiedTxnsAndProof getNextCommittedTxns(DtoLedgerProof start) {
+  public CommittedTransactionsWithProof getNextCommittedTransactionRun(DtoLedgerProof start) {
 
     long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
     final var startTime = System.nanoTime();
@@ -1171,28 +1172,30 @@ public final class BerkeleyLedgerEntryStore
       transaction.commit();
     }
 
-    final var txns = ImmutableList.<Transaction>builder();
-    final var atomSearchKey = toPKey(stateVersion + 1);
-    final var atomPosData = entry();
+    final var transactions = ImmutableList.<Transaction>builder();
+    final var transactionSearchKey = toPKey(stateVersion + 1);
+    final var transactionPosData = entry();
 
     try (var txnCursor = txnDatabase.openCursor(null, null)) {
-      int atomCount = (int) (nextHeader.getStateVersion() - stateVersion);
+      int transactionCount = (int) (nextHeader.getStateVersion() - stateVersion);
       int count = 0;
-      var atomCursorStatus = txnCursor.getSearchKeyRange(atomSearchKey, atomPosData, DEFAULT);
+      var transactionCursorStatus =
+          txnCursor.getSearchKeyRange(transactionSearchKey, transactionPosData, DEFAULT);
       do {
-        if (atomCursorStatus != SUCCESS) {
-          throw new BerkeleyStoreException("Atom database search failure");
+        if (transactionCursorStatus != SUCCESS) {
+          throw new BerkeleyStoreException("Transaction database search failure");
         }
-        var offset = fromByteArray(atomPosData.getData());
+        var offset = fromByteArray(transactionPosData.getData());
         var txnBytes = txnLog.read(offset);
-        txns.add(Transaction.create(txnBytes));
-        atomCursorStatus = txnCursor.getNext(atomSearchKey, atomPosData, DEFAULT);
+        transactions.add(Transaction.create(txnBytes));
+        transactionCursorStatus =
+            txnCursor.getNext(transactionSearchKey, transactionPosData, DEFAULT);
         count++;
-      } while (count < atomCount);
+      } while (count < transactionCount);
 
-      return VerifiedTxnsAndProof.create(txns.build(), nextHeader);
+      return CommittedTransactionsWithProof.create(transactions.build(), nextHeader);
     } catch (IOException e) {
-      throw new BerkeleyStoreException("Unable to read from atom store.", e);
+      throw new BerkeleyStoreException("Unable to read from transaction store.", e);
     } finally {
       addTime(
           startTime, CounterType.ELAPSED_BDB_LEDGER_ENTRIES, CounterType.COUNT_BDB_LEDGER_ENTRIES);

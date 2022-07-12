@@ -95,7 +95,7 @@ public final class MempoolRelayerModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  private EventProcessorOnRunner<?> mempoolRelayCommandsEventProcessor(
+  private EventProcessorOnRunner<?> mempoolRelayTransactionsEventProcessor(
       MempoolRelayer mempoolRelayer) {
     return new EventProcessorOnRunner<>(
         Runners.MEMPOOL,

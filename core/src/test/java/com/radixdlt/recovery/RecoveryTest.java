@@ -68,7 +68,6 @@ import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ClassToInstanceMap;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -80,10 +79,10 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -98,8 +97,9 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
-import com.radixdlt.network.p2p.PeersView;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -118,7 +118,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
 import org.junit.After;
 import org.junit.Before;
@@ -151,11 +150,11 @@ public class RecoveryTest {
   private DeterministicNetwork network;
   private Injector currentInjector;
   private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-  private final long epochCeilingView;
+  private final long epochMaxRound;
   private final int processForCount;
 
-  public RecoveryTest(long epochCeilingView, int processForCount) {
-    this.epochCeilingView = epochCeilingView;
+  public RecoveryTest(long epochMaxRound, int processForCount) {
+    this.epochMaxRound = epochMaxRound;
     this.processForCount = processForCount;
     this.network =
         new DeterministicNetwork(
@@ -193,7 +192,7 @@ public class RecoveryTest {
                 FeeTable.noFees(),
                 1024 * 1024,
                 OptionalInt.of(50),
-                epochCeilingView,
+                epochMaxRound,
                 2,
                 Amount.ofTokens(10),
                 1,
@@ -203,20 +202,20 @@ public class RecoveryTest {
                 MSG.maxLength())),
         new ForksModule(),
         MempoolConfig.asModule(10, 10),
-        new LastEventsModule(EpochViewUpdate.class, Vote.class),
+        new LastEventsModule(EpochRoundUpdate.class, Vote.class),
         new AbstractModule() {
           @Override
           protected void configure() {
-            bind(PeersView.class).toInstance(Stream::of);
             bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
-            bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(ImmutableList.of(self));
             bind(Environment.class).toInstance(network.createSender(BFTNode.create(self.getKey())));
             bindConstant()
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
           }
         },
-        new PersistedNodeForTestingModule());
+        new PersistedNodeForTestingModule(),
+        new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build());
   }
 
   private RadixEngine<LedgerAndBFTProof> getRadixEngine() {
@@ -228,11 +227,11 @@ public class RecoveryTest {
     return currentInjector.getInstance(CommittedReader.class);
   }
 
-  private EpochView getLastEpochView() {
+  private EpochRound getLastEpochRound() {
     return currentInjector
         .getInstance(Key.get(new TypeLiteral<ClassToInstanceMap<Object>>() {}))
-        .getInstance(EpochViewUpdate.class)
-        .getEpochView();
+        .getInstance(EpochRoundUpdate.class)
+        .getEpochRound();
   }
 
   private Vote getLastVote() {
@@ -280,7 +279,7 @@ public class RecoveryTest {
   public void on_reboot_should_load_same_last_epoch_header() {
     // Arrange
     processForCount(processForCount);
-    var epochView = getLastEpochView();
+    var epochRound = getLastEpochRound();
 
     // Act
     restartNode();
@@ -291,9 +290,9 @@ public class RecoveryTest {
 
     assertThat(restartedEpochProof.isEndOfEpoch()).isTrue();
     assertThat(
-            restartedEpochProof.getEpoch() == epochView.getEpoch() - 1
-                || (restartedEpochProof.getEpoch() == epochView.getEpoch()
-                    && epochView.getView().number() > epochCeilingView + 3))
+            restartedEpochProof.getEpoch() == epochRound.getEpoch() - 1
+                || (restartedEpochProof.getEpoch() == epochRound.getEpoch()
+                    && epochRound.getRound().number() > epochMaxRound + 3))
         .isTrue();
   }
 
@@ -309,9 +308,9 @@ public class RecoveryTest {
     // Assert
     SafetyState safetyState = currentInjector.getInstance(SafetyState.class);
     assertThat(
-            safetyState.getLastVotedView().equals(vote.getView())
-                || (safetyState.getLastVotedView().equals(View.genesis())
-                    && vote.getView().equals(View.of(epochCeilingView + 3))))
+            safetyState.getLastVotedRound().equals(vote.getRound())
+                || (safetyState.getLastVotedRound().equals(Round.genesis())
+                    && vote.getRound().equals(Round.of(epochMaxRound + 3))))
         .isTrue();
   }
 

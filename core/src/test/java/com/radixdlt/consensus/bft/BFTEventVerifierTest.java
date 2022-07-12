@@ -164,7 +164,7 @@ public class BFTEventVerifierTest {
   @Test
   public void when_process_correct_vote_then_should_be_forwarded() {
     Vote vote = mock(Vote.class);
-    when(vote.getView()).thenReturn(View.of(1));
+    when(vote.getRound()).thenReturn(Round.of(1));
     when(vote.getEpoch()).thenReturn(0L);
     BFTNode author = mock(BFTNode.class);
     when(vote.getAuthor()).thenReturn(author);
@@ -207,7 +207,7 @@ public class BFTEventVerifierTest {
   @Test
   public void when_process_bad_timeout_signature_vote_then_should_not_be_forwarded() {
     Vote vote = mock(Vote.class);
-    when(vote.getView()).thenReturn(View.of(1));
+    when(vote.getRound()).thenReturn(Round.of(1));
     when(vote.getEpoch()).thenReturn(0L);
     BFTNode author = mock(BFTNode.class);
     when(vote.getAuthor()).thenReturn(author);

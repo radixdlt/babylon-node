@@ -64,7 +64,7 @@
 
 package com.radixdlt.rev1.radixengine;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.inject.AbstractModule;
@@ -74,9 +74,6 @@ import com.google.inject.Injector;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.TxBuilderException;
-import com.radixdlt.atom.TxnConstructionRequest;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.constraintmachine.exceptions.InvalidPermissionException;
 import com.radixdlt.constraintmachine.exceptions.ReservedSymbolException;
@@ -85,7 +82,9 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -96,6 +95,9 @@ import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
+import com.radixdlt.substate.MutableTokenDefinition;
+import com.radixdlt.substate.TxBuilderException;
+import com.radixdlt.substate.TxnConstructionRequest;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -127,7 +129,9 @@ public class MutableTokenAndResourceFeeTest {
                     FeeTable.create(
                         Amount.zero(), Map.of(TokenResource.class, Amount.ofTokens(1))))),
         new ForksModule(),
-        new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY, 0),
+        new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
+        new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build(),
         new MockedGenesisModule(
             Set.of(VALIDATOR_KEY.getPublicKey()), Amount.ofTokens(101), Amount.ofTokens(100)),
         new AbstractModule() {

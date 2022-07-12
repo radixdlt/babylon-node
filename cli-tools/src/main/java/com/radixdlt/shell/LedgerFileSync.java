@@ -68,8 +68,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.VerifiedTxnsAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
@@ -99,17 +99,19 @@ public final class LedgerFileSync {
       final var endProof = endProofOpt.get();
       try (var out = new FileOutputStream(fileName)) {
         var currentProof = initialProof.get();
-        var nextCommands = committedReader.getNextCommittedTxns(currentProof.toDto());
-        while (nextCommands != null
-            && nextCommands.getProof().getStateVersion() <= endProof.getStateVersion()) {
-          final var commandsAndProof =
-              new CommandsAndProof(nextCommands.getTxns(), nextCommands.getProof().toDto());
+        var nextTransactions = committedReader.getNextCommittedTransactionRun(currentProof.toDto());
+        while (nextTransactions != null
+            && nextTransactions.getProof().getStateVersion() <= endProof.getStateVersion()) {
+          final var transactionsWithProofDto =
+              new CommittedTransactionsWithProofDto(
+                  nextTransactions.getTransactions(), nextTransactions.getProof().toDto());
           final var serialized =
-              Compress.compress(serialization.toDson(commandsAndProof, DsonOutput.Output.WIRE));
+              Compress.compress(
+                  serialization.toDson(transactionsWithProofDto, DsonOutput.Output.WIRE));
           out.write(ByteBuffer.allocate(4).putInt(serialized.length).array());
           out.write(serialized);
-          currentProof = nextCommands.getProof();
-          nextCommands = committedReader.getNextCommittedTxns(currentProof.toDto());
+          currentProof = nextTransactions.getProof();
+          nextTransactions = committedReader.getNextCommittedTransactionRun(currentProof.toDto());
         }
       }
     }
@@ -119,28 +121,29 @@ public final class LedgerFileSync {
   public static void restoreFromFile(
       String fileName,
       Serialization serialization,
-      EventDispatcher<VerifiedTxnsAndProof> verifiedTxnsAndProofDispatcher)
+      EventDispatcher<CommittedTransactionsWithProof> transactionsWithProofDispatcher)
       throws IOException {
     try (var in = new FileInputStream(fileName)) {
       while (in.available() > 0) {
         final var len = ByteBuffer.wrap(in.readNBytes(4)).getInt();
         final var data = in.readNBytes(len);
         final var wrapper =
-            serialization.fromDson(Compress.uncompress(data), CommandsAndProof.class);
+            serialization.fromDson(
+                Compress.uncompress(data), CommittedTransactionsWithProofDto.class);
         final var proof = wrapper.getProof();
         // TODO: verify the proof
-        final var verifiedTxnsAndProof =
-            VerifiedTxnsAndProof.create(
+        final var transactionsWithProof =
+            CommittedTransactionsWithProof.create(
                 wrapper.getTxns(),
                 new LedgerProof(proof.getOpaque(), proof.getLedgerHeader(), proof.getSignatures()));
-        verifiedTxnsAndProofDispatcher.dispatch(verifiedTxnsAndProof);
+        transactionsWithProofDispatcher.dispatch(transactionsWithProof);
       }
     }
   }
 
   @Immutable
-  @SerializerId2("ledger_file_sync.commands_and_proof")
-  private static final class CommandsAndProof {
+  @SerializerId2("ledger_file_sync.committed_transactions_with_proof")
+  private static final class CommittedTransactionsWithProofDto {
     @JsonProperty(SerializerConstants.SERIALIZER_NAME)
     @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
     SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -154,7 +157,7 @@ public final class LedgerFileSync {
     private final DtoLedgerProof proof;
 
     @JsonCreator
-    public CommandsAndProof(
+    public CommittedTransactionsWithProofDto(
         @JsonProperty("txns") List<Transaction> transactions,
         @JsonProperty("proof") DtoLedgerProof proof) {
       this.transactions = Objects.requireNonNull(transactions);
@@ -177,7 +180,7 @@ public final class LedgerFileSync {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      final var that = (CommandsAndProof) o;
+      final var that = (CommittedTransactionsWithProofDto) o;
       return Objects.equals(transactions, that.transactions) && Objects.equals(proof, that.proof);
     }
 

@@ -92,7 +92,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
   private final BFTNode self;
   private final VertexStoreAdapter vertexStore;
   private final Pacemaker pacemaker;
-  private final EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher;
+  private final EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher;
   private final EventDispatcher<NoVote> noVoteDispatcher;
   private final RemoteEventDispatcher<Vote> voteDispatcher;
   private final Hasher hasher;
@@ -101,53 +101,53 @@ public final class BFTEventReducer implements BFTEventProcessor {
   private final PendingVotes pendingVotes;
 
   private BFTInsertUpdate latestInsertUpdate;
-  private ViewUpdate latestViewUpdate;
+  private RoundUpdate latestRoundUpdate;
 
-  /* Indicates whether the quorum (QC or TC) has already been formed for the current view.
-   * If the quorum has been reached (but view hasn't yet been updated), subsequent votes are ignored.
+  /* Indicates whether the quorum (QC or TC) has already been formed for the current round.
+   * If the quorum has been reached (but round hasn't yet been updated), subsequent votes are ignored.
    * TODO: consider moving it to PendingVotes or elsewhere.
    */
   private boolean hasReachedQuorum = false;
 
-  private boolean isViewTimedOut = false;
+  private boolean isRoundTimedOut = false;
 
   public BFTEventReducer(
       BFTNode self,
       Pacemaker pacemaker,
       VertexStoreAdapter vertexStore,
-      EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher,
+      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
       Hasher hasher,
       SafetyRules safetyRules,
       BFTValidatorSet validatorSet,
       PendingVotes pendingVotes,
-      ViewUpdate initialViewUpdate) {
+      RoundUpdate initialRoundUpdate) {
     this.self = Objects.requireNonNull(self);
     this.pacemaker = Objects.requireNonNull(pacemaker);
     this.vertexStore = Objects.requireNonNull(vertexStore);
-    this.viewQuorumReachedEventDispatcher =
-        Objects.requireNonNull(viewQuorumReachedEventDispatcher);
+    this.roundQuorumReachedEventDispatcher =
+        Objects.requireNonNull(roundQuorumReachedEventDispatcher);
     this.noVoteDispatcher = Objects.requireNonNull(noVoteDispatcher);
     this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
     this.hasher = Objects.requireNonNull(hasher);
     this.safetyRules = Objects.requireNonNull(safetyRules);
     this.validatorSet = Objects.requireNonNull(validatorSet);
     this.pendingVotes = Objects.requireNonNull(pendingVotes);
-    this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
+    this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
   }
 
   @Override
   public void processBFTUpdate(BFTInsertUpdate update) {
     log.trace("BFTUpdate: Processing {}", update);
 
-    final View view = update.getHeader().getView();
-    if (view.lt(this.latestViewUpdate.getCurrentView())) {
+    final Round round = update.getHeader().getRound();
+    if (round.lt(this.latestRoundUpdate.getCurrentRound())) {
       log.trace(
-          "InsertUpdate: Ignoring insert {} for view {}, current view at {}",
+          "InsertUpdate: Ignoring insert {} for round {}, current round at {}",
           update,
-          view,
-          this.latestViewUpdate.getCurrentView());
+          round,
+          this.latestRoundUpdate.getCurrentRound());
       return;
     }
 
@@ -158,11 +158,11 @@ public final class BFTEventReducer implements BFTEventProcessor {
   }
 
   @Override
-  public void processViewUpdate(ViewUpdate viewUpdate) {
+  public void processRoundUpdate(RoundUpdate roundUpdate) {
     this.hasReachedQuorum = false;
-    this.isViewTimedOut = false;
-    this.latestViewUpdate = viewUpdate;
-    this.pacemaker.processViewUpdate(viewUpdate);
+    this.isRoundTimedOut = false;
+    this.latestRoundUpdate = roundUpdate;
+    this.pacemaker.processRoundUpdate(roundUpdate);
     this.tryVote();
   }
 
@@ -172,28 +172,28 @@ public final class BFTEventReducer implements BFTEventProcessor {
       return;
     }
 
-    if (!Objects.equals(update.getHeader().getView(), this.latestViewUpdate.getCurrentView())) {
+    if (!Objects.equals(update.getHeader().getRound(), this.latestRoundUpdate.getCurrentRound())) {
       return;
     }
 
     // check if already voted in this round
-    if (this.safetyRules.getLastVote(this.latestViewUpdate.getCurrentView()).isPresent()) {
+    if (this.safetyRules.getLastVote(this.latestRoundUpdate.getCurrentRound()).isPresent()) {
       return;
     }
 
-    // don't vote if view has timed out
-    if (this.isViewTimedOut) {
+    // don't vote if round has timed out
+    if (this.isRoundTimedOut) {
       return;
     }
 
-    // TODO: what if insertUpdate occurs before viewUpdate
-    final BFTNode nextLeader = this.latestViewUpdate.getNextLeader();
+    // TODO: what if insertUpdate occurs before roundUpdate
+    final BFTNode nextLeader = this.latestRoundUpdate.getNextLeader();
     final Optional<Vote> maybeVote =
         this.safetyRules.voteFor(
             update.getInserted().getVertex(),
             update.getHeader(),
             update.getInserted().getTimeOfExecution(),
-            this.latestViewUpdate.getHighQC());
+            this.latestRoundUpdate.getHighQC());
     maybeVote.ifPresentOrElse(
         vote -> this.voteDispatcher.dispatch(nextLeader, vote),
         () -> this.noVoteDispatcher.dispatch(NoVote.create(update.getInserted().getVertex())));
@@ -208,27 +208,28 @@ public final class BFTEventReducer implements BFTEventProcessor {
   public void processVote(Vote vote) {
     log.trace("Vote: Processing {}", vote);
 
-    final View view = vote.getView();
+    final Round round = vote.getRound();
 
-    if (view.lt(this.latestViewUpdate.getCurrentView())) {
+    if (round.lt(this.latestRoundUpdate.getCurrentRound())) {
       log.trace(
-          "Vote: Ignoring vote from {} for view {}, current view at {}",
+          "Vote: Ignoring vote from {} for round {}, current round at {}",
           vote.getAuthor(),
-          view,
-          this.latestViewUpdate.getCurrentView());
+          round,
+          this.latestRoundUpdate.getCurrentRound());
       return;
     }
 
     if (this.hasReachedQuorum) {
       log.trace(
-          "Vote: Ignoring vote from {} for view {}, quorum has already been reached",
+          "Vote: Ignoring vote from {} for round {}, quorum has already been reached",
           vote.getAuthor(),
-          view);
+          round);
       return;
     }
 
-    if (!this.self.equals(this.latestViewUpdate.getNextLeader()) && !vote.isTimeout()) {
-      log.trace("Vote: Ignoring vote from {} for view {}, unexpected vote", vote.getAuthor(), view);
+    if (!this.self.equals(this.latestRoundUpdate.getNextLeader()) && !vote.isTimeout()) {
+      log.trace(
+          "Vote: Ignoring vote from {} for round {}, unexpected vote", vote.getAuthor(), round);
       return;
     }
 
@@ -238,8 +239,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
           "Vote has been rejected because of: {}", voteRejected.getReason());
       case QuorumReached quorumReached -> {
         this.hasReachedQuorum = true;
-        viewQuorumReachedEventDispatcher.dispatch(
-            new ViewQuorumReached(quorumReached.getViewVotingResult(), vote.getAuthor()));
+        roundQuorumReachedEventDispatcher.dispatch(
+            new RoundQuorumReached(quorumReached.getRoundVotingResult(), vote.getAuthor()));
       }
     }
   }
@@ -249,10 +250,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
     log.trace("Proposal: Processing {}", proposal);
 
     // TODO: Move into preprocessor
-    final View proposedVertexView = proposal.getView();
-    final View currentView = this.latestViewUpdate.getCurrentView();
-    if (!currentView.equals(proposedVertexView)) {
-      log.trace("Proposal: Ignoring view {}, current is: {}", proposedVertexView, currentView);
+    final Round proposedVertexRound = proposal.getRound();
+    final Round currentRound = this.latestRoundUpdate.getCurrentRound();
+    if (!currentRound.equals(proposedVertexRound)) {
+      log.trace("Proposal: Ignoring round {}, current is: {}", proposedVertexRound, currentRound);
       return;
     }
 
@@ -265,8 +266,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
   public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
     log.trace("LocalTimeout: Processing {}", scheduledLocalTimeout);
 
-    if (scheduledLocalTimeout.view().equals(this.latestViewUpdate.getCurrentView())) {
-      this.isViewTimedOut = true;
+    if (scheduledLocalTimeout.round().equals(this.latestRoundUpdate.getCurrentRound())) {
+      this.isRoundTimedOut = true;
     }
 
     this.pacemaker.processLocalTimeout(scheduledLocalTimeout);

@@ -85,12 +85,12 @@ import org.junit.Test;
 /**
  * When running a network with 3 nodes, where all proposals are dropped, leader should be able to
  * re-send his vote with a timeout flag and the vote should be accepted by all other nodes,
- * resulting in moving to a next view (once remaining two nodes also timeout). If the timeout
+ * resulting in moving to a next round (once remaining two nodes also timeout). If the timeout
  * replacement votes are not accepted, then we loose a round because a node can only move to the
- * next view when it hasn't received the original non-timeout vote. This test checks that all nodes
- * only need a single timeout event to proceed to next view, even the node that initially received a
- * non-timeout vote (next leader), meaning that it must have successfully replaced a non-timeout
- * vote with a timeout vote in the same view.
+ * next round when it hasn't received the original non-timeout vote. This test checks that all nodes
+ * only need a single timeout event to proceed to next round, even the node that initially received
+ * a non-timeout vote (next leader), meaning that it must have successfully replaced a non-timeout
+ * vote with a timeout vote in the same round.
  */
 public class TimeoutPreviousVoteWithDroppedProposalsTest {
   private final Builder bftTestBuilder =
@@ -124,11 +124,11 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
 
     statistics.forEach(
         s -> {
-          // to make sure we've processed some views
+          // to make sure we've processed some rounds
           assertTrue(s.getMin() > 2);
 
-          // this ensures that we only need a single timeout per view
-          // BFT_TIMEOUT equal to BFT_TIMED_OUT_VIEWS
+          // this ensures that we only need a single timeout per round
+          // BFT_PACEMAKER_TIMEOUTS_SENT equal to BFT_PACEMAKER_TIMED_OUT_ROUNDS
           assertEquals(s.getMin(), s.getMax());
         });
 

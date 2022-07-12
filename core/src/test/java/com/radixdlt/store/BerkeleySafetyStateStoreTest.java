@@ -64,7 +64,7 @@
 
 package com.radixdlt.store;
 
-import static com.radixdlt.utils.SerializerTestDataGenerator.randomView;
+import static com.radixdlt.utils.SerializerTestDataGenerator.randomRound;
 import static com.radixdlt.utils.SerializerTestDataGenerator.randomVote;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -103,7 +103,7 @@ public class BerkeleySafetyStateStoreTest {
         new BerkeleySafetyStateStore(
             dbEnv, DefaultSerialization.getInstance(), new SystemCountersImpl());
 
-    final var safetyState = new SafetyState(randomView(), Optional.of(randomVote()));
+    final var safetyState = new SafetyState(randomRound(), Optional.of(randomVote()));
 
     when(env.beginTransaction(any(), any())).thenReturn(tx);
 

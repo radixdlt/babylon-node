@@ -66,7 +66,7 @@ package com.radixdlt.rev1;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.rev1.forks.ForkVotingResult;
 import java.util.Objects;
 import java.util.Optional;
@@ -74,13 +74,13 @@ import java.util.Optional;
 /** Proof of ledger commit */
 public final class LedgerAndBFTProof {
   private final LedgerProof ledgerProof;
-  private final VerifiedVertexStoreState vertexStoreState;
+  private final VertexStoreState vertexStoreState;
   private final Optional<String> nextForkName;
   private final Optional<ImmutableSet<ForkVotingResult>> forksVotingResults;
 
   private LedgerAndBFTProof(
       LedgerProof ledgerProof,
-      VerifiedVertexStoreState vertexStoreState,
+      VertexStoreState vertexStoreState,
       Optional<String> nextForkName,
       Optional<ImmutableSet<ForkVotingResult>> forksVotingResults) {
     this.ledgerProof = ledgerProof;
@@ -94,13 +94,13 @@ public final class LedgerAndBFTProof {
   }
 
   public static LedgerAndBFTProof create(
-      LedgerProof ledgerProof, VerifiedVertexStoreState vertexStoreState) {
+      LedgerProof ledgerProof, VertexStoreState vertexStoreState) {
     return create(ledgerProof, vertexStoreState, Optional.empty(), Optional.empty());
   }
 
   public static LedgerAndBFTProof create(
       LedgerProof ledgerProof,
-      VerifiedVertexStoreState vertexStoreState,
+      VertexStoreState vertexStoreState,
       Optional<String> nextForkName,
       Optional<ImmutableSet<ForkVotingResult>> forksVotingResults) {
     Objects.requireNonNull(ledgerProof);
@@ -111,7 +111,7 @@ public final class LedgerAndBFTProof {
     return ledgerProof;
   }
 
-  public Optional<VerifiedVertexStoreState> vertexStoreState() {
+  public Optional<VertexStoreState> vertexStoreState() {
     return Optional.ofNullable(vertexStoreState);
   }
 

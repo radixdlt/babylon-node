@@ -73,13 +73,14 @@ import java.util.Objects;
 import java.util.Optional;
 
 public final class LedgerUpdate {
-  private final VerifiedTxnsAndProof verifiedTxnsAndProof;
+  private final CommittedTransactionsWithProof committedTransactionsWithProof;
   // FIXME: Easiest way to implement this part for now
   private final ClassToInstanceMap<Object> output;
 
   public LedgerUpdate(
-      VerifiedTxnsAndProof verifiedTxnsAndProof, ClassToInstanceMap<Object> output) {
-    this.verifiedTxnsAndProof = Objects.requireNonNull(verifiedTxnsAndProof);
+      CommittedTransactionsWithProof committedTransactionsWithProof,
+      ClassToInstanceMap<Object> output) {
+    this.committedTransactionsWithProof = Objects.requireNonNull(committedTransactionsWithProof);
     this.output = Objects.requireNonNull(output);
   }
 
@@ -87,26 +88,27 @@ public final class LedgerUpdate {
     return output;
   }
 
-  public List<Transaction> getNewTxns() {
-    return verifiedTxnsAndProof.getTxns();
+  public List<Transaction> getNewTransactions() {
+    return committedTransactionsWithProof.getTransactions();
   }
 
   public LedgerProof getTail() {
-    return verifiedTxnsAndProof.getProof();
+    return committedTransactionsWithProof.getProof();
   }
 
   public Optional<BFTValidatorSet> getNextValidatorSet() {
-    return verifiedTxnsAndProof.getProof().getNextValidatorSet();
+    return committedTransactionsWithProof.getProof().getNextValidatorSet();
   }
 
   @Override
   public String toString() {
-    return String.format("%s{commands=%s}", this.getClass().getSimpleName(), verifiedTxnsAndProof);
+    return String.format(
+        "%s{transactions=%s}", this.getClass().getSimpleName(), committedTransactionsWithProof);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(verifiedTxnsAndProof, output);
+    return Objects.hash(committedTransactionsWithProof, output);
   }
 
   @Override
@@ -116,7 +118,7 @@ public final class LedgerUpdate {
     }
 
     LedgerUpdate other = (LedgerUpdate) o;
-    return Objects.equals(other.verifiedTxnsAndProof, this.verifiedTxnsAndProof)
+    return Objects.equals(other.committedTransactionsWithProof, this.committedTransactionsWithProof)
         && Objects.equals(other.output, this.output);
   }
 }

@@ -71,8 +71,8 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -83,27 +83,27 @@ import java.util.Optional;
 /** Manages consensus recovery on startup */
 public class ConsensusRecoveryModule extends AbstractModule {
   @Provides
-  private ViewUpdate view(
-      VerifiedVertexStoreState vertexStoreState, BFTConfiguration configuration) {
+  private RoundUpdate initialRoundUpdate(
+      VertexStoreState vertexStoreState, BFTConfiguration configuration) {
     var highQC = vertexStoreState.getHighQC();
-    var view = highQC.highestQC().getView().next();
+    var round = highQC.highestQC().getRound().next();
     var proposerElection = configuration.getProposerElection();
-    var leader = proposerElection.getProposer(view);
-    var nextLeader = proposerElection.getProposer(view.next());
+    var leader = proposerElection.getProposer(round);
+    var nextLeader = proposerElection.getProposer(round.next());
 
-    return ViewUpdate.create(view, highQC, leader, nextLeader);
+    return RoundUpdate.create(round, highQC, leader, nextLeader);
   }
 
   @Provides
   @Singleton
   private BFTConfiguration initialConfig(
-      BFTValidatorSet validatorSet, VerifiedVertexStoreState vertexStoreState) {
+      BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
   }
 
   @Provides
-  private BFTValidatorSet validatorSet(@LastEpochProof LedgerProof lastEpochProof) {
+  private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
     return lastEpochProof
         .getNextValidatorSet()
         .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
@@ -111,7 +111,7 @@ public class ConsensusRecoveryModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private SafetyState safetyState(
+  private SafetyState initialSafetyState(
       EpochChange initialEpoch, PersistentSafetyStateStore safetyStore) {
     return safetyStore
         .get()

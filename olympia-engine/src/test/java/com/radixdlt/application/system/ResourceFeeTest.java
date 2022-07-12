@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.system;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
@@ -77,10 +77,7 @@ import com.radixdlt.application.tokens.construction.MintTokenConstructor;
 import com.radixdlt.application.tokens.construction.TransferTokensConstructorV2;
 import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.TokenResource;
-import com.radixdlt.atom.MutableTokenDefinition;
-import com.radixdlt.atom.REConstructor;
-import com.radixdlt.atom.TxnConstructionRequest;
-import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.cmos.ConstraintMachineOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.DepletedFeeReserveException;
@@ -91,6 +88,9 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.substate.MutableTokenDefinition;
+import com.radixdlt.substate.REConstructor;
+import com.radixdlt.substate.TxnConstructionRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -106,18 +106,18 @@ public final class ResourceFeeTest {
 
   @Before
   public void setup() throws Exception {
-    var cmAtomOS = new CMAtomOS();
-    cmAtomOS.load(new TokensConstraintScryptV3(Set.of("xrd"), Pattern.compile("[a-z0-9]+")));
-    cmAtomOS.load(new SystemConstraintScrypt());
+    var cmOS = new ConstraintMachineOS();
+    cmOS.load(new TokensConstraintScryptV3(Set.of("xrd"), Pattern.compile("[a-z0-9]+")));
+    cmOS.load(new SystemConstraintScrypt());
     var feeTable = FeeTable.create(Amount.zero(), Map.of(TokenResource.class, Amount.ofTokens(1)));
     var cm =
         new ConstraintMachine(
-            cmAtomOS.getProcedures(),
-            cmAtomOS.buildSubstateDeserialization(),
-            cmAtomOS.buildVirtualSubstateDeserialization(),
+            cmOS.getProcedures(),
+            cmOS.buildSubstateDeserialization(),
+            cmOS.buildVirtualSubstateDeserialization(),
             UpSubstateFeeMeter.create(feeTable.getPerUpSubstateFee()));
-    var parser = new REParser(cmAtomOS.buildSubstateDeserialization());
-    var serialization = cmAtomOS.buildSubstateSerialization();
+    var parser = new REParser(cmOS.buildSubstateDeserialization());
+    var serialization = cmOS.buildSubstateSerialization();
     this.store = new InMemoryEngineStore<>();
     this.engine =
         new RadixEngine<>(

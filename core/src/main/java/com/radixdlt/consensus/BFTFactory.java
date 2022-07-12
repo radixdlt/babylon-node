@@ -67,8 +67,8 @@ package com.radixdlt.consensus;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.ViewQuorumReached;
-import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.VertexStoreAdapter;
@@ -86,8 +86,8 @@ public interface BFTFactory {
       Pacemaker pacemaker,
       VertexStoreAdapter vertexStore,
       BFTSyncer bftSyncer,
-      EventProcessor<ViewQuorumReached> viewQuorumReachedEventProcessor,
+      EventProcessor<RoundQuorumReached> roundQuorumReachedEventProcessor,
       BFTValidatorSet validatorSet,
-      ViewUpdate viewUpdate,
+      RoundUpdate roundUpdate,
       SafetyRules safetyRules);
 }

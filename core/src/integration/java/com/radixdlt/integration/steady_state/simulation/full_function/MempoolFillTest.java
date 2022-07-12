@@ -78,7 +78,6 @@ import com.radixdlt.harness.simulation.application.MempoolFillerStarter;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.integration.targeted.mempool.MempoolFillerModule;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.checkpoint.Genesis;
@@ -87,6 +86,7 @@ import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.targeted.mempool.MempoolFillerModule;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -125,7 +125,7 @@ public class MempoolFillTest {
               ConsensusMonitors.directParents(),
               LedgerMonitors.consensusToLedger(),
               LedgerMonitors.ordered(),
-              RadixEngineMonitors.noInvalidProposedCommands())
+              RadixEngineMonitors.noInvalidProposedTransactions())
           .addActor(MempoolFillerStarter.class);
 
   @Test
@@ -139,12 +139,12 @@ public class MempoolFillTest {
     // Post conditions
     assertThat(results)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    long invalidCommandsCount =
+    long invalidTransactionsCount =
         runningTest.getNetwork().getSystemCounters().values().stream()
-            .map(s -> s.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_COMMANDS))
+            .map(s -> s.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
             .mapToLong(l -> l)
             .sum();
-    assertThat(invalidCommandsCount).isZero();
+    assertThat(invalidTransactionsCount).isZero();
   }
 
   @Test

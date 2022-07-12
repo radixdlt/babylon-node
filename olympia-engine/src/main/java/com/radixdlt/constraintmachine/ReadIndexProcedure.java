@@ -67,7 +67,8 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import java.util.function.Supplier;
 
-public class ReadIndexProcedure<D extends Particle, S extends ReducerState> implements Procedure {
+public class ReadIndexProcedure<D extends RawSubstate, S extends ReducerState>
+    implements Procedure {
   private final Class<D> readClass;
   private final Class<S> reducerStateClass;
   private final IndexedReducer<D, S> readReducer;

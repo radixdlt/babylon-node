@@ -72,7 +72,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.util.Optional;
 
-/** Particle representing a fixed supply token definition */
+/** Substate representing a fixed supply token definition */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public record TokenResource(REAddr addr, UInt256 granularity, boolean isMutable, ECPublicKey owner)
     implements ResourceData {

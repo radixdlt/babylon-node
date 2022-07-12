@@ -75,29 +75,29 @@ import java.util.TreeMap;
 public class UpdatingValidatorBFTData implements ReducerState {
   private final long maxRounds;
   private final TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate;
-  private long expectedNextView;
+  private long expectedNextRound;
 
   UpdatingValidatorBFTData(
-      long maxRounds, long view, TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate) {
+      long maxRounds, long round, TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate) {
     this.maxRounds = maxRounds;
-    this.expectedNextView = view;
+    this.expectedNextRound = round;
     this.validatorsToUpdate = validatorsToUpdate;
   }
 
-  private void incrementViews(long count) throws ProcedureException {
-    if (this.expectedNextView + count < this.expectedNextView) {
-      throw new ProcedureException("View overflow");
+  private void incrementRounds(long count) throws ProcedureException {
+    if (this.expectedNextRound + count < this.expectedNextRound) {
+      throw new ProcedureException("Round overflow");
     }
 
-    if (this.expectedNextView + count > maxRounds) {
+    if (this.expectedNextRound + count > maxRounds) {
       throw new ProcedureException(
           "Max rounds is "
               + maxRounds
               + " but attempting to execute "
-              + (this.expectedNextView + count));
+              + (this.expectedNextRound + count));
     }
 
-    this.expectedNextView += count;
+    this.expectedNextRound += count;
   }
 
   public ReducerState update(ValidatorBFTData next, ExecutionContext context)
@@ -125,13 +125,13 @@ public class UpdatingValidatorBFTData implements ReducerState {
               next.validatorKey(), additionalProposalsMissed));
     }
 
-    incrementViews(additionalProposalsCompleted);
-    incrementViews(additionalProposalsMissed);
+    incrementRounds(additionalProposalsCompleted);
+    incrementRounds(additionalProposalsMissed);
 
     if (!validatorsToUpdate.isEmpty()) {
       return this;
     }
 
-    return new StartNextRound(this.expectedNextView);
+    return new StartNextRound(this.expectedNextRound);
   }
 }

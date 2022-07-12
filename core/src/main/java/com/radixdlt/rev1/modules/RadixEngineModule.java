@@ -68,14 +68,14 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.rev1.EpochCeilingView;
+import com.radixdlt.rev1.EpochMaxRound;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.MaxSigsPerRound;
 import com.radixdlt.rev1.MaxValidators;
@@ -89,7 +89,7 @@ import com.radixdlt.sync.CommittedReader;
 import java.util.Map;
 import java.util.OptionalInt;
 
-/** Module which manages execution of commands */
+/** Module which manages execution of transactions */
 public class RadixEngineModule extends AbstractModule {
   @Provides
   @Singleton
@@ -145,8 +145,8 @@ public class RadixEngineModule extends AbstractModule {
   // TODO: Remove
   @Provides
   @Singleton
-  @EpochCeilingView
-  private View epochCeilingHighView(CurrentForkView currentForkView) {
+  @EpochMaxRound
+  private Round maxRoundsInEpoch(CurrentForkView currentForkView) {
     return currentForkView.currentForkConfig().engineRules().maxRounds();
   }
 

@@ -69,11 +69,9 @@ import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.UnclaimedREAddr;
 import com.radixdlt.application.system.state.VirtualParent;
 import com.radixdlt.application.tokens.scrypt.TokenHoldingBucket;
-import com.radixdlt.atom.REFieldSerialization;
-import com.radixdlt.atom.SubstateTypeId;
-import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.Loader;
-import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.cmos.ConstraintScrypt;
+import com.radixdlt.cmos.Loader;
+import com.radixdlt.cmos.SubstateDefinition;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.DownProcedure;
 import com.radixdlt.constraintmachine.ExecutionContext;
@@ -86,6 +84,8 @@ import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
 import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.substate.REFieldSerialization;
+import com.radixdlt.substate.SubstateTypeId;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -208,13 +208,13 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
             SubstateTypeId.ROUND_DATA.id(),
             buf -> {
               REFieldSerialization.deserializeReservedByte(buf);
-              var view = REFieldSerialization.deserializeNonNegativeLong(buf);
+              var round = REFieldSerialization.deserializeNonNegativeLong(buf);
               var timestamp = REFieldSerialization.deserializeNonNegativeLong(buf);
-              return new RoundData(view, timestamp);
+              return new RoundData(round, timestamp);
             },
             (s, buf) -> {
               REFieldSerialization.serializeReservedByte(buf);
-              buf.putLong(s.view());
+              buf.putLong(s.round());
               buf.putLong(s.timestamp());
             }));
 
@@ -318,8 +318,8 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
             RoundData.class,
             u -> new Authorization(PermissionLevel.SYSTEM, (r, c) -> {}),
             (s, u, c, r) -> {
-              if (u.view() != 0) {
-                throw new ProcedureException("First view must be 0.");
+              if (u.round() != 0) {
+                throw new ProcedureException("First round must be 0.");
               }
               return ReducerResult.incomplete(new AllocatingVirtualState());
             }));

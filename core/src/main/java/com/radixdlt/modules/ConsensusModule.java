@@ -88,9 +88,9 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.NoVote;
+import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.ViewQuorumReached;
-import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -114,8 +114,8 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.network.GetVerticesRequestRateLimit;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
@@ -137,7 +137,7 @@ public final class ConsensusModule extends AbstractModule {
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
-    eventBinder.addBinding().toInstance(ViewUpdate.class);
+    eventBinder.addBinding().toInstance(RoundUpdate.class);
     eventBinder.addBinding().toInstance(BFTRebuildUpdate.class);
     eventBinder.addBinding().toInstance(BFTInsertUpdate.class);
     eventBinder.addBinding().toInstance(Proposal.class);
@@ -148,16 +148,16 @@ public final class ConsensusModule extends AbstractModule {
   private BFTFactory bftFactory(
       Hasher hasher,
       HashVerifier verifier,
-      EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher,
+      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher) {
     return (self,
         pacemaker,
         vertexStore,
         bftSyncer,
-        viewQuorumReachedEventProcessor,
+        roundQuorumReachedEventProcessor,
         validatorSet,
-        viewUpdate,
+        roundUpdate,
         safetyRules) ->
         BFTBuilder.create()
             .self(self)
@@ -167,14 +167,14 @@ public final class ConsensusModule extends AbstractModule {
             .safetyRules(safetyRules)
             .pacemaker(pacemaker)
             .vertexStore(vertexStore)
-            .viewQuorumReachedEventDispatcher(
-                viewQuorumReached -> {
+            .roundQuorumReachedEventDispatcher(
+                roundQuorumReached -> {
                   // FIXME: a hack for now until replacement of epochmanager factories
-                  viewQuorumReachedEventProcessor.process(viewQuorumReached);
-                  viewQuorumReachedEventDispatcher.dispatch(viewQuorumReached);
+                  roundQuorumReachedEventProcessor.process(roundQuorumReached);
+                  roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
                 })
             .noVoteEventDispatcher(noVoteEventDispatcher)
-            .viewUpdate(viewUpdate)
+            .roundUpdate(roundUpdate)
             .bftSyncer(bftSyncer)
             .validatorSet(validatorSet)
             .build();
@@ -196,15 +196,15 @@ public final class ConsensusModule extends AbstractModule {
       VertexStoreAdapter vertexStore,
       BFTSync bftSync,
       SafetyRules safetyRules,
-      ViewUpdate viewUpdate) {
+      RoundUpdate roundUpdate) {
     return bftFactory.create(
         self,
         pacemaker,
         vertexStore,
         bftSync,
-        bftSync.viewQuorumReachedEventProcessor(),
+        bftSync.roundQuorumReachedEventProcessor(),
         config.getValidatorSet(),
-        viewUpdate,
+        roundUpdate,
         safetyRules);
   }
 
@@ -224,7 +224,7 @@ public final class ConsensusModule extends AbstractModule {
       RemoteEventDispatcher<Proposal> proposalDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher,
       TimeSupplier timeSupplier,
-      ViewUpdate initialViewUpdate,
+      RoundUpdate initialRoundUpdate,
       SystemCounters systemCounters) {
     BFTValidatorSet validatorSet = configuration.getValidatorSet();
     return new Pacemaker(
@@ -241,7 +241,7 @@ public final class ConsensusModule extends AbstractModule {
         voteDispatcher,
         hasher,
         timeSupplier,
-        initialViewUpdate,
+        initialRoundUpdate,
         systemCounters);
   }
 

@@ -20,4 +20,4 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 - Rehaul of fungible system
-- Refactored Fixed Supply Tokens to not use Unallocated Token particles
+- Refactored Fixed Supply Tokens to not use Unallocated Token substates

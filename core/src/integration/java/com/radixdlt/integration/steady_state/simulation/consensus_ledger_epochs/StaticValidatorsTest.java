@@ -66,7 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.*;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
@@ -95,8 +95,8 @@ public class StaticValidatorsTest {
       long epochRounds, long epochRoundsCheck) {
     SimulationTest bftTest =
         bftTestBuilder
-            .ledgerAndEpochs(View.of(epochRounds), e -> IntStream.range(0, 4))
-            .addTestModules(ConsensusMonitors.epochCeilingView(View.of(epochRoundsCheck)))
+            .ledgerAndEpochs(Round.of(epochRounds), e -> IntStream.range(0, 4))
+            .addTestModules(ConsensusMonitors.epochMaxRound(Round.of(epochRoundsCheck)))
             .build();
 
     return bftTest.run().awaitCompletion();
@@ -106,7 +106,7 @@ public class StaticValidatorsTest {
   public void epoch_ceiling_monitor_fails_correctly() {
     var checkResults = runTest(10, 9);
     assertThat(checkResults)
-        .hasEntrySatisfying(Monitor.EPOCH_CEILING_VIEW, error -> assertThat(error).isPresent());
+        .hasEntrySatisfying(Monitor.EPOCH_MAX_ROUND, error -> assertThat(error).isPresent());
   }
 
   @Test

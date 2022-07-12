@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.tokens.construction;
 
-import com.radixdlt.atom.TxBuilderException;
+import com.radixdlt.substate.TxBuilderException;
 import com.radixdlt.utils.UInt256;
 
 public class MinimumStakeException extends TxBuilderException {

@@ -64,7 +64,7 @@
 
 package com.radixdlt.application.tokens;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.application.system.construction.CreateSystemConstructorV2;
@@ -76,8 +76,7 @@ import com.radixdlt.application.tokens.scrypt.TokensConstraintScryptV3;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
 import com.radixdlt.application.tokens.state.TokensInAccount;
-import com.radixdlt.atom.*;
-import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.cmos.ConstraintMachineOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.SubstateSerialization;
@@ -90,6 +89,7 @@ import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.substate.*;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -109,16 +109,16 @@ public class TokenResourceTest {
 
   @Before
   public void setup() throws Exception {
-    var cmAtomOS = new CMAtomOS();
-    cmAtomOS.load(new SystemConstraintScrypt());
-    cmAtomOS.load(new TokensConstraintScryptV3(Set.of("xrd"), Pattern.compile("[a-z0-9]+")));
+    var cmOS = new ConstraintMachineOS();
+    cmOS.load(new SystemConstraintScrypt());
+    cmOS.load(new TokensConstraintScryptV3(Set.of("xrd"), Pattern.compile("[a-z0-9]+")));
     var cm =
         new ConstraintMachine(
-            cmAtomOS.getProcedures(),
-            cmAtomOS.buildSubstateDeserialization(),
-            cmAtomOS.buildVirtualSubstateDeserialization());
-    this.parser = new REParser(cmAtomOS.buildSubstateDeserialization());
-    this.serialization = cmAtomOS.buildSubstateSerialization();
+            cmOS.getProcedures(),
+            cmOS.buildSubstateDeserialization(),
+            cmOS.buildVirtualSubstateDeserialization());
+    this.parser = new REParser(cmOS.buildSubstateDeserialization());
+    this.serialization = cmOS.buildSubstateSerialization();
     this.store = new InMemoryEngineStore<>();
     this.engine =
         new RadixEngine<>(
@@ -144,14 +144,14 @@ public class TokenResourceTest {
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
     var tokenResource = TokenResource.createFixedSupplyResource(addr);
     var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-    var tokensParticle = new TokensInAccount(holdingAddress, addr, UInt256.TEN);
+    var tokensSubstate = new TokensInAccount(holdingAddress, addr, UInt256.TEN);
 
     var builder =
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
             .up(tokenResource)
-            .up(tokensParticle)
+            .up(tokensSubstate)
             .up(TokenResourceMetadata.empty(addr, "test"))
             .end();
     var sig = keyPair.sign(builder.hashToSign().asBytes());
@@ -169,14 +169,14 @@ public class TokenResourceTest {
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "xrd");
     var tokenResource = TokenResource.createFixedSupplyResource(addr);
     var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-    var tokensParticle = new TokensInAccount(holdingAddress, addr, UInt256.TEN);
+    var tokensSubstate = new TokensInAccount(holdingAddress, addr, UInt256.TEN);
 
     var builder =
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "xrd".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
             .up(tokenResource)
-            .up(tokensParticle)
+            .up(tokensSubstate)
             .up(TokenResourceMetadata.empty(addr, "xrd"))
             .end();
     var sig = keyPair.sign(builder.hashToSign().asBytes());
@@ -196,14 +196,14 @@ public class TokenResourceTest {
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "xrd");
     var tokenResource = TokenResource.createFixedSupplyResource(addr);
     var holdingAddress = REAddr.ofPubKeyAccount(keyPair.getPublicKey());
-    var tokensParticle = new TokensInAccount(holdingAddress, addr, UInt256.TEN);
+    var tokensSubstate = new TokensInAccount(holdingAddress, addr, UInt256.TEN);
 
     var builder =
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "xrd".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
             .up(tokenResource)
-            .up(tokensParticle)
+            .up(tokensSubstate)
             .up(TokenResourceMetadata.empty(addr, "xrd"))
             .end();
     var txn = builder.build();
@@ -218,12 +218,12 @@ public class TokenResourceTest {
     // Arrange
     var keyPair = ECKeyPair.generateNew();
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "test");
-    var tokenDefinitionParticle = TokenResource.createFixedSupplyResource(addr);
+    var tokenDefinitionSubstate = TokenResource.createFixedSupplyResource(addr);
     var builder =
         TxLowLevelBuilder.newBuilder(serialization)
             .syscall(Syscall.READDR_CLAIM, "test".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
-            .up(tokenDefinitionParticle)
+            .up(tokenDefinitionSubstate)
             .end();
     var sig = keyPair.sign(builder.hashToSign().asBytes());
     var txn = builder.sig(sig).build();
@@ -239,14 +239,14 @@ public class TokenResourceTest {
     var keyPair = ECKeyPair.generateNew();
     // Arrange
     var addr = REAddr.ofHashedKey(ECKeyPair.generateNew().getPublicKey(), "smthng");
-    var tokenDefinitionParticle =
+    var tokenDefinitionSubstate =
         TokenResource.createMutableSupplyResource(addr, keyPair.getPublicKey());
     var builder =
         TxBuilder.newBuilder(parser.getSubstateDeserialization(), serialization, 255)
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
             .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
-            .up(tokenDefinitionParticle)
+            .up(tokenDefinitionSubstate)
             .end();
     var sig = keyPair.sign(builder.hashToSign());
     var txn = builder.sig(sig).build();

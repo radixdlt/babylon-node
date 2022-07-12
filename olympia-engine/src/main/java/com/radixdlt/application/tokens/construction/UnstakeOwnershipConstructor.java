@@ -64,14 +64,14 @@
 
 package com.radixdlt.application.tokens.construction;
 
-import static com.radixdlt.atom.TxAction.*;
+import static com.radixdlt.substate.TxAction.*;
 
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
-import com.radixdlt.atom.*;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.substate.*;
 import java.nio.ByteBuffer;
 
 public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwnership> {

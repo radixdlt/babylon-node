@@ -64,7 +64,7 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atomos.SubstateDefinition;
+import com.radixdlt.cmos.SubstateDefinition;
 import com.radixdlt.engine.parser.exceptions.SubstateDeserializationException;
 import com.radixdlt.serialization.DeserializeException;
 import java.nio.ByteBuffer;
@@ -73,10 +73,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class SubstateDeserialization {
-  private final Map<Byte, SubstateDefinition<? extends Particle>> byteToDeserializer;
-  private final Map<Class<? extends Particle>, Byte> classToTypeByte;
+  private final Map<Byte, SubstateDefinition<? extends RawSubstate>> byteToDeserializer;
+  private final Map<Class<? extends RawSubstate>, Byte> classToTypeByte;
 
-  public SubstateDeserialization(Collection<SubstateDefinition<? extends Particle>> definitions) {
+  public SubstateDeserialization(
+      Collection<SubstateDefinition<? extends RawSubstate>> definitions) {
     this.byteToDeserializer =
         definitions.stream().collect(Collectors.toMap(SubstateDefinition::getTypeByte, d -> d));
     this.classToTypeByte =
@@ -86,7 +87,7 @@ public final class SubstateDeserialization {
                     SubstateDefinition::getSubstateClass, SubstateDefinition::getTypeByte));
   }
 
-  public Class<? extends Particle> byteToClass(Byte typeByte) throws DeserializeException {
+  public Class<? extends RawSubstate> byteToClass(Byte typeByte) throws DeserializeException {
     var definition = byteToDeserializer.get(typeByte);
     if (definition == null) {
       throw new DeserializeException("Unknown substate byte type: " + typeByte);
@@ -94,7 +95,7 @@ public final class SubstateDeserialization {
     return definition.getSubstateClass();
   }
 
-  public byte classToByte(Class<? extends Particle> substateClass) {
+  public byte classToByte(Class<? extends RawSubstate> substateClass) {
     var b = classToTypeByte.get(substateClass);
     if (b == null) {
       throw new IllegalStateException("Unknown substateClass: " + substateClass);
@@ -102,15 +103,15 @@ public final class SubstateDeserialization {
     return b;
   }
 
-  public <T extends Particle> SubstateIndex<T> index(Class<T> substateClass) {
+  public <T extends RawSubstate> SubstateIndex<T> index(Class<T> substateClass) {
     return SubstateIndex.create(classToByte(substateClass), substateClass);
   }
 
-  public Particle deserialize(byte[] b) throws DeserializeException {
+  public RawSubstate deserialize(byte[] b) throws DeserializeException {
     return deserialize(ByteBuffer.wrap(b));
   }
 
-  public Particle deserialize(ByteBuffer buf) throws DeserializeException {
+  public RawSubstate deserialize(ByteBuffer buf) throws DeserializeException {
     var typeByte = buf.get();
     var deserializer = byteToDeserializer.get(typeByte);
     if (deserializer == null) {
