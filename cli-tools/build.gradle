@@ -236,13 +236,13 @@ task runTargetedIntegrationTests(type: Test) {
         includeTestsMatching "com.radixdlt.integration.targeted.*"
     }
 
-    environment "RADIX_NODE_KEYSTORE_PASSWORD", System.getenv('supersecret')
+    environment "RADIX_NODE_KEYSTORE_PASSWORD", "supersecret"
     testClassesDirs = sourceSets.integration.output.classesDirs
     classpath = sourceSets.integration.runtimeClasspath
 }
 
 task runAllIntegrationTests(type: Test) {
-    environment "RADIX_NODE_KEYSTORE_PASSWORD", System.getenv('supersecret')
+    environment "RADIX_NODE_KEYSTORE_PASSWORD", "supersecret"
     testClassesDirs = sourceSets.integration.output.classesDirs
     classpath = sourceSets.integration.runtimeClasspath
 }
