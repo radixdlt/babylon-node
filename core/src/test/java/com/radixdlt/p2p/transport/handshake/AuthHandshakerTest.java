@@ -490,7 +490,7 @@ public final class AuthHandshakerTest {
     AuthHandshakerField.setAccessible(true);
     ECKeyPair ephemeralKey = (ECKeyPair) AuthHandshakerField.get(authHandshaker);
 
-    var ecKeyOps = ECKeyOps.fromKeyPair(remoteKey);ß
+    var ecKeyOps = ECKeyOps.fromKeyPair(remoteKey);
     var remotePubKey = remoteKey.getPublicKey();
 
     final var sharedSecret = bigIntegerToBytes(ecKeyOps.ecdhAgreement(remotePubKey), 32);
