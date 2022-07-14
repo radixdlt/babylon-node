@@ -98,9 +98,9 @@ public abstract class BaseHandshakeMessage {
     if (capabilities.size() > Capabilities.MAX_NUMBER_OF_CAPABILITIES_ACCEPTED) {
       throw new InvalidHandshakeMessageException(
           String.format(
-              "Invalid handshake message. The remote peer sent us %s capabilities, but we accept at"
-                  + " most %s.",
-              capabilities.size(), Capabilities.MAX_NUMBER_OF_CAPABILITIES_ACCEPTED));
+              Capabilities.MAX_NUMBER_OF_CAPABILITIES_ACCEPTED_ERROR_MSG,
+              capabilities.size(),
+              Capabilities.MAX_NUMBER_OF_CAPABILITIES_ACCEPTED));
     }
     try {
       capabilities.forEach(RemotePeerCapability::validate);
