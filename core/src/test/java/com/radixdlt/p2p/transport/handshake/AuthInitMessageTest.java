@@ -69,8 +69,11 @@ import static org.junit.Assert.*;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Assert;
@@ -89,25 +92,37 @@ public class AuthInitMessageTest {
   }
 
   @Test
+  public void
+      when_number_of_remote_peer_capabilities_is_bigger_than_allowed_then_an_exception_is_thrown() {
+
+    var remotePeerCapabilities = new HashSet<RemotePeerCapability>();
+    for (var lc = 0; lc < Capabilities.MAX_NUMBER_OF_CAPABILITIES_ACCEPTED + 1; lc++) {
+      remotePeerCapabilities.add(new RemotePeerCapability("DUMMY_CAPABILITY" + lc, Map.of()));
+    }
+
+    InvalidHandshakeMessageException invalidHandshakeMessageException =
+        assertThrows(
+            InvalidHandshakeMessageException.class,
+            () -> getAuthInitiateMessage(remotePeerCapabilities));
+
+    assertEquals(
+        String.format(
+            Capabilities.MAX_NUMBER_OF_CAPABILITIES_ACCEPTED_ERROR_MSG,
+            remotePeerCapabilities.size(),
+            Capabilities.MAX_NUMBER_OF_CAPABILITIES_ACCEPTED),
+        invalidHandshakeMessageException.getMessage());
+  }
+
+  @Test
   public void when_remote_peer_capabilities_is_bigger_than_allowed_then_an_exception_is_thrown() {
 
+    var configMap = new HashMap<String, String>();
+    for (var lc = 0; lc < RemotePeerCapability.CONFIGURATION_MAP_MAX_SIZE + 1; lc++) {
+      configMap.put("Config" + lc, "Value" + lc);
+    }
+
     Set<RemotePeerCapability> remotePeerCapabilities =
-        Set.of(
-            new RemotePeerCapability(
-                LedgerSyncCapability.NAME,
-                Map.of(
-                    "config1",
-                    "configValue1",
-                    "config2",
-                    "configValue2",
-                    "config3",
-                    "configValue3",
-                    "config4",
-                    "configValue4",
-                    "config5",
-                    "configValue5",
-                    "config6",
-                    "configValue6")));
+        Set.of(new RemotePeerCapability(LedgerSyncCapability.NAME, configMap));
 
     InvalidHandshakeMessageException invalidHandshakeMessageException =
         assertThrows(
@@ -127,7 +142,7 @@ public class AuthInitMessageTest {
   public void
       when_remote_peer_capabilities_config_name_is_bigger_than_allowed_then_an_exception_is_thrown() {
 
-    var configName = "thisConfigNameIsBiggerThanTheSizeAllowed";
+    var configName = "N".repeat(RemotePeerCapability.CONFIGURATION_MAX_NAME_SIZE + 1);
 
     Set<RemotePeerCapability> remotePeerCapabilities =
         Set.of(
@@ -154,7 +169,7 @@ public class AuthInitMessageTest {
       when_remote_peer_capabilities_config_value_is_bigger_than_allowed_then_an_exception_is_thrown() {
 
     var configName = "config1";
-    var configValue = "thisConfigValueIsBiggerThanTheSizeAllowed";
+    var configValue = "V".repeat(RemotePeerCapability.CONFIGURATION_MAX_VALUE_SIZE + 1);
 
     Set<RemotePeerCapability> remotePeerCapabilities =
         Set.of(

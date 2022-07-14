@@ -73,6 +73,9 @@ public record Capabilities(LedgerSyncCapability ledgerSyncCapability) {
    * This is used to mitigate malicious messages during capabilities exchange.
    * */
   public static final int MAX_NUMBER_OF_CAPABILITIES_ACCEPTED = 5;
+  public static final String MAX_NUMBER_OF_CAPABILITIES_ACCEPTED_ERROR_MSG =
+      "Invalid handshake message. The remote peer sent us %s capabilities, but we accept at most"
+          + " %s.";
 
   /**
    * Returns {@code true} if the Ledger Sync Capability is enabled.
