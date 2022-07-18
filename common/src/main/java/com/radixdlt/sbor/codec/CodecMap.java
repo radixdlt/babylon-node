@@ -81,20 +81,20 @@ import java.util.function.Consumer;
 /**
  * The CodecMap registers default strategies to encode/decode a type.
  *
- * <p>You can register codecsMap for:
+ * <p>You can register codecs for:
  *
  * <ul>
  *   <li>A class object - this captures types without their generic parameters
  *   <li>A concrete TypeToken - this is specific to all the given generic parameters
  * </ul>
  *
- * <p>If multiple codecsMap are registered against the same object/TypeToken, the latest to be
+ * <p>If multiple codecs are registered against the same object/TypeToken, the latest to be
  * registered is used.
  *
- * <p>You can also register a codec creator, which allows automatic creation of codecsMap for
+ * <p>You can also register a codec creator, which allows automatic creation of codecs for
  * explicit type parameters of a given class. This works well with types such as Option&lt;T&rt;,
  * where you may wish to decode into an Option&lt;String&rt; without registering a codec for
- * Option&lt;String&rt; explicitly. The generated codecsMap are cached against their explicit
+ * Option&lt;String&rt; explicitly. The generated codecs are cached against their explicit
  * TypeToken.
  *
  * <p>Finally, you can also register a class object codec and codec creators for a sealed class and
@@ -107,11 +107,6 @@ import java.util.function.Consumer;
   "unused"
 }) // This class is required to play fast and loose with generics
 public final class CodecMap {
-  /**
-   * Codecs can be registered on the static CodecMap.DEFAULT which is used by SborCoder.DEFAULT. It
-   * is recommended to do this in the static constructor of a class being encoded/decoded. It is
-   * safe to register twice - the latest registration will apply.
-   */
   private static final CodecMap DEFAULT = new CodecMap();
 
   public static final CodecResolver DEFAULT_RESOLVER = DEFAULT.resolver;

@@ -242,13 +242,73 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
   }
 
-  private LongFunction<ECPublicKey> getValidatorMapping() {
-    return l -> proposerElection.getProposer(Round.of(l)).getKey();
+  private record SystemIntent(BFTNode roundProposer, long roundTimestamp) {}
+
+  @Override
+  public StateComputerResult prepare(
+      List<ExecutedTransaction> previousTransactions, VertexWithHash vertex, long roundTimestamp) {
+    synchronized (lock) {
+      var systemIntent = new SystemIntent(vertex.getProposer(), roundTimestamp);
+      var vertexTransactions = vertex.getTransactions();
+      var transientBranch = this.radixEngine.transientBranch();
+
+      reexecutePreviousTransactions(transientBranch, previousTransactions);
+
+      var systemUpdateTransaction = this.executeSystemUpdate(transientBranch, systemIntent);
+      var successBuilder = ImmutableList.<ExecutedTransaction>builder();
+
+      successBuilder.add(systemUpdateTransaction);
+
+      var exceptionBuilder = ImmutableMap.<Transaction, Exception>builder();
+      var nextValidatorSet =
+          systemUpdateTransaction.processed().getEvents().stream()
+              .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+              .map(REEvent.NextValidatorSetEvent.class::cast)
+              .findFirst()
+              .map(
+                  e ->
+                      BFTValidatorSet.from(
+                          e.nextValidators().stream()
+                              .map(
+                                  v ->
+                                      BFTValidator.from(
+                                          BFTNode.create(v.validatorKey()), v.amount()))));
+      // Don't execute and user transactions if changing epochs
+      if (nextValidatorSet.isEmpty()) {
+        this.executeUserTransactions(
+            systemIntent.roundProposer(), transientBranch, vertexTransactions, successBuilder, exceptionBuilder);
+      }
+      this.radixEngine.deleteBranches();
+
+      return new StateComputerResult(
+          successBuilder.build(), exceptionBuilder.build(), nextValidatorSet.orElse(null));
+    }
+  }
+
+  private void reexecutePreviousTransactions(RadixEngineBranch<LedgerAndBFTProof> transientBranch, List<ExecutedTransaction> previousTransactions) {
+    for (var transaction : previousTransactions) {
+      // TODO: fix this cast with generics. Currently the fix would become a bit too messy
+      final var radixEngineTransaction = (RadixEngineTransaction) transaction;
+      try {
+        transientBranch.execute(
+            List.of(radixEngineTransaction.transaction()),
+            radixEngineTransaction.permissionLevel());
+      } catch (RadixEngineException e) {
+        throw new IllegalStateException(
+            "Re-execution of already prepared transaction failed: "
+                + radixEngineTransaction.processed.getTxn().getId(),
+            e);
+      }
+    }
   }
 
   private RadixEngineTransaction executeSystemUpdate(
-      RadixEngineBranch<LedgerAndBFTProof> branch, VertexWithHash vertex, long timestamp) {
+      RadixEngineBranch<LedgerAndBFTProof> branch, SystemIntent systemIntent) {
     var systemActions = TxnConstructionRequest.create();
+
+    VertexWithHash vertex;
+    long timestamp;
+
     var round = vertex.getRound();
     if (round.compareTo(epochCeilingRound) <= 0) {
       systemActions.action(
@@ -273,6 +333,10 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
     return new RadixEngineTransaction(
         systemUpdate, result.getProcessedTxn(), PermissionLevel.SUPER_USER);
+  }
+
+  private LongFunction<ECPublicKey> getValidatorMapping() {
+    return l -> proposerElection.getProposer(Round.of(l)).getKey();
   }
 
   private void executeUserTransactions(
@@ -306,59 +370,6 @@ public final class RadixEngineStateComputer implements StateComputer {
       var radixEngineTransaction =
           new RadixEngineTransaction(txn, result.getProcessedTxn(), PermissionLevel.USER);
       successBuilder.add(radixEngineTransaction);
-    }
-  }
-
-  @Override
-  public StateComputerResult prepare(
-      List<ExecutedTransaction> previousTransactions, VertexWithHash vertex, long timestamp) {
-    synchronized (lock) {
-      var next = vertex.getTransactions();
-      var transientBranch = this.radixEngine.transientBranch();
-
-      for (var transaction : previousTransactions) {
-        // TODO: fix this cast with generics. Currently the fix would become a bit too messy
-        final var radixEngineTransaction = (RadixEngineTransaction) transaction;
-        try {
-          transientBranch.execute(
-              List.of(radixEngineTransaction.transaction()),
-              radixEngineTransaction.permissionLevel());
-        } catch (RadixEngineException e) {
-          throw new IllegalStateException(
-              "Re-execution of already prepared transaction failed: "
-                  + radixEngineTransaction.processed.getTxn().getId(),
-              e);
-        }
-      }
-
-      var systemUpdateTransaction = this.executeSystemUpdate(transientBranch, vertex, timestamp);
-      var successBuilder = ImmutableList.<ExecutedTransaction>builder();
-
-      successBuilder.add(systemUpdateTransaction);
-
-      var exceptionBuilder = ImmutableMap.<Transaction, Exception>builder();
-      var nextValidatorSet =
-          systemUpdateTransaction.processed().getEvents().stream()
-              .filter(REEvent.NextValidatorSetEvent.class::isInstance)
-              .map(REEvent.NextValidatorSetEvent.class::cast)
-              .findFirst()
-              .map(
-                  e ->
-                      BFTValidatorSet.from(
-                          e.nextValidators().stream()
-                              .map(
-                                  v ->
-                                      BFTValidator.from(
-                                          BFTNode.create(v.validatorKey()), v.amount()))));
-      // Don't execute and user transactions if changing epochs
-      if (nextValidatorSet.isEmpty()) {
-        this.executeUserTransactions(
-            vertex.getProposer(), transientBranch, next, successBuilder, exceptionBuilder);
-      }
-      this.radixEngine.deleteBranches();
-
-      return new StateComputerResult(
-          successBuilder.build(), exceptionBuilder.build(), nextValidatorSet.orElse(null));
     }
   }
 
