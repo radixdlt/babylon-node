@@ -62,65 +62,66 @@
  * permissions under this License.
  */
 
-package com.radixdlt;
+package com.radixdlt.statecomputer;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.lang.Option;
+import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.inject.*;
+import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.RustMempool;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transaction.RustTransactionStore;
-import com.radixdlt.transaction.TransactionStore;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.transactions.Transaction;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public final class StateManagerModule extends AbstractModule {
+public class StatelessComputerModule extends AbstractModule {
   @Provides
   @Singleton
-  StateManager stateManager(RustMempoolConfig mempoolConfig) {
-    return StateManager.createAndInitialize(new StateManagerConfig(Option.some(mempoolConfig)));
-  }
-
-  @Provides
-  @Singleton
-  private RustMempoolConfig stateManagerMempoolConfig(@MempoolMaxSize int maxSize) {
-    return new RustMempoolConfig(maxSize);
-  }
-
-  @ProvidesIntoMap
-  @StringMapKey(Runners.STATE_MANAGER)
-  @Singleton
-  ModuleRunner stateManagerModuleRunner(StateManager stateManager) {
-    return new ModuleRunner() {
+  private StateComputerLedger.StateComputer stateComputer(
+      StatelessComputer statelessComputer,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
+    return new StateComputerLedger.StateComputer() {
       @Override
-      public void start() {
-        // no-op
+      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
+
+      @Override
+      public List<Transaction> getTransactionsForProposal(
+          List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
+        return List.of();
       }
 
       @Override
-      public void stop() {
-        stateManager.shutdown();
+      public StateComputerLedger.StateComputerResult prepare(
+          List<StateComputerLedger.ExecutedTransaction> previous,
+          VertexWithHash vertex,
+          long timestamp) {
+
+        return new StateComputerLedger.StateComputerResult(
+            vertex.getTransactions().stream()
+                .map(
+                    txn -> {
+                      var success = statelessComputer.execute(txn);
+                      return new StatelessComputerExecutedTransaction(txn, success);
+                    })
+                .collect(Collectors.toList()),
+            Map.of());
+      }
+
+      @Override
+      public void commit(
+          CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
+        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
+        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
       }
     };
-  }
-
-  @Provides
-  @Singleton
-  private Mempool<Transaction> stateManagerMempool(StateManager stateManager) {
-    return new RustMempool(stateManager.getRustState());
-  }
-
-  @Provides
-  @Singleton
-  private TransactionStore stateManagerTransactionStore(StateManager stateManager) {
-    return new RustTransactionStore(stateManager.getRustState());
   }
 }

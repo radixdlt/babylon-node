@@ -62,39 +62,73 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::*;
-use crate::mempool::{Mempool, MempoolConfig};
-use crate::transaction_store::TransactionStore;
-use crate::types::Transaction;
-use sbor::DecodeError;
-use scrypto::buffer::scrypto_decode;
-use std::sync::Arc;
-use std::sync::Mutex;
-use transaction::model::NotarizedTransaction;
+package com.radixdlt.rev2.modules;
 
-#[derive(Clone, Debug)]
-pub struct StateManager<M: Mempool> {
-    pub mempool: Arc<Mutex<M>>,
-    pub transaction_store: Arc<Mutex<TransactionStore>>,
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.lang.Option;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.RustMempool;
+import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.modules.ModuleRunner;
+import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statecomputer.StatelessComputer;
+import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.transaction.RustTransactionStore;
+import com.radixdlt.transaction.TransactionStore;
+import com.radixdlt.transactions.Transaction;
+
+public final class REv2StateManagerModule extends AbstractModule {
+  @Provides
+  @Singleton
+  StateManager stateManager(RustMempoolConfig mempoolConfig) {
+    return StateManager.createAndInitialize(new StateManagerConfig(Option.some(mempoolConfig)));
+  }
+
+  @Provides
+  @Singleton
+  private RustMempoolConfig stateManagerMempoolConfig(@MempoolMaxSize int maxSize) {
+    return new RustMempoolConfig(maxSize);
+  }
+
+  @Provides
+  @Singleton
+  private StatelessComputer statelessComputer(StateManager stateManager) {
+    return new RustStateComputer(stateManager.getRustState());
+  }
+
+  @ProvidesIntoMap
+  @StringMapKey(Runners.STATE_MANAGER)
+  @Singleton
+  ModuleRunner stateManagerModuleRunner(StateManager stateManager) {
+    return new ModuleRunner() {
+      @Override
+      public void start() {
+        // no-op
+      }
+
+      @Override
+      public void stop() {
+        stateManager.shutdown();
+      }
+    };
+  }
+
+  @Provides
+  @Singleton
+  private Mempool<Transaction> stateManagerMempool(StateManager stateManager) {
+    return new RustMempool(stateManager.getRustState());
+  }
+
+  @Provides
+  @Singleton
+  private TransactionStore stateManagerTransactionStore(StateManager stateManager) {
+    return new RustTransactionStore(stateManager.getRustState());
+  }
 }
-
-impl<M: Mempool> StateManager<M> {
-    pub fn new(mempool: M, transaction_store: TransactionStore) -> StateManager<M> {
-        StateManager {
-            mempool: Arc::new(Mutex::new(mempool)),
-            transaction_store: Arc::new(Mutex::new(transaction_store)),
-        }
-    }
-
-    pub fn prepare(txn: Transaction) -> bool {
-        let parse_result: Result<NotarizedTransaction, DecodeError> = scrypto_decode(&txn.payload);
-        parse_result.is_ok()
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
-pub struct StateManagerConfig {
-    pub mempool_config: Option<MempoolConfig>,
-}
-
-impl JavaStructure for StateManagerConfig {}

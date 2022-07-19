@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 jni = "0.19.0"
 sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", branch="architecture/recursive-track" }
+scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", branch="architecture/recursive-track" }
+transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", branch="architecture/recursive-track" }
 
 [lib]
 crate_type = ["cdylib"]

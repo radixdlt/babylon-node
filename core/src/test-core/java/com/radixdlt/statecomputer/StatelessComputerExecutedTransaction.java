@@ -62,39 +62,23 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::*;
-use crate::mempool::{Mempool, MempoolConfig};
-use crate::transaction_store::TransactionStore;
-use crate::types::Transaction;
-use sbor::DecodeError;
-use scrypto::buffer::scrypto_decode;
-use std::sync::Arc;
-use std::sync::Mutex;
-use transaction::model::NotarizedTransaction;
+package com.radixdlt.statecomputer;
 
-#[derive(Clone, Debug)]
-pub struct StateManager<M: Mempool> {
-    pub mempool: Arc<Mutex<M>>,
-    pub transaction_store: Arc<Mutex<TransactionStore>>,
+import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.transactions.Transaction;
+
+public class StatelessComputerExecutedTransaction
+    implements StateComputerLedger.ExecutedTransaction {
+  private final Transaction transaction;
+  private final boolean success;
+
+  public StatelessComputerExecutedTransaction(Transaction transaction, boolean success) {
+    this.transaction = transaction;
+    this.success = success;
+  }
+
+  @Override
+  public Transaction transaction() {
+    return transaction;
+  }
 }
-
-impl<M: Mempool> StateManager<M> {
-    pub fn new(mempool: M, transaction_store: TransactionStore) -> StateManager<M> {
-        StateManager {
-            mempool: Arc::new(Mutex::new(mempool)),
-            transaction_store: Arc::new(Mutex::new(transaction_store)),
-        }
-    }
-
-    pub fn prepare(txn: Transaction) -> bool {
-        let parse_result: Result<NotarizedTransaction, DecodeError> = scrypto_decode(&txn.payload);
-        parse_result.is_ok()
-    }
-}
-
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
-pub struct StateManagerConfig {
-    pub mempool_config: Option<MempoolConfig>,
-}
-
-impl JavaStructure for StateManagerConfig {}
