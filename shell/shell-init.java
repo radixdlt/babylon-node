@@ -1,8 +1,8 @@
 import static com.radixdlt.shell.RadixShell.*;
 import com.radixdlt.*;
 import com.radixdlt.modules.*;
-import com.radixdlt.network.p2p.*;
-import com.radixdlt.network.p2p.transport.*;
+import com.radixdlt.p2p.*;
+import com.radixdlt.p2p.transport.*;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.networks.Network;
 import com.radixdlt.store.DatabaseLocation;

@@ -98,6 +98,7 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.LedgerAndBFTProof;
@@ -176,6 +177,7 @@ public class LargeEpochChangeTest {
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(100000), Amount.ofTokens(1000)),
         new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {

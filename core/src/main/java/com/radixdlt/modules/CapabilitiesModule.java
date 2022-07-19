@@ -67,8 +67,8 @@ package com.radixdlt.modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.network.capability.Capabilities;
-import com.radixdlt.network.capability.LedgerSyncCapability;
+import com.radixdlt.p2p.capability.Capabilities;
+import com.radixdlt.p2p.capability.LedgerSyncCapability;
 
 public class CapabilitiesModule extends AbstractModule {
 

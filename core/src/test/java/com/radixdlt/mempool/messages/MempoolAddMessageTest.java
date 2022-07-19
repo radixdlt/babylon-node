@@ -68,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.network.messages.MempoolAddMessage;
+import com.radixdlt.messaging.mempool.MempoolAddMessage;
 import com.radixdlt.transactions.Transaction;
 import java.util.ArrayList;
 import java.util.List;

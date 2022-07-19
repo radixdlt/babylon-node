@@ -70,8 +70,8 @@ import com.radixdlt.api.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.exceptions.CoreApiException;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.network.p2p.PeersView;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.p2p.PeersView;
 import java.util.List;
 
 public final class NetworkSyncStatusHandler

@@ -79,6 +79,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.p2p.TestP2PModule;
@@ -88,6 +89,9 @@ import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.targeted.mempool.MempoolFillerModule;
+import com.radixdlt.targeted.mempool.MempoolFillerUpdate;
+import com.radixdlt.targeted.mempool.ScheduledMempoolFill;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.Set;
 import org.junit.Rule;
@@ -121,6 +125,7 @@ public final class MempoolFillAndEmptyTest {
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(1000)),
         new MempoolFillerModule(),
         new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {

@@ -90,11 +90,35 @@ startScripts {
     }
 }
 
+
+sourceSets {
+    testcore {
+        java {
+            compileClasspath += main.output
+            runtimeClasspath += main.output
+            srcDir file('src/test-core/java')
+        }
+        resources.srcDir file('src/test-core/resources')
+    }
+}
+configurations {
+    testcoreImplementation.extendsFrom testImplementation
+}
+
+sourceSets {
+    test {
+        java {
+            compileClasspath += testcore.output
+            runtimeClasspath += testcore.output
+        }
+    }
+}
+
 sourceSets {
     integration {
         java {
-            compileClasspath += main.output + test.output
-            runtimeClasspath += main.output + test.output
+            compileClasspath += main.output + testcore.output
+            runtimeClasspath += main.output + testcore.output
             srcDir file('src/integration/java')
         }
         resources.srcDir file('src/integration/resources')

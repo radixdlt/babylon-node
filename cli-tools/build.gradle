@@ -67,8 +67,34 @@ apply plugin: 'org.sonarqube'
 apply plugin: 'project-report'
 apply plugin: 'application'
 
+sourceSets {
+    integration {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/integration/java')
+        }
+        resources.srcDir file('src/integration/resources')
+    }
+}
+
 compileTestJava {
     options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
+}
+
+sourceSets {
+    p2pTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/p2pTest/java')
+        }
+        resources.srcDir file('src/p2pTest/resources')
+    }
+}
+
+configurations {
+    p2pTestImplementation.extendsFrom testImplementation
 }
 
 dependencies {
@@ -82,9 +108,15 @@ dependencies {
     implementation 'io.netty:netty-all'
 
     testImplementation 'junit:junit'
-    testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.awaitility:awaitility:3.0.0'
+    testImplementation project(':cli-tools')
 }
+
+configurations {
+    integrationImplementation.extendsFrom testImplementation
+}
+
 
 jacocoTestReport {
     dependsOn test
@@ -198,3 +230,26 @@ tasks.getByName("createGenerateNodeKeyScripts") {
     }
 }
 tasks.getByName("startScripts").dependsOn createGenerateNodeKeyScripts
+
+task runTargetedIntegrationTests(type: Test) {
+    filter {
+        includeTestsMatching "com.radixdlt.integration.targeted.*"
+    }
+
+    environment "RADIX_NODE_KEYSTORE_PASSWORD", "supersecret"
+    testClassesDirs = sourceSets.integration.output.classesDirs
+    classpath = sourceSets.integration.runtimeClasspath
+}
+
+task runAllIntegrationTests(type: Test) {
+    environment "RADIX_NODE_KEYSTORE_PASSWORD", "supersecret"
+    testClassesDirs = sourceSets.integration.output.classesDirs
+    classpath = sourceSets.integration.runtimeClasspath
+}
+
+task runP2pTests(type: JavaExec) {
+    classpath = sourceSets.p2pTest.runtimeClasspath
+    systemProperty "java.library.path", "${project(':state-manager').projectDir}/target/debug/"
+    main = "com.radixdlt.p2ptest.LargeMessageTest"
+
+}
