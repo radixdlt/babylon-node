@@ -66,7 +66,6 @@ package com.radixdlt.rev2.modules;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.*;
-import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
@@ -76,6 +75,7 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.REv2ExecutedTransaction;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
@@ -126,11 +126,11 @@ public class REv2StateComputerModule extends AbstractModule {
 
       @Override
       public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.ExecutedTransaction> previous,
-          VertexWithHash vertex,
-          long timestamp) {
+              List<StateComputerLedger.ExecutedTransaction> previous,
+              List<Transaction> proposedTransactions,
+              RoundDetails roundDetails) {
         return new StateComputerLedger.StateComputerResult(
-            vertex.getTransactions().stream()
+            proposedTransactions.stream()
                 .map(REv2ExecutedTransaction::new)
                 .collect(Collectors.toList()),
             Map.of());

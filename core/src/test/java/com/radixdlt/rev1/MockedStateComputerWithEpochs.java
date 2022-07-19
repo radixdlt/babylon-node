@@ -66,7 +66,6 @@ package com.radixdlt.rev1;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.VertexWithHash;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
@@ -112,17 +111,14 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
   @Override
   public StateComputerResult prepare(
-      List<ExecutedTransaction> previous, VertexWithHash vertex, long timestamp) {
-    var round = vertex.getRound();
-    var epoch = vertex.getParentHeader().getLedgerHeader().getEpoch();
-    var next = vertex.getTransactions();
-    if (round.compareTo(epochMaxRound) >= 0) {
+          List<ExecutedTransaction> previous, List<Transaction> proposedTransactions, RoundDetails roundDetails) {
+    if (roundDetails.roundNumber() >= epochMaxRound.number()) {
       return new StateComputerResult(
-          next.stream().map(MockExecuted::new).collect(Collectors.toList()),
+          proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
           ImmutableMap.of(),
-          validatorSetMapping.apply(epoch + 1));
+          validatorSetMapping.apply(roundDetails.epoch() + 1));
     } else {
-      return stateComputer.prepare(previous, vertex, timestamp);
+      return stateComputer.prepare(previous, proposedTransactions, roundDetails);
     }
   }
 

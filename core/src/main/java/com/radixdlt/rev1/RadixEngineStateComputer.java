@@ -242,25 +242,10 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
   }
 
-  private record RoundDetails(
-      long roundNumber,
-      long previousQcRoundNumber,
-      BFTNode roundProposer,
-      boolean roundWasTimeout,
-      long roundTimestamp) {}
-
   @Override
   public StateComputerResult prepare(
-      List<ExecutedTransaction> previousTransactions, VertexWithHash vertex, long roundTimestamp) {
+          List<ExecutedTransaction> previousTransactions, List<Transaction> proposedTransactions, RoundDetails roundDetails) {
     synchronized (lock) {
-      var roundDetails =
-          new RoundDetails(
-              vertex.getRound().number(),
-              vertex.getParentHeader().getRound().number(),
-              vertex.getProposer(),
-              vertex.isTimeout(),
-              roundTimestamp);
-      var vertexTransactions = vertex.getTransactions();
       var transientBranch = this.radixEngine.transientBranch();
 
       reexecutePreviousTransactions(transientBranch, previousTransactions);
@@ -289,7 +274,7 @@ public final class RadixEngineStateComputer implements StateComputer {
         this.executeUserTransactions(
             roundDetails.roundProposer(),
             transientBranch,
-            vertexTransactions,
+            proposedTransactions,
             successBuilder,
             exceptionBuilder);
       }
@@ -335,39 +320,36 @@ public final class RadixEngineStateComputer implements StateComputer {
      *
      * Essentially, we just wait till we get a chain of consecutive QCs and can have something commit!
      */
-    var roundIsDuringEpoch = roundDetails.roundNumber <= epochMaxRoundNumber;
-    if (!roundIsDuringEpoch) {
+    var roundIsDuringEpoch = roundDetails.roundNumber() <= epochMaxRoundNumber;
+    if (roundIsDuringEpoch) {
       systemActions.action(
           new NextRound(
-              roundDetails.roundNumber,
-              roundDetails.roundWasTimeout,
-              roundDetails.roundTimestamp,
+              roundDetails.roundNumber(),
+              roundDetails.roundWasTimeout(),
+              roundDetails.roundTimestamp(),
               getValidatorMapping()));
     } else {
       // We shouldn't record the outcome of rounds beyond the end of the epoch, BUT we do need to
       // ensure we record any timeouts of the "standard" rounds at the end of the epoch.
       var shouldRecordRoundTimeoutsUpToEndOfEpoch =
-          roundDetails.previousQcRoundNumber < epochMaxRoundNumber;
+          roundDetails.previousQcRoundNumber() < epochMaxRoundNumber;
       if (shouldRecordRoundTimeoutsUpToEndOfEpoch) {
         systemActions.action(
             new NextRound(
-                epochMaxRoundNumber, true, roundDetails.roundTimestamp, getValidatorMapping()));
+                epochMaxRoundNumber, true, roundDetails.roundTimestamp(), getValidatorMapping()));
       }
-      systemActions.action(new NextEpoch(roundDetails.roundTimestamp));
+      systemActions.action(new NextEpoch(roundDetails.roundTimestamp()));
     }
 
-    final Transaction systemUpdate;
-    final RadixEngineResult<LedgerAndBFTProof> result;
     try {
-      // TODO: combine construct/execute
-      systemUpdate = branch.construct(systemActions).buildWithoutSignature();
-      result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
+      final var systemUpdate = branch.construct(systemActions).buildWithoutSignature();
+      final var result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
+      return new RadixEngineTransaction(
+              systemUpdate, result.getProcessedTxn(), PermissionLevel.SUPER_USER);
     } catch (RadixEngineException | TxBuilderException e) {
       throw new IllegalStateException(
           String.format("Failed to execute system updates: %s", systemActions), e);
     }
-    return new RadixEngineTransaction(
-        systemUpdate, result.getProcessedTxn(), PermissionLevel.SUPER_USER);
   }
 
   private LongFunction<ECPublicKey> getValidatorMapping() {

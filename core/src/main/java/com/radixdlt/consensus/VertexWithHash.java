@@ -158,6 +158,10 @@ public final class VertexWithHash {
     return getParentQC().getWeightedTimestampOfSignatures();
   }
 
+  public long getEpoch() {
+    return getParentHeader().getLedgerHeader().getEpoch();
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(this.vertex, this.vertexHash);
