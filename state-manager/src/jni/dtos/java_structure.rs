@@ -74,7 +74,7 @@ pub use sbor::{Decode, Encode, TypeId};
  * In general, some structs - such as eg "Transaction" are okay to be shared with Java.
  * But errors should be explicitly mapped to a corresponding Java error, for unmapping on the Java side.
  */
-pub trait JavaStructure: Encode + Decode {
+pub trait JavaStructure: Encode + Decode + TypeId {
     fn from_java(data: &[u8]) -> StateManagerResult<Self> {
         decode_with_type(data).map_err(|e| {
             StateManagerError::create(ERRCODE_SBOR, format!("SBOR Decode Failed: {:?}", e))
