@@ -140,7 +140,9 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     List<Transaction> getTransactionsForProposal(List<ExecutedTransaction> executedTransactions);
 
     StateComputerResult prepare(
-            List<ExecutedTransaction> previous, List<Transaction> proposedTransactions, RoundDetails roundDetails);
+        List<ExecutedTransaction> previous,
+        List<Transaction> proposedTransactions,
+        RoundDetails roundDetails);
 
     void commit(
         CommittedTransactionsWithProof committedTransactionsWithProof,
@@ -222,7 +224,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         return Optional.of(
             new ExecutedVertex(
                 vertex,
-                parentHeader.updateRoundAndTimestamp(vertex.getRound(), vertex.getWeightedTimestampOfParentQC()),
+                parentHeader.updateRoundAndTimestamp(
+                    vertex.getRound(), vertex.getWeightedTimestampOfParentQC()),
                 ImmutableList.of(),
                 ImmutableMap.of(),
                 timeSupplier.currentTime()));
@@ -244,7 +247,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       final var executedTransactions = executedTransactionsOptional.get();
 
       final StateComputerResult result =
-          stateComputer.prepare(executedTransactions, vertex.getTransactions(), RoundDetails.fromVertex(vertex));
+          stateComputer.prepare(
+              executedTransactions, vertex.getTransactions(), RoundDetails.fromVertex(vertex));
 
       AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
       for (ExecutedTransaction transaction : result.getSuccessfullyExecutedTransactions()) {

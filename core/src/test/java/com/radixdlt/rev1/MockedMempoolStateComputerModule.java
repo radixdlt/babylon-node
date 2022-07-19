@@ -141,10 +141,11 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
       @Override
       public StateComputerLedger.StateComputerResult prepare(
-              List<StateComputerLedger.ExecutedTransaction> previous,
-              List<Transaction> proposedTransactions, RoundDetails roundDetails) {
+          List<StateComputerLedger.ExecutedTransaction> previous,
+          List<Transaction> proposedTransactions,
+          RoundDetails roundDetails) {
         return new StateComputerLedger.StateComputerResult(
-                proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
+            proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
             Map.of());
       }
 

@@ -161,7 +161,9 @@ public class EpochManagerTest {
 
         @Override
         public StateComputerResult prepare(
-                List<ExecutedTransaction> previous, List<Transaction> proposedTransactions, RoundDetails roundDetails) {
+            List<ExecutedTransaction> previous,
+            List<Transaction> proposedTransactions,
+            RoundDetails roundDetails) {
           return new StateComputerResult(List.of(), Map.of());
         }
 

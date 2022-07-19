@@ -70,7 +70,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
@@ -80,13 +79,10 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -132,7 +128,6 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.substate.*;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.transactions.Transaction;
-import com.radixdlt.utils.RandomHasher;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -270,7 +265,10 @@ public class RadixEngineStateComputerTest {
           TxnConstructionRequest.create()
               .action(
                   new NextRound(
-                          epochMaxRound, true, 0, v -> proposerElection.getProposer(Round.of(v)).getKey()))
+                      epochMaxRound,
+                      true,
+                      0,
+                      v -> proposerElection.getProposer(Round.of(v)).getKey()))
               .action(new NextEpoch(0));
       builder = radixEngine.construct(request);
     } else {
@@ -292,9 +290,7 @@ public class RadixEngineStateComputerTest {
   @Ignore("Ignore for now given need for more refactoring to get this test to work")
   public void executing_non_epoch_max_round_should_return_no_validator_set() {
     // Arrange
-    var roundDetails = new RoundDetails(
-            0, epochMaxRound - 1, 0, BFTNode.random(), false, 0
-    );
+    var roundDetails = new RoundDetails(0, epochMaxRound - 1, 0, BFTNode.random(), false, 0);
 
     // Action
     var result = sut.prepare(List.of(), List.of(), roundDetails);
@@ -308,9 +304,7 @@ public class RadixEngineStateComputerTest {
   @Test
   public void executing_epoch_max_round_should_return_next_validator_set() {
     // Arrange
-    var roundDetails = new RoundDetails(
-            0, epochMaxRound + 1, 0, BFTNode.random(), false, 0
-    );
+    var roundDetails = new RoundDetails(0, epochMaxRound + 1, 0, BFTNode.random(), false, 0);
 
     // Act
     StateComputerResult result = sut.prepare(List.of(), List.of(), roundDetails);
@@ -338,12 +332,11 @@ public class RadixEngineStateComputerTest {
     var registerNewValidatorTransaction = registerTransaction(newNodeKeyPair);
     BFTNode newValidator = BFTNode.create(newNodeKeyPair.getPublicKey());
 
-    var roundDetails = new RoundDetails(
-            0, epochMaxRound + 1, 0, BFTNode.random(), false, 0
-    );
+    var roundDetails = new RoundDetails(0, epochMaxRound + 1, 0, BFTNode.random(), false, 0);
 
     // Act
-    StateComputerResult result = sut.prepare(List.of(), List.of(registerNewValidatorTransaction), roundDetails);
+    StateComputerResult result =
+        sut.prepare(List.of(), List.of(registerNewValidatorTransaction), roundDetails);
 
     // Assert
     assertThat(result.getSuccessfullyExecutedTransactions())
@@ -352,7 +345,9 @@ public class RadixEngineStateComputerTest {
         .hasValueSatisfying(
             s -> {
               assertThat(s.getValidators()).hasSize(2);
-              assertThat(s.getValidators()).extracting(BFTValidator::getNode).doesNotContain(newValidator);
+              assertThat(s.getValidators())
+                  .extracting(BFTValidator::getNode)
+                  .doesNotContain(newValidator);
             });
   }
 
@@ -372,9 +367,8 @@ public class RadixEngineStateComputerTest {
             .end()
             .build();
 
-    var roundDetails = new RoundDetails(
-            0, 1, 0, proposerElection.getProposer(Round.of(1)), false, 0
-    );
+    var roundDetails =
+        new RoundDetails(0, 1, 0, proposerElection.getProposer(Round.of(1)), false, 0);
 
     // Act
     var result = sut.prepare(ImmutableList.of(), List.of(illegalTxn), roundDetails);
@@ -403,7 +397,8 @@ public class RadixEngineStateComputerTest {
     var ledgerProof =
         new LedgerProof(
             HashUtils.random256(),
-            LedgerHeader.create(0, Round.of(epochMaxRound + 1), new AccumulatorState(3, HashUtils.zero256()), 0),
+            LedgerHeader.create(
+                0, Round.of(epochMaxRound + 1), new AccumulatorState(3, HashUtils.zero256()), 0),
             new TimestampedECDSASignatures());
     var transactionsWithProof =
         CommittedTransactionsWithProof.create(ImmutableList.of(cmd0), ledgerProof);
@@ -424,7 +419,8 @@ public class RadixEngineStateComputerTest {
     var ledgerProof =
         new LedgerProof(
             HashUtils.random256(),
-            LedgerHeader.create(0, Round.of(epochMaxRound - 1), new AccumulatorState(3, HashUtils.zero256()), 0),
+            LedgerHeader.create(
+                0, Round.of(epochMaxRound - 1), new AccumulatorState(3, HashUtils.zero256()), 0),
             new TimestampedECDSASignatures());
     var transactionsWithProof =
         CommittedTransactionsWithProof.create(ImmutableList.of(cmd0, cmd1), ledgerProof);

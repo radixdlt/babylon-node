@@ -111,7 +111,9 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
   @Override
   public StateComputerResult prepare(
-          List<ExecutedTransaction> previous, List<Transaction> proposedTransactions, RoundDetails roundDetails) {
+      List<ExecutedTransaction> previous,
+      List<Transaction> proposedTransactions,
+      RoundDetails roundDetails) {
     if (roundDetails.roundNumber() >= epochMaxRound.number()) {
       return new StateComputerResult(
           proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),

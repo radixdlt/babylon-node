@@ -126,9 +126,9 @@ public class REv2StateComputerModule extends AbstractModule {
 
       @Override
       public StateComputerLedger.StateComputerResult prepare(
-              List<StateComputerLedger.ExecutedTransaction> previous,
-              List<Transaction> proposedTransactions,
-              RoundDetails roundDetails) {
+          List<StateComputerLedger.ExecutedTransaction> previous,
+          List<Transaction> proposedTransactions,
+          RoundDetails roundDetails) {
         return new StateComputerLedger.StateComputerResult(
             proposedTransactions.stream()
                 .map(REv2ExecutedTransaction::new)

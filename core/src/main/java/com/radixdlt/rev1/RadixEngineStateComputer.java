@@ -244,7 +244,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 
   @Override
   public StateComputerResult prepare(
-          List<ExecutedTransaction> previousTransactions, List<Transaction> proposedTransactions, RoundDetails roundDetails) {
+      List<ExecutedTransaction> previousTransactions,
+      List<Transaction> proposedTransactions,
+      RoundDetails roundDetails) {
     synchronized (lock) {
       var transientBranch = this.radixEngine.transientBranch();
 
@@ -345,7 +347,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       final var systemUpdate = branch.construct(systemActions).buildWithoutSignature();
       final var result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
       return new RadixEngineTransaction(
-              systemUpdate, result.getProcessedTxn(), PermissionLevel.SUPER_USER);
+          systemUpdate, result.getProcessedTxn(), PermissionLevel.SUPER_USER);
     } catch (RadixEngineException | TxBuilderException e) {
       throw new IllegalStateException(
           String.format("Failed to execute system updates: %s", systemActions), e);
