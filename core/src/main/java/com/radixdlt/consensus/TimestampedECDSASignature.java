@@ -119,9 +119,9 @@ public final class TimestampedECDSASignature {
   }
 
   /**
-   * Returns the timestamp of the signature in milliseconds since epoch.
+   * Returns the timestamp of the signature in milliseconds since UNIX epoch.
    *
-   * @return The timestamp of the signature in milliseconds since epoch
+   * @return The timestamp of the signature in milliseconds since UNIX epoch
    */
   public long timestamp() {
     return this.timestamp;

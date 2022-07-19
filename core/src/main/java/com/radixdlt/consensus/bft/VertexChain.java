@@ -84,7 +84,7 @@ public final class VertexChain {
     if (vertices.size() >= 2) {
       for (int index = 1; index < vertices.size(); index++) {
         HashCode parentId = vertices.get(index - 1).getHash();
-        HashCode parentIdCheck = vertices.get(index).getParentId();
+        HashCode parentIdCheck = vertices.get(index).getParentVertexId();
         if (!parentId.equals(parentIdCheck)) {
           throw new IllegalArgumentException(String.format("Invalid chain: %s", vertices));
         }

@@ -244,11 +244,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 
   private record RoundDetails(
       long roundNumber,
-      long parentRoundNumber,
+      long previousQcRoundNumber,
       BFTNode roundProposer,
       boolean roundWasTimeout,
-      long roundTimestamp,
-      LongFunction<ECPublicKey> leaderMapping) {}
+      long roundTimestamp) {}
 
   @Override
   public StateComputerResult prepare(
@@ -260,8 +259,7 @@ public final class RadixEngineStateComputer implements StateComputer {
               vertex.getParentHeader().getRound().number(),
               vertex.getProposer(),
               vertex.isTimeout(),
-              roundTimestamp,
-              getValidatorMapping());
+              roundTimestamp);
       var vertexTransactions = vertex.getTransactions();
       var transientBranch = this.radixEngine.transientBranch();
 
@@ -325,22 +323,35 @@ public final class RadixEngineStateComputer implements StateComputer {
       RadixEngineBranch<LedgerAndBFTProof> branch, RoundDetails roundDetails) {
     var systemActions = TxnConstructionRequest.create();
 
-    var round = roundDetails.roundNumber;
-    if (round <= epochMaxRoundNumber) {
+    /*
+     * Note that for committing an end-of-epoch, we currently do some tricks.
+     *
+     * - The consensus rounds actually extend beyond epochMaxRoundNumber
+     * - All rounds with roundNumber > epochMaxRoundNumber are filled with empty transactions.
+     * - Hopefully we change epoch at roundNumber = epochMaxRoundNumber + 1, but if rounds timeout,
+     *   the roundNumber may keep going beyond this.
+     * - We ignore round results (commit/timeouts) after the end of the epoch - so these won't factor into (eg)
+     *   emissions calculations
+     *
+     * Essentially, we just wait till we get a chain of consecutive QCs and can have something commit!
+     */
+    var roundIsDuringEpoch = roundDetails.roundNumber <= epochMaxRoundNumber;
+    if (!roundIsDuringEpoch) {
       systemActions.action(
           new NextRound(
               roundDetails.roundNumber,
               roundDetails.roundWasTimeout,
               roundDetails.roundTimestamp,
-              roundDetails.leaderMapping));
+              getValidatorMapping()));
     } else {
-      if (roundDetails.parentRoundNumber < epochMaxRoundNumber) {
+      // We shouldn't record the outcome of rounds beyond the end of the epoch, BUT we do need to
+      // ensure we record any timeouts of the "standard" rounds at the end of the epoch.
+      var shouldRecordRoundTimeoutsUpToEndOfEpoch =
+          roundDetails.previousQcRoundNumber < epochMaxRoundNumber;
+      if (shouldRecordRoundTimeoutsUpToEndOfEpoch) {
         systemActions.action(
             new NextRound(
-                epochMaxRoundNumber,
-                true,
-                roundDetails.roundTimestamp,
-                roundDetails.leaderMapping));
+                epochMaxRoundNumber, true, roundDetails.roundTimestamp, getValidatorMapping()));
       }
       systemActions.action(new NextEpoch(roundDetails.roundTimestamp));
     }

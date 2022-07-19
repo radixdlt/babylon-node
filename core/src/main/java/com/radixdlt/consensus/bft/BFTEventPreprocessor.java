@@ -150,11 +150,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
     log.trace("LOCAL_SYNC: {}", vertexId);
 
     syncingEvents.stream()
-        .filter(e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId))
+        .filter(e -> e.highQC().highestQC().getProposedHeader().getVertexId().equals(vertexId))
         .forEach(this::processQueuedConsensusEvent);
 
     syncingEvents.removeIf(
-        e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId));
+        e -> e.highQC().highestQC().getProposedHeader().getVertexId().equals(vertexId));
 
     forwardTo.processBFTUpdate(update);
   }
@@ -168,11 +168,13 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
             v -> {
               HashCode vertexId = v.getHash();
               syncingEvents.stream()
-                  .filter(e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId))
+                  .filter(
+                      e ->
+                          e.highQC().highestQC().getProposedHeader().getVertexId().equals(vertexId))
                   .forEach(this::processQueuedConsensusEvent);
 
               syncingEvents.removeIf(
-                  e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId));
+                  e -> e.highQC().highestQC().getProposedHeader().getVertexId().equals(vertexId));
             });
   }
 
@@ -281,7 +283,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
         final boolean endOfEpoch =
             highQC
                 .highestCommittedQC()
-                .getCommitted()
+                .getCommittedHeader()
                 .orElseThrow(() -> new IllegalStateException("Invalid High QC"))
                 .getLedgerHeader()
                 .isEndOfEpoch();

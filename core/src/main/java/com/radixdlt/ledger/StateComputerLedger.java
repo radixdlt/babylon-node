@@ -210,15 +210,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         previous.stream()
             .flatMap(ExecutedVertex::successfulTransactions)
             .collect(ImmutableList.toImmutableList());
-    final long quorumTimestamp;
-    // if vertex has genesis parent then QC is mocked so just use previous timestamp
-    // this does have the edge case of never increasing timestamps if configuration is
-    // one round per epoch but good enough for now
-    if (vertex.getParentHeader().getRound().isGenesis()) {
-      quorumTimestamp = vertex.getParentHeader().getLedgerHeader().timestamp();
-    } else {
-      quorumTimestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
-    }
+
+    final var weightedTimestampOfLastQC = vertex.getWeightedTimestampOfParentQC();
 
     synchronized (lock) {
       if (this.currentLedgerHeader.getStateVersion() > parentAccumulatorState.getStateVersion()) {
@@ -230,7 +223,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         return Optional.of(
             new ExecutedVertex(
                 vertex,
-                parentHeader.updateRoundAndTimestamp(vertex.getRound(), quorumTimestamp),
+                parentHeader.updateRoundAndTimestamp(vertex.getRound(), weightedTimestampOfLastQC),
                 ImmutableList.of(),
                 ImmutableMap.of(),
                 timeSupplier.currentTime()));
@@ -252,7 +245,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       final var executedTransactions = executedTransactionsOptional.get();
 
       final StateComputerResult result =
-          stateComputer.prepare(executedTransactions, vertex, quorumTimestamp);
+          stateComputer.prepare(executedTransactions, vertex, weightedTimestampOfLastQC);
 
       AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
       for (ExecutedTransaction transaction : result.getSuccessfullyExecutedTransactions()) {
@@ -266,7 +259,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               parentHeader.getEpoch(),
               vertex.getRound(),
               accumulatorState,
-              quorumTimestamp,
+              weightedTimestampOfLastQC,
               result.getNextValidatorSet().orElse(null));
 
       return Optional.of(

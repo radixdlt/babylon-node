@@ -309,7 +309,7 @@ public class RadixEngineStateComputerTest {
     var qc = mock(QuorumCertificate.class);
     var parentHeader = mock(BFTHeader.class);
     when(parentHeader.getRound()).thenReturn(Round.of(0));
-    when(qc.getProposed()).thenReturn(parentHeader);
+    when(qc.getProposedHeader()).thenReturn(parentHeader);
     var unverified = Vertex.create(qc, Round.of(11), List.of(), BFTNode.random());
     var vertex = unverified.withId(RandomHasher.INSTANCE);
 
@@ -341,7 +341,7 @@ public class RadixEngineStateComputerTest {
     var qc = mock(QuorumCertificate.class);
     var parentHeader = mock(BFTHeader.class);
     when(parentHeader.getRound()).thenReturn(Round.of(0));
-    when(qc.getProposed()).thenReturn(parentHeader);
+    when(qc.getProposedHeader()).thenReturn(parentHeader);
     var vertex =
         Vertex.create(qc, Round.of(11), List.of(txn), BFTNode.random())
             .withId(RandomHasher.INSTANCE);

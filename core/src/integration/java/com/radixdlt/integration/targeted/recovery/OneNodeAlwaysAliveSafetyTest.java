@@ -187,7 +187,7 @@ public class OneNodeAlwaysAliveSafetyTest {
                       if (roundQuorumReached.votingResult() instanceof FormedQC
                           && ((FormedQC) roundQuorumReached.votingResult())
                               .getQC()
-                              .getCommitted()
+                              .getCommittedHeader()
                               .isPresent()) {
                         lastNodeToCommit = network.lookup(node);
                       }

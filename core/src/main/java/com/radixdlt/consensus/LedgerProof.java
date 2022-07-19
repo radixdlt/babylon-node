@@ -192,7 +192,7 @@ public final class LedgerProof {
   }
 
   public long timestamp() {
-    return ledgerHeader.timestamp();
+    return ledgerHeader.roundTimestamp();
   }
 
   public boolean isEndOfEpoch() {

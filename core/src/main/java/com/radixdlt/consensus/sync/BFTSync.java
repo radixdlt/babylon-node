@@ -122,7 +122,7 @@ public final class BFTSync implements BFTSyncer {
     private final LinkedList<VertexWithHash> fetched = new LinkedList<>();
 
     SyncState(HighQC highQC, BFTNode author, Hasher hasher) {
-      this.localSyncId = highQC.highestQC().getProposed().getVertexId();
+      this.localSyncId = highQC.highestQC().getProposedHeader().getVertexId();
       var pair =
           highQC
               .highestCommittedQC()
@@ -234,11 +234,11 @@ public final class BFTSync implements BFTSyncer {
     this.runOnThreads.add(Thread.currentThread().getName());
     final var qc = highQC.highestQC();
 
-    if (qc.getProposed().getRound().lt(vertexStore.getRoot().getRound())) {
+    if (qc.getProposedHeader().getRound().lt(vertexStore.getRoot().getRound())) {
       return SyncResult.INVALID;
     }
 
-    if (qc.getProposed().getRound().lt(this.currentLedgerHeader.getRound())) {
+    if (qc.getProposedHeader().getRound().lt(this.currentLedgerHeader.getRound())) {
       return SyncResult.INVALID;
     }
 
@@ -260,7 +260,7 @@ public final class BFTSync implements BFTSyncer {
 
     log.trace("SYNC_TO_QC: Need sync: {}", highQC);
 
-    if (syncing.containsKey(qc.getProposed().getVertexId())) {
+    if (syncing.containsKey(qc.getProposedHeader().getVertexId())) {
       return SyncResult.IN_PROGRESS;
     }
 
@@ -306,11 +306,12 @@ public final class BFTSync implements BFTSyncer {
 
     final var qc = syncState.highQC().highestQC();
     this.sendBFTSyncRequest(
-        qc.getRound(), qc.getProposed().getVertexId(), 1, authors, syncState.localSyncId);
+        qc.getRound(), qc.getProposedHeader().getVertexId(), 1, authors, syncState.localSyncId);
   }
 
   private void doCommittedSync(SyncState syncState) {
-    final var committedQCId = syncState.highQC().highestCommittedQC().getProposed().getVertexId();
+    final var committedQCId =
+        syncState.highQC().highestCommittedQC().getProposedHeader().getVertexId();
     final var commitedRound = syncState.highQC().highestCommittedQC().getRound();
 
     syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
@@ -481,7 +482,7 @@ public final class BFTSync implements BFTSyncer {
     var vertex = response.getVertices().get(0);
     syncState.fetched.addFirst(vertex);
 
-    var parentId = vertex.getParentId();
+    var parentId = vertex.getParentVertexId();
 
     if (vertexStore.containsVertex(parentId)) {
       vertexStore.insertVertexChain(VertexChain.create(syncState.fetched));
@@ -498,7 +499,7 @@ public final class BFTSync implements BFTSyncer {
       final var authors =
           Stream.concat(
                   Stream.of(syncState.author),
-                  vertex.getQC().getSigners().filter(n -> !n.equals(syncState.author)))
+                  vertex.getParentQC().getSigners().filter(n -> !n.equals(syncState.author)))
               .filter(not(n -> n.equals(this.self)))
               .collect(ImmutableList.toImmutableList());
 
@@ -548,7 +549,7 @@ public final class BFTSync implements BFTSyncer {
   private void processGetVerticesResponse(BFTNode sender, GetVerticesResponse response) {
     final var allVerticesHaveValidQc =
         response.getVertices().stream()
-            .allMatch(v -> safetyRules.verifyQcAgainstTheValidatorSet(v.getQC()));
+            .allMatch(v -> safetyRules.verifyQcAgainstTheValidatorSet(v.getParentQC()));
 
     if (!allVerticesHaveValidQc) {
       // If the response is invalid we just ignore it and wait for the timeout event

@@ -123,27 +123,39 @@ public final class VertexWithHash {
   }
 
   public BFTHeader getParentHeader() {
-    return vertex.getQC().getProposed();
+    return vertex.getParentQC().getProposedHeader();
   }
 
   public BFTHeader getGrandParentHeader() {
-    return vertex.getQC().getParent();
+    return vertex.getParentQC().getParentHeader();
   }
 
   public Round getRound() {
     return vertex.getRound();
   }
 
-  public QuorumCertificate getQC() {
-    return vertex.getQC();
+  public QuorumCertificate getParentQC() {
+    return vertex.getParentQC();
   }
 
   public HashCode getHash() {
     return vertexHash;
   }
 
-  public HashCode getParentId() {
-    return vertex.getQC().getProposed().getVertexId();
+  public HashCode getParentVertexId() {
+    return vertex.getParentQC().getProposedHeader().getVertexId();
+  }
+
+  /**
+   * @return The weighted timestamp of the signatures in the parent QC, in milliseconds since Unix
+   *     Epoch.
+   */
+  public long getWeightedTimestampOfParentQC() {
+    // If the vertex has a genesis parent then its QC is mocked so just use previous timestamp
+    // this does have the edge case of never increasing timestamps if configuration is
+    // one round per epoch but good enough for now
+
+    return getParentQC().getWeightedTimestampOfSignatures();
   }
 
   @Override
@@ -166,9 +178,9 @@ public final class VertexWithHash {
     return String.format(
         "%s{epoch=%s round=%s parentRound=%s hash=%s}",
         this.getClass().getSimpleName(),
-        this.vertex.getQC().getProposed().getLedgerHeader().getEpoch(),
+        this.vertex.getParentQC().getProposedHeader().getLedgerHeader().getEpoch(),
         this.vertex.getRound(),
-        this.vertex.getQC().getProposed().getRound(),
+        this.vertex.getParentQC().getProposedHeader().getRound(),
         this.vertexHash);
   }
 }

@@ -124,12 +124,12 @@ public final class Proposal implements ConsensusEvent {
     this.signature = requireNonNull(signature);
 
     this.highestTC = // only relevant if it's for a higher round than QC
-        highestTC.filter(tc -> tc.getRound().gt(vertex.getQC().getRound())).orElse(null);
+        highestTC.filter(tc -> tc.getRound().gt(vertex.getParentQC().getRound())).orElse(null);
   }
 
   @Override
   public long getEpoch() {
-    return vertex.getQC().getProposed().getLedgerHeader().getEpoch();
+    return vertex.getParentQC().getProposedHeader().getLedgerHeader().getEpoch();
   }
 
   @Override
@@ -139,7 +139,7 @@ public final class Proposal implements ConsensusEvent {
 
   @Override
   public HighQC highQC() {
-    return HighQC.from(vertex.getQC(), committedQC, Optional.ofNullable(highestTC));
+    return HighQC.from(vertex.getParentQC(), committedQC, Optional.ofNullable(highestTC));
   }
 
   @Override

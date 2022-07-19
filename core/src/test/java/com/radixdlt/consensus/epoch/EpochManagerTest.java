@@ -312,7 +312,7 @@ public class EpochManagerTest {
             header.getEpoch() + 1,
             Round.genesis(),
             header.getAccumulatorState(),
-            header.timestamp());
+            header.roundTimestamp());
     var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(nextValidatorSet);
     var bftConfiguration =

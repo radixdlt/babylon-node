@@ -173,7 +173,7 @@ public class PacemakerTest {
     BFTHeader highestQcProposed = mock(BFTHeader.class);
     HashCode highQcParentVertexId = mock(HashCode.class);
     when(highestQcProposed.getVertexId()).thenReturn(highQcParentVertexId);
-    when(highestQc.getProposed()).thenReturn(highestQcProposed);
+    when(highestQc.getProposedHeader()).thenReturn(highestQcProposed);
     when(committedQc.getRound()).thenReturn(Round.of(0));
     RoundUpdate roundUpdate =
         RoundUpdate.create(
@@ -222,7 +222,7 @@ public class PacemakerTest {
     ArgumentCaptor<VertexWithHash> insertVertexCaptor =
         ArgumentCaptor.forClass(VertexWithHash.class);
     verify(this.vertexStore, times(1)).insertVertex(insertVertexCaptor.capture());
-    assertEquals(insertVertexCaptor.getValue().getParentId(), highQcParentVertexId);
+    assertEquals(insertVertexCaptor.getValue().getParentVertexId(), highQcParentVertexId);
 
     verifyNoMoreInteractions(this.vertexStore);
   }

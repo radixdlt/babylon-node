@@ -92,7 +92,8 @@ public class MockedLedgerModule extends AbstractModule {
       @Override
       public Optional<ExecutedVertex> prepare(
           LinkedList<ExecutedVertex> previous, VertexWithHash vertex) {
-        final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
+        final long timestamp =
+            vertex.getParentQC().getTimestampedSignatures().weightedTimestampMillis();
         final LedgerHeader ledgerHeader =
             vertex
                 .getParentHeader()
