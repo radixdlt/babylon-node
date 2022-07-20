@@ -70,6 +70,7 @@ import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.ledger.RandomTransactionGeneratorModule;
+import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.rev1.MockedMempoolStateComputerModule;
@@ -79,6 +80,8 @@ import com.radixdlt.rev1.ReV1DispatcherModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
 import com.radixdlt.rev2.modules.MockedSyncServiceModule;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statecomputer.StatelessComputerModule;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
@@ -126,11 +129,17 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     static StateComputerConfig rev1() {
       return new REv1StateComputerConfig();
     }
+
+    static StateComputerConfig rev2() {
+      return new REv2StateComputerConfig();
+    }
   }
 
   public record MockedStateComputerConfig(MempoolType mempoolType) implements StateComputerConfig {}
 
   public static final class REv1StateComputerConfig implements StateComputerConfig {}
+
+  public static final class REv2StateComputerConfig implements StateComputerConfig {}
 
   private final boolean epochs;
   private final LedgerConfig ledgerConfig;
@@ -222,6 +231,12 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             install(new RadixEngineStateComputerModule());
             install(new RadixEngineModule());
             install(new ReV1DispatcherModule());
+          }
+          case REv2StateComputerConfig ignored -> {
+            bindConstant().annotatedWith(MempoolMaxSize.class).to(0);
+            install(new RandomTransactionGeneratorModule());
+            install(new REv2StateManagerModule());
+            install(new StatelessComputerModule());
           }
         }
       }

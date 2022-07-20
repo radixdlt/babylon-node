@@ -62,62 +62,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.inject.*;
-import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStoreState;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.transactions.Transaction;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-public class StatelessComputerModule extends AbstractModule {
-  @Provides
-  @Singleton
-  private StateComputerLedger.StateComputer stateComputer(
-      StatelessComputer statelessComputer, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
-    return new StateComputerLedger.StateComputer() {
-      @Override
-      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
+import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkOrdering;
+import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.StateComputerConfig;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Test;
 
-      @Override
-      public List<Transaction> getTransactionsForProposal(
-          List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
-        return List.of();
-      }
+public class SanityTest {
+  private final SimulationTest.Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .pacemakerTimeout(1000)
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false, LedgerConfig.stateComputer(StateComputerConfig.rev2(), false)))
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered());
 
-      @Override
-      public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.ExecutedTransaction> previous,
-          VertexWithHash vertex,
-          long timestamp) {
-
-        return new StateComputerLedger.StateComputerResult(
-            vertex.getTransactions().stream()
-                .map(
-                    txn -> {
-                      var success = statelessComputer.execute(txn);
-                      return new StatelessComputerExecutedTransaction(txn, success);
-                    })
-                .collect(Collectors.toList()),
-            Map.of());
-      }
-
-      @Override
-      public void commit(
-          CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
-        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
-      }
-    };
+  @Test
+  public void sanity_tests_should_pass() {
+    SimulationTest simulationTest = bftTestBuilder.build();
+    final var checkResults = simulationTest.run().awaitCompletion();
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
   }
 }
