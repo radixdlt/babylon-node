@@ -181,35 +181,10 @@ public final class SimulationTest {
   }
 
   public static class Builder {
-    private enum LedgerType {
-      MOCKED_LEDGER(false, LedgerConfig.mocked()),
-      LEDGER_ONLY(
-          false, LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false)),
-      LEDGER_AND_SYNC(
-          false, LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true)),
-      LEDGER_AND_LOCALMEMPOOL(
-          false,
-          LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.LOCAL_ONLY), false)),
-      LEDGER_AND_EPOCHS(
-          true, LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false)),
-      LEDGER_AND_EPOCHS_AND_SYNC(
-          true, LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true)),
-      LEDGER_AND_EPOCHS_AND_RADIXENGINE(
-          true, LedgerConfig.stateComputer(StateComputerConfig.rev1(), false)),
-      FULL_FUNCTION(true, LedgerConfig.stateComputer(StateComputerConfig.rev1(), true));
-
-      private final boolean epochs;
-      private final LedgerConfig ledgerConfig;
-
-      LedgerType(boolean epochs, LedgerConfig ledgerConfig) {
-        this.epochs = epochs;
-        this.ledgerConfig = ledgerConfig;
-      }
-    }
-
     private ImmutableList<ECKeyPair> initialNodes = ImmutableList.of(ECKeyPair.generateNew());
     private long pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
-    private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
+    private FunctionalRadixNodeModule functionalNodeModule =
+        new FunctionalRadixNodeModule(false, LedgerConfig.mocked());
 
     private Module initialNodesModule;
     private final ImmutableList.Builder<Module> testModules = ImmutableList.builder();
@@ -322,7 +297,10 @@ public final class SimulationTest {
 
     public Builder ledgerAndEpochs(
         Round epochMaxRound, Function<Long, IntStream> epochToNodeIndexMapper) {
-      this.ledgerType = LedgerType.LEDGER_AND_EPOCHS;
+      this.functionalNodeModule =
+          new FunctionalRadixNodeModule(
+              true,
+              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false));
       this.modules.add(
           new AbstractModule() {
             @Override
@@ -347,12 +325,18 @@ public final class SimulationTest {
     }
 
     public Builder ledger() {
-      this.ledgerType = LedgerType.LEDGER_ONLY;
+      this.functionalNodeModule =
+          new FunctionalRadixNodeModule(
+              false,
+              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false));
       return this;
     }
 
     public Builder ledgerAndSync(SyncConfig syncConfig) {
-      this.ledgerType = LedgerType.LEDGER_AND_SYNC;
+      this.functionalNodeModule =
+          new FunctionalRadixNodeModule(
+              false,
+              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true));
       modules.add(
           new AbstractModule() {
             @Override
@@ -364,7 +348,9 @@ public final class SimulationTest {
     }
 
     public Builder fullFunctionNodes(SyncConfig syncConfig) {
-      this.ledgerType = LedgerType.FULL_FUNCTION;
+      this.functionalNodeModule =
+          new FunctionalRadixNodeModule(
+              true, LedgerConfig.stateComputer(StateComputerConfig.rev1(), true));
       modules.add(
           new AbstractModule() {
             @Override
@@ -381,7 +367,9 @@ public final class SimulationTest {
         Round epochMaxRound,
         Function<Long, IntStream> epochToNodeIndexMapper,
         SyncConfig syncConfig) {
-      this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
+      this.functionalNodeModule =
+          new FunctionalRadixNodeModule(
+              true, LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true));
       modules.add(
           new AbstractModule() {
             @Override
@@ -406,13 +394,19 @@ public final class SimulationTest {
     }
 
     public Builder ledgerAndMempool() {
-      this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL;
+      this.functionalNodeModule =
+          new FunctionalRadixNodeModule(
+              false,
+              LedgerConfig.stateComputer(
+                  StateComputerConfig.mocked(MempoolType.LOCAL_ONLY), false));
       this.modules.add(MempoolConfig.asModule(10, 10));
       return this;
     }
 
     public Builder ledgerAndRadixEngineWithEpochMaxRound() {
-      this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_RADIXENGINE;
+      this.functionalNodeModule =
+          new FunctionalRadixNodeModule(
+              true, LedgerConfig.stateComputer(StateComputerConfig.rev1(), false));
       this.modules.add(
           new AbstractModule() {
             @Override
@@ -466,7 +460,9 @@ public final class SimulationTest {
     public Builder addMempoolSubmissionsSteadyState(
         Class<? extends TransactionGenerator> txnGeneratorClass) {
       NodeSelector nodeSelector =
-          this.ledgerType.epochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
+          this.functionalNodeModule.supportsEpochs()
+              ? new EpochsNodeSelector()
+              : new BFTValidatorSetNodeSelector();
       this.testModules.add(
           new AbstractModule() {
             @Override
@@ -533,10 +529,10 @@ public final class SimulationTest {
 
       modules.add(new TestMessagingModule.Builder().withDefaultRateLimit().build());
       // Functional
-      modules.add(new FunctionalRadixNodeModule(ledgerType.epochs, ledgerType.ledgerConfig));
+      modules.add(this.functionalNodeModule);
 
       // Persistence
-      if (ledgerType.ledgerConfig.isREV1()) {
+      if (this.functionalNodeModule.supportsREv1()) {
         modules.add(new InMemoryRadixEngineStoreModule());
         modules.add(
             new MockedGenesisModule(
@@ -607,7 +603,7 @@ public final class SimulationTest {
 
       // Runners
       modules.add(new RxEnvironmentModule());
-      if (ledgerType.ledgerConfig.hasSync()) {
+      if (this.functionalNodeModule.supportsSync()) {
         modules.add(new InMemoryCommittedReaderModule());
         modules.add(new InMemoryForksEpochStoreModule());
       }

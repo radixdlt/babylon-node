@@ -147,6 +147,18 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     this.ledgerConfig = ledgerConfig;
   }
 
+  public boolean supportsEpochs() {
+    return epochs;
+  }
+
+  public boolean supportsREv1() {
+    return this.ledgerConfig.isREV1();
+  }
+
+  public boolean supportsSync() {
+    return this.ledgerConfig.hasSync();
+  }
+
   @Override
   public void configure() {
     install(new EventLoggerModule());
