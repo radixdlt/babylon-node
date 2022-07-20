@@ -70,9 +70,6 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.ledger.MockedLedgerModule;
-import com.radixdlt.rev2.RandomREv2TransactionGenerator;
-import com.radixdlt.statecomputer.RandomTransactionGenerator;
-import com.radixdlt.statecomputer.RandomTransactionGeneratorModule;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
@@ -82,8 +79,10 @@ import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
 import com.radixdlt.rev1.ReV1DispatcherModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
+import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedSyncServiceModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.statecomputer.StatelessComputerModule;
 
 /** Manages the functional components of a node */
@@ -210,7 +209,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           case MockedStateComputerConfig c -> {
             switch (c.mempoolType) {
               case NONE -> {
-                install(new RandomTransactionGeneratorModule());
+                bind(ProposalGenerator.class).to(RandomTransactionGenerator.class);
                 if (!this.epochs) {
                   install(new MockedStateComputerModule());
                 } else {
@@ -237,7 +236,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           }
           case REv2StateComputerConfig ignored -> {
             bindConstant().annotatedWith(MempoolMaxSize.class).to(0);
-            bind(ProposalGenerator.class).to(RandomREv2TransactionGenerator.class);
+            bind(ProposalGenerator.class).to(HalfCorrectREv2TransactionGenerator.class);
             install(new REv2StateManagerModule());
             install(new StatelessComputerModule());
           }

@@ -77,6 +77,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.StateComputerConfig;
 import com.radixdlt.statecomputer.StatelessComputer;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
+import org.assertj.core.data.Offset;
 import org.junit.Test;
 
 public class SanityTest {
@@ -107,8 +108,12 @@ public class SanityTest {
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
     for (var node : runningTest.getNetwork().getNodes()) {
       var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
-      //assertThat(statelessComputer.getInvalidCount()).isGreaterThan(0);
-      assertThat(statelessComputer.getSuccessCount()).isZero();
+
+      // The current proposal generator for REv2 produces half correct transactions and half invalid.
+      // This part verifies that this actually happened.
+      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
+      assertThat(statelessComputer.getInvalidCount())
+          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(2));
     }
   }
 }

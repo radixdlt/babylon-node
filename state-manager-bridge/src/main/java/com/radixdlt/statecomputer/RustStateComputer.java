@@ -67,14 +67,10 @@ package com.radixdlt.statecomputer;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Result;
-import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
-import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.transactions.Transaction;
-
-import java.util.List;
 import java.util.Objects;
 
 public class RustStateComputer implements StatelessTransactionVerifier {
@@ -84,7 +80,8 @@ public class RustStateComputer implements StatelessTransactionVerifier {
     this.rustState = Objects.requireNonNull(rustState);
   }
 
-  private static final TypeToken<Result<Boolean, StateManagerRuntimeError>> booleanType = new TypeToken<>() {};
+  private static final TypeToken<Result<Boolean, StateManagerRuntimeError>> booleanType =
+      new TypeToken<>() {};
 
   @Override
   public boolean verify(Transaction transaction) {
