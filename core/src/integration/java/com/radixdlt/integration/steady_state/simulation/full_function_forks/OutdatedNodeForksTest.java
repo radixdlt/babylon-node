@@ -121,7 +121,9 @@ public final class OutdatedNodeForksTest {
                   nodeUnderTest = BFTNode.create(node);
                   return ImmutableList.of(node);
                 },
-                new RadixEngineForksGenesisOnlyModule() // the node under test starts with just the
+                unused ->
+                    new RadixEngineForksGenesisOnlyModule() // the node under test starts with just
+                // the
                 // genesis fork
                 )
             .addNodeModule(MempoolConfig.asModule(1000, 10))

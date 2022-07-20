@@ -111,7 +111,6 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.modules.ConsensusModule;
 import com.radixdlt.modules.CryptoModule;
-import com.radixdlt.modules.EpochsConsensusModule;
 import com.radixdlt.modules.LedgerModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;

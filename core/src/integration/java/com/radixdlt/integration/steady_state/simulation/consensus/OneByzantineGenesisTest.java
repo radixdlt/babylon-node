@@ -67,13 +67,13 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.harness.simulation.Monitor;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.rev2.modules.MockedRecoveryModule;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -93,7 +93,11 @@ public class OneByzantineGenesisTest {
             .numNodes(3)
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
-                new MockedRecoveryModule(HashUtils.random256()))
+                nodes ->
+                    new MockedConsensusRecoveryModule.Builder()
+                        .withPreGenesisAccumulatorHash(HashUtils.random256())
+                        .withNodes(nodes)
+                        .build())
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
 
@@ -120,7 +124,7 @@ public class OneByzantineGenesisTest {
             .numNodes(4)
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
-                new MockedRecoveryModule(HashUtils.random256()))
+                nodes -> new MockedConsensusRecoveryModule.Builder().withNodes(nodes).build())
             .addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
             .build();
 

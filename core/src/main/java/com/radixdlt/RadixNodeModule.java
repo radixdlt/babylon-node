@@ -66,11 +66,14 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.api.ApiModule;
+import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
+import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
@@ -82,13 +85,11 @@ import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
-import com.radixdlt.rev2.modules.MockedRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -121,15 +122,6 @@ public final class RadixNodeModule extends AbstractModule {
     bind(Addressing.class).toInstance(addressing);
     bindConstant().annotatedWith(NetworkId.class).to(networkId);
 
-    // Use genesis to specify number of validators for now
-    var numValidators = Integer.parseInt(properties.get("network.genesis_txn"));
-    var initialVset =
-        BFTValidatorSet.from(
-            PrivateKeys.numeric(6)
-                .limit(numValidators)
-                .map(ECKeyPair::getPublicKey)
-                .map(k -> BFTValidator.from(BFTNode.create(k), UInt256.ONE)));
-    bind(BFTValidatorSet.class).toInstance(initialVset);
     bind(RuntimeProperties.class).toInstance(properties);
 
     // Consensus configuration
@@ -194,7 +186,17 @@ public final class RadixNodeModule extends AbstractModule {
     // install(new PersistenceModule());
     // install(new ConsensusRecoveryModule());
     // install(new LedgerRecoveryModule());
-    install(new MockedRecoveryModule());
+
+    // Use genesis to specify number of validators for now
+    var numValidators = Integer.parseInt(properties.get("network.genesis_txn"));
+    var initialVset =
+        PrivateKeys.numeric(6)
+            .limit(numValidators)
+            .map(ECKeyPair::getPublicKey)
+            .map(k -> BFTNode.create(k))
+            .toList();
+    install(new MockedConsensusRecoveryModule.Builder().withNodes(initialVset).build());
+    install(new MockedLedgerRecoveryModule());
 
     // System Info
     install(new SystemInfoModule());

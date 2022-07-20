@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.deterministic.configuration;
+package com.radixdlt.consensus;
 
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
