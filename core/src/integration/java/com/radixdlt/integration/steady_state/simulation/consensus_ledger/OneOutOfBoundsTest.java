@@ -72,6 +72,7 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -89,7 +90,7 @@ public class OneOutOfBoundsTest {
           .networkModules(
               NetworkOrdering.inOrder(),
               NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency))
-          .ledger()
+          .functionalNodeModule(FunctionalRadixNodeModule.justLedger())
           .pacemakerTimeout(1000)
           .addTestModules(
               ConsensusMonitors.safety(),
