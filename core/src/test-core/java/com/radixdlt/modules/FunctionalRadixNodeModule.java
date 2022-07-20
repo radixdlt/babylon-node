@@ -147,6 +147,11 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     this.ledgerConfig = ledgerConfig;
   }
 
+  public static FunctionalRadixNodeModule justLedger() {
+    return new FunctionalRadixNodeModule(
+        false, LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false));
+  }
+
   public boolean supportsEpochs() {
     return epochs;
   }

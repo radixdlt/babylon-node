@@ -324,11 +324,8 @@ public final class SimulationTest {
       return this;
     }
 
-    public Builder ledger() {
-      this.functionalNodeModule =
-          new FunctionalRadixNodeModule(
-              false,
-              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false));
+    public Builder functionalNodeModule(FunctionalRadixNodeModule functionalNodeModule) {
+      this.functionalNodeModule = functionalNodeModule;
       return this;
     }
 
