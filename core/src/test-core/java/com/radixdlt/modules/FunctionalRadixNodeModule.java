@@ -147,28 +147,31 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     } else {
       install(new LedgerModule());
 
-      if (!hasComponent(MEMPOOL)) {
-        install(new RandomTransactionGeneratorModule());
-
-        if (!hasComponent(EPOCHS)) {
-          install(new MockedStateComputerModule());
-        } else {
-          install(new MockedStateComputerWithEpochsModule());
-        }
-      } else {
-        install(new MempoolReceiverModule());
-
-        if (hasComponent(MEMPOOL_RELAYER)) {
-          install(new MempoolRelayerModule());
-        }
-
-        switch (this.stateComputer) {
-          case MOCKED -> install(new MockedMempoolStateComputerModule());
-          case REV1 -> {
-            install(new RadixEngineStateComputerModule());
-            install(new RadixEngineModule());
-            install(new ReV1DispatcherModule());
+      switch (this.stateComputer) {
+        case MOCKED -> {
+          if (!hasComponent(MEMPOOL)) {
+            install(new RandomTransactionGeneratorModule());
+            if (!hasComponent(EPOCHS)) {
+              install(new MockedStateComputerModule());
+            } else {
+              install(new MockedStateComputerWithEpochsModule());
+            }
+          } else {
+            install(new MempoolReceiverModule());
+            if (hasComponent(MEMPOOL_RELAYER)) {
+              install(new MempoolRelayerModule());
+            }
+            install(new MockedMempoolStateComputerModule());
           }
+        }
+        case REV1 -> {
+          install(new MempoolReceiverModule());
+          if (hasComponent(MEMPOOL_RELAYER)) {
+            install(new MempoolRelayerModule());
+          }
+          install(new RadixEngineStateComputerModule());
+          install(new RadixEngineModule());
+          install(new ReV1DispatcherModule());
         }
       }
     }
