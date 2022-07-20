@@ -83,11 +83,21 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
 
   private final StatelessTransactionVerifier verifier;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
+  private int successCount = 0;
+  private int invalidCount = 0;
 
   public StatelessComputer(
       StatelessTransactionVerifier verifier, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
     this.verifier = verifier;
     this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
+  }
+
+  public int getSuccessCount() {
+    return successCount;
+  }
+
+  public int getInvalidCount() {
+    return invalidCount;
   }
 
   @Override
@@ -112,8 +122,10 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
       var success = verifier.verify(transaction);
       if (success) {
         successfulTransactions.add(new StatelessComputerExecutedTransaction(transaction));
+        successCount++;
       } else {
         invalidTransactions.put(transaction, new StatelessTransactionException());
+        invalidCount++;
       }
     }
 

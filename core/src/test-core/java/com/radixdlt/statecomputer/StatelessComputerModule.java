@@ -70,9 +70,14 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
 
 public class StatelessComputerModule extends AbstractModule {
+  @Override
+  protected void configure() {
+    bind(StateComputerLedger.StateComputer.class).to(StatelessComputer.class);
+  }
+
   @Provides
   @Singleton
-  private StateComputerLedger.StateComputer stateComputer(
+  private StatelessComputer statelessComputer(
       StatelessTransactionVerifier verifier, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
     return new StatelessComputer(verifier, ledgerUpdateDispatcher);
   }

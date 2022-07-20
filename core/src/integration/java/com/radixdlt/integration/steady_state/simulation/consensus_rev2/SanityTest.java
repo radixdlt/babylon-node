@@ -75,6 +75,8 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.StateComputerConfig;
 import java.util.concurrent.TimeUnit;
+
+import com.radixdlt.statecomputer.StatelessComputer;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -97,9 +99,17 @@ public class SanityTest {
 
   @Test
   public void sanity_tests_should_pass() {
-    SimulationTest simulationTest = bftTestBuilder.build();
-    final var checkResults = simulationTest.run().awaitCompletion();
+    var simulationTest = bftTestBuilder.build();
+
+    var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
+
     assertThat(checkResults)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    for (var node : runningTest.getNetwork().getNodes()) {
+      var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
+      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(0);
+      assertThat(statelessComputer.getSuccessCount()).isZero();
+    }
   }
 }
