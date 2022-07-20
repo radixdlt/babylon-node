@@ -86,7 +86,7 @@ impl<M: Mempool> StateManager<M> {
         }
     }
 
-    pub fn prepare(txn: Transaction) -> bool {
+    pub fn verify(&self, txn: &Transaction) -> bool {
         let parse_result: Result<NotarizedTransaction, DecodeError> = scrypto_decode(&txn.payload);
         parse_result.is_ok()
     }

@@ -62,53 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
+use crate::jni::dtos::JavaStructure;
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+use crate::jni::state_manager::JNIStateManager;
+use crate::jni::utils::*;
+use crate::result::StateManagerResult;
+use crate::types::Transaction;
 
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.StateComputerConfig;
-import com.radixdlt.statecomputer.StatelessComputer;
-import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Test;
+//
+// JNI Interface
+//
 
-public class SanityTest {
-  private final SimulationTest.Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numNodes(4)
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .pacemakerTimeout(1000)
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false, LedgerConfig.stateComputer(StateComputerConfig.rev2(), false)))
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered());
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_verify(&env, j_state, j_payload).to_java();
 
-  @Test
-  public void sanity_tests_should_pass() {
-    var simulationTest = bftTestBuilder.build();
+    jni_slice_to_jbytearray(&env, &ret)
+}
 
-    var runningTest = simulationTest.run();
-    final var checkResults = runningTest.awaitCompletion();
-
-    assertThat(checkResults)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    for (var node : runningTest.getNetwork().getNodes()) {
-      var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
-      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(0);
-      assertThat(statelessComputer.getSuccessCount()).isZero();
-    }
-  }
+fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<bool> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
+    let transaction = Transaction::from_java(&request_payload)?;
+    let result = state_manager.verify(&transaction);
+    Ok(result)
 }

@@ -93,6 +93,8 @@ impl<T: JavaStructure, E: JavaStructure> JavaStructure for Result<T, E> {}
 
 impl<T: JavaStructure> JavaStructure for Option<T> {}
 
+impl JavaStructure for bool {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
