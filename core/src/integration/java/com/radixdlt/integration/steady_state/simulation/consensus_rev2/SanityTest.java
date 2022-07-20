@@ -98,18 +98,22 @@ public class SanityTest {
               LedgerMonitors.ordered());
 
   @Test
-  public void sanity_tests_should_pass() {
+  public void test_half_valid_half_invalid_rev2_transactions() {
+    // Arrange
     var simulationTest = bftTestBuilder.build();
 
+    // Run
     var runningTest = simulationTest.run();
     final var checkResults = runningTest.awaitCompletion();
 
+    // Post-run assertions
     assertThat(checkResults)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
     for (var node : runningTest.getNetwork().getNodes()) {
       var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
 
-      // The current proposal generator for REv2 produces half correct transactions and half invalid.
+      // The current proposal generator for REv2 produces half correct transactions and half
+      // invalid.
       // This part verifies that this actually happened.
       assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
       assertThat(statelessComputer.getInvalidCount())

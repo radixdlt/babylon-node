@@ -67,16 +67,6 @@ package com.radixdlt.statecomputer;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.transactions.Transaction;
 
-public class StatelessComputerExecutedTransaction
-    implements StateComputerLedger.ExecutedTransaction {
-  private final Transaction transaction;
-
-  public StatelessComputerExecutedTransaction(Transaction transaction) {
-    this.transaction = transaction;
-  }
-
-  @Override
-  public Transaction transaction() {
-    return transaction;
-  }
-}
+/** Representation of an executed transaction on a StatelessComputer */
+public record StatelessComputerExecutedTransaction(Transaction transaction)
+    implements StateComputerLedger.ExecutedTransaction {}

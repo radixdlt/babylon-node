@@ -78,6 +78,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * Ledger Computer for testing which stores no state but only statelessly verifies whether a
+ * transaction is correct or not.
+ */
 public final class StatelessComputer implements StateComputerLedger.StateComputer {
   public static class StatelessTransactionException extends Exception {}
 
