@@ -86,26 +86,33 @@ import java.util.Objects;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
+  public enum StateComputer {
+    MOCKED,
+    REV1,
+  }
+
   public enum RadixNodeComponent {
     SYNC,
     LEDGER,
     MEMPOOL,
-    RADIX_ENGINE,
     MEMPOOL_RELAYER,
     EPOCHS,
   }
 
   private final EnumSet<RadixNodeComponent> components;
+  private final StateComputer stateComputer;
 
   // FIXME: This is required for now for shared syncing, remove after refactor
   private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
 
   public FunctionalRadixNodeModule() {
-    this(EnumSet.allOf(RadixNodeComponent.class));
+    this(EnumSet.allOf(RadixNodeComponent.class), StateComputer.REV1);
   }
 
-  public FunctionalRadixNodeModule(EnumSet<RadixNodeComponent> components) {
+  public FunctionalRadixNodeModule(
+      EnumSet<RadixNodeComponent> components, StateComputer stateComputer) {
     this.components = Objects.requireNonNull(components);
+    this.stateComputer = stateComputer;
   }
 
   @Override
@@ -155,12 +162,13 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           install(new MempoolRelayerModule());
         }
 
-        if (!hasComponent(RADIX_ENGINE)) {
-          install(new MockedMempoolStateComputerModule());
-        } else {
-          install(new RadixEngineStateComputerModule());
-          install(new RadixEngineModule());
-          install(new ReV1DispatcherModule());
+        switch (this.stateComputer) {
+          case MOCKED -> install(new MockedMempoolStateComputerModule());
+          case REV1 -> {
+            install(new RadixEngineStateComputerModule());
+            install(new RadixEngineModule());
+            install(new ReV1DispatcherModule());
+          }
         }
       }
     }

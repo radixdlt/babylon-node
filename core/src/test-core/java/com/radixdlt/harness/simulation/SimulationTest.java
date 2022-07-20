@@ -108,6 +108,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent;
+import com.radixdlt.modules.FunctionalRadixNodeModule.StateComputer;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.monitoring.SystemCounters;
@@ -183,20 +184,22 @@ public final class SimulationTest {
 
   public static class Builder {
     private enum LedgerType {
-      MOCKED_LEDGER(EnumSet.noneOf(RadixNodeComponent.class)),
-      LEDGER_ONLY(EnumSet.of(LEDGER)),
-      LEDGER_AND_SYNC(EnumSet.of(LEDGER, SYNC)),
-      LEDGER_AND_LOCALMEMPOOL(EnumSet.of(LEDGER, MEMPOOL)),
-      LEDGER_AND_EPOCHS(EnumSet.of(LEDGER, EPOCHS)),
-      LEDGER_AND_EPOCHS_AND_SYNC(EnumSet.of(LEDGER, EPOCHS, SYNC)),
+      MOCKED_LEDGER(EnumSet.noneOf(RadixNodeComponent.class), StateComputer.MOCKED),
+      LEDGER_ONLY(EnumSet.of(LEDGER), StateComputer.MOCKED),
+      LEDGER_AND_SYNC(EnumSet.of(LEDGER, SYNC), StateComputer.MOCKED),
+      LEDGER_AND_LOCALMEMPOOL(EnumSet.of(LEDGER, MEMPOOL), StateComputer.MOCKED),
+      LEDGER_AND_EPOCHS(EnumSet.of(LEDGER, EPOCHS), StateComputer.MOCKED),
+      LEDGER_AND_EPOCHS_AND_SYNC(EnumSet.of(LEDGER, EPOCHS, SYNC), StateComputer.MOCKED),
       LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(
-          EnumSet.of(LEDGER, MEMPOOL, MEMPOOL_RELAYER, RADIX_ENGINE, EPOCHS)),
-      FULL_FUNCTION(EnumSet.allOf(RadixNodeComponent.class));
+          EnumSet.of(LEDGER, MEMPOOL, MEMPOOL_RELAYER, EPOCHS), StateComputer.REV1),
+      FULL_FUNCTION(EnumSet.allOf(RadixNodeComponent.class), StateComputer.REV1);
 
       private final EnumSet<RadixNodeComponent> components;
+      private final StateComputer stateComputer;
 
-      LedgerType(EnumSet<RadixNodeComponent> components) {
+      LedgerType(EnumSet<RadixNodeComponent> components, StateComputer stateComputer) {
         this.components = components;
+        this.stateComputer = stateComputer;
       }
 
       boolean hasComponent(RadixNodeComponent component) {
@@ -532,10 +535,10 @@ public final class SimulationTest {
 
       modules.add(new TestMessagingModule.Builder().withDefaultRateLimit().build());
       // Functional
-      modules.add(new FunctionalRadixNodeModule(ledgerType.components));
+      modules.add(new FunctionalRadixNodeModule(ledgerType.components, ledgerType.stateComputer));
 
       // Persistence
-      if (ledgerType.hasComponent(RADIX_ENGINE)) {
+      if (ledgerType.stateComputer == StateComputer.REV1) {
         modules.add(new InMemoryRadixEngineStoreModule());
         modules.add(
             new MockedGenesisModule(
