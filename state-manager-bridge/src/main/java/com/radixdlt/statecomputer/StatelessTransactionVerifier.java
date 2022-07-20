@@ -64,19 +64,8 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transactions.Transaction;
-import java.util.Objects;
 
-public class RustStateComputer implements StatelessTransactionVerifier {
-  private final StateManager.RustState rustState;
-
-  public RustStateComputer(StateManager.RustState rustState) {
-    this.rustState = Objects.requireNonNull(rustState);
-  }
-
-  @Override
-  public boolean verify(Transaction transaction) {
-    return false;
-  }
+public interface StatelessTransactionVerifier {
+  boolean verify(Transaction transaction);
 }

@@ -70,11 +70,9 @@ import com.radixdlt.transactions.Transaction;
 public class StatelessComputerExecutedTransaction
     implements StateComputerLedger.ExecutedTransaction {
   private final Transaction transaction;
-  private final boolean success;
 
-  public StatelessComputerExecutedTransaction(Transaction transaction, boolean success) {
+  public StatelessComputerExecutedTransaction(Transaction transaction) {
     this.transaction = transaction;
-    this.success = success;
   }
 
   @Override

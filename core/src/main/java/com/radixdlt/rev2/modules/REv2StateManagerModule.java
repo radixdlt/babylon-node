@@ -77,7 +77,7 @@ import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.StatelessComputer;
+import com.radixdlt.statecomputer.StatelessTransactionVerifier;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transaction.RustTransactionStore;
@@ -99,7 +99,7 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private StatelessComputer statelessComputer(StateManager stateManager) {
+  private StatelessTransactionVerifier statelessComputer(StateManager stateManager) {
     return new RustStateComputer(stateManager.getRustState());
   }
 

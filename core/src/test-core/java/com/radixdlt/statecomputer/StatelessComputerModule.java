@@ -64,60 +64,16 @@
 
 package com.radixdlt.statecomputer;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.*;
-import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.transactions.Transaction;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 
 public class StatelessComputerModule extends AbstractModule {
   @Provides
   @Singleton
   private StateComputerLedger.StateComputer stateComputer(
-      StatelessComputer statelessComputer, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
-    return new StateComputerLedger.StateComputer() {
-      @Override
-      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
-
-      @Override
-      public List<Transaction> getTransactionsForProposal(
-          List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
-        return List.of();
-      }
-
-      @Override
-      public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.ExecutedTransaction> previous,
-          VertexWithHash vertex,
-          long timestamp) {
-
-        return new StateComputerLedger.StateComputerResult(
-            vertex.getTransactions().stream()
-                .map(
-                    txn -> {
-                      var success = statelessComputer.execute(txn);
-                      return new StatelessComputerExecutedTransaction(txn, success);
-                    })
-                .collect(Collectors.toList()),
-            Map.of());
-      }
-
-      @Override
-      public void commit(
-          CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
-        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
-      }
-    };
+      StatelessTransactionVerifier verifier, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
+    return new StatelessComputer(verifier, ledgerUpdateDispatcher);
   }
 }

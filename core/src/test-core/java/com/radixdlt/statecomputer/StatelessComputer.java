@@ -64,8 +64,66 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.transactions.Transaction;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
-public interface StatelessComputer {
-  boolean execute(Transaction transaction);
+public final class StatelessComputer implements StateComputerLedger.StateComputer {
+  public static class StatelessTransactionException extends Exception {}
+
+  private final StatelessTransactionVerifier verifier;
+  private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
+
+  public StatelessComputer(
+      StatelessTransactionVerifier verifier, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
+    this.verifier = verifier;
+    this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
+  }
+
+  @Override
+  public void addToMempool(MempoolAdd mempoolAdd, BFTNode origin) {}
+
+  @Override
+  public List<Transaction> getTransactionsForProposal(
+      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
+    return List.of();
+  }
+
+  @Override
+  public StateComputerLedger.StateComputerResult prepare(
+      List<StateComputerLedger.ExecutedTransaction> previous,
+      VertexWithHash vertex,
+      long timestamp) {
+
+    var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
+    var invalidTransactions = new HashMap<Transaction, Exception>();
+
+    for (var transaction : vertex.getTransactions()) {
+      var success = verifier.verify(transaction);
+      if (success) {
+        successfulTransactions.add(new StatelessComputerExecutedTransaction(transaction));
+      } else {
+        invalidTransactions.put(transaction, new StatelessTransactionException());
+      }
+    }
+
+    return new StateComputerLedger.StateComputerResult(successfulTransactions, invalidTransactions);
+  }
+
+  @Override
+  public void commit(
+      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
+    var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
+    ledgerUpdateDispatcher.dispatch(ledgerUpdate);
+  }
 }
