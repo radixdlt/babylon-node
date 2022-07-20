@@ -64,8 +64,6 @@
 
 package com.radixdlt.harness.simulation;
 
-import static com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent.*;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -107,7 +105,9 @@ import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.MempoolType;
+import com.radixdlt.modules.FunctionalRadixNodeModule.StateComputerConfig;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.monitoring.SystemCounters;
@@ -138,7 +138,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -183,24 +182,28 @@ public final class SimulationTest {
 
   public static class Builder {
     private enum LedgerType {
-      MOCKED_LEDGER(EnumSet.noneOf(RadixNodeComponent.class)),
-      LEDGER_ONLY(EnumSet.of(LEDGER)),
-      LEDGER_AND_SYNC(EnumSet.of(LEDGER, SYNC)),
-      LEDGER_AND_LOCALMEMPOOL(EnumSet.of(LEDGER, MEMPOOL)),
-      LEDGER_AND_EPOCHS(EnumSet.of(LEDGER, EPOCHS)),
-      LEDGER_AND_EPOCHS_AND_SYNC(EnumSet.of(LEDGER, EPOCHS, SYNC)),
-      LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(
-          EnumSet.of(LEDGER, MEMPOOL, MEMPOOL_RELAYER, RADIX_ENGINE, EPOCHS)),
-      FULL_FUNCTION(EnumSet.allOf(RadixNodeComponent.class));
+      MOCKED_LEDGER(false, LedgerConfig.mocked()),
+      LEDGER_ONLY(
+          false, LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false)),
+      LEDGER_AND_SYNC(
+          false, LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true)),
+      LEDGER_AND_LOCALMEMPOOL(
+          false,
+          LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.LOCAL_ONLY), false)),
+      LEDGER_AND_EPOCHS(
+          true, LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false)),
+      LEDGER_AND_EPOCHS_AND_SYNC(
+          true, LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true)),
+      LEDGER_AND_EPOCHS_AND_RADIXENGINE(
+          true, LedgerConfig.stateComputer(StateComputerConfig.rev1(), false)),
+      FULL_FUNCTION(true, LedgerConfig.stateComputer(StateComputerConfig.rev1(), true));
 
-      private final EnumSet<RadixNodeComponent> components;
+      private final boolean epochs;
+      private final LedgerConfig ledgerConfig;
 
-      LedgerType(EnumSet<RadixNodeComponent> components) {
-        this.components = components;
-      }
-
-      boolean hasComponent(RadixNodeComponent component) {
-        return this.components.contains(component);
+      LedgerType(boolean epochs, LedgerConfig ledgerConfig) {
+        this.epochs = epochs;
+        this.ledgerConfig = ledgerConfig;
       }
     }
 
@@ -409,7 +412,7 @@ public final class SimulationTest {
     }
 
     public Builder ledgerAndRadixEngineWithEpochMaxRound() {
-      this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE;
+      this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_RADIXENGINE;
       this.modules.add(
           new AbstractModule() {
             @Override
@@ -463,9 +466,7 @@ public final class SimulationTest {
     public Builder addMempoolSubmissionsSteadyState(
         Class<? extends TransactionGenerator> txnGeneratorClass) {
       NodeSelector nodeSelector =
-          this.ledgerType.hasComponent(EPOCHS)
-              ? new EpochsNodeSelector()
-              : new BFTValidatorSetNodeSelector();
+          this.ledgerType.epochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
       this.testModules.add(
           new AbstractModule() {
             @Override
@@ -532,10 +533,10 @@ public final class SimulationTest {
 
       modules.add(new TestMessagingModule.Builder().withDefaultRateLimit().build());
       // Functional
-      modules.add(new FunctionalRadixNodeModule(ledgerType.components));
+      modules.add(new FunctionalRadixNodeModule(ledgerType.epochs, ledgerType.ledgerConfig));
 
       // Persistence
-      if (ledgerType.hasComponent(RADIX_ENGINE)) {
+      if (ledgerType.ledgerConfig.isREV1()) {
         modules.add(new InMemoryRadixEngineStoreModule());
         modules.add(
             new MockedGenesisModule(
@@ -606,7 +607,7 @@ public final class SimulationTest {
 
       // Runners
       modules.add(new RxEnvironmentModule());
-      if (ledgerType.hasComponent(LEDGER) && ledgerType.hasComponent(SYNC)) {
+      if (ledgerType.ledgerConfig.hasSync()) {
         modules.add(new InMemoryCommittedReaderModule());
         modules.add(new InMemoryForksEpochStoreModule());
       }
