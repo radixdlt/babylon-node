@@ -107,7 +107,7 @@ public class SanityTest {
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
     for (var node : runningTest.getNetwork().getNodes()) {
       var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
-      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(0);
+      //assertThat(statelessComputer.getInvalidCount()).isGreaterThan(0);
       assertThat(statelessComputer.getSuccessCount()).isZero();
     }
   }
