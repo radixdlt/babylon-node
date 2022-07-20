@@ -64,8 +64,6 @@
 
 package com.radixdlt.modules;
 
-import static com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent.*;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.environment.NoEpochsConsensusModule;
@@ -81,38 +79,72 @@ import com.radixdlt.rev1.ReV1DispatcherModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
 import com.radixdlt.rev2.modules.MockedSyncServiceModule;
-import java.util.EnumSet;
-import java.util.Objects;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
-  public enum StateComputer {
-    MOCKED,
-    REV1,
+
+  public sealed interface LedgerConfig {
+    static LedgerConfig mocked() {
+      return new MockedLedgerConfig();
+    }
+
+    static LedgerConfig stateComputer(StateComputerConfig stateComputerConfig, boolean sync) {
+      return new StateComputerLedgerConfig(stateComputerConfig, sync);
+    }
+
+    default boolean hasSync() {
+      if (this instanceof StateComputerLedgerConfig c) {
+        return c.sync;
+      }
+      return false;
+    }
+
+    default boolean isREV1() {
+      if (this instanceof StateComputerLedgerConfig c) {
+        return c.config instanceof REv1StateComputerConfig;
+      }
+      return false;
+    }
   }
 
-  public enum RadixNodeComponent {
-    SYNC,
-    LEDGER,
-    MEMPOOL,
-    MEMPOOL_RELAYER,
-    EPOCHS,
+  public static final class MockedLedgerConfig implements LedgerConfig {}
+
+  public record StateComputerLedgerConfig(StateComputerConfig config, boolean sync)
+      implements LedgerConfig {}
+
+  public enum MempoolType {
+    NONE,
+    LOCAL_ONLY,
+    RELAYED,
   }
 
-  private final EnumSet<RadixNodeComponent> components;
-  private final StateComputer stateComputer;
+  public sealed interface StateComputerConfig {
+    static StateComputerConfig mocked(MempoolType mempoolType) {
+      return new MockedStateComputerConfig(mempoolType);
+    }
+
+    static StateComputerConfig rev1() {
+      return new REv1StateComputerConfig();
+    }
+  }
+
+  public record MockedStateComputerConfig(MempoolType mempoolType) implements StateComputerConfig {}
+
+  public static final class REv1StateComputerConfig implements StateComputerConfig {}
+
+  private final boolean epochs;
+  private final LedgerConfig ledgerConfig;
 
   // FIXME: This is required for now for shared syncing, remove after refactor
   private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
 
   public FunctionalRadixNodeModule() {
-    this(EnumSet.allOf(RadixNodeComponent.class), StateComputer.REV1);
+    this(true, LedgerConfig.stateComputer(StateComputerConfig.rev1(), true));
   }
 
-  public FunctionalRadixNodeModule(
-      EnumSet<RadixNodeComponent> components, StateComputer stateComputer) {
-    this.components = Objects.requireNonNull(components);
-    this.stateComputer = stateComputer;
+  public FunctionalRadixNodeModule(boolean epochs, LedgerConfig ledgerConfig) {
+    this.epochs = epochs;
+    this.ledgerConfig = ledgerConfig;
   }
 
   @Override
@@ -122,62 +154,60 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
     // Consensus
     install(new ConsensusModule());
-    if (hasComponent(EPOCHS)) {
+    if (this.epochs) {
       install(new EpochsConsensusModule());
     } else {
       install(new NoEpochsConsensusModule());
     }
 
-    // Sync
-    if (hasComponent(LEDGER)) {
-      if (!hasComponent(SYNC)) {
-        install(mockedSyncServiceModule);
-      } else {
-        install(new SyncServiceModule());
-        if (hasComponent(EPOCHS)) {
-          install(new EpochsSyncModule());
-        } else {
-          install(new NoEpochsSyncModule());
-        }
-      }
-    }
+    switch (this.ledgerConfig) {
+      case MockedLedgerConfig ignored -> install(new MockedLedgerModule());
+      case StateComputerLedgerConfig stateComputerLedgerConfig -> {
+        install(new LedgerModule());
 
-    if (!hasComponent(LEDGER)) {
-      install(new MockedLedgerModule());
-    } else {
-      install(new LedgerModule());
-
-      switch (this.stateComputer) {
-        case MOCKED -> {
-          if (!hasComponent(MEMPOOL)) {
-            install(new RandomTransactionGeneratorModule());
-            if (!hasComponent(EPOCHS)) {
-              install(new MockedStateComputerModule());
-            } else {
-              install(new MockedStateComputerWithEpochsModule());
-            }
+        // Sync
+        if (stateComputerLedgerConfig.sync) {
+          install(new SyncServiceModule());
+          if (this.epochs) {
+            install(new EpochsSyncModule());
           } else {
-            install(new MempoolReceiverModule());
-            if (hasComponent(MEMPOOL_RELAYER)) {
-              install(new MempoolRelayerModule());
-            }
-            install(new MockedMempoolStateComputerModule());
+            install(new NoEpochsSyncModule());
           }
+        } else {
+          install(mockedSyncServiceModule);
         }
-        case REV1 -> {
-          install(new MempoolReceiverModule());
-          if (hasComponent(MEMPOOL_RELAYER)) {
-            install(new MempoolRelayerModule());
+
+        switch (stateComputerLedgerConfig.config) {
+          case MockedStateComputerConfig c -> {
+            switch (c.mempoolType) {
+              case NONE -> {
+                install(new RandomTransactionGeneratorModule());
+                if (!this.epochs) {
+                  install(new MockedStateComputerModule());
+                } else {
+                  install(new MockedStateComputerWithEpochsModule());
+                }
+              }
+              case LOCAL_ONLY -> {
+                install(new MempoolReceiverModule());
+                install(new MockedMempoolStateComputerModule());
+              }
+              case RELAYED -> {
+                install(new MempoolReceiverModule());
+                install(new MempoolRelayerModule());
+                install(new MockedMempoolStateComputerModule());
+              }
+            }
           }
-          install(new RadixEngineStateComputerModule());
-          install(new RadixEngineModule());
-          install(new ReV1DispatcherModule());
+          case REv1StateComputerConfig ignored -> {
+            install(new MempoolReceiverModule());
+            install(new MempoolRelayerModule());
+            install(new RadixEngineStateComputerModule());
+            install(new RadixEngineModule());
+            install(new ReV1DispatcherModule());
+          }
         }
       }
     }
-  }
-
-  private boolean hasComponent(RadixNodeComponent component) {
-    return this.components.contains(component);
   }
 }

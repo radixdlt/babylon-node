@@ -64,8 +64,6 @@
 
 package com.radixdlt.harness.deterministic;
 
-import static com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent.*;
-
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
@@ -89,8 +87,9 @@ import com.radixdlt.harness.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent;
-import com.radixdlt.modules.FunctionalRadixNodeModule.StateComputer;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.MempoolType;
+import com.radixdlt.modules.FunctionalRadixNodeModule.StateComputerConfig;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.monitoring.SystemCounters;
@@ -107,7 +106,6 @@ import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
-import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Function;
@@ -209,7 +207,10 @@ public final class DeterministicTest {
 
     public DeterministicTest buildWithEpochs(Round epochMaxRound) {
       Objects.requireNonNull(epochMaxRound);
-      modules.add(new FunctionalRadixNodeModule(EnumSet.of(LEDGER, EPOCHS), StateComputer.MOCKED));
+      modules.add(
+          new FunctionalRadixNodeModule(
+              true,
+              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false)));
       addEpochedConsensusProcessorModule(epochMaxRound);
       return build();
     }
@@ -217,7 +218,9 @@ public final class DeterministicTest {
     public DeterministicTest buildWithEpochsAndSync(Round epochMaxRound, SyncConfig syncConfig) {
       Objects.requireNonNull(epochMaxRound);
       modules.add(
-          new FunctionalRadixNodeModule(EnumSet.of(LEDGER, EPOCHS, SYNC), StateComputer.MOCKED));
+          new FunctionalRadixNodeModule(
+              true,
+              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true)));
       modules.add(new InMemoryCommittedReaderModule());
       modules.add(
           new AbstractModule() {
@@ -233,7 +236,8 @@ public final class DeterministicTest {
     public DeterministicTest buildWithoutEpochs() {
       modules.add(
           new FunctionalRadixNodeModule(
-              EnumSet.noneOf(RadixNodeComponent.class), StateComputer.MOCKED));
+              false,
+              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false)));
       addNonEpochedConsensusProcessorModule();
       return build();
     }
