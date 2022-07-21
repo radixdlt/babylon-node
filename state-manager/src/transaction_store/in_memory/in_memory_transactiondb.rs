@@ -67,14 +67,19 @@ use crate::types::*;
 use std::collections::BTreeMap;
 
 #[derive(Debug, PartialEq)]
-pub struct InMemoryTransactionStore {
+pub struct InMemoryTransactionDatabase {
     next_state: TransactionStateVersion,
     in_memory_store: BTreeMap<TransactionStateVersion, Transaction>,
 }
 
-impl InMemoryTransactionStore {
-    pub fn new() -> InMemoryTransactionStore {
-        InMemoryTransactionStore {
+#[derive(Debug, PartialEq)]
+pub enum InMemoryTransactionDatabaseGetError {
+    NotFound(TransactionStateVersion),
+}
+
+impl InMemoryTransactionDatabase {
+    pub fn new() -> InMemoryTransactionDatabase {
+        InMemoryTransactionDatabase {
             next_state: 0,
             in_memory_store: BTreeMap::new(),
         }
@@ -91,10 +96,8 @@ impl InMemoryTransactionStore {
             None
         }
     }
-}
 
-impl TransactionStore for InMemoryTransactionStore {
-    fn store(
+    pub fn store(
         &mut self,
         transaction: Transaction,
     ) -> Result<TransactionStateVersion, TransactionStoreStoreError> {
@@ -106,17 +109,12 @@ impl TransactionStore for InMemoryTransactionStore {
         Ok(state)
     }
 
-    fn get(&self, state: TransactionStateVersion) -> Result<Transaction, TransactionStoreGetError> {
-        self.in_memory_store
-            .get(&state)
-            .cloned()
-            .ok_or(TransactionStoreGetError::NotFound(state))
+    pub fn get(&self, state: TransactionStateVersion) -> Option<Transaction> {
+        self.in_memory_store.get(&state).cloned()
     }
 
-    fn last_version(&self) -> Result<TransactionStateVersion, TransactionStoreLastVersionError> {
-        self.next_state
-            .prev()
-            .ok_or(TransactionStoreLastVersionError::Empty)
+    pub fn last_version(&self) -> Option<TransactionStateVersion> {
+        self.next_state.prev()
     }
 }
 
@@ -125,21 +123,9 @@ mod tests {
     use crate::transaction_store::in_memory::*;
     use crate::types::*;
 
-    // GIANLUCA: Move to types.rs
-    #[test]
-    fn state_test() {
-        let v: TransactionStateVersion = 0;
-        assert_eq!(v.prev(), None);
-        assert_eq!(v.next(), Some(1));
-
-        let v: TransactionStateVersion = u64::MAX;
-        assert_eq!(v.prev(), Some(u64::MAX - 1));
-        assert_eq!(v.next(), None);
-    }
-
     #[test]
     fn alloc_test() {
-        let mut ts = InMemoryTransactionStore::new();
+        let mut ts = InMemoryTransactionDatabase::new();
 
         assert_eq!(ts.next_state, 0);
         let ret = ts.alloc_state();
@@ -172,7 +158,7 @@ mod tests {
             id: TId { bytes: v3 },
         };
 
-        let mut ts = InMemoryTransactionStore::new();
+        let mut ts = InMemoryTransactionDatabase::new();
         let rc = ts.store(t1.clone());
         assert_eq!(rc, Ok(0));
         let rc = ts.store(t2.clone());
@@ -203,7 +189,7 @@ mod tests {
             id: TId { bytes: v3 },
         };
 
-        let mut ts = InMemoryTransactionStore::new();
+        let mut ts = InMemoryTransactionDatabase::new();
         let rc = ts.store(t1.clone());
         assert_eq!(rc, Ok(0));
         let rc = ts.store(t2.clone());
@@ -212,12 +198,12 @@ mod tests {
         assert_eq!(rc, Ok(2));
 
         let rc = ts.get(0);
-        assert_eq!(rc, Ok(t1.clone()));
+        assert_eq!(rc, Some(t1.clone()));
         let rc = ts.get(1);
-        assert_eq!(rc, Ok(t2.clone()));
+        assert_eq!(rc, Some(t2.clone()));
         let rc = ts.get(2);
-        assert_eq!(rc, Ok(t3.clone()));
+        assert_eq!(rc, Some(t3.clone()));
         let rc = ts.get(3);
-        assert_eq!(rc, Err(TransactionStoreGetError::NotFound(3)));
+        assert_eq!(rc, None);
     }
 }

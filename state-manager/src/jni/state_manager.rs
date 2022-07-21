@@ -68,7 +68,6 @@ use crate::mempool::simple::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{StateManager, StateManagerConfig};
 use crate::transaction_store::in_memory::InMemoryTransactionStore;
-use crate::transaction_store::TransactionStore;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -116,7 +115,7 @@ impl JNIStateManager {
         };
 
         let mempool = SimpleMempool::new(mempool_config);
-        let transaction_store = InMemoryTransactionStore::new();
+        let transaction_store = InMemoryTransactionStore::new(5);
 
         // Build the state manager.
         let state_manager = Arc::new(StateManager::new(mempool, transaction_store));

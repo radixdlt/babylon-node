@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::jni::dtos::*;
 use crate::types::*;
 
 #[derive(Debug, PartialEq)]
@@ -70,22 +71,60 @@ pub enum TransactionStoreStoreError {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum TransactionStoreGetError {
-    NotFound(TransactionStateVersion),
+pub enum NextProvedTransactionsError {
+    InvalidStateVersion(TransactionStateVersion),
+    NextProofNotFound(TransactionStateVersion),
+    TransactionNotFound(TransactionStateVersion),
 }
 
-#[derive(Debug, PartialEq)]
-pub enum TransactionStoreLastVersionError {
-    Empty,
+pub enum EpochProofError {
+    EpochProofNotFound(EpochId),
+}
+
+pub enum LastProofError {
+    ProofNotFound,
+}
+
+pub enum StoreProofError {
+    NoTransactionBeforeProof,
+    ProofStateVersionMismatch(TransactionStateVersion, TransactionStateVersion),
 }
 
 pub trait TransactionStore {
-    fn store(
+    /// Begin a transaction in the underlying TransactionStore database.
+    fn store_begin(&mut self);
+
+    /// Store Transaction passed as argument in the TransactionStore database.
+    fn store_transaction(
         &mut self,
         transaction: Transaction,
     ) -> Result<TransactionStateVersion, TransactionStoreStoreError>;
-    fn get(&self, state: TransactionStateVersion) -> Result<Transaction, TransactionStoreGetError>;
-    fn last_version(&self) -> Result<TransactionStateVersion, TransactionStoreLastVersionError>;
+
+    /// Store Proof in the TransactionStore database.
+    fn store_proof(&mut self, proof: LedgerProof) -> Result<(), StoreProofError>;
+
+    /// Store the latest Vertex Store State in the TransactionStore database.
+    fn store_vertex_state(&mut self, vertex_state: Vec<u8>);
+
+    /// Commit all writes in the underlying TransactionStore database.
+    fn store_commit(&mut self);
+
+    /// Get proof for epoch 'epoch'
+    fn epoch_proof(&self, epoch: EpochId) -> Result<LedgerProof, EpochProofError>;
+
+    /// Get last proof stored.
+    fn last_proof(&self) -> Result<LedgerProof, LastProofError>;
+
+    /// Get next proof and associated transactions after the transaction at state version 'state_version'.
+    fn next_proved_transactions(
+        &self,
+        state_version: TransactionStateVersion,
+    ) -> Result<ProvedTransactions, NextProvedTransactionsError>;
+}
+
+#[derive(Debug, TypeId, Encode, Decode, Clone)]
+pub struct TransactionStoreConfig {
+    pub minimum_block_size: u32,
 }
 
 pub mod in_memory;

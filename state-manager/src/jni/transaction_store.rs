@@ -74,7 +74,7 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_insertTran
     interop_state: JObject,
     j_payload: jbyteArray,
 ) {
-//    let ret = do_insert_transaction(&env, j_state, j_payload).to_java();
+    //    let ret = do_insert_transaction(&env, j_state, j_payload).to_java();
 }
 
 /*
@@ -90,7 +90,7 @@ fn do_insert_transaction(
     let result = state_manager.transaction_store.lock().unwrap().store_transaction(transaction);
     let mapped_result = result.map_err_sm(|err| err.into())?;
 }
-*/
+ */
 /*
 
 #[no_mangle]

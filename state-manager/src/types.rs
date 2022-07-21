@@ -83,7 +83,7 @@ pub struct Transaction {
 
 impl JavaStructure for Transaction {}
 
-#[derive(Debug, Clone, Decode, Encode, TypeId)]
+#[derive(Debug, Clone, Decode, Encode, TypeId, PartialEq)]
 pub struct LedgerProof {
     pub state_version: TransactionStateVersion,
     pub new_epoch: Option<u64>,
@@ -129,5 +129,36 @@ impl TransactionStateVersionTrait for TransactionStateVersion {
 
     fn next(&self) -> Option<TransactionStateVersion> {
         self.checked_add(1)
+    }
+}
+
+pub struct ProvedTransactions {
+    proof: LedgerProof,
+    transactions: Vec<Transaction>,
+}
+
+impl ProvedTransactions {
+    pub fn new(proof: LedgerProof, transactions: Vec<Transaction>) -> ProvedTransactions {
+        ProvedTransactions {
+            proof,
+            transactions,
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use crate::types::*;
+
+    #[test]
+    fn state_test() {
+        let v: TransactionStateVersion = 0;
+        assert_eq!(v.prev(), None);
+        assert_eq!(v.next(), Some(1));
+
+        let v: TransactionStateVersion = u64::MAX;
+        assert_eq!(v.prev(), Some(u64::MAX - 1));
+        assert_eq!(v.next(), None);
     }
 }
