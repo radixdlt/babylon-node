@@ -65,12 +65,28 @@
 package com.radixdlt.rev1;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.statecomputer.StatelessComputer;
+import com.radixdlt.statecomputer.StatelessTransactionVerifier;
 
 public class MockedStateComputerModule extends AbstractModule {
   @Override
-  public void configure() {
-    bind(StateComputer.class).to(MockedStateComputer.class).in(Scopes.SINGLETON);
+  protected void configure() {
+    bind(StateComputerLedger.StateComputer.class).to(StatelessComputer.class);
+    bind(StatelessTransactionVerifier.class).toInstance(txn -> true);
+  }
+
+  @Provides
+  @Singleton
+  private StatelessComputer statelessComputer(
+          StatelessTransactionVerifier verifier, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher, Hasher hasher) {
+    return new StatelessComputer(verifier, ledgerUpdateDispatcher, hasher);
   }
 }

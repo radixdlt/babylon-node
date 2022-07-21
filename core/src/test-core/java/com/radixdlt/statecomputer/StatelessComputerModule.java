@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.*;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
@@ -78,7 +79,7 @@ public class StatelessComputerModule extends AbstractModule {
   @Provides
   @Singleton
   private StatelessComputer statelessComputer(
-      StatelessTransactionVerifier verifier, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
-    return new StatelessComputer(verifier, ledgerUpdateDispatcher);
+          StatelessTransactionVerifier verifier, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher, Hasher hasher) {
+    return new StatelessComputer(verifier, ledgerUpdateDispatcher, hasher);
   }
 }
