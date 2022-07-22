@@ -65,7 +65,6 @@
 package com.radixdlt.integration.steady_state.simulation.full_function_forks;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Key;
@@ -130,7 +129,7 @@ public final class CoordinatedForkSanityTest {
   @Test
   public void sanity_tests_should_pass() {
     final var simulationTest = bftTestBuilder.build();
-    final var runningTest = simulationTest.run(Duration.ofSeconds(30));
+    final var runningTest = simulationTest.run(Duration.ofSeconds(45));
     final var network = runningTest.getNetwork();
     final var nodes = ImmutableList.copyOf(network.getNodes());
     final var halfOfTheNodes = nodes.subList(0, nodes.size() / 2);
@@ -219,7 +218,7 @@ public final class CoordinatedForkSanityTest {
     testErrorsDisposable.dispose();
 
     // make sure that at least 20 epochs have passed (fork min epoch)
-    assertTrue(latestEpochChange.get().getNextEpoch() > 20);
+    assertThat(latestEpochChange.get().getNextEpoch()).isGreaterThan(20);
 
     // verify that at the end of test all nodes are at fork idx 3
     if (!verifyCurrentFork(network, forks.get(3))) {
