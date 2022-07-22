@@ -90,6 +90,10 @@ public final class TimestampChecker implements TestInvariant {
     final var now = System.currentTimeMillis();
     final var proof = update.getTail();
     final var timestamp = proof.timestamp();
+    // Initial rounds of Consensus can have a timestamp of 0
+    if (timestamp == 0) {
+      return Maybe.empty();
+    }
     final var diff = now - timestamp;
     if (0 <= diff && diff < acceptableTimeRange.toMillis()) {
       return Maybe.empty();

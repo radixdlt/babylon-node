@@ -116,7 +116,7 @@ public class FProposalsPerRoundDropperTest {
             .pacemakerTimeout(5000)
             .addTestModules(
                 ConsensusMonitors.safety(),
-                ConsensusMonitors.vertexRequestRate(50), // Conservative check
+                ConsensusMonitors.vertexRequestRate(75), // Conservative check
                 ConsensusMonitors.noTimeouts());
   }
 

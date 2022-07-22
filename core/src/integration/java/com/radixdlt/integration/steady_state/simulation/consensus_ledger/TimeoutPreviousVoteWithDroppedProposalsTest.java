@@ -96,6 +96,7 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
           .numNodes(3)
+          .pacemakerTimeout(1000L)
           .networkModules(
               NetworkOrdering.inOrder(),
               NetworkLatencies.fixed(),
@@ -108,10 +109,14 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
 
   @Test
   public void sanity_test() {
+    // Arrangement
     SimulationTest test = bftTestBuilder.build();
+
+    // Execution
     final var runningTest = test.run(Duration.ofSeconds(10));
     final var results = runningTest.awaitCompletion();
 
+    // Post-Execution Assertions
     final var statistics =
         runningTest.getNetwork().getSystemCounters().values().stream()
             .map(
