@@ -62,64 +62,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.rev2;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
+import static org.mockito.Mockito.mock;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Key;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.mempool.Mempool;
+import com.google.inject.Injector;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.modules.CryptoModule;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transaction.TransactionStore;
+import com.radixdlt.statecomputer.StatelessComputerModule;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
-public final class StateManagerTest {
+public class REv2Test {
+  private static final byte[] VALID_REV2_TRANSACTION_BYTES =
+      Hex.decode(
+          "10020000001002000000100200000010070000000701110f000000496e7465726e616c546573746e6574000000000a00000000000000000a64000000000000000a0500000000000000912100000002f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9010010010000003011010000000d000000436c656172417574685a6f6e65000000003023020000000200000091210000000279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179892400000006cf35fe75e8cf4cc7db93e2d0b5e5f17efe0768cc2eb3db9d1e9d4bb8c6df6d95446cc78c550c68a91217f75266dc8ec14b1c2324637ea49cc99119d782f3a4b02000000912100000002c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee592400000000350a245e2df1143d5a97433cc640601e725fc342d3ba9ebd74052757526695432ff1c321c001ab11f01943a9da312333b78f4bcbadfac89754ec111c2cf5ea1924000000024bd869215c36f4291ea48ac7e1378758bef43a56088446d441f99509cec06f9516089eb7040d1bb9455be59455084c232ecc85becb496cb59b7c156a1206917");
+
+  private final Injector injector =
+      Guice.createInjector(
+          new CryptoModule(),
+          new StatelessComputerModule(),
+          new REv2StateManagerModule(),
+          MempoolConfig.asModule(100, 1000L),
+          new AbstractModule() {
+            @Override
+            protected void configure() {
+              bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
+              bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+            }
+          });
 
   @Test
-  public void state_manager_concurrent_access_is_possible() throws Exception {
+  public void test_valid_rev2_transaction_passes() {
     // Arrange
-    final var testModules =
-        List.of(new REv2StateManagerModule(), MempoolConfig.asModule(100, 1000L));
-    final var injectorNode1 = Guice.createInjector(testModules);
-    final var injectorNode2 = Guice.createInjector(testModules);
+    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
+    var validTransaction = Transaction.create(VALID_REV2_TRANSACTION_BYTES);
 
     // Act
-    var rand = new Random();
-    var cdl = new CountDownLatch(1000);
-    for (int i = 0; i < 1000; i++) {
-      new Thread(
-              () -> {
-                final var tx = HashUtils.random256();
-                final var stateVer = rand.nextLong();
-                final var transactionStore = injectorNode1.getInstance(TransactionStore.class);
-                transactionStore.insertTransaction(stateVer, tx.asBytes());
-                assertArrayEquals(
-                    tx.asBytes(), transactionStore.getTransactionAtStateVersion(stateVer));
-                cdl.countDown();
-              })
-          .start();
-    }
-    final var payload = new byte[] {1, 2, 3, 4, 5};
-    final var transaction = Transaction.create(payload);
-    final var mempoolNode1 = injectorNode1.getInstance(new Key<Mempool<Transaction>>() {});
-    mempoolNode1.addTransaction(transaction);
-    try {
-      mempoolNode1.addTransaction(transaction);
-    } catch (Exception ignored) {
-    }
+    var result =
+        stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
 
     // Assert
-    assertThat(cdl.await(5, TimeUnit.SECONDS)).isTrue();
-    // Cleanup
-    injectorNode1.getInstance(StateManager.class).shutdown();
-    injectorNode2.getInstance(StateManager.class).shutdown();
+    assertThat(result.getSuccessfullyExecutedTransactions()).hasSize(1);
+    assertThat(result.getFailedTransactions()).isEmpty();
+  }
+
+  @Test
+  public void test_invalid_rev2_transaction_fails() {
+    // Arrange
+    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
+    var validTransaction = Transaction.create(new byte[1]);
+
+    // Act
+    var result =
+        stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
+
+    // Assert
+    assertThat(result.getSuccessfullyExecutedTransactions()).isEmpty();
+    assertThat(result.getFailedTransactions()).hasSize(1);
   }
 }
