@@ -74,6 +74,7 @@ import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
+import com.radixdlt.modules.StateComputerConfig.*;
 import com.radixdlt.rev1.MockedMempoolStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
@@ -123,26 +124,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     LOCAL_ONLY,
     RELAYED,
   }
-
-  public sealed interface StateComputerConfig {
-    static StateComputerConfig mocked(MempoolType mempoolType) {
-      return new MockedStateComputerConfig(mempoolType);
-    }
-
-    static StateComputerConfig rev1() {
-      return new REv1StateComputerConfig();
-    }
-
-    static StateComputerConfig rev2() {
-      return new REv2StateComputerConfig();
-    }
-  }
-
-  public record MockedStateComputerConfig(MempoolType mempoolType) implements StateComputerConfig {}
-
-  public static final class REv1StateComputerConfig implements StateComputerConfig {}
-
-  public static final class REv2StateComputerConfig implements StateComputerConfig {}
 
   private final boolean epochs;
   private final LedgerConfig ledgerConfig;
@@ -209,7 +190,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
         switch (stateComputerLedgerConfig.config) {
           case MockedStateComputerConfig c -> {
-            switch (c.mempoolType) {
+            switch (c.mempoolType()) {
               case NONE -> {
                 bind(ProposalGenerator.class).to(RandomTransactionGenerator.class);
                 if (!this.epochs) {
@@ -236,9 +217,17 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             install(new RadixEngineModule());
             install(new ReV1DispatcherModule());
           }
-          case REv2StateComputerConfig ignored -> {
-            bindConstant().annotatedWith(MempoolMaxSize.class).to(0);
-            bind(ProposalGenerator.class).to(HalfCorrectREv2TransactionGenerator.class);
+          case REv2StateComputerConfig rev2Config -> {
+            switch (rev2Config.proposerConfig()) {
+              case REV2ProposerConfig.HalfCorrectProposer ignored -> {
+                bind(ProposalGenerator.class).to(HalfCorrectREv2TransactionGenerator.class);
+                bindConstant().annotatedWith(MempoolMaxSize.class).to(0);
+              }
+              case REV2ProposerConfig.Mempool ignored -> {
+                install(new MempoolReceiverModule());
+                bind(ProposalGenerator.class).to(HalfCorrectREv2TransactionGenerator.class);
+              }
+            }
             install(new REv2StateManagerModule());
             install(new StatelessComputerModule());
           }

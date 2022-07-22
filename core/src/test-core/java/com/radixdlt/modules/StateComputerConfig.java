@@ -62,65 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
+package com.radixdlt.modules;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+public sealed interface StateComputerConfig {
+  static StateComputerConfig mocked(FunctionalRadixNodeModule.MempoolType mempoolType) {
+    return new MockedStateComputerConfig(mempoolType);
+  }
 
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.statecomputer.StatelessComputer;
-import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.assertj.core.data.Offset;
-import org.junit.Test;
+  static StateComputerConfig rev1() {
+    return new REv1StateComputerConfig();
+  }
 
-public class SanityTest {
-  private final SimulationTest.Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numNodes(4)
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .pacemakerTimeout(1000)
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  LedgerConfig.stateComputer(
-                      StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer()), false)))
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered());
+  static StateComputerConfig rev2(REV2ProposerConfig proposerConfig) {
+    return new REv2StateComputerConfig(proposerConfig);
+  }
 
-  @Test
-  public void test_half_valid_half_invalid_rev2_transactions() {
-    // Arrange
-    var simulationTest = bftTestBuilder.build();
+  record MockedStateComputerConfig(FunctionalRadixNodeModule.MempoolType mempoolType)
+      implements StateComputerConfig {}
 
-    // Run
-    var runningTest = simulationTest.run();
-    final var checkResults = runningTest.awaitCompletion();
+  record REv1StateComputerConfig() implements StateComputerConfig {}
 
-    // Post-run assertions
-    assertThat(checkResults)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    for (var node : runningTest.getNetwork().getNodes()) {
-      var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
+  record REv2StateComputerConfig(REV2ProposerConfig proposerConfig)
+      implements StateComputerConfig {}
 
-      // The current proposal generator for REv2 produces half correct transactions and half
-      // invalid.
-      // This part verifies that this actually happened.
-      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
-      assertThat(statelessComputer.getInvalidCount())
-          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(4));
+  sealed interface REV2ProposerConfig {
+    static REV2ProposerConfig halfCorrectProposer() {
+      return new HalfCorrectProposer();
     }
+
+    record HalfCorrectProposer() implements REV2ProposerConfig {}
+
+    record Mempool() implements REV2ProposerConfig {}
   }
 }
