@@ -97,7 +97,9 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
   private int invalidCount = 0;
 
   public StatelessComputer(
-      StatelessTransactionVerifier verifier, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher, Hasher hasher) {
+      StatelessTransactionVerifier verifier,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      Hasher hasher) {
     this.verifier = verifier;
     this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
     this.hasher = hasher;
@@ -146,33 +148,33 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
   @Override
   public void commit(
       CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-      var output =
-            txnsAndProof
-                    .getProof()
-                    .getNextValidatorSet()
-                    .map(
-                            validatorSet -> {
-                              LedgerProof header = txnsAndProof.getProof();
-                              VertexWithHash genesisVertex =
-                                      Vertex.createGenesis(header.getHeader()).withId(hasher);
-                              LedgerHeader nextLedgerHeader =
-                                      LedgerHeader.create(
-                                              header.getNextEpoch(),
-                                              Round.genesis(),
-                                              header.getAccumulatorState(),
-                                              header.timestamp());
-                              QuorumCertificate genesisQC =
-                                      QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
-                              final var initialState =
-                                      VertexStoreState.create(
-                                              HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
-                              var proposerElection = new WeightedRotatingLeaders(validatorSet);
-                              var bftConfiguration =
-                                      new BFTConfiguration(proposerElection, validatorSet, initialState);
-                              return new EpochChange(header, bftConfiguration);
-                            })
-                    .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
-                    .orElse(ImmutableClassToInstanceMap.of());
+    var output =
+        txnsAndProof
+            .getProof()
+            .getNextValidatorSet()
+            .map(
+                validatorSet -> {
+                  LedgerProof header = txnsAndProof.getProof();
+                  VertexWithHash genesisVertex =
+                      Vertex.createGenesis(header.getHeader()).withId(hasher);
+                  LedgerHeader nextLedgerHeader =
+                      LedgerHeader.create(
+                          header.getNextEpoch(),
+                          Round.genesis(),
+                          header.getAccumulatorState(),
+                          header.timestamp());
+                  QuorumCertificate genesisQC =
+                      QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                  final var initialState =
+                      VertexStoreState.create(
+                          HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+                  var proposerElection = new WeightedRotatingLeaders(validatorSet);
+                  var bftConfiguration =
+                      new BFTConfiguration(proposerElection, validatorSet, initialState);
+                  return new EpochChange(header, bftConfiguration);
+                })
+            .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
+            .orElse(ImmutableClassToInstanceMap.of());
 
     var ledgerUpdate = new LedgerUpdate(txnsAndProof, output);
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);

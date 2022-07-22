@@ -77,6 +77,7 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.rev2.REv2ExecutedTransaction;
+import com.radixdlt.statecomputer.StatelessTransactionVerifier;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
 import java.util.Map;
@@ -98,7 +99,9 @@ public class REv2StateComputerModule extends AbstractModule {
   @Provides
   @Singleton
   private StateComputerLedger.StateComputer stateComputer(
-      Mempool<Transaction> mempool, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
+      Mempool<Transaction> mempool,
+      StatelessTransactionVerifier verifier,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
     return new StateComputerLedger.StateComputer() {
       @Override
       public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
@@ -131,6 +134,7 @@ public class REv2StateComputerModule extends AbstractModule {
           long timestamp) {
         return new StateComputerLedger.StateComputerResult(
             vertex.getTransactions().stream()
+                .filter(verifier::verify)
                 .map(REv2ExecutedTransaction::new)
                 .collect(Collectors.toList()),
             Map.of());

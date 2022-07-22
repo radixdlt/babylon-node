@@ -79,7 +79,9 @@ public class StatelessComputerModule extends AbstractModule {
   @Provides
   @Singleton
   private StatelessComputer statelessComputer(
-          StatelessTransactionVerifier verifier, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher, Hasher hasher) {
+      StatelessTransactionVerifier verifier,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      Hasher hasher) {
     return new StatelessComputer(verifier, ledgerUpdateDispatcher, hasher);
   }
 }
