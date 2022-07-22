@@ -73,6 +73,7 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
@@ -91,7 +92,7 @@ public class RandomVoteAndRoundTimeoutDropperTest {
               NetworkOrdering.inOrder(),
               NetworkLatencies.fixed(),
               NetworkDroppers.randomVotesAndRoundTimeoutsDropped(0.4))
-          .ledger()
+          .functionalNodeModule(FunctionalRadixNodeModule.justLedger())
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
