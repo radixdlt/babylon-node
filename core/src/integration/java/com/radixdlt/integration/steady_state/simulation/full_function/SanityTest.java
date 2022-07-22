@@ -112,7 +112,7 @@ public class SanityTest {
             .addNodeModule(MempoolConfig.asModule(1000, 10))
             .addTestModules(
                 ConsensusMonitors.safety(),
-                ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+                ConsensusMonitors.liveness(2, TimeUnit.SECONDS),
                 ConsensusMonitors.noTimeouts(),
                 ConsensusMonitors.directParents(),
                 LedgerMonitors.consensusToLedger(),
