@@ -68,6 +68,10 @@ import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 
 /** A node index, together with its weight. */
+/**
+ * This class has been temporarily moved from the tests to main as code has been moved from tests to
+ * MockedConsensusRecoveryModule and this module lives in main for now.
+ */
 public final class NodeIndexAndWeight {
   private final int index;
   private final UInt256 weight;
@@ -97,8 +101,7 @@ public final class NodeIndexAndWeight {
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof NodeIndexAndWeight) {
-      NodeIndexAndWeight that = (NodeIndexAndWeight) o;
+    if (o instanceof NodeIndexAndWeight that) {
       return this.index == that.index && this.weight.equals(that.weight);
     }
     return false;

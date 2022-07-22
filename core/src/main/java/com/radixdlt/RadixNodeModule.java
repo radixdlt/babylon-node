@@ -193,7 +193,7 @@ public final class RadixNodeModule extends AbstractModule {
         PrivateKeys.numeric(6)
             .limit(numValidators)
             .map(ECKeyPair::getPublicKey)
-            .map(k -> BFTNode.create(k))
+            .map(BFTNode::create)
             .toList();
     install(new MockedConsensusRecoveryModule.Builder().withNodes(initialVset).build());
     install(new MockedLedgerRecoveryModule());

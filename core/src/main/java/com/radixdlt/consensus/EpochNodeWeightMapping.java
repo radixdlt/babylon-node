@@ -71,6 +71,10 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /** Mapping from epoch to validator set. */
+/**
+ * This class has been temporarily moved from the tests to main as code has been moved from tests to
+ * MockedConsensusRecoveryModule and this module lives in main for now.
+ */
 @FunctionalInterface
 public interface EpochNodeWeightMapping {
   Stream<NodeIndexAndWeight> nodesAndWeightFor(long epoch);

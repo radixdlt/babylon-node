@@ -89,7 +89,7 @@ public class MockedConsensusRecoveryModule extends AbstractModule {
 
   private final Builder builder;
 
-  public MockedConsensusRecoveryModule(Builder builder) {
+  private MockedConsensusRecoveryModule(Builder builder) {
     this.builder = builder;
   }
 
