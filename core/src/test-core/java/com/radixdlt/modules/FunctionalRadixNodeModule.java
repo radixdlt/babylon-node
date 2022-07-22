@@ -71,6 +71,7 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.ledger.MockedLedgerModule;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
@@ -225,7 +226,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               }
               case REV2ProposerConfig.Mempool ignored -> {
                 install(new MempoolReceiverModule());
-                bind(ProposalGenerator.class).to(HalfCorrectREv2TransactionGenerator.class);
+                install(MempoolConfig.asModule(100, 10000));
               }
             }
             install(new REv2StateManagerModule());

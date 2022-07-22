@@ -62,65 +62,14 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
+package com.radixdlt.harness.simulation.application;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import com.radixdlt.rev2.REv2ExampleTransactions;
+import com.radixdlt.transactions.Transaction;
 
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.statecomputer.StatelessComputer;
-import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.assertj.core.data.Offset;
-import org.junit.Test;
-
-public class SanityTest {
-  private final SimulationTest.Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numNodes(4)
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .pacemakerTimeout(1000)
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  LedgerConfig.stateComputer(
-                      StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer()), false)))
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered());
-
-  @Test
-  public void test_half_valid_half_invalid_rev2_transactions() {
-    // Arrange
-    var simulationTest = bftTestBuilder.build();
-
-    // Run
-    var runningTest = simulationTest.run();
-    final var checkResults = runningTest.awaitCompletion();
-
-    // Post-run assertions
-    assertThat(checkResults)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    for (var node : runningTest.getNetwork().getNodes()) {
-      var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
-
-      // The current proposal generator for REv2 produces half correct transactions and half
-      // invalid.
-      // This part verifies that this actually happened.
-      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
-      assertThat(statelessComputer.getInvalidCount())
-          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(4));
-    }
+public class REV2TransactionGenerator implements TransactionGenerator {
+  @Override
+  public Transaction nextTransaction() {
+    return Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
   }
 }

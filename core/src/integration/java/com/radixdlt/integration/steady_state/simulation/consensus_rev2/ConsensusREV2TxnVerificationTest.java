@@ -62,74 +62,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_ledger_localmempool;
+package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.harness.simulation.Monitor;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.SimulationTest.Builder;
-import com.radixdlt.harness.simulation.application.IncrementalBytes;
-import com.radixdlt.harness.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.Mempools;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.statecomputer.StatelessComputer;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
+import org.assertj.core.data.Offset;
 import org.junit.Test;
 
-/** Simple mempool sanity test which runs the mempool submit and commit invariant. */
-public class MempoolSanityTest {
-  private final Builder bftTestBuilder =
+public class ConsensusREV2TxnVerificationTest {
+  private final SimulationTest.Builder bftTestBuilder =
       SimulationTest.builder()
           .numNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .ledgerAndMempool()
-          .pacemakerTimeout(3000)
-          .addMempoolSubmissionsSteadyState(IncrementalBytes.class);
-
-  /** TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else */
-  @Test
-  public void when_submitting_items_to_null_mempool__then_test_should_fail() {
-    SimulationTest simulationTest =
-        bftTestBuilder
-            .addTestModules(ApplicationMonitors.mempoolCommitted())
-            .addOverrideModuleToAllInitialNodes(
-                new AbstractModule() {
-                  @Override
-                  protected void configure() {
-                    bind(new TypeLiteral<Mempool<Transaction>>() {}).toInstance(Mempools.empty());
-                  }
-                })
-            .build();
-
-    final var checkResults = simulationTest.run().awaitCompletion();
-    assertThat(checkResults)
-        .hasEntrySatisfying(Monitor.MEMPOOL_COMMITTED, error -> assertThat(error).isPresent());
-  }
+          .pacemakerTimeout(1000)
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  LedgerConfig.stateComputer(
+                      StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer()), false)))
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered());
 
   @Test
-  public void when_submitting_items_to_mempool__then_they_should_get_executed() {
-    SimulationTest simulationTest =
-        bftTestBuilder
-            .addTestModules(
-                ConsensusMonitors.safety(),
-                ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-                ConsensusMonitors.noTimeouts(),
-                ConsensusMonitors.directParents(),
-                LedgerMonitors.consensusToLedger(),
-                LedgerMonitors.ordered(),
-                ApplicationMonitors.mempoolCommitted())
-            .build();
+  public void test_half_valid_half_invalid_rev2_transactions() {
+    // Arrange
+    var simulationTest = bftTestBuilder.build();
 
-    final var checkResults = simulationTest.run().awaitCompletion();
+    // Run
+    var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
+
+    // Post-run assertions
     assertThat(checkResults)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    for (var node : runningTest.getNetwork().getNodes()) {
+      var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
+
+      // The current proposal generator for REv2 produces half correct transactions and half
+      // invalid.
+      // This part verifies that this actually happened.
+      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
+      assertThat(statelessComputer.getInvalidCount())
+          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(4));
+    }
   }
 }

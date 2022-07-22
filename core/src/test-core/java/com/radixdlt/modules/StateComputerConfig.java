@@ -90,6 +90,10 @@ public sealed interface StateComputerConfig {
       return new HalfCorrectProposer();
     }
 
+    static REV2ProposerConfig mempool() {
+      return new Mempool();
+    }
+
     record HalfCorrectProposer() implements REV2ProposerConfig {}
 
     record Mempool() implements REV2ProposerConfig {}
