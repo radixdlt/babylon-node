@@ -115,10 +115,10 @@ public final class MockedStateComputer implements StateComputer {
   @Override
   public StateComputerLedger.StateComputerResult prepare(
       List<StateComputerLedger.ExecutedTransaction> previous,
-      VertexWithHash vertex,
-      long timestamp) {
+      List<Transaction> proposedTransactions,
+      RoundDetails roundDetails) {
     return new StateComputerLedger.StateComputerResult(
-        vertex.getTransactions().stream().map(MockExecuted::new).collect(Collectors.toList()),
+        proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
         Map.of());
   }
 

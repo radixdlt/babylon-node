@@ -253,7 +253,7 @@ public class ConsensusModuleTest {
             Round.of(1),
             vertex.getHash(),
             LedgerHeader.create(1, Round.of(1), new AccumulatorState(1, HashUtils.zero256()), 1));
-    final var voteData = new VoteData(next, parent.getProposed(), parent.getParent());
+    final var voteData = new VoteData(next, parent.getProposedHeader(), parent.getParentHeader());
     final var timestamp = 1;
     final var voteDataHash = Vote.getHashOfData(hasher, voteData, timestamp);
     final var qcSignature = proposerKeyPair.sign(voteDataHash);

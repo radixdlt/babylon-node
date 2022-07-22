@@ -195,7 +195,7 @@ public class VertexStoreTest {
     sut.insertVertex(vertices.get(0));
 
     // Act
-    QuorumCertificate qc = vertices.get(1).getQC();
+    QuorumCertificate qc = vertices.get(1).getQCToParent();
     sut.insertQc(qc);
 
     // Assert
@@ -212,7 +212,7 @@ public class VertexStoreTest {
     sut.insertVertex(vertices.get(2));
 
     // Act
-    QuorumCertificate qc = vertices.get(3).getQC();
+    QuorumCertificate qc = vertices.get(3).getQCToParent();
     boolean success = sut.insertQc(qc);
 
     // Assert
@@ -235,7 +235,7 @@ public class VertexStoreTest {
     this.nextVertex.get();
 
     // Act
-    QuorumCertificate qc = this.nextVertex.get().getQC();
+    QuorumCertificate qc = this.nextVertex.get().getQCToParent();
     boolean success = sut.insertQc(qc);
 
     // Assert
@@ -248,7 +248,7 @@ public class VertexStoreTest {
     final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
     VertexStoreState vertexStoreState =
         VertexStoreState.create(
-            HighQC.from(vertices.get(3).getQC()),
+            HighQC.from(vertices.get(3).getQCToParent()),
             vertices.get(0),
             vertices.stream().skip(1).collect(ImmutableList.toImmutableList()),
             sut.highQC().highestTC(),

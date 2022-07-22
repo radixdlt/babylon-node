@@ -79,12 +79,12 @@ public class NextRoundConstructorV3 implements ActionConstructor<NextRound> {
   @Override
   public void construct(NextRound action, TxBuilder txBuilder) throws TxBuilderException {
     var prevRound = txBuilder.downSystem(RoundData.class);
-    if (action.round() <= prevRound.round()) {
-      throw new InvalidRoundException(prevRound.round(), action.round());
+    if (action.roundNumber() <= prevRound.round()) {
+      throw new InvalidRoundException(prevRound.round(), action.roundNumber());
     }
 
     var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(KeyComparator.instance());
-    for (long round = prevRound.round() + 1; round < action.round(); round++) {
+    for (long round = prevRound.round() + 1; round < action.roundNumber(); round++) {
       var missingLeader = action.leaderMapping().apply(round);
       if (!validatorsToUpdate.containsKey(missingLeader)) {
         var validatorData = txBuilder.down(ValidatorBFTData.class, missingLeader);
@@ -94,13 +94,13 @@ public class NextRoundConstructorV3 implements ActionConstructor<NextRound> {
       validatorsToUpdate.put(missingLeader, nextData);
     }
 
-    var curLeader = action.leaderMapping().apply(action.round());
+    var curLeader = action.leaderMapping().apply(action.roundNumber());
     if (!validatorsToUpdate.containsKey(curLeader)) {
       var validatorData = txBuilder.down(ValidatorBFTData.class, curLeader);
       validatorsToUpdate.put(curLeader, validatorData);
     }
     var nextData =
-        action.isTimeout()
+        action.roundIsTimeout()
             ? validatorsToUpdate.get(curLeader).incrementProposalsMissed()
             : validatorsToUpdate.get(curLeader).incrementCompletedProposals();
     validatorsToUpdate.put(curLeader, nextData);
@@ -109,7 +109,7 @@ public class NextRoundConstructorV3 implements ActionConstructor<NextRound> {
       txBuilder.up(e.getValue());
     }
 
-    txBuilder.up(new RoundData(action.round(), action.timestamp()));
+    txBuilder.up(new RoundData(action.roundNumber(), action.roundTimestamp()));
     txBuilder.end();
   }
 }

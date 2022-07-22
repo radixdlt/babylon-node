@@ -200,15 +200,14 @@ subprojects {
             endWithNewline()
         }
         java {
-            // don't need to set target, it is inferred from java
+            // Don't need to set target, it is inferred from java. But we add some exclusions.
             targetExclude('**/openapitools/**/*.java', '**/generated/**/*.java')
-            // apply a specific flavor of google-java-format
+
+            // Apply a specific flavor of google-java-format
+            // See https://github.com/diffplug/spotless/tree/main/plugin-gradle#google-java-format
             googleJavaFormat('1.13.0').reflowLongStrings()
 
-
-            // make sure every file has the following copyright header.
-            // optionally, Spotless can set copyright years by digging
-            // through git history (see "license" section below)
+            // Make sure every file has the following copyright header
             licenseHeaderFile("${project.rootDir}/licence-header.txt")
         }
     }

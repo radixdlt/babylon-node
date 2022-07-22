@@ -114,6 +114,7 @@ import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.LedgerModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -159,7 +160,9 @@ public class EpochManagerTest {
 
         @Override
         public StateComputerResult prepare(
-            List<ExecutedTransaction> previous, VertexWithHash vertex, long timestamp) {
+            List<ExecutedTransaction> previous,
+            List<Transaction> proposedTransactions,
+            RoundDetails roundDetails) {
           return new StateComputerResult(List.of(), Map.of());
         }
 
@@ -311,7 +314,7 @@ public class EpochManagerTest {
             header.getEpoch() + 1,
             Round.genesis(),
             header.getAccumulatorState(),
-            header.timestamp());
+            header.roundTimestamp());
     var genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
     var proposerElection = new WeightedRotatingLeaders(nextValidatorSet);
     var bftConfiguration =

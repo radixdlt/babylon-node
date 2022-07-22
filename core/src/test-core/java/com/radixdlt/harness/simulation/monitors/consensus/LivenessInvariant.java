@@ -107,7 +107,7 @@ public class LivenessInvariant implements TestInvariant {
                   BFTCommittedUpdate.class);
             })
         .serialize()
-        .map(QuorumCertificate::getProposed)
+        .map(QuorumCertificate::getProposedHeader)
         .map(header -> EpochRound.of(header.getLedgerHeader().getEpoch(), header.getRound()))
         .scan(EpochRound.of(0, Round.genesis()), Ordering.natural()::max)
         .distinctUntilChanged()

@@ -92,7 +92,7 @@ public class LedgerHeaderTest {
   @Test
   public void testGetters() {
     assertThat(ledgerHeader.getAccumulatorState()).isEqualTo(accumulatorState);
-    assertThat(ledgerHeader.timestamp()).isEqualTo(timestamp);
+    assertThat(ledgerHeader.roundTimestamp()).isEqualTo(timestamp);
     assertThat(ledgerHeader.isEndOfEpoch()).isFalse();
   }
 

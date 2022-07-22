@@ -127,15 +127,26 @@ public final class QuorumCertificate {
     return this.voteData.getProposed().getLedgerHeader().getEpoch();
   }
 
-  public BFTHeader getProposed() {
+  /** @return The weighted timestamp of the signatures, in milliseconds since Unix Epoch. */
+  public long getWeightedTimestampOfSignatures() {
+    // If this is a genesis QC then its signatures are mocked, so just use the previous timestamp
+    // NB - this does have the edge case of never increasing timestamps if configuration is
+    // one round per epoch but this is likely good enough
+
+    return getProposedHeader().getRound().isGenesis()
+        ? getProposedHeader().getLedgerHeader().roundTimestamp()
+        : getTimestampedSignatures().weightedTimestampMillis();
+  }
+
+  public BFTHeader getProposedHeader() {
     return voteData.getProposed();
   }
 
-  public BFTHeader getParent() {
+  public BFTHeader getParentHeader() {
     return voteData.getParent();
   }
 
-  public Optional<BFTHeader> getCommitted() {
+  public Optional<BFTHeader> getCommittedHeader() {
     return voteData.getCommitted();
   }
 

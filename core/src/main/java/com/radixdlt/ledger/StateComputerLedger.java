@@ -83,6 +83,7 @@ import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.TimeSupplier;
@@ -139,7 +140,9 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     List<Transaction> getTransactionsForProposal(List<ExecutedTransaction> executedTransactions);
 
     StateComputerResult prepare(
-        List<ExecutedTransaction> previous, VertexWithHash vertex, long timestamp);
+        List<ExecutedTransaction> previous,
+        List<Transaction> proposedTransactions,
+        RoundDetails roundDetails);
 
     void commit(
         CommittedTransactionsWithProof committedTransactionsWithProof,
@@ -210,15 +213,6 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         previous.stream()
             .flatMap(ExecutedVertex::successfulTransactions)
             .collect(ImmutableList.toImmutableList());
-    final long quorumTimestamp;
-    // if vertex has genesis parent then QC is mocked so just use previous timestamp
-    // this does have the edge case of never increasing timestamps if configuration is
-    // one round per epoch but good enough for now
-    if (vertex.getParentHeader().getRound().isGenesis()) {
-      quorumTimestamp = vertex.getParentHeader().getLedgerHeader().timestamp();
-    } else {
-      quorumTimestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
-    }
 
     synchronized (lock) {
       if (this.currentLedgerHeader.getStateVersion() > parentAccumulatorState.getStateVersion()) {
@@ -230,7 +224,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
         return Optional.of(
             new ExecutedVertex(
                 vertex,
-                parentHeader.updateRoundAndTimestamp(vertex.getRound(), quorumTimestamp),
+                parentHeader.updateRoundAndTimestamp(
+                    vertex.getRound(), vertex.getWeightedTimestampOfQCToParent()),
                 ImmutableList.of(),
                 ImmutableMap.of(),
                 timeSupplier.currentTime()));
@@ -252,7 +247,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       final var executedTransactions = executedTransactionsOptional.get();
 
       final StateComputerResult result =
-          stateComputer.prepare(executedTransactions, vertex, quorumTimestamp);
+          stateComputer.prepare(
+              executedTransactions, vertex.getTransactions(), RoundDetails.fromVertex(vertex));
 
       AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
       for (ExecutedTransaction transaction : result.getSuccessfullyExecutedTransactions()) {
@@ -266,7 +262,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               parentHeader.getEpoch(),
               vertex.getRound(),
               accumulatorState,
-              quorumTimestamp,
+              vertex.getWeightedTimestampOfQCToParent(),
               result.getNextValidatorSet().orElse(null));
 
       return Optional.of(
