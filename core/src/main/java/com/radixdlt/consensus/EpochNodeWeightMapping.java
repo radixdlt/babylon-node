@@ -62,50 +62,68 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.deterministic.configuration;
+package com.radixdlt.consensus;
 
 import com.radixdlt.utils.UInt256;
-import java.util.Objects;
+import java.util.Arrays;
+import java.util.function.IntFunction;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
-/** A node index, together with its weight. */
-public final class NodeIndexAndWeight {
-  private final int index;
-  private final UInt256 weight;
+/** Mapping from epoch to validator set. */
+/**
+ * This class has been temporarily moved from the tests to main as code has been moved from tests to
+ * MockedConsensusRecoveryModule and this module lives in main for now.
+ */
+@FunctionalInterface
+public interface EpochNodeWeightMapping {
+  Stream<NodeIndexAndWeight> nodesAndWeightFor(long epoch);
 
-  private NodeIndexAndWeight(int index, UInt256 weight) {
-    this.index = index;
-    this.weight = Objects.requireNonNull(weight);
+  /**
+   * Returns an {@code EpochValidatorSetMapping} of the specified size and all with the specified
+   * weight.
+   */
+  static EpochNodeWeightMapping constant(int numNodes, long weight) {
+    return repeatingSequence(numNodes, UInt256.from(weight));
   }
 
-  /** Returns a {@code NodeIndexAndWeight} from specified values. */
-  public static NodeIndexAndWeight from(int index, UInt256 weight) {
-    return new NodeIndexAndWeight(index, weight);
+  /**
+   * Returns an {@code EpochValidatorSetMapping} of the specified size and all with the specified
+   * weight.
+   */
+  static EpochNodeWeightMapping constant(int numNodes, UInt256 weight) {
+    return repeatingSequence(numNodes, weight);
   }
 
-  public int index() {
-    return this.index;
+  /**
+   * Returns an {@code EpochValidatorSetMapping} of the specified size and with the specified
+   * weights. If the length of {@code weights} is less than {@code numNodes}, then the weights are
+   * cycled starting from the zeroth weight.
+   */
+  static EpochNodeWeightMapping repeatingSequence(int numNodes, long... weights) {
+    UInt256[] weights256 = Arrays.stream(weights).mapToObj(UInt256::from).toArray(UInt256[]::new);
+    return repeatingSequence(numNodes, weights256);
   }
 
-  public UInt256 weight() {
-    return this.weight;
+  /**
+   * Returns an {@code EpochValidatorSetMapping} of the specified size and with the specified
+   * weights. If the length of {@code weights} is less than {@code numNodes}, then the weights are
+   * cycled starting from the zeroth weight.
+   */
+  static EpochNodeWeightMapping repeatingSequence(int numNodes, UInt256... weights) {
+    int length = weights.length;
+    return epoch ->
+        IntStream.range(0, numNodes)
+            .mapToObj(index -> NodeIndexAndWeight.from(index, weights[index % length]));
   }
 
-  @Override
-  public int hashCode() {
-    return weight.hashCode() * 31 + this.index;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (o instanceof NodeIndexAndWeight) {
-      NodeIndexAndWeight that = (NodeIndexAndWeight) o;
-      return this.index == that.index && this.weight.equals(that.weight);
-    }
-    return false;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s[%s:%s]", getClass().getSimpleName(), this.index, this.weight);
+  /**
+   * Returns an {@code EpochValidatorSetMapping} of the specified size and with each weight computed
+   * using the specified function.
+   */
+  static EpochNodeWeightMapping computed(int numNodes, IntFunction<UInt256> function) {
+    return epoch ->
+        IntStream.range(0, numNodes)
+            .mapToObj(index -> NodeIndexAndWeight.from(index, function.apply(index)));
   }
 }

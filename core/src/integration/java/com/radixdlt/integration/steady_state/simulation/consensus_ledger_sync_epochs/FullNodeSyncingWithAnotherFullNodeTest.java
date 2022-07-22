@@ -69,10 +69,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -86,7 +83,6 @@ import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SyncConfig;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import org.junit.Test;
 
 /**
@@ -131,14 +127,6 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
                       ImmutableList.of(nonValidatorSyncNodeKey));
                 })
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(10))
-            .addOverrideModuleToAllInitialNodes(
-                new AbstractModule() { // TODO: remove this hack
-                  @Provides
-                  public BFTValidatorSet genesisValidatorSet(
-                      Function<Long, BFTValidatorSet> mapper) {
-                    return mapper.apply(0L);
-                  }
-                })
             .pacemakerTimeout(3000)
             .ledgerAndEpochsAndSync(
                 Round.of(100),

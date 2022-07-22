@@ -78,7 +78,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.LinkedList;
-import java.util.function.LongFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -86,7 +86,7 @@ import org.junit.Test;
 
 public class MovingWindowValidatorsTest {
 
-  private static LongFunction<IntStream> windowedEpochToNodesMapper(
+  private static Function<Long, IntStream> windowedEpochToNodesMapper(
       int windowSize, int totalValidatorCount) {
     // Epoch starts at 1, and we want base 0, so subtract 1
     return epoch ->

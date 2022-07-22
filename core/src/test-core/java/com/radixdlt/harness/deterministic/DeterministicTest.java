@@ -72,6 +72,8 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
+import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -84,9 +86,8 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.configuration.EpochNodeWeightMapping;
-import com.radixdlt.harness.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.RadixNodeComponent;
@@ -99,18 +100,15 @@ import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochMaxRound;
 import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
-import com.radixdlt.rev2.modules.MockedRecoveryModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Function;
-import java.util.function.LongFunction;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -140,7 +138,8 @@ public final class DeterministicTest {
     private MessageSelector messageSelector = MessageSelector.firstSelector();
     private MessageMutator messageMutator = MessageMutator.nothing();
     private long pacemakerTimeout = 1000L;
-    private EpochNodeWeightMapping epochNodeWeightMapping = null;
+    private Function<Long, IntStream> epochToNodeIndexesMapping;
+    private EpochNodeWeightMapping epochNodeWeightMapping;
     private Module overrideModule = null;
     private ImmutableList.Builder<Module> modules = ImmutableList.builder();
 
@@ -171,9 +170,9 @@ public final class DeterministicTest {
       return this;
     }
 
-    public Builder epochNodeIndexesMapping(LongFunction<IntStream> epochToNodeIndexesMapping) {
+    public Builder epochNodeIndexesMapping(Function<Long, IntStream> epochToNodeIndexesMapping) {
       Objects.requireNonNull(epochToNodeIndexesMapping);
-      this.epochNodeWeightMapping = epoch -> equalWeight(epochToNodeIndexesMapping.apply(epoch));
+      this.epochToNodeIndexesMapping = epochToNodeIndexesMapping;
       return this;
     }
 
@@ -210,7 +209,7 @@ public final class DeterministicTest {
       Objects.requireNonNull(epochMaxRound);
       modules.add(new FunctionalRadixNodeModule(EnumSet.of(LEDGER, EPOCHS)));
       addEpochedConsensusProcessorModule(epochMaxRound);
-      return build();
+      return build(true);
     }
 
     public DeterministicTest buildWithEpochsAndSync(Round epochMaxRound, SyncConfig syncConfig) {
@@ -225,16 +224,15 @@ public final class DeterministicTest {
             }
           });
       addEpochedConsensusProcessorModule(epochMaxRound);
-      return build();
+      return build(true);
     }
 
     public DeterministicTest buildWithoutEpochs() {
       modules.add(new FunctionalRadixNodeModule(EnumSet.noneOf(RadixNodeComponent.class)));
-      addNonEpochedConsensusProcessorModule();
-      return build();
+      return build(false);
     }
 
-    private DeterministicTest build() {
+    private DeterministicTest build(boolean withEpoch) {
       modules.add(
           new AbstractModule() {
             @Override
@@ -252,7 +250,21 @@ public final class DeterministicTest {
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
       modules.add(new MockedPersistenceStoreModule());
-      modules.add(new MockedRecoveryModule());
+
+      MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder =
+          new MockedConsensusRecoveryModule.Builder(withEpoch);
+      mockedConsensusRecoveryModuleBuilder.withNodes(nodes);
+      if (this.epochNodeWeightMapping != null) {
+        mockedConsensusRecoveryModuleBuilder.withEpochNodeWeightMapping(
+            this.epochNodeWeightMapping);
+      } else if (this.epochToNodeIndexesMapping != null) {
+        mockedConsensusRecoveryModuleBuilder.withEpochNodeIndexesMapping(
+            this.epochToNodeIndexesMapping);
+      }
+      modules.add(mockedConsensusRecoveryModuleBuilder.build());
+
+      modules.add(new MockedLedgerRecoveryModule());
+
       modules.add(new TestP2PModule.Builder().withAllNodes(nodes).build());
       modules.add(new TestMessagingModule.Builder().build());
 
@@ -264,59 +276,17 @@ public final class DeterministicTest {
           overrideModule);
     }
 
-    private void addNonEpochedConsensusProcessorModule() {
-      final var validatorSet = validatorSetMapping().apply(1L);
-      modules.add(
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bind(BFTValidatorSet.class).toInstance(validatorSet);
-            }
-          });
-    }
-
     private void addEpochedConsensusProcessorModule(Round epochMaxRound) {
-      // TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet>
-      // shouldn't be needed
-      Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping()::apply;
       modules.add(
           new AbstractModule() {
             @Override
             public void configure() {
               bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
-              bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
               bind(new TypeLiteral<EventProcessor<EpochRound>>() {}).toInstance(epochRound -> {});
               bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() {})
                   .toInstance(t -> {});
             }
-
-            @Provides
-            public Function<Long, BFTValidatorSet> epochToNodeMapper() {
-              return epochToValidatorSetMapping;
-            }
           });
-    }
-
-    private LongFunction<BFTValidatorSet> validatorSetMapping() {
-      return epochNodeWeightMapping == null
-          ? epoch -> completeEqualWeightValidatorSet(this.nodes)
-          : epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
-    }
-
-    private static BFTValidatorSet completeEqualWeightValidatorSet(ImmutableList<BFTNode> nodes) {
-      return BFTValidatorSet.from(nodes.stream().map(node -> BFTValidator.from(node, UInt256.ONE)));
-    }
-
-    private static BFTValidatorSet partialMixedWeightValidatorSet(
-        long epoch, ImmutableList<BFTNode> nodes, EpochNodeWeightMapping mapper) {
-      return BFTValidatorSet.from(
-          mapper
-              .nodesAndWeightFor(epoch)
-              .map(niw -> BFTValidator.from(nodes.get(niw.index()), niw.weight())));
-    }
-
-    private static Stream<NodeIndexAndWeight> equalWeight(IntStream indexes) {
-      return indexes.mapToObj(i -> NodeIndexAndWeight.from(i, UInt256.ONE));
     }
   }
 
