@@ -62,64 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.deterministic.configuration;
+package com.radixdlt.ledger;
 
-import com.radixdlt.utils.UInt256;
-import java.util.Arrays;
-import java.util.function.IntFunction;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
 
-/** Mapping from epoch to validator set. */
-@FunctionalInterface
-public interface EpochNodeWeightMapping {
-  Stream<NodeIndexAndWeight> nodesAndWeightFor(long epoch);
+/** Starting configuration for simulation/deterministic steady state tests. */
+public class MockedLedgerRecoveryModule extends AbstractModule {
 
-  /**
-   * Returns an {@code EpochValidatorSetMapping} of the specified size and all with the specified
-   * weight.
-   */
-  static EpochNodeWeightMapping constant(int numNodes, long weight) {
-    return repeatingSequence(numNodes, UInt256.from(weight));
+  @Provides
+  @LastEpochProof
+  public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
+    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    return LedgerProof.genesis(accumulatorState, validatorSet, 0);
   }
 
-  /**
-   * Returns an {@code EpochValidatorSetMapping} of the specified size and all with the specified
-   * weight.
-   */
-  static EpochNodeWeightMapping constant(int numNodes, UInt256 weight) {
-    return repeatingSequence(numNodes, weight);
-  }
-
-  /**
-   * Returns an {@code EpochValidatorSetMapping} of the specified size and with the specified
-   * weights. If the length of {@code weights} is less than {@code numNodes}, then the weights are
-   * cycled starting from the zeroth weight.
-   */
-  static EpochNodeWeightMapping repeatingSequence(int numNodes, long... weights) {
-    UInt256[] weights256 = Arrays.stream(weights).mapToObj(UInt256::from).toArray(UInt256[]::new);
-    return repeatingSequence(numNodes, weights256);
-  }
-
-  /**
-   * Returns an {@code EpochValidatorSetMapping} of the specified size and with the specified
-   * weights. If the length of {@code weights} is less than {@code numNodes}, then the weights are
-   * cycled starting from the zeroth weight.
-   */
-  static EpochNodeWeightMapping repeatingSequence(int numNodes, UInt256... weights) {
-    int length = weights.length;
-    return epoch ->
-        IntStream.range(0, numNodes)
-            .mapToObj(index -> NodeIndexAndWeight.from(index, weights[index % length]));
-  }
-
-  /**
-   * Returns an {@code EpochValidatorSetMapping} of the specified size and with each weight computed
-   * using the specified function.
-   */
-  static EpochNodeWeightMapping computed(int numNodes, IntFunction<UInt256> function) {
-    return epoch ->
-        IntStream.range(0, numNodes)
-            .mapToObj(index -> NodeIndexAndWeight.from(index, function.apply(index)));
+  @Provides
+  @LastProof
+  private LedgerProof lastProof(BFTConfiguration bftConfiguration) {
+    return bftConfiguration.getVertexStoreState().getRootHeader();
   }
 }

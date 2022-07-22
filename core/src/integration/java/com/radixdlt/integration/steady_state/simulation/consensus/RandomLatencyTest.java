@@ -87,9 +87,11 @@ public class RandomLatencyTest {
   // the minimum latency per round is determined using the network latency
   // a round can consist of 6 * max_transmission_time (MTT)
   private final int trips = 6;
-  private final int synchronousTimeout = maxLatency * trips;
+  // Extra time to account for processing/CPU scheduler
+  private final int additional_time = 200;
+  private final int synchronousTimeout = maxLatency * trips + additional_time;
 
-  private Builder bftTestBuilder =
+  private final Builder bftTestBuilder =
       SimulationTest.builder()
           .networkModules(
               NetworkOrdering.inOrder(),

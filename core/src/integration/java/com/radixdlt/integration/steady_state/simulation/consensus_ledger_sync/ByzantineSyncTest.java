@@ -71,11 +71,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.harness.simulation.Monitor;
-import com.radixdlt.harness.simulation.NetworkDroppers;
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.*;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
@@ -122,18 +118,20 @@ public class ByzantineSyncTest {
                   }
                 })
             .pacemakerTimeout(3000)
-            .ledgerAndSync(SyncConfig.of(200L, 10, 2000L))
+            .ledgerAndSync(SyncConfig.of(200L, 10, 1000L));
+  }
+
+  @Test
+  public void given_a_sometimes_byzantine_sync_layer__sanity_tests_should_pass() {
+    SimulationTest simulationTest =
+        bftTestBuilder
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
                 ConsensusMonitors.directParents(),
                 LedgerMonitors.consensusToLedger(),
-                LedgerMonitors.ordered());
-  }
-
-  @Test
-  public void given_a_sometimes_byzantine_sync_layer__sanity_tests_should_pass() {
-    SimulationTest simulationTest = bftTestBuilder.build();
+                LedgerMonitors.ordered())
+            .build();
     final var runningTest = simulationTest.run();
     final var results = runningTest.awaitCompletion();
     assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
@@ -153,6 +151,7 @@ public class ByzantineSyncTest {
       given_a_sometimes_byzantine_sync_layer_with_incorrect_accumulator_verifier__sanity_tests_should_not_pass() {
     SimulationTest simulationTest =
         bftTestBuilder
+            .addTestModules(LedgerMonitors.ordered())
             .addOverrideModuleToAllInitialNodes(
                 new IncorrectAlwaysAcceptingAccumulatorVerifierModule())
             .build();

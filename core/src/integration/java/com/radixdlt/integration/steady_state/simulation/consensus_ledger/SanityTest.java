@@ -72,6 +72,7 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -85,7 +86,7 @@ public class SanityTest {
           .numNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .pacemakerTimeout(1000)
-          .ledger()
+          .functionalNodeModule(FunctionalRadixNodeModule.justLedger())
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

@@ -76,6 +76,7 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.time.Duration;
 import java.util.stream.LongStream;
@@ -96,11 +97,12 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
           .numNodes(3)
+          .pacemakerTimeout(1000L)
           .networkModules(
               NetworkOrdering.inOrder(),
               NetworkLatencies.fixed(),
               NetworkDroppers.dropAllProposals())
-          .ledger()
+          .functionalNodeModule(FunctionalRadixNodeModule.justLedger())
           .addTestModules(
               ConsensusMonitors.safety(),
               LedgerMonitors.consensusToLedger(),
@@ -108,10 +110,14 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
 
   @Test
   public void sanity_test() {
+    // Arrangement
     SimulationTest test = bftTestBuilder.build();
+
+    // Execution
     final var runningTest = test.run(Duration.ofSeconds(10));
     final var results = runningTest.awaitCompletion();
 
+    // Post-Execution Assertions
     final var statistics =
         runningTest.getNetwork().getSystemCounters().values().stream()
             .map(

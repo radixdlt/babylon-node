@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.consensus.epoch;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
@@ -84,13 +84,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.epoch.BFTSyncFactory;
-import com.radixdlt.consensus.epoch.BFTSyncRequestProcessorFactory;
-import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.epoch.EpochRoundUpdate;
-import com.radixdlt.consensus.epoch.Epoched;
-import com.radixdlt.consensus.epoch.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.Pacemaker;

@@ -94,6 +94,7 @@ public class RandomValidatorsTest {
       SimulationTest.builder()
           .numNodes(10)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .pacemakerTimeout(2000L)
           .addRadixEngineConfigModules(
               new MainnetForksModule(),
               new RadixEngineForksLatestOnlyModule(
