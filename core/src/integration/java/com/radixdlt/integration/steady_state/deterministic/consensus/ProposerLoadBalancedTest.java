@@ -67,13 +67,13 @@ package com.radixdlt.integration.steady_state.deterministic.consensus;
 import static org.assertj.core.api.Assertions.*;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.utils.UInt256;
 import java.util.List;

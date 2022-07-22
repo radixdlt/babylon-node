@@ -62,43 +62,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VertexStoreState;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LastProof;
+import com.radixdlt.utils.UInt256;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.LongFunction;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /** Starting configuration for simulation/deterministic steady state tests. */
-public class MockedRecoveryModule extends AbstractModule {
+public class MockedConsensusRecoveryModule extends AbstractModule {
 
-  private final HashCode preGenesisAccumulatorHash;
+  private final Builder builder;
 
-  public MockedRecoveryModule() {
-    this(HashUtils.zero256());
+  private MockedConsensusRecoveryModule(Builder builder) {
+    this.builder = builder;
   }
 
-  public MockedRecoveryModule(HashCode preGenesisAccumulatorHash) {
-    this.preGenesisAccumulatorHash = preGenesisAccumulatorHash;
+  @Override
+  protected void configure() {
+    super.configure();
+    if (this.builder.withEpoch) {
+      bind(new TypeLiteral<Function<Long, BFTValidatorSet>>() {})
+          .toInstance(this.builder.validatorSetMapping()::apply);
+    }
   }
 
   @Provides
@@ -113,9 +114,14 @@ public class MockedRecoveryModule extends AbstractModule {
   }
 
   @Provides
+  private BFTValidatorSet validatorSet() {
+    return this.builder.validatorSetMapping().apply(1);
+  }
+
+  @Provides
   private BFTConfiguration configuration(
       @LastEpochProof LedgerProof proof, BFTValidatorSet validatorSet, Hasher hasher) {
-    var accumulatorState = new AccumulatorState(0, preGenesisAccumulatorHash);
+    var accumulatorState = new AccumulatorState(0, this.builder.preGenesisAccumulatorHash);
     VertexWithHash genesisVertex =
         Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, validatorSet, 0))
             .withId(hasher);
@@ -130,16 +136,67 @@ public class MockedRecoveryModule extends AbstractModule {
         VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
   }
 
-  @Provides
-  @LastEpochProof
-  public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    return LedgerProof.genesis(accumulatorState, validatorSet, 0);
-  }
+  public static class Builder {
+    private HashCode preGenesisAccumulatorHash;
+    private List<BFTNode> nodes;
+    private boolean withEpoch;
+    private EpochNodeWeightMapping epochNodeWeightMapping;
 
-  @Provides
-  @LastProof
-  private LedgerProof lastProof(BFTConfiguration bftConfiguration) {
-    return bftConfiguration.getVertexStoreState().getRootHeader();
+    public Builder() {
+      this(false);
+    }
+
+    public Builder(boolean withEpoch) {
+      this.withEpoch = withEpoch;
+      this.preGenesisAccumulatorHash = HashUtils.zero256();
+    }
+
+    public Builder withPreGenesisAccumulatorHash(HashCode preGenesisAccumulatorHash) {
+      this.preGenesisAccumulatorHash = preGenesisAccumulatorHash;
+      return this;
+    }
+
+    public Builder withEpochNodeIndexesMapping(
+        Function<Long, IntStream> epochToNodeIndexesMapping) {
+      Objects.requireNonNull(epochToNodeIndexesMapping);
+      this.epochNodeWeightMapping = epoch -> equalWeight(epochToNodeIndexesMapping.apply(epoch));
+      return this;
+    }
+
+    private static Stream<NodeIndexAndWeight> equalWeight(IntStream indexes) {
+      return indexes.mapToObj(i -> NodeIndexAndWeight.from(i, UInt256.ONE));
+    }
+
+    public Builder withEpochNodeWeightMapping(EpochNodeWeightMapping epochNodeWeightMapping) {
+      this.epochNodeWeightMapping = Objects.requireNonNull(epochNodeWeightMapping);
+      return this;
+    }
+
+    LongFunction<BFTValidatorSet> validatorSetMapping() {
+      return epochNodeWeightMapping == null
+          ? epoch -> completeEqualWeightValidatorSet(this.nodes)
+          : epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
+    }
+
+    private static BFTValidatorSet completeEqualWeightValidatorSet(List<BFTNode> nodes) {
+      return BFTValidatorSet.from(nodes.stream().map(node -> BFTValidator.from(node, UInt256.ONE)));
+    }
+
+    private static BFTValidatorSet partialMixedWeightValidatorSet(
+        long epoch, List<BFTNode> nodes, EpochNodeWeightMapping mapper) {
+      return BFTValidatorSet.from(
+          mapper
+              .nodesAndWeightFor(epoch)
+              .map(niw -> BFTValidator.from(nodes.get(niw.index()), niw.weight())));
+    }
+
+    public Builder withNodes(List<BFTNode> nodes) {
+      this.nodes = nodes;
+      return this;
+    }
+
+    public MockedConsensusRecoveryModule build() {
+      return new MockedConsensusRecoveryModule(this);
+    }
   }
 }

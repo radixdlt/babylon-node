@@ -81,6 +81,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -97,11 +98,7 @@ import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.NoOpCommittedReader;
-import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
+import com.radixdlt.ledger.*;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -126,7 +123,6 @@ import com.radixdlt.rev1.modules.LedgerRecoveryModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
-import com.radixdlt.rev2.modules.MockedRecoveryModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SyncConfig;
@@ -195,14 +191,15 @@ public final class SimulationTest {
     private ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> addressBookNodes;
 
     private List<BFTNode> bftNodes;
+    private Function<Long, IntStream> epochToNodeIndexMapper;
 
     private Builder() {}
 
     public Builder addOverrideModuleToInitialNodes(
         Function<ImmutableList<ECKeyPair>, ImmutableList<ECPublicKey>> nodesSelector,
-        Module overrideModule) {
+        Function<List<BFTNode>, Module> overrideModule) {
       final var nodes = nodesSelector.apply(this.initialNodes);
-      nodes.forEach(node -> overrideModules.put(node, overrideModule));
+      nodes.forEach(node -> overrideModules.put(node, overrideModule.apply(this.bftNodes)));
       return this;
     }
 
@@ -210,7 +207,7 @@ public final class SimulationTest {
       addOverrideModuleToInitialNodes(
           nodes ->
               nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList()),
-          overrideModule);
+          nodes -> overrideModule);
       return this;
     }
 
@@ -276,17 +273,8 @@ public final class SimulationTest {
               // FIXME This list is injected in at least 2 places: NetworkDroppers and
               // NetworkLatencies. Maybe we could make this more explicit?
               bind(new TypeLiteral<ImmutableList<BFTNode>>() {}).toInstance(bftNodes);
-              bind(new TypeLiteral<ImmutableList<BFTValidator>>() {}).toInstance(validators);
             }
           };
-
-      this.modules.add(
-          new AbstractModule() {
-            @Override
-            public void configure() {
-              bind(new TypeLiteral<ImmutableList<BFTValidator>>() {}).toInstance(validators);
-            }
-          });
 
       return this;
     }
@@ -301,23 +289,12 @@ public final class SimulationTest {
           new FunctionalRadixNodeModule(
               true,
               LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false));
+      this.epochToNodeIndexMapper = epochToNodeIndexMapper;
       this.modules.add(
           new AbstractModule() {
             @Override
             protected void configure() {
               bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
-            }
-
-            @Provides
-            public Function<Long, BFTValidatorSet> epochToNodeMapper() {
-              return epochToNodeIndexMapper.andThen(
-                  indices ->
-                      BFTValidatorSet.from(
-                          indices
-                              .mapToObj(initialNodes::get)
-                              .map(node -> BFTNode.create(node.getPublicKey()))
-                              .map(node -> BFTValidator.from(node, UInt256.ONE))
-                              .toList()));
             }
           });
 
@@ -367,24 +344,13 @@ public final class SimulationTest {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               true, LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true));
+      this.epochToNodeIndexMapper = epochToNodeIndexMapper;
       modules.add(
           new AbstractModule() {
             @Override
             protected void configure() {
               bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
               bind(SyncConfig.class).toInstance(syncConfig);
-            }
-
-            @Provides
-            public Function<Long, BFTValidatorSet> epochToNodeMapper() {
-              return epochToNodeIndexMapper.andThen(
-                  indices ->
-                      BFTValidatorSet.from(
-                          indices
-                              .mapToObj(initialNodes::get)
-                              .map(node -> BFTNode.create(node.getPublicKey()))
-                              .map(node -> BFTValidator.from(node, UInt256.ONE))
-                              .toList()));
             }
           });
       return this;
@@ -566,17 +532,18 @@ public final class SimulationTest {
               }
             });
       } else {
-        modules.add(new MockedRecoveryModule());
-        var initialVset =
-            BFTValidatorSet.from(
-                initialNodes.stream()
-                    .map(e -> BFTValidator.from(BFTNode.create(e.getPublicKey()), UInt256.ONE)));
-        modules.add(
-            new AbstractModule() {
-              public void configure() {
-                bind(BFTValidatorSet.class).toInstance(initialVset);
-              }
-            });
+        modules.add(new MockedLedgerRecoveryModule());
+        var initialVset = initialNodes.stream().map(e -> BFTNode.create(e.getPublicKey())).toList();
+        MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder;
+        if (this.epochToNodeIndexMapper != null) {
+          mockedConsensusRecoveryModuleBuilder = new MockedConsensusRecoveryModule.Builder(true);
+          mockedConsensusRecoveryModuleBuilder.withEpochNodeIndexesMapping(
+              this.epochToNodeIndexMapper);
+        } else {
+          mockedConsensusRecoveryModuleBuilder = new MockedConsensusRecoveryModule.Builder();
+        }
+        mockedConsensusRecoveryModuleBuilder.withNodes(initialVset);
+        modules.add(mockedConsensusRecoveryModuleBuilder.build());
       }
 
       modules.add(new MockedPersistenceStoreModule());
