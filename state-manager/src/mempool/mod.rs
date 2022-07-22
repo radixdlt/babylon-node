@@ -65,12 +65,14 @@
 use crate::jni::dtos::*;
 pub use crate::result::ToStateManagerError;
 use crate::types::Transaction;
+use sbor::DecodeError;
 use std::string::ToString;
 
 #[derive(Debug, PartialEq)]
 pub enum MempoolError {
     Full { current_size: u64, max_size: u64 },
     Duplicate,
+    DecodeError(DecodeError), // TODO: Move outside of mempool error
 }
 
 impl ToString for MempoolError {
@@ -81,6 +83,7 @@ impl ToString for MempoolError {
                 max_size,
             } => format!("Mempool Full [{} - {}]", current_size, max_size),
             MempoolError::Duplicate => "Duplicate Entry".to_string(),
+            MempoolError::DecodeError(error) => format!("Decode Error ({:?})", error),
         }
     }
 }

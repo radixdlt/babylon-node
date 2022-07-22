@@ -72,6 +72,7 @@ import com.google.inject.Key;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.rev2.REv2ExampleTransactions;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.TransactionStore;
 import com.radixdlt.transactions.Transaction;
@@ -107,8 +108,7 @@ public final class StateManagerTest {
               })
           .start();
     }
-    final var payload = new byte[] {1, 2, 3, 4, 5};
-    final var transaction = Transaction.create(payload);
+    final var transaction = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
     final var mempoolNode1 = injectorNode1.getInstance(new Key<Mempool<Transaction>>() {});
     mempoolNode1.addTransaction(transaction);
     try {

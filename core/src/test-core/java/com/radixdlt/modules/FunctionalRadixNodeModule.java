@@ -189,6 +189,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       install(new NoEpochsConsensusModule());
     }
 
+    // Ledger
     switch (this.ledgerConfig) {
       case MockedLedgerConfig ignored -> install(new MockedLedgerModule());
       case StateComputerLedgerConfig stateComputerLedgerConfig -> {

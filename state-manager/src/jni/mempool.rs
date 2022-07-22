@@ -172,6 +172,12 @@ fn do_add(
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
     let transaction = Transaction::from_java(&request_payload)?;
 
+    // TODO: Move decoding of transaction to a separate "zone"
+    // TODO: Use notarized transaction in mempool
+    if let Err(decode_error) = state_manager.decode_transaction(&transaction) {
+        return Err(MempoolError::DecodeError(decode_error)).map_err_sm(|err| err.into());
+    }
+
     let result = state_manager
         .mempool
         .lock()
@@ -256,6 +262,7 @@ fn do_get_transactions_to_relay(
 enum MempoolErrorJava {
     Full { current_size: i64, max_size: i64 },
     Duplicate,
+    DecodeError(String),
 }
 
 impl JavaStructure for MempoolErrorJava {}
@@ -281,6 +288,9 @@ impl From<MempoolError> for StateManagerResult<MempoolErrorJava> {
                 })?,
             }),
             MempoolError::Duplicate => Ok(MempoolErrorJava::Duplicate),
+            MempoolError::DecodeError(decode_error) => {
+                Ok(MempoolErrorJava::DecodeError(format!("{:?}", decode_error)))
+            }
         }
     }
 }
