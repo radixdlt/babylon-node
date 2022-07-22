@@ -117,7 +117,7 @@ public class SanityTest {
       // This part verifies that this actually happened.
       assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
       assertThat(statelessComputer.getInvalidCount())
-          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(2));
+          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(4));
     }
   }
 }
