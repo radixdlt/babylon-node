@@ -79,6 +79,8 @@ import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collection;
 import org.junit.Test;
@@ -154,7 +156,7 @@ public class FProposalsPerRoundDropperTest {
   public void
       given_get_vertices_enabled__then_test_should_succeed_against_drop_proposal_adversary() {
     SimulationTest test = bftTestBuilder.build();
-    final var runningTest = test.run();
+    final var runningTest = test.run(Duration.of(45, ChronoUnit.SECONDS));
     final var checkResults = runningTest.awaitCompletion();
     assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
   }
