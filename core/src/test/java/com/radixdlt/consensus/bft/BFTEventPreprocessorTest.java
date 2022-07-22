@@ -107,7 +107,7 @@ public class BFTEventPreprocessorTest {
     when(proposalHighQc.highestCommittedQC()).thenReturn(proposalHighestCommittedQc);
     var header = mock(BFTHeader.class);
     when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
-    when(proposalHighestCommittedQc.getCommitted()).thenReturn(Optional.of(header));
+    when(proposalHighestCommittedQc.getCommittedHeader()).thenReturn(Optional.of(header));
     when(proposalLedgerProof.isEndOfEpoch()).thenReturn(false);
     when(bftSyncer.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
 

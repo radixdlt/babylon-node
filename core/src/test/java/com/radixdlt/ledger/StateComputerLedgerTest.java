@@ -66,7 +66,6 @@ package com.radixdlt.ledger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -188,7 +187,7 @@ public class StateComputerLedgerTest {
   public void should_not_change_accumulator_when_there_is_no_transaction() {
     // Arrange
     genesisIsEndOfEpoch(false);
-    when(stateComputer.prepare(any(), any(), anyLong()))
+    when(stateComputer.prepare(any(), any(), any()))
         .thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
     var proposedVertex =
         Vertex.create(genesisQC, Round.of(1), List.of(), BFTNode.random()).withId(hasher);
@@ -210,7 +209,7 @@ public class StateComputerLedgerTest {
   public void should_not_change_header_when_past_end_of_epoch_even_with_transaction() {
     // Arrange
     genesisIsEndOfEpoch(true);
-    when(stateComputer.prepare(any(), any(), anyLong()))
+    when(stateComputer.prepare(any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
                 ImmutableList.of(successfulNextTransaction), ImmutableMap.of()));
@@ -235,7 +234,7 @@ public class StateComputerLedgerTest {
   public void should_accumulate_when_next_transaction_valid() {
     // Arrange
     genesisIsEndOfEpoch(false);
-    when(stateComputer.prepare(any(), any(), anyLong()))
+    when(stateComputer.prepare(any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
                 ImmutableList.of(successfulNextTransaction), ImmutableMap.of()));
@@ -264,7 +263,7 @@ public class StateComputerLedgerTest {
   public void should_do_nothing_if_committing_lower_state_version() {
     // Arrange
     genesisIsEndOfEpoch(false);
-    when(stateComputer.prepare(any(), any(), anyLong()))
+    when(stateComputer.prepare(any(), any(), any()))
         .thenReturn(
             new StateComputerResult(
                 ImmutableList.of(successfulNextTransaction), ImmutableMap.of()));

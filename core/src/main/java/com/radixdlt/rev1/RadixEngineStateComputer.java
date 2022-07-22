@@ -128,7 +128,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   private final Object lock = new Object();
 
   private ProposerElection proposerElection;
-  private Round epochCeilingRound;
+  private long epochMaxRoundNumber;
   private OptionalInt maxSigsPerRound;
 
   @Inject
@@ -137,20 +137,20 @@ public final class RadixEngineStateComputer implements StateComputer {
       RadixEngine<LedgerAndBFTProof> radixEngine,
       Forks forks,
       RadixEngineMempool mempool, // TODO: Move this into radixEngine
-      @EpochMaxRound Round epochCeilingRound, // TODO: Move this into radixEngine
+      @EpochMaxRound Round epochMaxRound, // TODO: Move this into radixEngine
       @MaxSigsPerRound OptionalInt maxSigsPerRound, // TODO: Move this into radixEngine
       EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher,
       EventDispatcher<InvalidProposedTransaction> invalidProposedTransactionEventDispatcher,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
       Hasher hasher,
       SystemCounters systemCounters) {
-    if (epochCeilingRound.isGenesis()) {
+    if (epochMaxRound.isGenesis()) {
       throw new IllegalArgumentException("Epoch change round must not be genesis.");
     }
 
     this.radixEngine = Objects.requireNonNull(radixEngine);
     this.forks = Objects.requireNonNull(forks);
-    this.epochCeilingRound = epochCeilingRound;
+    this.epochMaxRoundNumber = epochMaxRound.number();
     this.maxSigsPerRound = maxSigsPerRound;
     this.mempool = Objects.requireNonNull(mempool);
     this.mempoolAddSuccessEventDispatcher =
@@ -242,37 +242,120 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
   }
 
-  private LongFunction<ECPublicKey> getValidatorMapping() {
-    return l -> proposerElection.getProposer(Round.of(l)).getKey();
+  @Override
+  public StateComputerResult prepare(
+      List<ExecutedTransaction> previousTransactions,
+      List<Transaction> proposedTransactions,
+      RoundDetails roundDetails) {
+    synchronized (lock) {
+      var transientBranch = this.radixEngine.transientBranch();
+
+      reexecutePreviousTransactions(transientBranch, previousTransactions);
+
+      var systemUpdateTransaction = this.executeSystemUpdate(transientBranch, roundDetails);
+      var successBuilder = ImmutableList.<ExecutedTransaction>builder();
+
+      successBuilder.add(systemUpdateTransaction);
+
+      var exceptionBuilder = ImmutableMap.<Transaction, Exception>builder();
+      var nextValidatorSet =
+          systemUpdateTransaction.processed().getEvents().stream()
+              .filter(REEvent.NextValidatorSetEvent.class::isInstance)
+              .map(REEvent.NextValidatorSetEvent.class::cast)
+              .findFirst()
+              .map(
+                  e ->
+                      BFTValidatorSet.from(
+                          e.nextValidators().stream()
+                              .map(
+                                  v ->
+                                      BFTValidator.from(
+                                          BFTNode.create(v.validatorKey()), v.amount()))));
+      // Don't execute and user transactions if changing epochs
+      if (nextValidatorSet.isEmpty()) {
+        this.executeUserTransactions(
+            roundDetails.roundProposer(),
+            transientBranch,
+            proposedTransactions,
+            successBuilder,
+            exceptionBuilder);
+      }
+      this.radixEngine.deleteBranches();
+
+      return new StateComputerResult(
+          successBuilder.build(), exceptionBuilder.build(), nextValidatorSet.orElse(null));
+    }
+  }
+
+  private void reexecutePreviousTransactions(
+      RadixEngineBranch<LedgerAndBFTProof> transientBranch,
+      List<ExecutedTransaction> previousTransactions) {
+    for (var transaction : previousTransactions) {
+      // TODO: fix this cast with generics. Currently the fix would become a bit too messy
+      final var radixEngineTransaction = (RadixEngineTransaction) transaction;
+      try {
+        transientBranch.execute(
+            List.of(radixEngineTransaction.transaction()),
+            radixEngineTransaction.permissionLevel());
+      } catch (RadixEngineException e) {
+        throw new IllegalStateException(
+            "Re-execution of already prepared transaction failed: "
+                + radixEngineTransaction.processed.getTxn().getId(),
+            e);
+      }
+    }
   }
 
   private RadixEngineTransaction executeSystemUpdate(
-      RadixEngineBranch<LedgerAndBFTProof> branch, VertexWithHash vertex, long timestamp) {
+      RadixEngineBranch<LedgerAndBFTProof> branch, RoundDetails roundDetails) {
     var systemActions = TxnConstructionRequest.create();
-    var round = vertex.getRound();
-    if (round.compareTo(epochCeilingRound) <= 0) {
+
+    /*
+     * Note that for committing an end-of-epoch, we currently do some tricks.
+     *
+     * - The consensus rounds actually extend beyond epochMaxRoundNumber
+     * - All rounds with roundNumber > epochMaxRoundNumber are filled with empty transactions.
+     * - Hopefully we change epoch at roundNumber = epochMaxRoundNumber + 1, but if rounds timeout,
+     *   the roundNumber may keep going beyond this.
+     * - We ignore round results (commit/timeouts) after the end of the epoch - so these won't factor into (eg)
+     *   emissions calculations
+     *
+     * Essentially, we just wait till we get a chain of consecutive QCs and can have something commit!
+     */
+    var roundIsDuringEpoch = roundDetails.roundNumber() <= epochMaxRoundNumber;
+    if (roundIsDuringEpoch) {
       systemActions.action(
-          new NextRound(round.number(), vertex.isTimeout(), timestamp, getValidatorMapping()));
+          new NextRound(
+              roundDetails.roundNumber(),
+              roundDetails.roundWasTimeout(),
+              roundDetails.roundTimestamp(),
+              getValidatorMapping()));
     } else {
-      if (vertex.getParentHeader().getRound().compareTo(epochCeilingRound) < 0) {
+      // We shouldn't record the outcome of rounds beyond the end of the epoch, BUT we do need to
+      // ensure we record any timeouts of the "standard" rounds at the end of the epoch.
+      var shouldRecordRoundTimeoutsUpToEndOfEpoch =
+          roundDetails.previousQcRoundNumber() < epochMaxRoundNumber;
+      if (shouldRecordRoundTimeoutsUpToEndOfEpoch) {
         systemActions.action(
-            new NextRound(epochCeilingRound.number(), true, timestamp, getValidatorMapping()));
+            new NextRound(
+                epochMaxRoundNumber, true, roundDetails.roundTimestamp(), getValidatorMapping()));
       }
-      systemActions.action(new NextEpoch(timestamp));
+      systemActions.action(new NextEpoch(roundDetails.roundTimestamp()));
     }
 
-    final Transaction systemUpdate;
-    final RadixEngineResult<LedgerAndBFTProof> result;
     try {
-      // TODO: combine construct/execute
-      systemUpdate = branch.construct(systemActions).buildWithoutSignature();
-      result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
+      final var systemUpdate = branch.construct(systemActions).buildWithoutSignature();
+      final var result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
+      return new RadixEngineTransaction(
+          systemUpdate, result.getProcessedTxn(), PermissionLevel.SUPER_USER);
     } catch (RadixEngineException | TxBuilderException e) {
       throw new IllegalStateException(
           String.format("Failed to execute system updates: %s", systemActions), e);
     }
-    return new RadixEngineTransaction(
-        systemUpdate, result.getProcessedTxn(), PermissionLevel.SUPER_USER);
+  }
+
+  private LongFunction<ECPublicKey> getValidatorMapping() {
+    return l -> proposerElection.getProposer(Round.of(l)).getKey();
   }
 
   private void executeUserTransactions(
@@ -306,59 +389,6 @@ public final class RadixEngineStateComputer implements StateComputer {
       var radixEngineTransaction =
           new RadixEngineTransaction(txn, result.getProcessedTxn(), PermissionLevel.USER);
       successBuilder.add(radixEngineTransaction);
-    }
-  }
-
-  @Override
-  public StateComputerResult prepare(
-      List<ExecutedTransaction> previousTransactions, VertexWithHash vertex, long timestamp) {
-    synchronized (lock) {
-      var next = vertex.getTransactions();
-      var transientBranch = this.radixEngine.transientBranch();
-
-      for (var transaction : previousTransactions) {
-        // TODO: fix this cast with generics. Currently the fix would become a bit too messy
-        final var radixEngineTransaction = (RadixEngineTransaction) transaction;
-        try {
-          transientBranch.execute(
-              List.of(radixEngineTransaction.transaction()),
-              radixEngineTransaction.permissionLevel());
-        } catch (RadixEngineException e) {
-          throw new IllegalStateException(
-              "Re-execution of already prepared transaction failed: "
-                  + radixEngineTransaction.processed.getTxn().getId(),
-              e);
-        }
-      }
-
-      var systemUpdateTransaction = this.executeSystemUpdate(transientBranch, vertex, timestamp);
-      var successBuilder = ImmutableList.<ExecutedTransaction>builder();
-
-      successBuilder.add(systemUpdateTransaction);
-
-      var exceptionBuilder = ImmutableMap.<Transaction, Exception>builder();
-      var nextValidatorSet =
-          systemUpdateTransaction.processed().getEvents().stream()
-              .filter(REEvent.NextValidatorSetEvent.class::isInstance)
-              .map(REEvent.NextValidatorSetEvent.class::cast)
-              .findFirst()
-              .map(
-                  e ->
-                      BFTValidatorSet.from(
-                          e.nextValidators().stream()
-                              .map(
-                                  v ->
-                                      BFTValidator.from(
-                                          BFTNode.create(v.validatorKey()), v.amount()))));
-      // Don't execute and user transactions if changing epochs
-      if (nextValidatorSet.isEmpty()) {
-        this.executeUserTransactions(
-            vertex.getProposer(), transientBranch, next, successBuilder, exceptionBuilder);
-      }
-      this.radixEngine.deleteBranches();
-
-      return new StateComputerResult(
-          successBuilder.build(), exceptionBuilder.build(), nextValidatorSet.orElse(null));
     }
   }
 
@@ -407,7 +437,7 @@ public final class RadixEngineStateComputer implements StateComputer {
         rules.actionConstructors(),
         rules.postProcessor(),
         rules.parser());
-    this.epochCeilingRound = rules.maxRounds();
+    this.epochMaxRoundNumber = rules.maxRounds().number();
     this.maxSigsPerRound = rules.maxSigsPerRound();
   }
 

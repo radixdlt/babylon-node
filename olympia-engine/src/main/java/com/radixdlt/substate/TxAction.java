@@ -153,8 +153,20 @@ public sealed interface TxAction {
 
   record NextEpoch(long timestamp) implements TxAction {}
 
+  /**
+   * Records a change of round. It also marks all unrecorded rounds up to this round as proposal
+   * timeouts.
+   *
+   * @param roundNumber - The current round number
+   * @param roundIsTimeout - If the current round is also a timeout
+   * @param roundTimestamp - The round timestamp of this round
+   * @param leaderMapping - A provider of a round -> leader mapping
+   */
   record NextRound(
-      long round, boolean isTimeout, long timestamp, LongFunction<ECPublicKey> leaderMapping)
+      long roundNumber,
+      boolean roundIsTimeout,
+      long roundTimestamp,
+      LongFunction<ECPublicKey> leaderMapping)
       implements TxAction {}
 
   record RegisterValidator(ECPublicKey validatorKey) implements TxAction {

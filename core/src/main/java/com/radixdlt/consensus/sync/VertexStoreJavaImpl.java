@@ -132,7 +132,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
             vertexStoreState.getHighQC().highestTC());
 
     for (var vertex : vertexStoreState.getVertices()) {
-      var previous = vertexStore.getPathFromRoot(vertex.getParentId());
+      var previous = vertexStore.getPathFromRoot(vertex.getParentVertexId());
       var executedVertexMaybe = ledger.prepare(previous, vertex);
       if (executedVertexMaybe.isEmpty()) {
         // Try pruning to see if that helps catching up to the ledger
@@ -199,11 +199,11 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   public InsertQcResult insertQc(QuorumCertificate qc) {
-    if (!this.containsVertex(qc.getProposed().getVertexId())) {
+    if (!this.containsVertex(qc.getProposedHeader().getVertexId())) {
       return new VertexStore.InsertQcResult.VertexIsMissing(); // false
     }
 
-    final var hasAnyChildren = !vertexChildren.get(qc.getProposed().getVertexId()).isEmpty();
+    final var hasAnyChildren = !vertexChildren.get(qc.getProposedHeader().getVertexId()).isEmpty();
     if (hasAnyChildren) {
       // TODO: Check to see if qc's match in case there's a fault
       return new VertexStore.InsertQcResult.Ignored();
@@ -221,7 +221,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
 
     final var committedUpdate =
-        Option.from(qc.getCommitted().flatMap(header -> this.commit(header, qc)));
+        Option.from(qc.getCommittedHeader().flatMap(header -> this.commit(header, qc)));
 
     return new VertexStore.InsertQcResult.Inserted(highQC(), getState(), committedUpdate);
   }
@@ -275,7 +275,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     final var bftInsertUpdates = new ArrayList<BFTInsertUpdate>();
     final var insertedQcs = new ArrayList<InsertQcResult.Inserted>();
     for (VertexWithHash v : vertexChain.getVertices()) {
-      final var insertQcResult = insertQc(v.getQC());
+      final var insertQcResult = insertQc(v.getQCToParent());
 
       switch (insertQcResult) {
         case InsertQcResult.VertexIsMissing missing -> {
@@ -304,15 +304,15 @@ public final class VertexStoreJavaImpl implements VertexStore {
       return Option.empty();
     }
 
-    if (!this.containsVertex(vertex.getParentId())) {
-      throw new MissingParentException(vertex.getParentId());
+    if (!this.containsVertex(vertex.getParentVertexId())) {
+      throw new MissingParentException(vertex.getParentVertexId());
     }
 
     return insertVertexInternal(vertex);
   }
 
   private Option<BFTInsertUpdate> insertVertexInternal(VertexWithHash vertex) {
-    LinkedList<ExecutedVertex> previous = getPathFromRoot(vertex.getParentId());
+    LinkedList<ExecutedVertex> previous = getPathFromRoot(vertex.getParentVertexId());
     final var executedVertexOption = Option.from(ledger.prepare(previous, vertex));
     return executedVertexOption.map(
         executedVertex -> {
@@ -413,7 +413,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
       }
 
       builder.add(vertexWithHash);
-      nextId = vertexWithHash.getParentId();
+      nextId = vertexWithHash.getParentVertexId();
     }
 
     return Option.present(builder.build());

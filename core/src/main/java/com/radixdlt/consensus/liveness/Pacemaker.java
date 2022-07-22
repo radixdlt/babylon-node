@@ -210,12 +210,12 @@ public final class Pacemaker {
     // If we're at the end of an epoch, we need to generate an empty proposal
     // - these transactions will get ignored at vertex preparation time anyway
     // TODO: Remove isEndOfEpoch knowledge from consensus
-    if (highestQC.getProposed().getLedgerHeader().isEndOfEpoch()) {
+    if (highestQC.getProposedHeader().getLedgerHeader().isEndOfEpoch()) {
       return List.of();
     }
 
     final var alreadyExecutedVertices =
-        vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
+        vertexStore.getPathFromRoot(highestQC.getProposedHeader().getVertexId());
     final var nextTransactions =
         proposalGenerator.getTransactionsForProposal(round, alreadyExecutedVertices);
     systemCounters.add(CounterType.BFT_PACEMAKER_PROPOSED_TRANSACTIONS, nextTransactions.size());

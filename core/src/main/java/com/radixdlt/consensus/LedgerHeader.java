@@ -110,9 +110,10 @@ public final class LedgerHeader {
   @DsonOutput(Output.ALL)
   private final AccumulatorState accumulatorState;
 
+  /** The timestamp when this round was proposed. */
   @JsonProperty("timestamp")
   @DsonOutput(Output.ALL)
-  private final long timestamp;
+  private final long roundTimestamp;
 
   @JsonProperty("next_validators")
   @DsonOutput(Output.ALL)
@@ -124,16 +125,16 @@ public final class LedgerHeader {
       @JsonProperty("epoch") long epoch,
       @JsonProperty("round") long roundNumber,
       @JsonProperty(value = "accumulator_state", required = true) AccumulatorState accumulatorState,
-      @JsonProperty("timestamp") long timestamp,
+      @JsonProperty("timestamp") long roundTimestamp,
       @JsonProperty("next_validators") ImmutableSet<BFTValidator> nextValidators) {
-    this(epoch, Round.of(roundNumber), accumulatorState, timestamp, nextValidators);
+    this(epoch, Round.of(roundNumber), accumulatorState, roundTimestamp, nextValidators);
   }
 
   private LedgerHeader(
       long epoch,
       Round round,
       AccumulatorState accumulatorState,
-      long timestamp,
+      long roundTimestamp,
       ImmutableSet<BFTValidator> nextValidators) {
     this.epoch = epoch;
 
@@ -144,35 +145,35 @@ public final class LedgerHeader {
     this.round = round;
     this.accumulatorState = requireNonNull(accumulatorState);
     this.nextValidators = nextValidators;
-    this.timestamp = timestamp;
+    this.roundTimestamp = roundTimestamp;
   }
 
   public static LedgerHeader genesis(
-      AccumulatorState accumulatorState, BFTValidatorSet nextValidators, long timestamp) {
+      AccumulatorState accumulatorState, BFTValidatorSet nextValidators, long roundTimestamp) {
     return new LedgerHeader(
         0,
         Round.genesis(),
         accumulatorState,
-        timestamp,
+        roundTimestamp,
         nextValidators == null ? null : nextValidators.getValidators());
   }
 
   public static LedgerHeader create(
-      long epoch, Round round, AccumulatorState accumulatorState, long timestamp) {
-    return new LedgerHeader(epoch, round, accumulatorState, timestamp, null);
+      long epoch, Round round, AccumulatorState accumulatorState, long roundTimestamp) {
+    return new LedgerHeader(epoch, round, accumulatorState, roundTimestamp, null);
   }
 
   public static LedgerHeader create(
       long epoch,
       Round round,
       AccumulatorState accumulatorState,
-      long timestamp,
+      long roundTimestamp,
       BFTValidatorSet validatorSet) {
     return new LedgerHeader(
         epoch,
         round,
         accumulatorState,
-        timestamp,
+        roundTimestamp,
         validatorSet == null ? null : validatorSet.getValidators());
   }
 
@@ -207,14 +208,14 @@ public final class LedgerHeader {
     return nextValidators != null;
   }
 
-  public long timestamp() {
-    return this.timestamp;
+  public long roundTimestamp() {
+    return this.roundTimestamp;
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        this.accumulatorState, this.timestamp, this.epoch, this.round, this.nextValidators);
+        this.accumulatorState, this.roundTimestamp, this.epoch, this.round, this.nextValidators);
   }
 
   @Override
@@ -224,7 +225,7 @@ public final class LedgerHeader {
     }
 
     return (o instanceof LedgerHeader other)
-        && this.timestamp == other.timestamp
+        && this.roundTimestamp == other.roundTimestamp
         && Objects.equals(this.accumulatorState, other.accumulatorState)
         && this.epoch == other.epoch
         && Objects.equals(this.round, other.round)
@@ -237,7 +238,7 @@ public final class LedgerHeader {
         "%s{accumulator=%s timestamp=%s epoch=%s round=%s nextValidators=%s}",
         getClass().getSimpleName(),
         this.accumulatorState,
-        this.timestamp,
+        this.roundTimestamp,
         this.epoch,
         this.round,
         this.nextValidators);

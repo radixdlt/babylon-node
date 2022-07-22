@@ -143,15 +143,16 @@ public final class VertexStoreState {
     seen.put(root.getHash(), root);
 
     for (var vertex : vertices) {
-      if (!seen.containsKey(vertex.getParentId())) {
+      if (!seen.containsKey(vertex.getParentVertexId())) {
         throw new IllegalStateException(
-            String.format("Missing qc=%s {root=%s vertices=%s}", vertex.getQC(), root, vertices));
+            String.format(
+                "Missing qc=%s {root=%s vertices=%s}", vertex.getQCToParent(), root, vertices));
       }
       seen.put(vertex.getHash(), vertex);
     }
 
     if (seen.keySet().stream()
-        .noneMatch(highQC.highestCommittedQC().getProposed().getVertexId()::equals)) {
+        .noneMatch(highQC.highestCommittedQC().getProposedHeader().getVertexId()::equals)) {
       throw new IllegalStateException(
           String.format(
               "highQC=%s highCommitted proposed missing {root=%s vertices=%s}",
@@ -159,18 +160,20 @@ public final class VertexStoreState {
     }
 
     if (seen.keySet().stream()
-        .noneMatch(highQC.highestCommittedQC().getParent().getVertexId()::equals)) {
+        .noneMatch(highQC.highestCommittedQC().getParentHeader().getVertexId()::equals)) {
       throw new IllegalStateException(
           String.format(
               "highQC=%s highCommitted parent does not have a corresponding vertex", highQC));
     }
 
-    if (seen.keySet().stream().noneMatch(highQC.highestQC().getParent().getVertexId()::equals)) {
+    if (seen.keySet().stream()
+        .noneMatch(highQC.highestQC().getParentHeader().getVertexId()::equals)) {
       throw new IllegalStateException(
           String.format("highQC=%s highQC parent does not have a corresponding vertex", highQC));
     }
 
-    if (seen.keySet().stream().noneMatch(highQC.highestQC().getProposed().getVertexId()::equals)) {
+    if (seen.keySet().stream()
+        .noneMatch(highQC.highestQC().getProposedHeader().getVertexId()::equals)) {
       throw new IllegalStateException(
           String.format("highQC=%s highQC proposed does not have a corresponding vertex", highQC));
     }
@@ -189,12 +192,12 @@ public final class VertexStoreState {
         var newRoot = idToVertex.get(header.getVertexId());
         var newVertices =
             ImmutableList.of(
-                idToVertex.get(highQC.highestQC().getParent().getVertexId()),
-                idToVertex.get(highQC.highestQC().getProposed().getVertexId()));
+                idToVertex.get(highQC.highestQC().getParentHeader().getVertexId()),
+                idToVertex.get(highQC.highestQC().getProposedHeader().getVertexId()));
         var idToVertexMap =
             ImmutableMap.of(
-                highQC.highestQC().getParent().getVertexId(), newVertices.get(0),
-                highQC.highestQC().getProposed().getVertexId(), newVertices.get(1));
+                highQC.highestQC().getParentHeader().getVertexId(), newVertices.get(0),
+                highQC.highestQC().getProposedHeader().getVertexId(), newVertices.get(1));
         var newHighQC = HighQC.from(highQC.highestQC());
         var proof = newHeaders.getSecond();
         return new VertexStoreState(

@@ -93,12 +93,12 @@ public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
               // Skip check on first round of epoch 1 as simulation nodes startup time is
               // unpredictable
               if (v.getRound().equals(Round.of(2))
-                  && v.getQC().getProposed().getRound().isGenesis()
-                  && v.getQC().getEpoch() == 1) {
+                  && v.getQCToParent().getProposedHeader().getRound().isGenesis()
+                  && v.getQCToParent().getEpoch() == 1) {
                 return Observable.empty();
               }
 
-              if (!v.getRound().equals(v.getQC().getProposed().getRound().next())) {
+              if (!v.getRound().equals(v.getQCToParent().getProposedHeader().getRound().next())) {
                 return Observable.just(
                     new TestInvariantError(String.format("Vertex %s has no direct parent", v)));
               } else {

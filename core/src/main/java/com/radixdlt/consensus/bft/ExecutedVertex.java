@@ -117,7 +117,7 @@ public final class ExecutedVertex {
   }
 
   public HashCode getParentId() {
-    return vertex.getParentId();
+    return vertex.getParentVertexId();
   }
 
   public Round getRound() {

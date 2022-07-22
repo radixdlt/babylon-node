@@ -300,12 +300,14 @@ public final class SafetyRules {
 
   private boolean isGenesisQc(QuorumCertificate qc) {
     final var committedAndParentAndProposedAreTheSame =
-        qc.getCommitted()
+        qc.getCommittedHeader()
             .map(
-                committed -> qc.getProposed().equals(committed) && qc.getParent().equals(committed))
+                committed ->
+                    qc.getProposedHeader().equals(committed)
+                        && qc.getParentHeader().equals(committed))
             .orElse(false);
 
-    final var isGenesisRound = qc.getProposed().getRound().isGenesis();
+    final var isGenesisRound = qc.getProposedHeader().getRound().isGenesis();
 
     return committedAndParentAndProposedAreTheSame && isGenesisRound;
   }

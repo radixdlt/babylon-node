@@ -77,6 +77,7 @@ import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.transactions.Transaction;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -125,13 +126,12 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
   @Override
   public StateComputerLedger.StateComputerResult prepare(
       List<StateComputerLedger.ExecutedTransaction> previous,
-      VertexWithHash vertex,
-      long timestamp) {
-
+      List<Transaction> proposedTransactions,
+      RoundDetails roundDetails) {
     var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
     var invalidTransactions = new HashMap<Transaction, Exception>();
 
-    for (var transaction : vertex.getTransactions()) {
+    for (var transaction : proposedTransactions) {
       var success = verifier.verify(transaction);
       if (success) {
         successfulTransactions.add(new StatelessComputerExecutedTransaction(transaction));

@@ -90,7 +90,7 @@ public class ProposalTest {
     this.commitQc = mock(QuorumCertificate.class);
     this.qc = mock(QuorumCertificate.class);
 
-    when(this.vertex.getQC()).thenReturn(qc);
+    when(this.vertex.getQCToParent()).thenReturn(qc);
 
     this.proposal = new Proposal(vertex, commitQc, signature, Optional.empty());
   }

@@ -166,7 +166,7 @@ public final class TimestampedECDSASignatures {
    *
    * @return The weighted timestamp, or {@code Long.MIN_VALUE} if a timestamp cannot be computed
    */
-  public long weightedTimestamp() {
+  public long weightedTimestampMillis() {
     var totalPower = UInt256.ZERO;
     var weightedTimes = new ArrayList<Pair<Long, UInt256>>();
 
