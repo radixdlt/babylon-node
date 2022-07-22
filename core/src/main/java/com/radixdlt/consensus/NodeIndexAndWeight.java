@@ -62,73 +62,53 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus;
+package com.radixdlt.consensus;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.radixdlt.utils.UInt256;
+import java.util.Objects;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.harness.simulation.Monitor;
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Test;
+/** A node index, together with its weight. */
+/**
+ * This class has been temporarily moved from the tests to main as code has been moved from tests to
+ * MockedConsensusRecoveryModule and this module lives in main for now.
+ */
+public final class NodeIndexAndWeight {
+  private final int index;
+  private final UInt256 weight;
 
-/** Tests that progress cannot be made if nodes do not form a quorum on the genesis hash. */
-public class OneByzantineGenesisTest {
-  SimulationTest.Builder bftTestBuilder =
-      SimulationTest.builder()
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .pacemakerTimeout(1000)
-          .addTestModules(ConsensusMonitors.safety());
-
-  @Test
-  public void given_2_correct_bfts_and_1_byzantine__then_should_never_make_progress() {
-    SimulationTest bftTest =
-        bftTestBuilder
-            .numNodes(3)
-            .addOverrideModuleToInitialNodes(
-                nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
-                nodes ->
-                    new MockedConsensusRecoveryModule.Builder()
-                        .withPreGenesisAccumulatorHash(HashUtils.random256())
-                        .withNodes(nodes)
-                        .build())
-            .addTestModules(ConsensusMonitors.noneCommitted())
-            .build();
-
-    final var checkResults = bftTest.run().awaitCompletion();
-    assertThat(checkResults)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+  private NodeIndexAndWeight(int index, UInt256 weight) {
+    this.index = index;
+    this.weight = Objects.requireNonNull(weight);
   }
 
-  @Test
-  public void given_3_correct_bfts__then_none_committed_invariant_should_fail() {
-    SimulationTest bftTest =
-        bftTestBuilder.numNodes(3).addTestModules(ConsensusMonitors.noneCommitted()).build();
-
-    final var checkResults = bftTest.run().awaitCompletion();
-    assertThat(checkResults)
-        .hasEntrySatisfying(
-            Monitor.CONSENSUS_NONE_COMMITTED, error -> assertThat(error).isPresent());
+  /** Returns a {@code NodeIndexAndWeight} from specified values. */
+  public static NodeIndexAndWeight from(int index, UInt256 weight) {
+    return new NodeIndexAndWeight(index, weight);
   }
 
-  @Test
-  public void given_3_correct_bfts_and_1_byzantine__then_should_make_progress() {
-    SimulationTest bftTest =
-        bftTestBuilder
-            .numNodes(4)
-            .addOverrideModuleToInitialNodes(
-                nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
-                nodes -> new MockedConsensusRecoveryModule.Builder().withNodes(nodes).build())
-            .addTestModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
-            .build();
+  public int index() {
+    return this.index;
+  }
 
-    final var checkResults = bftTest.run().awaitCompletion();
-    assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
+  public UInt256 weight() {
+    return this.weight;
+  }
+
+  @Override
+  public int hashCode() {
+    return weight.hashCode() * 31 + this.index;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof NodeIndexAndWeight that) {
+      return this.index == that.index && this.weight.equals(that.weight);
+    }
+    return false;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s[%s:%s]", getClass().getSimpleName(), this.index, this.weight);
   }
 }

@@ -66,6 +66,7 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.ledger.MockedLedgerModule;
