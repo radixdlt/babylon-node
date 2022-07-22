@@ -106,7 +106,7 @@ public class VertexTest {
 
   @Test
   public void testGetters() {
-    assertEquals(this.qc, this.testObject.getParentQC());
+    assertEquals(this.qc, this.testObject.getQCToParent());
     assertEquals(Round.of(1234567892L), this.testObject.getRound());
   }
 

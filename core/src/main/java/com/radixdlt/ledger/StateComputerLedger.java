@@ -225,7 +225,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
             new ExecutedVertex(
                 vertex,
                 parentHeader.updateRoundAndTimestamp(
-                    vertex.getRound(), vertex.getWeightedTimestampOfParentQC()),
+                    vertex.getRound(), vertex.getWeightedTimestampOfQCToParent()),
                 ImmutableList.of(),
                 ImmutableMap.of(),
                 timeSupplier.currentTime()));
@@ -262,7 +262,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
               parentHeader.getEpoch(),
               vertex.getRound(),
               accumulatorState,
-              vertex.getWeightedTimestampOfParentQC(),
+              vertex.getWeightedTimestampOfQCToParent(),
               result.getNextValidatorSet().orElse(null));
 
       return Optional.of(

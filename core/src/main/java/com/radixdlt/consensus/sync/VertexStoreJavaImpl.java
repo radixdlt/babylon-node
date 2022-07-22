@@ -275,7 +275,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     final var bftInsertUpdates = new ArrayList<BFTInsertUpdate>();
     final var insertedQcs = new ArrayList<InsertQcResult.Inserted>();
     for (VertexWithHash v : vertexChain.getVertices()) {
-      final var insertQcResult = insertQc(v.getParentQC());
+      final var insertQcResult = insertQc(v.getQCToParent());
 
       switch (insertQcResult) {
         case InsertQcResult.VertexIsMissing missing -> {

@@ -217,7 +217,7 @@ public class DifferentTimestampsCauseTimeoutTest {
   }
 
   private Vertex mutateVertex(Vertex v, int destination) {
-    var qc = v.getParentQC();
+    var qc = v.getQCToParent();
     var round = v.getRound();
     var txns = v.getTransactions();
     var proposer = v.getProposer();

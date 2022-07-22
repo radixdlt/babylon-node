@@ -82,6 +82,6 @@ public record RoundDetails(
         vertex.getParentHeader().getRound().number(),
         vertex.getProposer(),
         vertex.isTimeout(),
-        vertex.getWeightedTimestampOfParentQC());
+        vertex.getWeightedTimestampOfQCToParent());
   }
 }

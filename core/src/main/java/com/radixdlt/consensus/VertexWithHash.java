@@ -123,19 +123,19 @@ public final class VertexWithHash {
   }
 
   public BFTHeader getParentHeader() {
-    return vertex.getParentQC().getProposedHeader();
+    return vertex.getQCToParent().getProposedHeader();
   }
 
   public BFTHeader getGrandParentHeader() {
-    return vertex.getParentQC().getParentHeader();
+    return vertex.getQCToParent().getParentHeader();
   }
 
   public Round getRound() {
     return vertex.getRound();
   }
 
-  public QuorumCertificate getParentQC() {
-    return vertex.getParentQC();
+  public QuorumCertificate getQCToParent() {
+    return vertex.getQCToParent();
   }
 
   public HashCode getHash() {
@@ -143,19 +143,19 @@ public final class VertexWithHash {
   }
 
   public HashCode getParentVertexId() {
-    return vertex.getParentQC().getProposedHeader().getVertexId();
+    return vertex.getQCToParent().getProposedHeader().getVertexId();
   }
 
   /**
    * @return The weighted timestamp of the signatures in the parent QC, in milliseconds since Unix
    *     Epoch.
    */
-  public long getWeightedTimestampOfParentQC() {
+  public long getWeightedTimestampOfQCToParent() {
     // If the vertex has a genesis parent then its QC is mocked so just use previous timestamp
     // this does have the edge case of never increasing timestamps if configuration is
     // one round per epoch but good enough for now
 
-    return getParentQC().getWeightedTimestampOfSignatures();
+    return getQCToParent().getWeightedTimestampOfSignatures();
   }
 
   public long getEpoch() {
@@ -182,9 +182,9 @@ public final class VertexWithHash {
     return String.format(
         "%s{epoch=%s round=%s parentRound=%s hash=%s}",
         this.getClass().getSimpleName(),
-        this.vertex.getParentQC().getProposedHeader().getLedgerHeader().getEpoch(),
+        this.vertex.getQCToParent().getProposedHeader().getLedgerHeader().getEpoch(),
         this.vertex.getRound(),
-        this.vertex.getParentQC().getProposedHeader().getRound(),
+        this.vertex.getQCToParent().getProposedHeader().getRound(),
         this.vertexHash);
   }
 }

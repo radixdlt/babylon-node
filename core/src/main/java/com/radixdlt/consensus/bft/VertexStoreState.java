@@ -146,7 +146,7 @@ public final class VertexStoreState {
       if (!seen.containsKey(vertex.getParentVertexId())) {
         throw new IllegalStateException(
             String.format(
-                "Missing qc=%s {root=%s vertices=%s}", vertex.getParentQC(), root, vertices));
+                "Missing qc=%s {root=%s vertices=%s}", vertex.getQCToParent(), root, vertices));
       }
       seen.put(vertex.getHash(), vertex);
     }

@@ -499,7 +499,7 @@ public final class BFTSync implements BFTSyncer {
       final var authors =
           Stream.concat(
                   Stream.of(syncState.author),
-                  vertex.getParentQC().getSigners().filter(n -> !n.equals(syncState.author)))
+                  vertex.getQCToParent().getSigners().filter(n -> !n.equals(syncState.author)))
               .filter(not(n -> n.equals(this.self)))
               .collect(ImmutableList.toImmutableList());
 
@@ -549,7 +549,7 @@ public final class BFTSync implements BFTSyncer {
   private void processGetVerticesResponse(BFTNode sender, GetVerticesResponse response) {
     final var allVerticesHaveValidQc =
         response.getVertices().stream()
-            .allMatch(v -> safetyRules.verifyQcAgainstTheValidatorSet(v.getParentQC()));
+            .allMatch(v -> safetyRules.verifyQcAgainstTheValidatorSet(v.getQCToParent()));
 
     if (!allVerticesHaveValidQc) {
       // If the response is invalid we just ignore it and wait for the timeout event
