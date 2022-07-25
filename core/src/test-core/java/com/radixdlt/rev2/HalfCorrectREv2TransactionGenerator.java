@@ -67,7 +67,6 @@ package com.radixdlt.rev2;
 import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
 
@@ -82,7 +81,8 @@ public class HalfCorrectREv2TransactionGenerator implements ProposalGenerator {
     if (proposalCount % 2 == 0) {
       return List.of(Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0));
     } else {
-      return List.of(Transaction.create(HashUtils.random256().asBytes()));
+      // Invalid transaction
+      return List.of(Transaction.create(new byte[] {0}));
     }
   }
 }
