@@ -62,64 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.rev2;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
-
-import com.google.inject.Guice;
-import com.google.inject.Key;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transaction.TransactionStore;
+import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import org.junit.Test;
 
-public final class StateManagerTest {
+/** Proposes half valid, half invalid REv2 transactions for the purpose of testing. */
+public class HalfCorrectREv2TransactionGenerator implements ProposalGenerator {
+  private int proposalCount = 0;
 
-  @Test
-  public void state_manager_concurrent_access_is_possible() throws Exception {
-    // Arrange
-    final var testModules =
-        List.of(new REv2StateManagerModule(), MempoolConfig.asModule(100, 1000L));
-    final var injectorNode1 = Guice.createInjector(testModules);
-    final var injectorNode2 = Guice.createInjector(testModules);
+  @Override
+  public List<Transaction> getTransactionsForProposal(Round round, List<ExecutedVertex> prepared) {
+    proposalCount++;
 
-    // Act
-    var rand = new Random();
-    var cdl = new CountDownLatch(1000);
-    for (int i = 0; i < 1000; i++) {
-      new Thread(
-              () -> {
-                final var tx = HashUtils.random256();
-                final var stateVer = rand.nextLong();
-                final var transactionStore = injectorNode1.getInstance(TransactionStore.class);
-                transactionStore.insertTransaction(stateVer, tx.asBytes());
-                assertArrayEquals(
-                    tx.asBytes(), transactionStore.getTransactionAtStateVersion(stateVer));
-                cdl.countDown();
-              })
-          .start();
+    if (proposalCount % 2 == 0) {
+      return List.of(Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0));
+    } else {
+      // Invalid transaction
+      return List.of(Transaction.create(new byte[] {0}));
     }
-    final var payload = new byte[] {1, 2, 3, 4, 5};
-    final var transaction = Transaction.create(payload);
-    final var mempoolNode1 = injectorNode1.getInstance(new Key<Mempool<Transaction>>() {});
-    mempoolNode1.addTransaction(transaction);
-    try {
-      mempoolNode1.addTransaction(transaction);
-    } catch (Exception ignored) {
-    }
-
-    // Assert
-    assertThat(cdl.await(5, TimeUnit.SECONDS)).isTrue();
-    // Cleanup
-    injectorNode1.getInstance(StateManager.class).shutdown();
-    injectorNode2.getInstance(StateManager.class).shutdown();
   }
 }

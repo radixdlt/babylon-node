@@ -86,6 +86,7 @@ import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.rev2.modules.REv2StateComputerModule;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.BooleanUtils;
@@ -173,10 +174,8 @@ public final class RadixNodeModule extends AbstractModule {
     // Epochs - Sync
     install(new EpochsSyncModule());
 
-    // State manager
-    install(new StateManagerModule());
-
     // State Computer
+    install(new REv2StateManagerModule());
     install(new MockedPersistenceStoreModule());
     install(new REv2StateComputerModule());
     install(new InMemoryCommittedReaderModule());

@@ -62,15 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.statecomputer;
 
-import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.transactions.Transaction;
 
-/** Module which provides a random transaction generator */
-public class RandomTransactionGeneratorModule extends AbstractModule {
-  @Override
-  protected void configure() {
-    bind(ProposalGenerator.class).to(RandomTransactionGenerator.class);
-  }
+public interface StatelessTransactionVerifier {
+  boolean verify(Transaction transaction);
 }

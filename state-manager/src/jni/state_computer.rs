@@ -62,64 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+use crate::jni::dtos::JavaStructure;
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
+use crate::jni::state_manager::JNIStateManager;
+use crate::jni::utils::*;
+use crate::result::StateManagerResult;
+use crate::types::Transaction;
 
-import com.google.inject.Guice;
-import com.google.inject.Key;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transaction.TransactionStore;
-import com.radixdlt.transactions.Transaction;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import org.junit.Test;
+//
+// JNI Interface
+//
 
-public final class StateManagerTest {
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_verify(&env, j_state, j_payload).to_java();
 
-  @Test
-  public void state_manager_concurrent_access_is_possible() throws Exception {
-    // Arrange
-    final var testModules =
-        List.of(new REv2StateManagerModule(), MempoolConfig.asModule(100, 1000L));
-    final var injectorNode1 = Guice.createInjector(testModules);
-    final var injectorNode2 = Guice.createInjector(testModules);
+    jni_slice_to_jbytearray(&env, &ret)
+}
 
-    // Act
-    var rand = new Random();
-    var cdl = new CountDownLatch(1000);
-    for (int i = 0; i < 1000; i++) {
-      new Thread(
-              () -> {
-                final var tx = HashUtils.random256();
-                final var stateVer = rand.nextLong();
-                final var transactionStore = injectorNode1.getInstance(TransactionStore.class);
-                transactionStore.insertTransaction(stateVer, tx.asBytes());
-                assertArrayEquals(
-                    tx.asBytes(), transactionStore.getTransactionAtStateVersion(stateVer));
-                cdl.countDown();
-              })
-          .start();
-    }
-    final var payload = new byte[] {1, 2, 3, 4, 5};
-    final var transaction = Transaction.create(payload);
-    final var mempoolNode1 = injectorNode1.getInstance(new Key<Mempool<Transaction>>() {});
-    mempoolNode1.addTransaction(transaction);
-    try {
-      mempoolNode1.addTransaction(transaction);
-    } catch (Exception ignored) {
-    }
-
-    // Assert
-    assertThat(cdl.await(5, TimeUnit.SECONDS)).isTrue();
-    // Cleanup
-    injectorNode1.getInstance(StateManager.class).shutdown();
-    injectorNode2.getInstance(StateManager.class).shutdown();
-  }
+fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<bool> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
+    let transaction = Transaction::from_java(&request_payload)?;
+    let result = state_manager.verify(&transaction);
+    Ok(result)
 }

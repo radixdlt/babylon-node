@@ -62,19 +62,71 @@
  * permissions under this License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.rev2;
 
-import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.crypto.HashUtils;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.modules.CryptoModule;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.rev1.RoundDetails;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statecomputer.StatelessComputerModule;
 import com.radixdlt.transactions.Transaction;
 import java.util.List;
+import org.junit.Test;
 
-/** Generates new transactions with content of random hashes */
-public final class RandomTransactionGenerator implements ProposalGenerator {
-  @Override
-  public List<Transaction> getTransactionsForProposal(Round round, List<ExecutedVertex> prepared) {
-    return List.of(Transaction.create(HashUtils.random256().asBytes()));
+public class REv2Test {
+  private final Injector injector =
+      Guice.createInjector(
+          new CryptoModule(),
+          new StatelessComputerModule(),
+          new REv2StateManagerModule(),
+          MempoolConfig.asModule(100, 1000L),
+          new AbstractModule() {
+            @Override
+            protected void configure() {
+              bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
+              bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+            }
+          });
+
+  @Test
+  public void test_valid_rev2_transaction_passes() {
+    // Arrange
+    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
+    var validTransaction = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+
+    // Act
+    var result =
+        stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
+
+    // Assert
+    assertThat(result.getSuccessfullyExecutedTransactions()).hasSize(1);
+    assertThat(result.getFailedTransactions()).isEmpty();
+  }
+
+  @Test
+  public void test_invalid_rev2_transaction_fails() {
+    // Arrange
+    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
+    var validTransaction = Transaction.create(new byte[1]);
+
+    // Act
+    var result =
+        stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
+
+    // Assert
+    assertThat(result.getSuccessfullyExecutedTransactions()).isEmpty();
+    assertThat(result.getFailedTransactions()).hasSize(1);
   }
 }

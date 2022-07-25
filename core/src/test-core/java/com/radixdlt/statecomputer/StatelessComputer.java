@@ -62,92 +62,126 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.inject.*;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.rev2.REv2ExecutedTransaction;
-import com.radixdlt.statecomputer.StatelessTransactionVerifier;
 import com.radixdlt.transactions.Transaction;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.Optional;
 
-public class REv2StateComputerModule extends AbstractModule {
-  private static final Logger log = LogManager.getLogger();
+/**
+ * Ledger Computer for testing which stores no state but only statelessly verifies whether a
+ * transaction is correct or not.
+ */
+public final class StatelessComputer implements StateComputerLedger.StateComputer {
+  public static class StatelessTransactionException extends Exception {}
 
-  @Override
-  protected void configure() {
-    bind(new TypeLiteral<Mempool<?>>() {})
-        .to(new TypeLiteral<Mempool<Transaction>>() {})
-        .in(Scopes.SINGLETON);
+  private final StatelessTransactionVerifier verifier;
+  private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
+  private final Hasher hasher;
+  private int successCount = 0;
+  private int invalidCount = 0;
+
+  public StatelessComputer(
+      StatelessTransactionVerifier verifier,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      Hasher hasher) {
+    this.verifier = verifier;
+    this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
+    this.hasher = hasher;
   }
 
-  @Provides
-  @Singleton
-  private StateComputerLedger.StateComputer stateComputer(
-      Mempool<Transaction> mempool,
-      StatelessTransactionVerifier verifier,
-      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
-    return new StateComputerLedger.StateComputer() {
-      @Override
-      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
-        mempoolAdd
-            .transactions()
-            .forEach(
-                transaction -> {
-                  try {
-                    mempool.addTransaction(transaction);
-                  } catch (MempoolRejectedException e) {
-                    log.error(e);
-                  }
-                });
-      }
+  public int getSuccessCount() {
+    return successCount;
+  }
 
-      @Override
-      public List<Transaction> getTransactionsForProposal(
-          List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
-        var transactionsNotToInclude =
-            executedTransactions.stream()
-                .map(StateComputerLedger.ExecutedTransaction::transaction)
-                .toList();
-        return mempool.getTransactionsForProposal(1, transactionsNotToInclude);
-      }
+  public int getInvalidCount() {
+    return invalidCount;
+  }
 
-      @Override
-      public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.ExecutedTransaction> previous,
-          List<Transaction> proposedTransactions,
-          RoundDetails roundDetails) {
-        return new StateComputerLedger.StateComputerResult(
-            proposedTransactions.stream()
-                .filter(verifier::verify)
-                .map(REv2ExecutedTransaction::new)
-                .collect(Collectors.toList()),
-            Map.of());
-      }
+  @Override
+  public void addToMempool(MempoolAdd mempoolAdd, BFTNode origin) {}
 
-      @Override
-      public void commit(
-          CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-        mempool.handleTransactionsCommitted(txnsAndProof.getTransactions());
+  @Override
+  public List<Transaction> getTransactionsForProposal(
+      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
+    return List.of();
+  }
 
-        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
-        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
+  @Override
+  public StateComputerLedger.StateComputerResult prepare(
+      List<StateComputerLedger.ExecutedTransaction> previous,
+      List<Transaction> proposedTransactions,
+      RoundDetails roundDetails) {
+    var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
+    var invalidTransactions = new HashMap<Transaction, Exception>();
+
+    for (var transaction : proposedTransactions) {
+      var success = verifier.verify(transaction);
+      if (success) {
+        successfulTransactions.add(new StatelessComputerExecutedTransaction(transaction));
+      } else {
+        invalidTransactions.put(transaction, new StatelessTransactionException());
       }
-    };
+    }
+
+    successCount += successfulTransactions.size();
+    invalidCount += invalidTransactions.size();
+
+    return new StateComputerLedger.StateComputerResult(successfulTransactions, invalidTransactions);
+  }
+
+  private LedgerUpdate generateLedgerUpdate(CommittedTransactionsWithProof txnsAndProof) {
+    var output =
+        txnsAndProof
+            .getProof()
+            .getNextValidatorSet()
+            .map(
+                validatorSet -> {
+                  LedgerProof header = txnsAndProof.getProof();
+                  VertexWithHash genesisVertex =
+                      Vertex.createGenesis(header.getHeader()).withId(hasher);
+                  LedgerHeader nextLedgerHeader =
+                      LedgerHeader.create(
+                          header.getNextEpoch(),
+                          Round.genesis(),
+                          header.getAccumulatorState(),
+                          header.timestamp());
+                  QuorumCertificate genesisQC =
+                      QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                  final var initialState =
+                      VertexStoreState.create(
+                          HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+                  var proposerElection = new WeightedRotatingLeaders(validatorSet);
+                  var bftConfiguration =
+                      new BFTConfiguration(proposerElection, validatorSet, initialState);
+                  return new EpochChange(header, bftConfiguration);
+                })
+            .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
+            .orElse(ImmutableClassToInstanceMap.of());
+
+    return new LedgerUpdate(txnsAndProof, output);
+  }
+
+  @Override
+  public void commit(
+      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
+    var ledgerUpdate = this.generateLedgerUpdate(txnsAndProof);
+    ledgerUpdateDispatcher.dispatch(ledgerUpdate);
   }
 }

@@ -64,6 +64,7 @@
 
 pub(crate) mod dtos;
 mod mempool;
+mod state_computer;
 mod state_manager;
 mod transaction_store;
 mod utils;

@@ -65,8 +65,12 @@
 use crate::jni::dtos::*;
 use crate::mempool::{Mempool, MempoolConfig};
 use crate::transaction_store::TransactionStore;
+use crate::types::Transaction;
+use sbor::DecodeError;
+use scrypto::buffer::scrypto_decode;
 use std::sync::Arc;
 use std::sync::Mutex;
+use transaction::model::NotarizedTransaction;
 
 #[derive(Clone, Debug)]
 pub struct StateManager<M: Mempool> {
@@ -80,6 +84,11 @@ impl<M: Mempool> StateManager<M> {
             mempool: Arc::new(Mutex::new(mempool)),
             transaction_store: Arc::new(Mutex::new(transaction_store)),
         }
+    }
+
+    pub fn verify(&self, txn: &Transaction) -> bool {
+        let parse_result: Result<NotarizedTransaction, DecodeError> = scrypto_decode(&txn.payload);
+        parse_result.is_ok()
     }
 }
 

@@ -62,64 +62,62 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.google.inject.Guice;
-import com.google.inject.Key;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transaction.TransactionStore;
-import com.radixdlt.transactions.Transaction;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
+import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkOrdering;
+import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.StateComputerConfig;
+import com.radixdlt.statecomputer.StatelessComputer;
 import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.assertj.core.data.Offset;
 import org.junit.Test;
 
-public final class StateManagerTest {
+public class SanityTest {
+  private final SimulationTest.Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .pacemakerTimeout(1000)
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false, LedgerConfig.stateComputer(StateComputerConfig.rev2(), false)))
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered());
 
   @Test
-  public void state_manager_concurrent_access_is_possible() throws Exception {
+  public void test_half_valid_half_invalid_rev2_transactions() {
     // Arrange
-    final var testModules =
-        List.of(new REv2StateManagerModule(), MempoolConfig.asModule(100, 1000L));
-    final var injectorNode1 = Guice.createInjector(testModules);
-    final var injectorNode2 = Guice.createInjector(testModules);
+    var simulationTest = bftTestBuilder.build();
 
-    // Act
-    var rand = new Random();
-    var cdl = new CountDownLatch(1000);
-    for (int i = 0; i < 1000; i++) {
-      new Thread(
-              () -> {
-                final var tx = HashUtils.random256();
-                final var stateVer = rand.nextLong();
-                final var transactionStore = injectorNode1.getInstance(TransactionStore.class);
-                transactionStore.insertTransaction(stateVer, tx.asBytes());
-                assertArrayEquals(
-                    tx.asBytes(), transactionStore.getTransactionAtStateVersion(stateVer));
-                cdl.countDown();
-              })
-          .start();
-    }
-    final var payload = new byte[] {1, 2, 3, 4, 5};
-    final var transaction = Transaction.create(payload);
-    final var mempoolNode1 = injectorNode1.getInstance(new Key<Mempool<Transaction>>() {});
-    mempoolNode1.addTransaction(transaction);
-    try {
-      mempoolNode1.addTransaction(transaction);
-    } catch (Exception ignored) {
-    }
+    // Run
+    var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
 
-    // Assert
-    assertThat(cdl.await(5, TimeUnit.SECONDS)).isTrue();
-    // Cleanup
-    injectorNode1.getInstance(StateManager.class).shutdown();
-    injectorNode2.getInstance(StateManager.class).shutdown();
+    // Post-run assertions
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    for (var node : runningTest.getNetwork().getNodes()) {
+      var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
+
+      // The current proposal generator for REv2 produces half correct transactions and half
+      // invalid.
+      // This part verifies that this actually happened.
+      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
+      assertThat(statelessComputer.getInvalidCount())
+          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(4));
+    }
   }
 }

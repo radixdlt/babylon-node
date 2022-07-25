@@ -62,64 +62,73 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.rev2.modules;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
-
-import com.google.inject.Guice;
-import com.google.inject.Key;
-import com.radixdlt.crypto.HashUtils;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.mempool.MempoolMaxSize;
+import com.radixdlt.mempool.RustMempool;
+import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.modules.ModuleRunner;
+import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statecomputer.StatelessTransactionVerifier;
+import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStore;
 import com.radixdlt.transactions.Transaction;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import org.junit.Test;
 
-public final class StateManagerTest {
+public final class REv2StateManagerModule extends AbstractModule {
+  @Provides
+  @Singleton
+  StateManager stateManager(RustMempoolConfig mempoolConfig) {
+    return StateManager.createAndInitialize(new StateManagerConfig(Option.some(mempoolConfig)));
+  }
 
-  @Test
-  public void state_manager_concurrent_access_is_possible() throws Exception {
-    // Arrange
-    final var testModules =
-        List.of(new REv2StateManagerModule(), MempoolConfig.asModule(100, 1000L));
-    final var injectorNode1 = Guice.createInjector(testModules);
-    final var injectorNode2 = Guice.createInjector(testModules);
+  @Provides
+  @Singleton
+  private RustMempoolConfig stateManagerMempoolConfig(@MempoolMaxSize int maxSize) {
+    return new RustMempoolConfig(maxSize);
+  }
 
-    // Act
-    var rand = new Random();
-    var cdl = new CountDownLatch(1000);
-    for (int i = 0; i < 1000; i++) {
-      new Thread(
-              () -> {
-                final var tx = HashUtils.random256();
-                final var stateVer = rand.nextLong();
-                final var transactionStore = injectorNode1.getInstance(TransactionStore.class);
-                transactionStore.insertTransaction(stateVer, tx.asBytes());
-                assertArrayEquals(
-                    tx.asBytes(), transactionStore.getTransactionAtStateVersion(stateVer));
-                cdl.countDown();
-              })
-          .start();
-    }
-    final var payload = new byte[] {1, 2, 3, 4, 5};
-    final var transaction = Transaction.create(payload);
-    final var mempoolNode1 = injectorNode1.getInstance(new Key<Mempool<Transaction>>() {});
-    mempoolNode1.addTransaction(transaction);
-    try {
-      mempoolNode1.addTransaction(transaction);
-    } catch (Exception ignored) {
-    }
+  @Provides
+  @Singleton
+  private StatelessTransactionVerifier statelessVerifier(StateManager stateManager) {
+    return new RustStateComputer(stateManager.getRustState());
+  }
 
-    // Assert
-    assertThat(cdl.await(5, TimeUnit.SECONDS)).isTrue();
-    // Cleanup
-    injectorNode1.getInstance(StateManager.class).shutdown();
-    injectorNode2.getInstance(StateManager.class).shutdown();
+  @ProvidesIntoMap
+  @StringMapKey(Runners.STATE_MANAGER)
+  @Singleton
+  ModuleRunner stateManagerModuleRunner(StateManager stateManager) {
+    return new ModuleRunner() {
+      @Override
+      public void start() {
+        // no-op
+      }
+
+      @Override
+      public void stop() {
+        stateManager.shutdown();
+      }
+    };
+  }
+
+  @Provides
+  @Singleton
+  private Mempool<Transaction> stateManagerMempool(StateManager stateManager) {
+    return new RustMempool(stateManager.getRustState());
+  }
+
+  @Provides
+  @Singleton
+  private TransactionStore stateManagerTransactionStore(StateManager stateManager) {
+    return new RustTransactionStore(stateManager.getRustState());
   }
 }
