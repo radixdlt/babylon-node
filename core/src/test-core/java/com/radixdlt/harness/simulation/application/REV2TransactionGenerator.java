@@ -67,6 +67,7 @@ package com.radixdlt.harness.simulation.application;
 import com.radixdlt.rev2.REv2ExampleTransactions;
 import com.radixdlt.transactions.Transaction;
 
+/** Generates a valid transaction for REV2 */
 public class REV2TransactionGenerator implements TransactionGenerator {
   @Override
   public Transaction nextTransaction() {

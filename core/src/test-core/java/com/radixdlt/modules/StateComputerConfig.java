@@ -64,6 +64,7 @@
 
 package com.radixdlt.modules;
 
+/** Configuration options for the state computer */
 public sealed interface StateComputerConfig {
   static StateComputerConfig mocked(FunctionalRadixNodeModule.MempoolType mempoolType) {
     return new MockedStateComputerConfig(mempoolType);
