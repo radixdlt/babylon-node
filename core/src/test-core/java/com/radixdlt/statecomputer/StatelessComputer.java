@@ -135,19 +135,18 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
       var success = verifier.verify(transaction);
       if (success) {
         successfulTransactions.add(new StatelessComputerExecutedTransaction(transaction));
-        successCount++;
       } else {
         invalidTransactions.put(transaction, new StatelessTransactionException());
-        invalidCount++;
       }
     }
+
+    successCount += successfulTransactions.size();
+    invalidCount += invalidTransactions.size();
 
     return new StateComputerLedger.StateComputerResult(successfulTransactions, invalidTransactions);
   }
 
-  @Override
-  public void commit(
-      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
+  private LedgerUpdate generateLedgerUpdate(CommittedTransactionsWithProof txnsAndProof) {
     var output =
         txnsAndProof
             .getProof()
@@ -176,7 +175,13 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
             .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
             .orElse(ImmutableClassToInstanceMap.of());
 
-    var ledgerUpdate = new LedgerUpdate(txnsAndProof, output);
+    return new LedgerUpdate(txnsAndProof, output);
+  }
+
+  @Override
+  public void commit(
+      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
+    var ledgerUpdate = this.generateLedgerUpdate(txnsAndProof);
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);
   }
 }
