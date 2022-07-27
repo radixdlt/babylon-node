@@ -92,6 +92,6 @@ fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateMana
     let state_manager = JNIStateManager::get_state_manager(env, j_state);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
     let transaction = Transaction::from_java(&request_payload)?;
-    let result = state_manager.verify(&transaction);
-    Ok(result)
+    let result = state_manager.decode_transaction(&transaction);
+    Ok(result.is_ok())
 }

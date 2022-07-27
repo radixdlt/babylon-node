@@ -62,52 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.harness.simulation.application;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.lang.Option;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.RustMempool;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.StatelessTransactionVerifier;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transaction.RustTransactionStore;
-import com.radixdlt.transaction.TransactionStore;
+import com.radixdlt.rev2.REv2ExampleTransactions;
 import com.radixdlt.transactions.Transaction;
 
-public final class REv2StateManagerModule extends AbstractModule {
-  @Provides
-  @Singleton
-  StateManager stateManager(RustMempoolConfig mempoolConfig) {
-    return StateManager.createAndInitialize(new StateManagerConfig(Option.some(mempoolConfig)));
-  }
-
-  @Provides
-  @Singleton
-  private RustMempoolConfig stateManagerMempoolConfig(@MempoolMaxSize int maxSize) {
-    return new RustMempoolConfig(maxSize);
-  }
-
-  @Provides
-  @Singleton
-  private StatelessTransactionVerifier statelessVerifier(StateManager stateManager) {
-    return new RustStateComputer(stateManager.getRustState());
-  }
-
-  @Provides
-  @Singleton
-  private Mempool<Transaction> stateManagerMempool(StateManager stateManager) {
-    return new RustMempool(stateManager.getRustState());
-  }
-
-  @Provides
-  @Singleton
-  private TransactionStore stateManagerTransactionStore(StateManager stateManager) {
-    return new RustTransactionStore(stateManager.getRustState());
+/** Generates a valid transaction for REV2 */
+public class REV2TransactionGenerator implements TransactionGenerator {
+  @Override
+  public Transaction nextTransaction() {
+    return Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
   }
 }

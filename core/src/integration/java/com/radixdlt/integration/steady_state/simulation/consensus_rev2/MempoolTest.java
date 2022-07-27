@@ -62,52 +62,61 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.lang.Option;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.RustMempool;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.StatelessTransactionVerifier;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transaction.RustTransactionStore;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
+import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkOrdering;
+import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.application.REV2TransactionGenerator;
+import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.rev2.REv2ExampleTransactions;
 import com.radixdlt.transaction.TransactionStore;
-import com.radixdlt.transactions.Transaction;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Test;
 
-public final class REv2StateManagerModule extends AbstractModule {
-  @Provides
-  @Singleton
-  StateManager stateManager(RustMempoolConfig mempoolConfig) {
-    return StateManager.createAndInitialize(new StateManagerConfig(Option.some(mempoolConfig)));
-  }
+public class MempoolTest {
+  private final SimulationTest.Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .pacemakerTimeout(1000)
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  FunctionalRadixNodeModule.LedgerConfig.stateComputer(
+                      StateComputerConfig.rev2(REV2ProposerConfig.mempool()), false)))
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered())
+          .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class);
 
-  @Provides
-  @Singleton
-  private RustMempoolConfig stateManagerMempoolConfig(@MempoolMaxSize int maxSize) {
-    return new RustMempoolConfig(maxSize);
-  }
+  @Test
+  public void sanity_test() {
+    // Arrange
+    var simulationTest = bftTestBuilder.build();
 
-  @Provides
-  @Singleton
-  private StatelessTransactionVerifier statelessVerifier(StateManager stateManager) {
-    return new RustStateComputer(stateManager.getRustState());
-  }
+    // Run
+    var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
 
-  @Provides
-  @Singleton
-  private Mempool<Transaction> stateManagerMempool(StateManager stateManager) {
-    return new RustMempool(stateManager.getRustState());
-  }
-
-  @Provides
-  @Singleton
-  private TransactionStore stateManagerTransactionStore(StateManager stateManager) {
-    return new RustTransactionStore(stateManager.getRustState());
+    // Post-run assertions
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    for (var node : runningTest.getNetwork().getNodes()) {
+      var store = runningTest.getNetwork().getInstance(TransactionStore.class, node);
+      var txn = store.getTransactionAtStateVersion(1);
+      assertThat(txn).isEqualTo(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+    }
   }
 }

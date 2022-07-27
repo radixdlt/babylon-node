@@ -92,14 +92,6 @@ public class MempoolSanityTest {
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .ledgerAndMempool()
           .pacemakerTimeout(3000)
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered(),
-              ApplicationMonitors.mempoolCommitted())
           .addMempoolSubmissionsSteadyState(IncrementalBytes.class);
 
   /** TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else */
@@ -107,6 +99,7 @@ public class MempoolSanityTest {
   public void when_submitting_items_to_null_mempool__then_test_should_fail() {
     SimulationTest simulationTest =
         bftTestBuilder
+            .addTestModules(ApplicationMonitors.mempoolCommitted())
             .addOverrideModuleToAllInitialNodes(
                 new AbstractModule() {
                   @Override
@@ -123,7 +116,17 @@ public class MempoolSanityTest {
 
   @Test
   public void when_submitting_items_to_mempool__then_they_should_get_executed() {
-    SimulationTest simulationTest = bftTestBuilder.build();
+    SimulationTest simulationTest =
+        bftTestBuilder
+            .addTestModules(
+                ConsensusMonitors.safety(),
+                ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+                ConsensusMonitors.noTimeouts(),
+                ConsensusMonitors.directParents(),
+                LedgerMonitors.consensusToLedger(),
+                LedgerMonitors.ordered(),
+                ApplicationMonitors.mempoolCommitted())
+            .build();
 
     final var checkResults = simulationTest.run().awaitCompletion();
     assertThat(checkResults)
