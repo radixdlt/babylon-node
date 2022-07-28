@@ -65,72 +65,58 @@
 package com.radixdlt.rev1.modules;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VertexStoreState;
-import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.store.LastEpochProof;
-import java.util.Optional;
 
 /** Manages consensus recovery on startup */
 public class ConsensusRecoveryModule extends AbstractModule {
-  @Provides
-  private RoundUpdate initialRoundUpdate(
-      VertexStoreState vertexStoreState, BFTConfiguration configuration) {
-    var highQC = vertexStoreState.getHighQC();
-    var round = highQC.highestQC().getRound().next();
-    var proposerElection = configuration.getProposerElection();
-    var leader = proposerElection.getProposer(round);
-    var nextLeader = proposerElection.getProposer(round.next());
-
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
-  }
-
-  @Provides
-  @Singleton
-  private BFTConfiguration initialConfig(
-      BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
-    return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
-  }
-
-  @Provides
-  private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
-    return lastEpochProof
-        .getNextValidatorSet()
-        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
-  }
-
-  @Provides
-  @Singleton
-  private SafetyState initialSafetyState(
-      EpochChange initialEpoch, PersistentSafetyStateStore safetyStore) {
-    return safetyStore
-        .get()
-        .flatMap(
-            safetyState -> {
-              final long safetyStateEpoch =
-                  safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
-
-              if (safetyStateEpoch > initialEpoch.getNextEpoch()) {
-                throw new IllegalStateException(
-                    String.format(
-                        "Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
-                        safetyStateEpoch, initialEpoch.getNextEpoch()));
-              } else if (safetyStateEpoch == initialEpoch.getNextEpoch()) {
-                return Optional.of(safetyState);
-              } else {
-                return Optional.empty();
-              }
-            })
-        .orElse(new SafetyState());
-  }
+  //    @Provides
+  //    private RoundUpdate initialRoundUpdate(
+  //        VertexStoreState vertexStoreState, BFTConfiguration configuration) {
+  //      var highQC = vertexStoreState.getHighQC();
+  //      var round = highQC.highestQC().getRound().next();
+  //      var proposerElection = configuration.getProposerElection();
+  //      var leader = proposerElection.getProposer(round);
+  //      var nextLeader = proposerElection.getProposer(round.next());
+  //
+  //      return RoundUpdate.create(round, highQC, leader, nextLeader);
+  //    }
+  //
+  //    @Provides
+  //    @Singleton
+  //    private BFTConfiguration initialConfig(
+  //        BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
+  //      var proposerElection = new WeightedRotatingLeaders(validatorSet);
+  //      return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
+  //    }
+  //
+  //    @Provides
+  //    private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
+  //      return lastEpochProof
+  //          .getNextValidatorSet()
+  //          .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+  //    }
+  //
+  //  @Provides
+  //  @Singleton
+  //  private SafetyState initialSafetyState(
+  //      EpochChange initialEpoch, PersistentSafetyStateStore safetyStore) {
+  //    return safetyStore
+  //        .get()
+  //        .flatMap(
+  //            safetyState -> {
+  //              final long safetyStateEpoch =
+  //                  safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
+  //
+  //              if (safetyStateEpoch > initialEpoch.getNextEpoch()) {
+  //                throw new IllegalStateException(
+  //                    String.format(
+  //                        "Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
+  //                        safetyStateEpoch, initialEpoch.getNextEpoch()));
+  //              } else if (safetyStateEpoch == initialEpoch.getNextEpoch()) {
+  //                return Optional.of(safetyState);
+  //              } else {
+  //                return Optional.empty();
+  //              }
+  //            })
+  //        .orElse(new SafetyState());
+  //  }
 }

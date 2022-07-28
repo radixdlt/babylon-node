@@ -76,10 +76,10 @@ import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.modules.LedgerProofProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;
-import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
@@ -109,6 +109,8 @@ public final class RemoteSyncService {
 
   private LedgerProof currentHeader;
 
+  private LedgerProofProvider ledgerProofProvider;
+
   @Inject
   public RemoteSyncService(
       PeersView peersView,
@@ -120,7 +122,7 @@ public final class RemoteSyncService {
       SyncConfig syncConfig,
       SystemCounters systemCounters,
       Comparator<AccumulatorState> accComparator,
-      @LastProof LedgerProof initialHeader) {
+      LedgerProofProvider ledgerProofProvider) {
     this.peersView = Objects.requireNonNull(peersView);
     this.localSyncService = Objects.requireNonNull(localSyncService);
     this.committedReader = Objects.requireNonNull(committedReader);
@@ -132,7 +134,7 @@ public final class RemoteSyncService {
     this.accComparator = Objects.requireNonNull(accComparator);
     this.ledgerStatusUpdateSendRateLimiter = RateLimiter.create(syncConfig.maxLedgerUpdatesRate());
 
-    this.currentHeader = initialHeader;
+    this.ledgerProofProvider = ledgerProofProvider;
   }
 
   public RemoteEventProcessor<SyncRequest> syncRequestEventProcessor() {
@@ -177,7 +179,7 @@ public final class RemoteSyncService {
   }
 
   private void processStatusRequest(BFTNode sender, StatusRequest statusRequest) {
-    statusResponseDispatcher.dispatch(sender, StatusResponse.create(this.currentHeader));
+    statusResponseDispatcher.dispatch(sender, StatusResponse.create(this.getCurrentHeader()));
   }
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
@@ -187,7 +189,7 @@ public final class RemoteSyncService {
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
     final LedgerProof updatedHeader = ledgerUpdate.getTail();
     if (accComparator.compare(
-            updatedHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState())
+            updatedHeader.getAccumulatorState(), this.getCurrentHeader().getAccumulatorState())
         > 0) {
       this.currentHeader = updatedHeader;
       this.sendStatusUpdateToSomePeers(updatedHeader);
@@ -213,5 +215,12 @@ public final class RemoteSyncService {
                 statusUpdateDispatcher.dispatch(peer, statusUpdate);
               }
             });
+  }
+
+  public LedgerProof getCurrentHeader() {
+    if (this.currentHeader == null) {
+      this.currentHeader = this.ledgerProofProvider.getLastProof();
+    }
+    return this.currentHeader;
   }
 }

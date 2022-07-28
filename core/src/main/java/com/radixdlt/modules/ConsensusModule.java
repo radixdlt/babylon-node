@@ -73,11 +73,9 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.BFTEventProcessorFactory;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTBuilder;
@@ -98,7 +96,6 @@ import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.BFTSync;
@@ -108,7 +105,6 @@ import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.consensus.sync.VertexStore;
 import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
-import com.radixdlt.consensus.sync.VertexStoreJavaImpl;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.LocalEvents;
@@ -116,7 +112,6 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Comparator;
@@ -145,7 +140,7 @@ public final class ConsensusModule extends AbstractModule {
   }
 
   @Provides
-  private BFTFactory bftFactory(
+  private BFTEventProcessorFactory bftFactory(
       Hasher hasher,
       HashVerifier verifier,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
@@ -180,24 +175,24 @@ public final class ConsensusModule extends AbstractModule {
             .build();
   }
 
-  @Provides
-  @Singleton
-  public ProposerElection proposerElection(BFTConfiguration configuration) {
-    return configuration.getProposerElection();
-  }
+  //  @Provides
+  //  @Singleton
+  //  public ProposerElection proposerElection(BFTConfiguration configuration) {
+  //    return configuration.getProposerElection();
+  //  }
 
   @Provides
   @Singleton
   public BFTEventProcessor eventProcessor(
       @Self BFTNode self,
       BFTConfiguration config,
-      BFTFactory bftFactory,
+      BFTEventProcessorFactory bftEventProcessorFactory,
       Pacemaker pacemaker,
       VertexStoreAdapter vertexStore,
       BFTSync bftSync,
       SafetyRules safetyRules,
       RoundUpdate roundUpdate) {
-    return bftFactory.create(
+    return bftEventProcessorFactory.create(
         self,
         pacemaker,
         vertexStore,
@@ -255,7 +250,8 @@ public final class ConsensusModule extends AbstractModule {
       RemoteEventDispatcher<GetVerticesRequest> requestSender,
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
-      @LastProof LedgerProof ledgerLastProof, // Use this instead of configuration.getRoot()
+      ConsensusBootstrapProvider
+          consensusBootstrapProvider, // Use this instead of configuration.getRoot()
       Random random,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Hasher hasher,
@@ -272,17 +268,18 @@ public final class ConsensusModule extends AbstractModule {
         requestSender,
         syncLedgerRequestSender,
         timeoutDispatcher,
-        ledgerLastProof,
+        consensusBootstrapProvider,
         random,
         bftSyncPatienceMillis,
         counters);
   }
 
-  @Provides
-  @Singleton
-  private VertexStore vertexStore(BFTConfiguration bftConfiguration, Ledger ledger, Hasher hasher) {
-    return VertexStoreJavaImpl.create(bftConfiguration.getVertexStoreState(), ledger, hasher);
-  }
+  //  @Provides
+  //  @Singleton
+  //  private VertexStore vertexStore(BFTConfiguration bftConfiguration, Ledger ledger, Hasher
+  // hasher) {
+  //    return VertexStoreJavaImpl.create(bftConfiguration.getVertexStoreState(), ledger, hasher);
+  //  }
 
   @Provides
   @Singleton

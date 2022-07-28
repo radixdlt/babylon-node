@@ -70,6 +70,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.modules.ConsensusBootstrapProvider;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;
@@ -94,14 +95,15 @@ public class EpochsLocalSyncService {
   private EpochChange currentEpoch;
   private LocalSyncService localSyncService;
 
+  private ConsensusBootstrapProvider consensusBootstrapProvider;
+
   @Inject
   public EpochsLocalSyncService(
       LocalSyncService initialLocalSyncService,
-      EpochChange initialEpoch,
+      ConsensusBootstrapProvider consensusBootstrapProvider,
       LocalSyncServiceFactory localSyncServiceFactory) {
-    this.currentEpoch = initialEpoch;
+    this.consensusBootstrapProvider = consensusBootstrapProvider;
     this.localSyncService = initialLocalSyncService;
-
     this.localSyncServiceFactory = localSyncServiceFactory;
   }
 
@@ -130,11 +132,11 @@ public class EpochsLocalSyncService {
   private void processLocalSyncRequest(LocalSyncRequest request) {
     final long targetEpoch = request.getTarget().getEpoch();
 
-    if (targetEpoch < currentEpoch.getNextEpoch()) {
+    if (targetEpoch < this.getCurrentEpoch().getNextEpoch()) {
       log.trace(
           "Request epoch {} is lower from current {} ignoring: {}",
           targetEpoch,
-          currentEpoch.getNextEpoch(),
+          this.getCurrentEpoch().getNextEpoch(),
           request);
       return;
     }
@@ -172,6 +174,13 @@ public class EpochsLocalSyncService {
 
   public EventProcessor<SyncRequestTimeout> syncRequestTimeoutEventProcessor() {
     return this::processSyncRequestTimeout;
+  }
+
+  public EpochChange getCurrentEpoch() {
+    if (this.currentEpoch == null) {
+      this.currentEpoch = consensusBootstrapProvider.currentKnownEpoch();
+    }
+    return this.currentEpoch;
   }
 
   private void processSyncRequestTimeout(SyncRequestTimeout syncRequestTimeout) {

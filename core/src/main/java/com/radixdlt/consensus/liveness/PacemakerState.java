@@ -70,6 +70,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.modules.ConsensusBootstrapProvider;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -83,20 +84,33 @@ public class PacemakerState implements PacemakerReducer {
   private static final Logger log = LogManager.getLogger();
 
   private final EventDispatcher<RoundUpdate> roundUpdateSender;
-  private final ProposerElection proposerElection;
+  private ProposerElection proposerElection;
 
   private Round currentRound;
   private HighQC highQC;
 
+  private ConsensusBootstrapProvider consensusBootstrapProvider;
+
   @Inject
+  public PacemakerState(
+      ConsensusBootstrapProvider consensusBootstrapProvider,
+      EventDispatcher<RoundUpdate> roundUpdateSender) {
+    this(roundUpdateSender);
+    this.consensusBootstrapProvider = consensusBootstrapProvider;
+  }
+
   public PacemakerState(
       RoundUpdate roundUpdate,
       ProposerElection proposerElection,
       EventDispatcher<RoundUpdate> roundUpdateSender) {
+    this(roundUpdateSender);
     this.proposerElection = Objects.requireNonNull(proposerElection);
-    this.roundUpdateSender = Objects.requireNonNull(roundUpdateSender);
     this.highQC = roundUpdate.getHighQC();
     this.currentRound = roundUpdate.getCurrentRound();
+  }
+
+  private PacemakerState(EventDispatcher<RoundUpdate> roundUpdateSender) {
+    this.roundUpdateSender = Objects.requireNonNull(roundUpdateSender);
   }
 
   @Override
@@ -104,24 +118,46 @@ public class PacemakerState implements PacemakerReducer {
     log.trace("QuorumCertificate: {}", highQC);
 
     final Round round = highQC.getHighestRound();
-    if (round.gte(this.currentRound)) {
+    if (round.gte(this.getCurrentRound())) {
       this.highQC = highQC;
       this.updateRound(round.next());
     } else {
-      log.trace("Ignoring QC for round {}: current round is {}", round, this.currentRound);
+      log.trace("Ignoring QC for round {}: current round is {}", round, this.getCurrentRound());
     }
   }
 
   @Override
   public void updateRound(Round nextRound) {
-    if (nextRound.lte(this.currentRound)) {
+    if (nextRound.lte(this.getCurrentRound())) {
       return;
     }
 
-    final BFTNode leader = this.proposerElection.getProposer(nextRound);
-    final BFTNode nextLeader = this.proposerElection.getProposer(nextRound.next());
+    final BFTNode leader = this.getProposerElection().getProposer(nextRound);
+    final BFTNode nextLeader = this.getProposerElection().getProposer(nextRound.next());
     this.currentRound = nextRound;
     roundUpdateSender.dispatch(
-        RoundUpdate.create(this.currentRound, this.highQC, leader, nextLeader));
+        RoundUpdate.create(this.getCurrentRound(), this.getHighQC(), leader, nextLeader));
+  }
+
+  public Round getCurrentRound() {
+    if (this.currentRound == null) {
+      this.currentRound =
+          this.consensusBootstrapProvider.currentKnownRoundUpdate().getCurrentRound();
+    }
+    return this.currentRound;
+  }
+
+  public HighQC getHighQC() {
+    if (this.highQC == null) {
+      this.highQC = this.consensusBootstrapProvider.currentKnownRoundUpdate().getHighQC();
+    }
+    return highQC;
+  }
+
+  public ProposerElection getProposerElection() {
+    if (this.proposerElection == null) {
+      this.proposerElection = this.consensusBootstrapProvider.proposerElection();
+    }
+    return proposerElection;
   }
 }

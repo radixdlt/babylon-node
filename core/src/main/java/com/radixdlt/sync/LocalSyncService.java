@@ -77,6 +77,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.modules.LedgerProofProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;
@@ -148,7 +149,46 @@ public final class LocalSyncService {
 
   private SyncState syncState;
 
+  private LedgerProofProvider ledgerProofProvider;
+
   @Inject
+  // Bootstrap constructor that is used by Guice
+  public LocalSyncService(
+      RemoteEventDispatcher<StatusRequest> statusRequestDispatcher,
+      ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>
+          syncCheckReceiveStatusTimeoutDispatcher,
+      RemoteEventDispatcher<SyncRequest> syncRequestDispatcher,
+      ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
+      ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
+      SyncConfig syncConfig,
+      SystemCounters systemCounters,
+      PeersView peersView,
+      Comparator<AccumulatorState> accComparator,
+      RemoteSyncResponseValidatorSetVerifier validatorSetVerifier,
+      RemoteSyncResponseSignaturesVerifier signaturesVerifier,
+      LedgerAccumulatorVerifier accumulatorVerifier,
+      VerifiedSyncResponseHandler verifiedSyncResponseHandler,
+      InvalidSyncResponseHandler invalidSyncResponseHandler,
+      LedgerProofProvider ledgerProofProvider) {
+
+    this(
+        statusRequestDispatcher,
+        syncCheckReceiveStatusTimeoutDispatcher,
+        syncRequestDispatcher,
+        syncRequestTimeoutDispatcher,
+        syncLedgerUpdateTimeoutDispatcher,
+        syncConfig,
+        systemCounters,
+        peersView,
+        accComparator,
+        validatorSetVerifier,
+        signaturesVerifier,
+        accumulatorVerifier,
+        verifiedSyncResponseHandler,
+        invalidSyncResponseHandler);
+    this.ledgerProofProvider = ledgerProofProvider;
+  }
+
   public LocalSyncService(
       RemoteEventDispatcher<StatusRequest> statusRequestDispatcher,
       ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>
@@ -166,6 +206,40 @@ public final class LocalSyncService {
       VerifiedSyncResponseHandler verifiedSyncResponseHandler,
       InvalidSyncResponseHandler invalidSyncResponseHandler,
       SyncState initialState) {
+    this(
+        statusRequestDispatcher,
+        syncCheckReceiveStatusTimeoutDispatcher,
+        syncRequestDispatcher,
+        syncRequestTimeoutDispatcher,
+        syncLedgerUpdateTimeoutDispatcher,
+        syncConfig,
+        systemCounters,
+        peersView,
+        accComparator,
+        validatorSetVerifier,
+        signaturesVerifier,
+        accumulatorVerifier,
+        verifiedSyncResponseHandler,
+        invalidSyncResponseHandler);
+    this.syncState = initialState;
+  }
+
+  private LocalSyncService(
+      RemoteEventDispatcher<StatusRequest> statusRequestDispatcher,
+      ScheduledEventDispatcher<SyncCheckReceiveStatusTimeout>
+          syncCheckReceiveStatusTimeoutDispatcher,
+      RemoteEventDispatcher<SyncRequest> syncRequestDispatcher,
+      ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
+      ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
+      SyncConfig syncConfig,
+      SystemCounters systemCounters,
+      PeersView peersView,
+      Comparator<AccumulatorState> accComparator,
+      RemoteSyncResponseValidatorSetVerifier validatorSetVerifier,
+      RemoteSyncResponseSignaturesVerifier signaturesVerifier,
+      LedgerAccumulatorVerifier accumulatorVerifier,
+      VerifiedSyncResponseHandler verifiedSyncResponseHandler,
+      InvalidSyncResponseHandler invalidSyncResponseHandler) {
     this.statusRequestDispatcher = Objects.requireNonNull(statusRequestDispatcher);
     this.syncCheckReceiveStatusTimeoutDispatcher =
         Objects.requireNonNull(syncCheckReceiveStatusTimeoutDispatcher);
@@ -182,8 +256,6 @@ public final class LocalSyncService {
     this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
     this.verifiedSyncResponseHandler = Objects.requireNonNull(verifiedSyncResponseHandler);
     this.invalidSyncResponseHandler = Objects.requireNonNull(invalidSyncResponseHandler);
-
-    this.syncState = initialState;
 
     this.handlers =
         new ImmutableMap.Builder<Pair<? extends Class<?>, ? extends Class<?>>, Handler<?, ?>>()
@@ -576,10 +648,6 @@ public final class LocalSyncService {
     return syncState;
   }
 
-  public SyncState getSyncState() {
-    return this.syncState;
-  }
-
   public EventProcessor<SyncCheckTrigger> syncCheckTriggerEventProcessor() {
     return (event) -> this.processEvent(SyncCheckTrigger.class, event);
   }
@@ -620,18 +688,20 @@ public final class LocalSyncService {
   private <T> void processEvent(Class<T> eventClass, T event) {
     @SuppressWarnings("unchecked")
     final var maybeHandler =
-        (Handler<Object, Object>) this.handlers.get(Pair.of(this.syncState.getClass(), eventClass));
+        (Handler<Object, Object>)
+            this.handlers.get(Pair.of(this.getSyncState().getClass(), eventClass));
     if (maybeHandler != null) {
-      this.syncState = maybeHandler.handle(this.syncState, event);
+      this.syncState = maybeHandler.handle(this.getSyncState(), event);
     }
   }
 
   private <T> void processRemoteEvent(Class<T> eventClass, BFTNode peer, T event) {
     @SuppressWarnings("unchecked")
     final var maybeHandler =
-        (Handler<Object, Object>) this.handlers.get(Pair.of(this.syncState.getClass(), eventClass));
+        (Handler<Object, Object>)
+            this.handlers.get(Pair.of(this.getSyncState().getClass(), eventClass));
     if (maybeHandler != null) {
-      this.syncState = maybeHandler.handle(this.syncState, peer, event);
+      this.syncState = maybeHandler.handle(this.getSyncState(), peer, event);
     }
   }
 
@@ -667,5 +737,12 @@ public final class LocalSyncService {
     SyncState handle(S currentState, BFTNode peer, T event) {
       return this.handleRemoteEvent.apply(currentState).apply(peer).apply(event);
     }
+  }
+
+  public SyncState getSyncState() {
+    if (this.syncState == null) {
+      this.syncState = SyncState.IdleState.init(this.ledgerProofProvider.getLastProof());
+    }
+    return this.syncState;
   }
 }

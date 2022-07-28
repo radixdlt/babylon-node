@@ -82,6 +82,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.modules.ConsensusBootstrapProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -178,6 +179,41 @@ public final class BFTSync implements BFTSyncer {
   // FIXME: Remove this once sync is fixed
   private final RateLimiter syncRequestRateLimiter;
 
+  private ConsensusBootstrapProvider consensusBootstrapProvider;
+
+  // Bootstrap constructor that is used by Guice
+  public BFTSync(
+      @Self BFTNode self,
+      RateLimiter syncRequestRateLimiter,
+      VertexStoreAdapter vertexStore,
+      Hasher hasher,
+      SafetyRules safetyRules,
+      PacemakerReducer pacemakerReducer,
+      Comparator<LedgerHeader> ledgerHeaderComparator,
+      RemoteEventDispatcher<GetVerticesRequest> requestSender,
+      EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher,
+      ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
+      ConsensusBootstrapProvider consensusBootstrapProvider,
+      Random random,
+      int bftSyncPatienceMillis,
+      SystemCounters systemCounters) {
+    this(
+        self,
+        syncRequestRateLimiter,
+        vertexStore,
+        hasher,
+        safetyRules,
+        pacemakerReducer,
+        ledgerHeaderComparator,
+        requestSender,
+        localSyncRequestEventDispatcher,
+        timeoutDispatcher,
+        random,
+        bftSyncPatienceMillis,
+        systemCounters);
+    this.consensusBootstrapProvider = Objects.requireNonNull(consensusBootstrapProvider);
+  }
+
   public BFTSync(
       @Self BFTNode self,
       RateLimiter syncRequestRateLimiter,
@@ -193,6 +229,37 @@ public final class BFTSync implements BFTSyncer {
       Random random,
       int bftSyncPatienceMillis,
       SystemCounters systemCounters) {
+    this(
+        self,
+        syncRequestRateLimiter,
+        vertexStore,
+        hasher,
+        safetyRules,
+        pacemakerReducer,
+        ledgerHeaderComparator,
+        requestSender,
+        localSyncRequestEventDispatcher,
+        timeoutDispatcher,
+        random,
+        bftSyncPatienceMillis,
+        systemCounters);
+    this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
+  }
+
+  private BFTSync(
+      @Self BFTNode self,
+      RateLimiter syncRequestRateLimiter,
+      VertexStoreAdapter vertexStore,
+      Hasher hasher,
+      SafetyRules safetyRules,
+      PacemakerReducer pacemakerReducer,
+      Comparator<LedgerHeader> ledgerHeaderComparator,
+      RemoteEventDispatcher<GetVerticesRequest> requestSender,
+      EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher,
+      ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
+      Random random,
+      int bftSyncPatienceMillis,
+      SystemCounters systemCounters) {
     this.self = self;
     this.syncRequestRateLimiter = Objects.requireNonNull(syncRequestRateLimiter);
     this.vertexStore = vertexStore;
@@ -203,7 +270,6 @@ public final class BFTSync implements BFTSyncer {
     this.requestSender = requestSender;
     this.localSyncRequestEventDispatcher = Objects.requireNonNull(localSyncRequestEventDispatcher);
     this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
-    this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
     this.random = random;
     this.bftSyncPatienceMillis = bftSyncPatienceMillis;
     this.systemCounters = Objects.requireNonNull(systemCounters);
@@ -238,7 +304,7 @@ public final class BFTSync implements BFTSyncer {
       return SyncResult.INVALID;
     }
 
-    if (qc.getProposedHeader().getRound().lt(this.currentLedgerHeader.getRound())) {
+    if (qc.getProposedHeader().getRound().lt(this.getCurrentLedgerHeader().getRound())) {
       return SyncResult.INVALID;
     }
 
@@ -455,12 +521,13 @@ public final class BFTSync implements BFTSyncer {
         syncState,
         response.getVertices().get(0).getRound(),
         sender,
-        this.currentLedgerHeader);
+        this.getCurrentLedgerHeader());
 
     syncState.fetched.addAll(response.getVertices());
 
     // TODO: verify actually extends rather than just state version comparison
-    if (syncState.committedProof.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
+    if (syncState.committedProof.getStateVersion()
+        <= this.getCurrentLedgerHeader().getStateVersion()) {
       rebuildAndSyncQC(syncState);
     } else {
       syncState.setSyncStage(SyncStage.LEDGER_SYNC);
@@ -613,5 +680,16 @@ public final class BFTSync implements BFTSyncer {
         .entrySet()
         .removeIf(
             e -> e.getValue().highQC.highestQC().getRound().lte(ledgerUpdate.getTail().getRound()));
+  }
+
+  public LedgerProof getCurrentLedgerHeader() {
+    if (this.currentLedgerHeader == null) {
+      this.currentLedgerHeader =
+          this.consensusBootstrapProvider
+              .currentKnownBftConfiguration()
+              .getVertexStoreState()
+              .getRootHeader();
+    }
+    return this.currentLedgerHeader;
   }
 }

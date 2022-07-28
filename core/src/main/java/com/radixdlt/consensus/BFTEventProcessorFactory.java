@@ -75,7 +75,7 @@ import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.environment.EventProcessor;
 
 /** Creates a new bft processor */
-public interface BFTFactory {
+public interface BFTEventProcessorFactory {
   /**
    * Create a new clean BFT processor
    *

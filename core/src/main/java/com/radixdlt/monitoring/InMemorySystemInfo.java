@@ -74,8 +74,7 @@ import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LastProof;
+import com.radixdlt.modules.LedgerProofProvider;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -95,13 +94,10 @@ public final class InMemorySystemInfo {
   // private final RadixEngine<LedgerAndBFTProof> radixEngine;
 
   @Inject
-  public InMemorySystemInfo(
-      @LastProof LedgerProof lastProof,
-      @LastEpochProof LedgerProof lastEpochProof,
-      @Self BFTNode self
+  public InMemorySystemInfo(LedgerProofProvider ledgerProofProvider, @Self BFTNode self
       /*RadixEngine<LedgerAndBFTProof> radixEngine*/ ) {
-    this.ledgerProof = new AtomicReference<>(lastProof);
-    this.epochsLedgerProof = new AtomicReference<>(lastEpochProof);
+    this.ledgerProof = new AtomicReference<>(ledgerProofProvider.getLastProof());
+    this.epochsLedgerProof = new AtomicReference<>(ledgerProofProvider.getLastEpochProof());
     this.self = self;
     // this.radixEngine = radixEngine;
   }

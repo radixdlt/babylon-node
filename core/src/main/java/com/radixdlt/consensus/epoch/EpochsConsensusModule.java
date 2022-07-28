@@ -71,10 +71,8 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -114,8 +112,8 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
+import com.radixdlt.modules.ConsensusBootstrapProvider;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Comparator;
@@ -226,20 +224,20 @@ public class EpochsConsensusModule extends AbstractModule {
         Runners.CONSENSUS, EpochRoundUpdate.class, epochManager.epochRoundUpdateEventProcessor());
   }
 
-  @Provides
-  private EpochChange initialEpoch(
-      @LastEpochProof LedgerProof proof, BFTConfiguration initialBFTConfig) {
-    return new EpochChange(proof, initialBFTConfig);
-  }
+  //  @Provides
+  //  private EpochChange initialEpoch(
+  //      @LastEpochProof LedgerProof proof, BFTConfiguration initialBFTConfig) {
+  //    return new EpochChange(proof, initialBFTConfig);
+  //  }
 
   @ProvidesIntoSet
   @ProcessOnDispatch
   private EventProcessor<ScheduledLocalTimeout> initialEpochsTimeoutSender(
       ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
-      EpochChange initialEpoch) {
+      ConsensusBootstrapProvider consensusBootstrapProvider) {
     return localTimeout -> {
       Epoched<ScheduledLocalTimeout> epochTimeout =
-          Epoched.from(initialEpoch.getNextEpoch(), localTimeout);
+          Epoched.from(consensusBootstrapProvider.currentKnownEpoch().getNextEpoch(), localTimeout);
       localTimeoutSender.dispatch(epochTimeout, localTimeout.millisecondsWaitTime());
     };
   }
@@ -247,10 +245,12 @@ public class EpochsConsensusModule extends AbstractModule {
   @ProvidesIntoSet
   @ProcessOnDispatch
   private EventProcessor<RoundUpdate> initialRoundUpdateToEpochRoundUpdateConverter(
-      EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher, EpochChange initialEpoch) {
+      EventDispatcher<EpochRoundUpdate> epochRoundUpdateEventDispatcher,
+      ConsensusBootstrapProvider consensusBootstrapProvider) {
     return roundUpdate -> {
       EpochRoundUpdate epochRoundUpdate =
-          new EpochRoundUpdate(initialEpoch.getNextEpoch(), roundUpdate);
+          new EpochRoundUpdate(
+              consensusBootstrapProvider.currentKnownEpoch().getNextEpoch(), roundUpdate);
       epochRoundUpdateEventDispatcher.dispatch(epochRoundUpdate);
     };
   }
@@ -271,10 +271,12 @@ public class EpochsConsensusModule extends AbstractModule {
   @ProvidesIntoSet
   @ProcessOnDispatch
   EventProcessor<LocalTimeoutOccurrence> initialEpochsTimeoutProcessor(
-      EpochChange initialEpoch, EventDispatcher<EpochLocalTimeoutOccurrence> timeoutDispatcher) {
+      ConsensusBootstrapProvider consensusBootstrapProvider,
+      EventDispatcher<EpochLocalTimeoutOccurrence> timeoutDispatcher) {
     return timeoutOccurrence ->
         timeoutDispatcher.dispatch(
-            new EpochLocalTimeoutOccurrence(initialEpoch.getNextEpoch(), timeoutOccurrence));
+            new EpochLocalTimeoutOccurrence(
+                consensusBootstrapProvider.currentKnownEpoch().getNextEpoch(), timeoutOccurrence));
   }
 
   @Provides

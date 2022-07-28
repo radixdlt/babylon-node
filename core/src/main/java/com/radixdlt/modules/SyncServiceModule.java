@@ -83,13 +83,11 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;
-import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
 import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseHandler;
 import com.radixdlt.sync.RemoteSyncService;
 import com.radixdlt.sync.SyncConfig;
-import com.radixdlt.sync.SyncState;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.SyncRequest;
@@ -106,10 +104,10 @@ public class SyncServiceModule extends AbstractModule {
     bind(RemoteSyncService.class).in(Scopes.SINGLETON);
   }
 
-  @Provides
-  private SyncState initialSyncState(@LastProof LedgerProof currentHeader) {
-    return SyncState.IdleState.init(currentHeader);
-  }
+  //  @Provides
+  //  private SyncState initialSyncState(@LastProof LedgerProof currentHeader) {
+  //    return SyncState.IdleState.init(currentHeader);
+  //  }
 
   @ProvidesIntoSet
   private RemoteEventProcessorOnRunner<?> syncRequestEventProcessor(

@@ -62,87 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1.modules;
+package com.radixdlt.modules;
 
-import com.google.inject.AbstractModule;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 
-/** Recovery for ledger */
-public final class LedgerRecoveryModule extends AbstractModule {
-  //  @Provides
-  //  @Singleton
-  //  @LastStoredProof
-  //  LedgerProof lastStoredProof(
-  //      // TODO: Remove this by moving the genesis committedDispatcher.dispatch to getRadixEngine
-  //      RadixEngine<LedgerAndBFTProof> radixEngine,
-  //      CommittedReader committedReader,
-  //      @Genesis CommittedTransactionsWithProof genesis,
-  //      EventDispatcher<REOutput> committedDispatcher // FIXME: this is hack so client can get
-  // genesis
-  //      ) {
-  //    return committedReader
-  //        .getLastProof()
-  //        .orElseGet(
-  //            () -> {
-  //              var txns = genesis.getTransactions();
-  //              var proof = LedgerAndBFTProof.create(genesis.getProof());
-  //              try {
-  //                var result = radixEngine.execute(txns, proof, PermissionLevel.SYSTEM);
-  //                committedDispatcher.dispatch(REOutput.create(result.getProcessedTxns()));
-  //              } catch (RadixEngineException e) {
-  //                throw new IllegalStateException("Error during node initialization", e);
-  //              }
-  //
-  //              return genesis.getProof();
-  //            });
-  //  }
-  //
-  //  @Provides
-  //  @Singleton
-  //  @LastProof
-  //  LedgerProof lastProof(
-  //      VertexStoreState vertexStoreState, @LastStoredProof LedgerProof lastStoredProof) {
-  //    if (lastStoredProof.isEndOfEpoch()) {
-  //      return vertexStoreState.getRootHeader();
-  //    } else {
-  //      return lastStoredProof;
-  //    }
-  //  }
-  //
-  //  @Provides
-  //  @Singleton
-  //  @LastEpochProof
-  //  LedgerProof lastEpochProof(
-  //      CommittedReader committedReader, @LastStoredProof LedgerProof lastStoredProof) {
-  //    if (lastStoredProof.isEndOfEpoch()) {
-  //      return lastStoredProof;
-  //    }
-  //    return committedReader.getEpochProof(lastStoredProof.getEpoch()).orElseThrow();
-  //  }
-  //
-  //  private static VertexStoreState genesisEpochProofToGenesisVertexStore(
-  //      LedgerProof lastEpochProof, Hasher hasher) {
-  //    var genesisVertex = Vertex.createGenesis(lastEpochProof.getHeader()).withId(hasher);
-  //    var nextLedgerHeader =
-  //        LedgerHeader.create(
-  //            lastEpochProof.getNextEpoch(),
-  //            Round.genesis(),
-  //            lastEpochProof.getAccumulatorState(),
-  //            lastEpochProof.timestamp());
-  //    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
-  //    return VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(),
-  // hasher);
-  //  }
-  //
-  //  @Provides
-  //  @Singleton
-  //  private VertexStoreState vertexStoreState(
-  //      @LastEpochProof LedgerProof lastEpochProof,
-  //      Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState,
-  //      Hasher hasher) {
-  //    var currentEpoch = lastEpochProof.getNextEpoch();
-  //    return serializedVertexStoreState
-  //        .filter(vertexStoreState -> vertexStoreState.isForEpoch(currentEpoch))
-  //        .map(state -> state.toVertexStoreState(hasher))
-  //        .orElseGet(() -> genesisEpochProofToGenesisVertexStore(lastEpochProof, hasher));
-  //  }
+public class OlympiaGenesisProvider {
+
+  public CommittedTransactionsWithProof getGenesis() {
+    return null;
+  }
 }

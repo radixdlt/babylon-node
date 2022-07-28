@@ -73,6 +73,7 @@ import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.modules.ConsensusBootstrapProvider;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -90,13 +91,30 @@ public final class SafetyRules {
   private final Hasher hasher;
   private final HashSigner signer;
   private final HashVerifier hashVerifier;
-  private final BFTValidatorSet validatorSet;
+  private BFTValidatorSet validatorSet;
   private final PersistentSafetyStateStore persistentSafetyStateStore;
 
-  private SafetyState state;
+  private SafetyState safetyState;
   private final Set<HashCode> verifiedCertificatesCache = new LinkedHashSet<>();
 
+  private ConsensusBootstrapProvider consensusBootstrapProvider;
+
   @Inject
+  public SafetyRules(
+      @Self BFTNode self,
+      PersistentSafetyStateStore persistentSafetyStateStore,
+      Hasher hasher,
+      HashSigner signer,
+      HashVerifier hashVerifier,
+      ConsensusBootstrapProvider consensusBootstrapProvider) {
+    this.self = self;
+    this.persistentSafetyStateStore = Objects.requireNonNull(persistentSafetyStateStore);
+    this.hasher = Objects.requireNonNull(hasher);
+    this.signer = Objects.requireNonNull(signer);
+    this.hashVerifier = Objects.requireNonNull(hashVerifier);
+    this.consensusBootstrapProvider = consensusBootstrapProvider;
+  }
+
   public SafetyRules(
       @Self BFTNode self,
       SafetyState initialState,
@@ -106,7 +124,7 @@ public final class SafetyRules {
       HashVerifier hashVerifier,
       BFTValidatorSet validatorSet) {
     this.self = self;
-    this.state = Objects.requireNonNull(initialState);
+    this.safetyState = Objects.requireNonNull(initialState);
     this.persistentSafetyStateStore = Objects.requireNonNull(persistentSafetyStateStore);
     this.hasher = Objects.requireNonNull(hasher);
     this.signer = Objects.requireNonNull(signer);
@@ -116,11 +134,11 @@ public final class SafetyRules {
 
   private boolean checkLastVoted(VertexWithHash proposedVertex) {
     // ensure vertex does not violate earlier votes
-    if (proposedVertex.getRound().lte(this.state.getLastVotedRound())) {
+    if (proposedVertex.getRound().lte(this.getSafetyState().getLastVotedRound())) {
       logger.warn(
           "Safety warning: Vertex {} violates earlier vote at round {}",
           proposedVertex,
-          this.state.getLastVotedRound());
+          this.getSafetyState().getLastVotedRound());
       return false;
     } else {
       return true;
@@ -128,16 +146,19 @@ public final class SafetyRules {
   }
 
   private boolean checkLocked(VertexWithHash proposedVertex, Builder nextStateBuilder) {
-    if (proposedVertex.getParentHeader().getRound().lt(this.state.getLockedRound())) {
+    if (proposedVertex.getParentHeader().getRound().lt(this.getSafetyState().getLockedRound())) {
       logger.warn(
           "Safety warning: Vertex {} does not respect locked round {}",
           proposedVertex,
-          this.state.getLockedRound());
+          this.getSafetyState().getLockedRound());
       return false;
     }
 
     // pre-commit phase on consecutive qc's proposed vertex
-    if (proposedVertex.getGrandParentHeader().getRound().compareTo(this.state.getLockedRound())
+    if (proposedVertex
+            .getGrandParentHeader()
+            .getRound()
+            .compareTo(this.getSafetyState().getLockedRound())
         > 0) {
       nextStateBuilder.lockedRound(proposedVertex.getGrandParentHeader().getRound());
     }
@@ -156,12 +177,12 @@ public final class SafetyRules {
       VertexWithHash proposedVertex,
       QuorumCertificate highestCommittedQC,
       Optional<TimeoutCertificate> highestTC) {
-    final Builder safetyStateBuilder = this.state.toBuilder();
+    final Builder safetyStateBuilder = this.getSafetyState().toBuilder();
     if (!checkLocked(proposedVertex, safetyStateBuilder)) {
       return Optional.empty();
     }
 
-    this.state = safetyStateBuilder.build();
+    this.safetyState = safetyStateBuilder.build();
 
     final ECDSASignature signature = this.signer.sign(proposedVertex.getHash());
     return Optional.of(
@@ -197,7 +218,7 @@ public final class SafetyRules {
    */
   public Optional<Vote> voteFor(
       VertexWithHash proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
-    Builder safetyStateBuilder = this.state.toBuilder();
+    Builder safetyStateBuilder = this.getSafetyState().toBuilder();
 
     if (!checkLastVoted(proposedVertex)) {
       return Optional.empty();
@@ -211,8 +232,8 @@ public final class SafetyRules {
 
     safetyStateBuilder.lastVote(vote);
 
-    this.state = safetyStateBuilder.build();
-    this.persistentSafetyStateStore.commitState(this.state);
+    this.safetyState = safetyStateBuilder.build();
+    this.persistentSafetyStateStore.commitState(this.getSafetyState());
 
     return Optional.of(vote);
   }
@@ -228,8 +249,8 @@ public final class SafetyRules {
     final ECDSASignature timeoutSignature = this.signer.sign(voteTimeoutHash);
     final Vote timeoutVote = vote.withTimeoutSignature(timeoutSignature);
 
-    this.state = this.state.toBuilder().lastVote(timeoutVote).build();
-    this.persistentSafetyStateStore.commitState(this.state);
+    this.safetyState = this.getSafetyState().toBuilder().lastVote(timeoutVote).build();
+    this.persistentSafetyStateStore.commitState(this.getSafetyState());
 
     return timeoutVote;
   }
@@ -245,7 +266,9 @@ public final class SafetyRules {
   }
 
   public Optional<Vote> getLastVote(Round round) {
-    return this.state.getLastVote().filter(lastVote -> lastVote.getRound().equals(round));
+    return this.getSafetyState()
+        .getLastVote()
+        .filter(lastVote -> lastVote.getRound().equals(round));
   }
 
   public boolean verifyHighQcAgainstTheValidatorSet(HighQC highQC) {
@@ -271,7 +294,7 @@ public final class SafetyRules {
       return false;
     }
 
-    final var validationState = ValidationState.forValidatorSet(validatorSet);
+    final var validationState = ValidationState.forValidatorSet(this.getValidatorSet());
 
     final var allSignaturesAddedSuccessfully =
         qc.getTimestampedSignatures().getSignatures().entrySet().stream()
@@ -331,7 +354,7 @@ public final class SafetyRules {
     }
 
     final var isTcValid =
-        tc.getSigners().allMatch(validatorSet::containsNode)
+        tc.getSigners().allMatch(this.getValidatorSet()::containsNode)
             && areAllTcTimestampedSignaturesValid(tc);
 
     if (isTcValid) {
@@ -350,5 +373,19 @@ public final class SafetyRules {
               final var nodePublicKey = e.getKey().getKey();
               return hashVerifier.verify(nodePublicKey, voteTimeoutHash, e.getValue().signature());
             });
+  }
+
+  public BFTValidatorSet getValidatorSet() {
+    if (this.validatorSet == null) {
+      this.validatorSet = this.consensusBootstrapProvider.currentKnownValidatorSet();
+    }
+    return validatorSet;
+  }
+
+  public SafetyState getSafetyState() {
+    if (this.safetyState == null) {
+      this.safetyState = this.consensusBootstrapProvider.initialSafetyState();
+    }
+    return safetyState;
   }
 }

@@ -81,10 +81,10 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.modules.LedgerProofProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Comparator;
@@ -158,11 +158,12 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   private final TimeSupplier timeSupplier;
 
   private LedgerProof currentLedgerHeader;
+  private final LedgerProofProvider ledgerProofProvider;
 
   @Inject
   public StateComputerLedger(
       TimeSupplier timeSupplier,
-      @LastProof LedgerProof initialLedgerState,
+      LedgerProofProvider ledgerProofProvider,
       Comparator<LedgerProof> headerComparator,
       StateComputer stateComputer,
       LedgerAccumulator accumulator,
@@ -174,7 +175,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     this.counters = Objects.requireNonNull(counters);
     this.accumulator = Objects.requireNonNull(accumulator);
     this.verifier = Objects.requireNonNull(verifier);
-    this.currentLedgerHeader = initialLedgerState;
+    this.ledgerProofProvider = ledgerProofProvider;
   }
 
   public RemoteEventProcessor<MempoolAdd> mempoolAddRemoteEventProcessor() {
@@ -215,7 +216,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
             .collect(ImmutableList.toImmutableList());
 
     synchronized (lock) {
-      if (this.currentLedgerHeader.getStateVersion() > parentAccumulatorState.getStateVersion()) {
+      if (this.getCurrentLedgerHeader().getStateVersion()
+          > parentAccumulatorState.getStateVersion()) {
         return Optional.empty();
       }
 
@@ -233,7 +235,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
       final var executedTransactionsOptional =
           this.verifier.verifyAndGetExtension(
-              this.currentLedgerHeader.getAccumulatorState(),
+              this.getCurrentLedgerHeader().getAccumulatorState(),
               prevTransactions,
               p -> p.transaction().getId().asHashCode(),
               parentAccumulatorState);
@@ -299,20 +301,23 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       VertexStoreState vertexStoreState) {
     synchronized (lock) {
       final LedgerProof nextHeader = committedTransactionsWithProof.getProof();
-      if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {
+      if (headerComparator.compare(nextHeader, this.getCurrentLedgerHeader()) <= 0) {
         return;
       }
 
       var verifiedExtension =
           verifier.verifyAndGetExtension(
-              this.currentLedgerHeader.getAccumulatorState(),
+              this.getCurrentLedgerHeader().getAccumulatorState(),
               committedTransactionsWithProof.getTransactions(),
               transaction -> transaction.getId().asHashCode(),
               committedTransactionsWithProof.getProof().getAccumulatorState());
 
       if (verifiedExtension.isEmpty()) {
         throw new ByzantineQuorumException(
-            "Accumulator failure " + currentLedgerHeader + " " + committedTransactionsWithProof);
+            "Accumulator failure "
+                + getCurrentLedgerHeader()
+                + " "
+                + committedTransactionsWithProof);
       }
 
       var transactions = verifiedExtension.get();
@@ -332,7 +337,14 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       // TODO: move all of the following to post-persist event handling
       this.currentLedgerHeader = nextHeader;
       this.counters.set(
-          CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
+          CounterType.LEDGER_STATE_VERSION, this.getCurrentLedgerHeader().getStateVersion());
     }
+  }
+
+  public LedgerProof getCurrentLedgerHeader() {
+    if (this.currentLedgerHeader == null) {
+      this.currentLedgerHeader = this.ledgerProofProvider.getLastProof();
+    }
+    return this.currentLedgerHeader;
   }
 }
