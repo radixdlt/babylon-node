@@ -91,6 +91,7 @@ import com.radixdlt.harness.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.ModuleRunner;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.forks.InMemoryForksEpochStore;
@@ -293,7 +294,7 @@ public class SimulationNodes {
     public Observable<EpochChange> latestEpochChanges() {
       // Just do first instance for now
       final var initialEpoch =
-          nodes.values().stream().findAny().orElseThrow().getInstance(EpochChange.class);
+          nodes.values().stream().findAny().orElseThrow().getInstance(ConsensusBootstrapProvider.class).currentKnownEpoch();
 
       return Observable.just(initialEpoch)
           .concatWith(

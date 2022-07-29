@@ -65,6 +65,7 @@
 package com.radixdlt.sync.validation;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import java.util.Objects;
 
@@ -74,7 +75,13 @@ import java.util.Objects;
  */
 public class RemoteSyncResponseValidatorSetVerifier {
 
-  private final BFTValidatorSet validatorSet;
+  private BFTValidatorSet validatorSet;
+
+  private ConsensusBootstrapProvider consensusBootstrapProvider;
+
+  public RemoteSyncResponseValidatorSetVerifier(ConsensusBootstrapProvider consensusBootstrapProvider) {
+    this.consensusBootstrapProvider = Objects.requireNonNull(consensusBootstrapProvider);
+  }
 
   public RemoteSyncResponseValidatorSetVerifier(BFTValidatorSet validatorSet) {
     this.validatorSet = Objects.requireNonNull(validatorSet);
@@ -82,7 +89,7 @@ public class RemoteSyncResponseValidatorSetVerifier {
 
   public boolean verifyValidatorSet(SyncResponse syncResponse) {
     final var transactionsWithProofDto = syncResponse.getTransactionsWithProofDto();
-    final var validationState = validatorSet.newValidationState();
+    final var validationState = this.getValidatorSet().newValidationState();
 
     transactionsWithProofDto
         .getTail()
@@ -93,5 +100,12 @@ public class RemoteSyncResponseValidatorSetVerifier {
                 validationState.addSignature(node, signature.timestamp(), signature.signature()));
 
     return validationState.complete();
+  }
+
+  public BFTValidatorSet getValidatorSet() {
+    if (this.validatorSet == null) {
+      this.validatorSet = this.consensusBootstrapProvider.currentKnownValidatorSet();
+    }
+    return validatorSet;
   }
 }

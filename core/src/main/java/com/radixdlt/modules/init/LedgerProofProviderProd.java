@@ -62,13 +62,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.modules.init;
 
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.sync.CommittedReader;
 
-public class OlympiaGenesisProvider {
+public class LedgerProofProviderProd implements LedgerProofProvider {
 
-  public CommittedTransactionsWithProof getGenesis() {
-    return null;
+  private CommittedReader committedReader;
+  private OlympiaGenesisProvider olympiaGenesisProvider;
+  private Provider<ConsensusBootstrapProvider> consensusBootstrapProvider;
+
+  public LedgerProofProviderProd(
+      CommittedReader committedReader,
+      OlympiaGenesisProvider olympiaGenesisProvider,
+      Provider<ConsensusBootstrapProvider> consensusBootstrapProvider) {
+    this.committedReader = committedReader;
+    this.olympiaGenesisProvider = olympiaGenesisProvider;
+    this.consensusBootstrapProvider = consensusBootstrapProvider;
+  }
+
+  public LedgerProof getLastProof() {
+    var lastStoredProof = lastStoredProof();
+    if (lastStoredProof.isEndOfEpoch()) {
+      return this.consensusBootstrapProvider.get().getVertexStoreState().getRootHeader();
+    } else {
+      return lastStoredProof;
+    }
+  }
+
+  public LedgerProof getLastEpochProof() {
+    var lastStoredProof = lastStoredProof();
+    if (lastStoredProof.isEndOfEpoch()) {
+      return lastStoredProof;
+    }
+    return committedReader.getEpochProof(lastStoredProof.getEpoch()).orElseThrow();
+  }
+
+  private LedgerProof lastStoredProof() {
+    return committedReader.getLastProof().orElse(olympiaGenesisProvider.getGenesis().getProof());
   }
 }

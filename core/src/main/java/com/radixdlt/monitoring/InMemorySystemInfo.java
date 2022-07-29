@@ -74,7 +74,8 @@ import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.modules.LedgerProofProvider;
+import com.radixdlt.modules.init.LedgerProofProvider;
+import com.radixdlt.modules.init.LedgerProofProviderProd;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 

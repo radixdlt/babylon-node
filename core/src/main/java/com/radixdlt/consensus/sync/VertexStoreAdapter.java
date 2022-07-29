@@ -79,27 +79,49 @@ import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.VertexChain;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
 
 public final class VertexStoreAdapter {
-  private final VertexStore vertexStore;
+  private VertexStore vertexStore;
 
   private final EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher;
   private final EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher;
   private final EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher;
   private final EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher;
 
+  private ConsensusBootstrapProvider consensusBootstrapProvider;
+
   @Inject
   public VertexStoreAdapter(
-      VertexStore vertexStore,
-      EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
-      EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
-      EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
-      EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher) {
+          EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
+          EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
+          EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
+          EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher,
+          ConsensusBootstrapProvider consensusBootstrapProvider) {
+    this(highQCUpdateDispatcher, bftUpdateDispatcher, bftRebuildDispatcher, bftCommittedDispatcher);
+    this.consensusBootstrapProvider = consensusBootstrapProvider;
+  }
+
+  public VertexStoreAdapter(
+          VertexStore vertexStore,
+          EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
+          EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
+          EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
+          EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher) {
+    this(highQCUpdateDispatcher, bftUpdateDispatcher, bftRebuildDispatcher, bftCommittedDispatcher);
     this.vertexStore = Objects.requireNonNull(vertexStore);
+  }
+
+  private VertexStoreAdapter(
+          EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
+          EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
+          EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
+          EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher) {
     this.highQCUpdateDispatcher = Objects.requireNonNull(highQCUpdateDispatcher);
     this.bftUpdateDispatcher = Objects.requireNonNull(bftUpdateDispatcher);
     this.bftRebuildDispatcher = Objects.requireNonNull(bftRebuildDispatcher);
@@ -107,7 +129,7 @@ public final class VertexStoreAdapter {
   }
 
   public boolean tryRebuild(VertexStoreState vertexStoreState) {
-    final var result = vertexStore.tryRebuild(vertexStoreState);
+    final var result = this.getVertexStore().tryRebuild(vertexStoreState);
 
     result.onPresent(
         newVertexStoreState ->
@@ -117,11 +139,11 @@ public final class VertexStoreAdapter {
   }
 
   public void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
-    vertexStore.insertTimeoutCertificate(timeoutCertificate);
+    this.getVertexStore().insertTimeoutCertificate(timeoutCertificate);
   }
 
   public boolean insertQc(QuorumCertificate qc) {
-    return switch (vertexStore.insertQc(qc)) {
+    return switch (this.getVertexStore().insertQc(qc)) {
       case VertexStore.InsertQcResult.Inserted inserted -> {
         // TODO: why is this if statement needed?
         if (inserted.committedUpdate().isEmpty()) {
@@ -142,15 +164,15 @@ public final class VertexStoreAdapter {
   }
 
   public Optional<ExecutedVertex> getExecutedVertex(HashCode vertexHash) {
-    return vertexStore.getExecutedVertex(vertexHash).toOptional();
+    return this.getVertexStore().getExecutedVertex(vertexHash).toOptional();
   }
 
   public List<ExecutedVertex> getPathFromRoot(HashCode vertexHash) {
-    return vertexStore.getPathFromRoot(vertexHash);
+    return this.getVertexStore().getPathFromRoot(vertexHash);
   }
 
   public void insertVertexChain(VertexChain vertexChain) {
-    final var result = vertexStore.insertVertexChain(vertexChain);
+    final var result = this.getVertexStore().insertVertexChain(vertexChain);
     result
         .insertedQcs()
         .forEach(
@@ -170,32 +192,39 @@ public final class VertexStoreAdapter {
   }
 
   public Optional<ImmutableList<VertexWithHash>> getVertices(HashCode vertexId, int count) {
-    return vertexStore.getVertices(vertexId, count).toOptional();
+    return this.getVertexStore().getVertices(vertexId, count).toOptional();
   }
 
   public void insertVertex(VertexWithHash vertex) {
-    final var result = vertexStore.insertVertex(vertex);
+    final var result = this.getVertexStore().insertVertex(vertex);
     result.onPresent(bftUpdateDispatcher::dispatch);
   }
 
   public boolean containsVertex(HashCode vertexId) {
-    return vertexStore.containsVertex(vertexId);
+    return this.getVertexStore().containsVertex(vertexId);
   }
 
   public boolean hasCommittedVertexOrRootAtOrAboveRound(BFTHeader committedHeader) {
-    if (vertexStore.containsVertex(committedHeader.getVertexId())) {
+    if (this.getVertexStore().containsVertex(committedHeader.getVertexId())) {
       return true;
     } else {
-      final var rootRound = vertexStore.getRoot().getRound();
+      final var rootRound = this.getVertexStore().getRoot().getRound();
       return rootRound.gte(committedHeader.getRound());
     }
   }
 
   public HighQC highQC() {
-    return vertexStore.highQC();
+    return this.getVertexStore().highQC();
   }
 
   public VertexWithHash getRoot() {
-    return vertexStore.getRoot();
+    return this.getVertexStore().getRoot();
+  }
+
+  public VertexStore getVertexStore() {
+    if (this.vertexStore == null) {
+      this.vertexStore = this.consensusBootstrapProvider.vertexStore();
+    }
+    return this.vertexStore;
   }
 }

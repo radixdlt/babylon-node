@@ -64,44 +64,28 @@
 
 package com.radixdlt.modules;
 
-import com.google.inject.Inject;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.modules.init.LedgerProofProvider;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
 
-public class LedgerProofProvider {
+public class TestLedgerProofProviderModule extends AbstractModule {
 
-  private CommittedReader committedReader;
-  private OlympiaGenesisProvider olympiaGenesisProvider;
-  private ConsensusBootstrapProvider consensusBootstrapProvider;
+  @Provides
+  public LedgerProofProvider get(
+      @LastProof LedgerProof lastProof, @LastEpochProof LedgerProof lastEpochProof) {
+    return new LedgerProofProvider() {
+      @Override
+      public LedgerProof getLastProof() {
+        return lastProof;
+      }
 
-  @Inject
-  public LedgerProofProvider(
-      CommittedReader committedReader,
-      OlympiaGenesisProvider olympiaGenesisProvider,
-      ConsensusBootstrapProvider consensusBootstrapProvider) {
-    this.committedReader = committedReader;
-    this.olympiaGenesisProvider = olympiaGenesisProvider;
-    this.consensusBootstrapProvider = consensusBootstrapProvider;
-  }
-
-  public LedgerProof getLastProof() {
-    var lastStoredProof = lastStoredProof();
-    if (lastStoredProof.isEndOfEpoch()) {
-      return this.consensusBootstrapProvider.getVertexStoreState().getRootHeader();
-    } else {
-      return lastStoredProof;
-    }
-  }
-
-  public LedgerProof getLastEpochProof() {
-    var lastStoredProof = lastStoredProof();
-    if (lastStoredProof.isEndOfEpoch()) {
-      return lastStoredProof;
-    }
-    return committedReader.getEpochProof(lastStoredProof.getEpoch()).orElseThrow();
-  }
-
-  private LedgerProof lastStoredProof() {
-    return committedReader.getLastProof().orElse(olympiaGenesisProvider.getGenesis().getProof());
+      @Override
+      public LedgerProof getLastEpochProof() {
+        return lastEpochProof;
+      }
+    };
   }
 }

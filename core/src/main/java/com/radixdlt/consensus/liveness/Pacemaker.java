@@ -74,6 +74,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.transactions.Transaction;
@@ -90,7 +91,7 @@ public final class Pacemaker {
 
   private final BFTNode self;
   private final SystemCounters counters;
-  private final BFTValidatorSet validatorSet;
+  private BFTValidatorSet validatorSet;
   private final VertexStoreAdapter vertexStore;
   private final SafetyRules safetyRules;
   private final ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender;
@@ -107,25 +108,25 @@ public final class Pacemaker {
   private boolean isRoundTimedOut = false;
   private Optional<HashCode> timeoutVoteVertexId = Optional.empty();
 
+  private ConsensusBootstrapProvider consensusBootstrapProvider;
+
   public Pacemaker(
-      BFTNode self,
-      SystemCounters counters,
-      BFTValidatorSet validatorSet,
-      VertexStoreAdapter vertexStore,
-      SafetyRules safetyRules,
-      EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
-      ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
-      PacemakerTimeoutCalculator timeoutCalculator,
-      ProposalGenerator proposalGenerator,
-      RemoteEventDispatcher<Proposal> proposalDispatcher,
-      RemoteEventDispatcher<Vote> voteDispatcher,
-      Hasher hasher,
-      TimeSupplier timeSupplier,
-      RoundUpdate initialRoundUpdate,
-      SystemCounters systemCounters) {
+          BFTNode self,
+          SystemCounters counters,
+          VertexStoreAdapter vertexStore,
+          SafetyRules safetyRules,
+          EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
+          ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
+          PacemakerTimeoutCalculator timeoutCalculator,
+          ProposalGenerator proposalGenerator,
+          RemoteEventDispatcher<Proposal> proposalDispatcher,
+          RemoteEventDispatcher<Vote> voteDispatcher,
+          Hasher hasher,
+          TimeSupplier timeSupplier,
+          SystemCounters systemCounters,
+          ConsensusBootstrapProvider consensusBootstrapProvider) {
     this.self = Objects.requireNonNull(self);
     this.counters = Objects.requireNonNull(counters);
-    this.validatorSet = Objects.requireNonNull(validatorSet);
     this.vertexStore = Objects.requireNonNull(vertexStore);
     this.safetyRules = Objects.requireNonNull(safetyRules);
     this.timeoutSender = Objects.requireNonNull(timeoutSender);
@@ -136,12 +137,62 @@ public final class Pacemaker {
     this.hasher = Objects.requireNonNull(hasher);
     this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
     this.timeSupplier = Objects.requireNonNull(timeSupplier);
+    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this.consensusBootstrapProvider = Objects.requireNonNull(consensusBootstrapProvider);
+  }
+
+  public Pacemaker(
+          BFTNode self,
+          SystemCounters counters,
+          BFTValidatorSet validatorSet,
+          VertexStoreAdapter vertexStore,
+          SafetyRules safetyRules,
+          EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
+          ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
+          PacemakerTimeoutCalculator timeoutCalculator,
+          ProposalGenerator proposalGenerator,
+          RemoteEventDispatcher<Proposal> proposalDispatcher,
+          RemoteEventDispatcher<Vote> voteDispatcher,
+          Hasher hasher,
+          TimeSupplier timeSupplier,
+          RoundUpdate initialRoundUpdate,
+          SystemCounters systemCounters) {
+    this(self, counters, vertexStore, safetyRules, timeoutDispatcher, timeoutSender, timeoutCalculator, proposalGenerator, proposalDispatcher, voteDispatcher, hasher, timeSupplier, systemCounters);
+    this.validatorSet = Objects.requireNonNull(validatorSet);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
+  }
+
+  public Pacemaker(
+          BFTNode self,
+          SystemCounters counters,
+          VertexStoreAdapter vertexStore,
+          SafetyRules safetyRules,
+          EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
+          ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
+          PacemakerTimeoutCalculator timeoutCalculator,
+          ProposalGenerator proposalGenerator,
+          RemoteEventDispatcher<Proposal> proposalDispatcher,
+          RemoteEventDispatcher<Vote> voteDispatcher,
+          Hasher hasher,
+          TimeSupplier timeSupplier,
+          SystemCounters systemCounters) {
+    this.self = Objects.requireNonNull(self);
+    this.counters = Objects.requireNonNull(counters);
+    this.vertexStore = Objects.requireNonNull(vertexStore);
+    this.safetyRules = Objects.requireNonNull(safetyRules);
+    this.timeoutSender = Objects.requireNonNull(timeoutSender);
+    this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
+    this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
+    this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
+    this.proposalDispatcher = Objects.requireNonNull(proposalDispatcher);
+    this.hasher = Objects.requireNonNull(hasher);
+    this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
+    this.timeSupplier = Objects.requireNonNull(timeSupplier);
     this.systemCounters = Objects.requireNonNull(systemCounters);
   }
 
   public void start() {
-    log.info("Pacemaker Start: {}", latestRoundUpdate);
+    log.info("Pacemaker Start: {}", this.getLatestRoundUpdate());
     this.startRound();
   }
 
@@ -149,7 +200,7 @@ public final class Pacemaker {
   public void processRoundUpdate(RoundUpdate roundUpdate) {
     log.trace("Round Update: {}", roundUpdate);
 
-    final var previousRound = this.latestRoundUpdate.getCurrentRound();
+    final var previousRound = this.getLatestRoundUpdate().getCurrentRound();
     if (roundUpdate.getCurrentRound().lte(previousRound)) {
       return;
     }
@@ -178,24 +229,24 @@ public final class Pacemaker {
     this.timeoutVoteVertexId = Optional.empty();
 
     final var timeoutMs =
-        timeoutCalculator.calculateTimeoutMs(latestRoundUpdate.consecutiveUncommittedRoundsCount());
-    final var timeoutEvent = ScheduledLocalTimeout.create(latestRoundUpdate, timeoutMs);
+        timeoutCalculator.calculateTimeoutMs(this.getLatestRoundUpdate().consecutiveUncommittedRoundsCount());
+    final var timeoutEvent = ScheduledLocalTimeout.create(this.getLatestRoundUpdate(), timeoutMs);
     this.timeoutSender.dispatch(timeoutEvent, timeoutMs);
 
-    final var currentRoundProposer = latestRoundUpdate.getLeader();
+    final var currentRoundProposer = this.getLatestRoundUpdate().getLeader();
     if (this.self.equals(currentRoundProposer)) {
-      Optional<Proposal> proposalMaybe = generateProposal(latestRoundUpdate.getCurrentRound());
+      Optional<Proposal> proposalMaybe = generateProposal(this.getLatestRoundUpdate().getCurrentRound());
       proposalMaybe.ifPresent(
           proposal -> {
             log.trace("Broadcasting proposal: {}", proposal);
-            this.proposalDispatcher.dispatch(this.validatorSet.nodes(), proposal);
+            this.proposalDispatcher.dispatch(this.getValidatorSet().nodes(), proposal);
             this.counters.increment(CounterType.BFT_PACEMAKER_PROPOSALS_SENT);
           });
     }
   }
 
   private Optional<Proposal> generateProposal(Round round) {
-    final var highQC = this.latestRoundUpdate.getHighQC();
+    final var highQC = this.getLatestRoundUpdate().getHighQC();
     final var highestQC = highQC.highestQC();
 
     final var nextTransactions = getTransactionsForProposal(round, highestQC);
@@ -230,11 +281,11 @@ public final class Pacemaker {
   public void processLocalTimeout(ScheduledLocalTimeout scheduledTimeout) {
     final var round = scheduledTimeout.round();
 
-    if (!round.equals(this.latestRoundUpdate.getCurrentRound())) {
+    if (!round.equals(this.getLatestRoundUpdate().getCurrentRound())) {
       log.trace(
           "LocalTimeout: Ignoring timeout {}, current is {}",
           scheduledTimeout,
-          this.latestRoundUpdate.getCurrentRound());
+          this.getLatestRoundUpdate().getCurrentRound());
       return;
     }
 
@@ -249,7 +300,7 @@ public final class Pacemaker {
         .map(this.safetyRules::timeoutVote)
         .ifPresentOrElse(
             /* if there is a previously sent vote, we time it out and broadcast to all nodes */
-            vote -> this.voteDispatcher.dispatch(this.validatorSet.nodes(), vote),
+            vote -> this.voteDispatcher.dispatch(this.getValidatorSet().nodes(), vote),
             /* otherwise, we asynchronously insert an empty vertex and, when done,
             we send a timeout vote on it (see processBFTUpdate) */
             () -> createTimeoutVertexAndSendVote(scheduledTimeout.roundUpdate()));
@@ -257,12 +308,26 @@ public final class Pacemaker {
     rescheduleTimeout(scheduledTimeout);
   }
 
+  public BFTValidatorSet getValidatorSet() {
+    if (this.validatorSet == null) {
+      this.validatorSet = this.consensusBootstrapProvider.currentKnownValidatorSet();
+    }
+    return this.validatorSet;
+  }
+
+  public RoundUpdate getLatestRoundUpdate() {
+    if (this.latestRoundUpdate == null) {
+      this.latestRoundUpdate = this.consensusBootstrapProvider.currentKnownRoundUpdate();
+    }
+    return this.latestRoundUpdate;
+  }
+
   private void createTimeoutVertexAndSendVote(RoundUpdate roundUpdate) {
     if (this.timeoutVoteVertexId.isPresent()) {
       return; // vertex for a timeout vote for this round is already inserted
     }
 
-    final var highQC = this.latestRoundUpdate.getHighQC();
+    final var highQC = this.getLatestRoundUpdate().getHighQC();
     final var vertex =
         Vertex.createTimeout(
                 highQC.highestQC(), roundUpdate.getCurrentRound(), roundUpdate.getLeader())
@@ -300,11 +365,11 @@ public final class Pacemaker {
             executedVertex.getVertex(),
             bftHeader,
             this.timeSupplier.currentTime(),
-            this.latestRoundUpdate.getHighQC());
+            this.getLatestRoundUpdate().getHighQC());
 
     final var timeoutVote = this.safetyRules.timeoutVote(baseVote);
 
-    this.voteDispatcher.dispatch(this.validatorSet.nodes(), timeoutVote);
+    this.voteDispatcher.dispatch(this.getValidatorSet().nodes(), timeoutVote);
   }
 
   private void updateTimeoutCounters(ScheduledLocalTimeout scheduledTimeout) {
@@ -319,7 +384,7 @@ public final class Pacemaker {
     this.timeoutDispatcher.dispatch(localTimeoutOccurrence);
 
     final var timeout =
-        timeoutCalculator.calculateTimeoutMs(latestRoundUpdate.consecutiveUncommittedRoundsCount());
+        timeoutCalculator.calculateTimeoutMs(this.getLatestRoundUpdate().consecutiveUncommittedRoundsCount());
     final var nextTimeout = scheduledTimeout.nextRetry(timeout);
     this.timeoutSender.dispatch(nextTimeout, timeout);
   }

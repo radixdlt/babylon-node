@@ -70,7 +70,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.modules.ConsensusBootstrapProvider;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.local.SyncCheckReceiveStatusTimeout;

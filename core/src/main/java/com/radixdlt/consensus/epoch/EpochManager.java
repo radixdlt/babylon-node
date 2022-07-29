@@ -93,7 +93,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.modules.ConsensusBootstrapProvider;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;

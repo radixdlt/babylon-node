@@ -70,7 +70,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.modules.ConsensusBootstrapProvider;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

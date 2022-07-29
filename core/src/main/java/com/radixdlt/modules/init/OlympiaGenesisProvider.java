@@ -62,61 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus;
+package com.radixdlt.modules.init;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
 
-import com.radixdlt.consensus.sync.*;
-import com.radixdlt.harness.simulation.Monitor;
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.SimulationTest.Builder;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import java.util.concurrent.TimeUnit;
-import org.junit.Test;
+public class OlympiaGenesisProvider {
 
-public class FPlusOneOutOfBoundsTest {
-  private static final int LATENCY_MS = 50;
-  private static final int TIMEOUT_MS = 50 * 10;
-  private static final int LIVENESS_MS = 50 * 20;
-  private final Builder bftTestBuilder =
-      SimulationTest.builder()
-          .pacemakerTimeout(TIMEOUT_MS)
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(LIVENESS_MS, TimeUnit.MILLISECONDS));
-
-  /** Tests a configuration of 0 out of 3 nodes out of synchrony bounds */
-  @Test
-  public void given_0_out_of_3_nodes_out_of_synchrony_bounds() {
-    SimulationTest test =
-        bftTestBuilder
-            .numNodes(3)
-            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(LATENCY_MS))
-            .build();
-
-    final var runningTest = test.run();
-    final var checkResults = runningTest.awaitCompletion();
-
-    assertThat(checkResults).allSatisfy((name, error) -> assertThat(error).isNotPresent());
-  }
-
-  /** Tests a configuration of 1 out of 3 nodes out of synchrony bounds */
-  @Test
-  public void given_1_out_of_3_nodes_out_of_synchrony_bounds() {
-    SimulationTest test =
-        bftTestBuilder
-            .numNodes(3)
-            .networkModules(
-                NetworkOrdering.inOrder(), NetworkLatencies.oneOutOfBounds(LATENCY_MS, LIVENESS_MS))
-            .build();
-
-    final var runningTest = test.run();
-    final var checkResults = runningTest.awaitCompletion();
-
-    assertThat(checkResults)
-        .hasEntrySatisfying(Monitor.CONSENSUS_LIVENESS, error -> assertThat(error).isPresent())
-        .hasEntrySatisfying(Monitor.CONSENSUS_SAFETY, error -> assertThat(error).isNotPresent());
+  public CommittedTransactionsWithProof getGenesis() {
+    return null;
   }
 }

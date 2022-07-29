@@ -73,7 +73,7 @@ import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.modules.ConsensusBootstrapProvider;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;

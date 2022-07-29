@@ -79,6 +79,7 @@ import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.ScheduledEventProducerOnRunner;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.NodeId;
@@ -165,8 +166,8 @@ public class SyncServiceModule extends AbstractModule {
 
   @Provides
   private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier(
-      BFTConfiguration initialConfiguration) {
-    return new RemoteSyncResponseValidatorSetVerifier(initialConfiguration.getValidatorSet());
+          ConsensusBootstrapProvider consensusBootstrapProvider) {
+    return new RemoteSyncResponseValidatorSetVerifier(consensusBootstrapProvider);
   }
 
   @Provides

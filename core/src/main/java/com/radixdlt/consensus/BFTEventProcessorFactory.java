@@ -73,6 +73,7 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 
 /** Creates a new bft processor */
 public interface BFTEventProcessorFactory {

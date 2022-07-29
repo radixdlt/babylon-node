@@ -62,9 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.modules.init;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
@@ -85,7 +86,6 @@ public class ConsensusBootstrapProvider {
   private Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState;
   private Hasher hasher;
   private LedgerProofProvider ledgerProofProvider;
-  private ConsensusBootstrapProvider consensusBootstrapProvider;
   private PersistentSafetyStateStore safetyStore;
   private Ledger ledger;
 
@@ -94,13 +94,11 @@ public class ConsensusBootstrapProvider {
       Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState,
       Hasher hasher,
       LedgerProofProvider ledgerProofProvider,
-      ConsensusBootstrapProvider consensusBootstrapProvider,
       PersistentSafetyStateStore safetyStore,
       Ledger ledger) {
     this.serializedVertexStoreState = serializedVertexStoreState;
     this.hasher = hasher;
     this.ledgerProofProvider = ledgerProofProvider;
-    this.consensusBootstrapProvider = consensusBootstrapProvider;
     this.safetyStore = safetyStore;
     this.ledger = ledger;
   }
@@ -111,8 +109,7 @@ public class ConsensusBootstrapProvider {
 
   public EpochChange currentKnownEpoch() {
     return new EpochChange(
-        this.ledgerProofProvider.getLastEpochProof(),
-        this.consensusBootstrapProvider.currentKnownBftConfiguration());
+        this.ledgerProofProvider.getLastEpochProof(), this.currentKnownBftConfiguration());
   }
 
   public RoundUpdate currentKnownRoundUpdate() {
@@ -172,7 +169,7 @@ public class ConsensusBootstrapProvider {
         .get()
         .flatMap(
             safetyState -> {
-              var initialEpoch = this.consensusBootstrapProvider.currentKnownEpoch();
+              var initialEpoch = this.currentKnownEpoch();
               final long safetyStateEpoch =
                   safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
 

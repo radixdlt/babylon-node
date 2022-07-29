@@ -79,6 +79,8 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hasher;
 import java.util.Objects;
 import java.util.Optional;
+
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -87,11 +89,13 @@ import org.apache.logging.log4j.Logger;
 public final class BFTEventVerifier implements BFTEventProcessor {
   private static final Logger log = LogManager.getLogger();
 
-  private final BFTValidatorSet validatorSet;
+  private BFTValidatorSet validatorSet;
   private final BFTEventProcessor forwardTo;
   private final Hasher hasher;
   private final HashVerifier verifier;
   private final SafetyRules safetyRules;
+
+  private ConsensusBootstrapProvider consensusBootstrapProvider;
 
   public BFTEventVerifier(
       BFTValidatorSet validatorSet,
@@ -99,7 +103,23 @@ public final class BFTEventVerifier implements BFTEventProcessor {
       Hasher hasher,
       HashVerifier verifier,
       SafetyRules safetyRules) {
+    this(forwardTo, hasher, verifier, safetyRules);
     this.validatorSet = Objects.requireNonNull(validatorSet);
+  }
+  public BFTEventVerifier(
+          BFTEventProcessor forwardTo,
+          Hasher hasher,
+          HashVerifier verifier,
+          SafetyRules safetyRules,
+          ConsensusBootstrapProvider consensusBootstrapProvider) {
+    this(forwardTo, hasher, verifier, safetyRules);
+    this.consensusBootstrapProvider = Objects.requireNonNull(consensusBootstrapProvider);
+  }
+  private BFTEventVerifier(
+          BFTEventProcessor forwardTo,
+          Hasher hasher,
+          HashVerifier verifier,
+          SafetyRules safetyRules) {
     this.hasher = Objects.requireNonNull(hasher);
     this.verifier = Objects.requireNonNull(verifier);
     this.forwardTo = Objects.requireNonNull(forwardTo);
@@ -187,12 +207,12 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 
   private Optional<BFTNode> validAuthor(ConsensusEvent event) {
     BFTNode node = event.getAuthor();
-    if (!validatorSet.containsNode(node)) {
+    if (!this.getValidatorSet().containsNode(node)) {
       log.warn(
           "CONSENSUS_EVENT: {} from author {} not in validator set {}",
           event.getClass().getSimpleName(),
           node,
-          this.validatorSet);
+          this.getValidatorSet());
       return Optional.empty();
     }
     return Optional.of(node);
@@ -210,5 +230,12 @@ public final class BFTEventVerifier implements BFTEventProcessor {
   private boolean verifyObjectSignature(
       BFTNode author, Object hashable, ECDSASignature signature, Object what) {
     return verifyHashSignature(author, this.hasher.hashDsonEncoded(hashable), signature, what);
+  }
+
+  public BFTValidatorSet getValidatorSet() {
+    if (this.validatorSet == null) {
+      this.validatorSet = this.consensusBootstrapProvider.currentKnownValidatorSet();
+    }
+    return this.validatorSet;
   }
 }

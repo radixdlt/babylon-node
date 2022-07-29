@@ -80,6 +80,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -103,16 +105,29 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
   private final Map<Round, List<ConsensusEvent>> roundQueues = new HashMap<>();
   private RoundUpdate latestRoundUpdate;
 
+  private ConsensusBootstrapProvider consensusBootstrapProvider;
+
   public BFTEventPreprocessor(
-      BFTEventProcessor forwardTo, BFTSyncer bftSyncer, RoundUpdate initialRoundUpdate) {
+          BFTEventProcessor forwardTo, BFTSyncer bftSyncer, ConsensusBootstrapProvider consensusBootstrapProvider) {
+    this(forwardTo, bftSyncer);
+    this.consensusBootstrapProvider = Objects.requireNonNull(consensusBootstrapProvider);
+  }
+
+  public BFTEventPreprocessor(
+          BFTEventProcessor forwardTo, BFTSyncer bftSyncer, RoundUpdate initialRoundUpdate) {
+    this(forwardTo, bftSyncer);
+    this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
+  }
+
+  private BFTEventPreprocessor(
+          BFTEventProcessor forwardTo, BFTSyncer bftSyncer) {
     this.bftSyncer = Objects.requireNonNull(bftSyncer);
     this.forwardTo = forwardTo;
-    this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
   }
 
   @Override
   public void processRoundUpdate(RoundUpdate roundUpdate) {
-    final Round previousRound = this.latestRoundUpdate.getCurrentRound();
+    final Round previousRound = this.getLatestRoundUpdate().getCurrentRound();
     log.trace("Processing roundUpdate {} cur {}", roundUpdate, previousRound);
 
     // FIXME: Check is required for now since Deterministic tests can randomize local messages
@@ -230,7 +245,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
   }
 
   private boolean processVoteInternal(Vote vote) {
-    final Round currentRound = this.latestRoundUpdate.getCurrentRound();
+    final Round currentRound = this.getLatestRoundUpdate().getCurrentRound();
     if (vote.getRound().gte(currentRound)) {
       log.trace("Vote: PreProcessing {}", vote);
       return syncUp(
@@ -244,7 +259,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
   }
 
   private boolean processProposalInternal(Proposal proposal) {
-    final Round currentRound = this.latestRoundUpdate.getCurrentRound();
+    final Round currentRound = this.getLatestRoundUpdate().getCurrentRound();
     if (proposal.getRound().gte(currentRound)) {
       log.trace("Proposal: PreProcessing {}", proposal);
       return syncUp(
@@ -260,10 +275,10 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 
   private <T extends ConsensusEvent> void processOnCurrentRoundOrCache(
       T event, Consumer<T> processFn) {
-    if (latestRoundUpdate.getCurrentRound().equals(event.getRound())) {
+    if (this.getLatestRoundUpdate().getCurrentRound().equals(event.getRound())) {
       processFn.accept(event);
-    } else if (latestRoundUpdate.getCurrentRound().lt(event.getRound())) {
-      log.trace("Caching {}, current round is {}", event, latestRoundUpdate.getCurrentRound());
+    } else if (this.getLatestRoundUpdate().getCurrentRound().lt(event.getRound())) {
+      log.trace("Caching {}, current round is {}", event, this.getLatestRoundUpdate().getCurrentRound());
       roundQueues.putIfAbsent(event.getRound(), new LinkedList<>());
       roundQueues.get(event.getRound()).add(event);
     } else {
@@ -299,5 +314,12 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
       default:
         throw new IllegalStateException("Unknown syncResult " + syncResult);
     }
+  }
+
+  public RoundUpdate getLatestRoundUpdate() {
+    if (this.latestRoundUpdate == null) {
+      this.latestRoundUpdate = this.consensusBootstrapProvider.currentKnownRoundUpdate();
+    }
+    return this.latestRoundUpdate;
   }
 }

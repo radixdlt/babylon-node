@@ -86,6 +86,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.modules.init.LedgerProofProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
@@ -132,7 +133,7 @@ public class RemoteSyncServiceTest {
             SyncConfig.of(5000L, 10, 5000L, 10, 50),
             mock(SystemCounters.class),
             Comparator.comparingLong(AccumulatorState::getStateVersion),
-            initialHeader);
+            mock(LedgerProofProvider.class));
   }
 
   @Test

@@ -74,6 +74,7 @@ import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 
 /** A helper class to help in constructing a BFT validator state machine */
 public final class BFTBuilder {
@@ -95,6 +96,8 @@ public final class BFTBuilder {
   private RoundUpdate roundUpdate;
   private RemoteEventDispatcher<Vote> voteDispatcher;
   private SafetyRules safetyRules;
+
+  private ConsensusBootstrapProvider consensusBootstrapProvider;
 
   private BFTBuilder() {
     // Just making this inaccessible
@@ -165,28 +168,53 @@ public final class BFTBuilder {
     return this;
   }
 
+  public BFTBuilder consensusBootstrapProvider(ConsensusBootstrapProvider consensusBootstrapProvider) {
+    this.consensusBootstrapProvider = consensusBootstrapProvider;
+    return this;
+  }
+
   public BFTEventProcessor build() {
-    if (!validatorSet.containsNode(self)) {
-      return EmptyBFTEventProcessor.INSTANCE;
-    }
+//    if (!validatorSet.containsNode(self)) {
+//      return EmptyBFTEventProcessor.INSTANCE;
+//    }
     final PendingVotes pendingVotes = new PendingVotes(hasher);
 
-    BFTEventReducer reducer =
-        new BFTEventReducer(
-            self,
-            pacemaker,
-            vertexStore,
-            roundQuorumReachedEventDispatcher,
-            noVoteEventDispatcher,
-            voteDispatcher,
-            hasher,
-            safetyRules,
-            validatorSet,
-            pendingVotes,
-            roundUpdate);
+    if (this.consensusBootstrapProvider != null) {
 
-    BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(reducer, bftSyncer, roundUpdate);
+      BFTEventReducer reducer = new BFTEventReducer(
+              self,
+              pacemaker,
+              vertexStore,
+              roundQuorumReachedEventDispatcher,
+              noVoteEventDispatcher,
+              voteDispatcher,
+              hasher,
+              safetyRules,
+              pendingVotes,
+              consensusBootstrapProvider);
 
-    return new BFTEventVerifier(validatorSet, preprocessor, hasher, verifier, safetyRules);
+      BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(reducer, bftSyncer, consensusBootstrapProvider);
+
+      return new BFTEventVerifier(preprocessor, hasher, verifier, safetyRules, consensusBootstrapProvider);
+
+    } else {
+
+      BFTEventReducer reducer = new BFTEventReducer(
+              self,
+              pacemaker,
+              vertexStore,
+              roundQuorumReachedEventDispatcher,
+              noVoteEventDispatcher,
+              voteDispatcher,
+              hasher,
+              safetyRules,
+              validatorSet,
+              pendingVotes,
+              roundUpdate);
+
+      BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(reducer, bftSyncer, roundUpdate);
+
+      return new BFTEventVerifier(validatorSet, preprocessor, hasher, verifier, safetyRules);
+    }
   }
 }

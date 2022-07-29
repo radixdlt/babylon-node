@@ -71,6 +71,7 @@ import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -99,6 +100,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.substate.*;
@@ -131,9 +133,11 @@ public final class RadixEngineStateComputer implements StateComputer {
   private long epochMaxRoundNumber;
   private OptionalInt maxSigsPerRound;
 
+  private Provider<ConsensusBootstrapProvider> consensusBootstrapProvider;
+
   @Inject
   public RadixEngineStateComputer(
-      ProposerElection proposerElection, // TODO: Should be able to load this directly from state
+      //ProposerElection proposerElection, // TODO: Should be able to load this directly from state
       RadixEngine<LedgerAndBFTProof> radixEngine,
       Forks forks,
       RadixEngineMempool mempool, // TODO: Move this into radixEngine
@@ -143,7 +147,8 @@ public final class RadixEngineStateComputer implements StateComputer {
       EventDispatcher<InvalidProposedTransaction> invalidProposedTransactionEventDispatcher,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
       Hasher hasher,
-      SystemCounters systemCounters) {
+      SystemCounters systemCounters,
+      Provider<ConsensusBootstrapProvider> consensusBootstrapProvider) {
     if (epochMaxRound.isGenesis()) {
       throw new IllegalArgumentException("Epoch change round must not be genesis.");
     }
@@ -160,7 +165,8 @@ public final class RadixEngineStateComputer implements StateComputer {
     this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
     this.hasher = Objects.requireNonNull(hasher);
     this.systemCounters = Objects.requireNonNull(systemCounters);
-    this.proposerElection = proposerElection;
+    //this.proposerElection = proposerElection;
+    this.consensusBootstrapProvider = consensusBootstrapProvider;
   }
 
   public record RadixEngineTransaction(
@@ -287,6 +293,13 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
   }
 
+  public ProposerElection getProposerElection() {
+    if (this.proposerElection == null) {
+      this.proposerElection = this.consensusBootstrapProvider.get().proposerElection();
+    }
+    return this.proposerElection;
+  }
+
   private void reexecutePreviousTransactions(
       RadixEngineBranch<LedgerAndBFTProof> transientBranch,
       List<ExecutedTransaction> previousTransactions) {
@@ -355,7 +368,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   private LongFunction<ECPublicKey> getValidatorMapping() {
-    return l -> proposerElection.getProposer(Round.of(l)).getKey();
+    return l -> this.getProposerElection().getProposer(Round.of(l)).getKey();
   }
 
   private void executeUserTransactions(

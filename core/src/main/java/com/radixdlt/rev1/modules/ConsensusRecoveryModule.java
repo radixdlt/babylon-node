@@ -65,6 +65,20 @@
 package com.radixdlt.rev1.modules;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.safety.SafetyState;
+import com.radixdlt.store.LastEpochProof;
+import java.util.Optional;
 
 /** Manages consensus recovery on startup */
 public class ConsensusRecoveryModule extends AbstractModule {

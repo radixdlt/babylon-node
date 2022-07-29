@@ -106,6 +106,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.MempoolType;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
+import com.radixdlt.modules.TestLedgerProofProviderModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
@@ -460,6 +461,7 @@ public final class SimulationTest {
     public SimulationTest build() {
       final NodeEvents nodeEvents = new NodeEvents();
 
+      modules.add(new TestLedgerProofProviderModule());
       // Config
       modules.add(
           new AbstractModule() {

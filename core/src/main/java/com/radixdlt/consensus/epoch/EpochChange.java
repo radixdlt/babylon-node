@@ -64,6 +64,7 @@
 
 package com.radixdlt.consensus.epoch;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerProof;
 import java.util.Objects;
