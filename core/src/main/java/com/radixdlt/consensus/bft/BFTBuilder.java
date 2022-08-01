@@ -168,20 +168,19 @@ public final class BFTBuilder {
     return this;
   }
 
-  public BFTBuilder consensusBootstrapProvider(ConsensusBootstrapProvider consensusBootstrapProvider) {
+  public BFTBuilder consensusBootstrapProvider(
+      ConsensusBootstrapProvider consensusBootstrapProvider) {
     this.consensusBootstrapProvider = consensusBootstrapProvider;
     return this;
   }
 
   public BFTEventProcessor build() {
-//    if (!validatorSet.containsNode(self)) {
-//      return EmptyBFTEventProcessor.INSTANCE;
-//    }
     final PendingVotes pendingVotes = new PendingVotes(hasher);
 
     if (this.consensusBootstrapProvider != null) {
 
-      BFTEventReducer reducer = new BFTEventReducer(
+      BFTEventReducer reducer =
+          new BFTEventReducer(
               self,
               pacemaker,
               vertexStore,
@@ -193,13 +192,16 @@ public final class BFTBuilder {
               pendingVotes,
               consensusBootstrapProvider);
 
-      BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(reducer, bftSyncer, consensusBootstrapProvider);
+      BFTEventPreprocessor preprocessor =
+          new BFTEventPreprocessor(reducer, bftSyncer, consensusBootstrapProvider);
 
-      return new BFTEventVerifier(preprocessor, hasher, verifier, safetyRules, consensusBootstrapProvider);
+      return new BFTEventVerifier(
+          preprocessor, hasher, verifier, safetyRules, consensusBootstrapProvider);
 
     } else {
 
-      BFTEventReducer reducer = new BFTEventReducer(
+      BFTEventReducer reducer =
+          new BFTEventReducer(
               self,
               pacemaker,
               vertexStore,

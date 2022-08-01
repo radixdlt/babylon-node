@@ -137,7 +137,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 
   @Inject
   public RadixEngineStateComputer(
-      //ProposerElection proposerElection, // TODO: Should be able to load this directly from state
       RadixEngine<LedgerAndBFTProof> radixEngine,
       Forks forks,
       RadixEngineMempool mempool, // TODO: Move this into radixEngine
@@ -165,7 +164,6 @@ public final class RadixEngineStateComputer implements StateComputer {
     this.ledgerUpdateDispatcher = Objects.requireNonNull(ledgerUpdateDispatcher);
     this.hasher = Objects.requireNonNull(hasher);
     this.systemCounters = Objects.requireNonNull(systemCounters);
-    //this.proposerElection = proposerElection;
     this.consensusBootstrapProvider = consensusBootstrapProvider;
   }
 

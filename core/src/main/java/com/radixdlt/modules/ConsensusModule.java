@@ -78,7 +78,6 @@ import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.bft.RoundQuorumReached;
 import com.radixdlt.consensus.bft.RoundUpdate;
@@ -154,11 +153,11 @@ public final class ConsensusModule extends AbstractModule {
             .build();
   }
 
-//    @Provides
-//    @Singleton
-//    public ProposerElection proposerElection(BFTConfiguration configuration) {
-//      return configuration.getProposerElection();
-//    }
+  //    @Provides
+  //    @Singleton
+  //    public ProposerElection proposerElection(BFTConfiguration configuration) {
+  //      return configuration.getProposerElection();
+  //    }
 
   @Provides
   @Singleton
@@ -167,42 +166,41 @@ public final class ConsensusModule extends AbstractModule {
       Hasher hasher,
       HashVerifier verifier,
       RemoteEventDispatcher<Vote> voteDispatcher,
-      ConsensusBootstrapProvider
-              consensusBootstrapProvider,
+      ConsensusBootstrapProvider consensusBootstrapProvider,
       Pacemaker pacemaker,
       VertexStoreAdapter vertexStore,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
       BFTSync bftSync,
       SafetyRules safetyRules) {
-//    return bftEventProcessorFactory.create(
-//        self,
-//        pacemaker,
-//        vertexStore,
-//        bftSync,
-//        bftSync.roundQuorumReachedEventProcessor(),
-//            consensusBootstrapProvider,
-//        safetyRules);
+    //    return bftEventProcessorFactory.create(
+    //        self,
+    //        pacemaker,
+    //        vertexStore,
+    //        bftSync,
+    //        bftSync.roundQuorumReachedEventProcessor(),
+    //            consensusBootstrapProvider,
+    //        safetyRules);
     return BFTBuilder.create()
-            .self(self)
-            .hasher(hasher)
-            .verifier(verifier)
-            .voteDispatcher(voteDispatcher)
-            .safetyRules(safetyRules)
-            .pacemaker(pacemaker)
-            .vertexStore(vertexStore)
-            .roundQuorumReachedEventDispatcher(
-                    roundQuorumReached -> {
-                      // FIXME: a hack for now until replacement of epochmanager factories
-                      bftSync.roundQuorumReachedEventProcessor().process(roundQuorumReached);
-                      roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
-                    })
-            .noVoteEventDispatcher(noVoteEventDispatcher)
-            .consensusBootstrapProvider(consensusBootstrapProvider)
-            //.roundUpdate(roundUpdate)
-            .bftSyncer(bftSync)
-            //.validatorSet(validatorSet)
-            .build();
+        .self(self)
+        .hasher(hasher)
+        .verifier(verifier)
+        .voteDispatcher(voteDispatcher)
+        .safetyRules(safetyRules)
+        .pacemaker(pacemaker)
+        .vertexStore(vertexStore)
+        .roundQuorumReachedEventDispatcher(
+            roundQuorumReached -> {
+              // FIXME: a hack for now until replacement of epochmanager factories
+              bftSync.roundQuorumReachedEventProcessor().process(roundQuorumReached);
+              roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
+            })
+        .noVoteEventDispatcher(noVoteEventDispatcher)
+        .consensusBootstrapProvider(consensusBootstrapProvider)
+        // .roundUpdate(roundUpdate)
+        .bftSyncer(bftSync)
+        // .validatorSet(validatorSet)
+        .build();
   }
 
   @Provides
@@ -273,11 +271,12 @@ public final class ConsensusModule extends AbstractModule {
         counters);
   }
 
-//  @Provides
-//  @Singleton
-//  private VertexStore vertexStore(BFTConfiguration bftConfiguration, Ledger ledger, Hasher hasher) {
-//    return VertexStoreJavaImpl.create(bftConfiguration.getVertexStoreState(), ledger, hasher);
-//  }
+  //  @Provides
+  //  @Singleton
+  //  private VertexStore vertexStore(BFTConfiguration bftConfiguration, Ledger ledger, Hasher
+  // hasher) {
+  //    return VertexStoreJavaImpl.create(bftConfiguration.getVertexStoreState(), ledger, hasher);
+  //  }
 
   @Provides
   @Singleton
@@ -292,6 +291,6 @@ public final class ConsensusModule extends AbstractModule {
         updateSender,
         rebuildUpdateDispatcher,
         committedSender,
-            consensusBootstrapProvider);
+        consensusBootstrapProvider);
   }
 }

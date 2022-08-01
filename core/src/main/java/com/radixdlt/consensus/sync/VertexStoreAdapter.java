@@ -80,7 +80,6 @@ import com.radixdlt.consensus.bft.VertexChain;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.modules.init.ConsensusBootstrapProvider;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -98,30 +97,30 @@ public final class VertexStoreAdapter {
 
   @Inject
   public VertexStoreAdapter(
-          EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
-          EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
-          EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
-          EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher,
-          ConsensusBootstrapProvider consensusBootstrapProvider) {
+      EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
+      EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
+      EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
+      EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher,
+      ConsensusBootstrapProvider consensusBootstrapProvider) {
     this(highQCUpdateDispatcher, bftUpdateDispatcher, bftRebuildDispatcher, bftCommittedDispatcher);
     this.consensusBootstrapProvider = consensusBootstrapProvider;
   }
 
   public VertexStoreAdapter(
-          VertexStore vertexStore,
-          EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
-          EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
-          EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
-          EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher) {
+      VertexStore vertexStore,
+      EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
+      EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
+      EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
+      EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher) {
     this(highQCUpdateDispatcher, bftUpdateDispatcher, bftRebuildDispatcher, bftCommittedDispatcher);
     this.vertexStore = Objects.requireNonNull(vertexStore);
   }
 
   private VertexStoreAdapter(
-          EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
-          EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
-          EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
-          EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher) {
+      EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
+      EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
+      EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
+      EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher) {
     this.highQCUpdateDispatcher = Objects.requireNonNull(highQCUpdateDispatcher);
     this.bftUpdateDispatcher = Objects.requireNonNull(bftUpdateDispatcher);
     this.bftRebuildDispatcher = Objects.requireNonNull(bftRebuildDispatcher);

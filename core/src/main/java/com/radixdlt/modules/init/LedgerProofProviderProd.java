@@ -64,7 +64,6 @@
 
 package com.radixdlt.modules.init;
 
-import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.sync.CommittedReader;

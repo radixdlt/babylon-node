@@ -67,6 +67,10 @@ package com.radixdlt.integration.steady_state.simulation.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.harness.simulation.Monitor;
@@ -74,6 +78,10 @@ import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.modules.init.LedgerProofProvider;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -94,10 +102,33 @@ public class OneByzantineGenesisTest {
             .addOverrideModuleToInitialNodes(
                 nodes -> ImmutableList.of(nodes.get(0).getPublicKey()),
                 nodes ->
-                    new MockedConsensusRecoveryModule.Builder()
-                        .withPreGenesisAccumulatorHash(HashUtils.random256())
-                        .withNodes(nodes)
-                        .build())
+                    new AbstractModule() {
+                      @Provides
+                      public LedgerProofProvider get(
+                          @LastProof LedgerProof lastProof,
+                          @LastEpochProof LedgerProof lastEpochProof) {
+                        return new LedgerProofProvider() {
+                          @Override
+                          public LedgerProof getLastProof() {
+                            return lastProof;
+                          }
+
+                          @Override
+                          public LedgerProof getLastEpochProof() {
+                            var accumulatorState = new AccumulatorState(0, HashUtils.random256());
+                            LedgerHeader ledgerHeader = lastEpochProof.getHeader();
+                            var newHeader =
+                                LedgerHeader.create(
+                                    ledgerHeader.getEpoch(),
+                                    ledgerHeader.getRound(),
+                                    accumulatorState,
+                                    0);
+                            return LedgerProof.genesis(
+                                accumulatorState, lastEpochProof.getNextValidatorSet().get(), 0);
+                          }
+                        };
+                      }
+                    })
             .addTestModules(ConsensusMonitors.noneCommitted())
             .build();
 

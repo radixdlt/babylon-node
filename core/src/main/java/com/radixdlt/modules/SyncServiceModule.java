@@ -68,7 +68,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
@@ -166,7 +165,7 @@ public class SyncServiceModule extends AbstractModule {
 
   @Provides
   private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier(
-          ConsensusBootstrapProvider consensusBootstrapProvider) {
+      ConsensusBootstrapProvider consensusBootstrapProvider) {
     return new RemoteSyncResponseValidatorSetVerifier(consensusBootstrapProvider);
   }
 

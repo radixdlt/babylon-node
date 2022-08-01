@@ -82,7 +82,6 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.modules.init.LedgerProofProvider;
-import com.radixdlt.modules.init.LedgerProofProviderProd;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.rev1.RoundDetails;

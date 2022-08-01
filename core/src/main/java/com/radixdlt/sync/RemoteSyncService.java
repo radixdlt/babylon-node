@@ -77,7 +77,6 @@ import com.radixdlt.ledger.CommittedTransactionsWithProofDto;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.init.LedgerProofProvider;
-import com.radixdlt.modules.init.LedgerProofProviderProd;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;

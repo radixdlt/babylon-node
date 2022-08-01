@@ -72,6 +72,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -80,8 +81,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-
-import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -108,19 +107,20 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
   private ConsensusBootstrapProvider consensusBootstrapProvider;
 
   public BFTEventPreprocessor(
-          BFTEventProcessor forwardTo, BFTSyncer bftSyncer, ConsensusBootstrapProvider consensusBootstrapProvider) {
+      BFTEventProcessor forwardTo,
+      BFTSyncer bftSyncer,
+      ConsensusBootstrapProvider consensusBootstrapProvider) {
     this(forwardTo, bftSyncer);
     this.consensusBootstrapProvider = Objects.requireNonNull(consensusBootstrapProvider);
   }
 
   public BFTEventPreprocessor(
-          BFTEventProcessor forwardTo, BFTSyncer bftSyncer, RoundUpdate initialRoundUpdate) {
+      BFTEventProcessor forwardTo, BFTSyncer bftSyncer, RoundUpdate initialRoundUpdate) {
     this(forwardTo, bftSyncer);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
   }
 
-  private BFTEventPreprocessor(
-          BFTEventProcessor forwardTo, BFTSyncer bftSyncer) {
+  private BFTEventPreprocessor(BFTEventProcessor forwardTo, BFTSyncer bftSyncer) {
     this.bftSyncer = Objects.requireNonNull(bftSyncer);
     this.forwardTo = forwardTo;
   }
@@ -278,7 +278,8 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
     if (this.getLatestRoundUpdate().getCurrentRound().equals(event.getRound())) {
       processFn.accept(event);
     } else if (this.getLatestRoundUpdate().getCurrentRound().lt(event.getRound())) {
-      log.trace("Caching {}, current round is {}", event, this.getLatestRoundUpdate().getCurrentRound());
+      log.trace(
+          "Caching {}, current round is {}", event, this.getLatestRoundUpdate().getCurrentRound());
       roundQueues.putIfAbsent(event.getRound(), new LinkedList<>());
       roundQueues.get(event.getRound()).add(event);
     } else {

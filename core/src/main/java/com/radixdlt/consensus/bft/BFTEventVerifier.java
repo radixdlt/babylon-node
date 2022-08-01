@@ -77,10 +77,9 @@ import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import java.util.Objects;
 import java.util.Optional;
-
-import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -106,20 +105,19 @@ public final class BFTEventVerifier implements BFTEventProcessor {
     this(forwardTo, hasher, verifier, safetyRules);
     this.validatorSet = Objects.requireNonNull(validatorSet);
   }
+
   public BFTEventVerifier(
-          BFTEventProcessor forwardTo,
-          Hasher hasher,
-          HashVerifier verifier,
-          SafetyRules safetyRules,
-          ConsensusBootstrapProvider consensusBootstrapProvider) {
+      BFTEventProcessor forwardTo,
+      Hasher hasher,
+      HashVerifier verifier,
+      SafetyRules safetyRules,
+      ConsensusBootstrapProvider consensusBootstrapProvider) {
     this(forwardTo, hasher, verifier, safetyRules);
     this.consensusBootstrapProvider = Objects.requireNonNull(consensusBootstrapProvider);
   }
+
   private BFTEventVerifier(
-          BFTEventProcessor forwardTo,
-          Hasher hasher,
-          HashVerifier verifier,
-          SafetyRules safetyRules) {
+      BFTEventProcessor forwardTo, Hasher hasher, HashVerifier verifier, SafetyRules safetyRules) {
     this.hasher = Objects.requireNonNull(hasher);
     this.verifier = Objects.requireNonNull(verifier);
     this.forwardTo = Objects.requireNonNull(forwardTo);

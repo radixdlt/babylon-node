@@ -106,8 +106,8 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.MempoolType;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
-import com.radixdlt.modules.TestLedgerProofProviderModule;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.TestLedgerProofProviderModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
@@ -164,17 +164,21 @@ public final class SimulationTest {
   private final Module baseNodeModule;
   private final ImmutableMultimap<ECPublicKey, Module> overrideModules;
 
+  private final boolean supportsEpochs;
+
   private SimulationTest(
       ImmutableList<ECKeyPair> initialNodes,
       SimulationNetwork simulationNetwork,
       Module baseNodeModule,
       ImmutableMultimap<ECPublicKey, Module> overrideModules,
-      Module testModule) {
+      Module testModule,
+      boolean supportsEpochs) {
     this.initialNodes = initialNodes;
     this.simulationNetwork = simulationNetwork;
     this.baseNodeModule = baseNodeModule;
     this.overrideModules = overrideModules;
     this.testModule = testModule;
+    this.supportsEpochs = supportsEpochs;
   }
 
   public static class Builder {
@@ -579,7 +583,8 @@ public final class SimulationTest {
           simulationNetwork,
           Modules.combine(modules.build()),
           overrideModules.build(),
-          Modules.combine(testModules.build()));
+          Modules.combine(testModules.build()),
+          this.functionalNodeModule.supportsEpochs());
     }
   }
 
@@ -683,7 +688,8 @@ public final class SimulationTest {
         testInjector.getInstance(Key.get(new TypeLiteral<Map<Monitor, TestInvariant>>() {}));
 
     SimulationNodes bftNetwork =
-        new SimulationNodes(initialNodes, simulationNetwork, baseNodeModule, overrideModules);
+        new SimulationNodes(
+            initialNodes, simulationNetwork, baseNodeModule, overrideModules, this.supportsEpochs);
     SimulationNodes.RunningNetwork runningNetwork = bftNetwork.start(disabledModuleRunners);
 
     final var resultObservable =

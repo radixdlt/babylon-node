@@ -69,7 +69,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
@@ -102,16 +101,16 @@ public class MockedConsensusRecoveryModule extends AbstractModule {
     }
   }
 
-//  @Provides
-//  private RoundUpdate initialRoundUpdate(
-//      BFTConfiguration configuration, ProposerElection proposerElection) {
-//    HighQC highQC = configuration.getVertexStoreState().getHighQC();
-//    Round round = highQC.highestQC().getRound().next();
-//    final BFTNode leader = proposerElection.getProposer(round);
-//    final BFTNode nextLeader = proposerElection.getProposer(round.next());
-//
-//    return RoundUpdate.create(round, highQC, leader, nextLeader);
-//  }
+  //  @Provides
+  //  private RoundUpdate initialRoundUpdate(
+  //      BFTConfiguration configuration, ProposerElection proposerElection) {
+  //    HighQC highQC = configuration.getVertexStoreState().getHighQC();
+  //    Round round = highQC.highestQC().getRound().next();
+  //    final BFTNode leader = proposerElection.getProposer(round);
+  //    final BFTNode nextLeader = proposerElection.getProposer(round.next());
+  //
+  //    return RoundUpdate.create(round, highQC, leader, nextLeader);
+  //  }
 
   @Provides
   private BFTValidatorSet validatorSet() {

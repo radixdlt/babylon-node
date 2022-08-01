@@ -65,7 +65,6 @@
 package com.radixdlt.modules.init;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;

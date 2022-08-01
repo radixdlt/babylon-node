@@ -79,7 +79,8 @@ public class RemoteSyncResponseValidatorSetVerifier {
 
   private ConsensusBootstrapProvider consensusBootstrapProvider;
 
-  public RemoteSyncResponseValidatorSetVerifier(ConsensusBootstrapProvider consensusBootstrapProvider) {
+  public RemoteSyncResponseValidatorSetVerifier(
+      ConsensusBootstrapProvider consensusBootstrapProvider) {
     this.consensusBootstrapProvider = Objects.requireNonNull(consensusBootstrapProvider);
   }
 

@@ -76,10 +76,9 @@ import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import java.util.Objects;
 import java.util.Optional;
-
-import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -116,52 +115,70 @@ public final class BFTEventReducer implements BFTEventProcessor {
   private boolean isRoundTimedOut = false;
 
   public BFTEventReducer(
-          BFTNode self,
-          Pacemaker pacemaker,
-          VertexStoreAdapter vertexStore,
-          EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
-          EventDispatcher<NoVote> noVoteDispatcher,
-          RemoteEventDispatcher<Vote> voteDispatcher,
-          Hasher hasher,
-          SafetyRules safetyRules,
-          PendingVotes pendingVotes,
-          ConsensusBootstrapProvider consensusBootstrapProvider) {
-    this(self, pacemaker, vertexStore, roundQuorumReachedEventDispatcher, noVoteDispatcher, voteDispatcher, hasher, safetyRules, pendingVotes);
+      BFTNode self,
+      Pacemaker pacemaker,
+      VertexStoreAdapter vertexStore,
+      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
+      EventDispatcher<NoVote> noVoteDispatcher,
+      RemoteEventDispatcher<Vote> voteDispatcher,
+      Hasher hasher,
+      SafetyRules safetyRules,
+      PendingVotes pendingVotes,
+      ConsensusBootstrapProvider consensusBootstrapProvider) {
+    this(
+        self,
+        pacemaker,
+        vertexStore,
+        roundQuorumReachedEventDispatcher,
+        noVoteDispatcher,
+        voteDispatcher,
+        hasher,
+        safetyRules,
+        pendingVotes);
     this.consensusBootstrapProvider = Objects.requireNonNull(consensusBootstrapProvider);
   }
 
   public BFTEventReducer(
-          BFTNode self,
-          Pacemaker pacemaker,
-          VertexStoreAdapter vertexStore,
-          EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
-          EventDispatcher<NoVote> noVoteDispatcher,
-          RemoteEventDispatcher<Vote> voteDispatcher,
-          Hasher hasher,
-          SafetyRules safetyRules,
-          BFTValidatorSet validatorSet,
-          PendingVotes pendingVotes,
-          RoundUpdate initialRoundUpdate) {
-   this(self, pacemaker, vertexStore, roundQuorumReachedEventDispatcher, noVoteDispatcher, voteDispatcher, hasher, safetyRules, pendingVotes);
+      BFTNode self,
+      Pacemaker pacemaker,
+      VertexStoreAdapter vertexStore,
+      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
+      EventDispatcher<NoVote> noVoteDispatcher,
+      RemoteEventDispatcher<Vote> voteDispatcher,
+      Hasher hasher,
+      SafetyRules safetyRules,
+      BFTValidatorSet validatorSet,
+      PendingVotes pendingVotes,
+      RoundUpdate initialRoundUpdate) {
+    this(
+        self,
+        pacemaker,
+        vertexStore,
+        roundQuorumReachedEventDispatcher,
+        noVoteDispatcher,
+        voteDispatcher,
+        hasher,
+        safetyRules,
+        pendingVotes);
     this.validatorSet = Objects.requireNonNull(validatorSet);
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
   }
 
   private BFTEventReducer(
-          BFTNode self,
-          Pacemaker pacemaker,
-          VertexStoreAdapter vertexStore,
-          EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
-          EventDispatcher<NoVote> noVoteDispatcher,
-          RemoteEventDispatcher<Vote> voteDispatcher,
-          Hasher hasher,
-          SafetyRules safetyRules,
-          PendingVotes pendingVotes) {
+      BFTNode self,
+      Pacemaker pacemaker,
+      VertexStoreAdapter vertexStore,
+      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
+      EventDispatcher<NoVote> noVoteDispatcher,
+      RemoteEventDispatcher<Vote> voteDispatcher,
+      Hasher hasher,
+      SafetyRules safetyRules,
+      PendingVotes pendingVotes) {
     this.self = Objects.requireNonNull(self);
     this.pacemaker = Objects.requireNonNull(pacemaker);
     this.vertexStore = Objects.requireNonNull(vertexStore);
     this.roundQuorumReachedEventDispatcher =
-            Objects.requireNonNull(roundQuorumReachedEventDispatcher);
+        Objects.requireNonNull(roundQuorumReachedEventDispatcher);
     this.noVoteDispatcher = Objects.requireNonNull(noVoteDispatcher);
     this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
     this.hasher = Objects.requireNonNull(hasher);
@@ -204,7 +221,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
       return;
     }
 
-    if (!Objects.equals(update.getHeader().getRound(), this.getLatestRoundUpdate().getCurrentRound())) {
+    if (!Objects.equals(
+        update.getHeader().getRound(), this.getLatestRoundUpdate().getCurrentRound())) {
       return;
     }
 
