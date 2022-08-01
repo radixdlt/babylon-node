@@ -76,6 +76,7 @@ public enum Network {
   MILESTONENET(5, "tdx5", "tv5", "_tr5", "tn5"),
   DEVOPSNET(6, "tdx6", "tv6", "_tr6", "tn6"),
   SANDPITNET(7, "tdx7", "tv7", "_tr7", "tn7"),
+  ENKINET(21, "tdx21", "tv21", "_tr21", "tn21"),
   LOCALNET(99, "ddx", "dv", "_dr", "dn");
 
   private static String mainnetGenesis() {
