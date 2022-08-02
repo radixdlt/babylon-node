@@ -65,7 +65,7 @@
 package com.radixdlt.rev1;
 
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.Objects;
 
 /**
@@ -74,17 +74,18 @@ import java.util.Objects;
  */
 public final class InvalidProposedTransaction {
   private final ECPublicKey proposer;
-  private final Transaction transaction;
+  private final RawTransaction transaction;
   private final Exception e;
 
-  private InvalidProposedTransaction(ECPublicKey proposer, Transaction transaction, Exception e) {
+  private InvalidProposedTransaction(
+      ECPublicKey proposer, RawTransaction transaction, Exception e) {
     this.proposer = proposer;
     this.transaction = transaction;
     this.e = e;
   }
 
   public static InvalidProposedTransaction create(
-      ECPublicKey proposer, Transaction transaction, Exception e) {
+      ECPublicKey proposer, RawTransaction transaction, Exception e) {
     Objects.requireNonNull(transaction);
     Objects.requireNonNull(e);
     return new InvalidProposedTransaction(proposer, transaction, e);
@@ -102,7 +103,7 @@ public final class InvalidProposedTransaction {
   public String toString() {
     return String.format(
         "%s{txn=%s ex=%s}",
-        this.getClass().getSimpleName(), this.transaction.getId(), this.e.toString());
+        this.getClass().getSimpleName(), this.transaction.getPayloadHash(), this.e.toString());
   }
 
   @Override

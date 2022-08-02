@@ -154,7 +154,7 @@ public class JacksonCborMapper extends ObjectMapper {
     cborModule.addSerializer(
         TID.class,
         new JacksonCborObjectBytesSerializer<>(
-            TID.class, JacksonCodecConstants.AID_VALUE, TID::getBytes));
+            TID.class, JacksonCodecConstants.TID_VALUE, TID::getBytes));
     cborModule.addSerializer(
         long[].class,
         new JacksonCborObjectBytesSerializer<>(
@@ -170,7 +170,7 @@ public class JacksonCborMapper extends ObjectMapper {
           @Override
           public void serialize(TID value, JsonGenerator gen, SerializerProvider provider)
               throws IOException {
-            gen.writeFieldName(JacksonCodecConstants.AID_STR_VALUE + value.toString());
+            gen.writeFieldName(JacksonCodecConstants.TID_STR_VALUE + value.toString());
           }
         });
 
@@ -202,7 +202,7 @@ public class JacksonCborMapper extends ObjectMapper {
     cborModule.addDeserializer(
         TID.class,
         new JacksonCborObjectBytesDeserializer<>(
-            TID.class, JacksonCodecConstants.AID_VALUE, TID::from));
+            TID.class, JacksonCodecConstants.TID_VALUE, TID::from));
     cborModule.addDeserializer(
         long[].class,
         new JacksonCborObjectBytesDeserializer<>(
@@ -216,10 +216,10 @@ public class JacksonCborMapper extends ObjectMapper {
         new KeyDeserializer() {
           @Override
           public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
-            if (!key.startsWith(JacksonCodecConstants.AID_STR_VALUE)) {
+            if (!key.startsWith(JacksonCodecConstants.TID_STR_VALUE)) {
               throw new InvalidFormatException(
                   ctxt.getParser(),
-                  "Expecting prefix" + JacksonCodecConstants.AID_STR_VALUE,
+                  "Expecting prefix" + JacksonCodecConstants.TID_STR_VALUE,
                   key,
                   TID.class);
             }

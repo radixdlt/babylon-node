@@ -127,7 +127,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.substate.*;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -230,7 +230,7 @@ public class RadixEngineStateComputerTest {
     var genesisLedgerHeader =
         LedgerProof.genesis(
             new AccumulatorState(
-                0, hasher.hashDsonEncoded(genesisTxns.getTransactions().get(0).getId())),
+                0, hasher.hashDsonEncoded(genesisTxns.getTransactions().get(0).getPayloadHash())),
             genesisValidatorSet,
             0);
     if (!genesisLedgerHeader.isEndOfEpoch()) {
@@ -257,7 +257,7 @@ public class RadixEngineStateComputerTest {
     setupGenesis();
   }
 
-  private Transaction systemUpdateTransaction(long nextRound, long nextEpoch)
+  private RawTransaction systemUpdateTransaction(long nextRound, long nextEpoch)
       throws TxBuilderException {
     TxBuilder builder;
     if (nextEpoch >= 2) {
@@ -280,7 +280,7 @@ public class RadixEngineStateComputerTest {
     return builder.buildWithoutSignature();
   }
 
-  private Transaction registerTransaction(ECKeyPair keyPair) throws TxBuilderException {
+  private RawTransaction registerTransaction(ECKeyPair keyPair) throws TxBuilderException {
     return radixEngine
         .construct(new RegisterValidator(keyPair.getPublicKey()))
         .signAndBuild(keyPair::sign);
@@ -362,7 +362,7 @@ public class RadixEngineStateComputerTest {
     var illegalTxn =
         TxLowLevelBuilder.newBuilder(
                 currentForkView.currentForkConfig().engineRules().serialization())
-            .down(SubstateId.ofSubstate(txn.getId(), 1))
+            .down(SubstateId.ofSubstate(txn.getPayloadHash(), 1))
             .up(new RoundData(2, 0))
             .end()
             .build();

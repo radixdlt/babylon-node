@@ -155,7 +155,7 @@ public final class GenesisProvider implements Provider<CommittedTransactionsWith
       additionalActions.ifPresent(actions::addAll);
       var genesis = genesisBuilder.build("hello", timestamp, actions);
 
-      logger.info("gen_create{tx_id={}}", genesis.getId());
+      logger.info("gen_create{tx_id={}}", genesis.getPayloadHash());
 
       var proof = genesisBuilder.generateGenesisProof(genesis);
       return CommittedTransactionsWithProof.create(List.of(genesis), proof);

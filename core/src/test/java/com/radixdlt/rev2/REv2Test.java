@@ -81,7 +81,7 @@ import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.StatelessComputerModule;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import org.junit.Test;
 
@@ -104,7 +104,7 @@ public class REv2Test {
   public void test_valid_rev2_transaction_passes() {
     // Arrange
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var validTransaction = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+    var validTransaction = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
 
     // Act
     var result =
@@ -119,7 +119,7 @@ public class REv2Test {
   public void test_invalid_rev2_transaction_fails() {
     // Arrange
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var validTransaction = Transaction.create(new byte[1]);
+    var validTransaction = RawTransaction.create(new byte[1]);
 
     // Act
     var result =

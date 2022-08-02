@@ -70,7 +70,7 @@ import com.radixdlt.lang.Result;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerResponse;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.Objects;
 
 public class RustStateComputer implements StatelessTransactionVerifier {
@@ -84,8 +84,8 @@ public class RustStateComputer implements StatelessTransactionVerifier {
       new TypeToken<>() {};
 
   @Override
-  public boolean verify(Transaction transaction) {
-    var transactionBytes = StateManagerSbor.sbor.encode(transaction, Transaction.class);
+  public boolean verify(RawTransaction transaction) {
+    var transactionBytes = StateManagerSbor.sbor.encode(transaction, RawTransaction.class);
     var encodedResponse = verify(this.rustState, transactionBytes);
     return StateManagerResponse.decode(encodedResponse, booleanType);
   }

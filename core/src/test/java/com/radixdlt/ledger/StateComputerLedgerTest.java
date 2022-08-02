@@ -93,7 +93,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.serialization.DefaultSerialization;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.TypedMocks;
@@ -121,7 +121,7 @@ public class StateComputerLedgerTest {
   private VertexWithHash genesisVertex;
   private QuorumCertificate genesisQC;
 
-  private final Transaction nextTransaction = Transaction.create(new byte[] {0});
+  private final RawTransaction nextTransaction = RawTransaction.create(new byte[] {0});
   private final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
   private final ExecutedTransaction successfulNextTransaction = () -> nextTransaction;
 
@@ -254,7 +254,7 @@ public class StateComputerLedgerTest {
                     accumulatorVerifier.verifyAndGetExtension(
                         ledgerHeader.getAccumulatorState(),
                         List.of(nextTransaction),
-                        txn -> txn.getId().asHashCode(),
+                        RawTransaction::getPayloadHash,
                         x.getLedgerHeader().getAccumulatorState())))
         .contains(List.of(nextTransaction));
   }

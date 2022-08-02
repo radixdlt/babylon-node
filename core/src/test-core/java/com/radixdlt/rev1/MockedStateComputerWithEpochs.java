@@ -77,7 +77,7 @@ import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -104,7 +104,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
 
   @Override
-  public List<Transaction> getTransactionsForProposal(
+  public List<RawTransaction> getTransactionsForProposal(
       List<ExecutedTransaction> executedTransactions) {
     return List.of();
   }
@@ -112,7 +112,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   @Override
   public StateComputerResult prepare(
       List<ExecutedTransaction> previous,
-      List<Transaction> proposedTransactions,
+      List<RawTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     if (roundDetails.roundNumber() >= epochMaxRound.number()) {
       return new StateComputerResult(

@@ -77,7 +77,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.LedgerHeaderMock;
 import java.util.List;
 import java.util.Optional;
@@ -96,7 +96,7 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
     BFTHeader parent = new BFTHeader(Round.of(1234567890L), HashUtils.random256(), ledgerHeader);
     VoteData voteData = new VoteData(header, parent, null);
     QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-    var transaction = Transaction.create(new byte[] {0, 1, 2, 3});
+    var transaction = RawTransaction.create(new byte[] {0, 1, 2, 3});
 
     BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
     Vertex vertex = Vertex.create(qc, round, List.of(transaction), author);

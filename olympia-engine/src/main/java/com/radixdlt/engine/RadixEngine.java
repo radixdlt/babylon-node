@@ -89,7 +89,7 @@ import com.radixdlt.substate.TxAction;
 import com.radixdlt.substate.TxBuilder;
 import com.radixdlt.substate.TxBuilderException;
 import com.radixdlt.substate.TxnConstructionRequest;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import java.util.ArrayList;
@@ -210,21 +210,21 @@ public final class RadixEngine<M> {
       }
     }
 
-    public RadixEngineResult<M> execute(List<Transaction> transactions)
+    public RadixEngineResult<M> execute(List<RawTransaction> transactions)
         throws RadixEngineException {
       assertNotDeleted();
       return engine.execute(transactions);
     }
 
-    public RadixEngineResult<M> execute(List<Transaction> transactions, boolean skipAuthorization)
-        throws RadixEngineException {
+    public RadixEngineResult<M> execute(
+        List<RawTransaction> transactions, boolean skipAuthorization) throws RadixEngineException {
       assertNotDeleted();
       return engine.execute(
           transactions, Optional.empty(), PermissionLevel.USER, skipAuthorization);
     }
 
     public RadixEngineResult<M> execute(
-        List<Transaction> transactions, PermissionLevel permissionLevel)
+        List<RawTransaction> transactions, PermissionLevel permissionLevel)
         throws RadixEngineException {
       assertNotDeleted();
       return engine.execute(transactions, null, permissionLevel);
@@ -285,7 +285,7 @@ public final class RadixEngine<M> {
 
   private REProcessedTxn verify(
       EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction,
-      Transaction transaction,
+      RawTransaction transaction,
       ExecutionContext context)
       throws AuthorizationException, TxnParseException, ConstraintMachineException {
 
@@ -302,12 +302,13 @@ public final class RadixEngine<M> {
         parsedTxn, signedByKey.orElse(null), stateUpdates, context.getEvents());
   }
 
-  public RadixEngineResult<M> execute(List<Transaction> transactions) throws RadixEngineException {
+  public RadixEngineResult<M> execute(List<RawTransaction> transactions)
+      throws RadixEngineException {
     return execute(transactions, null, PermissionLevel.USER);
   }
 
   public RadixEngineResult<M> execute(
-      List<Transaction> transactions, M meta, PermissionLevel permissionLevel)
+      List<RawTransaction> transactions, M meta, PermissionLevel permissionLevel)
       throws RadixEngineException {
     return execute(transactions, Optional.ofNullable(meta), permissionLevel, false);
   }
@@ -323,7 +324,7 @@ public final class RadixEngine<M> {
    * @throws RadixEngineException on state conflict or dependency issues
    */
   public RadixEngineResult<M> execute(
-      List<Transaction> transactions,
+      List<RawTransaction> transactions,
       Optional<M> meta,
       PermissionLevel permissionLevel,
       boolean skipAuthorization)
@@ -343,7 +344,7 @@ public final class RadixEngine<M> {
 
   private RadixEngineResult<M> executeInternal(
       EngineStore.EngineStoreInTransaction<M> engineStoreInTransaction,
-      List<Transaction> transactions,
+      List<RawTransaction> transactions,
       Optional<M> metaOpt,
       PermissionLevel permissionLevel,
       boolean skipAuthorization)

@@ -74,7 +74,7 @@ import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DefaultSerialization;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -125,13 +125,12 @@ public class SimpleLedgerAccumulatorAndVerifierTest {
 
   @Test
   public void when_single_round_truncate_from_perfect_version__then_should_return_equivalent() {
-    var txn = Transaction.create(new byte[] {0});
+    var txn = RawTransaction.create(new byte[] {0});
     AccumulatorState headState = new AccumulatorState(345, HashUtils.zero256());
-    AccumulatorState nextState =
-        accumulatorAndVerifier.accumulate(headState, txn.getId().asHashCode());
+    AccumulatorState nextState = accumulatorAndVerifier.accumulate(headState, txn.getPayloadHash());
     assertThat(
             accumulatorAndVerifier.verifyAndGetExtension(
-                headState, ImmutableList.of(txn), t -> t.getId().asHashCode(), nextState))
+                headState, ImmutableList.of(txn), t -> t.getPayloadHash(), nextState))
         .hasValue(ImmutableList.of(txn));
   }
 }

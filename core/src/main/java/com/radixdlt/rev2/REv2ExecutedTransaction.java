@@ -65,17 +65,17 @@
 package com.radixdlt.rev2;
 
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 
 public class REv2ExecutedTransaction implements StateComputerLedger.ExecutedTransaction {
-  private final Transaction transaction;
+  private final RawTransaction transaction;
 
-  public REv2ExecutedTransaction(Transaction transaction) {
+  public REv2ExecutedTransaction(RawTransaction transaction) {
     this.transaction = transaction;
   }
 
   @Override
-  public Transaction transaction() {
+  public RawTransaction transaction() {
     return transaction;
   }
 }

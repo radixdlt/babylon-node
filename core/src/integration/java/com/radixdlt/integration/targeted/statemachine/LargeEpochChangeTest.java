@@ -110,7 +110,7 @@ import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.substate.TxnConstructionRequest;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
@@ -240,7 +240,7 @@ public class LargeEpochChangeTest {
             signatures.elapsed(TimeUnit.SECONDS),
             execution.elapsed(TimeUnit.SECONDS));
       }
-      var txns = new ArrayList<Transaction>();
+      var txns = new ArrayList<RawTransaction>();
       systemConstruction.start();
       var sysTxn =
           sut.construct(new NextRound(round, false, 1, v -> TEST_KEY.getPublicKey()))

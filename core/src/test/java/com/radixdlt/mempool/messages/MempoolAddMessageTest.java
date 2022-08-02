@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.messaging.mempool.MempoolAddMessage;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.ArrayList;
 import java.util.List;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -82,7 +82,7 @@ public class MempoolAddMessageTest {
 
   @Before
   public void setUp() {
-    this.message = MempoolAddMessage.from(List.of(Transaction.create(new byte[0])));
+    this.message = MempoolAddMessage.from(List.of(RawTransaction.create(new byte[0])));
   }
 
   @Test

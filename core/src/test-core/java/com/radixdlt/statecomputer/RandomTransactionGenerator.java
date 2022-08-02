@@ -68,13 +68,14 @@ import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 
 /** Generates new transactions with content of random hashes */
 public final class RandomTransactionGenerator implements ProposalGenerator {
   @Override
-  public List<Transaction> getTransactionsForProposal(Round round, List<ExecutedVertex> prepared) {
-    return List.of(Transaction.create(HashUtils.random256().asBytes()));
+  public List<RawTransaction> getTransactionsForProposal(
+      Round round, List<ExecutedVertex> prepared) {
+    return List.of(RawTransaction.create(HashUtils.random256().asBytes()));
   }
 }

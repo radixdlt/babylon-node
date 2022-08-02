@@ -86,7 +86,7 @@ import com.radixdlt.ledger.MockExecuted;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -107,7 +107,7 @@ public final class MockedStateComputer implements StateComputer {
   public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
 
   @Override
-  public List<Transaction> getTransactionsForProposal(
+  public List<RawTransaction> getTransactionsForProposal(
       List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
     return List.of();
   }
@@ -115,7 +115,7 @@ public final class MockedStateComputer implements StateComputer {
   @Override
   public StateComputerLedger.StateComputerResult prepare(
       List<StateComputerLedger.ExecutedTransaction> previous,
-      List<Transaction> proposedTransactions,
+      List<RawTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     return new StateComputerLedger.StateComputerResult(
         proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),

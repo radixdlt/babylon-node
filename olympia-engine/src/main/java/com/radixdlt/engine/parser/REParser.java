@@ -75,8 +75,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
@@ -95,7 +94,7 @@ public final class REParser {
   }
 
   public static class ParserState {
-    private final Transaction transaction;
+    private final RawTransaction transaction;
     private final List<REInstruction> instructions = new ArrayList<>();
     private byte[] msg = null;
     private int upSubstateCount = 0;
@@ -104,7 +103,7 @@ public final class REParser {
     private int position = 0;
     private boolean disableResourceAllocAndDestroy = false;
 
-    ParserState(Transaction transaction) {
+    ParserState(RawTransaction transaction) {
       this.transaction = transaction;
     }
 
@@ -137,8 +136,8 @@ public final class REParser {
       return instructions.size();
     }
 
-    public TID txnId() {
-      return transaction.getId();
+    public HashCode transactionPayloadHash() {
+      return transaction.getPayloadHash();
     }
 
     public int upSubstateCount() {
@@ -178,7 +177,7 @@ public final class REParser {
     }
   }
 
-  public ParsedTxn parse(Transaction transaction) throws TxnParseException {
+  public ParsedTxn parse(RawTransaction transaction) throws TxnParseException {
     UInt256 feePaid = null;
     ECDSASignature sig = null;
     int sigPosition = 0;
@@ -261,7 +260,7 @@ public final class REParser {
         parserState.disableResourceAllocAndDestroy);
   }
 
-  private HashCode calculatePayloadHash(Transaction transaction, int sigPosition) {
+  private HashCode calculatePayloadHash(RawTransaction transaction, int sigPosition) {
     return HashUtils.sha256(transaction.getPayload(), 0, sigPosition); // This is a double hash
   }
 

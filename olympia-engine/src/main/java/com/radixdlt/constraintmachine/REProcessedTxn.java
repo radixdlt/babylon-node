@@ -68,9 +68,8 @@ import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.parser.ParsedTxn;
-import com.radixdlt.identifiers.TID;
 import com.radixdlt.substate.SubstateId;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.Objects;
@@ -115,11 +114,7 @@ public final class REProcessedTxn {
     return Optional.ofNullable(signedByKey);
   }
 
-  public TID getTxnId() {
-    return parsedTxn.txn().getId();
-  }
-
-  public Transaction getTxn() {
+  public RawTransaction getTxn() {
     return parsedTxn.txn();
   }
 

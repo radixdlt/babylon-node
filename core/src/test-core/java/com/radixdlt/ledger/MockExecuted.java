@@ -65,18 +65,18 @@
 package com.radixdlt.ledger;
 
 import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 
 public class MockExecuted implements ExecutedTransaction {
 
-  private final Transaction transaction;
+  private final RawTransaction transaction;
 
-  public MockExecuted(Transaction transaction) {
+  public MockExecuted(RawTransaction transaction) {
     this.transaction = transaction;
   }
 
   @Override
-  public Transaction transaction() {
+  public RawTransaction transaction() {
     return transaction;
   }
 }

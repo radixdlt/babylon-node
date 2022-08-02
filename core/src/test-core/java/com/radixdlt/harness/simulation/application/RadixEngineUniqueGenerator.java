@@ -73,7 +73,7 @@ import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.rev1.forks.CurrentForkView;
 import com.radixdlt.substate.SubstateId;
 import com.radixdlt.substate.TxBuilder;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -85,10 +85,10 @@ public class RadixEngineUniqueGenerator implements TransactionGenerator {
 
   @Inject private CurrentForkView currentForkView;
 
-  @Inject @Genesis private Transaction genesis;
+  @Inject @Genesis private RawTransaction genesis;
 
   @Override
-  public Transaction nextTransaction() {
+  public RawTransaction nextTransaction() {
     var keyPair = ECKeyPair.generateNew();
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "smthng");
     var builder =
@@ -98,7 +98,7 @@ public class RadixEngineUniqueGenerator implements TransactionGenerator {
                 255)
             .toLowLevelBuilder()
             .syscall(Syscall.READDR_CLAIM, "smthng".getBytes(StandardCharsets.UTF_8))
-            .virtualDown(SubstateId.ofSubstate(genesis.getId(), 0), addr.getBytes())
+            .virtualDown(SubstateId.ofSubstate(genesis.getPayloadHash(), 0), addr.getBytes())
             .end();
     var sig = keyPair.sign(builder.hashToSign());
     return builder.sig(sig).build();

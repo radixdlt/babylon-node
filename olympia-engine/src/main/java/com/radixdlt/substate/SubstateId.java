@@ -64,6 +64,7 @@
 
 package com.radixdlt.substate;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.utils.Ints;
 import java.nio.ByteBuffer;
@@ -82,9 +83,9 @@ public final class SubstateId {
     this.idBytes = Objects.requireNonNull(idBytes);
   }
 
-  public static SubstateId ofSubstate(TID txId, int index) {
+  public static SubstateId ofSubstate(HashCode transactionPayloadHash, int index) {
     byte[] id = new byte[BYTES];
-    txId.copyTo(id, 0);
+    TID.from(transactionPayloadHash.asBytes()).copyTo(id, 0);
     Ints.copyTo(index, id, TID.BYTES);
     return new SubstateId(id);
   }

@@ -118,7 +118,7 @@ import com.radixdlt.substate.CloseableCursor;
 import com.radixdlt.substate.SubstateId;
 import com.radixdlt.substate.SubstateTypeId;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.Shorts;
 import com.radixdlt.utils.UInt256;
@@ -1088,16 +1088,16 @@ public final class BerkeleyLedgerEntryStore
 
     try {
       // Transaction / Syncing database
-      var aid = txn.getTxn().getId();
+      var transactionHash = txn.getTxn().getPayloadHash();
       // Write transaction data as soon as possible
       var storedSize = txnLog.write(txn.getTxn().getPayload(), expectedOffset);
       // Store transaction indices
       var pKey = toPKey(stateVersion);
-      var transactionPosData = txnEntry(expectedOffset, storedSize, aid);
+      var transactionPosData = txnEntry(expectedOffset, storedSize, transactionHash);
       failIfNotSuccess(
           txnDatabase.putNoOverwrite(dbTransaction, pKey, transactionPosData),
           "Transaction write for",
-          aid);
+          transactionHash);
       addBytesWrite(transactionPosData, pKey);
       systemCounters.increment(CounterType.COUNT_BDB_LEDGER_COMMIT);
 
@@ -1172,7 +1172,7 @@ public final class BerkeleyLedgerEntryStore
       transaction.commit();
     }
 
-    final var transactions = ImmutableList.<Transaction>builder();
+    final var transactions = ImmutableList.<RawTransaction>builder();
     final var transactionSearchKey = toPKey(stateVersion + 1);
     final var transactionPosData = entry();
 
@@ -1187,7 +1187,7 @@ public final class BerkeleyLedgerEntryStore
         }
         var offset = fromByteArray(transactionPosData.getData());
         var txnBytes = txnLog.read(offset);
-        transactions.add(Transaction.create(txnBytes));
+        transactions.add(RawTransaction.create(txnBytes));
         transactionCursorStatus =
             txnCursor.getNext(transactionSearchKey, transactionPosData, DEFAULT);
         count++;
@@ -1202,10 +1202,10 @@ public final class BerkeleyLedgerEntryStore
     }
   }
 
-  public List<Transaction> getCommittedTxns(long stateVersion, long limit) {
+  public List<RawTransaction> getCommittedTxns(long stateVersion, long limit) {
     try (var txnCursor = txnDatabase.openCursor(null, null)) {
       var iterator =
-          new Iterator<Transaction>() {
+          new Iterator<RawTransaction>() {
             final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion + 1));
             final DatabaseEntry value = new DatabaseEntry();
             OperationStatus status =
@@ -1219,7 +1219,7 @@ public final class BerkeleyLedgerEntryStore
             }
 
             @Override
-            public Transaction next() {
+            public RawTransaction next() {
               if (status != SUCCESS) {
                 throw new NoSuchElementException();
               }
@@ -1230,7 +1230,7 @@ public final class BerkeleyLedgerEntryStore
               } catch (IOException e) {
                 throw new IllegalStateException("Unable to read transaction", e);
               }
-              Transaction next = Transaction.create(txnBytes);
+              RawTransaction next = RawTransaction.create(txnBytes);
 
               status = txnCursor.getNext(key, value, null);
               return next;
@@ -1332,11 +1332,11 @@ public final class BerkeleyLedgerEntryStore
     return new DatabaseEntry();
   }
 
-  private static DatabaseEntry txnEntry(long offset, long size, TID tid) {
+  private static DatabaseEntry txnEntry(long offset, long size, HashCode tid) {
     var buf = ByteBuffer.allocate(Long.BYTES + Long.BYTES + TID.BYTES);
     buf.putLong(offset);
     buf.putLong(size);
-    buf.put(tid.getBytes());
+    buf.put(tid.asBytes());
     return entry(buf.array());
   }
 

@@ -85,7 +85,7 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.substate.TxAction;
 import com.radixdlt.substate.TxBuilderException;
 import com.radixdlt.substate.TxnConstructionRequest;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -115,7 +115,7 @@ public final class GenesisBuilder {
             rules.config().maxMessageLen());
   }
 
-  public Transaction build(String message, long timestamp, List<TxAction> actions)
+  public RawTransaction build(String message, long timestamp, List<TxAction> actions)
       throws TxBuilderException, RadixEngineException {
     var txnConstructionRequest = TxnConstructionRequest.create();
     txnConstructionRequest.msg(message.getBytes(StandardCharsets.UTF_8));
@@ -132,7 +132,7 @@ public final class GenesisBuilder {
     return txn;
   }
 
-  public LedgerProof generateGenesisProof(Transaction transaction) throws RadixEngineException {
+  public LedgerProof generateGenesisProof(RawTransaction transaction) throws RadixEngineException {
     var branch = radixEngine.transientBranch();
     var result = branch.execute(List.of(transaction), PermissionLevel.SYSTEM);
     radixEngine.deleteBranches();
@@ -152,7 +152,7 @@ public final class GenesisBuilder {
             .orElseThrow(() -> new IllegalStateException("No validator set in genesis."));
 
     var init = new AccumulatorState(0, HashUtils.zero256());
-    var accumulatorState = ledgerAccumulator.accumulate(init, transaction.getId().asHashCode());
+    var accumulatorState = ledgerAccumulator.accumulate(init, transaction.getPayloadHash());
     var genesisProof = LedgerProof.genesis(accumulatorState, genesisValidatorSet, 0L);
     if (!genesisProof.isEndOfEpoch()) {
       throw new IllegalStateException("Genesis must be end of epoch");

@@ -68,13 +68,13 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.sbor.codec.core.IntegerCodec;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
 
 public class GetTransactionsForProposalRustArgs {
   int count;
-  List<Transaction> preparedTransactions;
+  List<RawTransaction> preparedTransactions;
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -83,11 +83,11 @@ public class GetTransactionsForProposalRustArgs {
             StructCodec.with(
                 GetTransactionsForProposalRustArgs::new,
                 new IntegerCodec(false),
-                codecs.of(new TypeToken<List<Transaction>>() {}),
+                codecs.of(new TypeToken<List<RawTransaction>>() {}),
                 (a, encoder) -> encoder.encode(a.count, a.preparedTransactions)));
   }
 
-  GetTransactionsForProposalRustArgs(int count, List<Transaction> preparedTransactions) {
+  GetTransactionsForProposalRustArgs(int count, List<RawTransaction> preparedTransactions) {
     this.count = count;
     this.preparedTransactions = Objects.requireNonNull(preparedTransactions);
   }

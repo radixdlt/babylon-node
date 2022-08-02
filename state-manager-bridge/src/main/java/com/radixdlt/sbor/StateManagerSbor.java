@@ -72,7 +72,7 @@ import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 
 public final class StateManagerSbor {
 
@@ -85,7 +85,7 @@ public final class StateManagerSbor {
   public static void registerCodecsWithCodecMap(CodecMap codecMap) {
     RustMempoolConfig.registerCodec(codecMap);
     StateManagerConfig.registerCodec(codecMap);
-    Transaction.registerCodec(codecMap);
+    RawTransaction.registerCodec(codecMap);
     TID.registerCodec(codecMap);
     StateManagerRuntimeError.registerCodec(codecMap);
     MempoolError.registerCodec(codecMap);

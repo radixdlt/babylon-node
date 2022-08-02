@@ -65,8 +65,8 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 
 /** Representation of an executed transaction on a StatelessComputer */
-public record StatelessComputerExecutedTransaction(Transaction transaction)
+public record StatelessComputerExecutedTransaction(RawTransaction transaction)
     implements StateComputerLedger.ExecutedTransaction {}

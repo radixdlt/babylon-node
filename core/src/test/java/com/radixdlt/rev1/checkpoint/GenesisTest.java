@@ -78,7 +78,7 @@ import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
 import java.util.Collection;
@@ -97,17 +97,17 @@ public class GenesisTest {
     return Arrays.stream(Network.values())
         .flatMap(n -> n.genesisTxn().stream())
         .map(Bytes::fromHexString)
-        .map(Transaction::create)
+        .map(RawTransaction::create)
         .map(txn -> new Object[] {txn})
         .toList();
   }
 
   private static final Logger logger = LogManager.getLogger();
-  private final Transaction genesis;
+  private final RawTransaction genesis;
 
   @Inject private GenesisBuilder genesisBuilder;
 
-  public GenesisTest(Transaction genesis) {
+  public GenesisTest(RawTransaction genesis) {
     this.genesis = genesis;
   }
 

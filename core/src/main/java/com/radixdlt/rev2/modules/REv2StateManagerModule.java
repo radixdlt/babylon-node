@@ -78,7 +78,7 @@ import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStore;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 
 public final class REv2StateManagerModule extends AbstractModule {
   @Provides
@@ -101,7 +101,7 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private Mempool<Transaction> stateManagerMempool(StateManager stateManager) {
+  private Mempool<RawTransaction> stateManagerMempool(StateManager stateManager) {
     return new RustMempool(stateManager.getRustState());
   }
 

@@ -97,6 +97,7 @@ import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
 import com.radixdlt.sync.validation.RemoteSyncResponseSignaturesVerifier;
 import com.radixdlt.sync.validation.RemoteSyncResponseValidatorSetVerifier;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Pair;
 import java.util.Collections;
 import java.util.Comparator;
@@ -475,7 +476,7 @@ public final class LocalSyncService {
     final var end = transactionsWithProofDto.getTail().getLedgerHeader().getAccumulatorState();
     final var hashes =
         transactionsWithProofDto.getTransactions().stream()
-            .map(txn -> txn.getId().asHashCode())
+            .map(RawTransaction::getPayloadHash)
             .collect(ImmutableList.toImmutableList());
 
     if (!this.validatorSetVerifier.verifyValidatorSet(syncResponse)) {

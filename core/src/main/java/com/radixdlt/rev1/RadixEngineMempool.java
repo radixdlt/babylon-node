@@ -65,6 +65,7 @@
 package com.radixdlt.rev1;
 
 import com.google.common.collect.Sets;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -72,14 +73,13 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.RadixEngineResult;
-import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.substate.SubstateId;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -100,9 +100,9 @@ import org.apache.logging.log4j.Logger;
 public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   private static final Logger logger = LogManager.getLogger();
 
-  private final ConcurrentHashMap<TID, Pair<REProcessedTxn, MempoolMetadata>> data =
+  private final ConcurrentHashMap<HashCode, Pair<REProcessedTxn, MempoolMetadata>> data =
       new ConcurrentHashMap<>();
-  private final Map<SubstateId, Set<TID>> substateIndex = new ConcurrentHashMap<>();
+  private final Map<SubstateId, Set<HashCode>> substateIndex = new ConcurrentHashMap<>();
   private final RadixEngine<LedgerAndBFTProof> radixEngine;
   private final int maxSize;
 
@@ -116,19 +116,20 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
     this.radixEngine = radixEngine;
   }
 
-  public <T> T getData(Function<Map<TID, Pair<REProcessedTxn, MempoolMetadata>>, T> mapper) {
+  public <T> T getData(Function<Map<HashCode, Pair<REProcessedTxn, MempoolMetadata>>, T> mapper) {
     return mapper.apply(data);
   }
 
   @Override
-  public REProcessedTxn addTransaction(Transaction transaction) throws MempoolRejectedException {
+  public REProcessedTxn addTransaction(RawTransaction transaction) throws MempoolRejectedException {
     if (this.data.size() >= maxSize) {
       throw new MempoolFullException(this.data.size(), maxSize);
     }
 
-    if (this.data.containsKey(transaction.getId())) {
+    if (this.data.containsKey(transaction.getPayloadHash())) {
       throw new MempoolDuplicateException(
-          String.format("Mempool already has transaction with id %s", transaction.getId()));
+          String.format(
+              "Mempool already has transaction with id %s", transaction.getPayloadHash()));
     }
 
     final RadixEngineResult<LedgerAndBFTProof> result;
@@ -144,22 +145,22 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 
     var mempoolMetadata = MempoolMetadata.create(System.currentTimeMillis());
     var data = Pair.of(result.getProcessedTxn(), mempoolMetadata);
-    this.data.put(transaction.getId(), data);
+    this.data.put(transaction.getPayloadHash(), data);
     result
         .getProcessedTxn()
         .substateDependencies()
         .forEach(
             substateId ->
-                substateIndex.merge(substateId, Set.of(transaction.getId()), Sets::union));
+                substateIndex.merge(substateId, Set.of(transaction.getPayloadHash()), Sets::union));
 
     return result.getProcessedTxn();
   }
 
   @Override
   public void handleTransactionsCommitted(List<REProcessedTxn> transactions) {
-    final var removed = new ArrayList<Transaction>();
+    final var removed = new ArrayList<RawTransaction>();
     final var committedIds =
-        transactions.stream().map(p -> p.getTxn().getId()).collect(Collectors.toSet());
+        transactions.stream().map(p -> p.getTxn().getPayloadHash()).collect(Collectors.toSet());
 
     transactions.stream()
         .flatMap(REProcessedTxn::stateUpdates)
@@ -167,7 +168,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
         .forEach(
             instruction -> {
               var substateId = instruction.getId();
-              Set<TID> txnIds = substateIndex.remove(substateId);
+              Set<HashCode> txnIds = substateIndex.remove(substateId);
               if (txnIds == null) {
                 return;
               }
@@ -176,7 +177,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
                 var toRemove = data.remove(txnId);
                 // TODO: Cleanup
                 if (toRemove != null
-                    && !committedIds.contains(toRemove.getFirst().getTxn().getId())) {
+                    && !committedIds.contains(toRemove.getFirst().getTxn().getPayloadHash())) {
                   removed.add(toRemove.getFirst().getTxn());
                 }
               }
@@ -188,7 +189,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   }
 
   @Override
-  public List<Transaction> getTransactionsForProposal(
+  public List<RawTransaction> getTransactionsForProposal(
       int count, List<REProcessedTxn> preparedTransactions) {
     // TODO: Order by highest fees paid
     var copy = new TreeSet<>(data.keySet());
@@ -199,7 +200,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
         .distinct()
         .forEach(copy::remove);
 
-    var txns = new ArrayList<Transaction>();
+    var txns = new ArrayList<RawTransaction>();
 
     for (int i = 0; i < count && !copy.isEmpty(); i++) {
       var txId = copy.first();
@@ -224,7 +225,8 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   }
 
   @Override
-  public List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis) {
+  public List<RawTransaction> getTransactionsToRelay(
+      long initialDelayMillis, long repeatDelayMillis) {
     final var now = System.currentTimeMillis();
     final var recentlyAddedCutoff = now - initialDelayMillis;
     final var lastRelayedCutoff = now - repeatDelayMillis;
@@ -237,7 +239,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
         m -> m.setLastRelayedTimestampMs(now));
   }
 
-  private List<Transaction> scanUpdateAndGet(
+  private List<RawTransaction> scanUpdateAndGet(
       Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
     return this.data.values().stream()
         .filter(e -> predicate.test(e.getSecond()))

@@ -85,7 +85,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.store.LastProof;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -98,17 +98,17 @@ import java.util.Optional;
 public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   public interface ExecutedTransaction {
-    Transaction transaction();
+    RawTransaction transaction();
   }
 
   public static class StateComputerResult {
     private final List<ExecutedTransaction> executedTransactions;
-    private final Map<Transaction, Exception> failedTransactions;
+    private final Map<RawTransaction, Exception> failedTransactions;
     private final BFTValidatorSet nextValidatorSet;
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<Transaction, Exception> failedTransactions,
+        Map<RawTransaction, Exception> failedTransactions,
         BFTValidatorSet nextValidatorSet) {
       this.executedTransactions = Objects.requireNonNull(executedTransactions);
       this.failedTransactions = Objects.requireNonNull(failedTransactions);
@@ -117,7 +117,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<Transaction, Exception> failedTransactions) {
+        Map<RawTransaction, Exception> failedTransactions) {
       this(executedTransactions, failedTransactions, null);
     }
 
@@ -129,7 +129,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       return executedTransactions;
     }
 
-    public Map<Transaction, Exception> getFailedTransactions() {
+    public Map<RawTransaction, Exception> getFailedTransactions() {
       return failedTransactions;
     }
   }
@@ -137,11 +137,11 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   public interface StateComputer {
     void addToMempool(MempoolAdd mempoolAdd, BFTNode origin);
 
-    List<Transaction> getTransactionsForProposal(List<ExecutedTransaction> executedTransactions);
+    List<RawTransaction> getTransactionsForProposal(List<ExecutedTransaction> executedTransactions);
 
     StateComputerResult prepare(
         List<ExecutedTransaction> previous,
-        List<Transaction> proposedTransactions,
+        List<RawTransaction> proposedTransactions,
         RoundDetails roundDetails);
 
     void commit(
@@ -194,7 +194,8 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   }
 
   @Override
-  public List<Transaction> getTransactionsForProposal(Round round, List<ExecutedVertex> prepared) {
+  public List<RawTransaction> getTransactionsForProposal(
+      Round round, List<ExecutedVertex> prepared) {
     final ImmutableList<ExecutedTransaction> executedTransactions =
         prepared.stream()
             .flatMap(ExecutedVertex::successfulTransactions)
@@ -235,7 +236,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
           this.verifier.verifyAndGetExtension(
               this.currentLedgerHeader.getAccumulatorState(),
               prevTransactions,
-              p -> p.transaction().getId().asHashCode(),
+              p -> p.transaction().getPayloadHash(),
               parentAccumulatorState);
 
       // TODO: Write a test to get here
@@ -254,7 +255,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       for (ExecutedTransaction transaction : result.getSuccessfullyExecutedTransactions()) {
         accumulatorState =
             this.accumulator.accumulate(
-                accumulatorState, transaction.transaction().getId().asHashCode());
+                accumulatorState, transaction.transaction().getPayloadHash());
       }
 
       final LedgerHeader ledgerHeader =
@@ -277,7 +278,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
     return committedUpdate -> {
-      final ImmutableList<Transaction> transactions =
+      final ImmutableList<RawTransaction> transactions =
           committedUpdate.committed().stream()
               .flatMap(ExecutedVertex::successfulTransactions)
               .map(ExecutedTransaction::transaction)
@@ -307,7 +308,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
           verifier.verifyAndGetExtension(
               this.currentLedgerHeader.getAccumulatorState(),
               committedTransactionsWithProof.getTransactions(),
-              transaction -> transaction.getId().asHashCode(),
+              transaction -> transaction.getPayloadHash(),
               committedTransactionsWithProof.getProof().getAccumulatorState());
 
       if (verifiedExtension.isEmpty()) {

@@ -65,12 +65,12 @@
 package com.radixdlt.harness.simulation.application;
 
 import com.radixdlt.rev2.REv2ExampleTransactions;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 
 /** Generates a valid transaction for REV2 */
 public class REV2TransactionGenerator implements TransactionGenerator {
   @Override
-  public Transaction nextTransaction() {
-    return Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+  public RawTransaction nextTransaction() {
+    return RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
   }
 }

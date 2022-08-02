@@ -78,7 +78,6 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.TID;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.rev1.LedgerAndBFTProof;
@@ -89,7 +88,7 @@ import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.substate.CloseableCursor;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -227,8 +226,8 @@ public final class BerkeleyLedgerEntryStoreTest {
   private void storeMetadataWithForks(long epoch, ImmutableSet<ForkVotingResult> forkVotingResults)
       throws RadixEngineException {
     final var fakeTx = mock(REProcessedTxn.class);
-    final var txn = mock(Transaction.class);
-    when(txn.getId()).thenReturn(TID.from(HashUtils.random256().asBytes()));
+    final var txn = mock(RawTransaction.class);
+    when(txn.getPayloadHash()).thenReturn(HashUtils.random256());
     when(fakeTx.getTxn()).thenReturn(txn);
     when(fakeTx.getGroupedStateUpdates()).thenReturn(List.of());
     when(txn.getPayload()).thenReturn(HashUtils.random256().asBytes());

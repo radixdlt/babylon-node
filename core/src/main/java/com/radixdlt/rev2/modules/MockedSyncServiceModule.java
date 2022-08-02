@@ -92,7 +92,7 @@ import com.radixdlt.sync.messages.remote.StatusRequest;
 import com.radixdlt.sync.messages.remote.StatusResponse;
 import com.radixdlt.sync.messages.remote.SyncRequest;
 import com.radixdlt.sync.messages.remote.SyncResponse;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.LongStream;
@@ -102,7 +102,7 @@ import org.apache.logging.log4j.Logger;
 public class MockedSyncServiceModule extends AbstractModule {
   private static final Logger logger = LogManager.getLogger();
 
-  private final ConcurrentMap<Long, Transaction> sharedCommittedTransactions;
+  private final ConcurrentMap<Long, RawTransaction> sharedCommittedTransactions;
   private final ConcurrentMap<Long, LedgerProof> sharedEpochProofs;
 
   public MockedSyncServiceModule() {

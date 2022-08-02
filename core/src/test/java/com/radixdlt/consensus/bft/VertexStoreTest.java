@@ -85,7 +85,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.DefaultSerialization;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.ZeroHasher;
 import java.util.List;
 import java.util.Optional;
@@ -176,7 +176,8 @@ public class VertexStoreTest {
           }
 
           var vertex =
-              Vertex.create(qc, round, List.of(Transaction.create(new byte[0])), BFTNode.random())
+              Vertex.create(
+                      qc, round, List.of(RawTransaction.create(new byte[0])), BFTNode.random())
                   .withId(hasher);
           lastParentHeader.set(new BFTHeader(round, vertex.getHash(), MOCKED_HEADER));
           lastGrandParentHeader.set(parentHeader);
