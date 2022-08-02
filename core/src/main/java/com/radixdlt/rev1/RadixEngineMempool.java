@@ -65,7 +65,6 @@
 package com.radixdlt.rev1;
 
 import com.google.common.collect.Sets;
-import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.constraintmachine.REProcessedTxn;
@@ -152,7 +151,10 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
         .substateDependencies()
         .forEach(
             substateId ->
-                substateIndex.merge(substateId, Set.of(TID.from(transaction.getPayloadHash().asBytes())), Sets::union));
+                substateIndex.merge(
+                    substateId,
+                    Set.of(TID.from(transaction.getPayloadHash().asBytes())),
+                    Sets::union));
 
     return result.getProcessedTxn();
   }
