@@ -65,15 +65,26 @@
 use crate::jni::dtos::*;
 use crate::mempool::{Mempool, MempoolConfig};
 use crate::transaction_store::TransactionStore;
-use crate::types::Transaction;
+use crate::types::{PreviewError, PreviewRequest, Transaction};
+use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::transaction::{PreviewExecutor, PreviewResult};
+use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
+use scrypto::core::Network;
+use scrypto::crypto::EcdsaPublicKey;
 use std::sync::Arc;
 use std::sync::Mutex;
-use transaction::model::NotarizedTransaction;
+use transaction::model::{
+    NotarizedTransaction, PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent,
+    TransactionManifest,
+};
+use transaction::signing::EcdsaPrivateKey;
+use transaction::validation::TestIntentHashManager;
 
 #[derive(Clone, Debug)]
 pub struct StateManager<M: Mempool> {
+    pub network: Network,
     pub mempool: Arc<Mutex<M>>,
     pub transaction_store: Arc<Mutex<TransactionStore>>,
 }
@@ -81,6 +92,7 @@ pub struct StateManager<M: Mempool> {
 impl<M: Mempool> StateManager<M> {
     pub fn new(mempool: M, transaction_store: TransactionStore) -> StateManager<M> {
         StateManager {
+            network: Network::LocalSimulator,
             mempool: Arc::new(Mutex::new(mempool)),
             transaction_store: Arc::new(Mutex::new(transaction_store)),
         }
@@ -89,6 +101,59 @@ impl<M: Mempool> StateManager<M> {
     pub fn verify(&self, txn: &Transaction) -> bool {
         let parse_result: Result<NotarizedTransaction, DecodeError> = scrypto_decode(&txn.payload);
         parse_result.is_ok()
+    }
+
+    pub fn preview(&self, preview_request: &PreviewRequest) -> Result<PreviewResult, PreviewError> {
+        let manifest: TransactionManifest =
+            scrypto_decode(&preview_request.manifest).map_err(|_| PreviewError::InvalidManifest)?;
+
+        let signer_public_keys: Result<Vec<EcdsaPublicKey>, PreviewError> = preview_request
+            .signer_public_keys
+            .iter()
+            .map(|pk| {
+                EcdsaPublicKey::try_from(&pk[..]).map_err(|_| PreviewError::InvalidSignerPublicKey)
+            })
+            .collect();
+
+        // not really used for preview
+        let notary_private_key = EcdsaPrivateKey::from_u64(2).unwrap();
+
+        let preview_intent = PreviewIntent {
+            intent: TransactionIntent {
+                header: TransactionHeader {
+                    version: 1,
+                    network: self.network.clone(),
+                    start_epoch_inclusive: 0,
+                    end_epoch_exclusive: 100,
+                    nonce: preview_request.nonce,
+                    notary_public_key: notary_private_key.public_key(),
+                    notary_as_signatory: false,
+                    cost_unit_limit: preview_request.cost_unit_limit,
+                    tip_bps: preview_request.tip_bps,
+                },
+                manifest,
+            },
+            signer_public_keys: signer_public_keys?,
+            flags: PreviewFlags {
+                unlimited_loan: preview_request.flags.unlimited_loan,
+            },
+        };
+
+        let mut substate_store = InMemorySubstateStore::with_bootstrap();
+        let mut wasm_engine = DefaultWasmEngine::new();
+        let mut wasm_instrumenter = WasmInstrumenter::new();
+        let intent_hash_manager = TestIntentHashManager::new();
+
+        let result = PreviewExecutor::new(
+            &mut substate_store,
+            &mut wasm_engine,
+            &mut wasm_instrumenter,
+            &intent_hash_manager,
+        )
+        .execute(preview_intent)
+        .map_err(PreviewError::EngineError)?;
+
+        Ok(result)
     }
 }
 

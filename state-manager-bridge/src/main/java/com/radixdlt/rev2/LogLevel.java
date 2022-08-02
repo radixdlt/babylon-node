@@ -62,60 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.rev2;
 
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
-import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
-import com.radixdlt.mempool.MempoolError;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.LogLevel;
-import com.radixdlt.rev2.PackageAddress;
-import com.radixdlt.rev2.ResourceAddress;
-import com.radixdlt.rev2.TransactionStatus;
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.statecomputer.preview.PreviewError;
-import com.radixdlt.statecomputer.preview.PreviewFlags;
-import com.radixdlt.statecomputer.preview.PreviewRequest;
-import com.radixdlt.statecomputer.preview.PreviewResult;
-import com.radixdlt.statecomputer.preview.TransactionFeeSummary;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transactions.Transaction;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.EnumEntry;
 
-public final class StateManagerSbor {
-
-  public static final Sbor sbor = createSborForStateManager();
-
-  private static Sbor createSborForStateManager() {
-    return new Sbor(true, new CodecMap().register(StateManagerSbor::registerCodecsWithCodecMap));
+@SecurityCritical(SecurityKind.NUMERIC)
+public sealed interface LogLevel {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        LogLevel.class,
+        (codecs) ->
+            EnumCodec.fromEntries(
+                EnumEntry.noFields(LogLevel.Error.class, LogLevel.Error::new),
+                EnumEntry.noFields(LogLevel.Warn.class, LogLevel.Warn::new),
+                EnumEntry.noFields(LogLevel.Info.class, LogLevel.Info::new),
+                EnumEntry.noFields(LogLevel.Debug.class, LogLevel.Debug::new),
+                EnumEntry.noFields(LogLevel.Trace.class, LogLevel.Trace::new)));
   }
 
-  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
-    UInt32.registerCodec(codecMap);
-    UInt64.registerCodec(codecMap);
-    RustMempoolConfig.registerCodec(codecMap);
-    StateManagerConfig.registerCodec(codecMap);
-    Transaction.registerCodec(codecMap);
-    PreviewFlags.registerCodec(codecMap);
-    PreviewRequest.registerCodec(codecMap);
-    PreviewResult.registerCodec(codecMap);
-    PreviewError.registerCodec(codecMap);
-    TransactionStatus.registerCodec(codecMap);
-    Decimal.registerCodec(codecMap);
-    LogLevel.registerCodec(codecMap);
-    PackageAddress.registerCodec(codecMap);
-    ComponentAddress.registerCodec(codecMap);
-    ResourceAddress.registerCodec(codecMap);
-    TransactionFeeSummary.registerCodec(codecMap);
-    TID.registerCodec(codecMap);
-    StateManagerRuntimeError.registerCodec(codecMap);
-    MempoolError.registerCodec(codecMap);
-    GetTransactionsForProposalRustArgs.registerCodec(codecMap);
-    GetRelayedTransactionsRustArgs.registerCodec(codecMap);
-  }
+  record Error() implements LogLevel {}
+
+  record Warn() implements LogLevel {}
+
+  record Info() implements LogLevel {}
+
+  record Debug() implements LogLevel {}
+
+  record Trace() implements LogLevel {}
 }

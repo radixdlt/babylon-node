@@ -20,26 +20,41 @@ import java.util.HashMap;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.TransactionStatus;
+import com.radixdlt.api.core.generated.models.TransactionStatusFailed;
+import com.radixdlt.api.core.generated.models.TransactionStatusFailedAllOf;
+import com.radixdlt.api.core.generated.models.TransactionStatusRejected;
+import com.radixdlt.api.core.generated.models.TransactionStatusSucceeded;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
+import com.radixdlt.api.common.JSON;
 /**
- * InvalidTransactionErrorAllOf
+ * TransactionStatusFailed
  */
 @JsonPropertyOrder({
-  InvalidTransactionErrorAllOf.JSON_PROPERTY_MESSAGE
+  TransactionStatusFailed.JSON_PROPERTY_MESSAGE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class InvalidTransactionErrorAllOf {
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = TransactionStatusFailed.class, name = "TransactionStatusFailed"),
+  @JsonSubTypes.Type(value = TransactionStatusRejected.class, name = "TransactionStatusRejected"),
+  @JsonSubTypes.Type(value = TransactionStatusSucceeded.class, name = "TransactionStatusSucceeded"),
+})
+
+public class TransactionStatusFailed extends TransactionStatus {
   public static final String JSON_PROPERTY_MESSAGE = "message";
   private String message;
 
 
-  public InvalidTransactionErrorAllOf message(String message) {
+  public TransactionStatusFailed message(String message) {
     this.message = message;
     return this;
   }
@@ -66,7 +81,7 @@ public class InvalidTransactionErrorAllOf {
 
 
   /**
-   * Return true if this InvalidTransactionError_allOf object is equal to o.
+   * Return true if this TransactionStatusFailed object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -76,19 +91,21 @@ public class InvalidTransactionErrorAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    InvalidTransactionErrorAllOf invalidTransactionErrorAllOf = (InvalidTransactionErrorAllOf) o;
-    return Objects.equals(this.message, invalidTransactionErrorAllOf.message);
+    TransactionStatusFailed transactionStatusFailed = (TransactionStatusFailed) o;
+    return Objects.equals(this.message, transactionStatusFailed.message) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(message);
+    return Objects.hash(message, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class InvalidTransactionErrorAllOf {\n");
+    sb.append("class TransactionStatusFailed {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -105,5 +122,14 @@ public class InvalidTransactionErrorAllOf {
     return o.toString().replace("\n", "\n    ");
   }
 
+static {
+  // Initialize and register the discriminator mappings.
+  Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
+  mappings.put("TransactionStatusFailed", TransactionStatusFailed.class);
+  mappings.put("TransactionStatusRejected", TransactionStatusRejected.class);
+  mappings.put("TransactionStatusSucceeded", TransactionStatusSucceeded.class);
+  mappings.put("TransactionStatusFailed", TransactionStatusFailed.class);
+  JSON.registerDiscriminator(TransactionStatusFailed.class, "type", mappings);
+}
 }
 

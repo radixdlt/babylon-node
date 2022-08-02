@@ -62,60 +62,79 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.utils;
 
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
-import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
-import com.radixdlt.mempool.MempoolError;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.LogLevel;
-import com.radixdlt.rev2.PackageAddress;
-import com.radixdlt.rev2.ResourceAddress;
-import com.radixdlt.rev2.TransactionStatus;
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
+import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.statecomputer.preview.PreviewError;
-import com.radixdlt.statecomputer.preview.PreviewFlags;
-import com.radixdlt.statecomputer.preview.PreviewRequest;
-import com.radixdlt.statecomputer.preview.PreviewResult;
-import com.radixdlt.statecomputer.preview.TransactionFeeSummary;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transactions.Transaction;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.EncoderApi;
+import java.io.Serializable;
+import java.util.Objects;
 
-public final class StateManagerSbor {
+/** A 32-bit unsigned integer wrapper */
+@SecurityCritical(SecurityKind.NUMERIC)
+public class UInt32 implements Comparable<UInt32>, Serializable {
 
-  public static final Sbor sbor = createSborForStateManager();
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        UInt32.class,
+        codecs ->
+            new Codec<UInt32>() {
+              @Override
+              public TypeId getTypeId() {
+                return TypeId.TYPE_U32;
+              }
 
-  private static Sbor createSborForStateManager() {
-    return new Sbor(true, new CodecMap().register(StateManagerSbor::registerCodecsWithCodecMap));
+              @Override
+              public void encodeWithoutTypeId(EncoderApi encoder, UInt32 uint32) {
+                encoder.writeInt(uint32.underlyingValue);
+              }
+
+              @Override
+              public UInt32 decodeWithoutTypeId(DecoderApi decoder) {
+                return new UInt32(decoder.readInt());
+              }
+            });
   }
 
-  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
-    UInt32.registerCodec(codecMap);
-    UInt64.registerCodec(codecMap);
-    RustMempoolConfig.registerCodec(codecMap);
-    StateManagerConfig.registerCodec(codecMap);
-    Transaction.registerCodec(codecMap);
-    PreviewFlags.registerCodec(codecMap);
-    PreviewRequest.registerCodec(codecMap);
-    PreviewResult.registerCodec(codecMap);
-    PreviewError.registerCodec(codecMap);
-    TransactionStatus.registerCodec(codecMap);
-    Decimal.registerCodec(codecMap);
-    LogLevel.registerCodec(codecMap);
-    PackageAddress.registerCodec(codecMap);
-    ComponentAddress.registerCodec(codecMap);
-    ResourceAddress.registerCodec(codecMap);
-    TransactionFeeSummary.registerCodec(codecMap);
-    TID.registerCodec(codecMap);
-    StateManagerRuntimeError.registerCodec(codecMap);
-    MempoolError.registerCodec(codecMap);
-    GetTransactionsForProposalRustArgs.registerCodec(codecMap);
-    GetRelayedTransactionsRustArgs.registerCodec(codecMap);
+  private final Integer underlyingValue;
+
+  public static UInt32 fromNonNegativeInt(int i) {
+    if (i < 0) {
+      throw new IllegalArgumentException("Can't construct uint32 from a negative integer");
+    }
+
+    return new UInt32(i);
+  }
+
+  private UInt32(Integer underlyingValue) {
+    this.underlyingValue = Objects.requireNonNull(underlyingValue);
+  }
+
+  public String toHexString() {
+    return Integer.toUnsignedString(underlyingValue, 16);
+  }
+
+  @Override
+  public String toString() {
+    return Integer.toUnsignedString(underlyingValue);
+  }
+
+  @Override
+  public int compareTo(UInt32 other) {
+    return Integer.compareUnsigned(underlyingValue, other.underlyingValue);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(underlyingValue);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof UInt32 other && Objects.equals(this.underlyingValue, other.underlyingValue);
   }
 }

@@ -99,8 +99,14 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private StatelessTransactionVerifier statelessVerifier(StateManager stateManager) {
+  private RustStateComputer rustStateComputer(StateManager stateManager) {
     return new RustStateComputer(stateManager.getRustState());
+  }
+
+  @Provides
+  @Singleton
+  private StatelessTransactionVerifier statelessVerifier(RustStateComputer rustStateComputer) {
+    return rustStateComputer;
   }
 
   @ProvidesIntoMap

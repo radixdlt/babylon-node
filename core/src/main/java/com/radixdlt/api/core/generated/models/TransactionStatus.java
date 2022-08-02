@@ -24,13 +24,9 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.InternalServerError;
-import com.radixdlt.api.core.generated.models.InvalidHexError;
-import com.radixdlt.api.core.generated.models.InvalidJsonError;
-import com.radixdlt.api.core.generated.models.InvalidTransactionError;
-import com.radixdlt.api.core.generated.models.MempoolFullError;
-import com.radixdlt.api.core.generated.models.NetworkNotSupportedError;
-import com.radixdlt.api.core.generated.models.PreviewError;
+import com.radixdlt.api.core.generated.models.TransactionStatusFailed;
+import com.radixdlt.api.core.generated.models.TransactionStatusRejected;
+import com.radixdlt.api.core.generated.models.TransactionStatusSucceeded;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -38,29 +34,25 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.common.JSON;
 /**
- * CoreErrorDetails
+ * TransactionStatus
  */
 @JsonPropertyOrder({
-  CoreErrorDetails.JSON_PROPERTY_TYPE
+  TransactionStatus.JSON_PROPERTY_TYPE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = InternalServerError.class, name = "InternalServerError"),
-  @JsonSubTypes.Type(value = InvalidHexError.class, name = "InvalidHexError"),
-  @JsonSubTypes.Type(value = InvalidJsonError.class, name = "InvalidJsonError"),
-  @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
-  @JsonSubTypes.Type(value = MempoolFullError.class, name = "MempoolFullError"),
-  @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
-  @JsonSubTypes.Type(value = PreviewError.class, name = "PreviewError"),
+  @JsonSubTypes.Type(value = TransactionStatusFailed.class, name = "TransactionStatusFailed"),
+  @JsonSubTypes.Type(value = TransactionStatusRejected.class, name = "TransactionStatusRejected"),
+  @JsonSubTypes.Type(value = TransactionStatusSucceeded.class, name = "TransactionStatusSucceeded"),
 })
 
-public class CoreErrorDetails {
+public class TransactionStatus {
   public static final String JSON_PROPERTY_TYPE = "type";
   private String type;
 
 
-  public CoreErrorDetails type(String type) {
+  public TransactionStatus type(String type) {
     this.type = type;
     return this;
   }
@@ -87,7 +79,7 @@ public class CoreErrorDetails {
 
 
   /**
-   * Return true if this CoreErrorDetails object is equal to o.
+   * Return true if this TransactionStatus object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -97,8 +89,8 @@ public class CoreErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    CoreErrorDetails coreErrorDetails = (CoreErrorDetails) o;
-    return Objects.equals(this.type, coreErrorDetails.type);
+    TransactionStatus transactionStatus = (TransactionStatus) o;
+    return Objects.equals(this.type, transactionStatus.type);
   }
 
   @Override
@@ -109,7 +101,7 @@ public class CoreErrorDetails {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class CoreErrorDetails {\n");
+    sb.append("class TransactionStatus {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -129,15 +121,11 @@ public class CoreErrorDetails {
 static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
-  mappings.put("InternalServerError", InternalServerError.class);
-  mappings.put("InvalidHexError", InvalidHexError.class);
-  mappings.put("InvalidJsonError", InvalidJsonError.class);
-  mappings.put("InvalidTransactionError", InvalidTransactionError.class);
-  mappings.put("MempoolFullError", MempoolFullError.class);
-  mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
-  mappings.put("PreviewError", PreviewError.class);
-  mappings.put("CoreErrorDetails", CoreErrorDetails.class);
-  JSON.registerDiscriminator(CoreErrorDetails.class, "type", mappings);
+  mappings.put("TransactionStatusFailed", TransactionStatusFailed.class);
+  mappings.put("TransactionStatusRejected", TransactionStatusRejected.class);
+  mappings.put("TransactionStatusSucceeded", TransactionStatusSucceeded.class);
+  mappings.put("TransactionStatus", TransactionStatus.class);
+  JSON.registerDiscriminator(TransactionStatus.class, "type", mappings);
 }
 }
 

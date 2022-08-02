@@ -62,60 +62,37 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.rev2;
 
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
-import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
-import com.radixdlt.mempool.MempoolError;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.LogLevel;
-import com.radixdlt.rev2.PackageAddress;
-import com.radixdlt.rev2.ResourceAddress;
-import com.radixdlt.rev2.TransactionStatus;
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.statecomputer.preview.PreviewError;
-import com.radixdlt.statecomputer.preview.PreviewFlags;
-import com.radixdlt.statecomputer.preview.PreviewRequest;
-import com.radixdlt.statecomputer.preview.PreviewResult;
-import com.radixdlt.statecomputer.preview.TransactionFeeSummary;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transactions.Transaction;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.EnumEntry;
+import java.util.List;
 
-public final class StateManagerSbor {
-
-  public static final Sbor sbor = createSborForStateManager();
-
-  private static Sbor createSborForStateManager() {
-    return new Sbor(true, new CodecMap().register(StateManagerSbor::registerCodecsWithCodecMap));
+public sealed interface TransactionStatus {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        TransactionStatus.class,
+        (codecs) ->
+            EnumCodec.fromEntries(
+                EnumEntry.noFields(
+                    TransactionStatus.Rejected.class, TransactionStatus.Rejected::new),
+                EnumEntry.with(
+                    TransactionStatus.Succeeded.class,
+                    TransactionStatus.Succeeded::new,
+                    codecs.of(new TypeToken<List<byte[]>>() {}),
+                    (t, encoder) -> encoder.encode(t.output)),
+                EnumEntry.with(
+                    TransactionStatus.Failed.class,
+                    TransactionStatus.Failed::new,
+                    codecs.of(String.class),
+                    (t, encoder) -> encoder.encode(t.message))));
   }
 
-  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
-    UInt32.registerCodec(codecMap);
-    UInt64.registerCodec(codecMap);
-    RustMempoolConfig.registerCodec(codecMap);
-    StateManagerConfig.registerCodec(codecMap);
-    Transaction.registerCodec(codecMap);
-    PreviewFlags.registerCodec(codecMap);
-    PreviewRequest.registerCodec(codecMap);
-    PreviewResult.registerCodec(codecMap);
-    PreviewError.registerCodec(codecMap);
-    TransactionStatus.registerCodec(codecMap);
-    Decimal.registerCodec(codecMap);
-    LogLevel.registerCodec(codecMap);
-    PackageAddress.registerCodec(codecMap);
-    ComponentAddress.registerCodec(codecMap);
-    ResourceAddress.registerCodec(codecMap);
-    TransactionFeeSummary.registerCodec(codecMap);
-    TID.registerCodec(codecMap);
-    StateManagerRuntimeError.registerCodec(codecMap);
-    MempoolError.registerCodec(codecMap);
-    GetTransactionsForProposalRustArgs.registerCodec(codecMap);
-    GetRelayedTransactionsRustArgs.registerCodec(codecMap);
-  }
+  record Rejected() implements TransactionStatus {}
+
+  record Succeeded(List<byte[]> output) implements TransactionStatus {}
+
+  record Failed(String message) implements TransactionStatus {}
 }

@@ -62,60 +62,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.statecomputer.preview;
 
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
-import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
-import com.radixdlt.mempool.MempoolError;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.LogLevel;
-import com.radixdlt.rev2.PackageAddress;
-import com.radixdlt.rev2.ResourceAddress;
-import com.radixdlt.rev2.TransactionStatus;
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.statecomputer.preview.PreviewError;
-import com.radixdlt.statecomputer.preview.PreviewFlags;
-import com.radixdlt.statecomputer.preview.PreviewRequest;
-import com.radixdlt.statecomputer.preview.PreviewResult;
-import com.radixdlt.statecomputer.preview.TransactionFeeSummary;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
-public final class StateManagerSbor {
-
-  public static final Sbor sbor = createSborForStateManager();
-
-  private static Sbor createSborForStateManager() {
-    return new Sbor(true, new CodecMap().register(StateManagerSbor::registerCodecsWithCodecMap));
+public record PreviewRequest(
+    byte[] manifest,
+    UInt32 costUnitLimit,
+    UInt32 tipBps,
+    UInt64 nonce,
+    List<byte[]> signerPublicKeys,
+    PreviewFlags flags) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PreviewRequest.class,
+        codecs ->
+            StructCodec.with(
+                PreviewRequest::new,
+                codecs.of(byte[].class),
+                codecs.of(UInt32.class),
+                codecs.of(UInt32.class),
+                codecs.of(UInt64.class),
+                codecs.of(new TypeToken<List<byte[]>>() {}),
+                codecs.of(PreviewFlags.class),
+                (t, encoder) ->
+                    encoder.encode(
+                        t.manifest,
+                        t.costUnitLimit,
+                        t.tipBps,
+                        t.nonce,
+                        t.signerPublicKeys,
+                        t.flags)));
   }
 
-  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
-    UInt32.registerCodec(codecMap);
-    UInt64.registerCodec(codecMap);
-    RustMempoolConfig.registerCodec(codecMap);
-    StateManagerConfig.registerCodec(codecMap);
-    Transaction.registerCodec(codecMap);
-    PreviewFlags.registerCodec(codecMap);
-    PreviewRequest.registerCodec(codecMap);
-    PreviewResult.registerCodec(codecMap);
-    PreviewError.registerCodec(codecMap);
-    TransactionStatus.registerCodec(codecMap);
-    Decimal.registerCodec(codecMap);
-    LogLevel.registerCodec(codecMap);
-    PackageAddress.registerCodec(codecMap);
-    ComponentAddress.registerCodec(codecMap);
-    ResourceAddress.registerCodec(codecMap);
-    TransactionFeeSummary.registerCodec(codecMap);
-    TID.registerCodec(codecMap);
-    StateManagerRuntimeError.registerCodec(codecMap);
-    MempoolError.registerCodec(codecMap);
-    GetTransactionsForProposalRustArgs.registerCodec(codecMap);
-    GetRelayedTransactionsRustArgs.registerCodec(codecMap);
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o instanceof PreviewRequest other) {
+      return Arrays.equals(other.manifest, manifest)
+          && Objects.equals(other.nonce, nonce)
+          && Objects.equals(other.costUnitLimit, costUnitLimit)
+          && Objects.equals(other.tipBps, tipBps)
+          && Objects.equals(other.signerPublicKeys, signerPublicKeys)
+          && Objects.equals(other.flags, flags);
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        Arrays.hashCode(manifest), nonce, costUnitLimit, tipBps, signerPublicKeys, flags);
   }
 }

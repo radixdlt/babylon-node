@@ -62,60 +62,78 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.statecomputer;
 
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
-import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
-import com.radixdlt.mempool.MempoolError;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.LogLevel;
-import com.radixdlt.rev2.PackageAddress;
-import com.radixdlt.rev2.ResourceAddress;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.TransactionStatus;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.statecomputer.preview.PreviewError;
 import com.radixdlt.statecomputer.preview.PreviewFlags;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
-import com.radixdlt.statecomputer.preview.PreviewResult;
-import com.radixdlt.statecomputer.preview.TransactionFeeSummary;
+import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
+import java.util.List;
+import org.bouncycastle.util.encoders.Hex;
+import org.junit.Test;
 
-public final class StateManagerSbor {
+public final class PreviewTest {
+  @Test
+  public void test_successful_preview() {
+    // Arrange
+    try (final var stateManager =
+        StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
+      final var stateComputer = new RustStateComputer(stateManager.getRustState());
+      // sbor-encoded manifest, just a single ClearAuthZone instruction
+      final var manifest =
+          Hex.decode("10010000003011010000000d000000436c656172417574685a6f6e6500000000");
+      final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
+      final var previewRequest =
+          new PreviewRequest(
+              manifest,
+              UInt32.fromNonNegativeInt(10000000),
+              UInt32.fromNonNegativeInt(0),
+              UInt64.fromNonNegativeLong(0L),
+              List.of(somePublicKey),
+              new PreviewFlags(true));
 
-  public static final Sbor sbor = createSborForStateManager();
+      // Act
+      final var result = stateComputer.preview(previewRequest);
 
-  private static Sbor createSborForStateManager() {
-    return new Sbor(true, new CodecMap().register(StateManagerSbor::registerCodecsWithCodecMap));
+      // Assert
+      assertTrue(result.unwrap().transactionStatus() instanceof TransactionStatus.Succeeded);
+      assertEquals(
+          UInt32.fromNonNegativeInt(48660), result.unwrap().transactionFee().costUnitsConsumed());
+    }
   }
 
-  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
-    UInt32.registerCodec(codecMap);
-    UInt64.registerCodec(codecMap);
-    RustMempoolConfig.registerCodec(codecMap);
-    StateManagerConfig.registerCodec(codecMap);
-    Transaction.registerCodec(codecMap);
-    PreviewFlags.registerCodec(codecMap);
-    PreviewRequest.registerCodec(codecMap);
-    PreviewResult.registerCodec(codecMap);
-    PreviewError.registerCodec(codecMap);
-    TransactionStatus.registerCodec(codecMap);
-    Decimal.registerCodec(codecMap);
-    LogLevel.registerCodec(codecMap);
-    PackageAddress.registerCodec(codecMap);
-    ComponentAddress.registerCodec(codecMap);
-    ResourceAddress.registerCodec(codecMap);
-    TransactionFeeSummary.registerCodec(codecMap);
-    TID.registerCodec(codecMap);
-    StateManagerRuntimeError.registerCodec(codecMap);
-    MempoolError.registerCodec(codecMap);
-    GetTransactionsForProposalRustArgs.registerCodec(codecMap);
-    GetRelayedTransactionsRustArgs.registerCodec(codecMap);
+  @Test
+  public void test_decode_error_result() {
+    // Arrange
+    try (final var stateManager =
+        StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
+      final var stateComputer = new RustStateComputer(stateManager.getRustState());
+      final var manifest = Hex.decode("00"); // invalid manifest
+      final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
+      final var previewRequest =
+          new PreviewRequest(
+              manifest,
+              UInt32.fromNonNegativeInt(100000000),
+              UInt32.fromNonNegativeInt(0),
+              UInt64.fromNonNegativeLong(0L),
+              List.of(somePublicKey),
+              new PreviewFlags(true));
+
+      // Act
+      final var result = stateComputer.preview(previewRequest);
+
+      // Assert
+      assertTrue(result.isError());
+      assertFalse(result.unwrapError().message().isBlank());
+    }
   }
 }

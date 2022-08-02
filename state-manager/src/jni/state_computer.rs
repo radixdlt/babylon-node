@@ -66,11 +66,16 @@ use crate::jni::dtos::JavaStructure;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use radix_engine::transaction::{PreviewResult, TransactionFeeSummary, TransactionStatus};
+use sbor::{Decode, Encode, TypeId};
+use scrypto::component::{ComponentAddress, PackageAddress};
+use scrypto::core::Level;
+use scrypto::prelude::ResourceAddress;
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
-use crate::result::StateManagerResult;
-use crate::types::Transaction;
+use crate::result::{ResultStateManagerMaps, StateManagerResult};
+use crate::types::{PreviewError, PreviewRequest, Transaction};
 
 //
 // JNI Interface
@@ -84,7 +89,6 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
     j_payload: jbyteArray,
 ) -> jbyteArray {
     let ret = do_verify(&env, j_state, j_payload).to_java();
-
     jni_slice_to_jbytearray(&env, &ret)
 }
 
@@ -94,4 +98,95 @@ fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateMana
     let transaction = Transaction::from_java(&request_payload)?;
     let result = state_manager.verify(&transaction);
     Ok(result)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_preview(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_preview(&env, j_state, j_payload).to_java();
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+fn do_preview(
+    env: &JNIEnv,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> StateManagerResult<Result<PreviewResultJava, PreviewErrorJava>> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
+    let preview_request = PreviewRequest::from_java(&request_payload)?;
+    let preview_result: Result<PreviewResultJava, PreviewErrorJava> = state_manager
+        .preview(&preview_request)
+        .map(|result| result.into())
+        .map_err_sm(|err| err.into())?;
+    Ok(preview_result)
+}
+
+#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+struct PreviewErrorJava {
+    message: String,
+}
+
+impl JavaStructure for PreviewErrorJava {}
+
+impl From<PreviewError> for StateManagerResult<PreviewErrorJava> {
+    fn from(err: PreviewError) -> Self {
+        let msg: String = match err {
+            PreviewError::InvalidManifest => "Invalid manifest".to_string(),
+            PreviewError::InvalidSignerPublicKey => "Invalid signer public key".to_string(),
+            PreviewError::EngineError(engine_preview_error) => {
+                format!("Preview execution failed: {:?}", engine_preview_error)
+            }
+        };
+        Ok(PreviewErrorJava { message: msg })
+    }
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+enum TransactionStatusJava {
+    Rejected,
+    Succeeded(Vec<Vec<u8>>),
+    Failed(String),
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+struct PreviewResultJava {
+    status: TransactionStatusJava,
+    transaction_fee: TransactionFeeSummary,
+    application_logs: Vec<(Level, String)>,
+    new_package_addresses: Vec<PackageAddress>,
+    new_component_addresses: Vec<ComponentAddress>,
+    new_resource_addresses: Vec<ResourceAddress>,
+}
+
+impl JavaStructure for PreviewResultJava {}
+
+impl From<PreviewResult> for PreviewResultJava {
+    fn from(result: PreviewResult) -> Self {
+        let receipt = result.receipt;
+        PreviewResultJava {
+            status: receipt.status.into(),
+            transaction_fee: receipt.transaction_fee,
+            application_logs: receipt.application_logs,
+            new_package_addresses: receipt.new_package_addresses,
+            new_component_addresses: receipt.new_component_addresses,
+            new_resource_addresses: receipt.new_resource_addresses,
+        }
+    }
+}
+
+impl From<TransactionStatus> for TransactionStatusJava {
+    fn from(status: TransactionStatus) -> Self {
+        match status {
+            TransactionStatus::Rejected => TransactionStatusJava::Rejected,
+            TransactionStatus::Succeeded(output) => TransactionStatusJava::Succeeded(output),
+            TransactionStatus::Failed(error) => {
+                TransactionStatusJava::Failed(format!("{:?}", error))
+            }
+        }
+    }
 }

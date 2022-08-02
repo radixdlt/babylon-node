@@ -62,60 +62,47 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.api.core.routes.transaction;
 
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
-import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
-import com.radixdlt.mempool.MempoolError;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.LogLevel;
-import com.radixdlt.rev2.PackageAddress;
-import com.radixdlt.rev2.ResourceAddress;
-import com.radixdlt.rev2.TransactionStatus;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.statecomputer.preview.PreviewError;
-import com.radixdlt.statecomputer.preview.PreviewFlags;
-import com.radixdlt.statecomputer.preview.PreviewRequest;
-import com.radixdlt.statecomputer.preview.PreviewResult;
-import com.radixdlt.statecomputer.preview.TransactionFeeSummary;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transactions.Transaction;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public final class StateManagerSbor {
+import com.google.inject.Inject;
+import com.radixdlt.api.ApiTest;
+import com.radixdlt.api.core.generated.models.NetworkIdentifier;
+import com.radixdlt.api.core.generated.models.TransactionPreviewRequest;
+import com.radixdlt.api.core.generated.models.TransactionPreviewRequestFlags;
+import com.radixdlt.api.core.generated.models.TransactionPreviewResponse;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.networks.Network;
+import org.bouncycastle.util.encoders.Hex;
+import org.junit.Test;
 
-  public static final Sbor sbor = createSborForStateManager();
+public class TransactionPreviewHandlerTest extends ApiTest {
+  @Inject private TransactionPreviewHandler sut;
 
-  private static Sbor createSborForStateManager() {
-    return new Sbor(true, new CodecMap().register(StateManagerSbor::registerCodecsWithCodecMap));
-  }
+  @Test
+  public void transaction_preview_should_work() throws Exception {
+    // Arrange
+    start();
 
-  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
-    UInt32.registerCodec(codecMap);
-    UInt64.registerCodec(codecMap);
-    RustMempoolConfig.registerCodec(codecMap);
-    StateManagerConfig.registerCodec(codecMap);
-    Transaction.registerCodec(codecMap);
-    PreviewFlags.registerCodec(codecMap);
-    PreviewRequest.registerCodec(codecMap);
-    PreviewResult.registerCodec(codecMap);
-    PreviewError.registerCodec(codecMap);
-    TransactionStatus.registerCodec(codecMap);
-    Decimal.registerCodec(codecMap);
-    LogLevel.registerCodec(codecMap);
-    PackageAddress.registerCodec(codecMap);
-    ComponentAddress.registerCodec(codecMap);
-    ResourceAddress.registerCodec(codecMap);
-    TransactionFeeSummary.registerCodec(codecMap);
-    TID.registerCodec(codecMap);
-    StateManagerRuntimeError.registerCodec(codecMap);
-    MempoolError.registerCodec(codecMap);
-    GetTransactionsForProposalRustArgs.registerCodec(codecMap);
-    GetRelayedTransactionsRustArgs.registerCodec(codecMap);
+    final var request =
+        new TransactionPreviewRequest()
+            .networkIdentifier(
+                new NetworkIdentifier().network(Network.LOCALNET.name().toLowerCase()))
+            .manifest("10010000003011010000000d000000436c656172417574685a6f6e6500000000")
+            .costUnitLimit(10000)
+            .tipBps(0)
+            .nonce(0L)
+            .addSignerPublicKeysItem(
+                Hex.toHexString(ECKeyPair.generateNew().getPublicKey().getCompressedBytes()))
+            .flags(new TransactionPreviewRequestFlags().unlimitedLoan(true));
+
+    // Act
+    final var response =
+        handleRequestWithExpectedResponse(sut, request, TransactionPreviewResponse.class);
+
+    // Assert
+    assertThat(response.getTransactionStatus().getType()).isEqualTo("TransactionStatusSucceeded");
+    assertThat(response.getTransactionFee().getCostUnitConsumed()).isNotBlank();
   }
 }

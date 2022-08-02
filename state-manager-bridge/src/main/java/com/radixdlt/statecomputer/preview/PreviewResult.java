@@ -62,60 +62,45 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.statecomputer.preview;
 
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
-import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
-import com.radixdlt.mempool.MempoolError;
-import com.radixdlt.mempool.RustMempoolConfig;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.LogLevel;
 import com.radixdlt.rev2.PackageAddress;
 import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.rev2.TransactionStatus;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.statecomputer.preview.PreviewError;
-import com.radixdlt.statecomputer.preview.PreviewFlags;
-import com.radixdlt.statecomputer.preview.PreviewRequest;
-import com.radixdlt.statecomputer.preview.PreviewResult;
-import com.radixdlt.statecomputer.preview.TransactionFeeSummary;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transactions.Transaction;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import com.radixdlt.sbor.codec.StructCodec;
+import java.util.List;
 
-public final class StateManagerSbor {
-
-  public static final Sbor sbor = createSborForStateManager();
-
-  private static Sbor createSborForStateManager() {
-    return new Sbor(true, new CodecMap().register(StateManagerSbor::registerCodecsWithCodecMap));
-  }
-
-  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
-    UInt32.registerCodec(codecMap);
-    UInt64.registerCodec(codecMap);
-    RustMempoolConfig.registerCodec(codecMap);
-    StateManagerConfig.registerCodec(codecMap);
-    Transaction.registerCodec(codecMap);
-    PreviewFlags.registerCodec(codecMap);
-    PreviewRequest.registerCodec(codecMap);
-    PreviewResult.registerCodec(codecMap);
-    PreviewError.registerCodec(codecMap);
-    TransactionStatus.registerCodec(codecMap);
-    Decimal.registerCodec(codecMap);
-    LogLevel.registerCodec(codecMap);
-    PackageAddress.registerCodec(codecMap);
-    ComponentAddress.registerCodec(codecMap);
-    ResourceAddress.registerCodec(codecMap);
-    TransactionFeeSummary.registerCodec(codecMap);
-    TID.registerCodec(codecMap);
-    StateManagerRuntimeError.registerCodec(codecMap);
-    MempoolError.registerCodec(codecMap);
-    GetTransactionsForProposalRustArgs.registerCodec(codecMap);
-    GetRelayedTransactionsRustArgs.registerCodec(codecMap);
+public record PreviewResult(
+    TransactionStatus transactionStatus,
+    TransactionFeeSummary transactionFee,
+    List<Tuple.Tuple2<LogLevel, String>> logs,
+    List<PackageAddress> newPackageAddresses,
+    List<ComponentAddress> newComponentAddresses,
+    List<ResourceAddress> newResourceAddresses) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PreviewResult.class,
+        codecs ->
+            StructCodec.with(
+                PreviewResult::new,
+                codecs.of(TransactionStatus.class),
+                codecs.of(TransactionFeeSummary.class),
+                codecs.of(new TypeToken<List<Tuple.Tuple2<LogLevel, String>>>() {}),
+                codecs.of(new TypeToken<List<PackageAddress>>() {}),
+                codecs.of(new TypeToken<List<ComponentAddress>>() {}),
+                codecs.of(new TypeToken<List<ResourceAddress>>() {}),
+                (t, encoder) ->
+                    encoder.encode(
+                        t.transactionStatus,
+                        t.transactionFee,
+                        t.logs,
+                        t.newPackageAddresses,
+                        t.newComponentAddresses,
+                        t.newResourceAddresses)));
   }
 }

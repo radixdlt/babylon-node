@@ -30,9 +30,9 @@ import com.radixdlt.api.core.generated.models.InvalidHexError;
 import com.radixdlt.api.core.generated.models.InvalidJsonError;
 import com.radixdlt.api.core.generated.models.InvalidTransactionError;
 import com.radixdlt.api.core.generated.models.MempoolFullError;
-import com.radixdlt.api.core.generated.models.MempoolFullErrorAllOf;
 import com.radixdlt.api.core.generated.models.NetworkNotSupportedError;
 import com.radixdlt.api.core.generated.models.PreviewError;
+import com.radixdlt.api.core.generated.models.TransactionStatusFailedAllOf;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -40,10 +40,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.common.JSON;
 /**
- * MempoolFullError
+ * PreviewError
  */
 @JsonPropertyOrder({
-  MempoolFullError.JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT
+  PreviewError.JSON_PROPERTY_MESSAGE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
@@ -57,39 +57,39 @@ import com.radixdlt.api.common.JSON;
   @JsonSubTypes.Type(value = PreviewError.class, name = "PreviewError"),
 })
 
-public class MempoolFullError extends CoreErrorDetails {
-  public static final String JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT = "mempool_transaction_count";
-  private Long mempoolTransactionCount;
+public class PreviewError extends CoreErrorDetails {
+  public static final String JSON_PROPERTY_MESSAGE = "message";
+  private String message;
 
 
-  public MempoolFullError mempoolTransactionCount(Long mempoolTransactionCount) {
-    this.mempoolTransactionCount = mempoolTransactionCount;
+  public PreviewError message(String message) {
+    this.message = message;
     return this;
   }
 
    /**
-   * Get mempoolTransactionCount
-   * @return mempoolTransactionCount
+   * Get message
+   * @return message
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT)
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Long getMempoolTransactionCount() {
-    return mempoolTransactionCount;
+  public String getMessage() {
+    return message;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_MEMPOOL_TRANSACTION_COUNT)
+  @JsonProperty(JSON_PROPERTY_MESSAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setMempoolTransactionCount(Long mempoolTransactionCount) {
-    this.mempoolTransactionCount = mempoolTransactionCount;
+  public void setMessage(String message) {
+    this.message = message;
   }
 
 
   /**
-   * Return true if this MempoolFullError object is equal to o.
+   * Return true if this PreviewError object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -99,22 +99,22 @@ public class MempoolFullError extends CoreErrorDetails {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    MempoolFullError mempoolFullError = (MempoolFullError) o;
-    return Objects.equals(this.mempoolTransactionCount, mempoolFullError.mempoolTransactionCount) &&
+    PreviewError previewError = (PreviewError) o;
+    return Objects.equals(this.message, previewError.message) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(mempoolTransactionCount, super.hashCode());
+    return Objects.hash(message, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class MempoolFullError {\n");
+    sb.append("class PreviewError {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
-    sb.append("    mempoolTransactionCount: ").append(toIndentedString(mempoolTransactionCount)).append("\n");
+    sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -140,8 +140,8 @@ static {
   mappings.put("MempoolFullError", MempoolFullError.class);
   mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
   mappings.put("PreviewError", PreviewError.class);
-  mappings.put("MempoolFullError", MempoolFullError.class);
-  JSON.registerDiscriminator(MempoolFullError.class, "type", mappings);
+  mappings.put("PreviewError", PreviewError.class);
+  JSON.registerDiscriminator(PreviewError.class, "type", mappings);
 }
 }
 

@@ -102,6 +102,31 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+  "/transaction/preview":
+    post:
+      summary: Preview a transaction against the latest network state
+      description: Returns the preview response
+      tags:
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/TransactionPreviewRequest"
+      responses:
+        '200':
+          description: Transaction preview response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/TransactionPreviewResponse"
+        '500':
+          description: An error occurred
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
 components:
   schemas:
 ###########################
@@ -150,6 +175,7 @@ components:
           InvalidHexError: "#/components/schemas/InvalidHexError"
           MempoolFullError: "#/components/schemas/MempoolFullError"
           InvalidTransactionError: "#/components/schemas/InvalidTransactionError"
+          PreviewError: "#/components/schemas/PreviewError"
     NetworkNotSupportedError:
       allOf:
         - $ref: "#/components/schemas/CoreErrorDetails"
@@ -286,6 +312,7 @@ components:
       type: object
       required:
         - network_identifier
+        - notarized_transaction
       properties:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
@@ -302,6 +329,146 @@ components:
           description: Is true if the transaction is a duplicate of an existing transaction
             in the mempool.
           type: boolean
+    TransactionPreviewRequest:
+      type: object
+      required:
+        - network_identifier
+        - manifest
+        - cost_unit_limit
+        - tip_bps
+        - nonce
+        - signer_public_keys
+        - flags
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network.
+        manifest:
+          description: A transaction manifest. Sbor encoded, and then hex encoded.
+          type: string
+        cost_unit_limit:
+          description: A limit of cost units available for execution
+          type: integer
+          format: int32
+        tip_bps:
+          description: A tip for the validator
+          type: integer
+          format: int32
+        nonce:
+          description: A nonce value to use for execution
+          type: integer
+          format: int64
+        signer_public_keys:
+          description: A list of public keys to be used as transaction signers, in a compressed format, hex encoded.
+          type: array
+          items:
+            type: string
+        flags:
+          type: object
+          required:
+            - unlimited_loan
+          properties:
+            unlimited_loan:
+              type: boolean
+    TransactionPreviewResponse:
+      type: object
+      required:
+        - transaction_status
+        - transaction_fee
+        - logs
+        - new_package_addresses
+        - new_component_addresses
+        - new_resource_addresses
+      properties:
+        transaction_status:
+          "$ref": "#/components/schemas/TransactionStatus"
+          description: The status of the transaction
+        transaction_fee:
+          "$ref": "#/components/schemas/TransactionFeeSummary"
+          description: Fees to be paid
+        logs:
+          type: array
+          items:
+            type: object
+            required:
+              - level
+              - message
+            properties:
+              level:
+                type: string
+              message:
+                type: string
+        new_package_addresses:
+          description: A list of new package addresses
+          type: array
+          items:
+            type: string
+        new_component_addresses:
+          description: A list of new component addresses
+          type: array
+          items:
+            type: string
+        new_resource_addresses:
+          description: A list of new resource addresses
+          type: array
+          items:
+            type: string
+    TransactionStatus:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          TransactionStatusRejected: "#/components/schemas/TransactionStatusRejected"
+          TransactionStatusSucceeded: "#/components/schemas/TransactionStatusSucceeded"
+          TransactionStatusFailed: "#/components/schemas/TransactionStatusFailed"
+    TransactionStatusRejected:
+      allOf:
+        - $ref: "#/components/schemas/TransactionStatus"
+        - type: object
+    TransactionStatusSucceeded:
+      allOf:
+        - $ref: "#/components/schemas/TransactionStatus"
+        - type: object
+          required:
+            - output
+          properties:
+            output:
+              type: array
+              items:
+                type: string
+    TransactionStatusFailed:
+      allOf:
+        - $ref: "#/components/schemas/TransactionStatus"
+        - type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+    TransactionFeeSummary:
+      type: object
+      required:
+        - cost_unit_limit
+        - cost_units_consumed
+        - cost_unit_price
+        - burned
+        - tipped
+      properties:
+        cost_unit_limit:
+          type: string
+        cost_unit_consumed:
+          type: string
+        cost_unit_price:
+          type: string
+        burned:
+          type: string
+        tipped:
+          type: string
     MempoolFullError:
       allOf:
         - $ref: "#/components/schemas/CoreErrorDetails"
@@ -313,6 +480,15 @@ components:
               type: integer
               format: int64
     InvalidTransactionError:
+      allOf:
+        - $ref: "#/components/schemas/CoreErrorDetails"
+        - type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+    PreviewError:
       allOf:
         - $ref: "#/components/schemas/CoreErrorDetails"
         - type: object

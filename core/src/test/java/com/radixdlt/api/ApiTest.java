@@ -95,6 +95,7 @@ import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
@@ -149,6 +150,7 @@ public abstract class ApiTest {
             new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),
+            new REv2StateManagerModule(),
             new AbstractModule() {
               @Override
               protected void configure() {

@@ -62,60 +62,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.rev2;
 
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
-import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
-import com.radixdlt.mempool.MempoolError;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.LogLevel;
-import com.radixdlt.rev2.PackageAddress;
-import com.radixdlt.rev2.ResourceAddress;
-import com.radixdlt.rev2.TransactionStatus;
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.statecomputer.preview.PreviewError;
-import com.radixdlt.statecomputer.preview.PreviewFlags;
-import com.radixdlt.statecomputer.preview.PreviewRequest;
-import com.radixdlt.statecomputer.preview.PreviewResult;
-import com.radixdlt.statecomputer.preview.TransactionFeeSummary;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transactions.Transaction;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
+import com.radixdlt.sbor.codec.CustomTypeCodec;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Objects;
+import org.bouncycastle.util.Arrays;
 
-public final class StateManagerSbor {
+/** Decimal represents a 128 bit representation of a fixed-scale decimal number. */
+@SecurityCritical(SecurityKind.NUMERIC)
+public class Decimal {
+  private static final int SCALE = 18;
 
-  public static final Sbor sbor = createSborForStateManager();
-
-  private static Sbor createSborForStateManager() {
-    return new Sbor(true, new CodecMap().register(StateManagerSbor::registerCodecsWithCodecMap));
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        Decimal.class,
+        codecs ->
+            new CustomTypeCodec<>(
+                TypeId.TYPE_CUSTOM_DECIMAL,
+                decimal -> {
+                  final var bytes = decimal.underlyingValue.unscaledValue().toByteArray();
+                  return Arrays.reverse(bytes);
+                },
+                bytes -> {
+                  final var reversed = Arrays.reverse(bytes);
+                  return new Decimal(new BigDecimal(new BigInteger(reversed), SCALE));
+                }));
   }
 
-  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
-    UInt32.registerCodec(codecMap);
-    UInt64.registerCodec(codecMap);
-    RustMempoolConfig.registerCodec(codecMap);
-    StateManagerConfig.registerCodec(codecMap);
-    Transaction.registerCodec(codecMap);
-    PreviewFlags.registerCodec(codecMap);
-    PreviewRequest.registerCodec(codecMap);
-    PreviewResult.registerCodec(codecMap);
-    PreviewError.registerCodec(codecMap);
-    TransactionStatus.registerCodec(codecMap);
-    Decimal.registerCodec(codecMap);
-    LogLevel.registerCodec(codecMap);
-    PackageAddress.registerCodec(codecMap);
-    ComponentAddress.registerCodec(codecMap);
-    ResourceAddress.registerCodec(codecMap);
-    TransactionFeeSummary.registerCodec(codecMap);
-    TID.registerCodec(codecMap);
-    StateManagerRuntimeError.registerCodec(codecMap);
-    MempoolError.registerCodec(codecMap);
-    GetTransactionsForProposalRustArgs.registerCodec(codecMap);
-    GetRelayedTransactionsRustArgs.registerCodec(codecMap);
+  private final BigDecimal underlyingValue;
+
+  private Decimal(BigDecimal underlyingValue) {
+    this.underlyingValue = Objects.requireNonNull(underlyingValue);
+  }
+
+  @Override
+  public String toString() {
+    return underlyingValue.toPlainString();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(underlyingValue);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof Decimal other
+        && Objects.equals(this.underlyingValue, other.underlyingValue);
   }
 }
