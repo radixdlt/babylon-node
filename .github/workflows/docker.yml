@@ -10,7 +10,7 @@ on:
 jobs:
   cancel_running_workflows:
     name: Cancel running workflows
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: cancel running workflows
         uses: styfle/cancel-workflow-action@0.8.0
@@ -19,7 +19,7 @@ jobs:
 
   build:
     name: Build image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
         with:
@@ -59,11 +59,16 @@ jobs:
           password: ${{ secrets.GCR_EU_DEV_JSON_KEY }}
       - name: Create deb package
         run: ./gradlew deb4docker
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
           file: ./docker/Dockerfile.core
           context: docker
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
