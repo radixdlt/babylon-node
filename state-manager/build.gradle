@@ -96,37 +96,35 @@ task runRustFormat(type: Exec) {
 }
 
 // TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
 task buildRustDebug(type: Exec) {
     commandLine 'cargo', 'build'
 }
 
+task buildDockerRustBuilder(type: Exec) {
+    commandLine 'sh', '-c', 'docker build ../docker/rust-Builder -t rust-builder:1.0.0'
+}
+
 task buildRustForDocker(type: Exec) {
-    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
-        environment("CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER", "x86_64-unknown-linux-gnu-gcc")
+    def arch = System.getProperty("os.arch")
+
+    def target = "x86_64-unknown-linux-gnu"
+    if (System.getProperty("os.arch") == "aarch64") {
+        target= "aarch64-unknown-linux-gnu"
     }
 
     // Trigger a custom error message on failure...
     ignoreExitValue true
 
-    // If you change this, copy it to the exception below
-    commandLine 'cargo', 'build', '--target=x86_64-unknown-linux-gnu'
+    def stdout = new ByteArrayOutputStream()
+    def dockerBuildCmd = "docker run -v "+projectDir+":/app rust-builder:1.0.0 cargo build --target=$target"
+    commandLine 'sh', '-c', dockerBuildCmd
 
     doLast {
         if (executionResult.get().getExitValue() != 0) {
-            println("Building the rust for docker failed. Some possible ideas to debug:")
-            println("-> You will need to install the correct target with:")
-            println("rustup target add x86_64-unknown-linux-gnu")
-            println("-> You may need to install an appropriate linker, depending on your platform")
-            if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
-                // https://stackoverflow.com/questions/40424255/cross-compilation-to-x86-64-unknown-linux-gnu-fails-on-mac-osx
-                println("-> On Mac OSX, you can try:")
-                println("brew tap SergioBenitez/osxct")
-                println("brew install x86_64-unknown-linux-gnu")
-            }
+            println "Output:\n$stdout";
             throw new RuntimeException(String.format(
-                "cargo build --target=x86_64-unknown-linux-gnu failed with non-zero exit value %s",
-                executionResult.get().getExitValue()
+                    "%s failed with non-zero exit value %s", commandLine,
+                    executionResult.get().getExitValue()
             ))
         }
     }
