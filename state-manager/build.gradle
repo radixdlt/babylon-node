@@ -115,7 +115,7 @@ task buildRustForDocker(type: Exec) {
     // Trigger a custom error message on failure...
     ignoreExitValue true
 
-    def dockerBuildCmd = "docker run -v "+projectDir+":/app rust-builder:1.0.0 cargo build --target=$target"
+    def dockerBuildCmd = "docker run  -v "+projectDir+"/.cargo:/usr/local/cargo/registry -v "+projectDir+":/app  rust-builder:1.0.0  cargo build --target=$target"
     commandLine 'sh', '-c', dockerBuildCmd
 
     doLast {
