@@ -105,9 +105,8 @@ task buildDockerRustBuilder(type: Exec) {
 }
 
 task buildRustForDocker(type: Exec) {
-    def arch = System.getProperty("os.arch")
-
     def target = "x86_64-unknown-linux-gnu"
+
     if (System.getProperty("os.arch") == "aarch64") {
         target= "aarch64-unknown-linux-gnu"
     }
