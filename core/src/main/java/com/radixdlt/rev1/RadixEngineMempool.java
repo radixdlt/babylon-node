@@ -73,6 +73,7 @@ import com.radixdlt.constraintmachine.REStateUpdate;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.engine.RadixEngineResult;
+import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
@@ -100,9 +101,9 @@ import org.apache.logging.log4j.Logger;
 public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   private static final Logger logger = LogManager.getLogger();
 
-  private final ConcurrentHashMap<HashCode, Pair<REProcessedTxn, MempoolMetadata>> data =
+  private final ConcurrentHashMap<TID, Pair<REProcessedTxn, MempoolMetadata>> data =
       new ConcurrentHashMap<>();
-  private final Map<SubstateId, Set<HashCode>> substateIndex = new ConcurrentHashMap<>();
+  private final Map<SubstateId, Set<TID>> substateIndex = new ConcurrentHashMap<>();
   private final RadixEngine<LedgerAndBFTProof> radixEngine;
   private final int maxSize;
 
@@ -116,7 +117,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
     this.radixEngine = radixEngine;
   }
 
-  public <T> T getData(Function<Map<HashCode, Pair<REProcessedTxn, MempoolMetadata>>, T> mapper) {
+  public <T> T getData(Function<Map<TID, Pair<REProcessedTxn, MempoolMetadata>>, T> mapper) {
     return mapper.apply(data);
   }
 
@@ -126,7 +127,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
       throw new MempoolFullException(this.data.size(), maxSize);
     }
 
-    if (this.data.containsKey(transaction.getPayloadHash())) {
+    if (this.data.containsKey(TID.from(transaction.getPayloadHash().asBytes()))) {
       throw new MempoolDuplicateException(
           String.format(
               "Mempool already has transaction with id %s", transaction.getPayloadHash()));
@@ -145,13 +146,13 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
 
     var mempoolMetadata = MempoolMetadata.create(System.currentTimeMillis());
     var data = Pair.of(result.getProcessedTxn(), mempoolMetadata);
-    this.data.put(transaction.getPayloadHash(), data);
+    this.data.put(TID.from(transaction.getPayloadHash().asBytes()), data);
     result
         .getProcessedTxn()
         .substateDependencies()
         .forEach(
             substateId ->
-                substateIndex.merge(substateId, Set.of(transaction.getPayloadHash()), Sets::union));
+                substateIndex.merge(substateId, Set.of(TID.from(transaction.getPayloadHash().asBytes())), Sets::union));
 
     return result.getProcessedTxn();
   }
@@ -168,7 +169,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
         .forEach(
             instruction -> {
               var substateId = instruction.getId();
-              Set<HashCode> txnIds = substateIndex.remove(substateId);
+              Set<TID> txnIds = substateIndex.remove(substateId);
               if (txnIds == null) {
                 return;
               }

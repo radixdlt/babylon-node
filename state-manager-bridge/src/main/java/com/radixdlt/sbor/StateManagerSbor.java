@@ -64,6 +64,7 @@
 
 package com.radixdlt.sbor;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
@@ -71,6 +72,7 @@ import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
 import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transactions.RawTransaction;
 
@@ -79,7 +81,11 @@ public final class StateManagerSbor {
   public static final Sbor sbor = createSborForStateManager();
 
   private static Sbor createSborForStateManager() {
-    return new Sbor(true, new CodecMap().register(StateManagerSbor::registerCodecsWithCodecMap));
+    return new Sbor(
+        true,
+        new CodecMap()
+            .register(StateManagerSbor::registerCodecsWithCodecMap)
+            .register(StateManagerSbor::registerCodecsForExistingTypes));
   }
 
   public static void registerCodecsWithCodecMap(CodecMap codecMap) {
@@ -91,5 +97,19 @@ public final class StateManagerSbor {
     MempoolError.registerCodec(codecMap);
     GetTransactionsForProposalRustArgs.registerCodec(codecMap);
     GetRelayedTransactionsRustArgs.registerCodec(codecMap);
+  }
+
+  public static void registerCodecsForExistingTypes(CodecMap codecMap) {
+    registerCodecForHashCode(codecMap);
+  }
+
+  public static void registerCodecForHashCode(CodecMap codecMap) {
+    codecMap.register(
+        HashCode.class,
+        codecs ->
+            StructCodec.with(
+                HashCode::fromBytes,
+                codecs.of(byte[].class),
+                (t, encoder) -> encoder.encode(t.asBytes())));
   }
 }
