@@ -101,7 +101,7 @@ task buildRustDebug(type: Exec) {
 }
 
 task buildDockerRustBuilder(type: Exec) {
-    commandLine 'sh', '-c', 'docker build ../docker/rust-Builder -t rust-builder:1.0.0'
+    commandLine 'sh', '-c', 'docker build ../docker/rust-builder -t rust-builder:1.0.0'
 }
 
 task buildRustForDocker(type: Exec) {
