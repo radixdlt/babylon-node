@@ -120,7 +120,6 @@ task buildRustForDocker(type: Exec) {
 
     doLast {
         if (executionResult.get().getExitValue() != 0) {
-            println "Output:\n$stdout";
             throw new RuntimeException(String.format(
                     "%s failed with non-zero exit value %s", commandLine,
                     executionResult.get().getExitValue()
