@@ -100,10 +100,6 @@ task buildRustDebug(type: Exec) {
     commandLine 'cargo', 'build'
 }
 
-task buildDockerRustBuilder(type: Exec) {
-    commandLine 'sh', '-c', 'docker build ../docker/rust-builder -t rust-builder:1.0.0'
-}
-
 task buildRustForDocker(type: Exec) {
     def target = "x86_64-unknown-linux-gnu"
 
@@ -114,7 +110,7 @@ task buildRustForDocker(type: Exec) {
     // Trigger a custom error message on failure...
     ignoreExitValue true
 
-    def dockerBuildCmd = "docker run  -v "+projectDir+"/.cargo:/usr/local/cargo/registry -v "+projectDir+":/app  rust-builder:1.0.0  cargo build --target=$target"
+    def dockerBuildCmd = "docker compose -f ../docker/rust-builder/build-sm.yaml run --env TARGET=$target build-sm"
     commandLine 'sh', '-c', dockerBuildCmd
 
     doLast {

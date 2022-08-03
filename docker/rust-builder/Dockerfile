@@ -20,3 +20,5 @@ RUN rustup toolchain install stable-x86_64-unknown-linux-gnu
 
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
+
+CMD cargo build --target=${TARGET}

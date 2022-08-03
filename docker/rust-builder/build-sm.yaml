@@ -1,0 +1,10 @@
+services:
+  build-sm:
+    environment:
+      - TARGET=abc
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ../../state-manager:/app
+      - .cargo:/usr/local/cargo/registry
