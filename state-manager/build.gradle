@@ -110,7 +110,7 @@ task buildRustForDocker(type: Exec) {
     // Trigger a custom error message on failure...
     ignoreExitValue true
 
-    def dockerBuildCmd = "docker compose -f ../docker/rust-builder/build-sm.yaml run --env TARGET=$target build-sm"
+    def dockerBuildCmd = "docker-compose -f ../docker/rust-builder/build-sm.yaml build --build-arg TARGET=$target build-sm"
     commandLine 'sh', '-c', dockerBuildCmd
 
     doLast {
