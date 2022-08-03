@@ -293,6 +293,7 @@ public final class EpochManager {
   }
 
   public void start() {
+    init();
     this.bftEventProcessor.start();
   }
 

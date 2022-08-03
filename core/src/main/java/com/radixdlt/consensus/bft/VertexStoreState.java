@@ -65,6 +65,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -268,6 +269,7 @@ public final class VertexStoreState {
 
     @JsonProperty("vertices")
     @DsonOutput(DsonOutput.Output.ALL)
+    @JsonInclude()
     private final ImmutableList<Vertex> vertices;
 
     @JsonProperty("high_qc")

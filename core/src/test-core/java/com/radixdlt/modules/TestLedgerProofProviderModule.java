@@ -66,12 +66,40 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import com.radixdlt.modules.init.LedgerProofProvider;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 
+import java.util.Optional;
+
 public class TestLedgerProofProviderModule extends AbstractModule {
+
+//  @Provides
+//  public ConsensusBootstrapProvider get(Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState, Hasher hasher, LedgerProofProvider ledgerProofProvider, PersistentSafetyStateStore safetyStore, Ledger ledger, BFTValidatorSet bftValidatorSet) {
+//    return new C(serializedVertexStoreState, hasher, ledgerProofProvider, safetyStore, ledger, bftValidatorSet);
+//  }
+//
+//  public class C extends ConsensusBootstrapProvider {
+//
+//    private BFTValidatorSet bftValidatorSet;
+//
+//    public C(Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState, Hasher hasher, LedgerProofProvider ledgerProofProvider, PersistentSafetyStateStore safetyStore, Ledger ledger, BFTValidatorSet bftValidatorSet) {
+//      super(serializedVertexStoreState, hasher, ledgerProofProvider, safetyStore, ledger);
+//      this.bftValidatorSet = bftValidatorSet;
+//    }
+//
+//    @Override
+//    public BFTValidatorSet currentKnownValidatorSet() {
+//      return this.bftValidatorSet;
+//    }
+//  }
 
   @Provides
   public LedgerProofProvider get(

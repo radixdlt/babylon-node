@@ -116,7 +116,6 @@ public class SimulationNodes {
   private final SimulationNetwork underlyingNetwork;
   private final Module baseModule;
   private final ImmutableMultimap<ECPublicKey, Module> overrideModules;
-  private final boolean supportsEpochs;
 
   /**
    * Create a BFT test network with an underlying simulated network.
@@ -128,13 +127,11 @@ public class SimulationNodes {
       ImmutableList<ECKeyPair> initialNodes,
       SimulationNetwork underlyingNetwork,
       Module baseModule,
-      ImmutableMultimap<ECPublicKey, Module> overrideModules,
-      boolean supportsEpochs) {
+      ImmutableMultimap<ECPublicKey, Module> overrideModules) {
     this.initialNodes = initialNodes;
     this.baseModule = baseModule;
     this.overrideModules = overrideModules;
     this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
-    this.supportsEpochs = supportsEpochs;
   }
 
   private Module createBFTModule(ECKeyPair self) {
@@ -259,11 +256,6 @@ public class SimulationNodes {
     private void startRunners(BFTNode node, Injector injector) {
       final var nodeDisabledModuleRunners =
           disabledModuleRunners.getOrDefault(node, ImmutableSet.of());
-
-      if (supportsEpochs) {
-        EpochManager epochManager = injector.getInstance(EpochManager.class);
-        epochManager.init();
-      }
 
       injector
           .getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() {}))

@@ -91,6 +91,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
+import com.radixdlt.modules.TestLedgerProofProviderModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.TestP2PModule;
@@ -131,7 +132,7 @@ public abstract class DeterministicActorsTest {
   private MultiNodeDeterministicRunner deterministicRunner;
 
   public DeterministicActorsTest(Module forkOverrideModule, Module byzantineModule) {
-    this.nodeKeys = PrivateKeys.numeric(1).limit(20).collect(ImmutableList.toImmutableList());
+    this.nodeKeys = PrivateKeys.numeric(1).limit(1).collect(ImmutableList.toImmutableList());
     this.radixEngineConfiguration =
         Modules.combine(new MainnetForksModule(), forkOverrideModule, new ForksModule());
     this.byzantineModule = byzantineModule;
@@ -201,7 +202,7 @@ public abstract class DeterministicActorsTest {
           }
         },
         new TestP2PModule.Builder().withAllNodes(allNodes).build(),
-        new TestMessagingModule.Builder().build());
+        new TestMessagingModule.Builder().build(), new TestLedgerProofProviderModule());
   }
 
   private static class RunningActor {

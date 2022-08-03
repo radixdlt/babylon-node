@@ -164,21 +164,17 @@ public final class SimulationTest {
   private final Module baseNodeModule;
   private final ImmutableMultimap<ECPublicKey, Module> overrideModules;
 
-  private final boolean supportsEpochs;
-
   private SimulationTest(
       ImmutableList<ECKeyPair> initialNodes,
       SimulationNetwork simulationNetwork,
       Module baseNodeModule,
       ImmutableMultimap<ECPublicKey, Module> overrideModules,
-      Module testModule,
-      boolean supportsEpochs) {
+      Module testModule) {
     this.initialNodes = initialNodes;
     this.simulationNetwork = simulationNetwork;
     this.baseNodeModule = baseNodeModule;
     this.overrideModules = overrideModules;
     this.testModule = testModule;
-    this.supportsEpochs = supportsEpochs;
   }
 
   public static class Builder {
@@ -583,8 +579,7 @@ public final class SimulationTest {
           simulationNetwork,
           Modules.combine(modules.build()),
           overrideModules.build(),
-          Modules.combine(testModules.build()),
-          this.functionalNodeModule.supportsEpochs());
+          Modules.combine(testModules.build()));
     }
   }
 
@@ -689,7 +684,7 @@ public final class SimulationTest {
 
     SimulationNodes bftNetwork =
         new SimulationNodes(
-            initialNodes, simulationNetwork, baseNodeModule, overrideModules, this.supportsEpochs);
+            initialNodes, simulationNetwork, baseNodeModule, overrideModules);
     SimulationNodes.RunningNetwork runningNetwork = bftNetwork.start(disabledModuleRunners);
 
     final var resultObservable =

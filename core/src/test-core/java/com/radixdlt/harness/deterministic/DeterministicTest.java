@@ -87,12 +87,9 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.*;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.MempoolType;
-import com.radixdlt.modules.MockedCryptoModule;
-import com.radixdlt.modules.MockedKeyModule;
-import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
@@ -241,6 +238,9 @@ public final class DeterministicTest {
     }
 
     private DeterministicTest build(boolean withEpoch) {
+
+      modules.add(new TestLedgerProofProviderModule());
+
       modules.add(
           new AbstractModule() {
             @Override

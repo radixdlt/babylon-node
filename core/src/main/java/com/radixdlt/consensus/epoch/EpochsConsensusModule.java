@@ -111,6 +111,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Comparator;
@@ -221,11 +222,11 @@ public class EpochsConsensusModule extends AbstractModule {
         Runners.CONSENSUS, EpochRoundUpdate.class, epochManager.epochRoundUpdateEventProcessor());
   }
 
-  //  @Provides
-  //  private EpochChange initialEpoch(
-  //      @LastEpochProof LedgerProof proof, BFTConfiguration initialBFTConfig) {
-  //    return new EpochChange(proof, initialBFTConfig);
-  //  }
+//    @Provides
+//    private EpochChange initialEpoch(
+//            @LastEpochProof LedgerProof proof, BFTConfiguration initialBFTConfig) {
+//      return new EpochChange(proof, initialBFTConfig);
+//    }
 
   @ProvidesIntoSet
   @ProcessOnDispatch
