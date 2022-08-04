@@ -29,7 +29,7 @@ COPY state-manager/Cargo.lock ./dummy
 RUN mv ./dummy/src/main.rs ./dummy/src/lib.rs
 WORKDIR /app/dummy
 RUN ls -lR /app
-RUN cargo build --release --target=$TARGET
+RUN cargo build --target=$TARGET
 
 WORKDIR /app
 COPY state-manager ./
