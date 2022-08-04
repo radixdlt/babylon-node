@@ -4,6 +4,7 @@ build/
 
 # rust stuff
 target/
+.cargo/
 
 # eclipse stuff
 bin/
