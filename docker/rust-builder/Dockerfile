@@ -20,6 +20,17 @@ RUN rustup toolchain install stable-$(cat /rust_target.txt)
 
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
+
+RUN USER=root cargo new state-manager
+COPY state-manager/Cargo.toml ./state-manager
+COPY state-manager/Cargo.lock ./state-manager
+
+
+RUN mv ./state-manager/src/main.rs ./state-manager/src/lib.rs
+WORKDIR /app/state-manager
+RUN ls -lR /app
+RUN cargo build --release
+
 COPY state-manager ./
 
 RUN cargo build --target=$TARGET
