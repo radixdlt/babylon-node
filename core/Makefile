@@ -22,3 +22,7 @@ package: build-core
 .PHONY: publish
 publish: package
 	docker push $(CORE_REPO):$(TAG)
+
+.PHONY: run-docker-node
+run-docker-node: package
+	../docker/scripts/rundocker.sh
