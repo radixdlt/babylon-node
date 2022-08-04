@@ -73,9 +73,9 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
 }
 
-compileJava {
-    dependsOn(":state-manager:buildRustDebug")
-}
+//compileJava {
+//    dependsOn(":state-manager:buildRustDebug")
+//}
 
 jacocoTestReport {
     dependsOn test
