@@ -58,7 +58,7 @@ jobs:
           username: _json_key
           password: ${{ secrets.GCR_EU_DEV_JSON_KEY }}
       - name: Create deb package
-        run: ./gradlew deb4docker
+        run: cd core && make build
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx

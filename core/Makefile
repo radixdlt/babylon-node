@@ -12,7 +12,7 @@ build-sm:
 
 .PHONY: build
 build-core:
-	cd .. && ./gradlew deb4docker
+	cd .. && ./gradlew deb4docker -Pci=true
 
 .PHONY: package
 package: build-core
