@@ -62,27 +62,142 @@
  * permissions under this License.
  */
 
+use crate::transaction_store::*;
 use std::collections::BTreeMap;
 
-#[derive(Debug)]
-pub struct TransactionStore {
-    in_memory_store: BTreeMap<u64, Vec<u8>>,
+#[derive(Debug, PartialEq)]
+pub struct InMemoryTransactionDatabase {
+    next_state: TransactionStateVersion,
+    in_memory_store: BTreeMap<TransactionStateVersion, Transaction>,
 }
 
-impl TransactionStore {
-    pub fn new() -> TransactionStore {
-        TransactionStore {
+impl InMemoryTransactionDatabase {
+    pub fn new() -> InMemoryTransactionDatabase {
+        InMemoryTransactionDatabase {
+            next_state: 0,
             in_memory_store: BTreeMap::new(),
         }
     }
 
-    pub fn insert_transaction(&mut self, state_version: u64, transaction_data: Vec<u8>) {
-        self.in_memory_store.insert(state_version, transaction_data);
+    pub fn alloc_state(&mut self) -> Option<TransactionStateVersion> {
+        let state = self.next_state;
+        let try_next = state.next();
+
+        if let Some(next_state) = try_next {
+            self.next_state = next_state;
+            Some(state)
+        } else {
+            None
+        }
     }
 
-    pub fn get_transaction(&self, state_version: u64) -> &Vec<u8> {
-        self.in_memory_store
-            .get(&state_version)
-            .expect("State version missing")
+    pub fn store(
+        &mut self,
+        transaction: Transaction,
+    ) -> Result<TransactionStateVersion, TransactionStoreStoreError> {
+        let state = self
+            .alloc_state()
+            .ok_or(TransactionStoreStoreError::ExhaustedStateVersions)?;
+        self.in_memory_store.insert(state, transaction);
+
+        Ok(state)
+    }
+
+    pub fn get(&self, state: TransactionStateVersion) -> Option<Transaction> {
+        self.in_memory_store.get(&state).cloned()
+    }
+
+    pub fn last_version(&self) -> Option<TransactionStateVersion> {
+        self.next_state.prev()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::transaction_store::in_memory::*;
+    use crate::types::*;
+
+    #[test]
+    fn alloc_test() {
+        let mut ts = InMemoryTransactionDatabase::new();
+
+        assert_eq!(ts.next_state, 0);
+        let ret = ts.alloc_state();
+        assert_eq!(ret, Some(0));
+        assert_eq!(ts.next_state, 1);
+        let ret = ts.alloc_state();
+        assert_eq!(ret, Some(1));
+        assert_eq!(ts.next_state, 2);
+
+        ts.next_state = u64::MAX;
+        let ret = ts.alloc_state();
+        assert_eq!(ret, None);
+    }
+
+    #[test]
+    fn store_test() {
+        let v1 = vec![1u8; 32];
+        let v2 = vec![2u8; 32];
+        let v3 = vec![3u8; 32];
+        let t1 = Transaction {
+            payload: v1.clone(),
+            id: TId { bytes: v1 },
+        };
+        let t2 = Transaction {
+            payload: v2.clone(),
+            id: TId { bytes: v2 },
+        };
+        let t3 = Transaction {
+            payload: v3.clone(),
+            id: TId { bytes: v3 },
+        };
+
+        let mut ts = InMemoryTransactionDatabase::new();
+        let rc = ts.store(t1.clone());
+        assert_eq!(rc, Ok(0));
+        let rc = ts.store(t2.clone());
+        assert_eq!(rc, Ok(1));
+        let rc = ts.store(t3.clone());
+        assert_eq!(rc, Ok(2));
+
+        ts.next_state = u64::MAX;
+        let rc = ts.store(t3.clone());
+        assert_eq!(rc, Err(TransactionStoreStoreError::ExhaustedStateVersions));
+    }
+
+    #[test]
+    fn get_test() {
+        let v1 = vec![1u8; 32];
+        let v2 = vec![2u8; 32];
+        let v3 = vec![3u8; 32];
+        let t1 = Transaction {
+            payload: v1.clone(),
+            id: TId { bytes: v1 },
+        };
+        let t2 = Transaction {
+            payload: v2.clone(),
+            id: TId { bytes: v2 },
+        };
+        let t3 = Transaction {
+            payload: v3.clone(),
+            id: TId { bytes: v3 },
+        };
+
+        let mut ts = InMemoryTransactionDatabase::new();
+        let rc = ts.store(t1.clone());
+        assert_eq!(rc, Ok(0));
+        let rc = ts.store(t2.clone());
+        assert_eq!(rc, Ok(1));
+        let rc = ts.store(t3.clone());
+        assert_eq!(rc, Ok(2));
+
+        let rc = ts.get(0);
+        assert_eq!(rc, Some(t1.clone()));
+        let rc = ts.get(1);
+        assert_eq!(rc, Some(t2.clone()));
+        let rc = ts.get(2);
+        assert_eq!(rc, Some(t3.clone()));
+        let rc = ts.get(3);
+        assert_eq!(rc, None);
     }
 }

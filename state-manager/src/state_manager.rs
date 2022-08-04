@@ -64,22 +64,23 @@
 
 use crate::jni::dtos::*;
 use crate::mempool::{Mempool, MempoolConfig};
-use crate::transaction_store::TransactionStore;
+use crate::transaction_store::{TransactionStore, TransactionStoreConfig};
 use crate::types::Transaction;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
+
 use std::sync::Arc;
 use std::sync::Mutex;
 use transaction::model::NotarizedTransaction;
 
 #[derive(Clone, Debug)]
-pub struct StateManager<M: Mempool> {
+pub struct StateManager<M: Mempool, TS: TransactionStore> {
     pub mempool: Arc<Mutex<M>>,
-    pub transaction_store: Arc<Mutex<TransactionStore>>,
+    pub transaction_store: Arc<Mutex<TS>>,
 }
 
-impl<M: Mempool> StateManager<M> {
-    pub fn new(mempool: M, transaction_store: TransactionStore) -> StateManager<M> {
+impl<M: Mempool, TS: TransactionStore> StateManager<M, TS> {
+    pub fn new(mempool: M, transaction_store: TS) -> StateManager<M, TS> {
         StateManager {
             mempool: Arc::new(Mutex::new(mempool)),
             transaction_store: Arc::new(Mutex::new(transaction_store)),
@@ -97,6 +98,7 @@ impl<M: Mempool> StateManager<M> {
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct StateManagerConfig {
     pub mempool_config: Option<MempoolConfig>,
+    pub transaction_store_config: Option<TransactionStoreConfig>,
 }
 
 impl JavaStructure for StateManagerConfig {}

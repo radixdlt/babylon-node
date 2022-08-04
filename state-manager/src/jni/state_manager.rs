@@ -67,7 +67,8 @@ use crate::jni::utils::*;
 use crate::mempool::simple::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{StateManager, StateManagerConfig};
-use crate::transaction_store::TransactionStore;
+use crate::transaction_store::in_memory::InMemoryTransactionStore;
+use crate::transaction_store::TransactionStoreConfig;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -95,7 +96,7 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
 }
 
 pub struct JNIStateManager {
-    state_manager: Arc<StateManager<SimpleMempool>>,
+    state_manager: Arc<StateManager<SimpleMempool, InMemoryTransactionStore>>,
 }
 
 impl JNIStateManager {
@@ -115,7 +116,17 @@ impl JNIStateManager {
         };
 
         let mempool = SimpleMempool::new(mempool_config);
-        let transaction_store = TransactionStore::new();
+
+        let transaction_store_config = match config.transaction_store_config {
+            Some(transaction_store_config) => transaction_store_config,
+            None => {
+                // As per mempool, it means it's not being used.
+                TransactionStoreConfig {
+                    minimum_block_size: 10,
+                }
+            }
+        };
+        let transaction_store = InMemoryTransactionStore::new(transaction_store_config);
 
         // Build the state manager.
         let state_manager = Arc::new(StateManager::new(mempool, transaction_store));
@@ -136,7 +147,7 @@ impl JNIStateManager {
     pub fn get_state_manager(
         env: &JNIEnv,
         interop_state: JObject,
-    ) -> Arc<StateManager<SimpleMempool>> {
+    ) -> Arc<StateManager<SimpleMempool, InMemoryTransactionStore>> {
         let jni_state_manager: &JNIStateManager = &env
             .get_rust_field(interop_state, POINTER_JNI_FIELD_NAME)
             .unwrap();
