@@ -81,6 +81,7 @@ import com.radixdlt.integration.Slow;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.modules.TestLedgerProofProviderModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
@@ -133,7 +134,7 @@ public final class MempoolFillAndEmptyTest {
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath());
           }
-        });
+        }, new TestLedgerProofProviderModule());
   }
 
   private void fillAndEmptyMempool() {

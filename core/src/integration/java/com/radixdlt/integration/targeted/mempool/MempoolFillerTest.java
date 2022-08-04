@@ -80,6 +80,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.*;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.modules.TestLedgerProofProviderModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.TestP2PModule;
@@ -135,7 +136,7 @@ public class MempoolFillerTest {
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath());
           }
-        });
+        }, new TestLedgerProofProviderModule());
   }
 
   @Test

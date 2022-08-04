@@ -99,6 +99,7 @@ import com.radixdlt.harness.deterministic.SafetyCheckerModule;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
+import com.radixdlt.modules.TestLedgerProofProviderModule;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -267,7 +268,7 @@ public class OneNodeAlwaysAliveSafetyTest {
           private EventProcessorOnDispatch<?> roundQuorumReachedEventProcessor(@Self BFTNode node) {
             return nodeEvents.processorOnDispatch(node, RoundQuorumReached.class);
           }
-        });
+        }, new TestLedgerProofProviderModule());
   }
 
   private void restartNode(int index) {
