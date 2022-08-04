@@ -6,13 +6,17 @@ all:
     TAG ?= $(GIT_BRANCH)-$(GIT_COMMIT)
     CORE_REPO ?= $(REGISTRY)/radixdlt-core
 
+.PHONY: build-sm
+build-sm:
+	cd .. && ./gradlew :state-manager:buildRustForDocker
+
 .PHONY: build
 build-core:
 	cd .. && ./gradlew deb4docker
 
 .PHONY: package
 package: build-core
-	docker-compose -f docker/node-1.yml build
+	docker-compose -f ../docker/node-1.yml build
 	docker tag radixdlt/radixdlt-core:main $(CORE_REPO):$(TAG)
 
 .PHONY: publish
