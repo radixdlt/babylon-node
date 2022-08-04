@@ -91,6 +91,7 @@ import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.modules.init.LedgerProofProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.transactions.Transaction;
@@ -146,10 +147,13 @@ public class StateComputerLedgerTest {
     this.currentLedgerHeader =
         this.genesisQC.getCommittedAndLedgerStateProof(hasher).map(Pair::getSecond).orElseThrow();
 
+    var ledgerProofProviderMock = mock(LedgerProofProvider.class);
+    when(ledgerProofProviderMock.getLastProof()).thenReturn(this.currentLedgerHeader);
+
     this.sut =
         new StateComputerLedger(
             mock(TimeSupplier.class),
-            currentLedgerHeader,
+            ledgerProofProviderMock,
             headerComparator,
             stateComputer,
             accumulator,
@@ -172,10 +176,13 @@ public class StateComputerLedgerTest {
     this.currentLedgerHeader =
         this.genesisQC.getCommittedAndLedgerStateProof(hasher).map(Pair::getSecond).orElseThrow();
 
+    var ledgerProofProviderMock = mock(LedgerProofProvider.class);
+    when(ledgerProofProviderMock.getLastProof()).thenReturn(this.currentLedgerHeader);
+
     this.sut =
         new StateComputerLedger(
             mock(TimeSupplier.class),
-            currentLedgerHeader,
+            ledgerProofProviderMock,
             headerComparator,
             stateComputer,
             accumulator,
