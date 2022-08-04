@@ -14,6 +14,15 @@ build-sm:
 build-core:
 	cd .. && ./gradlew deb4docker -Pci=true
 
+.PHONY: build-external-cache
+build-external-cache:
+	cd ../docker
+	DOCKER_BUILDKIT=1 docker buildx build\
+	  --cache-from=type=registry,ref=eu.gcr.io/dev-container-repo/build-core-cache \
+	  --cache-to=type=registry,ref=eu.gcr.io/dev-container-repo/build-core-cache,mode=max \
+	  --tag $(CORE_REPO):$(TAG) -f Dockerfile.core . --push
+
+
 .PHONY: package
 package: build-core
 	docker-compose -f ../docker/node-1.yml build

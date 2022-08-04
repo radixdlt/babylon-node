@@ -19,7 +19,7 @@ jobs:
 
   build:
     name: Build image
-    runs-on: docker-builder
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
         with:
