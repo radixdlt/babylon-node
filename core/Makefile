@@ -8,7 +8,7 @@ all:
 
 .PHONY: build-sm
 build-sm:
-	cd .. && ./gradlew :state-manager:buildRustForDocker
+	cd .. && ./gradlew :state-manager:buildRustForDocker -Pci=true
 
 .PHONY: build
 build-core:
