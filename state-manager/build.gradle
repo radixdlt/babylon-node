@@ -112,7 +112,7 @@ task buildRustForDocker(type: Exec) {
     workingDir rootProject.projectDir
     def dockerBuildCmd = "DOCKER_BUILDKIT=1 docker build -f docker/rust-builder/Dockerfile" +
             " --target=artifact" +
-            " --output type=local,dest=state-manager/target" +
+            " --output type=local,dest=state-manager/target/${target}/debug/" +
             " --build-arg TARGET=$target ."
     commandLine 'sh', '-c', dockerBuildCmd
 

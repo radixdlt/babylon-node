@@ -37,7 +37,9 @@ COPY state-manager ./
 RUN cargo build --target=$TARGET
 RUN mkdir -p /app/binary
 RUN cp -R target /app/output
+RUN ls -lR /app/output
 
 
 FROM scratch as artifact
-COPY --from=build /app/output /
+ARG TARGET
+COPY --from=build /app/output/$TARGET/debug/libstatemanager.so /
