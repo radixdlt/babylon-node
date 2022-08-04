@@ -168,7 +168,8 @@ public class UnstakingLockedTokensTest {
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath());
           }
-        }, new TestLedgerProofProviderModule());
+        },
+        new TestLedgerProofProviderModule());
   }
 
   public REProcessedTxn waitForCommit(TID txnId) {

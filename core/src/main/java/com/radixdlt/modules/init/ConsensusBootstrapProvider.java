@@ -65,7 +65,6 @@
 package com.radixdlt.modules.init;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
@@ -136,8 +135,7 @@ public class ConsensusBootstrapProvider {
   }
 
   public VertexStore vertexStore() {
-    return VertexStoreJavaImpl.create(
-            getVertexStoreState(), this.ledger, this.hasher);
+    return VertexStoreJavaImpl.create(getVertexStoreState(), this.ledger, this.hasher);
   }
 
   public VertexStoreState getVertexStoreState() {

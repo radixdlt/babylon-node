@@ -125,7 +125,8 @@ public class RandomTransactionTest {
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath());
           }
-        }, new TestLedgerProofProviderModule());
+        },
+        new TestLedgerProofProviderModule());
   }
 
   @Test

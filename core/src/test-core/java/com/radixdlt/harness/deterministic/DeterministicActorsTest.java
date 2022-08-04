@@ -202,7 +202,8 @@ public abstract class DeterministicActorsTest {
           }
         },
         new TestP2PModule.Builder().withAllNodes(allNodes).build(),
-        new TestMessagingModule.Builder().build(), new TestLedgerProofProviderModule());
+        new TestMessagingModule.Builder().build(),
+        new TestLedgerProofProviderModule());
   }
 
   private static class RunningActor {

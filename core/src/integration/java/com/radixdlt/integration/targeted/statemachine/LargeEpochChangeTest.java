@@ -186,7 +186,8 @@ public class LargeEpochChangeTest {
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath());
           }
-        }, new TestLedgerProofProviderModule());
+        },
+        new TestLedgerProofProviderModule());
   }
 
   @Test

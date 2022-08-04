@@ -134,7 +134,8 @@ public final class MempoolFillAndEmptyTest {
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath());
           }
-        }, new TestLedgerProofProviderModule());
+        },
+        new TestLedgerProofProviderModule());
   }
 
   private void fillAndEmptyMempool() {

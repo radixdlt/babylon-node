@@ -268,7 +268,8 @@ public class OneNodeAlwaysAliveSafetyTest {
           private EventProcessorOnDispatch<?> roundQuorumReachedEventProcessor(@Self BFTNode node) {
             return nodeEvents.processorOnDispatch(node, RoundQuorumReached.class);
           }
-        }, new TestLedgerProofProviderModule());
+        },
+        new TestLedgerProofProviderModule());
   }
 
   private void restartNode(int index) {

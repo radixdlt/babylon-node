@@ -683,8 +683,7 @@ public final class SimulationTest {
         testInjector.getInstance(Key.get(new TypeLiteral<Map<Monitor, TestInvariant>>() {}));
 
     SimulationNodes bftNetwork =
-        new SimulationNodes(
-            initialNodes, simulationNetwork, baseNodeModule, overrideModules);
+        new SimulationNodes(initialNodes, simulationNetwork, baseNodeModule, overrideModules);
     SimulationNodes.RunningNetwork runningNetwork = bftNetwork.start(disabledModuleRunners);
 
     final var resultObservable =

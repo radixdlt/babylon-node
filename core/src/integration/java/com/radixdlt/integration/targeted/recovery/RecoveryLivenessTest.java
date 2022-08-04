@@ -296,7 +296,8 @@ public class RecoveryLivenessTest {
           }
         },
         new TestP2PModule.Builder().withAllNodes(allNodes).build(),
-        new TestMessagingModule.Builder().build(), new TestLedgerProofProviderModule());
+        new TestMessagingModule.Builder().build(),
+        new TestLedgerProofProviderModule());
   }
 
   private void restartNode(int index) {

@@ -153,11 +153,11 @@ public final class ConsensusModule extends AbstractModule {
             .build();
   }
 
-//      @Provides
-//      @Singleton
-//      public ProposerElection proposerElection(BFTConfiguration configuration) {
-//        return configuration.getProposerElection();
-//      }
+  //      @Provides
+  //      @Singleton
+  //      public ProposerElection proposerElection(BFTConfiguration configuration) {
+  //        return configuration.getProposerElection();
+  //      }
 
   @Provides
   @Singleton
