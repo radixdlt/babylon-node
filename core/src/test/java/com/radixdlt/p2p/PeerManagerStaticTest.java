@@ -107,7 +107,7 @@ public class PeerManagerStaticTest {
         new PeerManager(
             self,
             P2PConfig.fromRuntimeProperties(defaultProperties()),
-            Addressing.ofNetwork(Network.LOCALNET),
+            Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             () -> addressBook,
             () -> mock(PendingOutboundChannelsManager.class),
             mock(SystemCounters.class));
@@ -161,7 +161,8 @@ public class PeerManagerStaticTest {
   }
 
   private RadixNodeUri makeNodeUri(ECPublicKey pubKey, String host, int port) {
-    return RadixNodeUri.fromPubKeyAndAddress(Network.LOCALNET.getId(), pubKey, host, port);
+    return RadixNodeUri.fromPubKeyAndAddress(
+        Network.INTEGRATIONTESTNET.getId(), pubKey, host, port);
   }
 
   private static RuntimeProperties defaultProperties() {

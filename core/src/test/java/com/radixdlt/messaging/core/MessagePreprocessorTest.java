@@ -154,7 +154,7 @@ public class MessagePreprocessorTest {
           System::currentTimeMillis,
           SERIALIZATION,
           () -> peerControl,
-          Addressing.ofNetwork(Network.LOCALNET),
+          Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
           new Capabilities(LedgerSyncCapability.Builder.asDefault().build()));
 
   private final InboundMessage inboundMessage;

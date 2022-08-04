@@ -70,8 +70,8 @@ import static org.awaitility.Awaitility.await;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.crypto.exception.KeyStoreException;
-import com.radixdlt.network.p2p.RadixNodeUri;
 import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.RadixNodeUri;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -144,7 +144,10 @@ public final class LargeMessageTest {
 
     final var targetUri =
         RadixNodeUri.fromPubKeyAndAddress(
-            Network.LOCALNET.getId(), targetKeyPair.getPublicKey(), "127.0.0.1", targetNodePort);
+            Network.INTEGRATIONTESTNET.getId(),
+            targetKeyPair.getPublicKey(),
+            "127.0.0.1",
+            targetNodePort);
 
     // Attacker node process
     final var attackerNodePort = FreePortFinder.findFreeLocalPort();

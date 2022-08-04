@@ -197,7 +197,7 @@ public abstract class DeterministicActorsTest {
             bindConstant()
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
-            bindConstant().annotatedWith(NetworkId.class).to(Network.LOCALNET.getId());
+            bindConstant().annotatedWith(NetworkId.class).to(Network.INTEGRATIONTESTNET.getId());
           }
         },
         new TestP2PModule.Builder().withAllNodes(allNodes).build(),

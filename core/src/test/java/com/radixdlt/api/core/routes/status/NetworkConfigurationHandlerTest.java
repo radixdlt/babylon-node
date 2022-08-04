@@ -91,6 +91,6 @@ public class NetworkConfigurationHandlerTest extends ApiTest {
     assertThat(bech32.getAccountHrp()).isEqualTo(addressing.forAccounts().getHrp());
     assertThat(bech32.getNodeHrp()).isEqualTo(addressing.forNodes().getHrp());
     assertThat(bech32.getValidatorHrp()).isEqualTo(addressing.forValidators().getHrp());
-    assertThat(bech32.getResourceHrpSuffix()).isEqualTo(addressing.forResources().getHrpSuffix());
+    assertThat(bech32.getResourceHrpSuffix()).isEqualTo(addressing.forResources().getHrp());
   }
 }

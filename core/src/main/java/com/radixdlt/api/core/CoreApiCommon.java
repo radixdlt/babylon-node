@@ -82,11 +82,11 @@ public class CoreApiCommon {
   }
 
   public void verifyNetwork(NetworkIdentifier networkIdentifier) throws CoreApiException {
-    if (!networkIdentifier.getNetwork().equals(this.network.name().toLowerCase())) {
+    if (!networkIdentifier.getNetwork().equals(this.network.getLogicalName())) {
       throw CoreApiException.notSupported(
           new NetworkNotSupportedError()
               .addSupportedNetworksItem(
-                  new NetworkIdentifier().network(this.network.name().toLowerCase()))
+                  new NetworkIdentifier().network(this.network.getLogicalName()))
               .type(NetworkNotSupportedError.class.getSimpleName()));
     }
   }
