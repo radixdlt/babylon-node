@@ -12,7 +12,7 @@ RUN apt install -y build-essential
 RUN case "$TARGET" in \
       "x86_64-unknown-linux-gnu") echo x86_64-unknown-linux-gnu > /rust_target.txt ;; \
       "x86_64-pc-windows-gnu") echo x86_64-pc-windows-gnu > /rust_target.txt ;; \
-      "arch64-unknown-linux-gnu") echo arch64-unknown-linux-gnu > /rust_target.txt ;; \
+      "aarch64-unknown-linux-gnu") echo arch64-unknown-linux-gnu > /rust_target.txt ;; \
       *) exit 1 ;; \
     esac
 RUN rustup target add $(cat /rust_target.txt)
