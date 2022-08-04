@@ -153,15 +153,15 @@ mod tests {
         };
 
         let mut ts = InMemoryTransactionDatabase::new();
-        let rc = ts.store(t1.clone());
+        let rc = ts.store(t1);
         assert_eq!(rc, Ok(0));
-        let rc = ts.store(t2.clone());
+        let rc = ts.store(t2);
         assert_eq!(rc, Ok(1));
         let rc = ts.store(t3.clone());
         assert_eq!(rc, Ok(2));
 
         ts.next_state = u64::MAX;
-        let rc = ts.store(t3.clone());
+        let rc = ts.store(t3);
         assert_eq!(rc, Err(TransactionStoreStoreError::ExhaustedStateVersions));
     }
 
@@ -192,11 +192,11 @@ mod tests {
         assert_eq!(rc, Ok(2));
 
         let rc = ts.get(0);
-        assert_eq!(rc, Some(t1.clone()));
+        assert_eq!(rc, Some(t1));
         let rc = ts.get(1);
-        assert_eq!(rc, Some(t2.clone()));
+        assert_eq!(rc, Some(t2));
         let rc = ts.get(2);
-        assert_eq!(rc, Some(t3.clone()));
+        assert_eq!(rc, Some(t3));
         let rc = ts.get(3);
         assert_eq!(rc, None);
     }

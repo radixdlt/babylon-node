@@ -83,7 +83,8 @@ public final class RustMempoolTest {
   @Test
   public void test_rust_mempool_add() throws Exception {
     final var mempoolSize = 2;
-    final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
+    final var config =
+        new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)), Option.none());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager.getRustState());
       var transaction1 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
@@ -137,7 +138,8 @@ public final class RustMempoolTest {
   @Test
   public void test_rust_mempool_getTxns() throws Exception {
     final var mempoolSize = 3;
-    final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
+    final var config =
+        new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)), Option.none());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager.getRustState());
       var transaction1 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
@@ -229,7 +231,8 @@ public final class RustMempoolTest {
   @Test
   public void test_rust_mempool_committed() throws Exception {
     final var mempoolSize = 2;
-    final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
+    final var config =
+        new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)), Option.none());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager.getRustState());
       var transaction1 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
@@ -253,7 +256,8 @@ public final class RustMempoolTest {
   @Test
   public void test_rust_mempool_getRelayTxns() throws Exception {
     final var mempoolSize = 3;
-    final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
+    final var config =
+        new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)), Option.none());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager.getRustState());
       var transaction1 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);

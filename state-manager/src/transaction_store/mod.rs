@@ -257,18 +257,18 @@ mod tests {
         assert_eq!(Ok(proof3.clone()), ret);
 
         // Get first proved transaction.
-        let proved0 = ProvedTransactions::new(proof1, vec![t1.clone()]);
+        let proved0 = ProvedTransactions::new(proof1, vec![t1]);
         let ret = store.first_proved_transactions();
         assert_eq!(ret, Ok(proved0.clone()));
 
         // Get second proved transaction.
-        let proved1 = ProvedTransactions::new(proof2, vec![t2.clone()]);
-        let ret = store.next_proved_transactions(proved0.clone().proof.state_version);
+        let proved1 = ProvedTransactions::new(proof2, vec![t2]);
+        let ret = store.next_proved_transactions(proved0.proof.state_version);
         assert_eq!(ret, Ok(proved1.clone()));
 
         // Get third proved transaction.
-        let proved2 = ProvedTransactions::new(proof3, vec![t3.clone()]);
-        let ret = store.next_proved_transactions(proved1.clone().proof.state_version);
+        let proved2 = ProvedTransactions::new(proof3, vec![t3]);
+        let ret = store.next_proved_transactions(proved1.proof.state_version);
         assert_eq!(ret, Ok(proved2));
 
         // Test Vertex State Store
@@ -277,6 +277,6 @@ mod tests {
 
         store.store_vertex_state(payload1.clone());
         let ret = store.vertex_state();
-        assert_eq!(ret, Ok(payload1.clone()));
+        assert_eq!(ret, Ok(payload1));
     }
 }

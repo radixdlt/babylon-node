@@ -84,7 +84,8 @@ public final class REv2StateManagerModule extends AbstractModule {
   @Provides
   @Singleton
   StateManager stateManager(RustMempoolConfig mempoolConfig) {
-    return StateManager.createAndInitialize(new StateManagerConfig(Option.some(mempoolConfig)));
+    return StateManager.createAndInitialize(
+        new StateManagerConfig(Option.some(mempoolConfig), Option.none()));
   }
 
   @Provides

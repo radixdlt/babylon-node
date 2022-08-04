@@ -62,36 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.transaction;
 
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
-import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
-import com.radixdlt.mempool.MempoolError;
-import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transaction.RustTransactionStoreConfig;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.sbor.codec.Field;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.sbor.codec.core.IntegerCodec;
 
-public final class StateManagerSbor {
-
-  public static final Sbor sbor = createSborForStateManager();
-
-  private static Sbor createSborForStateManager() {
-    return new Sbor(true, new CodecMap().register(StateManagerSbor::registerCodecsWithCodecMap));
-  }
-
-  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
-    RustMempoolConfig.registerCodec(codecMap);
-    RustTransactionStoreConfig.registerCodec(codecMap);
-    StateManagerConfig.registerCodec(codecMap);
-    Transaction.registerCodec(codecMap);
-    TID.registerCodec(codecMap);
-    StateManagerRuntimeError.registerCodec(codecMap);
-    MempoolError.registerCodec(codecMap);
-    GetTransactionsForProposalRustArgs.registerCodec(codecMap);
-    GetRelayedTransactionsRustArgs.registerCodec(codecMap);
+public record RustTransactionStoreConfig(int minimumBlockSize) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        RustTransactionStoreConfig.class,
+        codecs ->
+            StructCodec.fromFields(
+                RustTransactionStoreConfig::new,
+                Field.of(RustTransactionStoreConfig::minimumBlockSize, new IntegerCodec(false))));
   }
 }

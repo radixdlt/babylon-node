@@ -69,8 +69,11 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.transaction.RustTransactionStoreConfig;
 
-public record StateManagerConfig(Option<RustMempoolConfig> mempoolConfigOpt) {
+public record StateManagerConfig(
+    Option<RustMempoolConfig> mempoolConfigOpt,
+    Option<RustTransactionStoreConfig> transactionStoreConfigOpt) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateManagerConfig.class,
@@ -78,6 +81,7 @@ public record StateManagerConfig(Option<RustMempoolConfig> mempoolConfigOpt) {
             StructCodec.with(
                 StateManagerConfig::new,
                 codecs.of(new TypeToken<Option<RustMempoolConfig>>() {}),
-                (s, encoder) -> encoder.encode(s.mempoolConfigOpt)));
+                codecs.of(new TypeToken<Option<RustTransactionStoreConfig>>() {}),
+                (s, encoder) -> encoder.encode(s.mempoolConfigOpt, s.transactionStoreConfigOpt)));
   }
 }
