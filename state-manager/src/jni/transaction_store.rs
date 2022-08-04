@@ -62,52 +62,227 @@
  * permissions under this License.
  */
 
-use crate::jni::state_manager::JNIStateManager;
+use crate::jni::dtos::JavaStructure;
 use jni::objects::{JClass, JObject};
-use jni::sys::{jbyteArray, jlong};
+use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
+use crate::jni::state_manager::JNIStateManager;
+use crate::jni::utils::*;
+use crate::result::StateManagerResult;
+use crate::transaction_store::*;
+use crate::types::*;
+
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_insertTransaction(
+extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_storeBegin(
     env: JNIEnv,
     _class: JClass,
-    interop_state: JObject,
-    j_payload: jbyteArray,
-) {
-    //    let ret = do_insert_transaction(&env, j_state, j_payload).to_java();
+    j_state: JObject,
+) -> jbyteArray {
+    let ret = do_store_begin(&env, j_state).to_java();
+
+    jni_slice_to_jbytearray(&env, &ret)
 }
 
-/*
-fn do_insert_transaction(
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_RustTtransactionStore_storeCommit(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+) -> jbyteArray {
+    let ret = do_store_commit(&env, j_state).to_java();
+
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_storeTransaction(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_store_transaction(&env, j_state, j_payload).to_java();
+
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_storeProof(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_store_proof(&env, j_state, j_payload).to_java();
+
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_storeVertexState(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_store_vertex_state(&env, j_state, j_payload).to_java();
+
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getEpochProof(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_epoch_proof(&env, j_state, j_payload).to_java();
+
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getLastProof(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+) -> jbyteArray {
+    let ret = do_last_proof(&env, j_state).to_java();
+
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getNextProvedTransactions(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_next_proved_transactions(&env, j_state, j_payload).to_java();
+
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+fn do_store_begin(env: &JNIEnv, j_state: JObject) -> StateManagerResult<()> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    state_manager
+        .transaction_store
+        .lock()
+        .unwrap()
+        .store_begin();
+    Ok(())
+}
+
+fn do_store_commit(env: &JNIEnv, j_state: JObject) -> StateManagerResult<()> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    state_manager
+        .transaction_store
+        .lock()
+        .unwrap()
+        .store_commit();
+    Ok(())
+}
+
+fn do_store_transaction(
     env: &JNIEnv,
     j_state: JObject,
     j_payload: jbyteArray,
-) -> StateManagerResult<Result<TransactionStateVersion, TransactionStoreErrorJava>> {
-    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
-    let request_payload: Vec<u8> = jnu_jbytearray_to_vector(env, j_payload)?;
+) -> StateManagerResult<Result<TransactionStateVersion, TransactionStoreStoreError>> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
     let transaction = Transaction::from_java(&request_payload)?;
 
-    let result = state_manager.transaction_store.lock().unwrap().store_transaction(transaction);
-    let mapped_result = result.map_err_sm(|err| err.into())?;
+    let result = state_manager
+        .transaction_store
+        .lock()
+        .unwrap()
+        .store_transaction(transaction);
+
+    Ok(result)
 }
- */
-/*
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransactionAtStateVersion(
-    env: JNIEnv,
-    _class: JClass,
-    interop_state: JObject,
-    j_state_version: jlong,
-) -> jbyteArray {
-    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
+fn do_store_proof(
+    env: &JNIEnv,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> StateManagerResult<Result<(), StoreProofError>> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
+    let proof = LedgerProof::from_java(&request_payload)?;
 
-    // Only get the lock for transaction store
-    let transaction_store = state_manager.transaction_store.lock().unwrap();
+    let result = state_manager
+        .transaction_store
+        .lock()
+        .unwrap()
+        .store_proof(proof);
 
-    let transaction_data = transaction_store.get_transaction(j_state_version as u64);
-
-    env.byte_array_from_slice(transaction_data)
-        .expect("Can't create jbyteArray for transaction data")
+    Ok(result)
 }
-*/
+
+fn do_store_vertex_state(
+    env: &JNIEnv,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> StateManagerResult<()> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
+    let vertex_state = Vec::<u8>::from_java(&request_payload)?;
+
+    state_manager
+        .transaction_store
+        .lock()
+        .unwrap()
+        .store_vertex_state(vertex_state);
+
+    Ok(())
+}
+
+fn do_epoch_proof(
+    env: &JNIEnv,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> StateManagerResult<Result<LedgerProof, EpochProofError>> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
+    let epoch_id = EpochId::from_java(&request_payload)?;
+
+    let result = state_manager
+        .transaction_store
+        .lock()
+        .unwrap()
+        .epoch_proof(epoch_id);
+
+    Ok(result)
+}
+
+fn do_last_proof(
+    env: &JNIEnv,
+    j_state: JObject,
+) -> StateManagerResult<Result<LedgerProof, LastProofError>> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+
+    let result = state_manager.transaction_store.lock().unwrap().last_proof();
+
+    Ok(result)
+}
+
+fn do_next_proved_transactions(
+    env: &JNIEnv,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> StateManagerResult<Result<ProvedTransactions, NextProvedTransactionsError>> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
+    let state_version = TransactionStateVersion::from_java(&request_payload)?;
+
+    let result = state_manager
+        .transaction_store
+        .lock()
+        .unwrap()
+        .next_proved_transactions(state_version);
+
+    Ok(result)
+}

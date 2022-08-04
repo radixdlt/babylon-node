@@ -63,18 +63,12 @@
  */
 
 use crate::transaction_store::*;
-use crate::types::*;
 use std::collections::BTreeMap;
 
 #[derive(Debug, PartialEq)]
 pub struct InMemoryTransactionDatabase {
     next_state: TransactionStateVersion,
     in_memory_store: BTreeMap<TransactionStateVersion, Transaction>,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum InMemoryTransactionDatabaseGetError {
-    NotFound(TransactionStateVersion),
 }
 
 impl InMemoryTransactionDatabase {

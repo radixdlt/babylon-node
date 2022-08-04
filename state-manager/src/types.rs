@@ -67,6 +67,7 @@ use crate::jni::dtos::*;
 impl JavaStructure for i32 {}
 impl JavaStructure for u64 {}
 impl JavaStructure for Vec<Transaction> {}
+impl JavaStructure for Vec<u8> {}
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]
 pub struct TId {
@@ -91,17 +92,6 @@ pub struct LedgerProof {
 }
 
 impl LedgerProof {
-    pub fn new(
-        state_version: TransactionStateVersion,
-        new_epoch: Option<EpochId>,
-        serialized: Vec<u8>,
-    ) -> LedgerProof {
-        LedgerProof {
-            state_version,
-            new_epoch,
-            serialized,
-        }
-    }
     pub fn new_epoch(&self) -> Option<EpochId> {
         self.new_epoch
     }
@@ -132,9 +122,10 @@ impl TransactionStateVersionTrait for TransactionStateVersion {
     }
 }
 
+#[derive(Debug, Clone, Decode, Encode, TypeId, PartialEq)]
 pub struct ProvedTransactions {
-    proof: LedgerProof,
-    transactions: Vec<Transaction>,
+    pub proof: LedgerProof,
+    pub transactions: Vec<Transaction>,
 }
 
 impl ProvedTransactions {
@@ -146,6 +137,7 @@ impl ProvedTransactions {
     }
 }
 
+impl JavaStructure for ProvedTransactions {}
 
 #[cfg(test)]
 mod tests {

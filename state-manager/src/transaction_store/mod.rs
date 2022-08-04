@@ -63,31 +63,53 @@
  */
 
 use crate::jni::dtos::*;
-use crate::types::*;
+use crate::types::{
+    EpochId, LedgerProof, ProvedTransactions, Transaction, TransactionStateVersion,
+    TransactionStateVersionTrait,
+};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Encode, Decode, TypeId)]
 pub enum TransactionStoreStoreError {
     ExhaustedStateVersions,
 }
+impl JavaStructure for TransactionStoreStoreError {}
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Encode, Decode, TypeId)]
+pub enum FirstProvedTransactionsError {
+    FirstProofNotFound,
+    TransactionNotFound(TransactionStateVersion),
+}
+
+#[derive(Debug, PartialEq, Encode, Decode, TypeId)]
 pub enum NextProvedTransactionsError {
     InvalidStateVersion(TransactionStateVersion),
     NextProofNotFound(TransactionStateVersion),
     TransactionNotFound(TransactionStateVersion),
 }
+impl JavaStructure for NextProvedTransactionsError {}
 
+#[derive(Debug, PartialEq, Encode, Decode, TypeId)]
 pub enum EpochProofError {
     EpochProofNotFound(EpochId),
 }
+impl JavaStructure for EpochProofError {}
 
+#[derive(Debug, PartialEq, Encode, Decode, TypeId)]
 pub enum LastProofError {
     ProofNotFound,
 }
+impl JavaStructure for LastProofError {}
 
+#[derive(Debug, PartialEq, Encode, Decode, TypeId)]
 pub enum StoreProofError {
     NoTransactionBeforeProof,
     ProofStateVersionMismatch(TransactionStateVersion, TransactionStateVersion),
+}
+impl JavaStructure for StoreProofError {}
+
+#[derive(Debug, PartialEq, Encode, Decode, TypeId)]
+pub enum VertexStateError {
+    VertexStateNotFound,
 }
 
 pub trait TransactionStore {
@@ -115,11 +137,18 @@ pub trait TransactionStore {
     /// Get last proof stored.
     fn last_proof(&self) -> Result<LedgerProof, LastProofError>;
 
+    /// Get the first proof and associated transactions.
+    fn first_proved_transactions(&self)
+        -> Result<ProvedTransactions, FirstProvedTransactionsError>;
+
     /// Get next proof and associated transactions after the transaction at state version 'state_version'.
     fn next_proved_transactions(
         &self,
         state_version: TransactionStateVersion,
     ) -> Result<ProvedTransactions, NextProvedTransactionsError>;
+
+    /// Get Vertex State
+    fn vertex_state(&self) -> Result<Vec<u8>, VertexStateError>;
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
@@ -128,3 +157,127 @@ pub struct TransactionStoreConfig {
 }
 
 pub mod in_memory;
+
+#[cfg(test)]
+mod tests {
+    use crate::transaction_store::in_memory::InMemoryTransactionStore;
+    use crate::transaction_store::*;
+    use crate::types::*;
+
+    #[test]
+    fn test_in_memory() {
+        let payload1 = vec![1u8; 32];
+        let payload2 = vec![2u8; 32];
+        let payload3 = vec![3u8; 32];
+
+        let t1 = Transaction {
+            payload: payload1.clone(),
+            id: TId {
+                bytes: payload1.clone(),
+            },
+        };
+        let t2 = Transaction {
+            payload: payload2.clone(),
+            id: TId { bytes: payload2 },
+        };
+        let t3 = Transaction {
+            payload: payload3.clone(),
+            id: TId { bytes: payload3 },
+        };
+
+        let config = TransactionStoreConfig {
+            minimum_block_size: 5,
+        };
+        let mut store = InMemoryTransactionStore::new(config);
+
+        // Store first transaction.
+        let ret = store.store_transaction(t1.clone());
+        assert_eq!(ret, Ok(0));
+
+        // Attempt storing a proof with the wrong last transaction state version.
+        let proof = LedgerProof {
+            state_version: 1,
+            new_epoch: None,
+            serialized: payload1.clone(),
+        };
+        let ret = store.store_proof(proof);
+        assert_eq!(ret, Err(StoreProofError::ProofStateVersionMismatch(1, 0)));
+
+        // Store a proof for the first transaction.
+        let proof1 = LedgerProof{
+            state_version: 0,
+            new_epoch: Some(0),
+            serialized: payload1.clone(),
+        };
+        let ret = store.store_proof(proof1.clone());
+        assert_eq!(ret, Ok(()));
+        let ret = store.last_proof();
+        assert_eq!(ret, Ok(proof1.clone()));
+
+        // Store second transaction.
+        let ret = store.store_transaction(t2.clone());
+        assert_eq!(ret, Ok(1));
+
+        // Store a proof for the second transaction. Start new Epoch 1.
+        let proof2 = LedgerProof {
+            state_version: 1,
+            new_epoch: Some(1),
+            serialized: payload1.clone(),
+        };
+        let ret = store.store_proof(proof2.clone());
+        assert_eq!(ret, Ok(()));
+        let ret = store.last_proof();
+        assert_eq!(ret, Ok(proof2.clone()));
+
+        // Store third transaction.
+        let ret = store.store_transaction(t3.clone());
+        assert_eq!(ret, Ok(2));
+
+        // Store a proof for the third transaction.
+        let proof3 = LedgerProof {
+            state_version: 2,
+            new_epoch: Some(2),
+            serialized: payload1.clone(),
+        };
+        let ret = store.store_proof(proof3.clone());
+        assert_eq!(ret, Ok(()));
+        let ret = store.last_proof();
+        assert_eq!(ret, Ok(proof3.clone()));
+
+        // Get proof for epoch id 0.
+        let ret = store.epoch_proof(0);
+        assert_eq!(Ok(proof1.clone()), ret);
+
+        // Get proof for epoch id 1.
+        let ret = store.epoch_proof(1);
+        assert_eq!(Ok(proof2.clone()), ret);
+
+        // Get proof for epoch id 2.
+        let ret = store.epoch_proof(2);
+        assert_eq!(Ok(proof3.clone()), ret);
+
+        // Get first proved transaction.
+        let proved0 = ProvedTransactions::new(proof1, vec![t1.clone()]);
+        let ret = store.first_proved_transactions();
+        assert_eq!(ret, Ok(proved0.clone()));
+
+        // Get second proved transaction.
+        let proved1 = ProvedTransactions::new(proof2, vec![t2.clone()]);
+        let ret = store.next_proved_transactions(proved0.clone().proof.state_version);
+        assert_eq!(ret, Ok(proved1.clone()));
+
+        // Get third proved transaction.
+        let proved2 = ProvedTransactions::new(proof3, vec![t3.clone()]);
+        let ret = store.next_proved_transactions(proved1.clone().proof.state_version);
+        assert_eq!(ret, Ok(proved2));
+
+
+        // Test Vertex State Store
+        let ret = store.vertex_state();
+        assert_eq!(ret, Err(VertexStateError::VertexStateNotFound));
+
+        store.store_vertex_state(payload1.clone());
+        let ret = store.vertex_state();
+        assert_eq!(ret, Ok(payload1.clone()));
+    }
+}

@@ -64,7 +64,7 @@
 
 use crate::jni::dtos::*;
 use crate::mempool::{Mempool, MempoolConfig};
-use crate::transaction_store::TransactionStore;
+use crate::transaction_store::{TransactionStore, TransactionStoreConfig};
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -86,6 +86,7 @@ impl<M: Mempool, TS: TransactionStore> StateManager<M, TS> {
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct StateManagerConfig {
     pub mempool_config: Option<MempoolConfig>,
+    pub transaction_store_config: Option<TransactionStoreConfig>,
 }
 
 impl JavaStructure for StateManagerConfig {}

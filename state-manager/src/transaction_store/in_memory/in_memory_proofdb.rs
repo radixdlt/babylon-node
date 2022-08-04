@@ -4,14 +4,14 @@ use std::collections::BTreeMap;
 
 #[derive(Debug)]
 pub struct InMemoryProofDatabase {
-    minimum_block_size: u64,
+    minimum_block_size: u32,
     last_block_state_version: Option<TransactionStateVersion>,
     proof_map: BTreeMap<TransactionStateVersion, LedgerProof>,
     epoch_proof_map: BTreeMap<EpochId, LedgerProof>,
 }
 
 impl InMemoryProofDatabase {
-    pub fn new(minimum_block_size: u64) -> InMemoryProofDatabase {
+    pub fn new(minimum_block_size: u32) -> InMemoryProofDatabase {
         InMemoryProofDatabase {
             minimum_block_size,
             last_block_state_version: None,
@@ -27,7 +27,7 @@ impl InMemoryProofDatabase {
             // unwrap but asserts makes it more explicit.
             assert!(proof_version > last_block_version);
             let version_diff = proof_version - last_block_version;
-            version_diff > self.minimum_block_size
+            version_diff > (self.minimum_block_size as u64)
         } else {
             // First block.
             true
@@ -63,6 +63,14 @@ impl InMemoryProofDatabase {
 
     pub fn epoch_proof(&self, epoch: EpochId) -> Option<LedgerProof> {
         self.epoch_proof_map.get(&epoch).cloned()
+    }
+
+    pub fn first_proof(&self) -> Option<LedgerProof> {
+        if let Some((_, proof)) = self.proof_map.iter().next() {
+            Some(proof.clone())
+        } else {
+            None
+        }
     }
 
     pub fn next_proof(
@@ -104,19 +112,23 @@ mod tests {
             }
         }
 
-        fn new_proof(&mut self, new_epoch: bool) -> LedgerProof {
-            let payload = vec![1u8; 1];
+        fn new_proof(&mut self, start_epoch: bool) -> LedgerProof {
+            let serialized = vec![1u8; 1];
             let state_version = self.state_version;
             self.state_version = state_version.next().unwrap();
 
-            let epoch = if new_epoch {
+            let new_epoch = if start_epoch {
                 let e = self.epoch_id;
                 self.epoch_id = e + 1;
                 Some(e)
             } else {
                 None
             };
-            LedgerProof::new(state_version, epoch, payload)
+            LedgerProof {
+                state_version,
+                new_epoch,
+                serialized,
+            }
         }
     }
 
