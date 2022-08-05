@@ -62,79 +62,75 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+use crate::jni::dtos::JavaStructure;
+use jni::objects::JClass;
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use sbor::{Decode, Encode, TypeId};
+use scrypto::core::Network;
+use scrypto::prelude::scrypto_encode;
+use std::str;
+use std::str::FromStr;
+use transaction::manifest::{compile, CompileError};
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_manifest_ManifestCompiler_compile(
+    env: JNIEnv,
+    _class: JClass,
+    j_manifest_bytes: jbyteArray,
+    j_network_bytes: jbyteArray,
+) -> jbyteArray {
+    let manifest_bytes: Vec<u8> = env
+        .convert_byte_array(j_manifest_bytes)
+        .expect("Can't convert manifest byte array to vec");
 
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.lang.Option;
-import com.radixdlt.manifest.ManifestCompiler;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.TransactionStatus;
-import com.radixdlt.statecomputer.preview.PreviewFlags;
-import com.radixdlt.statecomputer.preview.PreviewRequest;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
-import java.util.List;
-import org.bouncycastle.util.encoders.Hex;
-import org.junit.Test;
+    let network_bytes: Vec<u8> = env
+        .convert_byte_array(j_network_bytes)
+        .expect("Can't convert network byte array to vec");
 
-public final class PreviewTest {
-  @Test
-  public void test_successful_preview() {
-    // Arrange
-    try (final var stateManager =
-                 StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
-      final var stateComputer = new RustStateComputer(stateManager.getRustState());
-      final var manifest = ManifestCompiler.compile("CLEAR_AUTH_ZONE;", "LocalSimulator").unwrap();
-      final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
-      final var previewRequest =
-              new PreviewRequest(
-                      manifest,
-                      UInt32.fromNonNegativeInt(10000000),
-                      UInt32.fromNonNegativeInt(0),
-                      UInt64.fromNonNegativeLong(0L),
-                      List.of(somePublicKey),
-                      new PreviewFlags(true));
+    let result = do_compile(manifest_bytes, network_bytes);
 
-      // Act
-      final var result = stateComputer.preview(previewRequest);
-      final var costUnitsConsumed = result.unwrap().transactionFee().costUnitsConsumed();
-
-      // Assert
-      assertTrue(result.unwrap().transactionStatus() instanceof TransactionStatus.Succeeded);
-      // Just to make sure we're getting some reasonable values back
-      assertTrue(costUnitsConsumed.gt(UInt32.fromNonNegativeInt(1000)));
-      assertTrue(costUnitsConsumed.lte(UInt32.fromNonNegativeInt(1000000)));
-    }
-  }
-
-  @Test
-  public void test_decode_error_result() {
-    // Arrange
-    try (final var stateManager =
-        StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
-      final var stateComputer = new RustStateComputer(stateManager.getRustState());
-      final var manifest = Hex.decode("00"); // invalid manifest
-      final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
-      final var previewRequest =
-          new PreviewRequest(
-              manifest,
-              UInt32.fromNonNegativeInt(100000000),
-              UInt32.fromNonNegativeInt(0),
-              UInt64.fromNonNegativeLong(0L),
-              List.of(somePublicKey),
-              new PreviewFlags(true));
-
-      // Act
-      final var result = stateComputer.preview(previewRequest);
-
-      // Assert
-      assertTrue(result.isError());
-      assertFalse(result.unwrapError().message().isBlank());
-    }
-  }
+    env.byte_array_from_slice(&result.to_java())
+        .expect("Can't create jbyteArray for compiled manifest")
 }
+
+fn do_compile(
+    manifest_bytes: Vec<u8>,
+    network_bytes: Vec<u8>,
+) -> Result<Vec<u8>, CompileManifestErrorJava> {
+    let manifest_str = str::from_utf8(&manifest_bytes)
+        .map_err(|_e| CompileManifestErrorJava::from("Invalid utf-8 string (manifest)"))?;
+
+    let network_str = str::from_utf8(&network_bytes)
+        .map_err(|_e| CompileManifestErrorJava::from("Invalid utf-8 string (network)"))?;
+
+    let network: Network = Network::from_str(network_str)
+        .map_err(|_e| CompileManifestErrorJava::from("Unknown network"))?;
+
+    compile(manifest_str, &network)
+        .map_err(|e| e.into())
+        .map(|manifest| scrypto_encode(&manifest))
+}
+
+#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+pub struct CompileManifestErrorJava {
+    message: String,
+}
+
+impl From<CompileError> for CompileManifestErrorJava {
+    fn from(err: CompileError) -> Self {
+        CompileManifestErrorJava {
+            message: format!("{:?}", err),
+        }
+    }
+}
+
+impl From<&str> for CompileManifestErrorJava {
+    fn from(message: &str) -> Self {
+        CompileManifestErrorJava {
+            message: message.to_string(),
+        }
+    }
+}
+
+impl JavaStructure for CompileManifestErrorJava {}

@@ -65,10 +65,10 @@
 mod dto;
 
 use crate::jni::dtos::JavaStructure;
+use dto::*;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use dto::*;
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;

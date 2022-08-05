@@ -63,13 +63,13 @@
  */
 
 use crate::jni::dtos::JavaStructure;
-use radix_engine::transaction::{PreviewResult, TransactionStatus};
 use radix_engine::fee::FeeSummary;
+use radix_engine::transaction::{PreviewResult, TransactionStatus};
 use sbor::{Decode, Encode, TypeId};
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::core::Level;
-use scrypto::prelude::ResourceAddress;
 use scrypto::math::Decimal;
+use scrypto::prelude::ResourceAddress;
 
 use crate::result::StateManagerResult;
 use crate::types::PreviewError;

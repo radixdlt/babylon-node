@@ -62,79 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.manifest;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.lang.Option;
-import com.radixdlt.manifest.ManifestCompiler;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.TransactionStatus;
-import com.radixdlt.statecomputer.preview.PreviewFlags;
-import com.radixdlt.statecomputer.preview.PreviewRequest;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
-import java.util.List;
-import org.bouncycastle.util.encoders.Hex;
-import org.junit.Test;
-
-public final class PreviewTest {
-  @Test
-  public void test_successful_preview() {
-    // Arrange
-    try (final var stateManager =
-                 StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
-      final var stateComputer = new RustStateComputer(stateManager.getRustState());
-      final var manifest = ManifestCompiler.compile("CLEAR_AUTH_ZONE;", "LocalSimulator").unwrap();
-      final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
-      final var previewRequest =
-              new PreviewRequest(
-                      manifest,
-                      UInt32.fromNonNegativeInt(10000000),
-                      UInt32.fromNonNegativeInt(0),
-                      UInt64.fromNonNegativeLong(0L),
-                      List.of(somePublicKey),
-                      new PreviewFlags(true));
-
-      // Act
-      final var result = stateComputer.preview(previewRequest);
-      final var costUnitsConsumed = result.unwrap().transactionFee().costUnitsConsumed();
-
-      // Assert
-      assertTrue(result.unwrap().transactionStatus() instanceof TransactionStatus.Succeeded);
-      // Just to make sure we're getting some reasonable values back
-      assertTrue(costUnitsConsumed.gt(UInt32.fromNonNegativeInt(1000)));
-      assertTrue(costUnitsConsumed.lte(UInt32.fromNonNegativeInt(1000000)));
-    }
-  }
-
-  @Test
-  public void test_decode_error_result() {
-    // Arrange
-    try (final var stateManager =
-        StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
-      final var stateComputer = new RustStateComputer(stateManager.getRustState());
-      final var manifest = Hex.decode("00"); // invalid manifest
-      final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
-      final var previewRequest =
-          new PreviewRequest(
-              manifest,
-              UInt32.fromNonNegativeInt(100000000),
-              UInt32.fromNonNegativeInt(0),
-              UInt64.fromNonNegativeLong(0L),
-              List.of(somePublicKey),
-              new PreviewFlags(true));
-
-      // Act
-      final var result = stateComputer.preview(previewRequest);
-
-      // Assert
-      assertTrue(result.isError());
-      assertFalse(result.unwrapError().message().isBlank());
-    }
+public record CompileManifestError(String message) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        CompileManifestError.class,
+        codecs ->
+            StructCodec.with(
+                CompileManifestError::new,
+                codecs.of(String.class),
+                (t, encoder) -> encoder.encode(t.message)));
   }
 }
