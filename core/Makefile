@@ -24,6 +24,14 @@ package: build-core
 publish: package
 	docker push $(CORE_REPO):$(TAG)
 
+.PHONY: build-push-using-remote-cache
+build-push-using-remote-cache: build-core
+
+	$(shell cd ../docker && DOCKER_BUILDKIT=1 docker buildx build \
+          --cache-from=type=registry,ref=europe-west2-docker.pkg.dev/dev-container-repo/eu-cache-repo/build-core-cache \
+          --cache-to=type=registry,ref=europe-west2-docker.pkg.dev/dev-container-repo/eu-cache-repo/build-core-cache,mode=min \
+          --tag europe-west2-docker.pkg.dev/dev-container-repo/eu-cache-repo/build-core-cache/radixdlt-core:test-external-cache -f Dockerfile.core . --push)
+
 .PHONY: run-docker-node
 run-docker-node: package
-	../docker/scripts/rundocker.sh
+	../docker/scripts/rundocker.sh 2
