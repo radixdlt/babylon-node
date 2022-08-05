@@ -69,28 +69,34 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt32;
 
-public record TransactionFeeSummary(
+public record FeeSummary(
+    boolean loanFullyRepaid,
     UInt32 costUnitLimit,
     UInt32 costUnitsConsumed,
     Decimal costUnitPrice,
+    UInt32 tipPercentage,
     Decimal burned,
     Decimal tipped) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        TransactionFeeSummary.class,
+        FeeSummary.class,
         codecs ->
             StructCodec.with(
-                TransactionFeeSummary::new,
+                FeeSummary::new,
+                codecs.of(boolean.class),
                 codecs.of(UInt32.class),
                 codecs.of(UInt32.class),
                 codecs.of(Decimal.class),
+                codecs.of(UInt32.class),
                 codecs.of(Decimal.class),
                 codecs.of(Decimal.class),
                 (t, encoder) ->
                     encoder.encode(
+                        t.loanFullyRepaid,
                         t.costUnitLimit,
                         t.costUnitsConsumed,
                         t.costUnitPrice,
+                        t.tipPercentage,
                         t.burned,
                         t.tipped)));
   }

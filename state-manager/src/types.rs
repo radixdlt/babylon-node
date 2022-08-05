@@ -89,7 +89,7 @@ impl JavaStructure for Transaction {}
 pub struct PreviewRequest {
     pub manifest: Vec<u8>,
     pub cost_unit_limit: u32,
-    pub tip_bps: u32,
+    pub tip_percentage: u32,
     pub nonce: u64,
     pub signer_public_keys: Vec<Vec<u8>>,
     pub flags: PreviewFlags,

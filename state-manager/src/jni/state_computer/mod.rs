@@ -62,79 +62,64 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+mod dto;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+use crate::jni::dtos::JavaStructure;
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use dto::*;
 
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.lang.Option;
-import com.radixdlt.rev2.TransactionStatus;
-import com.radixdlt.statecomputer.preview.PreviewFlags;
-import com.radixdlt.statecomputer.preview.PreviewRequest;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
-import java.util.List;
-import org.bouncycastle.util.encoders.Hex;
-import org.junit.Test;
+use crate::jni::state_manager::JNIStateManager;
+use crate::jni::utils::*;
+use crate::result::{ResultStateManagerMaps, StateManagerResult};
+use crate::types::{PreviewRequest, Transaction};
 
-public final class PreviewTest {
-  @Test
-  public void test_successful_preview() {
-    // Arrange
-    try (final var stateManager =
-                 StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
-      final var stateComputer = new RustStateComputer(stateManager.getRustState());
-      // sbor-encoded manifest, just a single ClearAuthZone instruction
-      final var manifest =
-              Hex.decode("10010000003011010000000d000000436c656172417574685a6f6e6500000000");
-      final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
-      final var previewRequest =
-              new PreviewRequest(
-                      manifest,
-                      UInt32.fromNonNegativeInt(10000000),
-                      UInt32.fromNonNegativeInt(0),
-                      UInt64.fromNonNegativeLong(0L),
-                      List.of(somePublicKey),
-                      new PreviewFlags(true));
+//
+// JNI Interface
+//
 
-      // Act
-      final var result = stateComputer.preview(previewRequest);
-      final var costUnitsConsumed = result.unwrap().transactionFee().costUnitsConsumed();
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_verify(&env, j_state, j_payload).to_java();
+    jni_slice_to_jbytearray(&env, &ret)
+}
 
-      // Assert
-      assertTrue(result.unwrap().transactionStatus() instanceof TransactionStatus.Succeeded);
-      // Just to make sure we're getting some reasonable values back
-      assertTrue(costUnitsConsumed.gt(UInt32.fromNonNegativeInt(1000)));
-      assertTrue(costUnitsConsumed.lte(UInt32.fromNonNegativeInt(1000000)));
-    }
-  }
+fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<bool> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
+    let transaction = Transaction::from_java(&request_payload)?;
+    let result = state_manager.verify(&transaction);
+    Ok(result)
+}
 
-  @Test
-  public void test_decode_error_result() {
-    // Arrange
-    try (final var stateManager =
-        StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
-      final var stateComputer = new RustStateComputer(stateManager.getRustState());
-      final var manifest = Hex.decode("00"); // invalid manifest
-      final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
-      final var previewRequest =
-          new PreviewRequest(
-              manifest,
-              UInt32.fromNonNegativeInt(100000000),
-              UInt32.fromNonNegativeInt(0),
-              UInt64.fromNonNegativeLong(0L),
-              List.of(somePublicKey),
-              new PreviewFlags(true));
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_preview(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_preview(&env, j_state, j_payload).to_java();
+    jni_slice_to_jbytearray(&env, &ret)
+}
 
-      // Act
-      final var result = stateComputer.preview(previewRequest);
-
-      // Assert
-      assertTrue(result.isError());
-      assertFalse(result.unwrapError().message().isBlank());
-    }
-  }
+fn do_preview(
+    env: &JNIEnv,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> StateManagerResult<Result<PreviewResultJava, PreviewErrorJava>> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
+    let preview_request = PreviewRequest::from_java(&request_payload)?;
+    let preview_result: Result<PreviewResultJava, PreviewErrorJava> = state_manager
+        .preview(&preview_request)
+        .map(|result| result.into())
+        .map_err_sm(|err| err.into())?;
+    Ok(preview_result)
 }

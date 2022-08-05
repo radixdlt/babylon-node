@@ -77,7 +77,7 @@ import java.util.List;
 
 public record PreviewResult(
     TransactionStatus transactionStatus,
-    TransactionFeeSummary transactionFee,
+    FeeSummary transactionFee,
     List<Tuple.Tuple2<LogLevel, String>> logs,
     List<PackageAddress> newPackageAddresses,
     List<ComponentAddress> newComponentAddresses,
@@ -89,7 +89,7 @@ public record PreviewResult(
             StructCodec.with(
                 PreviewResult::new,
                 codecs.of(TransactionStatus.class),
-                codecs.of(TransactionFeeSummary.class),
+                codecs.of(FeeSummary.class),
                 codecs.of(new TypeToken<List<Tuple.Tuple2<LogLevel, String>>>() {}),
                 codecs.of(new TypeToken<List<PackageAddress>>() {}),
                 codecs.of(new TypeToken<List<ComponentAddress>>() {}),

@@ -68,8 +68,8 @@ import com.google.inject.Inject;
 import com.radixdlt.api.core.CoreApiCommon;
 import com.radixdlt.api.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.exceptions.CoreApiException;
+import com.radixdlt.api.core.generated.models.FeeSummary;
 import com.radixdlt.api.core.generated.models.PreviewError;
-import com.radixdlt.api.core.generated.models.TransactionFeeSummary;
 import com.radixdlt.api.core.generated.models.TransactionPreviewRequest;
 import com.radixdlt.api.core.generated.models.TransactionPreviewResponse;
 import com.radixdlt.api.core.generated.models.TransactionPreviewResponseLogs;
@@ -109,7 +109,7 @@ public final class TransactionPreviewHandler
         new PreviewRequest(
             Hex.decode(request.getManifest()),
             UInt32.fromNonNegativeInt(request.getCostUnitLimit()),
-            UInt32.fromNonNegativeInt(request.getTipBps()),
+            UInt32.fromNonNegativeInt(request.getTipPercentage()),
             UInt64.fromNonNegativeLong(request.getNonce()),
             request.getSignerPublicKeys().stream().map(Hex::decode).toList(),
             new PreviewFlags(request.getFlags().getUnlimitedLoan()));
@@ -143,10 +143,12 @@ public final class TransactionPreviewHandler
       return new TransactionPreviewResponse()
           .transactionStatus(apiStatus)
           .transactionFee(
-              new TransactionFeeSummary()
+              new FeeSummary()
+                  .loanFullyRepaid(fee.loanFullyRepaid())
                   .costUnitLimit(fee.costUnitLimit().toString())
                   .costUnitConsumed(fee.costUnitsConsumed().toString())
                   .costUnitPrice(fee.costUnitPrice().toString())
+                  .tipPercentage(fee.tipPercentage().toString())
                   .burned(fee.burned().toString())
                   .tipped(fee.tipped().toString()))
           .logs(apiLogs)

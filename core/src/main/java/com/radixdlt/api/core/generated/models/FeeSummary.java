@@ -28,17 +28,22 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * TransactionFeeSummary
+ * FeeSummary
  */
 @JsonPropertyOrder({
-  TransactionFeeSummary.JSON_PROPERTY_COST_UNIT_LIMIT,
-  TransactionFeeSummary.JSON_PROPERTY_COST_UNIT_CONSUMED,
-  TransactionFeeSummary.JSON_PROPERTY_COST_UNIT_PRICE,
-  TransactionFeeSummary.JSON_PROPERTY_BURNED,
-  TransactionFeeSummary.JSON_PROPERTY_TIPPED
+  FeeSummary.JSON_PROPERTY_LOAN_FULLY_REPAID,
+  FeeSummary.JSON_PROPERTY_COST_UNIT_LIMIT,
+  FeeSummary.JSON_PROPERTY_COST_UNIT_CONSUMED,
+  FeeSummary.JSON_PROPERTY_COST_UNIT_PRICE,
+  FeeSummary.JSON_PROPERTY_TIP_PERCENTAGE,
+  FeeSummary.JSON_PROPERTY_BURNED,
+  FeeSummary.JSON_PROPERTY_TIPPED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class TransactionFeeSummary {
+public class FeeSummary {
+  public static final String JSON_PROPERTY_LOAN_FULLY_REPAID = "loan_fully_repaid";
+  private Boolean loanFullyRepaid;
+
   public static final String JSON_PROPERTY_COST_UNIT_LIMIT = "cost_unit_limit";
   private String costUnitLimit;
 
@@ -48,6 +53,9 @@ public class TransactionFeeSummary {
   public static final String JSON_PROPERTY_COST_UNIT_PRICE = "cost_unit_price";
   private String costUnitPrice;
 
+  public static final String JSON_PROPERTY_TIP_PERCENTAGE = "tip_percentage";
+  private String tipPercentage;
+
   public static final String JSON_PROPERTY_BURNED = "burned";
   private String burned;
 
@@ -55,7 +63,33 @@ public class TransactionFeeSummary {
   private String tipped;
 
 
-  public TransactionFeeSummary costUnitLimit(String costUnitLimit) {
+  public FeeSummary loanFullyRepaid(Boolean loanFullyRepaid) {
+    this.loanFullyRepaid = loanFullyRepaid;
+    return this;
+  }
+
+   /**
+   * Get loanFullyRepaid
+   * @return loanFullyRepaid
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_LOAN_FULLY_REPAID)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getLoanFullyRepaid() {
+    return loanFullyRepaid;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_LOAN_FULLY_REPAID)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setLoanFullyRepaid(Boolean loanFullyRepaid) {
+    this.loanFullyRepaid = loanFullyRepaid;
+  }
+
+
+  public FeeSummary costUnitLimit(String costUnitLimit) {
     this.costUnitLimit = costUnitLimit;
     return this;
   }
@@ -81,7 +115,7 @@ public class TransactionFeeSummary {
   }
 
 
-  public TransactionFeeSummary costUnitConsumed(String costUnitConsumed) {
+  public FeeSummary costUnitConsumed(String costUnitConsumed) {
     this.costUnitConsumed = costUnitConsumed;
     return this;
   }
@@ -107,7 +141,7 @@ public class TransactionFeeSummary {
   }
 
 
-  public TransactionFeeSummary costUnitPrice(String costUnitPrice) {
+  public FeeSummary costUnitPrice(String costUnitPrice) {
     this.costUnitPrice = costUnitPrice;
     return this;
   }
@@ -133,7 +167,33 @@ public class TransactionFeeSummary {
   }
 
 
-  public TransactionFeeSummary burned(String burned) {
+  public FeeSummary tipPercentage(String tipPercentage) {
+    this.tipPercentage = tipPercentage;
+    return this;
+  }
+
+   /**
+   * Get tipPercentage
+   * @return tipPercentage
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getTipPercentage() {
+    return tipPercentage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setTipPercentage(String tipPercentage) {
+    this.tipPercentage = tipPercentage;
+  }
+
+
+  public FeeSummary burned(String burned) {
     this.burned = burned;
     return this;
   }
@@ -159,7 +219,7 @@ public class TransactionFeeSummary {
   }
 
 
-  public TransactionFeeSummary tipped(String tipped) {
+  public FeeSummary tipped(String tipped) {
     this.tipped = tipped;
     return this;
   }
@@ -186,7 +246,7 @@ public class TransactionFeeSummary {
 
 
   /**
-   * Return true if this TransactionFeeSummary object is equal to o.
+   * Return true if this FeeSummary object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -196,26 +256,30 @@ public class TransactionFeeSummary {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionFeeSummary transactionFeeSummary = (TransactionFeeSummary) o;
-    return Objects.equals(this.costUnitLimit, transactionFeeSummary.costUnitLimit) &&
-        Objects.equals(this.costUnitConsumed, transactionFeeSummary.costUnitConsumed) &&
-        Objects.equals(this.costUnitPrice, transactionFeeSummary.costUnitPrice) &&
-        Objects.equals(this.burned, transactionFeeSummary.burned) &&
-        Objects.equals(this.tipped, transactionFeeSummary.tipped);
+    FeeSummary feeSummary = (FeeSummary) o;
+    return Objects.equals(this.loanFullyRepaid, feeSummary.loanFullyRepaid) &&
+        Objects.equals(this.costUnitLimit, feeSummary.costUnitLimit) &&
+        Objects.equals(this.costUnitConsumed, feeSummary.costUnitConsumed) &&
+        Objects.equals(this.costUnitPrice, feeSummary.costUnitPrice) &&
+        Objects.equals(this.tipPercentage, feeSummary.tipPercentage) &&
+        Objects.equals(this.burned, feeSummary.burned) &&
+        Objects.equals(this.tipped, feeSummary.tipped);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(costUnitLimit, costUnitConsumed, costUnitPrice, burned, tipped);
+    return Objects.hash(loanFullyRepaid, costUnitLimit, costUnitConsumed, costUnitPrice, tipPercentage, burned, tipped);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionFeeSummary {\n");
+    sb.append("class FeeSummary {\n");
+    sb.append("    loanFullyRepaid: ").append(toIndentedString(loanFullyRepaid)).append("\n");
     sb.append("    costUnitLimit: ").append(toIndentedString(costUnitLimit)).append("\n");
     sb.append("    costUnitConsumed: ").append(toIndentedString(costUnitConsumed)).append("\n");
     sb.append("    costUnitPrice: ").append(toIndentedString(costUnitPrice)).append("\n");
+    sb.append("    tipPercentage: ").append(toIndentedString(tipPercentage)).append("\n");
     sb.append("    burned: ").append(toIndentedString(burned)).append("\n");
     sb.append("    tipped: ").append(toIndentedString(tipped)).append("\n");
     sb.append("}");

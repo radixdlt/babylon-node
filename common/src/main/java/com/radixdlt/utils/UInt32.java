@@ -110,6 +110,14 @@ public class UInt32 implements Comparable<UInt32>, Serializable {
     return new UInt32(i);
   }
 
+  public boolean gt(UInt32 other) {
+    return Integer.compareUnsigned(this.underlyingValue, other.underlyingValue) > 0;
+  }
+
+  public boolean lte(UInt32 other) {
+    return Integer.compareUnsigned(this.underlyingValue, other.underlyingValue) <= 0;
+  }
+
   private UInt32(Integer underlyingValue) {
     this.underlyingValue = Objects.requireNonNull(underlyingValue);
   }

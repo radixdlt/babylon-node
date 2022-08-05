@@ -335,7 +335,7 @@ components:
         - network_identifier
         - manifest
         - cost_unit_limit
-        - tip_bps
+        - tip_percentage
         - nonce
         - signer_public_keys
         - flags
@@ -350,7 +350,7 @@ components:
           description: A limit of cost units available for execution
           type: integer
           format: int32
-        tip_bps:
+        tip_percentage:
           description: A tip for the validator
           type: integer
           format: int32
@@ -384,7 +384,7 @@ components:
           "$ref": "#/components/schemas/TransactionStatus"
           description: The status of the transaction
         transaction_fee:
-          "$ref": "#/components/schemas/TransactionFeeSummary"
+          "$ref": "#/components/schemas/FeeSummary"
           description: Fees to be paid
         logs:
           type: array
@@ -450,20 +450,26 @@ components:
           properties:
             message:
               type: string
-    TransactionFeeSummary:
+    FeeSummary:
       type: object
       required:
+        - loan_fully_repaid
         - cost_unit_limit
         - cost_units_consumed
         - cost_unit_price
+        - tip_percentage
         - burned
         - tipped
       properties:
+        loan_fully_repaid:
+          type: boolean
         cost_unit_limit:
           type: string
         cost_unit_consumed:
           type: string
         cost_unit_price:
+          type: string
+        tip_percentage:
           type: string
         burned:
           type: string

@@ -91,7 +91,7 @@ public class TransactionPreviewHandlerTest extends ApiTest {
                 new NetworkIdentifier().network(Network.LOCALNET.name().toLowerCase()))
             .manifest("10010000003011010000000d000000436c656172417574685a6f6e6500000000")
             .costUnitLimit(10000)
-            .tipBps(0)
+            .tipPercentage(0)
             .nonce(0L)
             .addSignerPublicKeysItem(
                 Hex.toHexString(ECKeyPair.generateNew().getPublicKey().getCompressedBytes()))

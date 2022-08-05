@@ -63,71 +63,19 @@
  */
 
 use crate::jni::dtos::JavaStructure;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use radix_engine::transaction::{PreviewResult, TransactionFeeSummary, TransactionStatus};
+use radix_engine::transaction::{PreviewResult, TransactionStatus};
+use radix_engine::fee::FeeSummary;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::core::Level;
 use scrypto::prelude::ResourceAddress;
+use scrypto::math::Decimal;
 
-use crate::jni::state_manager::JNIStateManager;
-use crate::jni::utils::*;
-use crate::result::{ResultStateManagerMaps, StateManagerResult};
-use crate::types::{PreviewError, PreviewRequest, Transaction};
-
-//
-// JNI Interface
-//
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = do_verify(&env, j_state, j_payload).to_java();
-    jni_slice_to_jbytearray(&env, &ret)
-}
-
-fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<bool> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transaction = Transaction::from_java(&request_payload)?;
-    let result = state_manager.verify(&transaction);
-    Ok(result)
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_preview(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = do_preview(&env, j_state, j_payload).to_java();
-    jni_slice_to_jbytearray(&env, &ret)
-}
-
-fn do_preview(
-    env: &JNIEnv,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> StateManagerResult<Result<PreviewResultJava, PreviewErrorJava>> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let preview_request = PreviewRequest::from_java(&request_payload)?;
-    let preview_result: Result<PreviewResultJava, PreviewErrorJava> = state_manager
-        .preview(&preview_request)
-        .map(|result| result.into())
-        .map_err_sm(|err| err.into())?;
-    Ok(preview_result)
-}
+use crate::result::StateManagerResult;
+use crate::types::PreviewError;
 
 #[derive(Debug, PartialEq, TypeId, Encode, Decode)]
-struct PreviewErrorJava {
+pub struct PreviewErrorJava {
     message: String,
 }
 
@@ -147,16 +95,41 @@ impl From<PreviewError> for StateManagerResult<PreviewErrorJava> {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-enum TransactionStatusJava {
+pub enum TransactionStatusJava {
     Rejected,
     Succeeded(Vec<Vec<u8>>),
     Failed(String),
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-struct PreviewResultJava {
+pub struct FeeSummaryJava {
+    pub loan_fully_repaid: bool,
+    pub cost_unit_limit: u32,
+    pub cost_unit_consumed: u32,
+    pub cost_unit_price: Decimal,
+    pub tip_percentage: u32,
+    pub burned: Decimal,
+    pub tipped: Decimal,
+}
+
+impl From<FeeSummary> for FeeSummaryJava {
+    fn from(fee_summary: FeeSummary) -> Self {
+        FeeSummaryJava {
+            loan_fully_repaid: fee_summary.loan_fully_repaid,
+            cost_unit_limit: fee_summary.cost_unit_limit,
+            cost_unit_consumed: fee_summary.cost_unit_consumed,
+            cost_unit_price: fee_summary.cost_unit_price,
+            tip_percentage: fee_summary.tip_percentage,
+            burned: fee_summary.burned,
+            tipped: fee_summary.tipped,
+        }
+    }
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct PreviewResultJava {
     status: TransactionStatusJava,
-    transaction_fee: TransactionFeeSummary,
+    fee_summary: FeeSummaryJava,
     application_logs: Vec<(Level, String)>,
     new_package_addresses: Vec<PackageAddress>,
     new_component_addresses: Vec<ComponentAddress>,
@@ -170,7 +143,7 @@ impl From<PreviewResult> for PreviewResultJava {
         let receipt = result.receipt;
         PreviewResultJava {
             status: receipt.status.into(),
-            transaction_fee: receipt.transaction_fee,
+            fee_summary: receipt.fee_summary.into(),
             application_logs: receipt.application_logs,
             new_package_addresses: receipt.new_package_addresses,
             new_component_addresses: receipt.new_component_addresses,

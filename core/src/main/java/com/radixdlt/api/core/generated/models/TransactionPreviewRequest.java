@@ -38,7 +38,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   TransactionPreviewRequest.JSON_PROPERTY_NETWORK_IDENTIFIER,
   TransactionPreviewRequest.JSON_PROPERTY_MANIFEST,
   TransactionPreviewRequest.JSON_PROPERTY_COST_UNIT_LIMIT,
-  TransactionPreviewRequest.JSON_PROPERTY_TIP_BPS,
+  TransactionPreviewRequest.JSON_PROPERTY_TIP_PERCENTAGE,
   TransactionPreviewRequest.JSON_PROPERTY_NONCE,
   TransactionPreviewRequest.JSON_PROPERTY_SIGNER_PUBLIC_KEYS,
   TransactionPreviewRequest.JSON_PROPERTY_FLAGS
@@ -54,8 +54,8 @@ public class TransactionPreviewRequest {
   public static final String JSON_PROPERTY_COST_UNIT_LIMIT = "cost_unit_limit";
   private Integer costUnitLimit;
 
-  public static final String JSON_PROPERTY_TIP_BPS = "tip_bps";
-  private Integer tipBps;
+  public static final String JSON_PROPERTY_TIP_PERCENTAGE = "tip_percentage";
+  private Integer tipPercentage;
 
   public static final String JSON_PROPERTY_NONCE = "nonce";
   private Long nonce;
@@ -145,29 +145,29 @@ public class TransactionPreviewRequest {
   }
 
 
-  public TransactionPreviewRequest tipBps(Integer tipBps) {
-    this.tipBps = tipBps;
+  public TransactionPreviewRequest tipPercentage(Integer tipPercentage) {
+    this.tipPercentage = tipPercentage;
     return this;
   }
 
    /**
    * A tip for the validator
-   * @return tipBps
+   * @return tipPercentage
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "A tip for the validator")
-  @JsonProperty(JSON_PROPERTY_TIP_BPS)
+  @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public Integer getTipBps() {
-    return tipBps;
+  public Integer getTipPercentage() {
+    return tipPercentage;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TIP_BPS)
+  @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTipBps(Integer tipBps) {
-    this.tipBps = tipBps;
+  public void setTipPercentage(Integer tipPercentage) {
+    this.tipPercentage = tipPercentage;
   }
 
 
@@ -269,7 +269,7 @@ public class TransactionPreviewRequest {
     return Objects.equals(this.networkIdentifier, transactionPreviewRequest.networkIdentifier) &&
         Objects.equals(this.manifest, transactionPreviewRequest.manifest) &&
         Objects.equals(this.costUnitLimit, transactionPreviewRequest.costUnitLimit) &&
-        Objects.equals(this.tipBps, transactionPreviewRequest.tipBps) &&
+        Objects.equals(this.tipPercentage, transactionPreviewRequest.tipPercentage) &&
         Objects.equals(this.nonce, transactionPreviewRequest.nonce) &&
         Objects.equals(this.signerPublicKeys, transactionPreviewRequest.signerPublicKeys) &&
         Objects.equals(this.flags, transactionPreviewRequest.flags);
@@ -277,7 +277,7 @@ public class TransactionPreviewRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(networkIdentifier, manifest, costUnitLimit, tipBps, nonce, signerPublicKeys, flags);
+    return Objects.hash(networkIdentifier, manifest, costUnitLimit, tipPercentage, nonce, signerPublicKeys, flags);
   }
 
   @Override
@@ -287,7 +287,7 @@ public class TransactionPreviewRequest {
     sb.append("    networkIdentifier: ").append(toIndentedString(networkIdentifier)).append("\n");
     sb.append("    manifest: ").append(toIndentedString(manifest)).append("\n");
     sb.append("    costUnitLimit: ").append(toIndentedString(costUnitLimit)).append("\n");
-    sb.append("    tipBps: ").append(toIndentedString(tipBps)).append("\n");
+    sb.append("    tipPercentage: ").append(toIndentedString(tipPercentage)).append("\n");
     sb.append("    nonce: ").append(toIndentedString(nonce)).append("\n");
     sb.append("    signerPublicKeys: ").append(toIndentedString(signerPublicKeys)).append("\n");
     sb.append("    flags: ").append(toIndentedString(flags)).append("\n");

@@ -76,7 +76,7 @@ import java.util.Objects;
 public record PreviewRequest(
     byte[] manifest,
     UInt32 costUnitLimit,
-    UInt32 tipBps,
+    UInt32 tipPercentage,
     UInt64 nonce,
     List<byte[]> signerPublicKeys,
     PreviewFlags flags) {
@@ -96,7 +96,7 @@ public record PreviewRequest(
                     encoder.encode(
                         t.manifest,
                         t.costUnitLimit,
-                        t.tipBps,
+                        t.tipPercentage,
                         t.nonce,
                         t.signerPublicKeys,
                         t.flags)));
@@ -111,7 +111,7 @@ public record PreviewRequest(
       return Arrays.equals(other.manifest, manifest)
           && Objects.equals(other.nonce, nonce)
           && Objects.equals(other.costUnitLimit, costUnitLimit)
-          && Objects.equals(other.tipBps, tipBps)
+          && Objects.equals(other.tipPercentage, tipPercentage)
           && Objects.equals(other.signerPublicKeys, signerPublicKeys)
           && Objects.equals(other.flags, flags);
     }
@@ -121,6 +121,6 @@ public record PreviewRequest(
   @Override
   public int hashCode() {
     return Objects.hash(
-        Arrays.hashCode(manifest), nonce, costUnitLimit, tipBps, signerPublicKeys, flags);
+        Arrays.hashCode(manifest), nonce, costUnitLimit, tipPercentage, signerPublicKeys, flags);
   }
 }

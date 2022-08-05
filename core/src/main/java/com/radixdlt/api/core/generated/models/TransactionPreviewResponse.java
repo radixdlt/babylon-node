@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.core.generated.models.TransactionFeeSummary;
+import com.radixdlt.api.core.generated.models.FeeSummary;
 import com.radixdlt.api.core.generated.models.TransactionPreviewResponseLogs;
 import com.radixdlt.api.core.generated.models.TransactionStatus;
 import io.swagger.annotations.ApiModel;
@@ -49,7 +49,7 @@ public class TransactionPreviewResponse {
   private TransactionStatus transactionStatus;
 
   public static final String JSON_PROPERTY_TRANSACTION_FEE = "transaction_fee";
-  private TransactionFeeSummary transactionFee;
+  private FeeSummary transactionFee;
 
   public static final String JSON_PROPERTY_LOGS = "logs";
   private List<TransactionPreviewResponseLogs> logs = new ArrayList<>();
@@ -90,7 +90,7 @@ public class TransactionPreviewResponse {
   }
 
 
-  public TransactionPreviewResponse transactionFee(TransactionFeeSummary transactionFee) {
+  public TransactionPreviewResponse transactionFee(FeeSummary transactionFee) {
     this.transactionFee = transactionFee;
     return this;
   }
@@ -104,14 +104,14 @@ public class TransactionPreviewResponse {
   @JsonProperty(JSON_PROPERTY_TRANSACTION_FEE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public TransactionFeeSummary getTransactionFee() {
+  public FeeSummary getTransactionFee() {
     return transactionFee;
   }
 
 
   @JsonProperty(JSON_PROPERTY_TRANSACTION_FEE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTransactionFee(TransactionFeeSummary transactionFee) {
+  public void setTransactionFee(FeeSummary transactionFee) {
     this.transactionFee = transactionFee;
   }
 

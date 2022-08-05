@@ -129,7 +129,7 @@ impl<M: Mempool> StateManager<M> {
                     notary_public_key: notary_private_key.public_key(),
                     notary_as_signatory: false,
                     cost_unit_limit: preview_request.cost_unit_limit,
-                    tip_bps: preview_request.tip_bps,
+                    tip_percentage: preview_request.tip_percentage,
                 },
                 manifest,
             },

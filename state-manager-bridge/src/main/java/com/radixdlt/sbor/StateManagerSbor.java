@@ -81,7 +81,7 @@ import com.radixdlt.statecomputer.preview.PreviewError;
 import com.radixdlt.statecomputer.preview.PreviewFlags;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
 import com.radixdlt.statecomputer.preview.PreviewResult;
-import com.radixdlt.statecomputer.preview.TransactionFeeSummary;
+import com.radixdlt.statecomputer.preview.FeeSummary;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.UInt32;
@@ -111,7 +111,7 @@ public final class StateManagerSbor {
     PackageAddress.registerCodec(codecMap);
     ComponentAddress.registerCodec(codecMap);
     ResourceAddress.registerCodec(codecMap);
-    TransactionFeeSummary.registerCodec(codecMap);
+    FeeSummary.registerCodec(codecMap);
     TID.registerCodec(codecMap);
     StateManagerRuntimeError.registerCodec(codecMap);
     MempoolError.registerCodec(codecMap);
