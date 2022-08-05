@@ -64,101 +64,48 @@
 
 package com.radixdlt.networks;
 
-import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
+import static org.junit.Assert.*;
 
-public enum Network {
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.junit.Test;
 
-  /// Public Facing Permanent Networks (start with 0x0)
-  // - mainnet
-  // - stokenet
-  MAINNET(1 /* 0x01 */, "mainnet", "_rdx", GenesisSource.providedAsync),
-  STOKENET(2 /* 0x02 */, "stokenet", "_tdx2_", GenesisSource.providedAsync),
+public class NetworkTest {
 
-  /// Babylon Testnets (start with 0x1)
-  // - adapanet = Babylon Alphanet, after Adapa
-  // - nebunet = Babylon Betanet, after Nebuchadnezzar
-  ADAPANET(16 /* 0x10 */, "adapanet", "_tdx16_", GenesisSource.fromConfiguration),
-  NEBUNET(17 /* 0x11 */, "nebunet", "_tdx17_", GenesisSource.fromConfiguration),
-
-  /// RDX Development - Semi-permanent Testnets (start with 0x2)
-  // - gilganet = Integration, after Gilgamesh
-  // - enkinet = Misc Network 1, after Enkidu
-  // - hammunet = Misc Network 2, after Hammurabi
-  GILGANET(32 /* 0x20 */, "gilganet", "_tdx32_", GenesisSource.fromConfiguration),
-  ENKINET(33 /* 0x21 */, "enkinet", "_tdx33_", GenesisSource.fromConfiguration),
-  HAMMUNET(34 /* 0x22 */, "hammunet", "_tdx34_", GenesisSource.fromConfiguration),
-
-  /// Ephemeral Networks (start with 0xF)
-  // - localnet = The network used when running locally in development
-  // - inttestnet = The network used when running integration tests
-  LOCALNET(240 /* 0xF0 */, "localnet", "_tdx240_", GenesisSource.fromConfiguration),
-  INTEGRATIONTESTNET(241 /* 0xF1 */, "inttestnet", "_tdx241_", GenesisSource.fromConfiguration);
-
-  // For the Radix Shell to provide a default
-  public static final String DefaultHexGenesisTransaction = "01";
-
-  private final int id;
-  private final String logicalName;
-  private final String accountHrp;
-  private final String validatorHrp;
-  private final String resourceHrp;
-  private final String nodeHrp;
-  private final GenesisSource genesisSource;
-
-  Network(int id, String logicalName, String hrpSuffix, GenesisSource genesisSource) {
-    if (id <= 0 || id > 255) {
-      throw new IllegalArgumentException(
-          "Id should be between 1 and 255 so it isn't default(int) = 0 and will fit into a byte if"
-              + " we change in future");
+  @Test
+  public void test_hrp_suffices_align_with_network_id() {
+    for (var network : Network.values()) {
+      if (network.getId() == 1) {
+        assertEquals("account_rdx", network.getAccountHrp());
+        assertEquals("validator_rdx", network.getValidatorHrp());
+      } else {
+        assertEquals(String.format("account_tdx%d_", network.getId()), network.getAccountHrp());
+        assertEquals(String.format("validator_tdx%d_", network.getId()), network.getValidatorHrp());
+      }
     }
-    this.id = id;
-    this.logicalName = logicalName;
-    this.accountHrp = "account" + hrpSuffix;
-    this.validatorHrp = "validator" + hrpSuffix;
-    this.resourceHrp = "resource" + hrpSuffix;
-    this.nodeHrp = "node" + hrpSuffix;
-    this.genesisSource = genesisSource;
   }
 
-  public String getAccountHrp() {
-    return accountHrp;
+  @Test
+  public void test_no_duplicate_ids() {
+    var uniqueIds =
+        Arrays.stream(Network.values()).map(Network::getId).collect(Collectors.toSet()).size();
+    var numberOfNetworks = Network.values().length;
+    assertEquals(numberOfNetworks, uniqueIds);
   }
 
-  public String getValidatorHrp() {
-    return validatorHrp;
-  }
+  @Test
+  public void test_logical_names_agree() {
+    var logicalNameExceptions = Map.of("INTEGRATIONTESTNET", "inttestnet");
 
-  public String getResourceHrp() {
-    return resourceHrp;
-  }
-
-  public String getNodeHrp() {
-    return nodeHrp;
-  }
-
-  public int getId() {
-    return id;
-  }
-
-  public String getLogicalName() {
-    return logicalName;
-  }
-
-  public GenesisSource genesisSource() {
-    return genesisSource;
-  }
-
-  public static Optional<Network> ofId(int id) {
-    return find(network -> network.id == id);
-  }
-
-  public static Optional<Network> ofName(String logicalName) {
-    return find(network -> network.logicalName.equalsIgnoreCase(logicalName));
-  }
-
-  private static Optional<Network> find(Predicate<Network> predicate) {
-    return Stream.of(values()).filter(predicate).findAny();
+    for (var network : Network.values()) {
+      var networkEnumName = network.name();
+      if (logicalNameExceptions.containsKey(networkEnumName)) {
+        assertEquals(logicalNameExceptions.get(networkEnumName), network.getLogicalName());
+      } else {
+        assertEquals(network.name().toLowerCase(Locale.ROOT), network.getLogicalName());
+      }
+    }
   }
 }
