@@ -62,64 +62,6 @@
  * permissions under this License.
  */
 
-mod dto;
+package com.radixdlt.rev2;
 
-use crate::jni::dtos::JavaStructure;
-use dto::*;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-
-use crate::jni::state_manager::JNIStateManager;
-use crate::jni::utils::*;
-use crate::result::{ResultStateManagerMaps, StateManagerResult};
-use crate::types::{PreviewRequest, Transaction};
-
-//
-// JNI Interface
-//
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = do_verify(&env, j_state, j_payload).to_java();
-    jni_slice_to_jbytearray(&env, &ret)
-}
-
-fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<bool> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transaction = Transaction::from_java(&request_payload)?;
-    let result = state_manager.decode_transaction(&transaction);
-    Ok(result.is_ok())
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_preview(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = do_preview(&env, j_state, j_payload).to_java();
-    jni_slice_to_jbytearray(&env, &ret)
-}
-
-fn do_preview(
-    env: &JNIEnv,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> StateManagerResult<Result<PreviewResultJava, PreviewErrorJava>> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let preview_request = PreviewRequest::from_java(&request_payload)?;
-    let preview_result: Result<PreviewResultJava, PreviewErrorJava> = state_manager
-        .preview(&preview_request)
-        .map(|result| result.into())
-        .map_err_sm(|err| err.into())?;
-    Ok(preview_result)
-}
+public class InvalidREv2Transaction extends Exception {}

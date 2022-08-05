@@ -70,7 +70,6 @@ import static org.junit.Assert.assertTrue;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.lang.Option;
 import com.radixdlt.manifest.ManifestCompiler;
-import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.TransactionStatus;
 import com.radixdlt.statecomputer.preview.PreviewFlags;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
@@ -87,18 +86,18 @@ public final class PreviewTest {
   public void test_successful_preview() {
     // Arrange
     try (final var stateManager =
-                 StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
+        StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
       final var stateComputer = new RustStateComputer(stateManager.getRustState());
       final var manifest = ManifestCompiler.compile("CLEAR_AUTH_ZONE;", "LocalSimulator").unwrap();
       final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
       final var previewRequest =
-              new PreviewRequest(
-                      manifest,
-                      UInt32.fromNonNegativeInt(10000000),
-                      UInt32.fromNonNegativeInt(0),
-                      UInt64.fromNonNegativeLong(0L),
-                      List.of(somePublicKey),
-                      new PreviewFlags(true));
+          new PreviewRequest(
+              manifest,
+              UInt32.fromNonNegativeInt(10000000),
+              UInt32.fromNonNegativeInt(0),
+              UInt64.fromNonNegativeLong(0L),
+              List.of(somePublicKey),
+              new PreviewFlags(true));
 
       // Act
       final var result = stateComputer.preview(previewRequest);

@@ -90,7 +90,9 @@ public class TransactionPreviewHandlerTest extends ApiTest {
         new TransactionPreviewRequest()
             .networkIdentifier(
                 new NetworkIdentifier().network(Network.LOCALNET.name().toLowerCase()))
-            .manifest(Hex.toHexString(ManifestCompiler.compile("CLEAR_AUTH_ZONE;", "LocalSimulator").unwrap()))
+            .manifest(
+                Hex.toHexString(
+                    ManifestCompiler.compile("CLEAR_AUTH_ZONE;", "LocalSimulator").unwrap()))
             .costUnitLimit(10000)
             .tipPercentage(0)
             .nonce(0L)

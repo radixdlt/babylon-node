@@ -62,64 +62,61 @@
  * permissions under this License.
  */
 
-mod dto;
+package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
 
-use crate::jni::dtos::JavaStructure;
-use dto::*;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-use crate::jni::state_manager::JNIStateManager;
-use crate::jni::utils::*;
-use crate::result::{ResultStateManagerMaps, StateManagerResult};
-use crate::types::{PreviewRequest, Transaction};
+import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkOrdering;
+import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.application.REV2TransactionGenerator;
+import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.rev2.REv2ExampleTransactions;
+import com.radixdlt.transaction.TransactionStore;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Test;
 
-//
-// JNI Interface
-//
+public class MempoolTest {
+  private final SimulationTest.Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .pacemakerTimeout(1000)
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  FunctionalRadixNodeModule.LedgerConfig.stateComputer(
+                      StateComputerConfig.rev2(REV2ProposerConfig.mempool()), false)))
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered())
+          .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class);
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = do_verify(&env, j_state, j_payload).to_java();
-    jni_slice_to_jbytearray(&env, &ret)
-}
+  @Test
+  public void sanity_test() {
+    // Arrange
+    var simulationTest = bftTestBuilder.build();
 
-fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<bool> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transaction = Transaction::from_java(&request_payload)?;
-    let result = state_manager.decode_transaction(&transaction);
-    Ok(result.is_ok())
-}
+    // Run
+    var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_preview(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = do_preview(&env, j_state, j_payload).to_java();
-    jni_slice_to_jbytearray(&env, &ret)
-}
-
-fn do_preview(
-    env: &JNIEnv,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> StateManagerResult<Result<PreviewResultJava, PreviewErrorJava>> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let preview_request = PreviewRequest::from_java(&request_payload)?;
-    let preview_result: Result<PreviewResultJava, PreviewErrorJava> = state_manager
-        .preview(&preview_request)
-        .map(|result| result.into())
-        .map_err_sm(|err| err.into())?;
-    Ok(preview_result)
+    // Post-run assertions
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    for (var node : runningTest.getNetwork().getNodes()) {
+      var store = runningTest.getNetwork().getInstance(TransactionStore.class, node);
+      var txn = store.getTransactionAtStateVersion(1);
+      assertThat(txn).isEqualTo(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+    }
+  }
 }

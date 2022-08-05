@@ -100,7 +100,6 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
 
     // Only get the lock for transaction store
     let transaction_store = state_manager.transaction_store.lock().unwrap();
-
     let transaction_data = transaction_store.get_transaction(j_state_version as u64);
 
     env.byte_array_from_slice(transaction_data)

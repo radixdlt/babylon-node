@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager.mempool;
+package com.radixdlt.rev2;
 
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.MempoolDuplicateException;
@@ -86,13 +86,9 @@ public final class RustMempoolTest {
     final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager.getRustState());
-      var transaction1 = Transaction.create(new byte[] {1});
-      var transaction2 = Transaction.create(new byte[] {1, 2});
-      var transaction3 =
-          Transaction.create(
-              new byte[] {
-                1, 2, 3,
-              });
+      var transaction1 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+      var transaction2 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_1);
+      var transaction3 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_2);
 
       Assert.assertEquals(0, rustMempool.getCount());
 
@@ -144,13 +140,9 @@ public final class RustMempoolTest {
     final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager.getRustState());
-      var transaction1 = Transaction.create(new byte[] {1});
-      var transaction2 = Transaction.create(new byte[] {1, 2});
-      var transaction3 =
-          Transaction.create(
-              new byte[] {
-                1, 2, 3,
-              });
+      var transaction1 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+      var transaction2 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_1);
+      var transaction3 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_2);
 
       // Add Transactions
       rustMempool.addTransaction(transaction1);
@@ -240,13 +232,9 @@ public final class RustMempoolTest {
     final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager.getRustState());
-      var transaction1 = Transaction.create(new byte[] {1});
-      var transaction2 = Transaction.create(new byte[] {1, 2});
-      var transaction3 =
-          Transaction.create(
-              new byte[] {
-                1, 2, 3,
-              });
+      var transaction1 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+      var transaction2 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_1);
+      var transaction3 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_2);
 
       // Add Transactions
       var returnedTransaction = rustMempool.addTransaction(transaction1);
@@ -268,13 +256,9 @@ public final class RustMempoolTest {
     final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager.getRustState());
-      var transaction1 = Transaction.create(new byte[] {1});
-      var transaction2 = Transaction.create(new byte[] {1, 2});
-      var transaction3 =
-          Transaction.create(
-              new byte[] {
-                1, 2, 3,
-              });
+      var transaction1 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+      var transaction2 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_1);
+      var transaction3 = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_2);
 
       rustMempool.addTransaction(transaction1);
       rustMempool.addTransaction(transaction2);

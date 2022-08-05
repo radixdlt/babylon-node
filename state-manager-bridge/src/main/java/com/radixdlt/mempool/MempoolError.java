@@ -81,10 +81,17 @@ public sealed interface MempoolError {
                     codecs.of(long.class),
                     codecs.of(long.class),
                     (t, encoder) -> encoder.encode(t.currentSize, t.maxSize)),
-                EnumEntry.noFields(Duplicate.class, Duplicate::new)));
+                EnumEntry.noFields(Duplicate.class, Duplicate::new),
+                EnumEntry.with(
+                    DecodeError.class,
+                    DecodeError::new,
+                    codecs.of(String.class),
+                    (t, encoder) -> encoder.encode(t.errorDescription))));
   }
 
   record Full(long currentSize, long maxSize) implements MempoolError {}
 
   record Duplicate() implements MempoolError {}
+
+  record DecodeError(String errorDescription) implements MempoolError {}
 }
