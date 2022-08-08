@@ -203,6 +203,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "forward_ref"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8cbd1169bd7b4a0a20d92b9af7a7e0422888bd38a6f5ec29c1fd8c1558a272e"
+
+[[package]]
 name = "generic-array"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -376,6 +382,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "648001efe5d5c0102d8cea768e348da85d90af8ba91f0bea908f157951493cd4"
 
 [[package]]
+name = "paste"
+version = "1.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9423e2b32f7a043629287a536f21951e8c6a82482d0acb1eeebfc90bc2225b22"
+
+[[package]]
 name = "ppv-lite86"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -482,7 +494,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?branch=architecture/recursive-track#ffa4c279838d1aafc2a29ee0e8da44c3f8044c22"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e4c44274#e4c442742e9e20471e5e63b95f287a66f368f7dd"
 dependencies = [
  "hex",
  "sbor-derive",
@@ -492,7 +504,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?branch=architecture/recursive-track#ffa4c279838d1aafc2a29ee0e8da44c3f8044c22"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e4c44274#e4c442742e9e20471e5e63b95f287a66f368f7dd"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -503,13 +515,15 @@ dependencies = [
 [[package]]
 name = "scrypto"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?branch=architecture/recursive-track#ffa4c279838d1aafc2a29ee0e8da44c3f8044c22"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e4c44274#e4c442742e9e20471e5e63b95f287a66f368f7dd"
 dependencies = [
  "bech32",
+ "forward_ref",
  "hex",
  "num-bigint",
  "num-traits",
  "once_cell",
+ "paste",
  "sbor",
  "scrypto-abi",
  "scrypto-derive",
@@ -520,7 +534,7 @@ dependencies = [
 [[package]]
 name = "scrypto-abi"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?branch=architecture/recursive-track#ffa4c279838d1aafc2a29ee0e8da44c3f8044c22"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e4c44274#e4c442742e9e20471e5e63b95f287a66f368f7dd"
 dependencies = [
  "sbor",
  "serde",
@@ -529,7 +543,7 @@ dependencies = [
 [[package]]
 name = "scrypto-derive"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?branch=architecture/recursive-track#ffa4c279838d1aafc2a29ee0e8da44c3f8044c22"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e4c44274#e4c442742e9e20471e5e63b95f287a66f368f7dd"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -713,7 +727,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?branch=architecture/recursive-track#ffa4c279838d1aafc2a29ee0e8da44c3f8044c22"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-e4c44274#e4c442742e9e20471e5e63b95f287a66f368f7dd"
 dependencies = [
  "clap",
  "ed25519-dalek",
