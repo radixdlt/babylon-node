@@ -126,7 +126,7 @@ public final class CodecMap {
   private final TypeId sborTypeIdForArrayType;
 
   public CodecMap() {
-    this(true, TypeId.TYPE_VEC);
+    this(true, TypeId.TYPE_LIST);
   }
 
   public CodecMap(boolean includeCoreCodecs, TypeId sborTypeIdForArrayType) {
@@ -180,15 +180,15 @@ public final class CodecMap {
     ResultCodec.registerWith(this);
     TupleCodec.registerAllWith(this);
 
-    CollectionCodec.registerListToMapTo(this, TypeId.TYPE_VEC);
-    CollectionCodec.registerArrayListToMapTo(this, TypeId.TYPE_VEC);
-    CollectionCodec.registerSetToMapTo(this, TypeId.TYPE_HASH_SET);
-    CollectionCodec.registerHashSetToMapTo(this, TypeId.TYPE_HASH_SET);
-    CollectionCodec.registerTreeSetToMapTo(this, TypeId.TYPE_TREE_SET);
+    CollectionCodec.registerListToMapTo(this, TypeId.TYPE_LIST);
+    CollectionCodec.registerArrayListToMapTo(this, TypeId.TYPE_LIST);
+    CollectionCodec.registerSetToMapTo(this, TypeId.TYPE_SET);
+    CollectionCodec.registerHashSetToMapTo(this, TypeId.TYPE_SET);
+    CollectionCodec.registerTreeSetToMapTo(this, TypeId.TYPE_SET);
 
-    MapCodec.registerMapToMapTo(this, TypeId.TYPE_HASH_MAP);
-    MapCodec.registerHashMapToMapTo(this, TypeId.TYPE_HASH_MAP);
-    MapCodec.registerTreeMapToMapTo(this, TypeId.TYPE_TREE_MAP);
+    MapCodec.registerMapToMapTo(this, TypeId.TYPE_MAP);
+    MapCodec.registerHashMapToMapTo(this, TypeId.TYPE_MAP);
+    MapCodec.registerTreeMapToMapTo(this, TypeId.TYPE_MAP);
 
     return this;
   }

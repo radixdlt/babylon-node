@@ -91,19 +91,17 @@ public enum TypeId {
   // Enum and struct
   TYPE_STRUCT(0x10),
   TYPE_ENUM(0x11),
+  TYPE_OPTION(0x12),
+  TYPE_RESULT(0x13),
 
   // Composite types
-  TYPE_OPTION(0x20),
-  TYPE_ARRAY(0x22),
-  TYPE_TUPLE(0x23),
-  TYPE_RESULT(0x24),
+  TYPE_ARRAY(0x20),
+  TYPE_TUPLE(0x21),
 
   // Collections + Maps
-  TYPE_VEC(0x30),
-  TYPE_TREE_SET(0x31),
-  TYPE_TREE_MAP(0x32),
-  TYPE_HASH_SET(0x33),
-  TYPE_HASH_MAP(0x34),
+  TYPE_LIST(0x30),
+  TYPE_SET(0x31),
+  TYPE_MAP(0x32),
 
   // Custom Start
   // custom types start from 0x80 and values are encoded as `len + data`
@@ -123,8 +121,8 @@ public enum TypeId {
   }
 
   public static final Set<TypeId> collectionTypes =
-      ImmutableSet.of(TYPE_VEC, TYPE_ARRAY, TYPE_TREE_SET, TYPE_HASH_SET);
-  public static final Set<TypeId> mapTypes = ImmutableSet.of(TYPE_TREE_MAP, TYPE_HASH_MAP);
+      ImmutableSet.of(TYPE_LIST, TYPE_ARRAY, TYPE_SET);
+  public static final Set<TypeId> mapTypes = ImmutableSet.of(TYPE_MAP);
 
   public boolean isCollectionType() {
     return collectionTypes.contains(this);
