@@ -77,18 +77,14 @@ import com.radixdlt.api.core.generated.models.NetworkConfigurationResponseVersio
 import com.radixdlt.api.core.generated.models.NetworkIdentifier;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public final class NetworkConfigurationHandler
     extends CoreJsonRpcHandler<Void, NetworkConfigurationResponse> {
   private final Network network;
-  private static final Logger log = LogManager.getLogger();
 
   @Inject
   NetworkConfigurationHandler(@NetworkId int networkId) {
     super(Void.class);
-    log.info("Creating network configuration handler with network id = {}", networkId);
     this.network = Network.ofId(networkId).orElseThrow();
   }
 
