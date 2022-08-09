@@ -67,11 +67,19 @@ package com.radixdlt.shell;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
+import com.radixdlt.modules.init.ConsensusBootstrapProviderProd;
 import com.radixdlt.modules.init.LedgerProofProvider;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 
-public class MockedLedgerProofProviderModule extends AbstractModule {
+public class TestLedgerProofProviderModule extends AbstractModule {
+
+  @Override
+  protected void configure() {
+    super.configure();
+    bind(ConsensusBootstrapProvider.class).to(ConsensusBootstrapProviderProd.class);
+  }
 
   @Provides
   public LedgerProofProvider get(

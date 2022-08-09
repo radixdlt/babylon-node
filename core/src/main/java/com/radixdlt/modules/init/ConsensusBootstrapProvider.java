@@ -64,124 +64,30 @@
 
 package com.radixdlt.modules.init;
 
-import com.google.inject.Inject;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.VertexStore;
-import com.radixdlt.consensus.sync.VertexStoreJavaImpl;
-import com.radixdlt.crypto.Hasher;
-import java.util.Optional;
 
-public class ConsensusBootstrapProvider {
+public interface ConsensusBootstrapProvider {
 
-  private Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState;
-  private Hasher hasher;
-  private LedgerProofProvider ledgerProofProvider;
-  private PersistentSafetyStateStore safetyStore;
-  private Ledger ledger;
+  ProposerElection proposerElection();
 
-  @Inject
-  public ConsensusBootstrapProvider(
-      Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState,
-      Hasher hasher,
-      LedgerProofProvider ledgerProofProvider,
-      PersistentSafetyStateStore safetyStore,
-      Ledger ledger) {
-    this.serializedVertexStoreState = serializedVertexStoreState;
-    this.hasher = hasher;
-    this.ledgerProofProvider = ledgerProofProvider;
-    this.safetyStore = safetyStore;
-    this.ledger = ledger;
-  }
+  EpochChange currentKnownEpoch();
 
-  public ProposerElection proposerElection() {
-    return currentKnownBftConfiguration().getProposerElection();
-  }
+  RoundUpdate currentKnownRoundUpdate();
 
-  public EpochChange currentKnownEpoch() {
-    return new EpochChange(
-        this.ledgerProofProvider.getLastEpochProof(), this.currentKnownBftConfiguration());
-  }
+  BFTConfiguration currentKnownBftConfiguration();
 
-  public RoundUpdate currentKnownRoundUpdate() {
-    var highQC = getVertexStoreState().getHighQC();
-    var round = highQC.highestQC().getRound().next();
-    var proposerElection = currentKnownBftConfiguration().getProposerElection();
-    var leader = proposerElection.getProposer(round);
-    var nextLeader = proposerElection.getProposer(round.next());
+  BFTValidatorSet currentKnownValidatorSet();
 
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
-  }
+  VertexStore vertexStore();
 
-  public BFTConfiguration currentKnownBftConfiguration() {
-    var validatorSet = currentKnownValidatorSet();
-    var proposerElection = new WeightedRotatingLeaders(currentKnownValidatorSet());
-    return new BFTConfiguration(proposerElection, validatorSet, getVertexStoreState());
-  }
+  VertexStoreState getVertexStoreState();
 
-  public BFTValidatorSet currentKnownValidatorSet() {
-    return this.ledgerProofProvider
-        .getLastEpochProof()
-        .getNextValidatorSet()
-        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
-  }
-
-  public VertexStore vertexStore() {
-    return VertexStoreJavaImpl.create(getVertexStoreState(), this.ledger, this.hasher);
-  }
-
-  public VertexStoreState getVertexStoreState() {
-    var currentEpoch = this.ledgerProofProvider.getLastEpochProof().getNextEpoch();
-    return serializedVertexStoreState
-        .filter(vertexStoreState -> vertexStoreState.isForEpoch(currentEpoch))
-        .map(state -> state.toVertexStoreState(hasher))
-        .orElseGet(
-            () ->
-                genesisEpochProofToGenesisVertexStore(
-                    this.ledgerProofProvider.getLastEpochProof(), this.hasher));
-  }
-
-  private static VertexStoreState genesisEpochProofToGenesisVertexStore(
-      LedgerProof lastEpochProof, Hasher hasher) {
-    var genesisVertex = Vertex.createGenesis(lastEpochProof.getHeader()).withId(hasher);
-    var nextLedgerHeader =
-        LedgerHeader.create(
-            lastEpochProof.getNextEpoch(),
-            Round.genesis(),
-            lastEpochProof.getAccumulatorState(),
-            lastEpochProof.timestamp());
-    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
-    return VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
-  }
-
-  public SafetyState initialSafetyState() {
-    return safetyStore
-        .get()
-        .flatMap(
-            safetyState -> {
-              var initialEpoch = this.currentKnownEpoch();
-              final long safetyStateEpoch =
-                  safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
-
-              if (safetyStateEpoch > initialEpoch.getNextEpoch()) {
-                throw new IllegalStateException(
-                    String.format(
-                        "Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
-                        safetyStateEpoch, initialEpoch.getNextEpoch()));
-              } else if (safetyStateEpoch == initialEpoch.getNextEpoch()) {
-                return Optional.of(safetyState);
-              } else {
-                return Optional.empty();
-              }
-            })
-        .orElse(new SafetyState());
-  }
+  SafetyState initialSafetyState();
 }

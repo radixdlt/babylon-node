@@ -67,36 +67,20 @@ package com.radixdlt.modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
+import com.radixdlt.modules.init.ConsensusBootstrapProviderProd;
 import com.radixdlt.modules.init.LedgerProofProvider;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 
+// Changes to this file most likely need to be reflected to a file with same name in cli-tools
 public class TestLedgerProofProviderModule extends AbstractModule {
 
-  //  @Provides
-  //  public ConsensusBootstrapProvider get(Optional<VertexStoreState.SerializedVertexStoreState>
-  // serializedVertexStoreState, Hasher hasher, LedgerProofProvider ledgerProofProvider,
-  // PersistentSafetyStateStore safetyStore, Ledger ledger, BFTValidatorSet bftValidatorSet) {
-  //    return new C(serializedVertexStoreState, hasher, ledgerProofProvider, safetyStore, ledger,
-  // bftValidatorSet);
-  //  }
-  //
-  //  public class C extends ConsensusBootstrapProvider {
-  //
-  //    private BFTValidatorSet bftValidatorSet;
-  //
-  //    public C(Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState,
-  // Hasher hasher, LedgerProofProvider ledgerProofProvider, PersistentSafetyStateStore safetyStore,
-  // Ledger ledger, BFTValidatorSet bftValidatorSet) {
-  //      super(serializedVertexStoreState, hasher, ledgerProofProvider, safetyStore, ledger);
-  //      this.bftValidatorSet = bftValidatorSet;
-  //    }
-  //
-  //    @Override
-  //    public BFTValidatorSet currentKnownValidatorSet() {
-  //      return this.bftValidatorSet;
-  //    }
-  //  }
+  @Override
+  protected void configure() {
+    super.configure();
+    bind(ConsensusBootstrapProvider.class).to(ConsensusBootstrapProviderProd.class);
+  }
 
   @Provides
   public LedgerProofProvider get(

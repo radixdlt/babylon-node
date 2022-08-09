@@ -73,7 +73,6 @@ import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -83,6 +82,8 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.modules.TestLedgerProofProviderModule;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -102,7 +103,7 @@ public class PacemakerTest {
 
   @Inject private DeterministicProcessor processor;
 
-  @Inject private RoundUpdate initialRoundUpdate;
+  @Inject private ConsensusBootstrapProvider consensusBootstrapProvider;
 
   @Inject private DeterministicNetwork network;
 
@@ -126,7 +127,8 @@ public class PacemakerTest {
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath());
           }
-        });
+        },
+        new TestLedgerProofProviderModule());
   }
 
   @Test
@@ -224,6 +226,6 @@ public class PacemakerTest {
             .findAny()
             .orElseThrow();
     assertThat(nextEpochRoundUpdate.getRoundUpdate().getCurrentRound())
-        .isEqualTo(initialRoundUpdate.getCurrentRound().next());
+        .isEqualTo(consensusBootstrapProvider.currentKnownRoundUpdate().getCurrentRound().next());
   }
 }

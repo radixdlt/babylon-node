@@ -72,6 +72,7 @@ import static org.mockito.Mockito.doReturn;
 import com.google.inject.Guice;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
+import com.radixdlt.modules.TestLedgerProofProviderModule;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.serialization.TestSetupUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -95,7 +96,8 @@ public class RadixNodeModuleTest {
     final var properties = createDefaultProperties();
     when(properties.get("network.id")).thenReturn("99");
     when(properties.get("network.genesis_txn")).thenReturn("00");
-    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
+    Guice.createInjector(new RadixNodeModule(properties), new TestLedgerProofProviderModule())
+        .injectMembers(this);
   }
 
   @Test
@@ -124,7 +126,8 @@ public class RadixNodeModuleTest {
     when(properties.get("network.genesis_txn")).thenReturn("00");
     when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("true");
 
-    Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
+    Guice.createInjector(new RadixNodeModule(properties), new TestLedgerProofProviderModule())
+        .injectMembers(this);
   }
 
   private RuntimeProperties createDefaultProperties() {

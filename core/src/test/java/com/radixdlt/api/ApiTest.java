@@ -84,6 +84,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.modules.TestLedgerProofProviderModule;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
@@ -167,7 +168,8 @@ public abstract class ApiTest {
                     .thenReturn(true);
                 bind(RuntimeProperties.class).toInstance(runtimeProperties);
               }
-            });
+            },
+            new TestLedgerProofProviderModule());
     injector.injectMembers(this);
   }
 

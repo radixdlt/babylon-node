@@ -83,10 +83,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -103,6 +100,9 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
+import com.radixdlt.modules.init.ConsensusBootstrapProviderProd;
+import com.radixdlt.modules.init.LedgerProofProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.LastProof;
@@ -124,12 +124,26 @@ public class ConsensusModuleTest {
 
   @Inject private VertexStoreAdapter vertexStore;
 
-  private Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
+  private static Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 
-  private ECKeyPair validatorKeyPair;
+  private static AccumulatorState accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+  private static VertexWithHash genesisVertex =
+      Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, null, 0))
+          .withId(ZeroHasher.INSTANCE);
+  private static QuorumCertificate qc =
+      QuorumCertificate.ofGenesis(genesisVertex, LedgerHeader.genesis(accumulatorState, null, 0));
 
-  private BFTNode validatorBftNode;
-  private BFTConfiguration bftConfiguration;
+  private static VertexStoreState vertexStoreState =
+      VertexStoreState.create(HighQC.from(qc), genesisVertex, Optional.empty(), hasher);
+
+  private static ECKeyPair validatorKeyPair = ECKeyPair.generateNew();
+
+  private static BFTNode validatorBftNode = BFTNode.create(validatorKeyPair.getPublicKey());
+
+  private static BFTValidatorSet validatorSet =
+      BFTValidatorSet.from(Stream.of(BFTValidator.from(validatorBftNode, UInt256.ONE)));
+
+  private static BFTConfiguration bftConfiguration;
 
   private ECKeyPair ecKeyPair;
   private RemoteEventDispatcher<GetVerticesRequest> requestSender;
@@ -138,20 +152,9 @@ public class ConsensusModuleTest {
 
   @Before
   public void setup() {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    var genesisVertex =
-        Vertex.createGenesis(LedgerHeader.genesis(accumulatorState, null, 0))
-            .withId(ZeroHasher.INSTANCE);
-    var qc =
-        QuorumCertificate.ofGenesis(genesisVertex, LedgerHeader.genesis(accumulatorState, null, 0));
-    this.validatorKeyPair = ECKeyPair.generateNew();
-    this.validatorBftNode = BFTNode.create(this.validatorKeyPair.getPublicKey());
-    var validatorSet =
-        BFTValidatorSet.from(Stream.of(BFTValidator.from(this.validatorBftNode, UInt256.ONE)));
-    var vertexStoreState =
-        VertexStoreState.create(HighQC.from(qc), genesisVertex, Optional.empty(), hasher);
+
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
-    this.bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
+    bftConfiguration = new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
     this.ecKeyPair = ECKeyPair.generateNew();
     this.requestSender = rmock(RemoteEventDispatcher.class);
     this.responseSender = rmock(RemoteEventDispatcher.class);
@@ -224,6 +227,12 @@ public class ConsensusModuleTest {
 
         ECKeyPair ecKeyPair = ECKeyPair.generateNew();
         bind(HashSigner.class).toInstance(ecKeyPair::sign);
+
+        bind(new TypeLiteral<Optional<VertexStoreState.SerializedVertexStoreState>>() {})
+            .toInstance(Optional.empty());
+        bind(LedgerProofProvider.class).toInstance(mock(LedgerProofProvider.class));
+
+        bind(ConsensusBootstrapProvider.class).to(ConsensusBootstrapProviderStub.class);
       }
 
       @Provides
@@ -365,6 +374,34 @@ public class ConsensusModuleTest {
     } catch (InterruptedException e) {
       // Ignore
       Thread.currentThread().interrupt();
+    }
+  }
+
+  private static class ConsensusBootstrapProviderStub extends ConsensusBootstrapProviderProd {
+
+    @Inject
+    public ConsensusBootstrapProviderStub(
+        Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState,
+        LedgerProofProvider ledgerProofProvider,
+        Hasher hasher,
+        PersistentSafetyStateStore safetyStore,
+        Ledger ledger) {
+      super(serializedVertexStoreState, hasher, ledgerProofProvider, safetyStore, ledger);
+    }
+
+    @Override
+    public VertexStoreState getVertexStoreState() {
+      return vertexStoreState;
+    }
+
+    @Override
+    public BFTConfiguration currentKnownBftConfiguration() {
+      return bftConfiguration;
+    }
+
+    @Override
+    public BFTValidatorSet currentKnownValidatorSet() {
+      return validatorSet;
     }
   }
 }

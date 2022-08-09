@@ -88,11 +88,8 @@ import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.modules.DispatcherModule;
-import com.radixdlt.modules.EventLoggerModule;
-import com.radixdlt.modules.MockedCryptoModule;
-import com.radixdlt.modules.MockedKeyModule;
-import com.radixdlt.modules.ModuleRunner;
+import com.radixdlt.modules.*;
+import com.radixdlt.modules.init.LedgerProofProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
@@ -142,6 +139,7 @@ public final class MempoolRunnerTest {
         install(new DispatcherModule());
         install(new MempoolReceiverModule());
         install(new EventLoggerModule());
+        bind(LedgerProofProvider.class).toInstance(mock(LedgerProofProvider.class));
       }
     };
   }

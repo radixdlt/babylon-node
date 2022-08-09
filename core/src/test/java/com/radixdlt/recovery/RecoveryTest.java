@@ -86,6 +86,7 @@ import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -99,6 +100,7 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
+import com.radixdlt.modules.TestLedgerProofProviderModule;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
@@ -215,7 +217,8 @@ public class RecoveryTest {
         },
         new PersistedNodeForTestingModule(),
         new TestP2PModule.Builder().build(),
-        new TestMessagingModule.Builder().build());
+        new TestMessagingModule.Builder().build(),
+        new TestLedgerProofProviderModule());
   }
 
   private RadixEngine<LedgerAndBFTProof> getRadixEngine() {
@@ -306,7 +309,7 @@ public class RecoveryTest {
     restartNode();
 
     // Assert
-    SafetyState safetyState = currentInjector.getInstance(SafetyState.class);
+    SafetyState safetyState = currentInjector.getInstance(SafetyRules.class).getSafetyState();
     assertThat(
             safetyState.getLastVotedRound().equals(vote.getRound())
                 || (safetyState.getLastVotedRound().equals(Round.genesis())

@@ -208,7 +208,9 @@ public final class RadixShell {
             Network.MAINNET.genesisTxn().get()); // Default to mainnet genesis
       }
 
-      final var injector = Guice.createInjector(new RadixNodeModule(properties), new MockedLedgerProofProviderModule());
+      final var injector =
+          Guice.createInjector(
+              new RadixNodeModule(properties), new TestLedgerProofProviderModule());
       final var node = new Node(injector);
 
       moduleRunnersBuilder.build().forEach(node::startRunner);

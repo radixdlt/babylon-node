@@ -68,8 +68,7 @@ import static com.radixdlt.substate.TxAction.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
@@ -79,14 +78,12 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
@@ -109,6 +106,9 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
+import com.radixdlt.modules.init.ConsensusBootstrapProvider;
+import com.radixdlt.modules.init.ConsensusBootstrapProviderProd;
+import com.radixdlt.modules.init.LedgerProofProvider;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.rev1.checkpoint.Genesis;
@@ -131,6 +131,7 @@ import com.radixdlt.transactions.Transaction;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
@@ -151,16 +152,23 @@ public class RadixEngineStateComputerTest {
 
   @Inject private CurrentForkView currentForkView;
 
-  @Inject private ProposerElection proposerElection;
-
   @Inject private EventDispatcher<MempoolAddSuccess> mempoolAddSuccessEventDispatcher;
 
   private Serialization serialization = DefaultSerialization.getInstance();
   private InMemoryEngineStore<LedgerAndBFTProof> engineStore;
-  private ImmutableList<ECKeyPair> registeredNodes =
+  private static ImmutableList<ECKeyPair> registeredNodes =
       ImmutableList.of(ECKeyPair.generateNew(), ECKeyPair.generateNew());
   private ECKeyPair unregisteredNode = ECKeyPair.generateNew();
   private final long epochMaxRound = 10;
+
+  private static BFTValidatorSet validatorSet =
+      BFTValidatorSet.from(
+          registeredNodes.stream()
+              .map(ECKeyPair::getPublicKey)
+              .map(BFTNode::create)
+              .map(n -> BFTValidator.from(n, UInt256.ONE)));
+
+  private static ProposerElection proposerElection = new WeightedRotatingLeaders(validatorSet);
 
   private static final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
 
@@ -175,7 +183,6 @@ public class RadixEngineStateComputerTest {
                     .map(BFTNode::create)
                     .map(n -> BFTValidator.from(n, UInt256.ONE)));
 
-        bind(ProposerElection.class).toInstance(new WeightedRotatingLeaders(validatorSet));
         bind(Serialization.class).toInstance(serialization);
         bind(Hasher.class).toInstance(new Sha256Hasher(DefaultSerialization.getInstance()));
         bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(engineStore);
@@ -204,6 +211,14 @@ public class RadixEngineStateComputerTest {
             .toInstance(TypedMocks.rmock(EventDispatcher.class));
 
         bind(SystemCounters.class).to(SystemCountersImpl.class);
+
+        bind(Ledger.class).toInstance(mock(Ledger.class));
+        bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
+        bind(new TypeLiteral<Optional<VertexStoreState.SerializedVertexStoreState>>() {})
+            .toInstance(Optional.empty());
+        bind(LedgerProofProvider.class).toInstance(mock(LedgerProofProvider.class));
+
+        bind(ConsensusBootstrapProvider.class).to(ConsensusBootstrapProviderStub.class);
       }
     };
   }
@@ -494,5 +509,22 @@ public class RadixEngineStateComputerTest {
     verify(mempoolAddSuccessEventDispatcher)
         .dispatch(
             argThat(ev -> ev.getOrigin().orElseThrow().equals(origin) && ev.getTxn().equals(txn)));
+  }
+
+  private static class ConsensusBootstrapProviderStub extends ConsensusBootstrapProviderProd {
+
+    @Inject
+    public ConsensusBootstrapProviderStub(
+        Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState,
+        LedgerProofProvider ledgerProofProvider,
+        PersistentSafetyStateStore safetyStore,
+        Ledger ledger) {
+      super(serializedVertexStoreState, hasher, ledgerProofProvider, safetyStore, ledger);
+    }
+
+    @Override
+    public ProposerElection proposerElection() {
+      return proposerElection;
+    }
   }
 }

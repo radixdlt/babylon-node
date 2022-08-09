@@ -271,12 +271,12 @@ public final class ConsensusModule extends AbstractModule {
         counters);
   }
 
-  //  @Provides
-  //  @Singleton
-  //  private VertexStore vertexStore(BFTConfiguration bftConfiguration, Ledger ledger, Hasher
-  // hasher) {
-  //    return VertexStoreJavaImpl.create(bftConfiguration.getVertexStoreState(), ledger, hasher);
-  //  }
+  //    @Provides
+  //    @Singleton
+  //    private VertexStore vertexStore(BFTConfiguration bftConfiguration, Ledger ledger, Hasher
+  //   hasher) {
+  //      return VertexStoreJavaImpl.create(bftConfiguration.getVertexStoreState(), ledger, hasher);
+  //    }
 
   @Provides
   @Singleton

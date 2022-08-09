@@ -384,7 +384,10 @@ public final class SafetyRules {
 
   public SafetyState getSafetyState() {
     if (this.safetyState == null) {
-      this.safetyState = this.consensusBootstrapProvider.initialSafetyState();
+      this.safetyState =
+          this.consensusBootstrapProvider != null
+              ? this.consensusBootstrapProvider.initialSafetyState()
+              : null;
     }
     return safetyState;
   }

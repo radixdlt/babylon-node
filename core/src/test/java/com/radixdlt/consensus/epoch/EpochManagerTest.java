@@ -112,6 +112,7 @@ import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.modules.ConsensusModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.LedgerModule;
+import com.radixdlt.modules.TestLedgerProofProviderModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.rev1.RoundDetails;
@@ -242,6 +243,9 @@ public class EpochManagerTest {
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
         bind(new TypeLiteral<Consumer<EpochRoundUpdate>>() {}).toInstance(rmock(Consumer.class));
+
+        bind(new TypeLiteral<Optional<VertexStoreState.SerializedVertexStoreState>>() {})
+            .toInstance(Optional.empty());
       }
 
       @Provides
@@ -296,6 +300,7 @@ public class EpochManagerTest {
             new ConsensusModule(),
             new EpochsConsensusModule(),
             new LedgerModule(),
+            new TestLedgerProofProviderModule(),
             getExternalModule())
         .injectMembers(this);
   }
