@@ -12,8 +12,10 @@ all:
 
 .PHONY: gcloud-authenticate
 gcloud-authenticate:
+	 export CLOUDSDK_PYTHON_SITEPACKAGES=1
 	 echo "Authenticating service  account "
 	 gcloud auth activate-service-account dev-container-uploader@dev-container-repo.iam.gserviceaccount.com --key-file=$(GC_DEV_REPO_KEY)
+	 gcloud auth list
 	 echo "Getting access token"
 	 $(eval ACCESSTOKEN=$(shell gcloud auth print-access-token))
 	 docker login -u oauth2accesstoken -p $(ACCESSTOKEN) https://eu.gcr.io/

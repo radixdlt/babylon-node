@@ -110,7 +110,9 @@ task buildRustForDocker(type: Exec) {
     // Trigger a custom error message on failure...
     ignoreExitValue true
     def dockerComposeRun = "docker compose -f ../docker/rust-builder/build-sm.yaml run --env TARGET=$target build-sm"
-    def dockerBuildCmd = "DOCKER_BUILDKIT=1 docker build -f docker/rust-builder/Dockerfile" +
+    def dockerBuildCmd = "DOCKER_BUILDKIT=1 docker buildx build -f docker/rust-builder/Dockerfile" +
+            " --cache-from=type=registry,ref=europe-west2-docker.pkg.dev/dev-container-repo/eu-cache-repo/build-rust-core-cache" +
+            " --cache-to=type=registry,ref=europe-west2-docker.pkg.dev/dev-container-repo/eu-cache-repo/build-rust-core-cache,mode=min" +
             " --target=artifact" +
             " --output type=local,dest=state-manager/target/${target}/debug/" +
             " --build-arg TARGET=$target ."
