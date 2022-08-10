@@ -190,8 +190,9 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Use genesis to specify number of validators for now
     final var genesisTxn = properties.get("network.genesis_txn");
+
     final var initialVset =
-        Streams.stream(Splitter.fixedLength(ECPublicKey.COMPRESSED_BYTES).split(genesisTxn))
+        Streams.stream(Splitter.fixedLength(ECPublicKey.COMPRESSED_BYTES * 2).split(genesisTxn))
             .map(
                 pubKeyBytes -> {
                   try {
