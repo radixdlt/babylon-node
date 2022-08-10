@@ -93,10 +93,16 @@ import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.BooleanUtils;
+import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
+
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
@@ -188,10 +194,18 @@ public final class RadixNodeModule extends AbstractModule {
     // install(new ConsensusRecoveryModule());
     // install(new LedgerRecoveryModule());
 
-    // Use genesis to specify number of validators for now
-    final var genesisTxn = properties.get("network.genesis_txn");
+    String genesisTxn;
+    final var genesisFileProp = properties.get("network.genesis_file");
+    if (genesisFileProp != null && !genesisFileProp.isBlank()) {
+      log.info("Loading genesis from file: {}", genesisFileProp);
+      genesisTxn = loadGenesisFromFile(genesisFileProp);
+    } else {
+      log.info("Loading genesis from genesis_txn property");
+      genesisTxn = properties.get("network.genesis_txn");
+    }
 
     log.info("Using genesis txn: {}", genesisTxn);
+
     final var initialVset =
         Streams.stream(Splitter.fixedLength(ECPublicKey.COMPRESSED_BYTES * 2).split(genesisTxn))
             .map(
@@ -230,5 +244,14 @@ public final class RadixNodeModule extends AbstractModule {
             .map(LedgerSyncCapability.Builder::new)
             .orElse(LedgerSyncCapability.Builder.asDefault());
     install(new CapabilitiesModule(builder.build()));
+  }
+
+  private String loadGenesisFromFile(String genesisFile) {
+    try (var genesisJsonString = new FileInputStream(genesisFile)) {
+      var genesisJson = new JSONObject(IOUtils.toString(genesisJsonString));
+      return genesisJson.getString("genesis");
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
   }
 }
