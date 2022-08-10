@@ -9,8 +9,19 @@ all:
     GOOGLE_ARTIFICAT_REGISTRY ?= europe-west2-docker.pkg.dev
     GAR_CACHE_REPO ?= $(GOOGLE_ARTIFICAT_REGISTRY)/dev-container-repo/eu-cache-repo
 
+
+.PHONY: gcloud-authenticate
+gcloud-authenticate:
+	 echo "Authenticating service  account "
+	 gcloud auth activate-service-account dev-container-uploader@dev-container-repo.iam.gserviceaccount.com --key-file=$(GC_DEV_REPO_KEY)
+	 echo "Getting access token"
+	 $(eval ACCESSTOKEN=$(shell gcloud auth print-access-token))
+	 docker login -u oauth2accesstoken -p $(ACCESSTOKEN) https://eu.gcr.io/
+	 docker login -u oauth2accesstoken -p $(ACCESSTOKEN) https://europe-west2-docker.pkg.dev/
+
+
 .PHONY: build-sm
-build-sm:
+build-sm: gcloud-authenticate
 	cd .. && ./gradlew :state-manager:buildRustForDocker -Pci=true
 
 .PHONY: build
@@ -23,12 +34,6 @@ package: build-core
 	docker-compose -f ../docker/node-1.yml build
 	docker tag radixdlt/radixdlt-core:main $(CORE_REPO):$(TAG)
 
-.PHONY: gcloud-authenticate
-gcloud-authenticate:
-	 gcloud auth activate-service-account dev-container-uploader@dev-container-repo.iam.gserviceaccount.com --key-file=$(GC_DEV_REPO_KEY)
-	 $(eval ACCESSTOKEN=$(shell gcloud auth print-access-token))
-	 docker login -u oauth2accesstoken -p $(ACCESSTOKEN) https://eu.gcr.io/
-	 docker login -u oauth2accesstoken -p $(ACCESSTOKEN) https://europe-west2-docker.pkg.dev/
 
 .PHONY: publish
 publish: package
