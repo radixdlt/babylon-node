@@ -127,6 +127,30 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
+  "/transactions":
+    post:
+      summary: Get committed transactions
+      tags:
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/CommittedTransactionsRequest"
+      responses:
+        '200':
+          description: Transaction preview response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CommittedTransactionsResponse"
+        '500':
+          description: An error occurred
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
 components:
   schemas:
 ###########################
@@ -304,6 +328,111 @@ components:
         xrd_burned:
           type: string
         xrd_tipped:
+          type: string
+    TransactionReceipt:
+      type: object
+      required:
+        - status
+        - fee_summary
+      properties:
+        status:
+          "$ref": "#/components/schemas/TransactionStatus"
+        fee_summary:
+          "$ref": "#/components/schemas/FeeSummary"
+    NotarizedTransaction:
+      type: object
+      required:
+        - hash
+        - signed_intent
+        - notary_signature
+      properties:
+        hash:
+          type: string
+        signed_intent:
+          "$ref": "#/components/schemas/SignedTransactionIntent"
+        notary_signature:
+          type: string
+    SignedTransactionIntent:
+      type: object
+      required:
+        - hash
+        - intent
+        - intent_signatures
+      properties:
+        hash:
+          type: string
+        intent:
+          "$ref": "#/components/schemas/TransactionIntent"
+        intent_signatures:
+          type: array
+          items:
+            "$ref": "#/components/schemas/IntentSignature"
+    IntentSignature:
+      type: object
+      required:
+        - public_key
+        - signature
+      properties:
+        public_key:
+          type: string
+        signature:
+          type: string
+    TransactionIntent:
+      type: object
+      required:
+        - hash
+        - header
+        - manifest
+      properties:
+        hash:
+          type: string
+        header:
+          "$ref": "#/components/schemas/TransactionHeader"
+        manifest:
+          type: string
+    TransactionHeader:
+      type: object
+      required:
+        - version
+        - network
+        - start_epoch_inclusive
+        - end_epoch_exclusive
+        - nonce
+        - notary_public_key
+        - notary_as_signatory
+        - cost_unit_limit
+        - tip_percentage
+      properties:
+        version:
+          type: integer
+        network:
+          "$ref": "#/components/schemas/Network"
+        start_epoch_inclusive:
+          type: integer
+          format: int64
+        end_epoch_exclusive:
+          type: integer
+          format: int64
+        nonce:
+          type: integer
+          format: int64
+        notary_public_key:
+          type: string
+        notary_as_signatory:
+          type: boolean
+        cost_unit_limit:
+          type: integer
+        tip_percentage:
+          type: integer
+    Network:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
           type: string
 ##########################################
 # REQUEST: /status/network-configuration #
@@ -509,3 +638,47 @@ components:
           type: array
           items:
             type: string
+##########################
+# REQUEST: /transactions #
+##########################
+    CommittedTransactionsRequest:
+      description: A request to retrieve a sublist of committed transactions from the
+        ledger.
+      type: object
+      required:
+        - state_identifier
+        - network_identifier
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+          description: The name of the network
+        state_version:
+          type: integer
+          format: int64
+        limit:
+          description: The maximum number of transactions that will be returned.
+          type: integer
+    CommittedTransactionsResponse:
+      type: object
+      required:
+        - state_version
+        - transactions
+      properties:
+        state_version:
+          type: integer
+          format: int64
+        transactions:
+          description: A committed transactions list starting from the `state_version`.
+          type: array
+          items:
+            "$ref": "#/components/schemas/CommittedTransaction"
+    CommittedTransaction:
+      type: object
+      required:
+        - notarized_transaction
+        - receipt
+      properties:
+        notarized_transaction:
+          "$ref": "#/components/schemas/NotarizedTransaction"
+        receipt:
+          "$ref": "#/components/schemas/TransactionReceipt"

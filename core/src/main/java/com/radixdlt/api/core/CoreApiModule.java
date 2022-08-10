@@ -71,6 +71,7 @@ import com.radixdlt.api.core.routes.status.NetworkConfigurationHandler;
 import com.radixdlt.api.core.routes.status.NetworkSyncStatusHandler;
 import com.radixdlt.api.core.routes.transaction.TransactionPreviewHandler;
 import com.radixdlt.api.core.routes.transaction.TransactionSubmitHandler;
+import com.radixdlt.api.core.routes.transaction.TransactionsHandler;
 import io.undertow.server.HttpHandler;
 
 public class CoreApiModule extends AbstractModule {
@@ -89,6 +90,7 @@ public class CoreApiModule extends AbstractModule {
     addRoute(routeBinder, "/status/network-sync", NetworkSyncStatusHandler.class);
     addRoute(routeBinder, "/transaction/submit", TransactionSubmitHandler.class);
     addRoute(routeBinder, "/transaction/preview", TransactionPreviewHandler.class);
+    addRoute(routeBinder, "/transactions", TransactionsHandler.class);
   }
 
   private void addRoute(
