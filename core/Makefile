@@ -25,8 +25,10 @@ package: build-core
 
 .PHONY: gcloud-authenticate
 gcloud-authenticate:
-	 cat $(GC_DEV_REPO_KEY) | docker login -u _json_key --password-stdin https://$(GOOGLE_ARTIFICAT_REGISTRY)
-	 cat $(GC_DEV_REPO_KEY) | docker login -u _json_key --password-stdin https://eu.gcr.io
+	 gcloud auth activate-service-account dev-container-uploader@dev-container-repo.iam.gserviceaccount.com --key-file=$(GC_DEV_REPO_KEY)
+	 $(eval ACCESSTOKEN=$(shell gcloud auth print-access-token))
+	 docker login -u oauth2accesstoken -p $(ACCESSTOKEN) https://eu.gcr.io/
+	 docker login -u oauth2accesstoken -p $(ACCESSTOKEN) https://europe-west2-docker.pkg.dev/
 
 .PHONY: publish
 publish: package
