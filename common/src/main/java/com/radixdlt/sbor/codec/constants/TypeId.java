@@ -91,12 +91,12 @@ public enum TypeId {
   // Enum and struct
   TYPE_STRUCT(0x10),
   TYPE_ENUM(0x11),
+  TYPE_OPTION(0x12),
+  TYPE_RESULT(0x13),
 
   // Composite types
-  TYPE_OPTION(0x20),
-  TYPE_ARRAY(0x22),
-  TYPE_TUPLE(0x23),
-  TYPE_RESULT(0x24),
+  TYPE_ARRAY(0x20),
+  TYPE_TUPLE(0x21),
 
   // Collections + Maps
   TYPE_LIST(0x30),

@@ -330,7 +330,7 @@ public class SborTest {
     var r0 = sbor.encode(testArray, byte[].class);
 
     assertEquals(11, r0.length);
-    assertEquals(0x22, r0[0]); // Type == 0x22 - Fixed length array
+    assertEquals(0x20, r0[0]); // Type == 0x20 - Fixed length array
     assertEquals(0x07, r0[1]); // Type == 0x07 - u8
     assertEquals(5, r0[2]); // Array length 0
     assertEquals(0, r0[3]); // Array length 1
@@ -442,7 +442,7 @@ public class SborTest {
     var r0 = DefaultTypedSbor.encode(some("Test value"), optionTypeLiteral);
 
     assertEquals(17, r0.length);
-    assertEquals(0x20, r0[0]); // Type == 0x20 - Option
+    assertEquals(0x12, r0[0]); // Type == 0x12 - Option
     assertEquals(0x00, r0[1]); // Value - present
     assertEquals(0x0C, r0[2]); // Stored type - 0x0C - String
 
@@ -457,7 +457,7 @@ public class SborTest {
     var r0 = DefaultTypedSbor.encode(none(), optionTypeLiteral);
 
     assertEquals(2, r0.length);
-    assertEquals(0x20, r0[0]); // Type == 0x20 - Option
+    assertEquals(0x12, r0[0]); // Type == 0x12 - Option
     assertEquals(0x01, r0[1]); // Value - missing
 
     var r1 = DefaultTypedSbor.decode(r0, optionTypeLiteral);
@@ -473,7 +473,7 @@ public class SborTest {
     var successEncoded = DefaultTypedSbor.encode(successResult, resultTypeLiteral);
 
     assertEquals(17, successEncoded.length);
-    assertEquals(0x24, successEncoded[0]); // Type == 0x24 - Result
+    assertEquals(0x13, successEncoded[0]); // Type == 0x13 - Result
     assertEquals(0x00, successEncoded[1]); // Value - Success
     assertEquals(0x0C, successEncoded[2]); // Value type - String
 
@@ -483,7 +483,7 @@ public class SborTest {
     var errorResult = Result.<String, Long>error(123L);
     var errorEncoded = DefaultTypedSbor.encode(errorResult, resultTypeLiteral);
     assertEquals(11, errorEncoded.length);
-    assertEquals(0x24, errorEncoded[0]); // Type == 0x24 - Result
+    assertEquals(0x13, errorEncoded[0]); // Type == 0x13 - Result
     assertEquals(0x01, errorEncoded[1]); // Value - Failure
     assertEquals(0x05, errorEncoded[2]); // Value type - i64
 
@@ -500,7 +500,7 @@ public class SborTest {
 
     // NB - Left is "not-right", AKA failure
     assertEquals(17, leftEncoded.length);
-    assertEquals(0x24, leftEncoded[0]); // Type == 0x24 - Result
+    assertEquals(0x13, leftEncoded[0]); // Type == 0x13 - Result
     assertEquals(0x01, leftEncoded[1]); // Value - Failure
     assertEquals(0x0C, leftEncoded[2]); // Value type - String
 
@@ -512,7 +512,7 @@ public class SborTest {
 
     // NB - Right is "right", AKA success
     assertEquals(11, rightEncoded.length);
-    assertEquals(0x24, rightEncoded[0]); // Type == 0x24 - Result
+    assertEquals(0x13, rightEncoded[0]); // Type == 0x13 - Result
     assertEquals(0x00, rightEncoded[1]); // Value - Success
     assertEquals(0x05, rightEncoded[2]); // Value type - i64
 
@@ -595,7 +595,7 @@ public class SborTest {
           0,
           0,
           0, // number of fields
-          0x24, // Field 1 - Either Type
+          0x13, // Field 1 - Either Type
           0x01, // Field 1 - Left subtype
           5, // Field 1 - Either left is of long type
           5,
@@ -742,7 +742,7 @@ public class SborTest {
 
     assertArrayEquals(
         new byte[] {
-          35, // Tuple Type
+          33, // Tuple Type
           2,
           0,
           0,
