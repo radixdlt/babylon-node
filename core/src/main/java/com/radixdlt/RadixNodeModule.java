@@ -64,13 +64,16 @@
 
 package com.radixdlt;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.radixdlt.api.ApiModule;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
@@ -90,7 +93,6 @@ import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.BooleanUtils;
-import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -187,13 +189,19 @@ public final class RadixNodeModule extends AbstractModule {
     // install(new LedgerRecoveryModule());
 
     // Use genesis to specify number of validators for now
-    var numValidators = Integer.parseInt(properties.get("network.genesis_txn"));
-    var initialVset =
-        PrivateKeys.numeric(6)
-            .limit(numValidators)
-            .map(ECKeyPair::getPublicKey)
-            .map(BFTNode::create)
+    final var genesisTxn = properties.get("network.genesis_txn");
+    final var initialVset =
+        Streams.stream(Splitter.fixedLength(ECPublicKey.COMPRESSED_BYTES).split(genesisTxn))
+            .map(
+                pubKeyBytes -> {
+                  try {
+                    return BFTNode.create(ECPublicKey.fromHex(pubKeyBytes));
+                  } catch (PublicKeyException e) {
+                    throw new RuntimeException(e);
+                  }
+                })
             .toList();
+
     install(new MockedConsensusRecoveryModule.Builder().withNodes(initialVset).build());
     install(new MockedLedgerRecoveryModule());
 
