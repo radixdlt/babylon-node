@@ -51,7 +51,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # SonarCloud access token should be generated from https://sonarcloud.io/account/security/
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew sonarqube
+        run: |
+          cargo update
+          ./gradlew sonarqube
   steadystate-integration:
     name: Steady state integration tests
     runs-on: babylon-runner
@@ -80,7 +82,9 @@ jobs:
         #   In this case, the node calls System.exit(X), which appear in the integration test logs
         #   as something like:
         # "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
-        run: ./gradlew runSteadyStateIntegrationTests --refresh-dependencies
+        run: |
+          cargo update
+          ./gradlew runSteadyStateIntegrationTests --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
     runs-on: babylon-runner
@@ -109,4 +113,6 @@ jobs:
         #   In this case, the node calls System.exit(X), which appear in the integration test logs
         #   as something like:
         # "Process 'Gradle Test Executor 1' finished with non-zero exit value 255"
-        run: ./gradlew runTargetedIntegrationTests --refresh-dependencies --parallel
+        run: |
+          cargo update
+          ./gradlew runTargetedIntegrationTests --refresh-dependencies --parallel
