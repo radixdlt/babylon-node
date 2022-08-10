@@ -16,14 +16,17 @@ gcloud-authenticate:
 	 echo "Authenticating service  account "
 	 gcloud auth activate-service-account dev-container-uploader@dev-container-repo.iam.gserviceaccount.com --key-file=$(GC_DEV_REPO_KEY)
 	 gcloud auth list
+
+
+.PHONY: gcloud-token
+gcloud-token: gcloud-authenticate
 	 echo "Getting access token"
 	 $(eval ACCESSTOKEN=$(shell gcloud auth print-access-token))
 	 docker login -u oauth2accesstoken -p $(ACCESSTOKEN) https://eu.gcr.io/
 	 docker login -u oauth2accesstoken -p $(ACCESSTOKEN) https://europe-west2-docker.pkg.dev/
 
-
 .PHONY: build-sm
-build-sm: gcloud-authenticate
+build-sm: gcloud-token
 	cd .. && ./gradlew :state-manager:buildRustForDocker -Pci=true
 
 .PHONY: build
@@ -42,7 +45,7 @@ publish: package
 	docker push $(CORE_REPO):$(TAG)
 
 .PHONY: build-push-using-remote-cache
-build-push-using-remote-cache: build-core gcloud-authenticate
+build-push-using-remote-cache:  gcloud-token build-core
 	docker buildx create --use
 	echo "Building and pushing image $(CORE_REPO):$(TAG)"
 	$(shell cd ../docker && DOCKER_BUILDKIT=1 docker buildx build \
