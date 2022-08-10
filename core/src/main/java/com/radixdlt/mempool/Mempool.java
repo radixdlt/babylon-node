@@ -72,10 +72,7 @@ import java.util.List;
  *
  * <p>Note that conceptually, a mempool can be thought of as a list indexable by hash.
  */
-public interface Mempool<T> {
-  /** Add a transaction to the local mempool. */
-  T addTransaction(Transaction transaction) throws MempoolRejectedException;
-
+public interface Mempool<T> extends MempoolRelayReader, MempoolInserter<T> {
   /**
    * Retrieve a list of transactions from the local mempool for creating a proposal for consensus.
    *
@@ -85,8 +82,6 @@ public interface Mempool<T> {
    * @return A list of transactions for processing by consensus
    */
   List<Transaction> getTransactionsForProposal(int count, List<T> preparedTransactions);
-
-  List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis);
 
   void handleTransactionsCommitted(List<T> transactions);
 

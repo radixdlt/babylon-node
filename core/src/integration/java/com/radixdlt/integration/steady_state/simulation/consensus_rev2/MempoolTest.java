@@ -76,7 +76,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.rev2.REv2ExampleTransactions;
-import com.radixdlt.transaction.TransactionStore;
+import com.radixdlt.transaction.TransactionStoreReader;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -114,7 +114,7 @@ public class MempoolTest {
     assertThat(checkResults)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
     for (var node : runningTest.getNetwork().getNodes()) {
-      var store = runningTest.getNetwork().getInstance(TransactionStore.class, node);
+      var store = runningTest.getNetwork().getInstance(TransactionStoreReader.class, node);
       var txn = store.getTransactionAtStateVersion(1);
       assertThat(txn).isEqualTo(REv2ExampleTransactions.VALID_TXN_BYTES_0);
     }

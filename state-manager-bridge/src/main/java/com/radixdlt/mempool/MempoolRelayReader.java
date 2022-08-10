@@ -62,53 +62,11 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.mempool;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.lang.Option;
-import com.radixdlt.mempool.MempoolInserter;
-import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolRelayReader;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transaction.TransactionStoreReader;
 import com.radixdlt.transactions.Transaction;
+import java.util.List;
 
-public final class REv2StateManagerModule extends AbstractModule {
-  @Provides
-  @Singleton
-  StateManager stateManager(RustMempoolConfig mempoolConfig) {
-    return StateManager.createAndInitialize(new StateManagerConfig(Option.some(mempoolConfig)));
-  }
-
-  @Provides
-  @Singleton
-  private RustMempoolConfig stateManagerMempoolConfig(@MempoolMaxSize int maxSize) {
-    return new RustMempoolConfig(maxSize);
-  }
-
-  @Provides
-  private MempoolRelayReader mempoolRelayReader(RustStateComputer stateComputer) {
-    return stateComputer.getMempoolRelayReader();
-  }
-
-  @Provides
-  private MempoolInserter<Transaction> mempoolInserter(RustStateComputer stateComputer) {
-    return stateComputer.getMempoolInserter();
-  }
-
-  @Provides
-  private TransactionStoreReader transactionStoreReader(RustStateComputer stateComputer) {
-    return stateComputer.getTransactionStoreReader();
-  }
-
-  @Provides
-  @Singleton
-  private RustStateComputer rEv2StateComputer(StateManager stateManager) {
-    return new RustStateComputer(stateManager.getRustState());
-  }
+public interface MempoolRelayReader {
+  List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis);
 }
