@@ -191,10 +191,12 @@ public final class RadixNodeModule extends AbstractModule {
     // Use genesis to specify number of validators for now
     final var genesisTxn = properties.get("network.genesis_txn");
 
+    log.info("Using genesis txn: {}", genesisTxn);
     final var initialVset =
         Streams.stream(Splitter.fixedLength(ECPublicKey.COMPRESSED_BYTES * 2).split(genesisTxn))
             .map(
                 pubKeyBytes -> {
+                  log.info("Initial vset validator: {}", pubKeyBytes);
                   try {
                     return BFTNode.create(ECPublicKey.fromHex(pubKeyBytes));
                   } catch (PublicKeyException e) {
