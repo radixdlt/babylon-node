@@ -67,21 +67,53 @@ package com.radixdlt.statecomputer;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Result;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.transactions.Transaction;
+
+import java.util.List;
 import java.util.Objects;
 
-public class RustStateComputer implements StatelessTransactionVerifier {
+public class RustStateComputer implements StatelessTransactionVerifier, Mempool<Transaction> {
   private final StateManager.RustState rustState;
+  private final RustMempool mempool;
 
   public RustStateComputer(StateManager.RustState rustState) {
     this.rustState = Objects.requireNonNull(rustState);
+    this.mempool = new RustMempool(rustState);
   }
 
   private static final TypeToken<Result<Boolean, StateManagerRuntimeError>> booleanType =
       new TypeToken<>() {};
+
+  @Override
+  public Transaction addTransaction(Transaction transaction) throws MempoolRejectedException {
+    return this.mempool.addTransaction(transaction);
+  }
+
+  @Override
+  public List<Transaction> getTransactionsForProposal(int count, List<Transaction> preparedTransactions) {
+    return this.mempool.getTransactionsForProposal(count, preparedTransactions);
+  }
+
+  @Override
+  public List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis) {
+    return this.mempool.getTransactionsToRelay(initialDelayMillis, repeatDelayMillis);
+  }
+
+  @Override
+  public void handleTransactionsCommitted(List<Transaction> transactions) {
+    this.mempool.handleTransactionsCommitted(transactions);
+  }
+
+  @Override
+  public int getCount() {
+    return this.mempool.getCount();
+  }
 
   @Override
   public boolean verify(Transaction transaction) {

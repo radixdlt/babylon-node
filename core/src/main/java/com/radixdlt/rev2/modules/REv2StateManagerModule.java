@@ -67,10 +67,10 @@ package com.radixdlt.rev2.modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.StatelessTransactionVerifier;
@@ -101,13 +101,18 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private Mempool<Transaction> stateManagerMempool(StateManager stateManager) {
-    return new RustMempool(stateManager.getRustState());
+  private TransactionStore stateManagerTransactionStore(StateManager stateManager) {
+    return new RustTransactionStore(stateManager.getRustState());
   }
 
   @Provides
   @Singleton
-  private TransactionStore stateManagerTransactionStore(StateManager stateManager) {
-    return new RustTransactionStore(stateManager.getRustState());
+  private RustStateComputer rEv2StateComputer(StateManager stateManager) {
+    return new RustStateComputer(stateManager.getRustState());
+  }
+
+  @Override
+  protected void configure() {
+    bind(new TypeLiteral<Mempool<Transaction>>() {}).to(RustStateComputer.class);
   }
 }

@@ -78,7 +78,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.InvalidREv2Transaction;
 import com.radixdlt.rev2.REv2ExecutedTransaction;
-import com.radixdlt.statecomputer.StatelessTransactionVerifier;
+import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transaction.TransactionStore;
 import com.radixdlt.transactions.Transaction;
 import java.util.ArrayList;
@@ -100,11 +100,9 @@ public class REv2StateComputerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private StateComputerLedger.StateComputer stateComputer(
-      Mempool<Transaction> mempool,
-      StatelessTransactionVerifier verifier,
-      TransactionStore transactionStore,
-      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
+  private StateComputerLedger.StateComputer stateComputer(RustStateComputer stateComputer,
+                                                          TransactionStore transactionStore,
+                                                          EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
     return new StateComputerLedger.StateComputer() {
       @Override
       public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
@@ -113,7 +111,7 @@ public class REv2StateComputerModule extends AbstractModule {
             .forEach(
                 transaction -> {
                   try {
-                    mempool.addTransaction(transaction);
+                    stateComputer.addTransaction(transaction);
                   } catch (MempoolRejectedException e) {
                     log.error(e);
                   }
@@ -127,7 +125,7 @@ public class REv2StateComputerModule extends AbstractModule {
             executedTransactions.stream()
                 .map(StateComputerLedger.ExecutedTransaction::transaction)
                 .toList();
-        return mempool.getTransactionsForProposal(1, transactionsNotToInclude);
+        return stateComputer.getTransactionsForProposal(1, transactionsNotToInclude);
       }
 
       @Override
@@ -139,7 +137,7 @@ public class REv2StateComputerModule extends AbstractModule {
         var invalidTransactions = new HashMap<Transaction, Exception>();
 
         for (var transaction : proposedTransactions) {
-          var success = verifier.verify(transaction);
+          var success = stateComputer.verify(transaction);
           if (success) {
             successfulTransactions.add(new REv2ExecutedTransaction(transaction));
           } else {
@@ -157,7 +155,7 @@ public class REv2StateComputerModule extends AbstractModule {
 
         // This mempool update must be committed before the LedgerUpdate is dispatched
         // in order for consensus proposal retrieval to be updated correctly
-        mempool.handleTransactionsCommitted(txnsAndProof.getTransactions());
+        stateComputer.handleTransactionsCommitted(txnsAndProof.getTransactions());
 
         // TODO: There may be a better place to put this transaction store.
         for (int i = 0; i < txnsAndProof.getTransactions().size(); i++) {
