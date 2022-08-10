@@ -28,18 +28,18 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * TransactionStatusFailedAllOf
+ * InvalidTransactionErrorAllOf
  */
 @JsonPropertyOrder({
-  TransactionStatusFailedAllOf.JSON_PROPERTY_MESSAGE
+  InvalidTransactionErrorAllOf.JSON_PROPERTY_MESSAGE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class TransactionStatusFailedAllOf {
+public class InvalidTransactionErrorAllOf {
   public static final String JSON_PROPERTY_MESSAGE = "message";
   private String message;
 
 
-  public TransactionStatusFailedAllOf message(String message) {
+  public InvalidTransactionErrorAllOf message(String message) {
     this.message = message;
     return this;
   }
@@ -66,7 +66,7 @@ public class TransactionStatusFailedAllOf {
 
 
   /**
-   * Return true if this TransactionStatusFailed_allOf object is equal to o.
+   * Return true if this InvalidTransactionError_allOf object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -76,8 +76,8 @@ public class TransactionStatusFailedAllOf {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionStatusFailedAllOf transactionStatusFailedAllOf = (TransactionStatusFailedAllOf) o;
-    return Objects.equals(this.message, transactionStatusFailedAllOf.message);
+    InvalidTransactionErrorAllOf invalidTransactionErrorAllOf = (InvalidTransactionErrorAllOf) o;
+    return Objects.equals(this.message, invalidTransactionErrorAllOf.message);
   }
 
   @Override
@@ -88,7 +88,7 @@ public class TransactionStatusFailedAllOf {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionStatusFailedAllOf {\n");
+    sb.append("class InvalidTransactionErrorAllOf {\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("}");
     return sb.toString();

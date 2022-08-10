@@ -212,6 +212,99 @@ components:
           properties:
             invalid_hex:
               type: string
+    MempoolFullError:
+      allOf:
+        - $ref: "#/components/schemas/CoreErrorDetails"
+        - type: object
+          required:
+            - mempool_transaction_count
+          properties:
+            mempool_transaction_count:
+              type: integer
+              format: int64
+    InvalidTransactionError:
+      allOf:
+        - $ref: "#/components/schemas/CoreErrorDetails"
+        - type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+    PreviewError:
+      allOf:
+        - $ref: "#/components/schemas/CoreErrorDetails"
+        - type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+#########################################
+# GENERAL / SHARED MODELS - Transaction #
+#########################################
+    TransactionStatus:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          TransactionStatusRejected: "#/components/schemas/TransactionStatusRejected"
+          TransactionStatusSucceeded: "#/components/schemas/TransactionStatusSucceeded"
+          TransactionStatusFailed: "#/components/schemas/TransactionStatusFailed"
+    TransactionStatusRejected:
+      allOf:
+        - $ref: "#/components/schemas/TransactionStatus"
+        - type: object
+    TransactionStatusSucceeded:
+      allOf:
+        - $ref: "#/components/schemas/TransactionStatus"
+        - type: object
+          required:
+            - output
+          properties:
+            output:
+              type: array
+              items:
+                type: string
+    TransactionStatusFailed:
+      allOf:
+        - $ref: "#/components/schemas/TransactionStatus"
+        - type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+    FeeSummary:
+      type: object
+      required:
+        - loan_fully_repaid
+        - cost_unit_limit
+        - cost_units_consumed
+        - cost_unit_price
+        - tip_percentage
+        - burned
+        - tipped
+      properties:
+        loan_fully_repaid:
+          type: boolean
+        cost_unit_limit:
+          type: string
+        cost_unit_consumed:
+          type: string
+        cost_unit_price:
+          type: string
+        tip_percentage:
+          type: string
+        burned:
+          type: string
+        tipped:
+          type: string
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -329,6 +422,9 @@ components:
           description: Is true if the transaction is a duplicate of an existing transaction
             in the mempool.
           type: boolean
+#################################
+# REQUEST: /transaction/preview #
+#################################
     TransactionPreviewRequest:
       type: object
       required:
@@ -413,93 +509,3 @@ components:
           type: array
           items:
             type: string
-    TransactionStatus:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          type: string
-      discriminator:
-        propertyName: type
-        mapping:
-          TransactionStatusRejected: "#/components/schemas/TransactionStatusRejected"
-          TransactionStatusSucceeded: "#/components/schemas/TransactionStatusSucceeded"
-          TransactionStatusFailed: "#/components/schemas/TransactionStatusFailed"
-    TransactionStatusRejected:
-      allOf:
-        - $ref: "#/components/schemas/TransactionStatus"
-        - type: object
-    TransactionStatusSucceeded:
-      allOf:
-        - $ref: "#/components/schemas/TransactionStatus"
-        - type: object
-          required:
-            - output
-          properties:
-            output:
-              type: array
-              items:
-                type: string
-    TransactionStatusFailed:
-      allOf:
-        - $ref: "#/components/schemas/TransactionStatus"
-        - type: object
-          required:
-            - message
-          properties:
-            message:
-              type: string
-    FeeSummary:
-      type: object
-      required:
-        - loan_fully_repaid
-        - cost_unit_limit
-        - cost_units_consumed
-        - cost_unit_price
-        - tip_percentage
-        - burned
-        - tipped
-      properties:
-        loan_fully_repaid:
-          type: boolean
-        cost_unit_limit:
-          type: string
-        cost_unit_consumed:
-          type: string
-        cost_unit_price:
-          type: string
-        tip_percentage:
-          type: string
-        burned:
-          type: string
-        tipped:
-          type: string
-    MempoolFullError:
-      allOf:
-        - $ref: "#/components/schemas/CoreErrorDetails"
-        - type: object
-          required:
-            - mempool_transaction_count
-          properties:
-            mempool_transaction_count:
-              type: integer
-              format: int64
-    InvalidTransactionError:
-      allOf:
-        - $ref: "#/components/schemas/CoreErrorDetails"
-        - type: object
-          required:
-            - message
-          properties:
-            message:
-              type: string
-    PreviewError:
-      allOf:
-        - $ref: "#/components/schemas/CoreErrorDetails"
-        - type: object
-          required:
-            - message
-          properties:
-            message:
-              type: string
