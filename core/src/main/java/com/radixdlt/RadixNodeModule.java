@@ -93,10 +93,8 @@ import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.BooleanUtils;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Optional;
