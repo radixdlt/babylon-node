@@ -26,6 +26,7 @@ sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-d68722
 scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-d6872296" }
 transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-d6872296" }
 radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-d6872296" }
+radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-d6872296" }
 
 [lib]
 crate_type = ["cdylib"]
