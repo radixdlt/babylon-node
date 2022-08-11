@@ -64,8 +64,8 @@
 
 package com.radixdlt.sbor.codec.core;
 
+import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_LIST;
 import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_U8;
-import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_VEC;
 
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -81,7 +81,7 @@ public final class ByteArrayCodec implements Codec<byte[]> {
   }
 
   public ByteArrayCodec() {
-    this(TYPE_VEC);
+    this(TYPE_LIST);
   }
 
   @Override

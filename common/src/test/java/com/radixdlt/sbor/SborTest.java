@@ -323,14 +323,14 @@ public class SborTest {
 
   @Test
   public void byteArrayCanBeEncodedAndDecoded() {
-    var testVector = new byte[] {0x01, 0x02, 0x03, 0x04, 0x05};
+    var testArray = new byte[] {0x01, 0x02, 0x03, 0x04, 0x05};
 
-    // Define Java arrays to map to SBOR Arrays, instead of the default, Vec
+    // Define Java arrays to map to SBOR fixed-length Arrays, instead of the default, List
     var sbor = new Sbor(true, new CodecMap(true, TypeId.TYPE_ARRAY));
-    var r0 = sbor.encode(testVector, byte[].class);
+    var r0 = sbor.encode(testArray, byte[].class);
 
     assertEquals(11, r0.length);
-    assertEquals(0x22, r0[0]); // Type == 0x22 - Array
+    assertEquals(0x20, r0[0]); // Type == 0x20 - Fixed length array
     assertEquals(0x07, r0[1]); // Type == 0x07 - u8
     assertEquals(5, r0[2]); // Array length 0
     assertEquals(0, r0[3]); // Array length 1
@@ -344,17 +344,17 @@ public class SborTest {
 
     var r1 = sbor.decode(r0, byte[].class);
 
-    assertArrayEquals(testVector, r1);
+    assertArrayEquals(testArray, r1);
   }
 
   @Test
   public void shortArrayCanBeEncodedAndDecoded() {
-    var testVector = new short[] {0x0102, 0x0304};
+    var testArray = new short[] {0x0102, 0x0304};
 
-    var r0 = DefaultTypedSbor.encode(testVector, short[].class);
+    var r0 = DefaultTypedSbor.encode(testArray, short[].class);
 
     assertEquals(10, r0.length);
-    assertEquals(0x30, r0[0]); // Type == 0x30 - Vector
+    assertEquals(0x30, r0[0]); // Type == 0x30 - List
     assertEquals(0x03, r0[1]); // Type == 0x03 - i16
     assertEquals(2, r0[2]); // Array length 0
     assertEquals(0, r0[3]); // Array length 1
@@ -367,17 +367,17 @@ public class SborTest {
 
     var r1 = DefaultTypedSbor.decode(r0, short[].class);
 
-    assertArrayEquals(testVector, r1);
+    assertArrayEquals(testArray, r1);
   }
 
   @Test
   public void intArrayCanBeEncodedAndDecoded() {
-    var testVector = new int[] {0x01020304, 0x05060708, 0x090A0B0C};
+    var testArray = new int[] {0x01020304, 0x05060708, 0x090A0B0C};
 
-    var r0 = DefaultTypedSbor.encode(testVector, int[].class);
+    var r0 = DefaultTypedSbor.encode(testArray, int[].class);
 
     assertEquals(18, r0.length);
-    assertEquals(0x30, r0[0]); // Type == 0x30 - Vector
+    assertEquals(0x30, r0[0]); // Type == 0x30 - List
     assertEquals(0x04, r0[1]); // Type == 0x04 - i32
     assertEquals(3, r0[2]); // Array length 0
     assertEquals(0, r0[3]); // Array length 1
@@ -398,17 +398,17 @@ public class SborTest {
 
     var r1 = DefaultTypedSbor.decode(r0, int[].class);
 
-    assertArrayEquals(testVector, r1);
+    assertArrayEquals(testArray, r1);
   }
 
   @Test
   public void longArrayCanBeEncodedAndDecoded() {
-    var testVector = new long[] {0x0102030405060708L, 0x090A0B0C11121314L};
+    var testArray = new long[] {0x0102030405060708L, 0x090A0B0C11121314L};
 
-    var r0 = DefaultTypedSbor.encode(testVector);
+    var r0 = DefaultTypedSbor.encode(testArray);
 
     assertEquals(22, r0.length);
-    assertEquals(0x30, r0[0]); // Type == 0x30 - Vector
+    assertEquals(0x30, r0[0]); // Type == 0x30 - List
     assertEquals(0x05, r0[1]); // Type == 0x05 - i64
     assertEquals(2, r0[2]); // Array length 0
     assertEquals(0, r0[3]); // Array length 1
@@ -433,7 +433,7 @@ public class SborTest {
 
     var r1 = DefaultTypedSbor.decode(r0, long[].class);
 
-    assertArrayEquals(testVector, r1);
+    assertArrayEquals(testArray, r1);
   }
 
   @Test
@@ -442,8 +442,8 @@ public class SborTest {
     var r0 = DefaultTypedSbor.encode(some("Test value"), optionTypeLiteral);
 
     assertEquals(17, r0.length);
-    assertEquals(0x20, r0[0]); // Type == 0x20 - Option
-    assertEquals(0x01, r0[1]); // Value - present
+    assertEquals(0x12, r0[0]); // Type == 0x12 - Option
+    assertEquals(0x00, r0[1]); // Value - present
     assertEquals(0x0C, r0[2]); // Stored type - 0x0C - String
 
     var r1 = DefaultTypedSbor.decode(r0, optionTypeLiteral);
@@ -457,8 +457,8 @@ public class SborTest {
     var r0 = DefaultTypedSbor.encode(none(), optionTypeLiteral);
 
     assertEquals(2, r0.length);
-    assertEquals(0x20, r0[0]); // Type == 0x20 - Option
-    assertEquals(0x00, r0[1]); // Value - missing
+    assertEquals(0x12, r0[0]); // Type == 0x12 - Option
+    assertEquals(0x01, r0[1]); // Value - missing
 
     var r1 = DefaultTypedSbor.decode(r0, optionTypeLiteral);
 
@@ -473,7 +473,7 @@ public class SborTest {
     var successEncoded = DefaultTypedSbor.encode(successResult, resultTypeLiteral);
 
     assertEquals(17, successEncoded.length);
-    assertEquals(0x24, successEncoded[0]); // Type == 0x24 - Result
+    assertEquals(0x13, successEncoded[0]); // Type == 0x13 - Result
     assertEquals(0x00, successEncoded[1]); // Value - Success
     assertEquals(0x0C, successEncoded[2]); // Value type - String
 
@@ -483,7 +483,7 @@ public class SborTest {
     var errorResult = Result.<String, Long>error(123L);
     var errorEncoded = DefaultTypedSbor.encode(errorResult, resultTypeLiteral);
     assertEquals(11, errorEncoded.length);
-    assertEquals(0x24, errorEncoded[0]); // Type == 0x24 - Result
+    assertEquals(0x13, errorEncoded[0]); // Type == 0x13 - Result
     assertEquals(0x01, errorEncoded[1]); // Value - Failure
     assertEquals(0x05, errorEncoded[2]); // Value type - i64
 
@@ -500,7 +500,7 @@ public class SborTest {
 
     // NB - Left is "not-right", AKA failure
     assertEquals(17, leftEncoded.length);
-    assertEquals(0x24, leftEncoded[0]); // Type == 0x24 - Result
+    assertEquals(0x13, leftEncoded[0]); // Type == 0x13 - Result
     assertEquals(0x01, leftEncoded[1]); // Value - Failure
     assertEquals(0x0C, leftEncoded[2]); // Value type - String
 
@@ -512,7 +512,7 @@ public class SborTest {
 
     // NB - Right is "right", AKA success
     assertEquals(11, rightEncoded.length);
-    assertEquals(0x24, rightEncoded[0]); // Type == 0x24 - Result
+    assertEquals(0x13, rightEncoded[0]); // Type == 0x13 - Result
     assertEquals(0x00, rightEncoded[1]); // Value - Success
     assertEquals(0x05, rightEncoded[2]); // Value type - i64
 
@@ -595,7 +595,7 @@ public class SborTest {
           0,
           0,
           0, // number of fields
-          0x24, // Field 1 - Either Type
+          0x13, // Field 1 - Either Type
           0x01, // Field 1 - Left subtype
           5, // Field 1 - Either left is of long type
           5,
@@ -742,7 +742,7 @@ public class SborTest {
 
     assertArrayEquals(
         new byte[] {
-          35, // Tuple Type
+          33, // Tuple Type
           2,
           0,
           0,
@@ -768,7 +768,7 @@ public class SborTest {
   }
 
   @Test
-  public void vecEncodedCorrectly() {
+  public void listEncodedCorrectly() {
     var value = List.of("hi", "and", "bye");
     var type = new TypeToken<List<String>>() {};
 
@@ -776,7 +776,7 @@ public class SborTest {
 
     assertArrayEquals(
         new byte[] {
-          0x30, // Vec Type
+          0x30, // List Type
           12, // String type
           3, 0, 0, 0, // 3 elements in array
           2, 0, 0, 0, // String length 2
@@ -807,7 +807,7 @@ public class SborTest {
 
     assertArrayEquals(
         new byte[] {
-          0x33, // Hash Set Type
+          0x31, // Set Type
           12, // String type
           3, 0, 0, 0, // 3 elements in set; implicitly ingestion ordering (at least in Java 17)
           2, 0, 0, 0, // String length 2
@@ -838,7 +838,7 @@ public class SborTest {
 
     assertArrayEquals(
         new byte[] {
-          0x31, // Tree Set Type
+          0x31, // Set Type
           12, // String type
           3, 0, 0, 0, // 3 elements in set; ordered by lexicographic key ordering
           3, 0, 0, 0, // String length 3 - "and", first value in lexicographic ordering
@@ -873,7 +873,7 @@ public class SborTest {
 
     assertArrayEquals(
         new byte[] {
-          0x34, // Hash Map Type
+          0x32, // Map Type
           12, // Key type: String
           0x04, // Value type: Signed Integer
           3, 0, 0, 0, // 3 elements in map; implicitly ingestion ordering (at least in Java 17)
@@ -912,7 +912,7 @@ public class SborTest {
 
     assertArrayEquals(
         new byte[] {
-          0x32, // Tree Map Type
+          0x32, // Map Type
           12, // Key type: String
           0x04, // Value type: Signed Integer
           3, 0, 0, 0, // 3 elements in map; ordered by lexicographic key ordering
