@@ -46,9 +46,8 @@ publish: package
 
 .PHONY: build-push-using-remote-cache
 build-push-using-remote-cache:  gcloud-token build-core
-	docker buildx create --use
 	echo "Building and pushing image $(CORE_REPO):$(TAG)"
-	$(shell cd ../docker && DOCKER_BUILDKIT=1 docker buildx build \
+	$(shell docker buildx create --use && cd ../docker && DOCKER_BUILDKIT=1 docker buildx build \
           --cache-from=type=registry,ref=$(GAR_CACHE_REPO)/build-core-cache \
           --cache-to=type=registry,ref=$(GAR_CACHE_REPO)/build-core-cache,mode=min \
           --tag $(CORE_REPO):$(TAG) -f Dockerfile.core . --push)
