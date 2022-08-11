@@ -153,12 +153,6 @@ public final class ConsensusModule extends AbstractModule {
             .build();
   }
 
-  //      @Provides
-  //      @Singleton
-  //      public ProposerElection proposerElection(BFTConfiguration configuration) {
-  //        return configuration.getProposerElection();
-  //      }
-
   @Provides
   @Singleton
   public BFTEventProcessor eventProcessor(
@@ -173,14 +167,6 @@ public final class ConsensusModule extends AbstractModule {
       EventDispatcher<NoVote> noVoteEventDispatcher,
       BFTSync bftSync,
       SafetyRules safetyRules) {
-    //    return bftEventProcessorFactory.create(
-    //        self,
-    //        pacemaker,
-    //        vertexStore,
-    //        bftSync,
-    //        bftSync.roundQuorumReachedEventProcessor(),
-    //            consensusBootstrapProvider,
-    //        safetyRules);
     return BFTBuilder.create()
         .self(self)
         .hasher(hasher)
@@ -197,9 +183,7 @@ public final class ConsensusModule extends AbstractModule {
             })
         .noVoteEventDispatcher(noVoteEventDispatcher)
         .consensusBootstrapProvider(consensusBootstrapProvider)
-        // .roundUpdate(roundUpdate)
         .bftSyncer(bftSync)
-        // .validatorSet(validatorSet)
         .build();
   }
 
@@ -247,8 +231,7 @@ public final class ConsensusModule extends AbstractModule {
       RemoteEventDispatcher<GetVerticesRequest> requestSender,
       EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
       ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
-      ConsensusBootstrapProvider
-          consensusBootstrapProvider, // Use this instead of configuration.getRoot()
+      ConsensusBootstrapProvider consensusBootstrapProvider,
       Random random,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       Hasher hasher,
@@ -270,13 +253,6 @@ public final class ConsensusModule extends AbstractModule {
         bftSyncPatienceMillis,
         counters);
   }
-
-  //    @Provides
-  //    @Singleton
-  //    private VertexStore vertexStore(BFTConfiguration bftConfiguration, Ledger ledger, Hasher
-  //   hasher) {
-  //      return VertexStoreJavaImpl.create(bftConfiguration.getVertexStoreState(), ledger, hasher);
-  //    }
 
   @Provides
   @Singleton

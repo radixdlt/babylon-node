@@ -75,7 +75,6 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
 import com.radixdlt.rev1.modules.LedgerRecoveryModule;
 import com.radixdlt.rev1.modules.PersistenceModule;
 import com.radixdlt.rev1.modules.RadixEngineStoreModule;
@@ -106,7 +105,6 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
     install(new FunctionalRadixNodeModule());
     install(new RadixEngineStoreModule());
     install(new PersistenceModule());
-    install(new ConsensusRecoveryModule());
     install(new LedgerRecoveryModule());
   }
 }

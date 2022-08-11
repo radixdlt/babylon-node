@@ -119,7 +119,6 @@ import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.forks.InMemoryForksEpochStoreModule;
 import com.radixdlt.rev1.forks.NoOpForksEpochStore;
-import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
 import com.radixdlt.rev1.modules.LedgerRecoveryModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
@@ -505,7 +504,6 @@ public final class SimulationTest {
                 Amount.ofTokens(1000000),
                 Amount.ofTokens(10000)));
         modules.add(new LedgerRecoveryModule());
-        modules.add(new ConsensusRecoveryModule());
 
         // FIXME: A bit of a hack
         testModules.add(

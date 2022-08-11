@@ -101,17 +101,6 @@ public class MockedConsensusRecoveryModule extends AbstractModule {
     }
   }
 
-  //  @Provides
-  //  private RoundUpdate initialRoundUpdate(
-  //      BFTConfiguration configuration, ProposerElection proposerElection) {
-  //    HighQC highQC = configuration.getVertexStoreState().getHighQC();
-  //    Round round = highQC.highestQC().getRound().next();
-  //    final BFTNode leader = proposerElection.getProposer(round);
-  //    final BFTNode nextLeader = proposerElection.getProposer(round.next());
-  //
-  //    return RoundUpdate.create(round, highQC, leader, nextLeader);
-  //  }
-
   @Provides
   private BFTValidatorSet validatorSet() {
     return this.builder.validatorSetMapping().apply(1);

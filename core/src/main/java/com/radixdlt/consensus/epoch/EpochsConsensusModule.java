@@ -221,12 +221,6 @@ public class EpochsConsensusModule extends AbstractModule {
         Runners.CONSENSUS, EpochRoundUpdate.class, epochManager.epochRoundUpdateEventProcessor());
   }
 
-  //    @Provides
-  //    private EpochChange initialEpoch(
-  //            @LastEpochProof LedgerProof proof, BFTConfiguration initialBFTConfig) {
-  //      return new EpochChange(proof, initialBFTConfig);
-  //    }
-
   @ProvidesIntoSet
   @ProcessOnDispatch
   private EventProcessor<ScheduledLocalTimeout> initialEpochsTimeoutSender(

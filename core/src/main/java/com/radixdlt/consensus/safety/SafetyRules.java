@@ -218,12 +218,12 @@ public final class SafetyRules {
    */
   public Optional<Vote> voteFor(
       VertexWithHash proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
-    Builder safetyStateBuilder = this.getSafetyState().toBuilder();
 
     if (!checkLastVoted(proposedVertex)) {
       return Optional.empty();
     }
 
+    Builder safetyStateBuilder = this.getSafetyState().toBuilder();
     if (!checkLocked(proposedVertex, safetyStateBuilder)) {
       return Optional.empty();
     }

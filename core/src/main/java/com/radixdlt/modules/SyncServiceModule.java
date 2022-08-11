@@ -104,11 +104,6 @@ public class SyncServiceModule extends AbstractModule {
     bind(RemoteSyncService.class).in(Scopes.SINGLETON);
   }
 
-  //  @Provides
-  //  private SyncState initialSyncState(@LastProof LedgerProof currentHeader) {
-  //    return SyncState.IdleState.init(currentHeader);
-  //  }
-
   @ProvidesIntoSet
   private RemoteEventProcessorOnRunner<?> syncRequestEventProcessor(
       RemoteSyncService remoteSyncService) {

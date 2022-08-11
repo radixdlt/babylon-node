@@ -125,19 +125,20 @@ public final class Pacemaker {
       TimeSupplier timeSupplier,
       SystemCounters systemCounters,
       ConsensusBootstrapProvider consensusBootstrapProvider) {
-    this.self = Objects.requireNonNull(self);
-    this.counters = Objects.requireNonNull(counters);
-    this.vertexStore = Objects.requireNonNull(vertexStore);
-    this.safetyRules = Objects.requireNonNull(safetyRules);
-    this.timeoutSender = Objects.requireNonNull(timeoutSender);
-    this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
-    this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
-    this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
-    this.proposalDispatcher = Objects.requireNonNull(proposalDispatcher);
-    this.hasher = Objects.requireNonNull(hasher);
-    this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
-    this.timeSupplier = Objects.requireNonNull(timeSupplier);
-    this.systemCounters = Objects.requireNonNull(systemCounters);
+    this(
+        self,
+        counters,
+        vertexStore,
+        safetyRules,
+        timeoutDispatcher,
+        timeoutSender,
+        timeoutCalculator,
+        proposalGenerator,
+        proposalDispatcher,
+        voteDispatcher,
+        hasher,
+        timeSupplier,
+        systemCounters);
     this.consensusBootstrapProvider = Objects.requireNonNull(consensusBootstrapProvider);
   }
 
@@ -175,7 +176,7 @@ public final class Pacemaker {
     this.latestRoundUpdate = Objects.requireNonNull(initialRoundUpdate);
   }
 
-  public Pacemaker(
+  private Pacemaker(
       BFTNode self,
       SystemCounters counters,
       VertexStoreAdapter vertexStore,
