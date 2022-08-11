@@ -68,21 +68,20 @@ use crate::transaction_store::TransactionStore;
 use crate::types::Transaction;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
-use std::sync::Arc;
-use std::sync::Mutex;
+
 use transaction::model::NotarizedTransaction;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct StateManager<M: Mempool> {
-    pub mempool: Arc<Mutex<M>>,
-    pub transaction_store: Arc<Mutex<TransactionStore>>,
+    pub mempool: M,
+    pub transaction_store: TransactionStore,
 }
 
 impl<M: Mempool> StateManager<M> {
     pub fn new(mempool: M, transaction_store: TransactionStore) -> StateManager<M> {
         StateManager {
-            mempool: Arc::new(Mutex::new(mempool)),
-            transaction_store: Arc::new(Mutex::new(transaction_store)),
+            mempool,
+            transaction_store,
         }
     }
 

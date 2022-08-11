@@ -25,6 +25,7 @@ jni = "0.19.0"
 sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-db5aba34" }
 scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-db5aba34" }
 transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-db5aba34" }
+radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-db5aba34" }
 
 [lib]
 crate_type = ["cdylib"]
