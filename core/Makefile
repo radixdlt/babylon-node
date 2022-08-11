@@ -44,10 +44,16 @@ package: build-core
 publish: package
 	docker push $(CORE_REPO):$(TAG)
 
+.PHONY: buildx-driver
+buildx-driver:
+	docker buildx create --use
+
+
+
 .PHONY: build-push-using-remote-cache
-build-push-using-remote-cache:  gcloud-token build-core
+build-push-using-remote-cache:  buildx-driver gcloud-token build-core
 	echo "Building and pushing image $(CORE_REPO):$(TAG)"
-	$(shell docker buildx create --use && cd ../docker && DOCKER_BUILDKIT=1 docker buildx build \
+	$(shell cd ../docker && DOCKER_BUILDKIT=1 docker buildx build \
           --cache-from=type=registry,ref=$(GAR_CACHE_REPO)/build-core-cache \
           --cache-to=type=registry,ref=$(GAR_CACHE_REPO)/build-core-cache,mode=min \
           --tag $(CORE_REPO):$(TAG) -f Dockerfile.core . --push)
