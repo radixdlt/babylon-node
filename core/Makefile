@@ -22,8 +22,8 @@ gcloud-authenticate:
 gcloud-token: gcloud-authenticate
 	 echo "Getting access token"
 	 $(eval ACCESSTOKEN=$(shell gcloud auth print-access-token))
-	 docker login -u oauth2accesstoken -p $(ACCESSTOKEN) https://eu.gcr.io/
-	 docker login -u oauth2accesstoken -p $(ACCESSTOKEN) https://europe-west2-docker.pkg.dev/
+	 @docker login -u oauth2accesstoken -p $(ACCESSTOKEN) https://eu.gcr.io/
+	 @docker login -u oauth2accesstoken -p $(ACCESSTOKEN) https://europe-west2-docker.pkg.dev/
 
 .PHONY: build-sm
 build-sm: gcloud-token
