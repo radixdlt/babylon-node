@@ -82,6 +82,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/** REv2 State Computer implementation */
 public final class REv2StateComputer implements StateComputerLedger.StateComputer {
   private static final Logger log = LogManager.getLogger();
 
