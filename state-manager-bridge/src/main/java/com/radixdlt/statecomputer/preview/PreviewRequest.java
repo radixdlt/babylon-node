@@ -123,4 +123,14 @@ public record PreviewRequest(
     return Objects.hash(
         Arrays.hashCode(manifest), nonce, costUnitLimit, tipPercentage, signerPublicKeys, flags);
   }
+
+  @Override
+  public String toString() {
+    return "PreviewRequest{" +
+            "costUnitLimit=" + costUnitLimit +
+            ", tipPercentage=" + tipPercentage +
+            ", nonce=" + nonce +
+            ", flags=" + flags +
+            '}';
+  }
 }
