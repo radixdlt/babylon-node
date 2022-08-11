@@ -73,6 +73,11 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
 }
 
+compileJava {
+    if (!project.hasProperty('ci')) {
+        dependsOn(":state-manager:buildRustForDocker")
+    }
+}
 
 jacocoTestReport {
     dependsOn test
