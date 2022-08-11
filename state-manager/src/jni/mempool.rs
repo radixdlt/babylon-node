@@ -174,8 +174,8 @@ fn do_add(
 
     // TODO: Move decoding of transaction to a separate "zone"
     // TODO: Use notarized transaction in mempool
-    if let Err(decode_error) = state_manager.state_manager.decode_transaction(&transaction) {
-        return Err(MempoolError::DecodeError(decode_error)).map_err_sm(|err| err.into());
+    if let Err(error) = state_manager.state_manager.decode_transaction(&transaction) {
+        return Err(MempoolError::TransactionValidationError(error)).map_err_sm(|err| err.into());
     }
 
     let result = state_manager
@@ -257,7 +257,7 @@ fn do_get_transactions_to_relay(
 enum MempoolErrorJava {
     Full { current_size: i64, max_size: i64 },
     Duplicate,
-    DecodeError(String),
+    TransactionValidationError(String),
 }
 
 impl JavaStructure for MempoolErrorJava {}
@@ -283,9 +283,9 @@ impl From<MempoolError> for StateManagerResult<MempoolErrorJava> {
                 })?,
             }),
             MempoolError::Duplicate => Ok(MempoolErrorJava::Duplicate),
-            MempoolError::DecodeError(decode_error) => {
-                Ok(MempoolErrorJava::DecodeError(format!("{:?}", decode_error)))
-            }
+            MempoolError::TransactionValidationError(error) => Ok(
+                MempoolErrorJava::TransactionValidationError(format!("{:?}", error)),
+            ),
         }
     }
 }

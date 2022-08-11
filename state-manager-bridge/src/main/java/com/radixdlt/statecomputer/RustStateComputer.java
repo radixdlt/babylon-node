@@ -114,6 +114,10 @@ public class RustStateComputer {
     this.mempool.handleTransactionsCommitted(transactions);
     for (int i = 0; i < transactions.size(); i++) {
       var transaction = transactions.get(i);
+
+      var transactionBytes = StateManagerSbor.sbor.encode(transaction, Transaction.class);
+      execute(this.rustState, transactionBytes);
+
       var transactionStateVersion = committedStateVersion - transactions.size() + i;
       this.transactionStore.insertTransaction(transactionStateVersion, transaction.getPayload());
     }
@@ -126,4 +130,6 @@ public class RustStateComputer {
   }
 
   private static native byte[] verify(StateManager.RustState rustState, byte[] encodedArgs);
+
+  private static native byte[] execute(StateManager.RustState rustState, byte[] encodedArgs);
 }

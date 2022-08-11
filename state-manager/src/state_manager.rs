@@ -66,30 +66,81 @@ use crate::jni::dtos::*;
 use crate::mempool::{Mempool, MempoolConfig};
 use crate::transaction_store::TransactionStore;
 use crate::types::Transaction;
-use sbor::DecodeError;
-use scrypto::buffer::scrypto_decode;
+use radix_engine::constants::{
+    DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
+};
+use radix_engine::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+use radix_engine::transaction::{ExecutionConfig, TransactionExecutor};
+use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
+use scrypto::core::Network;
+use transaction::errors::TransactionValidationError;
 
-use transaction::model::NotarizedTransaction;
+use transaction::model::ValidatedTransaction;
+use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
-#[derive(Debug)]
-pub struct StateManager<M: Mempool> {
+pub struct StateManager<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> {
     pub mempool: M,
     pub transaction_store: TransactionStore,
+    pub substate_store: S,
+    wasm_engine: DefaultWasmEngine,
+    wasm_instrumenter: WasmInstrumenter,
+    validation_config: ValidationConfig,
+    execution_config: ExecutionConfig,
+    intent_hash_manager: TestIntentHashManager,
 }
 
-impl<M: Mempool> StateManager<M> {
-    pub fn new(mempool: M, transaction_store: TransactionStore) -> StateManager<M> {
+impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager<M, S> {
+    pub fn new(
+        mempool: M,
+        transaction_store: TransactionStore,
+        substate_store: S,
+    ) -> StateManager<M, S> {
         StateManager {
             mempool,
             transaction_store,
+            substate_store,
+            wasm_engine: DefaultWasmEngine::new(),
+            wasm_instrumenter: WasmInstrumenter::new(),
+            validation_config: ValidationConfig {
+                network: Network::InternalTestnet,
+                current_epoch: 1,
+                max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+                min_tip_percentage: 0,
+            },
+            execution_config: ExecutionConfig {
+                cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+                system_loan: DEFAULT_SYSTEM_LOAN,
+                is_system: false,
+                trace: false,
+            },
+            intent_hash_manager: TestIntentHashManager::new(),
         }
+    }
+
+    pub fn execute_transaction(
+        &mut self,
+        transaction: ValidatedTransaction,
+    ) -> Result<(), TransactionValidationError> {
+        let mut transaction_executor = TransactionExecutor::new(
+            &mut self.substate_store,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
+        );
+        transaction_executor.execute_and_commit(&transaction, &self.execution_config);
+
+        Ok(())
     }
 
     pub fn decode_transaction(
         &self,
         txn: &Transaction,
-    ) -> Result<NotarizedTransaction, DecodeError> {
-        scrypto_decode(&txn.payload)
+    ) -> Result<ValidatedTransaction, TransactionValidationError> {
+        TransactionValidator::validate_from_slice(
+            &txn.payload,
+            &self.intent_hash_manager,
+            &self.validation_config,
+        )
     }
 }
 
