@@ -7,6 +7,7 @@ RUN apt install -y curl
 RUN apt install -y g++-x86-64-linux-gnu
 RUN apt install -y g++-aarch64-linux-gnu libc6-dev-arm64-cross
 RUN apt install -y build-essential
+RUN apt install -y libclang-dev
 
 RUN rustup target add aarch64-unknown-linux-gnu
 RUN rustup toolchain install stable-aarch64-unknown-linux-gnu
