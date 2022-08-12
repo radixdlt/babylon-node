@@ -28,4 +28,4 @@ echo "Launching"
 # Launch
 ${reporoot}/gradlew -p "${reporoot}" deb4docker && \
   (docker kill $(docker ps -q) || true) 2>/dev/null && \
-  docker-compose -f "${dockerfile}" up --build | tee docker.log
+  docker compose -f "${dockerfile}" up --build | tee docker.log
