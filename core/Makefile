@@ -59,5 +59,5 @@ build-push-using-remote-cache:  buildx-driver gcloud-token build-core
           --tag $(CORE_REPO):$(TAG) -f Dockerfile.core . --push)
 
 .PHONY: run-docker-node
-run-docker-node: package
+run-docker-node:
 	../docker/scripts/rundocker.sh 2
