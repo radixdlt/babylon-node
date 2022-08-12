@@ -149,6 +149,8 @@ impl JNIStateManager {
         drop(jni_state_manager);
     }
 
+    /// Get a lock on the state manager
+    /// TODO: Optimize this lock out at some point
     pub fn get_state_manager<'a>(
         env: &'a JNIEnv,
         interop_state: JObject<'a>,
