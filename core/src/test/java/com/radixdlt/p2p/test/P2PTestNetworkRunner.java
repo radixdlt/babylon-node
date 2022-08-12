@@ -198,8 +198,8 @@ public final class P2PTestNetworkRunner {
             } catch (IOException e) {
               throw new RuntimeException(e);
             }
-            bindConstant().annotatedWith(NetworkId.class).to(Network.LOCALNET.getId());
-            bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
+            bindConstant().annotatedWith(NetworkId.class).to(Network.INTEGRATIONTESTNET.getId());
+            bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
             bindConstant()
                 .annotatedWith(DatabaseLocation.class)
                 .to(dbDir.getRoot().getAbsolutePath());
@@ -212,7 +212,7 @@ public final class P2PTestNetworkRunner {
             bind(String.class)
                 .annotatedWith(Self.class)
                 .toInstance(
-                    Addressing.ofNetwork(Network.LOCALNET)
+                    Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
                         .forValidators()
                         .of(nodeKey.getPublicKey())
                         .substring(0, 10));

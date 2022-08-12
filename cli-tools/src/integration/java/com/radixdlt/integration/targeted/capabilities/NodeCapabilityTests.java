@@ -68,6 +68,7 @@ import static com.radixdlt.shell.RadixShell.nodeBuilder;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;
 
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
 import com.radixdlt.messaging.ledgersync.StatusResponseMessage;
 import com.radixdlt.monitoring.SystemCounters;
@@ -296,7 +297,7 @@ public class NodeCapabilityTests {
     return nodeBuilder()
         .p2pServer(port)
         .ledgerSync()
-        .prop("network.genesis_txn", "01")
+        .prop("network.genesis_txn", ECKeyPair.fromSeed(new byte[] {0x01}).getPublicKey().toHex())
         .prop("capabilities.ledger_sync.enabled", Boolean.toString(ledgerSyncEnabled))
         .build();
   }

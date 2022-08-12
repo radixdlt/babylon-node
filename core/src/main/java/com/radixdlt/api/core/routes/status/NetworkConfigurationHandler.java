@@ -91,13 +91,13 @@ public final class NetworkConfigurationHandler
   @Override
   public NetworkConfigurationResponse handleRequest(Void request) throws CoreApiException {
     return new NetworkConfigurationResponse()
-        .networkIdentifier(new NetworkIdentifier().network(network.name().toLowerCase()))
+        .networkIdentifier(new NetworkIdentifier().network(network.getLogicalName()))
         .bech32HumanReadableParts(
             new Bech32HRPs()
                 .accountHrp(network.getAccountHrp())
                 .validatorHrp(network.getValidatorHrp())
                 .nodeHrp(network.getNodeHrp())
-                .resourceHrpSuffix(network.getResourceHrpSuffix()))
+                .resourceHrpSuffix(network.getResourceHrp()))
         .version(
             new NetworkConfigurationResponseVersion()
                 .apiVersion("1.0.0")

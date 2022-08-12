@@ -64,13 +64,16 @@
 
 package com.radixdlt;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.radixdlt.api.ApiModule;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
@@ -80,6 +83,7 @@ import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.messaging.MessagingModule;
 import com.radixdlt.modules.*;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
@@ -90,11 +94,14 @@ import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.BooleanUtils;
-import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
@@ -117,6 +124,10 @@ public final class RadixNodeModule extends AbstractModule {
   protected void configure() {
     if (this.networkId <= 0) {
       throw new IllegalStateException("Illegal networkId " + networkId);
+    }
+    if (Network.ofId(this.networkId).isEmpty()) {
+      throw new IllegalStateException(
+          "NetworkId " + networkId + " does not match any known networks");
     }
 
     var addressing = Addressing.ofNetworkId(networkId);
@@ -186,14 +197,31 @@ public final class RadixNodeModule extends AbstractModule {
     // install(new ConsensusRecoveryModule());
     // install(new LedgerRecoveryModule());
 
-    // Use genesis to specify number of validators for now
-    var numValidators = Integer.parseInt(properties.get("network.genesis_txn"));
-    var initialVset =
-        PrivateKeys.numeric(6)
-            .limit(numValidators)
-            .map(ECKeyPair::getPublicKey)
-            .map(BFTNode::create)
+    String genesisTxn;
+    final var genesisFileProp = properties.get("network.genesis_file");
+    if (genesisFileProp != null && !genesisFileProp.isBlank()) {
+      log.info("Loading genesis from file: {}", genesisFileProp);
+      genesisTxn = loadGenesisFromFile(genesisFileProp);
+    } else {
+      log.info("Loading genesis from genesis_txn property");
+      genesisTxn = properties.get("network.genesis_txn");
+    }
+
+    log.info("Using genesis txn: {}", genesisTxn);
+
+    final var initialVset =
+        Streams.stream(Splitter.fixedLength(ECPublicKey.COMPRESSED_BYTES * 2).split(genesisTxn))
+            .map(
+                pubKeyBytes -> {
+                  log.info("Initial vset validator: {}", pubKeyBytes);
+                  try {
+                    return BFTNode.create(ECPublicKey.fromHex(pubKeyBytes));
+                  } catch (PublicKeyException e) {
+                    throw new RuntimeException(e);
+                  }
+                })
             .toList();
+
     install(new MockedConsensusRecoveryModule.Builder().withNodes(initialVset).build());
     install(new MockedLedgerRecoveryModule());
 
@@ -219,5 +247,14 @@ public final class RadixNodeModule extends AbstractModule {
             .map(LedgerSyncCapability.Builder::new)
             .orElse(LedgerSyncCapability.Builder.asDefault());
     install(new CapabilitiesModule(builder.build()));
+  }
+
+  private String loadGenesisFromFile(String genesisFile) {
+    try (var genesisJsonString = new FileInputStream(genesisFile)) {
+      var genesisJson = new JSONObject(IOUtils.toString(genesisJsonString));
+      return genesisJson.getString("genesis");
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
+    }
   }
 }

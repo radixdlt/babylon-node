@@ -1,21 +1,45 @@
-FROM rust:1.62.1-slim
-
+FROM rust:1.62.1-slim as base
 WORKDIR /app
 
-RUN apt update; apt upgrade -y
-RUN apt install -y curl
-RUN apt install -y g++-x86-64-linux-gnu
-RUN apt install -y g++-aarch64-linux-gnu libc6-dev-arm64-cross
-RUN apt install -y build-essential
-RUN apt install -y libclang-dev
+RUN apt update; apt upgrade -y && \
+    apt install -y curl && \
+    apt install -y g++-x86-64-linux-gnu && \
+    apt install -y g++-aarch64-linux-gnu libc6-dev-arm64-cross && \
+    apt install -y build-essential && \
+    apt install -y libclang-dev
 
-RUN rustup target add aarch64-unknown-linux-gnu
-RUN rustup toolchain install stable-aarch64-unknown-linux-gnu
+RUN rustup target add aarch64-unknown-linux-gnu && \
+    rustup toolchain install stable-aarch64-unknown-linux-gnu
 
-RUN rustup target add x86_64-unknown-linux-gnu
-RUN rustup toolchain install stable-x86_64-unknown-linux-gnu
+RUN rustup target add x86_64-unknown-linux-gnu && \
+    rustup toolchain install stable-x86_64-unknown-linux-gnu
 
+FROM base as mapped-volume-build
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
 
 CMD cargo build --target=${TARGET}
+
+FROM base as prod-build
+ARG TARGET
+
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
+
+RUN USER=root cargo new dummy
+COPY state-manager/Cargo.toml ./dummy
+COPY state-manager/Cargo.lock ./dummy
+
+RUN mv ./dummy/src/main.rs ./dummy/src/lib.rs
+WORKDIR /app/dummy
+RUN cargo build --target=$TARGET
+
+WORKDIR /app
+COPY state-manager ./
+
+RUN cargo build --target=$TARGET
+RUN mkdir -p /app/binary && cp -R target /app/output
+
+FROM scratch as artifact
+ARG TARGET
+COPY --from=prod-build /app/output/$TARGET/debug/libstatemanager.so /

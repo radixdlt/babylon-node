@@ -109,16 +109,32 @@ task buildRustForDocker(type: Exec) {
 
     // Trigger a custom error message on failure...
     ignoreExitValue true
+    def dockerComposeRun = "docker compose -f ../docker/rust-builder/build-sm.yaml run --env TARGET=$target build-sm"
+    def dockerBuildCmd = "DOCKER_BUILDKIT=1 docker build -f docker/rust-builder/Dockerfile" +
+            " --target=artifact" +
+            " --output type=local,dest=state-manager/target/${target}/debug/" +
+            " --build-arg TARGET=$target ."
+    def dockerCmd
+    if (project.hasProperty('ci')){
+        workingDir rootProject.projectDir
+        dockerCmd=dockerBuildCmd
+    } else{
+        dockerCmd = dockerComposeRun
+    }
 
-    def dockerBuildCmd = "docker compose -f ../docker/rust-builder/build-sm.yaml run --env TARGET=$target build-sm"
-    commandLine 'sh', '-c', dockerBuildCmd
-
+    commandLine 'sh', '-c', dockerCmd
     doLast {
         if (executionResult.get().getExitValue() != 0) {
-            throw new RuntimeException(String.format(
-                    "%s failed with non-zero exit value %s", commandLine,
-                    executionResult.get().getExitValue()
+            logger.error(String.format(
+                    "\n!!! SPECIFIC HELP FOR THIS ERROR" +
+                            "\n!!!\n!!! The docker compose command failed. If the above error suggests that compose is not a command," +
+                            "\n!!! ensure you have `docker --version 20.10.10` or newer installed." +
+                            "\n!!!\n!!! The following command failed with exit value %s:" +
+                            "\n!!! %s",
+                    executionResult.get().getExitValue(),
+                    commandLine
             ))
+            executionResult.get().assertNormalExitValue()
         }
     }
 }
