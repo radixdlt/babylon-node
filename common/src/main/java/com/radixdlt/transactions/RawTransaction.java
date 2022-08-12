@@ -64,27 +64,75 @@
 
 package com.radixdlt.transactions;
 
-import static org.junit.Assert.assertEquals;
-
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.sbor.Sbor;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.sbor.codec.CodecMap;
-import org.junit.Test;
+import com.radixdlt.sbor.codec.StructCodec;
+import java.util.Objects;
 
-public class TransactionTest {
+/**
+ * A wrapper around the raw bytes of a transaction payload (System or User Transaction)
+ *
+ * <p>The transaction is yet to be parsed, and may be invalid.
+ */
+public final class RawTransaction {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        RawTransaction.class,
+        codecs ->
+            StructCodec.with(
+                RawTransaction::new,
+                codecs.of(byte[].class),
+                codecs.of(HashCode.class),
+                (t, encoder) -> encoder.encode(t.payload, t.payloadHash)));
+  }
 
-  @Test
-  public void testSBORSerialization() {
-    var sbor =
-        new Sbor(
-            true, new CodecMap().register(TID::registerCodec).register(Transaction::registerCodec));
+  private final byte[] payload;
+  private final HashCode payloadHash;
 
-    byte[] payload = new byte[10];
-    Transaction t0 = Transaction.create(payload);
+  private RawTransaction(byte[] payload, HashCode payloadHash) {
+    this.payload = Objects.requireNonNull(payload);
+    this.payloadHash = Objects.requireNonNull(payloadHash);
+  }
 
-    var r0 = sbor.encode(t0, Transaction.class);
-    var t1 = sbor.decode(r0, Transaction.class);
+  private RawTransaction(byte[] payload) {
+    this.payload = Objects.requireNonNull(payload);
+    this.payloadHash = HashUtils.transactionIdHash(payload);
+  }
 
-    assertEquals(t0, t1);
+  @JsonCreator
+  public static RawTransaction create(byte[] payload) {
+    return new RawTransaction(payload);
+  }
+
+  public HashCode getPayloadHash() {
+    return payloadHash;
+  }
+
+  @JsonValue
+  public byte[] getPayload() {
+    return payload;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(payloadHash);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof RawTransaction)) {
+      return false;
+    }
+
+    RawTransaction other = (RawTransaction) o;
+    return Objects.equals(this.payloadHash, other.payloadHash);
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s{payloadHash=%s}", this.getClass().getSimpleName(), this.payloadHash);
   }
 }

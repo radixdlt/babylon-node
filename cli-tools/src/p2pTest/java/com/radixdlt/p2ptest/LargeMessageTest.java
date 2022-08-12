@@ -144,7 +144,10 @@ public final class LargeMessageTest {
 
     final var targetUri =
         RadixNodeUri.fromPubKeyAndAddress(
-            Network.LOCALNET.getId(), targetKeyPair.getPublicKey(), "127.0.0.1", targetNodePort);
+            Network.INTEGRATIONTESTNET.getId(),
+            targetKeyPair.getPublicKey(),
+            "127.0.0.1",
+            targetNodePort);
 
     // Attacker node process
     final var attackerNodePort = FreePortFinder.findFreeLocalPort();

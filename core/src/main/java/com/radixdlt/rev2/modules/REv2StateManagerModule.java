@@ -76,7 +76,7 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transaction.TransactionStoreReader;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 
 public final class REv2StateManagerModule extends AbstractModule {
   @Provides
@@ -97,7 +97,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   @Provides
-  private MempoolInserter<Transaction> mempoolInserter(RustStateComputer stateComputer) {
+  private MempoolInserter<RawTransaction> mempoolInserter(RustStateComputer stateComputer) {
     return stateComputer.getMempoolInserter();
   }
 

@@ -73,31 +73,6 @@ import org.bitcoinj.core.AddressFormatException;
 import org.bitcoinj.core.Bech32;
 
 public final class Addressing {
-
-  public static String accountHrp(int networkId) {
-    return Network.ofId(networkId)
-        .map(Network::getAccountHrp)
-        .orElse(Network.MAINNET.getAccountHrp() + networkId);
-  }
-
-  public static String validatorHrp(int networkId) {
-    return Network.ofId(networkId)
-        .map(Network::getValidatorHrp)
-        .orElse(Network.MAINNET.getValidatorHrp() + networkId);
-  }
-
-  public static String resourceHrpSuffix(int networkId) {
-    return Network.ofId(networkId)
-        .map(Network::getResourceHrpSuffix)
-        .orElse(Network.MAINNET.getResourceHrpSuffix() + networkId);
-  }
-
-  public static String nodeHrp(int networkId) {
-    return Network.ofId(networkId)
-        .map(Network::getNodeHrp)
-        .orElse(Network.MAINNET.getNodeHrp() + networkId);
-  }
-
   private final ValidatorAddressing validatorAddressing;
   private final AccountAddressing accountAddressing;
   private final ResourceAddressing resourceAddressing;
@@ -119,11 +94,17 @@ public final class Addressing {
   }
 
   public static Addressing ofNetworkId(int networkId) {
+    var network =
+        Network.ofId(networkId)
+            .orElseThrow(
+                () ->
+                    new RuntimeException(
+                        "Provided Network ID does not match any known networks: " + networkId));
     return new Addressing(
-        ValidatorAddressing.bech32(validatorHrp(networkId)),
-        AccountAddressing.bech32(accountHrp(networkId)),
-        ResourceAddressing.bech32(resourceHrpSuffix(networkId)),
-        NodeAddressing.bech32(nodeHrp(networkId)));
+        ValidatorAddressing.bech32(network.getValidatorHrp()),
+        AccountAddressing.bech32(network.getAccountHrp()),
+        ResourceAddressing.bech32(network.getResourceHrp()),
+        NodeAddressing.bech32(network.getNodeHrp()));
   }
 
   public Optional<AddressType> getAddressType(String address) {
@@ -140,7 +121,7 @@ public final class Addressing {
     if (data.hrp.startsWith(accountAddressing.getHrp())) {
       return Optional.of(AddressType.ACCOUNT);
     }
-    if (data.hrp.endsWith(resourceAddressing.getHrpSuffix())) {
+    if (data.hrp.endsWith(resourceAddressing.getHrp())) {
       return Optional.of(AddressType.RESOURCE);
     }
     if (data.hrp.startsWith(nodeAddressing.getHrp())) {

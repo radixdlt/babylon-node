@@ -85,7 +85,7 @@ import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 import java.util.Random;
@@ -142,7 +142,7 @@ public class RandomTransactionTest {
       for (int j = 0; j < len; j++) {
         payload[j] = random.nextBoolean() ? (byte) random.nextInt(10) : payload[j];
       }
-      var txns = List.of(Transaction.create(payload));
+      var txns = List.of(RawTransaction.create(payload));
       if (i % 1000 == 0) {
         logger.info(i + "/" + count);
       }

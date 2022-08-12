@@ -245,7 +245,7 @@ public final class DeterministicTest {
           new AbstractModule() {
             @Override
             public void configure() {
-              bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
+              bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
               bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
               bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(pacemakerTimeout);
               bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);

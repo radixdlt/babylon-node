@@ -62,76 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.networks;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import java.util.Objects;
+public sealed interface GenesisSource {
+  FromConfiguration fromConfiguration = new FromConfiguration();
+  AsynchronouslyProvided providedAsync = new AsynchronouslyProvided();
 
-/**
- * A wrapper around the raw bytes of a transaction submission. The transaction is yet to be parsed,
- * and may be invalid.
- */
-public final class Transaction {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        Transaction.class,
-        codecs ->
-            StructCodec.with(
-                Transaction::new,
-                codecs.of(byte[].class),
-                codecs.of(TID.class),
-                (t, encoder) -> encoder.encode(t.payload, t.id)));
-  }
+  record Fixed(byte[] genesisTransactionPayload) implements GenesisSource {}
 
-  private final byte[] payload;
-  private final TID id;
+  record FromConfiguration() implements GenesisSource {}
 
-  private Transaction(byte[] payload, TID id) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = Objects.requireNonNull(id);
-  }
-
-  private Transaction(byte[] payload) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = TID.from(HashUtils.transactionIdHash(payload).asBytes());
-  }
-
-  @JsonCreator
-  public static Transaction create(byte[] payload) {
-    return new Transaction(payload);
-  }
-
-  public TID getId() {
-    return id;
-  }
-
-  @JsonValue
-  public byte[] getPayload() {
-    return payload;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Transaction)) {
-      return false;
-    }
-
-    Transaction other = (Transaction) o;
-    return Objects.equals(this.id, other.id);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
-  }
+  record AsynchronouslyProvided() implements GenesisSource {}
 }

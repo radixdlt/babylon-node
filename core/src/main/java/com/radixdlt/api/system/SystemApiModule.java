@@ -96,7 +96,7 @@ public class SystemApiModule extends AbstractModule {
     binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
     binder.addBinding(HandlerRoute.get("/system/peers")).to(PeersHandler.class);
     binder.addBinding(HandlerRoute.get("/system/addressbook")).to(AddressBookHandler.class);
-    install(new PrometheusApiModule("/prometheus/metrics"));
+    install(new PrometheusApiModule("/system/prometheus/metrics"));
   }
 
   @ProvidesIntoSet
