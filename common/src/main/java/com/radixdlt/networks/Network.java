@@ -65,9 +65,6 @@
 package com.radixdlt.networks;
 
 import com.radixdlt.crypto.ECKeyPair;
-
-import java.security.interfaces.ECKey;
-import java.security.interfaces.ECPrivateKey;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -84,7 +81,7 @@ public enum Network {
   LOCALNET(99, "ddx", "dv", "_dr", "dn");
 
   private static String mainnetGenesis() {
-    return ECKeyPair.fromSeed(new byte[] { 0x01 }).getPublicKey().toHex(); // genesis_transaction
+    return ECKeyPair.fromSeed(new byte[] {0x01}).getPublicKey().toHex(); // genesis_transaction
   }
 
   private final int id;

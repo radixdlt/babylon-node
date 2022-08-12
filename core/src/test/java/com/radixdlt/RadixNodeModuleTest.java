@@ -71,7 +71,6 @@ import static org.mockito.Mockito.doReturn;
 
 import com.google.inject.Guice;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.serialization.TestSetupUtils;
@@ -84,7 +83,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class RadixNodeModuleTest {
-  private static final String MOCK_GENESIS_TXN = ECKeyPair.fromSeed(new byte[] { 0x01 }).getPublicKey().toHex();
+  private static final String MOCK_GENESIS_TXN =
+      ECKeyPair.fromSeed(new byte[] {0x01}).getPublicKey().toHex();
 
   @NetworkId private int networkId;
 

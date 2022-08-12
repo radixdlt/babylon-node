@@ -297,7 +297,7 @@ public class NodeCapabilityTests {
     return nodeBuilder()
         .p2pServer(port)
         .ledgerSync()
-        .prop("network.genesis_txn", ECKeyPair.fromSeed(new byte[] { 0x01 }).getPublicKey().toHex())
+        .prop("network.genesis_txn", ECKeyPair.fromSeed(new byte[] {0x01}).getPublicKey().toHex())
         .prop("capabilities.ledger_sync.enabled", Boolean.toString(ledgerSyncEnabled))
         .build();
   }
