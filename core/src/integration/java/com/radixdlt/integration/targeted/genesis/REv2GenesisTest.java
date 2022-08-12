@@ -98,7 +98,8 @@ import org.junit.Test;
 public final class REv2GenesisTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
   private static final BigInteger ONE_TOKEN = BigInteger.TEN.pow(18);
-  private static final BigInteger GENESIS_AMOUNT = BigInteger.valueOf(24).multiply(BigInteger.TEN.pow(9)).multiply(ONE_TOKEN);
+  private static final BigInteger GENESIS_AMOUNT =
+      BigInteger.valueOf(24).multiply(BigInteger.TEN.pow(9)).multiply(ONE_TOKEN);
 
   @Inject private REv2StateReader stateReader;
 
@@ -155,8 +156,12 @@ public final class REv2GenesisTest {
   public void state_reader_on_genesis_returns_correct_amount() {
     createInjector().injectMembers(this);
 
-    var amount = this.stateReader.getComponentResources(ComponentAddress.SYSTEM_COMPONENT_ADDRESS);
+    var systemAmount =
+        this.stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_COMPONENT_ADDRESS);
+    assertThat(systemAmount).isEqualTo(GENESIS_AMOUNT);
 
-    assertThat(amount).isEqualTo(GENESIS_AMOUNT);
+    var emptyAccountAmount =
+        this.stateReader.getComponentXrdAmount(ComponentAddress.create(new byte[27]));
+    assertThat(emptyAccountAmount).isEqualTo(BigInteger.ZERO);
   }
 }

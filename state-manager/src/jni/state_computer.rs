@@ -126,27 +126,32 @@ fn do_execute(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateMan
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_resources(
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_xrd(
     env: JNIEnv,
     _class: JClass,
     j_state: JObject,
     j_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_get_component_resources(&env, j_state, j_payload).to_java();
+    let ret = get_component_xrd(&env, j_state, j_payload).to_java();
 
     jni_slice_to_jbytearray(&env, &ret)
 }
 
-fn do_get_component_resources(
+fn get_component_xrd(
     env: &JNIEnv,
     j_state: JObject,
-    _j_payload: jbyteArray,
+    j_payload: jbyteArray,
 ) -> StateManagerResult<Vec<u8>> {
     let state_manager = JNIStateManager::get_state_manager(env, j_state);
-    //let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
+    let request_payload = jni_jbytearray_to_vector(env, j_payload)?;
+    let component_address =
+        ComponentAddress::try_from(request_payload.as_slice()).expect("Invalid address");
     let resources = state_manager
         .state_manager
-        .get_component_resources(SYSTEM_COMPONENT);
-    let amount = resources.get(&RADIX_TOKEN).cloned().unwrap_or(Decimal::zero());
+        .get_component_resources(component_address);
+    let amount = resources
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap_or_else(Decimal::zero);
     Ok(amount.to_vec())
 }

@@ -115,6 +115,6 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   @Provides
   public REv2StateReader stateReader(RustStateComputer rustStateComputer) {
-    return rustStateComputer::getComponentResources;
+    return rustStateComputer::getComponentXrdAmount;
   }
 }

@@ -77,11 +77,10 @@ import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStoreReader;
 import com.radixdlt.transactions.RawTransaction;
-import org.bouncycastle.util.Arrays;
-
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
+import org.bouncycastle.util.Arrays;
 
 public class RustStateComputer {
   private final StateManager.RustState rustState;
@@ -97,7 +96,7 @@ public class RustStateComputer {
   private static final TypeToken<Result<Boolean, StateManagerRuntimeError>> booleanType =
       new TypeToken<>() {};
   private static final TypeToken<Result<byte[], StateManagerRuntimeError>> byteArrayType =
-          new TypeToken<>() {};
+      new TypeToken<>() {};
 
   public TransactionStoreReader getTransactionStoreReader() {
     return this.transactionStore;
@@ -116,8 +115,9 @@ public class RustStateComputer {
     return this.mempool.getTransactionsForProposal(count, transactionToExclude);
   }
 
-  public BigInteger getComponentResources(ComponentAddress componentAddress) {
-    var encodedResponse = resources(this.rustState, new byte[0]);
+  public BigInteger getComponentXrdAmount(ComponentAddress componentAddress) {
+    // TODO: Use SBOR custom component address codec
+    var encodedResponse = xrd(this.rustState, componentAddress.getAddressBytes());
     var amount = StateManagerResponse.decode(encodedResponse, byteArrayType);
     return new BigInteger(1, Arrays.reverse(amount));
   }
@@ -145,5 +145,5 @@ public class RustStateComputer {
 
   private static native byte[] execute(StateManager.RustState rustState, byte[] encodedArgs);
 
-  private static native byte[] resources(StateManager.RustState rustState, byte[] encodedArgs);
+  private static native byte[] xrd(StateManager.RustState rustState, byte[] encodedArgs);
 }
