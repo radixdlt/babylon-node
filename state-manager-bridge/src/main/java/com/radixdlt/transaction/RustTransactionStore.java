@@ -75,17 +75,10 @@ public final class RustTransactionStore implements TransactionStoreReader {
     this.rustState = Objects.requireNonNull(rustState);
   }
 
-  public void insertTransaction(long stateVersion, byte[] transactionBytes) {
-    insertTransaction(this.rustState, stateVersion, transactionBytes);
-  }
-
   @Override
   public byte[] getTransactionAtStateVersion(long stateVersion) {
     return getTransactionAtStateVersion(this.rustState, stateVersion);
   }
-
-  private static native void insertTransaction(
-      RustState rustState, long stateVersion, byte[] transactionBytes);
 
   private static native byte[] getTransactionAtStateVersion(RustState rustState, long stateVersion);
 }

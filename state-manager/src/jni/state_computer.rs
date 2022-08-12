@@ -99,28 +99,27 @@ fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateMana
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_execute(
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     env: JNIEnv,
     _class: JClass,
     j_state: JObject,
     j_payload: jbyteArray,
     j_state_version: jlong,
 ) -> jbyteArray {
-    let ret = do_execute(&env, j_state, j_payload, j_state_version).to_java();
+    let ret = do_commit(&env, j_state, j_payload, j_state_version).to_java();
 
     jni_slice_to_jbytearray(&env, &ret)
 }
 
-fn do_execute(
+fn do_commit(
     env: &JNIEnv,
     j_state: JObject,
     j_payload: jbyteArray,
-    _j_state_version: jlong,
+    j_state_version: jlong,
 ) -> StateManagerResult<()> {
     let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
     let transactions = Vec::<Transaction>::from_java(&request_payload)?;
-
     for transaction in &transactions {
         let validated_txn = state_manager
             .state_manager
@@ -130,6 +129,15 @@ fn do_execute(
             .state_manager
             .execute_transaction(validated_txn)
             .expect("Error on Byzantine quorum");
+    }
+
+    for (i, transaction) in transactions.iter().enumerate() {
+        let state_version = j_state_version as u64 - u64::try_from(transactions.len() - i - 1).unwrap();
+        let transaction_bytes = transaction.payload.clone();
+        state_manager
+            .state_manager
+            .transaction_store
+            .insert_transaction(state_version, transaction_bytes);
     }
 
     state_manager

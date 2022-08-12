@@ -125,13 +125,7 @@ public class RustStateComputer {
   public void commit(List<RawTransaction> transactions, long committedStateVersion) {
     var encodedTransactions =
         StateManagerSbor.sbor.encode(transactions, new TypeToken<List<RawTransaction>>() {});
-    execute(this.rustState, encodedTransactions, committedStateVersion);
-
-    for (int i = 0; i < transactions.size(); i++) {
-      var transaction = transactions.get(i);
-      var transactionStateVersion = committedStateVersion - transactions.size() + i;
-      this.transactionStore.insertTransaction(transactionStateVersion, transaction.getPayload());
-    }
+    commit(this.rustState, encodedTransactions, committedStateVersion);
   }
 
   public boolean verify(RawTransaction transaction) {
@@ -142,7 +136,7 @@ public class RustStateComputer {
 
   private static native byte[] verify(StateManager.RustState rustState, byte[] encodedArgs);
 
-  private static native byte[] execute(
+  private static native byte[] commit(
       StateManager.RustState rustState, byte[] encodedTransaction, long committedStateVersion);
 
   private static native byte[] xrd(StateManager.RustState rustState, byte[] encodedArgs);
