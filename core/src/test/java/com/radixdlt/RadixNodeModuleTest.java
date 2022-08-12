@@ -71,6 +71,7 @@ import static org.mockito.Mockito.doReturn;
 
 import com.google.inject.Guice;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.serialization.TestSetupUtils;
@@ -83,6 +84,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class RadixNodeModuleTest {
+  private static final String MOCK_GENESIS_TXN = ECKeyPair.fromSeed(new byte[] { 0x01 }).getPublicKey().toHex();
+
   @NetworkId private int networkId;
 
   @BeforeClass
@@ -94,7 +97,7 @@ public class RadixNodeModuleTest {
   public void testInjectorNotNullToken() {
     final var properties = createDefaultProperties();
     when(properties.get("network.id")).thenReturn("99");
-    when(properties.get("network.genesis_txn")).thenReturn("00");
+    when(properties.get("network.genesis_txn")).thenReturn(MOCK_GENESIS_TXN);
     Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
   }
 
@@ -102,7 +105,7 @@ public class RadixNodeModuleTest {
   public void when_capabilities_ledger_sync_enabled_value_is_invalid_exception_is_thrown() {
     final var properties = createDefaultProperties();
     when(properties.get("network.id")).thenReturn("99");
-    when(properties.get("network.genesis_txn")).thenReturn("00");
+    when(properties.get("network.genesis_txn")).thenReturn(MOCK_GENESIS_TXN);
     when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("yes");
 
     Exception exception =
@@ -121,7 +124,7 @@ public class RadixNodeModuleTest {
   public void when_capabilities_ledger_sync_enabled_value_is_valid_no_exception_is_thrown() {
     final var properties = createDefaultProperties();
     when(properties.get("network.id")).thenReturn("99");
-    when(properties.get("network.genesis_txn")).thenReturn("00");
+    when(properties.get("network.genesis_txn")).thenReturn(MOCK_GENESIS_TXN);
     when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("true");
 
     Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);

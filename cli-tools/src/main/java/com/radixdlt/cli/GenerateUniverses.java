@@ -246,15 +246,20 @@ public final class GenerateUniverses {
                       .forNodes()
                       .of(generatedValidatorKeys.get(i).getPublicKey()));
             });
+
+    final var genesisTxnBuilder = new StringBuilder();
+    for (var key : validatorKeys) {
+      genesisTxnBuilder.append(Hex.toHexString(key.getCompressedBytes()));
+    }
+
+    final var genesisTxn = genesisTxnBuilder.toString();
+
     if (validatorsCount > 0) {
-      System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", validatorsCount);
+      System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", genesisTxn);
     } else {
       try (var writer = new BufferedWriter(new FileWriter("genesis.json"))) {
-        final var out = new StringBuilder();
-        for (var key : validatorKeys) {
-          out.append(Hex.toHexString(key.getCompressedBytes()));
-        }
-        writer.write(new JSONObject().put("genesis", out.toString()).toString());
+
+        writer.write(new JSONObject().put("genesis", genesisTxn).toString());
       }
     }
   }
