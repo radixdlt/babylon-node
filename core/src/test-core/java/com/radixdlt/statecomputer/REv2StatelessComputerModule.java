@@ -67,7 +67,9 @@ package com.radixdlt.statecomputer;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 
-/** Stateless REv2 computer for testing. */
+/**
+ * Stateless REv2 computer for testing intended to be drop in replacement for StateComputerModule
+ */
 public final class REv2StatelessComputerModule extends AbstractModule {
   @Override
   protected void configure() {
