@@ -65,7 +65,7 @@
 package com.radixdlt.sbor.codec.core;
 
 import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_I32;
-import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_VEC;
+import static com.radixdlt.sbor.codec.constants.TypeId.TYPE_LIST;
 
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -81,7 +81,7 @@ public final class IntegerArrayCodec implements Codec<int[]> {
   }
 
   public IntegerArrayCodec() {
-    this(TYPE_VEC);
+    this(TYPE_LIST);
   }
 
   @Override

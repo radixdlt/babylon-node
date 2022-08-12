@@ -84,6 +84,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
@@ -155,12 +156,17 @@ public abstract class ApiTest {
                 bindConstant()
                     .annotatedWith(DatabaseLocation.class)
                     .to(folder.getRoot().getAbsolutePath());
-                bindConstant().annotatedWith(NetworkId.class).to(99);
+                bindConstant()
+                    .annotatedWith(NetworkId.class)
+                    .to(Network.INTEGRATIONTESTNET.getId());
                 bind(P2PConfig.class).toInstance(mock(P2PConfig.class));
                 bind(AddressBook.class).in(Scopes.SINGLETON);
                 var selfUri =
                     RadixNodeUri.fromPubKeyAndAddress(
-                        99, TEST_KEY.getPublicKey(), "localhost", 23456);
+                        Network.INTEGRATIONTESTNET.getId(),
+                        TEST_KEY.getPublicKey(),
+                        "localhost",
+                        23456);
                 bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
                 var runtimeProperties = mock(RuntimeProperties.class);
                 when(runtimeProperties.get(eq("api.transactions.enable"), anyBoolean()))

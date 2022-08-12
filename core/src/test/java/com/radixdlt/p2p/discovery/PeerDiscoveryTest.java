@@ -72,6 +72,7 @@ import com.google.inject.Key;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.test.DeterministicP2PNetworkTest;
@@ -113,7 +114,10 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
         PeersResponse.create(
             ImmutableSet.of(
                 RadixNodeUri.fromPubKeyAndAddress(
-                    0, ECKeyPair.generateNew().getPublicKey(), "127.0.0.1", 1234)));
+                    Network.INTEGRATIONTESTNET.getId(),
+                    ECKeyPair.generateNew().getPublicKey(),
+                    "127.0.0.1",
+                    1234)));
 
     testNetworkRunner
         .getInstance(0, PeerDiscovery.class)

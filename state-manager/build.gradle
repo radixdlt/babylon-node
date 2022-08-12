@@ -96,38 +96,35 @@ task runRustFormat(type: Exec) {
 }
 
 // TBC - We should consider using some kind of gradle rust build plug-in
-// TBC - We should work out how to build multi-target
 task buildRustDebug(type: Exec) {
     commandLine 'cargo', 'build'
 }
 
 task buildRustForDocker(type: Exec) {
-    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
-        environment("CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER", "x86_64-unknown-linux-gnu-gcc")
+    def target = "x86_64-unknown-linux-gnu"
+
+    if (System.getProperty("os.arch") == "aarch64") {
+        target= "aarch64-unknown-linux-gnu"
     }
 
     // Trigger a custom error message on failure...
     ignoreExitValue true
 
-    // If you change this, copy it to the exception below
-    commandLine 'cargo', 'build', '--target=x86_64-unknown-linux-gnu'
+    def dockerBuildCmd = "docker compose -f ../docker/rust-builder/build-sm.yaml run --env TARGET=$target build-sm"
+    commandLine 'sh', '-c', dockerBuildCmd
 
     doLast {
         if (executionResult.get().getExitValue() != 0) {
-            println("Building the rust for docker failed. Some possible ideas to debug:")
-            println("-> You will need to install the correct target with:")
-            println("rustup target add x86_64-unknown-linux-gnu")
-            println("-> You may need to install an appropriate linker, depending on your platform")
-            if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
-                // https://stackoverflow.com/questions/40424255/cross-compilation-to-x86-64-unknown-linux-gnu-fails-on-mac-osx
-                println("-> On Mac OSX, you can try:")
-                println("brew tap SergioBenitez/osxct")
-                println("brew install x86_64-unknown-linux-gnu")
-            }
-            throw new RuntimeException(String.format(
-                "cargo build --target=x86_64-unknown-linux-gnu failed with non-zero exit value %s",
-                executionResult.get().getExitValue()
+            logger.error(String.format(
+                    "\n!!! SPECIFIC HELP FOR THIS ERROR" +
+                            "\n!!!\n!!! The docker compose command failed. If the above error suggests that compose is not a command," +
+                            "\n!!! ensure you have `docker --version 20.10.10` or newer installed." +
+                            "\n!!!\n!!! The following command failed with exit value %s:" +
+                            "\n!!! %s",
+                    executionResult.get().getExitValue(),
+                    commandLine
             ))
+            executionResult.get().assertNormalExitValue()
         }
     }
 }

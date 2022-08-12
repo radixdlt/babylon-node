@@ -65,6 +65,6 @@
 package com.radixdlt.sbor.codec.constants;
 
 public class OptionTypeId {
-  public static final byte NONE = 0x00;
-  public static final byte SOME = 0x01;
+  public static final byte SOME = 0x00;
+  public static final byte NONE = 0x01;
 }

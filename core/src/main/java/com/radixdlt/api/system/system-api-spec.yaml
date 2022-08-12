@@ -3,9 +3,9 @@ info:
   version: '1.0.0'
   title: 'Radix System API'
 servers:
-  - url: 'localhost:3333'
+  - url: 'localhost:3333/system'
 paths:
-  /system/version:
+  /version:
     get:
       summary: 'Get Version'
       responses:
@@ -21,7 +21,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /system/health:
+  /health:
     get:
       summary: 'Get Health'
       responses:
@@ -37,7 +37,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /system/configuration:
+  /configuration:
     get:
       summary: 'Get Configuration'
       responses:
@@ -53,7 +53,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /system/peers:
+  /peers:
     get:
       summary: 'Get Peers'
       responses:
@@ -69,7 +69,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /system/addressbook:
+  /addressbook:
     get:
       summary: 'Get Address Book'
       responses:
@@ -85,7 +85,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /system/metrics:
+  /metrics:
     get:
       summary: 'Get Metrics'
       responses:

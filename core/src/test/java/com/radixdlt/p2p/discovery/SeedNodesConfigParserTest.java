@@ -95,12 +95,15 @@ public class SeedNodesConfigParserTest {
                 String.format(
                     "radix://%s@1.1.1.1",
                     NodeAddressing.of(
-                        Network.LOCALNET.getNodeHrp(), ECKeyPair.generateNew().getPublicKey()))))
+                        Network.INTEGRATIONTESTNET.getNodeHrp(),
+                        ECKeyPair.generateNew().getPublicKey()))))
         .when(p2pConfig)
         .seedNodes();
     final var testSubject =
         new SeedNodesConfigParser(
-            p2pConfig, Network.LOCALNET.getId(), Addressing.ofNetwork(Network.LOCALNET));
+            p2pConfig,
+            Network.INTEGRATIONTESTNET.getId(),
+            Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
     assertEquals(1, testSubject.getResolvedSeedNodes().size());
   }
 }

@@ -290,8 +290,12 @@ ospackage() {
         into "/etc/systemd/system"
     }
     // XXX: This ought to be done somewhere else.
-    from("${project(':state-manager').projectDir}/target/x86_64-unknown-linux-gnu/debug/libstatemanager.so") {
-       into "/usr/lib/jni/"
+    def target = "x86_64-unknown-linux-gnu"
+    if (System.getProperty("os.arch") == "aarch64") {
+        target= "aarch64-unknown-linux-gnu"
+    }
+    from("${project(':state-manager').projectDir}/target/${target}/debug/libstatemanager.so") {
+        into "/usr/lib/jni/"
     }
 
     // See https://github.com/nebula-plugins/gradle-ospackage-plugin/wiki/Deb-Plugin#basic-usage

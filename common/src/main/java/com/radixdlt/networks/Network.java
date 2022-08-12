@@ -64,54 +64,62 @@
 
 package com.radixdlt.networks;
 
-import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public enum Network {
-  MAINNET(1, "rdx", "rv", "_rr", "rn", mainnetGenesis()),
-  RELEASENET(3, "tdx3", "tv3", "_tr3", "tn3"),
-  RCNET(4, "tdx4", "tv4", "_tr4", "tn4"),
-  MILESTONENET(5, "tdx5", "tv5", "_tr5", "tn5"),
-  DEVOPSNET(6, "tdx6", "tv6", "_tr6", "tn6"),
-  SANDPITNET(7, "tdx7", "tv7", "_tr7", "tn7"),
-  LOCALNET(99, "ddx", "dv", "_dr", "dn");
 
-  private static String mainnetGenesis() {
-    return "01"; // genesis_transaction
-  }
+  /// Public Facing Permanent Networks (start with 0x0)
+  // - mainnet
+  // - stokenet
+  MAINNET(1 /* 0x01 */, "mainnet", "_rdx", GenesisSource.providedAsync),
+  STOKENET(2 /* 0x02 */, "stokenet", "_tdx2_", GenesisSource.providedAsync),
+
+  /// Babylon Testnets (start with 0x1)
+  // - adapanet = Babylon Alphanet, after Adapa
+  // - nebunet = Babylon Betanet, after Nebuchadnezzar
+  ADAPANET(16 /* 0x10 */, "adapanet", "_tdx16_", GenesisSource.fromConfiguration),
+  NEBUNET(17 /* 0x11 */, "nebunet", "_tdx17_", GenesisSource.fromConfiguration),
+
+  /// RDX Development - Semi-permanent Testnets (start with 0x2)
+  // - gilganet = Integration, after Gilgamesh
+  // - enkinet = Misc Network 1, after Enkidu
+  // - hammunet = Misc Network 2, after Hammurabi
+  GILGANET(32 /* 0x20 */, "gilganet", "_tdx32_", GenesisSource.fromConfiguration),
+  ENKINET(33 /* 0x21 */, "enkinet", "_tdx33_", GenesisSource.fromConfiguration),
+  HAMMUNET(34 /* 0x22 */, "hammunet", "_tdx34_", GenesisSource.fromConfiguration),
+
+  /// Ephemeral Networks (start with 0xF)
+  // - localnet = The network used when running locally in development
+  // - inttestnet = The network used when running integration tests
+  LOCALNET(240 /* 0xF0 */, "localnet", "_tdx240_", GenesisSource.fromConfiguration),
+  INTEGRATIONTESTNET(241 /* 0xF1 */, "inttestnet", "_tdx241_", GenesisSource.fromConfiguration);
+
+  // For the Radix Shell to provide a default
+  public static final String DefaultHexGenesisTransaction = "01";
 
   private final int id;
+  private final String logicalName;
   private final String accountHrp;
   private final String validatorHrp;
-  private final String resourceHrpSuffix;
+  private final String resourceHrp;
   private final String nodeHrp;
-  private final String genesisTxn;
+  private final GenesisSource genesisSource;
 
-  Network(
-      int id, String accountHrp, String validatorHrp, String resourceHrpSuffix, String nodeHrp) {
+  Network(int id, String logicalName, String hrpSuffix, GenesisSource genesisSource) {
+    if (id <= 0 || id > 255) {
+      throw new IllegalArgumentException(
+          "Id should be between 1 and 255 so it isn't default(int) = 0 and will fit into a byte if"
+              + " we change in future");
+    }
     this.id = id;
-    this.accountHrp = accountHrp;
-    this.validatorHrp = validatorHrp;
-    this.resourceHrpSuffix = resourceHrpSuffix;
-    this.nodeHrp = nodeHrp;
-    this.genesisTxn = null;
-  }
-
-  Network(
-      int id,
-      String accountHrp,
-      String validatorHrp,
-      String resourceHrpSuffix,
-      String nodeHrp,
-      String genesisTxn) {
-    this.id = id;
-    this.accountHrp = accountHrp;
-    this.validatorHrp = validatorHrp;
-    this.resourceHrpSuffix = resourceHrpSuffix;
-    this.nodeHrp = nodeHrp;
-    this.genesisTxn = genesisTxn;
+    this.logicalName = logicalName;
+    this.accountHrp = "account" + hrpSuffix;
+    this.validatorHrp = "validator" + hrpSuffix;
+    this.resourceHrp = "resource" + hrpSuffix;
+    this.nodeHrp = "node" + hrpSuffix;
+    this.genesisSource = genesisSource;
   }
 
   public String getAccountHrp() {
@@ -122,8 +130,8 @@ public enum Network {
     return validatorHrp;
   }
 
-  public String getResourceHrpSuffix() {
-    return resourceHrpSuffix;
+  public String getResourceHrp() {
+    return resourceHrp;
   }
 
   public String getNodeHrp() {
@@ -134,17 +142,20 @@ public enum Network {
     return id;
   }
 
-  public Optional<String> genesisTxn() {
-    return Optional.ofNullable(genesisTxn);
+  public String getLogicalName() {
+    return logicalName;
+  }
+
+  public GenesisSource genesisSource() {
+    return genesisSource;
   }
 
   public static Optional<Network> ofId(int id) {
     return find(network -> network.id == id);
   }
 
-  public static Optional<Network> ofName(String name) {
-    var upperCaseName = name.toUpperCase(Locale.US);
-    return find(network -> network.name().equals(upperCaseName));
+  public static Optional<Network> ofName(String logicalName) {
+    return find(network -> network.logicalName.equalsIgnoreCase(logicalName));
   }
 
   private static Optional<Network> find(Predicate<Network> predicate) {

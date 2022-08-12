@@ -197,7 +197,7 @@ public class AuthInitMessageTest {
         ECDSASignature.zeroSignature(),
         HashUtils.random256(),
         HashUtils.random256(),
-        Network.LOCALNET.getId(),
+        Network.INTEGRATIONTESTNET.getId(),
         "fork",
         remotePeerCapabilities);
   }

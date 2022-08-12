@@ -75,13 +75,14 @@ import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.networks.GenesisSource;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.transactions.RawTransaction;
-import com.radixdlt.utils.Bytes;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Ignore;
@@ -95,8 +96,11 @@ public class GenesisTest {
   @Parameterized.Parameters
   public static Collection<Object[]> parameters() {
     return Arrays.stream(Network.values())
-        .flatMap(n -> n.genesisTxn().stream())
-        .map(Bytes::fromHexString)
+        .flatMap(
+            n ->
+                n.genesisSource() instanceof GenesisSource.Fixed fixedGenesis
+                    ? Stream.of(fixedGenesis.genesisTransactionPayload())
+                    : Stream.empty())
         .map(RawTransaction::create)
         .map(txn -> new Object[] {txn})
         .toList();

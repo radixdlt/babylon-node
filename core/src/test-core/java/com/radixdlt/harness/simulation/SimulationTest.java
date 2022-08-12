@@ -466,7 +466,7 @@ public final class SimulationTest {
             @Override
             public void configure() {
               bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-              bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
+              bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
               bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
               bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(pacemakerTimeout);
               bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
