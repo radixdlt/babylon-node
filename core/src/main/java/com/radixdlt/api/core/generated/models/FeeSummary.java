@@ -33,11 +33,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
   FeeSummary.JSON_PROPERTY_LOAN_FULLY_REPAID,
   FeeSummary.JSON_PROPERTY_COST_UNIT_LIMIT,
-  FeeSummary.JSON_PROPERTY_COST_UNIT_CONSUMED,
+  FeeSummary.JSON_PROPERTY_COST_UNITS_CONSUMED,
   FeeSummary.JSON_PROPERTY_COST_UNIT_PRICE,
   FeeSummary.JSON_PROPERTY_TIP_PERCENTAGE,
-  FeeSummary.JSON_PROPERTY_BURNED,
-  FeeSummary.JSON_PROPERTY_TIPPED
+  FeeSummary.JSON_PROPERTY_XRD_BURNED,
+  FeeSummary.JSON_PROPERTY_XRD_TIPPED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class FeeSummary {
@@ -47,8 +47,8 @@ public class FeeSummary {
   public static final String JSON_PROPERTY_COST_UNIT_LIMIT = "cost_unit_limit";
   private String costUnitLimit;
 
-  public static final String JSON_PROPERTY_COST_UNIT_CONSUMED = "cost_unit_consumed";
-  private String costUnitConsumed;
+  public static final String JSON_PROPERTY_COST_UNITS_CONSUMED = "cost_units_consumed";
+  private String costUnitsConsumed;
 
   public static final String JSON_PROPERTY_COST_UNIT_PRICE = "cost_unit_price";
   private String costUnitPrice;
@@ -56,11 +56,11 @@ public class FeeSummary {
   public static final String JSON_PROPERTY_TIP_PERCENTAGE = "tip_percentage";
   private String tipPercentage;
 
-  public static final String JSON_PROPERTY_BURNED = "burned";
-  private String burned;
+  public static final String JSON_PROPERTY_XRD_BURNED = "xrd_burned";
+  private String xrdBurned;
 
-  public static final String JSON_PROPERTY_TIPPED = "tipped";
-  private String tipped;
+  public static final String JSON_PROPERTY_XRD_TIPPED = "xrd_tipped";
+  private String xrdTipped;
 
 
   public FeeSummary loanFullyRepaid(Boolean loanFullyRepaid) {
@@ -115,29 +115,29 @@ public class FeeSummary {
   }
 
 
-  public FeeSummary costUnitConsumed(String costUnitConsumed) {
-    this.costUnitConsumed = costUnitConsumed;
+  public FeeSummary costUnitsConsumed(String costUnitsConsumed) {
+    this.costUnitsConsumed = costUnitsConsumed;
     return this;
   }
 
    /**
-   * Get costUnitConsumed
-   * @return costUnitConsumed
+   * Get costUnitsConsumed
+   * @return costUnitsConsumed
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_COST_UNIT_CONSUMED)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_COST_UNITS_CONSUMED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getCostUnitConsumed() {
-    return costUnitConsumed;
+  public String getCostUnitsConsumed() {
+    return costUnitsConsumed;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_COST_UNIT_CONSUMED)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setCostUnitConsumed(String costUnitConsumed) {
-    this.costUnitConsumed = costUnitConsumed;
+  @JsonProperty(JSON_PROPERTY_COST_UNITS_CONSUMED)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setCostUnitsConsumed(String costUnitsConsumed) {
+    this.costUnitsConsumed = costUnitsConsumed;
   }
 
 
@@ -193,55 +193,55 @@ public class FeeSummary {
   }
 
 
-  public FeeSummary burned(String burned) {
-    this.burned = burned;
+  public FeeSummary xrdBurned(String xrdBurned) {
+    this.xrdBurned = xrdBurned;
     return this;
   }
 
    /**
-   * Get burned
-   * @return burned
+   * Get xrdBurned
+   * @return xrdBurned
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_BURNED)
+  @JsonProperty(JSON_PROPERTY_XRD_BURNED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getBurned() {
-    return burned;
+  public String getXrdBurned() {
+    return xrdBurned;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_BURNED)
+  @JsonProperty(JSON_PROPERTY_XRD_BURNED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setBurned(String burned) {
-    this.burned = burned;
+  public void setXrdBurned(String xrdBurned) {
+    this.xrdBurned = xrdBurned;
   }
 
 
-  public FeeSummary tipped(String tipped) {
-    this.tipped = tipped;
+  public FeeSummary xrdTipped(String xrdTipped) {
+    this.xrdTipped = xrdTipped;
     return this;
   }
 
    /**
-   * Get tipped
-   * @return tipped
+   * Get xrdTipped
+   * @return xrdTipped
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TIPPED)
+  @JsonProperty(JSON_PROPERTY_XRD_TIPPED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getTipped() {
-    return tipped;
+  public String getXrdTipped() {
+    return xrdTipped;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TIPPED)
+  @JsonProperty(JSON_PROPERTY_XRD_TIPPED)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setTipped(String tipped) {
-    this.tipped = tipped;
+  public void setXrdTipped(String xrdTipped) {
+    this.xrdTipped = xrdTipped;
   }
 
 
@@ -259,16 +259,16 @@ public class FeeSummary {
     FeeSummary feeSummary = (FeeSummary) o;
     return Objects.equals(this.loanFullyRepaid, feeSummary.loanFullyRepaid) &&
         Objects.equals(this.costUnitLimit, feeSummary.costUnitLimit) &&
-        Objects.equals(this.costUnitConsumed, feeSummary.costUnitConsumed) &&
+        Objects.equals(this.costUnitsConsumed, feeSummary.costUnitsConsumed) &&
         Objects.equals(this.costUnitPrice, feeSummary.costUnitPrice) &&
         Objects.equals(this.tipPercentage, feeSummary.tipPercentage) &&
-        Objects.equals(this.burned, feeSummary.burned) &&
-        Objects.equals(this.tipped, feeSummary.tipped);
+        Objects.equals(this.xrdBurned, feeSummary.xrdBurned) &&
+        Objects.equals(this.xrdTipped, feeSummary.xrdTipped);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(loanFullyRepaid, costUnitLimit, costUnitConsumed, costUnitPrice, tipPercentage, burned, tipped);
+    return Objects.hash(loanFullyRepaid, costUnitLimit, costUnitsConsumed, costUnitPrice, tipPercentage, xrdBurned, xrdTipped);
   }
 
   @Override
@@ -277,11 +277,11 @@ public class FeeSummary {
     sb.append("class FeeSummary {\n");
     sb.append("    loanFullyRepaid: ").append(toIndentedString(loanFullyRepaid)).append("\n");
     sb.append("    costUnitLimit: ").append(toIndentedString(costUnitLimit)).append("\n");
-    sb.append("    costUnitConsumed: ").append(toIndentedString(costUnitConsumed)).append("\n");
+    sb.append("    costUnitsConsumed: ").append(toIndentedString(costUnitsConsumed)).append("\n");
     sb.append("    costUnitPrice: ").append(toIndentedString(costUnitPrice)).append("\n");
     sb.append("    tipPercentage: ").append(toIndentedString(tipPercentage)).append("\n");
-    sb.append("    burned: ").append(toIndentedString(burned)).append("\n");
-    sb.append("    tipped: ").append(toIndentedString(tipped)).append("\n");
+    sb.append("    xrdBurned: ").append(toIndentedString(xrdBurned)).append("\n");
+    sb.append("    xrdTipped: ").append(toIndentedString(xrdTipped)).append("\n");
     sb.append("}");
     return sb.toString();
   }

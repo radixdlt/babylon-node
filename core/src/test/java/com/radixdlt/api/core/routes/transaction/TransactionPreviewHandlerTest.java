@@ -106,6 +106,6 @@ public class TransactionPreviewHandlerTest extends ApiTest {
 
     // Assert
     assertThat(response.getTransactionStatus().getType()).isEqualTo("TransactionStatusSucceeded");
-    assertThat(response.getTransactionFee().getCostUnitConsumed()).isNotBlank();
+    assertThat(response.getTransactionFee().getCostUnitsConsumed()).isNotBlank();
   }
 }

@@ -288,22 +288,22 @@ components:
         - cost_units_consumed
         - cost_unit_price
         - tip_percentage
-        - burned
-        - tipped
+        - xrd_burned
+        - xrd_tipped
       properties:
         loan_fully_repaid:
           type: boolean
         cost_unit_limit:
           type: string
-        cost_unit_consumed:
+        cost_units_consumed:
           type: string
         cost_unit_price:
           type: string
         tip_percentage:
           type: string
-        burned:
+        xrd_burned:
           type: string
-        tipped:
+        xrd_tipped:
           type: string
 ##########################################
 # REQUEST: /status/network-configuration #

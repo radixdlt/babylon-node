@@ -105,7 +105,7 @@ pub enum TransactionStatusJava {
 pub struct FeeSummaryJava {
     pub loan_fully_repaid: bool,
     pub cost_unit_limit: u32,
-    pub cost_unit_consumed: u32,
+    pub cost_units_consumed: u32,
     pub cost_unit_price: Decimal,
     pub tip_percentage: u32,
     pub burned: Decimal,
@@ -117,7 +117,7 @@ impl From<FeeSummary> for FeeSummaryJava {
         FeeSummaryJava {
             loan_fully_repaid: fee_summary.loan_fully_repaid,
             cost_unit_limit: fee_summary.cost_unit_limit,
-            cost_unit_consumed: fee_summary.cost_unit_consumed,
+            cost_units_consumed: fee_summary.cost_unit_consumed,
             cost_unit_price: fee_summary.cost_unit_price,
             tip_percentage: fee_summary.tip_percentage,
             burned: fee_summary.burned,

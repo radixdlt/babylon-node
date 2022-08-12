@@ -126,11 +126,15 @@ public record PreviewRequest(
 
   @Override
   public String toString() {
-    return "PreviewRequest{" +
-            "costUnitLimit=" + costUnitLimit +
-            ", tipPercentage=" + tipPercentage +
-            ", nonce=" + nonce +
-            ", flags=" + flags +
-            '}';
+    return "PreviewRequest{"
+        + "costUnitLimit="
+        + costUnitLimit
+        + ", tipPercentage="
+        + tipPercentage
+        + ", nonce="
+        + nonce
+        + ", flags="
+        + flags
+        + '}';
   }
 }
