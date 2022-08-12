@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.address.ComponentAddress;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Result;
 import com.radixdlt.mempool.MempoolInserter;
@@ -111,9 +112,10 @@ public class RustStateComputer {
     return this.mempool.getTransactionsForProposal(count, transactionToExclude);
   }
 
-  public BigDecimal getComponentResources() {
-    resources(this.rustState, new byte[0]);
-    return BigDecimal.ONE;
+  public BigDecimal getComponentResources(ComponentAddress componentAddress) {
+    var encodedResponse = resources(this.rustState, new byte[0]);
+    var exists = StateManagerResponse.decode(encodedResponse, booleanType);
+    return exists ? BigDecimal.ONE : BigDecimal.ZERO;
   }
 
   public void commit(List<RawTransaction> transactions, long committedStateVersion) {
@@ -139,6 +141,5 @@ public class RustStateComputer {
 
   private static native byte[] execute(StateManager.RustState rustState, byte[] encodedArgs);
 
-  private static native byte[] resources(
-      StateManager.RustState rustState, byte[] encodedArgs);
+  private static native byte[] resources(StateManager.RustState rustState, byte[] encodedArgs);
 }

@@ -62,87 +62,30 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::*;
-use crate::jni::utils::*;
-use crate::mempool::simple::SimpleMempool;
-use crate::mempool::MempoolConfig;
-use crate::state_manager::{StateManager, StateManagerConfig};
-use crate::transaction_store::TransactionStore;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
+package com.radixdlt.address;
 
-use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
-use std::sync::MutexGuard;
+public final class ComponentAddress {
+  private static final int COMPONENT_ADDRESS_BYTES_LENGTH = 27;
+  public static final ComponentAddress SYSTEM_COMPONENT_ADDRESS =
+      new ComponentAddress(
+          new byte[] {
+            2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2
+          });
 
-const POINTER_JNI_FIELD_NAME: &str = "stateManagerPointer";
+  private final byte[] addressBytes;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statemanager_StateManager_init(
-    env: JNIEnv,
-    _class: JClass,
-    interop_state: JObject,
-    j_config: jbyteArray,
-) {
-    JNIStateManager::init(&env, interop_state, j_config);
-}
+  private ComponentAddress(byte[] addressBytes) {
+    this.addressBytes = addressBytes;
+  }
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
-    env: JNIEnv,
-    _class: JClass,
-    interop_state: JObject,
-) {
-    JNIStateManager::cleanup(&env, interop_state);
-}
-
-pub struct JNIStateManager {
-    pub state_manager: StateManager<SimpleMempool, SerializedInMemorySubstateStore>,
-}
-
-impl JNIStateManager {
-    pub fn init(env: &JNIEnv, interop_state: JObject, j_config: jbyteArray) {
-        let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
-        let config = StateManagerConfig::from_java(&config_bytes).unwrap();
-
-        // Build the basic subcomponents.
-        let mempool_config = match config.mempool_config {
-            Some(mempool_config) => mempool_config,
-            None =>
-            // in general, missing mempool config should mean that mempool isn't needed
-            // but for now just using a default
-            {
-                MempoolConfig { max_size: 10 }
-            }
-        };
-
-        let mempool = SimpleMempool::new(mempool_config);
-        let transaction_store = TransactionStore::new();
-        let substate_store = SerializedInMemorySubstateStore::with_bootstrap();
-
-        // Build the state manager.
-        let state_manager = StateManager::new(mempool, transaction_store, substate_store);
-
-        let jni_state_manager = JNIStateManager { state_manager };
-
-        env.set_rust_field(interop_state, POINTER_JNI_FIELD_NAME, jni_state_manager)
-            .unwrap();
+  public static ComponentAddress create(byte[] addressBytes) {
+    if (addressBytes.length != COMPONENT_ADDRESS_BYTES_LENGTH) {
+      throw new IllegalArgumentException("Invalid component address length");
     }
+    return new ComponentAddress(addressBytes);
+  }
 
-    pub fn cleanup(env: &JNIEnv, interop_state: JObject) {
-        let jni_state_manager: JNIStateManager = env
-            .take_rust_field(interop_state, POINTER_JNI_FIELD_NAME)
-            .unwrap();
-        drop(jni_state_manager);
-    }
-
-    /// Get a lock on the state manager
-    /// TODO: Optimize this lock out at some point
-    pub fn get_state_manager<'a>(
-        env: &'a JNIEnv,
-        interop_state: JObject<'a>,
-    ) -> MutexGuard<'a, JNIStateManager> {
-        env.get_rust_field(interop_state, POINTER_JNI_FIELD_NAME)
-            .unwrap()
-    }
+  public byte[] getAddressBytes() {
+    return addressBytes;
+  }
 }

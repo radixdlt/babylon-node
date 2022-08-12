@@ -64,8 +64,9 @@
 
 package com.radixdlt.rev2;
 
+import com.radixdlt.address.ComponentAddress;
 import java.math.BigDecimal;
 
 public interface REv2StateReader {
-  BigDecimal getComponentResources();
+  BigDecimal getComponentResources(ComponentAddress componentAddress);
 }
