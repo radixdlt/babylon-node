@@ -64,7 +64,7 @@
 
 use crate::jni::dtos::JavaStructure;
 use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
+use jni::sys::{jbyteArray, jlong};
 use jni::JNIEnv;
 use scrypto::prelude::*;
 
@@ -103,24 +103,28 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_execute(
     _class: JClass,
     j_state: JObject,
     j_payload: jbyteArray,
+    j_state_version: jlong,
 ) -> jbyteArray {
-    let ret = do_execute(&env, j_state, j_payload).to_java();
+    let ret = do_execute(&env, j_state, j_payload, j_state_version).to_java();
 
     jni_slice_to_jbytearray(&env, &ret)
 }
 
-fn do_execute(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<()> {
+fn do_execute(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray, _j_state_version: jlong) -> StateManagerResult<()> {
     let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transaction = Transaction::from_java(&request_payload)?;
-    let validated_txn = state_manager
-        .state_manager
-        .decode_transaction(&transaction)
-        .expect("Error on Byzantine quorum");
-    state_manager
-        .state_manager
-        .execute_transaction(validated_txn)
-        .expect("Error on Byzantine quorum");
+    let transactions = Vec::<Transaction>::from_java(&request_payload)?;
+
+    for transaction in transactions {
+        let validated_txn = state_manager
+            .state_manager
+            .decode_transaction(&transaction)
+            .expect("Error on Byzantine quorum");
+        state_manager
+            .state_manager
+            .execute_transaction(validated_txn)
+            .expect("Error on Byzantine quorum");
+    }
 
     Ok(())
 }
