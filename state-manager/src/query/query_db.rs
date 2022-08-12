@@ -62,95 +62,65 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::*;
-use crate::mempool::{Mempool, MempoolConfig};
-use crate::transaction_store::TransactionStore;
-use crate::types::Transaction;
-use radix_engine::constants::{
-    DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
-};
-use radix_engine::ledger::{ReadableSubstateStore, WriteableSubstateStore};
-use radix_engine::transaction::{ExecutionConfig, TransactionExecutor};
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
-use scrypto::core::Network;
-use transaction::errors::TransactionValidationError;
+use radix_engine::engine::Substate;
+use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
+use radix_engine::model::{ComponentState, KeyValueStoreEntryWrapper, Vault};
+use scrypto::engine::types::{RENodeId, SubstateId};
+use scrypto::prelude::*;
+use scrypto::values::ScryptoValue;
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 
-use transaction::model::ValidatedTransaction;
-use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
-
-pub struct StateManager<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> {
-    pub mempool: M,
-    pub transaction_store: TransactionStore,
-    substate_store: S,
-    wasm_engine: DefaultWasmEngine,
-    wasm_instrumenter: WasmInstrumenter,
-    validation_config: ValidationConfig,
-    execution_config: ExecutionConfig,
-    intent_hash_manager: TestIntentHashManager,
+pub struct ResourceAccounter<'s, S: ReadableSubstateStore + QueryableSubstateStore> {
+    substate_store: &'s S,
+    accounting: HashMap<ResourceAddress, Decimal>,
 }
 
-impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager<M, S> {
-    pub fn new(
-        mempool: M,
-        transaction_store: TransactionStore,
-        substate_store: S,
-    ) -> StateManager<M, S> {
-        StateManager {
-            mempool,
-            transaction_store,
-            substate_store,
-            wasm_engine: DefaultWasmEngine::new(),
-            wasm_instrumenter: WasmInstrumenter::new(),
-            validation_config: ValidationConfig {
-                network: Network::InternalTestnet,
-                current_epoch: 1,
-                max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-                min_tip_percentage: 0,
-            },
-            execution_config: ExecutionConfig {
-                cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-                max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                system_loan: DEFAULT_SYSTEM_LOAN,
-                is_system: false,
-                trace: false,
-            },
-            intent_hash_manager: TestIntentHashManager::new(),
+impl<'s, S: ReadableSubstateStore + QueryableSubstateStore> ResourceAccounter<'s, S> {
+    pub fn add_resources(&mut self, node_id: RENodeId) {
+        match node_id {
+            RENodeId::Vault(vault_id) => {
+                if let Some(output_value) = self
+                    .substate_store
+                    .get_substate(&SubstateId::Vault(vault_id))
+                {
+                    let vault: Vault = output_value.substate.into();
+                    match self.accounting.entry(vault.resource_address()) {
+                        Entry::Occupied(mut e) => {
+                            let new_amount = vault.total_amount() + *e.get();
+                            e.insert(new_amount);
+                        }
+                        Entry::Vacant(e) => {
+                            e.insert(vault.total_amount());
+                        }
+                    }
+                }
+            }
+            RENodeId::KeyValueStore(kv_store_id) => {
+                let map = self.substate_store.get_kv_store_entries(&kv_store_id);
+                for (_, v) in map.iter() {
+                    if let Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(Some(entry))) = v
+                    {
+                        let value = ScryptoValue::from_slice(entry).unwrap();
+                        for child_node_id in value.stored_node_ids() {
+                            self.add_resources(child_node_id)
+                        }
+                    }
+                }
+            }
+            RENodeId::Component(component_address) => {
+                if let Some(output_value) = self
+                    .substate_store
+                    .get_substate(&SubstateId::ComponentState(component_address))
+                {
+                    let component_state: ComponentState = output_value.substate.into();
+                    let value = ScryptoValue::from_slice(component_state.state()).unwrap();
+                    for child_node_id in value.stored_node_ids() {
+                        self.add_resources(child_node_id)
+                    }
+                }
+            }
+            _ => {}
         }
     }
-
-    pub fn substate_store(&self) -> &S {
-        &self.substate_store
-    }
-
-    pub fn execute_transaction(
-        &mut self,
-        transaction: ValidatedTransaction,
-    ) -> Result<(), TransactionValidationError> {
-        let mut transaction_executor = TransactionExecutor::new(
-            &mut self.substate_store,
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
-        );
-        transaction_executor.execute_and_commit(&transaction, &self.execution_config);
-
-        Ok(())
-    }
-
-    pub fn decode_transaction(
-        &self,
-        txn: &Transaction,
-    ) -> Result<ValidatedTransaction, TransactionValidationError> {
-        TransactionValidator::validate_from_slice(
-            &txn.payload,
-            &self.intent_hash_manager,
-            &self.validation_config,
-        )
-    }
 }
-
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
-pub struct StateManagerConfig {
-    pub mempool_config: Option<MempoolConfig>,
-}
-
-impl JavaStructure for StateManagerConfig {}
