@@ -132,7 +132,7 @@ public final class MempoolRunnerTest {
         bind(LedgerAccumulator.class).toInstance(mock(LedgerAccumulator.class));
         bind(LedgerAccumulatorVerifier.class).toInstance(mock(LedgerAccumulatorVerifier.class));
         bind(new TypeLiteral<Comparator<LedgerProof>>() {}).toInstance(mock(Comparator.class));
-        bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
+        bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
         Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
         install(MempoolConfig.asModule(100, 10));

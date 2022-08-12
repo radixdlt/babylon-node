@@ -125,10 +125,16 @@ task buildRustForDocker(type: Exec) {
     commandLine 'sh', '-c', dockerCmd
     doLast {
         if (executionResult.get().getExitValue() != 0) {
-            throw new RuntimeException(String.format(
-                    "%s failed with non-zero exit value %s", commandLine,
-                    executionResult.get().getExitValue()
+            logger.error(String.format(
+                    "\n!!! SPECIFIC HELP FOR THIS ERROR" +
+                            "\n!!!\n!!! The docker compose command failed. If the above error suggests that compose is not a command," +
+                            "\n!!! ensure you have `docker --version 20.10.10` or newer installed." +
+                            "\n!!!\n!!! The following command failed with exit value %s:" +
+                            "\n!!! %s",
+                    executionResult.get().getExitValue(),
+                    commandLine
             ))
+            executionResult.get().assertNormalExitValue()
         }
     }
 }

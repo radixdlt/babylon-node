@@ -83,6 +83,7 @@ import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.messaging.MessagingModule;
 import com.radixdlt.modules.*;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
@@ -123,6 +124,10 @@ public final class RadixNodeModule extends AbstractModule {
   protected void configure() {
     if (this.networkId <= 0) {
       throw new IllegalStateException("Illegal networkId " + networkId);
+    }
+    if (Network.ofId(this.networkId).isEmpty()) {
+      throw new IllegalStateException(
+          "NetworkId " + networkId + " does not match any known networks");
     }
 
     var addressing = Addressing.ofNetworkId(networkId);

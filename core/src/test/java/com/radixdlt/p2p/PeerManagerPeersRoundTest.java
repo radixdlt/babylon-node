@@ -115,12 +115,15 @@ public class PeerManagerPeersRoundTest {
   private PeerManager getPeerManager() {
     var self =
         RadixNodeUri.fromPubKeyAndAddress(
-            Network.LOCALNET.getId(), ECKeyPair.generateNew().getPublicKey(), "10.0.0.1", 30000);
+            Network.INTEGRATIONTESTNET.getId(),
+            ECKeyPair.generateNew().getPublicKey(),
+            "10.0.0.1",
+            30000);
 
     return new PeerManager(
         self,
         mockP2PConfig(),
-        Addressing.ofNetwork(Network.LOCALNET),
+        Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
         () -> mock(AddressBook.class),
         () -> mock(PendingOutboundChannelsManager.class),
         mock(SystemCounters.class));
@@ -139,7 +142,10 @@ public class PeerManagerPeersRoundTest {
     // new key, but same host/port as peer2
     var peer =
         RadixNodeUri.fromPubKeyAndAddress(
-            Network.LOCALNET.getId(), ECKeyPair.generateNew().getPublicKey(), "10.0.0.2", 30000);
+            Network.INTEGRATIONTESTNET.getId(),
+            ECKeyPair.generateNew().getPublicKey(),
+            "10.0.0.2",
+            30000);
 
     when(peerChanel.getUri()).thenReturn(Optional.of(peer));
     when(peerChanel.inboundMessages()).thenReturn(inboundMessages);
