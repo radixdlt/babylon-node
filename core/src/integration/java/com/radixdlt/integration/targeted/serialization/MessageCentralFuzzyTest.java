@@ -136,7 +136,7 @@ public class MessageCentralFuzzyTest {
             queueFactory,
             new SystemCountersImpl(),
             () -> peerControl,
-            Addressing.ofNetwork(Network.LOCALNET),
+            Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             new Capabilities(LedgerSyncCapability.Builder.asDefault().build()));
 
     var counter = new AtomicLong(0);

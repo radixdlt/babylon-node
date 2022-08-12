@@ -115,7 +115,7 @@ final class MockP2PNetwork {
     final var clientChannel =
         new PeerChannel(
             clientPeer.injector.getInstance(P2PConfig.class),
-            Addressing.ofNetwork(Network.LOCALNET),
+            Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             1,
             "fork1",
             clientPeer.injector.getInstance(SystemCounters.class),
@@ -141,7 +141,7 @@ final class MockP2PNetwork {
     final var serverChannel =
         new PeerChannel(
             serverPeer.injector.getInstance(P2PConfig.class),
-            Addressing.ofNetwork(Network.LOCALNET),
+            Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             1,
             "fork1",
             serverPeer.injector.getInstance(SystemCounters.class),

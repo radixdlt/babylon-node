@@ -89,6 +89,7 @@ import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.messaging.core.MessageFromPeer;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.GenesisSource;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerManager;
@@ -202,10 +203,9 @@ public final class RadixShell {
       }
 
       properties.set("network.id", network.getId());
-      if (network.genesisTxn().isEmpty() && properties.get("network.genesis_txn", "").isEmpty()) {
-        properties.set(
-            "network.genesis_txn",
-            Network.MAINNET.genesisTxn().get()); // Default to mainnet genesis
+      if (network.genesisSource() instanceof GenesisSource.FromConfiguration
+          && properties.get("network.genesis_txn", "").isEmpty()) {
+        properties.set("network.genesis_txn", Network.DefaultHexGenesisTransaction);
       }
 
       final var injector = Guice.createInjector(new RadixNodeModule(properties));
