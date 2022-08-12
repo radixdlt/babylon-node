@@ -92,10 +92,7 @@ impl ToString for MempoolError {
 
 pub trait Mempool {
     fn add_transaction(&mut self, transaction: Transaction) -> Result<Transaction, MempoolError>;
-    fn handle_committed_transactions(
-        &mut self,
-        transactions: &[Transaction],
-    ) -> Result<Vec<Transaction>, MempoolError>;
+    fn handle_committed_transactions(&mut self, transactions: &[Transaction]) -> Vec<Transaction>;
     fn get_count(&self) -> u64;
     fn get_proposal_transactions(
         &self,

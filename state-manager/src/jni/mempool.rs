@@ -125,18 +125,6 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_mempool_RustMempool_handleTransactionsCommitted(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = do_handle_transactions_committed(&env, j_state, j_payload).to_java();
-
-    jni_slice_to_jbytearray(&env, &ret)
-}
-
-#[no_mangle]
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
     env: JNIEnv,
     _class: JClass,
@@ -200,24 +188,6 @@ fn do_get_transactions_for_proposal(
         .state_manager
         .mempool
         .get_proposal_transactions(args.count.into(), &args.prepared_transactions);
-
-    let mapped_result = result.map_err_sm(|err| err.into())?;
-    Ok(mapped_result)
-}
-
-fn do_handle_transactions_committed(
-    env: &JNIEnv,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
-    let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transactions = Vec::<Transaction>::from_java(&request_payload)?;
-
-    let result = state_manager
-        .state_manager
-        .mempool
-        .handle_committed_transactions(&transactions);
 
     let mapped_result = result.map_err_sm(|err| err.into())?;
     Ok(mapped_result)

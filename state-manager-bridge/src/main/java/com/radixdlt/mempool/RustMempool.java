@@ -138,17 +138,6 @@ public class RustMempool {
     return result.unwrap();
   }
 
-  public void handleTransactionsCommitted(List<RawTransaction> transactions) {
-    var encodedRequest =
-        StateManagerSbor.sbor.encode(transactions, new TypeToken<List<RawTransaction>>() {});
-    var encodedResponse = handleTransactionsCommitted(this.rustState, encodedRequest);
-    var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
-
-    // No error should be possible for this call at present
-    // But unwrap to make sure we didn't have one.
-    result.unwrap();
-  }
-
   public int getCount() {
     var encodedResponse = getCount(this.rustState);
     var transactionCount =
@@ -160,9 +149,6 @@ public class RustMempool {
   }
 
   private static native byte[] add(RustState rustState, byte[] transaction);
-
-  private static native byte[] handleTransactionsCommitted(
-      RustState rustState, byte[] transactions);
 
   private static native byte[] getCount(RustState rustState);
 

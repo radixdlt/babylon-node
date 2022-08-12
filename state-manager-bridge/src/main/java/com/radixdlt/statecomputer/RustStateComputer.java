@@ -123,8 +123,8 @@ public class RustStateComputer {
   }
 
   public void commit(List<RawTransaction> transactions, long committedStateVersion) {
-    this.mempool.handleTransactionsCommitted(transactions);
-    var encodedTransactions = StateManagerSbor.sbor.encode(transactions, new TypeToken<List<RawTransaction>>() {});
+    var encodedTransactions =
+        StateManagerSbor.sbor.encode(transactions, new TypeToken<List<RawTransaction>>() {});
     execute(this.rustState, encodedTransactions, committedStateVersion);
 
     for (int i = 0; i < transactions.size(); i++) {
@@ -142,7 +142,8 @@ public class RustStateComputer {
 
   private static native byte[] verify(StateManager.RustState rustState, byte[] encodedArgs);
 
-  private static native byte[] execute(StateManager.RustState rustState, byte[] encodedTransaction, long committedStateVersion);
+  private static native byte[] execute(
+      StateManager.RustState rustState, byte[] encodedTransaction, long committedStateVersion);
 
   private static native byte[] xrd(StateManager.RustState rustState, byte[] encodedArgs);
 }
