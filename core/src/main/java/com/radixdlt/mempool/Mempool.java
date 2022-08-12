@@ -62,47 +62,28 @@
  * permissions under this License.
  */
 
-use crate::jni::state_manager::JNIStateManager;
-use jni::objects::{JClass, JObject};
-use jni::sys::{jbyteArray, jlong};
-use jni::JNIEnv;
+package com.radixdlt.mempool;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_insertTransaction(
-    env: JNIEnv,
-    _class: JClass,
-    interop_state: JObject,
-    j_state_version: jlong,
-    j_transaction_bytes: jbyteArray,
-) {
-    let mut state_manager = JNIStateManager::get_state_manager(&env, interop_state);
+import com.radixdlt.transactions.RawTransaction;
+import java.util.List;
 
-    let transaction_bytes: Vec<u8> = env
-        .convert_byte_array(j_transaction_bytes)
-        .expect("Can't convert transaction data byte array to vec");
+/**
+ * Basic mempool functionality.
+ *
+ * <p>Note that conceptually, a mempool can be thought of as a list indexable by hash.
+ */
+public interface Mempool<T> extends MempoolRelayReader, MempoolInserter<T> {
+  /**
+   * Retrieve a list of transactions from the local mempool for creating a proposal for consensus.
+   *
+   * @param count the number of transactions to retrieve
+   * @param preparedTransactions transactions used in the prepared vertex ahead of the proposal
+   *     which will need to be taken into account when choosing transactions
+   * @return A list of transactions for processing by consensus
+   */
+  List<RawTransaction> getTransactionsForProposal(int count, List<T> preparedTransactions);
 
-    // Only get the lock for transaction store
-    state_manager
-        .state_manager
-        .transaction_store
-        .insert_transaction(j_state_version as u64, transaction_bytes);
-}
+  void handleTransactionsCommitted(List<T> transactions);
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransactionAtStateVersion(
-    env: JNIEnv,
-    _class: JClass,
-    interop_state: JObject,
-    j_state_version: jlong,
-) -> jbyteArray {
-    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
-
-    // Only get the lock for transaction store
-    let transaction_data = state_manager
-        .state_manager
-        .transaction_store
-        .get_transaction(j_state_version as u64);
-
-    env.byte_array_from_slice(transaction_data)
-        .expect("Can't create jbyteArray for transaction data")
+  int getCount();
 }

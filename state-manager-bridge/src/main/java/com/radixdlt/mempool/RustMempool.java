@@ -75,7 +75,7 @@ import java.util.List;
 import java.util.Objects;
 
 // This must become the new Mempool Interface.
-public class RustMempool implements Mempool<RawTransaction> {
+public class RustMempool {
   private final RustState rustState;
 
   public RustMempool(RustState rustState) {
@@ -89,7 +89,6 @@ public class RustMempool implements Mempool<RawTransaction> {
           Result<Result<List<RawTransaction>, MempoolError>, StateManagerRuntimeError>>
       listTransactionType = new TypeToken<>() {};
 
-  @Override
   public RawTransaction addTransaction(RawTransaction transaction) throws MempoolRejectedException {
     var encodedRequest = StateManagerSbor.sbor.encode(transaction, RawTransaction.class);
     var encodedResponse = add(this.rustState, encodedRequest);
@@ -111,7 +110,6 @@ public class RustMempool implements Mempool<RawTransaction> {
     return processedTransaction;
   }
 
-  @Override
   public List<RawTransaction> getTransactionsForProposal(
       int count, List<RawTransaction> preparedTransactions) {
     if (count <= 0) {
@@ -129,7 +127,6 @@ public class RustMempool implements Mempool<RawTransaction> {
     return newTransactions;
   }
 
-  @Override
   public List<RawTransaction> getTransactionsToRelay(
       long initialDelayMillis, long repeatDelayMillis) {
     var args = new GetRelayedTransactionsRustArgs(initialDelayMillis, repeatDelayMillis);
@@ -141,7 +138,6 @@ public class RustMempool implements Mempool<RawTransaction> {
     return result.unwrap();
   }
 
-  @Override
   public void handleTransactionsCommitted(List<RawTransaction> transactions) {
     var encodedRequest =
         StateManagerSbor.sbor.encode(transactions, new TypeToken<List<RawTransaction>>() {});
@@ -153,7 +149,6 @@ public class RustMempool implements Mempool<RawTransaction> {
     result.unwrap();
   }
 
-  @Override
   public int getCount() {
     var encodedResponse = getCount(this.rustState);
     var transactionCount =

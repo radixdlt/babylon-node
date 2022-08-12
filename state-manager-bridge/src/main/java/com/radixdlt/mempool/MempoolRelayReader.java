@@ -62,10 +62,11 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.mempool;
 
-public interface TransactionStore {
-  void insertTransaction(long stateVersion, byte[] transactionBytes);
+import com.radixdlt.transactions.RawTransaction;
+import java.util.List;
 
-  byte[] getTransactionAtStateVersion(long stateVersion);
+public interface MempoolRelayReader {
+  List<RawTransaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis);
 }

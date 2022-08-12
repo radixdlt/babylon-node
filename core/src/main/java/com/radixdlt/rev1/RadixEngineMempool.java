@@ -227,7 +227,6 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
     return new HashSet<>(substateIndex.keySet());
   }
 
-  @Override
   public List<RawTransaction> getTransactionsToRelay(
       long initialDelayMillis, long repeatDelayMillis) {
     final var now = System.currentTimeMillis();

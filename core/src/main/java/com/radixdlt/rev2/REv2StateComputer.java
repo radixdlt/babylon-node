@@ -62,47 +62,88 @@
  * permissions under this License.
  */
 
-use crate::jni::state_manager::JNIStateManager;
-use jni::objects::{JClass, JObject};
-use jni::sys::{jbyteArray, jlong};
-use jni::JNIEnv;
+package com.radixdlt.rev2;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_insertTransaction(
-    env: JNIEnv,
-    _class: JClass,
-    interop_state: JObject,
-    j_state_version: jlong,
-    j_transaction_bytes: jbyteArray,
-) {
-    let mut state_manager = JNIStateManager::get_state_manager(&env, interop_state);
+import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.rev1.RoundDetails;
+import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.transactions.RawTransaction;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-    let transaction_bytes: Vec<u8> = env
-        .convert_byte_array(j_transaction_bytes)
-        .expect("Can't convert transaction data byte array to vec");
+/** REv2 State Computer implementation */
+public final class REv2StateComputer implements StateComputerLedger.StateComputer {
+  private static final Logger log = LogManager.getLogger();
 
-    // Only get the lock for transaction store
-    state_manager
-        .state_manager
-        .transaction_store
-        .insert_transaction(j_state_version as u64, transaction_bytes);
-}
+  private final RustStateComputer stateComputer;
+  private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransactionAtStateVersion(
-    env: JNIEnv,
-    _class: JClass,
-    interop_state: JObject,
-    j_state_version: jlong,
-) -> jbyteArray {
-    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
+  public REv2StateComputer(
+      RustStateComputer stateComputer, EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher) {
+    this.stateComputer = stateComputer;
+    this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
+  }
 
-    // Only get the lock for transaction store
-    let transaction_data = state_manager
-        .state_manager
-        .transaction_store
-        .get_transaction(j_state_version as u64);
+  @Override
+  public void addToMempool(MempoolAdd mempoolAdd, BFTNode origin) {
+    mempoolAdd
+        .transactions()
+        .forEach(
+            transaction -> {
+              try {
+                stateComputer.getMempoolInserter().addTransaction(transaction);
+              } catch (MempoolRejectedException e) {
+                log.error(e);
+              }
+            });
+  }
 
-    env.byte_array_from_slice(transaction_data)
-        .expect("Can't create jbyteArray for transaction data")
+  @Override
+  public List<RawTransaction> getTransactionsForProposal(
+      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
+    var transactionsNotToInclude =
+        executedTransactions.stream()
+            .map(StateComputerLedger.ExecutedTransaction::transaction)
+            .toList();
+    return stateComputer.getTransactionsForProposal(1, transactionsNotToInclude);
+  }
+
+  @Override
+  public StateComputerLedger.StateComputerResult prepare(
+      List<StateComputerLedger.ExecutedTransaction> previous,
+      List<RawTransaction> proposedTransactions,
+      RoundDetails roundDetails) {
+    var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
+    var invalidTransactions = new HashMap<RawTransaction, Exception>();
+
+    for (var transaction : proposedTransactions) {
+      var success = stateComputer.verify(transaction);
+      if (success) {
+        successfulTransactions.add(new REv2ExecutedTransaction(transaction));
+      } else {
+        invalidTransactions.put(transaction, new InvalidREv2Transaction());
+      }
+    }
+
+    return new StateComputerLedger.StateComputerResult(successfulTransactions, invalidTransactions);
+  }
+
+  @Override
+  public void commit(
+      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
+    stateComputer.commit(txnsAndProof.getTransactions(), txnsAndProof.getProof().getStateVersion());
+    var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
+    ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
+  }
 }

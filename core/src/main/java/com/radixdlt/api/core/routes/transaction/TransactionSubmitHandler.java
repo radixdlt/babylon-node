@@ -69,22 +69,20 @@ import com.radixdlt.api.core.CoreApiCommon;
 import com.radixdlt.api.core.CoreJsonRpcHandler;
 import com.radixdlt.api.core.exceptions.CoreApiException;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.mempool.*;
 import com.radixdlt.transactions.RawTransaction;
 
 public final class TransactionSubmitHandler
     extends CoreJsonRpcHandler<TransactionSubmitRequest, TransactionSubmitResponse> {
   private final CoreApiCommon coreApiCommon;
-  private final Mempool<RawTransaction> mempool;
+  private final MempoolInserter<RawTransaction> mempoolInserter;
 
   @Inject
-  TransactionSubmitHandler(CoreApiCommon coreApiCommon, Mempool<RawTransaction> mempool) {
+  TransactionSubmitHandler(
+      CoreApiCommon coreApiCommon, MempoolInserter<RawTransaction> mempoolInserter) {
     super(TransactionSubmitRequest.class);
     this.coreApiCommon = coreApiCommon;
-    this.mempool = mempool;
+    this.mempoolInserter = mempoolInserter;
   }
 
   @Override
@@ -97,7 +95,7 @@ public final class TransactionSubmitHandler
 
     // BAB-TODO: This will need to pass more information from the mempool when it's available
     try {
-      mempool.addTransaction(transaction);
+      mempoolInserter.addTransaction(transaction);
       return new TransactionSubmitResponse().duplicate(false);
     } catch (MempoolDuplicateException e) {
       return new TransactionSubmitResponse().duplicate(true);

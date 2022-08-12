@@ -67,23 +67,62 @@ package com.radixdlt.statecomputer;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Result;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolRelayReader;
+import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerResponse;
+import com.radixdlt.transaction.RustTransactionStore;
+import com.radixdlt.transaction.TransactionStoreReader;
 import com.radixdlt.transactions.RawTransaction;
+import java.util.List;
 import java.util.Objects;
 
-public class RustStateComputer implements StatelessTransactionVerifier {
+public class RustStateComputer {
   private final StateManager.RustState rustState;
+  private final RustMempool mempool;
+  private final RustTransactionStore transactionStore;
 
   public RustStateComputer(StateManager.RustState rustState) {
     this.rustState = Objects.requireNonNull(rustState);
+    this.mempool = new RustMempool(rustState);
+    this.transactionStore = new RustTransactionStore(rustState);
   }
 
   private static final TypeToken<Result<Boolean, StateManagerRuntimeError>> booleanType =
       new TypeToken<>() {};
 
-  @Override
+  public TransactionStoreReader getTransactionStoreReader() {
+    return this.transactionStore;
+  }
+
+  public MempoolRelayReader getMempoolRelayReader() {
+    return this.mempool::getTransactionsToRelay;
+  }
+
+  public MempoolInserter<RawTransaction> getMempoolInserter() {
+    return this.mempool::addTransaction;
+  }
+
+  public List<RawTransaction> getTransactionsForProposal(
+      int count, List<RawTransaction> transactionToExclude) {
+    return this.mempool.getTransactionsForProposal(count, transactionToExclude);
+  }
+
+  public void commit(List<RawTransaction> transactions, long committedStateVersion) {
+    this.mempool.handleTransactionsCommitted(transactions);
+    for (int i = 0; i < transactions.size(); i++) {
+      var transaction = transactions.get(i);
+
+      var transactionBytes = StateManagerSbor.sbor.encode(transaction, RawTransaction.class);
+      execute(this.rustState, transactionBytes);
+
+      var transactionStateVersion = committedStateVersion - transactions.size() + i;
+      this.transactionStore.insertTransaction(transactionStateVersion, transaction.getPayload());
+    }
+  }
+
   public boolean verify(RawTransaction transaction) {
     var transactionBytes = StateManagerSbor.sbor.encode(transaction, RawTransaction.class);
     var encodedResponse = verify(this.rustState, transactionBytes);
@@ -91,4 +130,6 @@ public class RustStateComputer implements StatelessTransactionVerifier {
   }
 
   private static native byte[] verify(StateManager.RustState rustState, byte[] encodedArgs);
+
+  private static native byte[] execute(StateManager.RustState rustState, byte[] encodedArgs);
 }
