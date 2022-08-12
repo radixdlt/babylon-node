@@ -199,7 +199,7 @@ public abstract class ApiTest {
         u -> {
           var output = u.getStateComputerOutput().getInstance(REOutput.class);
           return output.getProcessedTxns().stream()
-              .anyMatch(txn -> txn.getTxn().getId().equals(txnId));
+              .anyMatch(txn -> txn.getTxn().getPayloadHash().equals(txnId));
         });
   }
 

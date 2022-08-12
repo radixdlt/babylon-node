@@ -78,7 +78,7 @@ import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructio
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
 import java.util.List;
@@ -87,7 +87,7 @@ import java.util.function.Function;
 
 // TODO: Cleanup permissions to access to these methods
 public final class ExecutionContext {
-  private final Transaction transaction;
+  private final RawTransaction transaction;
   private final PermissionLevel level;
   private final boolean skipAuthorization;
   private final TokenHoldingBucket reserve;
@@ -100,7 +100,7 @@ public final class ExecutionContext {
   private List<REEvent> events = new ArrayList<>();
 
   public ExecutionContext(
-      Transaction transaction, PermissionLevel level, boolean skipAuthorization, int sigsLeft) {
+      RawTransaction transaction, PermissionLevel level, boolean skipAuthorization, int sigsLeft) {
     this.transaction = transaction;
     this.level = level;
     this.skipAuthorization = skipAuthorization;
@@ -158,7 +158,7 @@ public final class ExecutionContext {
     feeDeposit = tokens.getAmount().getLow();
   }
 
-  public void chargeOneTimeTransactionFee(Function<Transaction, UInt256> feeComputer)
+  public void chargeOneTimeTransactionFee(Function<RawTransaction, UInt256> feeComputer)
       throws DepletedFeeReserveException {
     if (chargedOneTimeFee) {
       return;

@@ -103,7 +103,7 @@ import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.substate.SubstateId;
 import com.radixdlt.substate.TxLowLevelBuilder;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -159,7 +159,7 @@ public class MempoolTest {
     return peersView.peers().findFirst().get().bftNode();
   }
 
-  private Transaction createTxn(ECKeyPair keyPair, int numMutexes) throws Exception {
+  private RawTransaction createTxn(ECKeyPair keyPair, int numMutexes) throws Exception {
     final var transactionBuilder =
         TxLowLevelBuilder.newBuilder(
             currentForkView.currentForkConfig().engineRules().serialization());
@@ -169,7 +169,7 @@ public class MempoolTest {
       transactionBuilder
           .syscall(Syscall.READDR_CLAIM, symbol.getBytes(StandardCharsets.UTF_8))
           .virtualDown(
-              SubstateId.ofSubstate(genesisTxns.getTransactions().get(0).getId(), 0),
+              SubstateId.ofSubstate(genesisTxns.getTransactions().get(0).getPayloadHash(), 0),
               addr.getBytes())
           .end();
     }
@@ -177,7 +177,7 @@ public class MempoolTest {
     return transactionBuilder.sig(signature).build();
   }
 
-  private Transaction createTxn(ECKeyPair keyPair) throws Exception {
+  private RawTransaction createTxn(ECKeyPair keyPair) throws Exception {
     return createTxn(keyPair, 1);
   }
 
@@ -283,7 +283,7 @@ public class MempoolTest {
   public void add_bad_transaction_to_mempool() {
     // Arrange
     getInjector().injectMembers(this);
-    final var txn = Transaction.create(new byte[0]);
+    final var txn = RawTransaction.create(new byte[0]);
 
     // Act
     MempoolAdd mempoolAdd = MempoolAdd.create(txn);

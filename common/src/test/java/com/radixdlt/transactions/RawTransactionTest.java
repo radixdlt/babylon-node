@@ -64,74 +64,41 @@
 
 package com.radixdlt.transactions;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.identifiers.TID;
+import static org.junit.Assert.assertEquals;
+
+import com.google.common.hash.HashCode;
+import com.radixdlt.sbor.Sbor;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import java.util.Objects;
+import org.junit.Test;
 
-/**
- * A wrapper around the raw bytes of a transaction submission. The transaction is yet to be parsed,
- * and may be invalid.
- */
-public final class Transaction {
-  public static void registerCodec(CodecMap codecMap) {
+public class RawTransactionTest {
+
+  public static void registerHashCodeCodec(CodecMap codecMap) {
     codecMap.register(
-        Transaction.class,
+        HashCode.class,
         codecs ->
             StructCodec.with(
-                Transaction::new,
+                HashCode::fromBytes,
                 codecs.of(byte[].class),
-                codecs.of(TID.class),
-                (t, encoder) -> encoder.encode(t.payload, t.id)));
+                (t, encoder) -> encoder.encode(t.asBytes())));
   }
 
-  private final byte[] payload;
-  private final TID id;
+  @Test
+  public void testSBORSerialization() {
+    var sbor =
+        new Sbor(
+            true,
+            new CodecMap()
+                .register(RawTransactionTest::registerHashCodeCodec)
+                .register(RawTransaction::registerCodec));
 
-  private Transaction(byte[] payload, TID id) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = Objects.requireNonNull(id);
-  }
+    byte[] payload = new byte[10];
+    RawTransaction t0 = RawTransaction.create(payload);
 
-  private Transaction(byte[] payload) {
-    this.payload = Objects.requireNonNull(payload);
-    this.id = TID.from(HashUtils.transactionIdHash(payload).asBytes());
-  }
+    var r0 = sbor.encode(t0, RawTransaction.class);
+    var t1 = sbor.decode(r0, RawTransaction.class);
 
-  @JsonCreator
-  public static Transaction create(byte[] payload) {
-    return new Transaction(payload);
-  }
-
-  public TID getId() {
-    return id;
-  }
-
-  @JsonValue
-  public byte[] getPayload() {
-    return payload;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Transaction)) {
-      return false;
-    }
-
-    Transaction other = (Transaction) o;
-    return Objects.equals(this.id, other.id);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{id=%s}", this.getClass().getSimpleName(), this.id);
+    assertEquals(t0, t1);
   }
 }

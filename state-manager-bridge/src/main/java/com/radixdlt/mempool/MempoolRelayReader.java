@@ -64,9 +64,9 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 
 public interface MempoolRelayReader {
-  List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis);
+  List<RawTransaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis);
 }

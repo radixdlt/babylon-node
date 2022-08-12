@@ -75,7 +75,7 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -110,7 +110,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public List<Transaction> getTransactionsForProposal(
+  public List<RawTransaction> getTransactionsForProposal(
       List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
     var transactionsNotToInclude =
         executedTransactions.stream()
@@ -122,10 +122,10 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   @Override
   public StateComputerLedger.StateComputerResult prepare(
       List<StateComputerLedger.ExecutedTransaction> previous,
-      List<Transaction> proposedTransactions,
+      List<RawTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-    var invalidTransactions = new HashMap<Transaction, Exception>();
+    var invalidTransactions = new HashMap<RawTransaction, Exception>();
 
     for (var transaction : proposedTransactions) {
       var success = stateComputer.verify(transaction);

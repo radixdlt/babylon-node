@@ -64,9 +64,9 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 
 public interface MempoolInserter<T> {
   /** Add a transaction to the local mempool. */
-  T addTransaction(Transaction transaction) throws MempoolRejectedException;
+  T addTransaction(RawTransaction transaction) throws MempoolRejectedException;
 }

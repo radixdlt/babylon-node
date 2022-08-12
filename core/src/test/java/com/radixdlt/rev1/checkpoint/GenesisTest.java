@@ -79,7 +79,7 @@ import com.radixdlt.networks.GenesisSource;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -101,17 +101,17 @@ public class GenesisTest {
                 n.genesisSource() instanceof GenesisSource.Fixed fixedGenesis
                     ? Stream.of(fixedGenesis.genesisTransactionPayload())
                     : Stream.empty())
-        .map(Transaction::create)
+        .map(RawTransaction::create)
         .map(txn -> new Object[] {txn})
         .toList();
   }
 
   private static final Logger logger = LogManager.getLogger();
-  private final Transaction genesis;
+  private final RawTransaction genesis;
 
   @Inject private GenesisBuilder genesisBuilder;
 
-  public GenesisTest(Transaction genesis) {
+  public GenesisTest(RawTransaction genesis) {
     this.genesis = genesis;
   }
 

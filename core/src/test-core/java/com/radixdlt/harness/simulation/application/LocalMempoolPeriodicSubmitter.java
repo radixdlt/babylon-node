@@ -68,7 +68,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.simulation.SimulationTest.SimulationNetworkActor;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -79,7 +79,7 @@ import java.util.concurrent.TimeUnit;
 /** Contributes to steady state by submitting transactions to the mempool every few seconds */
 public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
 
-  private final PublishSubject<Pair<Transaction, BFTNode>> transactionsSubject;
+  private final PublishSubject<Pair<RawTransaction, BFTNode>> transactionsSubject;
   private final TransactionGenerator transactionGenerator;
   private final NodeSelector nodeSelector;
 
@@ -92,11 +92,11 @@ public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
     this.nodeSelector = nodeSelector;
   }
 
-  private void act(RunningNetwork network, Transaction transaction, BFTNode node) {
+  private void act(RunningNetwork network, RawTransaction transaction, BFTNode node) {
     network.getDispatcher(MempoolAdd.class, node).dispatch(MempoolAdd.create(transaction));
   }
 
-  public Observable<Pair<Transaction, BFTNode>> issuedTransactions() {
+  public Observable<Pair<RawTransaction, BFTNode>> issuedTransactions() {
     return transactionsSubject.observeOn(Schedulers.io());
   }
 

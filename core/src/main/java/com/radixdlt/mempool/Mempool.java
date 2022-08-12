@@ -64,7 +64,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 
 /**
@@ -81,7 +81,7 @@ public interface Mempool<T> extends MempoolRelayReader, MempoolInserter<T> {
    *     which will need to be taken into account when choosing transactions
    * @return A list of transactions for processing by consensus
    */
-  List<Transaction> getTransactionsForProposal(int count, List<T> preparedTransactions);
+  List<RawTransaction> getTransactionsForProposal(int count, List<T> preparedTransactions);
 
   void handleTransactionsCommitted(List<T> transactions);
 

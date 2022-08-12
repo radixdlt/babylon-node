@@ -64,25 +64,25 @@
 
 package com.radixdlt.engine;
 
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Bytes;
 
 /** Exception thrown by Radix Engine */
 @SuppressWarnings("serial")
 public final class RadixEngineException extends Exception {
-  private final Transaction transaction;
+  private final RawTransaction transaction;
   private final int txnIndex;
   private final int batchSize;
 
   public RadixEngineException(
-      int txnIndex, int batchSize, Transaction transaction, Exception cause) {
+      int txnIndex, int batchSize, RawTransaction transaction, Exception cause) {
     super(
         "index="
             + txnIndex
             + " batchSize="
             + batchSize
             + " txnId="
-            + transaction.getId()
+            + transaction.getPayloadHash()
             + " txn_size="
             + transaction.getPayload().length
             + " txn="
@@ -93,7 +93,7 @@ public final class RadixEngineException extends Exception {
     this.batchSize = batchSize;
   }
 
-  private static String txnToString(Transaction transaction) {
+  private static String txnToString(RawTransaction transaction) {
     if (transaction.getPayload().length > 2048) {
       return Bytes.toHexString(transaction.getPayload()).substring(0, 2048) + "...";
     } else {
@@ -105,7 +105,7 @@ public final class RadixEngineException extends Exception {
     return batchSize;
   }
 
-  public Transaction getTxn() {
+  public RawTransaction getTxn() {
     return transaction;
   }
 

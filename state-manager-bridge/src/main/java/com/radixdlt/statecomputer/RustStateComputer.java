@@ -75,7 +75,7 @@ import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStoreReader;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
 
@@ -101,21 +101,21 @@ public class RustStateComputer {
     return this.mempool::getTransactionsToRelay;
   }
 
-  public MempoolInserter<Transaction> getMempoolInserter() {
+  public MempoolInserter<RawTransaction> getMempoolInserter() {
     return this.mempool::addTransaction;
   }
 
-  public List<Transaction> getTransactionsForProposal(
-      int count, List<Transaction> transactionToExclude) {
+  public List<RawTransaction> getTransactionsForProposal(
+      int count, List<RawTransaction> transactionToExclude) {
     return this.mempool.getTransactionsForProposal(count, transactionToExclude);
   }
 
-  public void commit(List<Transaction> transactions, long committedStateVersion) {
+  public void commit(List<RawTransaction> transactions, long committedStateVersion) {
     this.mempool.handleTransactionsCommitted(transactions);
     for (int i = 0; i < transactions.size(); i++) {
       var transaction = transactions.get(i);
 
-      var transactionBytes = StateManagerSbor.sbor.encode(transaction, Transaction.class);
+      var transactionBytes = StateManagerSbor.sbor.encode(transaction, RawTransaction.class);
       execute(this.rustState, transactionBytes);
 
       var transactionStateVersion = committedStateVersion - transactions.size() + i;
@@ -123,8 +123,8 @@ public class RustStateComputer {
     }
   }
 
-  public boolean verify(Transaction transaction) {
-    var transactionBytes = StateManagerSbor.sbor.encode(transaction, Transaction.class);
+  public boolean verify(RawTransaction transaction) {
+    var transactionBytes = StateManagerSbor.sbor.encode(transaction, RawTransaction.class);
     var encodedResponse = verify(this.rustState, transactionBytes);
     return StateManagerResponse.decode(encodedResponse, booleanType);
   }

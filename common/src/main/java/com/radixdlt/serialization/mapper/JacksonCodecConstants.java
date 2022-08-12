@@ -77,7 +77,7 @@ final class JacksonCodecConstants {
   static final byte U20_VALUE = 0x05; // 0x20 byte = 256 bit unsigned int
   static final byte RRI_VALUE = 0x06;
   static final byte U30_VALUE = 0x07; // 0x30 byte = 384 bit unsigned int
-  static final byte AID_VALUE = 0x08;
+  static final byte TID_VALUE = 0x08;
   static final byte LONGS_VALUE = 0x09;
   static final byte INSTANT_VALUE = 0x0A;
 
@@ -90,6 +90,6 @@ final class JacksonCodecConstants {
   static final String U20_STR_VALUE = ":u20:"; // 0x20 byte = 256 bit unsigned int
   static final String RRI_STR_VALUE = ":rri:";
   static final String U30_STR_VALUE = ":u30:"; // 0x30 byte = 384 bit unsigned int
-  static final String AID_STR_VALUE = ":aid:";
+  static final String TID_STR_VALUE = ":tid:";
   static final String LONGS_STR_VALUE = ":lng:";
 }
