@@ -77,6 +77,13 @@ pub struct ResourceAccounter<'s, S: ReadableSubstateStore + QueryableSubstateSto
 }
 
 impl<'s, S: ReadableSubstateStore + QueryableSubstateStore> ResourceAccounter<'s, S> {
+    pub fn new(substate_store: &'s S) -> Self {
+        ResourceAccounter {
+            substate_store,
+            accounting: HashMap::new(),
+        }
+    }
+
     pub fn add_resources(&mut self, node_id: RENodeId) {
         match node_id {
             RENodeId::Vault(vault_id) => {
@@ -122,5 +129,9 @@ impl<'s, S: ReadableSubstateStore + QueryableSubstateStore> ResourceAccounter<'s
             }
             _ => {}
         }
+    }
+
+    pub fn into_map(self) -> HashMap<ResourceAddress, Decimal> {
+        self.accounting
     }
 }

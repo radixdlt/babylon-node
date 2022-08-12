@@ -66,6 +66,7 @@ use crate::jni::dtos::JavaStructure;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use scrypto::prelude::*;
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
@@ -121,5 +122,31 @@ fn do_execute(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateMan
         .execute_transaction(validated_txn)
         .expect("Error on Byzantine quorum");
 
+    Ok(())
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_get_component_resources(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_get_component_resources(&env, j_state, j_payload).to_java();
+
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+fn do_get_component_resources(
+    env: &JNIEnv,
+    j_state: JObject,
+    _j_payload: jbyteArray,
+) -> StateManagerResult<()> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    //let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
+    //let transaction = Transaction::from_java(&request_payload)?;
+    let _resources = state_manager
+        .state_manager
+        .get_component_resources(SYSTEM_COMPONENT);
     Ok(())
 }

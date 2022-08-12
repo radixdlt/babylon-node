@@ -63,3 +63,5 @@
  */
 
 mod query_db;
+
+pub use query_db::ResourceAccounter;

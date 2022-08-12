@@ -69,16 +69,20 @@ use crate::types::Transaction;
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore};
 use radix_engine::transaction::{ExecutionConfig, TransactionExecutor};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::core::Network;
+use scrypto::engine::types::RENodeId;
+use scrypto::prelude::*;
+use std::collections::HashMap;
 use transaction::errors::TransactionValidationError;
 
+use crate::query::ResourceAccounter;
 use transaction::model::ValidatedTransaction;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
-pub struct StateManager<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> {
+pub struct StateManager<M: Mempool, S> {
     pub mempool: M,
     pub transaction_store: TransactionStore,
     substate_store: S,
@@ -118,10 +122,6 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
         }
     }
 
-    pub fn substate_store(&self) -> &S {
-        &self.substate_store
-    }
-
     pub fn execute_transaction(
         &mut self,
         transaction: ValidatedTransaction,
@@ -145,6 +145,17 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
             &self.intent_hash_manager,
             &self.validation_config,
         )
+    }
+}
+
+impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager<M, S> {
+    pub fn get_component_resources(
+        &self,
+        component_address: ComponentAddress,
+    ) -> HashMap<ResourceAddress, Decimal> {
+        let mut resource_accounter = ResourceAccounter::new(&self.substate_store);
+        resource_accounter.add_resources(RENodeId::Component(component_address));
+        resource_accounter.into_map()
     }
 }
 
