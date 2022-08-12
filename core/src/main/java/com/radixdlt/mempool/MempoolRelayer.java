@@ -72,7 +72,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -127,7 +127,7 @@ public final class MempoolRelayer {
   }
 
   private void relayTransactions(
-      List<Transaction> transactions, ImmutableList<BFTNode> ignorePeers) {
+      List<RawTransaction> transactions, ImmutableList<BFTNode> ignorePeers) {
     final var mempoolAddMsg = MempoolAdd.create(transactions);
     final var peers =
         this.peersView.peers().map(PeersView.PeerInfo::bftNode).collect(Collectors.toList());

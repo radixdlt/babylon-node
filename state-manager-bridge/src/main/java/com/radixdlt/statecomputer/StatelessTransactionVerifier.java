@@ -64,8 +64,8 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 
 public interface StatelessTransactionVerifier {
-  boolean verify(Transaction transaction);
+  boolean verify(RawTransaction transaction);
 }

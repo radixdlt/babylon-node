@@ -75,7 +75,7 @@ import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.rev2.REv2ExampleTransactions;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transaction.TransactionStore;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -108,8 +108,8 @@ public final class StateManagerTest {
               })
           .start();
     }
-    final var transaction = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
-    final var mempoolNode1 = injectorNode1.getInstance(new Key<Mempool<Transaction>>() {});
+    final var transaction = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+    final var mempoolNode1 = injectorNode1.getInstance(new Key<Mempool<RawTransaction>>() {});
     mempoolNode1.addTransaction(transaction);
     try {
       mempoolNode1.addTransaction(transaction);

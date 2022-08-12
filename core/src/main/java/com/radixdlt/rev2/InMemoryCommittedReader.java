@@ -72,7 +72,7 @@ import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -128,12 +128,12 @@ public final class InMemoryCommittedReader implements CommittedReader {
           store.committedTransactionRuns.higherEntry(stateVersion);
 
       if (entry != null) {
-        List<Transaction> transactions =
+        List<RawTransaction> transactions =
             accumulatorVerifier
                 .verifyAndGetExtension(
                     start.getLedgerHeader().getAccumulatorState(),
                     entry.getValue().getTransactions(),
-                    txn -> txn.getId().asHashCode(),
+                    RawTransaction::getPayloadHash,
                     entry.getValue().getProof().getAccumulatorState())
                 .orElseThrow(() -> new RuntimeException());
 

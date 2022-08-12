@@ -65,23 +65,23 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.Objects;
 import java.util.Optional;
 
 /** Message indicating that a transaction was successfully added to the mempool */
 public final class MempoolAddSuccess {
-  private final Transaction transaction;
+  private final RawTransaction transaction;
   private final Object processedTxn;
   private final BFTNode origin;
 
-  private MempoolAddSuccess(Transaction transaction, Object processedTxn, BFTNode origin) {
+  private MempoolAddSuccess(RawTransaction transaction, Object processedTxn, BFTNode origin) {
     this.transaction = transaction;
     this.processedTxn = processedTxn;
     this.origin = origin;
   }
 
-  public Transaction getTxn() {
+  public RawTransaction getTxn() {
     return transaction;
   }
 
@@ -94,7 +94,7 @@ public final class MempoolAddSuccess {
   }
 
   public static MempoolAddSuccess create(
-      Transaction transaction, Object processedTxn, BFTNode origin) {
+      RawTransaction transaction, Object processedTxn, BFTNode origin) {
     Objects.requireNonNull(transaction);
     return new MempoolAddSuccess(transaction, processedTxn, origin);
   }

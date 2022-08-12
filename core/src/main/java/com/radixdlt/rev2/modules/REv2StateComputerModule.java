@@ -80,7 +80,7 @@ import com.radixdlt.rev2.InvalidREv2Transaction;
 import com.radixdlt.rev2.REv2ExecutedTransaction;
 import com.radixdlt.statecomputer.StatelessTransactionVerifier;
 import com.radixdlt.transaction.TransactionStore;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -94,14 +94,14 @@ public class REv2StateComputerModule extends AbstractModule {
   @Override
   protected void configure() {
     bind(new TypeLiteral<Mempool<?>>() {})
-        .to(new TypeLiteral<Mempool<Transaction>>() {})
+        .to(new TypeLiteral<Mempool<RawTransaction>>() {})
         .in(Scopes.SINGLETON);
   }
 
   @Provides
   @Singleton
   private StateComputerLedger.StateComputer stateComputer(
-      Mempool<Transaction> mempool,
+      Mempool<RawTransaction> mempool,
       StatelessTransactionVerifier verifier,
       TransactionStore transactionStore,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
@@ -121,7 +121,7 @@ public class REv2StateComputerModule extends AbstractModule {
       }
 
       @Override
-      public List<Transaction> getTransactionsForProposal(
+      public List<RawTransaction> getTransactionsForProposal(
           List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
         var transactionsNotToInclude =
             executedTransactions.stream()
@@ -133,10 +133,10 @@ public class REv2StateComputerModule extends AbstractModule {
       @Override
       public StateComputerLedger.StateComputerResult prepare(
           List<StateComputerLedger.ExecutedTransaction> previous,
-          List<Transaction> proposedTransactions,
+          List<RawTransaction> proposedTransactions,
           RoundDetails roundDetails) {
         var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-        var invalidTransactions = new HashMap<Transaction, Exception>();
+        var invalidTransactions = new HashMap<RawTransaction, Exception>();
 
         for (var transaction : proposedTransactions) {
           var success = verifier.verify(transaction);

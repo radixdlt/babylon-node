@@ -73,15 +73,15 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 
 public final class TransactionSubmitHandler
     extends CoreJsonRpcHandler<TransactionSubmitRequest, TransactionSubmitResponse> {
   private final CoreApiCommon coreApiCommon;
-  private final Mempool<Transaction> mempool;
+  private final Mempool<RawTransaction> mempool;
 
   @Inject
-  TransactionSubmitHandler(CoreApiCommon coreApiCommon, Mempool<Transaction> mempool) {
+  TransactionSubmitHandler(CoreApiCommon coreApiCommon, Mempool<RawTransaction> mempool) {
     super(TransactionSubmitRequest.class);
     this.coreApiCommon = coreApiCommon;
     this.mempool = mempool;
@@ -92,7 +92,8 @@ public final class TransactionSubmitHandler
       throws CoreApiException {
     coreApiCommon.verifyNetwork(request.getNetworkIdentifier());
 
-    var transaction = Transaction.create(coreApiCommon.fromHex(request.getNotarizedTransaction()));
+    var transaction =
+        RawTransaction.create(coreApiCommon.fromHex(request.getNotarizedTransaction()));
 
     // BAB-TODO: This will need to pass more information from the mempool when it's available
     try {
