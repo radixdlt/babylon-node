@@ -65,17 +65,15 @@
 package com.radixdlt.integration.targeted.genesis;
 
 import com.google.inject.*;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.keys.LocalSigner;
+import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.*;
@@ -91,20 +89,16 @@ import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
 import java.util.stream.Stream;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public class REv2GenesisTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   @Inject private REv2StateReader stateReader;
 
   private Injector createInjector() {
     return Guice.createInjector(
         new MockedCryptoModule(),
-        new MockedKeyModule(),
         new TestMessagingModule.Builder().withDefaultRateLimit().build(),
         new MockedLedgerRecoveryModule(),
         new MockedConsensusRecoveryModule.Builder()
@@ -118,6 +112,7 @@ public class REv2GenesisTest {
                     StateComputerConfig.REV2ProposerConfig.halfCorrectProposer()),
                 false)),
         new TestP2PModule.Builder().build(),
+        new InMemoryBFTKeyModule(TEST_KEY),
         new AbstractModule() {
           @Override
           protected void configure() {
@@ -130,29 +125,6 @@ public class REv2GenesisTest {
             bindConstant()
                 .annotatedWith(PacemakerMaxExponent.class)
                 .to(0); // Use constant timeout for now
-          }
-
-          @Provides
-          @Self
-          private BFTNode self() {
-            return BFTNode.create(TEST_KEY.getPublicKey());
-          }
-
-          @Provides
-          @Self
-          private ECPublicKey key() {
-            return TEST_KEY.getPublicKey();
-          }
-
-          @Provides
-          private ECKeyPair keyPair() {
-            return TEST_KEY;
-          }
-
-          @Provides
-          @LocalSigner
-          HashSigner hashSigner() {
-            return TEST_KEY::sign;
           }
 
           @Provides

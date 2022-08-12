@@ -281,12 +281,11 @@ public class RecoveryLivenessTest {
                 10,
                 MSG.maxLength())),
         new ForksModule(),
-        new PersistedNodeForTestingModule(),
+        new PersistedNodeForTestingModule(ecKeyPair),
         new LastEventsModule(EpochRoundUpdate.class),
         new AbstractModule() {
           @Override
           protected void configure() {
-            bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
             bind(Environment.class)
                 .toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
             bindConstant()
