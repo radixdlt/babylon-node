@@ -74,9 +74,7 @@ dependencies {
 }
 
 compileJava {
-    if (!project.hasProperty('ci')) {
-        dependsOn(":state-manager:buildRustForDocker")
-    }
+    dependsOn(":state-manager:buildRustDebug")
 }
 
 jacocoTestReport {
