@@ -89,7 +89,7 @@ public class TransactionPreviewHandlerTest extends ApiTest {
     final var request =
         new TransactionPreviewRequest()
             .networkIdentifier(
-                new NetworkIdentifier().network(Network.LOCALNET.name().toLowerCase()))
+                new NetworkIdentifier().network(Network.INTEGRATIONTESTNET.getLogicalName()))
             .manifest(
                 Hex.toHexString(
                     ManifestCompiler.compile("CLEAR_AUTH_ZONE;", "LocalSimulator").unwrap()))
