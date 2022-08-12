@@ -181,7 +181,7 @@ public class MessageCentralImplTest {
             outboundEventQueueFactory,
             systemCountersMock,
             peerControlMock,
-            Addressing.ofNetwork(Network.LOCALNET),
+            Addressing.ofNetwork(Network.INTEGRATIONTESTNET),
             capabilities);
     return messageCentral;
   }

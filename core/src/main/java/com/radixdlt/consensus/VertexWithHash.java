@@ -68,7 +68,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
 
@@ -104,7 +104,7 @@ public final class VertexWithHash {
     return vertex;
   }
 
-  public List<Transaction> getTransactions() {
+  public List<RawTransaction> getTransactions() {
     return vertex.getTransactions();
   }
 

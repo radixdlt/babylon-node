@@ -67,7 +67,7 @@ package com.radixdlt.transaction;
 import com.radixdlt.statemanager.StateManager.RustState;
 import java.util.Objects;
 
-public final class RustTransactionStore implements TransactionStore {
+public final class RustTransactionStore implements TransactionStoreReader {
 
   private final RustState rustState;
 
@@ -75,7 +75,6 @@ public final class RustTransactionStore implements TransactionStore {
     this.rustState = Objects.requireNonNull(rustState);
   }
 
-  @Override
   public void insertTransaction(long stateVersion, byte[] transactionBytes) {
     insertTransaction(this.rustState, stateVersion, transactionBytes);
   }

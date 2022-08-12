@@ -77,7 +77,7 @@ import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.rev2.InMemoryCommittedReader;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -110,7 +110,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
 
   private static class ByzantineCommittedTransactionRunBuilder {
     private DtoLedgerProof request;
-    private UnaryOperator<Transaction> transactionMapper;
+    private UnaryOperator<RawTransaction> transactionMapper;
     private CommittedTransactionsWithProof base;
     private TimestampedECDSASignatures overwriteSignatures;
     private LedgerAccumulator accumulator;
@@ -134,7 +134,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
     }
 
     public ByzantineCommittedTransactionRunBuilder replaceTransactions(
-        UnaryOperator<Transaction> transactionMapper) {
+        UnaryOperator<RawTransaction> transactionMapper) {
       this.transactionMapper = transactionMapper;
       return this;
     }
@@ -146,7 +146,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
     }
 
     public CommittedTransactionsWithProof build() {
-      List<Transaction> transactions;
+      List<RawTransaction> transactions;
       if (transactionMapper != null) {
         transactions =
             base.getTransactions().stream()
@@ -160,7 +160,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
       if (accumulator != null) {
         accumulatorState = request.getLedgerHeader().getAccumulatorState();
         for (var txn : transactions) {
-          accumulatorState = accumulator.accumulate(accumulatorState, txn.getId().asHashCode());
+          accumulatorState = accumulator.accumulate(accumulatorState, txn.getPayloadHash());
         }
       } else {
         accumulatorState = base.getProof().getAccumulatorState();
@@ -204,7 +204,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
         return new ByzantineCommittedTransactionRunBuilder()
             .hasher(hasher)
             .base(correctCommittedTransactionsWithProof)
-            .replaceTransactions(cmd -> Transaction.create(new byte[] {0}))
+            .replaceTransactions(cmd -> RawTransaction.create(new byte[] {0}))
             .build();
       }
     },
@@ -218,7 +218,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
         return new ByzantineCommittedTransactionRunBuilder()
             .hasher(hasher)
             .base(correctCommittedTransactionsWithProof)
-            .replaceTransactions(cmd -> Transaction.create(new byte[] {0}))
+            .replaceTransactions(cmd -> RawTransaction.create(new byte[] {0}))
             .accumulator(request, accumulator)
             .overwriteSignatures(new TimestampedECDSASignatures())
             .build();
@@ -234,7 +234,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
         return new ByzantineCommittedTransactionRunBuilder()
             .hasher(hasher)
             .base(correctCommittedTransactionsWithProof)
-            .replaceTransactions(cmd -> Transaction.create(new byte[] {0}))
+            .replaceTransactions(cmd -> RawTransaction.create(new byte[] {0}))
             .accumulator(request, accumulator)
             .build();
       }

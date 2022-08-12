@@ -86,8 +86,8 @@ import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedSyncServiceModule;
 import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statecomputer.REv2StatelessComputerModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
-import com.radixdlt.statecomputer.StatelessComputerModule;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
@@ -224,7 +224,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               case REV2ProposerConfig.HalfCorrectProposer ignored -> {
                 bind(ProposalGenerator.class).to(HalfCorrectREv2TransactionGenerator.class);
                 bindConstant().annotatedWith(MempoolMaxSize.class).to(0);
-                install(new StatelessComputerModule());
+                install(new REv2StatelessComputerModule());
               }
               case REV2ProposerConfig.Mempool ignored -> {
                 install(new MempoolReceiverModule());

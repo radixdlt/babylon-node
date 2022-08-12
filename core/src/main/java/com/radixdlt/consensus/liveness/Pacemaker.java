@@ -76,7 +76,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
 import java.util.Objects;
@@ -206,7 +206,8 @@ public final class Pacemaker {
         proposedVertex, highQC.highestCommittedQC(), highQC.highestTC());
   }
 
-  private List<Transaction> getTransactionsForProposal(Round round, QuorumCertificate highestQC) {
+  private List<RawTransaction> getTransactionsForProposal(
+      Round round, QuorumCertificate highestQC) {
     // If we're at the end of an epoch, we need to generate an empty proposal
     // - these transactions will get ignored at vertex preparation time anyway
     // TODO: Remove isEndOfEpoch knowledge from consensus

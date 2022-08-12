@@ -62,10 +62,11 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.mempool;
 
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 
-public interface StatelessTransactionVerifier {
-  boolean verify(Transaction transaction);
+public interface MempoolInserter<T> {
+  /** Add a transaction to the local mempool. */
+  T addTransaction(RawTransaction transaction) throws MempoolRejectedException;
 }

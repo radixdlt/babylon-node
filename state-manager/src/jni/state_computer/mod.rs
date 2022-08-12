@@ -94,7 +94,7 @@ fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateMana
     let state_manager = JNIStateManager::get_state_manager(env, j_state);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
     let transaction = Transaction::from_java(&request_payload)?;
-    let result = state_manager.decode_transaction(&transaction);
+    let result = state_manager.state_manager.decode_transaction(&transaction);
     Ok(result.is_ok())
 }
 
@@ -114,12 +114,41 @@ fn do_preview(
     j_state: JObject,
     j_payload: jbyteArray,
 ) -> StateManagerResult<Result<PreviewResultJava, PreviewErrorJava>> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
     let preview_request = PreviewRequest::from_java(&request_payload)?;
     let preview_result: Result<PreviewResultJava, PreviewErrorJava> = state_manager
+        .state_manager
         .preview(&preview_request)
         .map(|result| result.into())
         .map_err_sm(|err| err.into())?;
     Ok(preview_result)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_execute(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_execute(&env, j_state, j_payload).to_java();
+
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+fn do_execute(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<()> {
+    let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
+    let transaction = Transaction::from_java(&request_payload)?;
+    let validated_txn = state_manager
+        .state_manager
+        .decode_transaction(&transaction)
+        .expect("Error on Byzantine quorum");
+    state_manager
+        .state_manager
+        .execute_transaction(validated_txn)
+        .expect("Error on Byzantine quorum");
+
+    Ok(())
 }

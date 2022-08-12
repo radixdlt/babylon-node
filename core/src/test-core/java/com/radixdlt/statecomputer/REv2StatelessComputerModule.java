@@ -62,33 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.statecomputer;
 
-import com.radixdlt.transactions.Transaction;
-import java.util.List;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 
 /**
- * Basic mempool functionality.
- *
- * <p>Note that conceptually, a mempool can be thought of as a list indexable by hash.
+ * Stateless REv2 computer for testing intended to be drop in replacement for StateComputerModule
  */
-public interface Mempool<T> {
-  /** Add a transaction to the local mempool. */
-  T addTransaction(Transaction transaction) throws MempoolRejectedException;
+public final class REv2StatelessComputerModule extends AbstractModule {
+  @Override
+  protected void configure() {
+    install(new StatelessComputerModule());
+  }
 
-  /**
-   * Retrieve a list of transactions from the local mempool for creating a proposal for consensus.
-   *
-   * @param count the number of transactions to retrieve
-   * @param preparedTransactions transactions used in the prepared vertex ahead of the proposal
-   *     which will need to be taken into account when choosing transactions
-   * @return A list of transactions for processing by consensus
-   */
-  List<Transaction> getTransactionsForProposal(int count, List<T> preparedTransactions);
-
-  List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis);
-
-  void handleTransactionsCommitted(List<T> transactions);
-
-  int getCount();
+  @Provides
+  private StatelessTransactionVerifier statelessTransactionVerifier(
+      RustStateComputer stateComputer) {
+    return stateComputer::verify;
+  }
 }

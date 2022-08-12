@@ -126,7 +126,7 @@ import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SyncConfig;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -466,7 +466,7 @@ public final class SimulationTest {
             @Override
             public void configure() {
               bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-              bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
+              bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
               bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
               bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(pacemakerTimeout);
               bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
@@ -527,7 +527,7 @@ public final class SimulationTest {
 
               @Genesis
               @Provides
-              Transaction genesis(@Genesis CommittedTransactionsWithProof txnsAndProof) {
+              RawTransaction genesis(@Genesis CommittedTransactionsWithProof txnsAndProof) {
                 return txnsAndProof.getTransactions().get(0);
               }
             });

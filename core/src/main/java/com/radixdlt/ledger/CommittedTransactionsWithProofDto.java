@@ -74,7 +74,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
@@ -94,7 +94,7 @@ public final class CommittedTransactionsWithProofDto {
 
   @JsonProperty("txns")
   @DsonOutput(Output.ALL)
-  private final List<Transaction> transactions;
+  private final List<RawTransaction> transactions;
 
   @JsonProperty("head")
   @DsonOutput(Output.ALL)
@@ -106,7 +106,7 @@ public final class CommittedTransactionsWithProofDto {
 
   @JsonCreator
   public CommittedTransactionsWithProofDto(
-      @JsonProperty("txns") List<Transaction> transactions,
+      @JsonProperty("txns") List<RawTransaction> transactions,
       @JsonProperty(value = "head", required = true) DtoLedgerProof head,
       @JsonProperty(value = "tail", required = true) DtoLedgerProof tail) {
     this.transactions = transactions == null ? ImmutableList.of() : transactions;
@@ -116,7 +116,7 @@ public final class CommittedTransactionsWithProofDto {
     this.transactions.forEach(Objects::requireNonNull);
   }
 
-  public List<Transaction> getTransactions() {
+  public List<RawTransaction> getTransactions() {
     return transactions;
   }
 

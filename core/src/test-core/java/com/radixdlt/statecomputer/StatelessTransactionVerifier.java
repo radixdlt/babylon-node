@@ -62,51 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.statecomputer;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.radixdlt.consensus.bft.PacemakerBackoffRate;
-import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
-import com.radixdlt.consensus.bft.PacemakerMaxExponent;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.keys.InMemoryBFTKeyModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.networks.Addressing;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
-import com.radixdlt.rev1.modules.LedgerRecoveryModule;
-import com.radixdlt.rev1.modules.PersistenceModule;
-import com.radixdlt.rev1.modules.RadixEngineStoreModule;
-import com.radixdlt.store.DatabaseCacheSize;
-import com.radixdlt.sync.SyncConfig;
-import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.transactions.RawTransaction;
 
-/** Helper class for modules to be used for recovery tests. */
-public final class PersistedNodeForTestingModule extends AbstractModule {
-  @Override
-  public void configure() {
-    bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-    bind(SyncConfig.class).toInstance(SyncConfig.of(500, 10, 3000, 10, Long.MAX_VALUE));
-    bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
-    bind(Long.class).annotatedWith(PacemakerBaseTimeoutMs.class).toInstance(1000L);
-    bind(Double.class).annotatedWith(PacemakerBackoffRate.class).toInstance(2.0);
-    bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
-    bindConstant()
-        .annotatedWith(DatabaseCacheSize.class)
-        .to((long) (Runtime.getRuntime().maxMemory() * 0.125));
-
-    // System
-    bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-    bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
-    install(new InMemoryBFTKeyModule());
-    install(new CryptoModule());
-    install(new FunctionalRadixNodeModule());
-    install(new RadixEngineStoreModule());
-    install(new PersistenceModule());
-    install(new ConsensusRecoveryModule());
-    install(new LedgerRecoveryModule());
-  }
+public interface StatelessTransactionVerifier {
+  boolean verify(RawTransaction transaction);
 }

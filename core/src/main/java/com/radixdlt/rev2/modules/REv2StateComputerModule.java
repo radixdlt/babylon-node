@@ -64,111 +64,24 @@
 
 package com.radixdlt.rev2.modules;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.*;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.rev2.InvalidREv2Transaction;
-import com.radixdlt.rev2.REv2ExecutedTransaction;
-import com.radixdlt.statecomputer.StatelessTransactionVerifier;
-import com.radixdlt.transaction.TransactionStore;
-import com.radixdlt.transactions.Transaction;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import javax.annotation.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.radixdlt.rev2.REv2StateComputer;
+import com.radixdlt.statecomputer.RustStateComputer;
 
 public class REv2StateComputerModule extends AbstractModule {
-  private static final Logger log = LogManager.getLogger();
 
   @Override
-  protected void configure() {
-    bind(new TypeLiteral<Mempool<?>>() {})
-        .to(new TypeLiteral<Mempool<Transaction>>() {})
-        .in(Scopes.SINGLETON);
+  public void configure() {
+    bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
   }
 
   @Provides
   @Singleton
-  private StateComputerLedger.StateComputer stateComputer(
-      Mempool<Transaction> mempool,
-      StatelessTransactionVerifier verifier,
-      TransactionStore transactionStore,
-      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
-    return new StateComputerLedger.StateComputer() {
-      @Override
-      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
-        mempoolAdd
-            .transactions()
-            .forEach(
-                transaction -> {
-                  try {
-                    mempool.addTransaction(transaction);
-                  } catch (MempoolRejectedException e) {
-                    log.error(e);
-                  }
-                });
-      }
-
-      @Override
-      public List<Transaction> getTransactionsForProposal(
-          List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
-        var transactionsNotToInclude =
-            executedTransactions.stream()
-                .map(StateComputerLedger.ExecutedTransaction::transaction)
-                .toList();
-        return mempool.getTransactionsForProposal(1, transactionsNotToInclude);
-      }
-
-      @Override
-      public StateComputerLedger.StateComputerResult prepare(
-          List<StateComputerLedger.ExecutedTransaction> previous,
-          List<Transaction> proposedTransactions,
-          RoundDetails roundDetails) {
-        var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-        var invalidTransactions = new HashMap<Transaction, Exception>();
-
-        for (var transaction : proposedTransactions) {
-          var success = verifier.verify(transaction);
-          if (success) {
-            successfulTransactions.add(new REv2ExecutedTransaction(transaction));
-          } else {
-            invalidTransactions.put(transaction, new InvalidREv2Transaction());
-          }
-        }
-
-        return new StateComputerLedger.StateComputerResult(
-            successfulTransactions, invalidTransactions);
-      }
-
-      @Override
-      public void commit(
-          CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-
-        // This mempool update must be committed before the LedgerUpdate is dispatched
-        // in order for consensus proposal retrieval to be updated correctly
-        mempool.handleTransactionsCommitted(txnsAndProof.getTransactions());
-
-        // TODO: There may be a better place to put this transaction store.
-        for (int i = 0; i < txnsAndProof.getTransactions().size(); i++) {
-          var transaction = txnsAndProof.getTransactions().get(i);
-          transactionStore.insertTransaction(
-              txnsAndProof.getProof().getStateVersion() + i, transaction.getPayload());
-        }
-
-        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
-        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
-      }
-    };
+  public REv2StateComputer stateComputer(
+      RustStateComputer rustStateComputer, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
+    return new REv2StateComputer(rustStateComputer, ledgerUpdateDispatcher);
   }
 }

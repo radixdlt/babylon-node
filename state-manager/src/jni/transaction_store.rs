@@ -75,7 +75,7 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_insertTran
     j_state_version: jlong,
     j_transaction_bytes: jbyteArray,
 ) {
-    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
+    let mut state_manager = JNIStateManager::get_state_manager(&env, interop_state);
 
     let transaction_bytes: Vec<u8> = env
         .convert_byte_array(j_transaction_bytes)
@@ -83,9 +83,8 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_insertTran
 
     // Only get the lock for transaction store
     state_manager
+        .state_manager
         .transaction_store
-        .lock()
-        .unwrap()
         .insert_transaction(j_state_version as u64, transaction_bytes);
 }
 
@@ -99,8 +98,10 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
     let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
 
     // Only get the lock for transaction store
-    let transaction_store = state_manager.transaction_store.lock().unwrap();
-    let transaction_data = transaction_store.get_transaction(j_state_version as u64);
+    let transaction_data = state_manager
+        .state_manager
+        .transaction_store
+        .get_transaction(j_state_version as u64);
 
     env.byte_array_from_slice(transaction_data)
         .expect("Can't create jbyteArray for transaction data")
