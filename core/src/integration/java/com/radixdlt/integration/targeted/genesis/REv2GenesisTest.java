@@ -90,13 +90,15 @@ import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
-import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.Test;
 
 public final class REv2GenesisTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+  private static final BigInteger ONE_TOKEN = BigInteger.TEN.pow(18);
+  private static final BigInteger GENESIS_AMOUNT = BigInteger.valueOf(24).multiply(BigInteger.TEN.pow(9)).multiply(ONE_TOKEN);
 
   @Inject private REv2StateReader stateReader;
 
@@ -155,6 +157,6 @@ public final class REv2GenesisTest {
 
     var amount = this.stateReader.getComponentResources(ComponentAddress.SYSTEM_COMPONENT_ADDRESS);
 
-    assertThat(amount).isEqualTo(BigDecimal.ONE);
+    assertThat(amount).isEqualTo(GENESIS_AMOUNT);
   }
 }

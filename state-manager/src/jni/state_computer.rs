@@ -141,12 +141,12 @@ fn do_get_component_resources(
     env: &JNIEnv,
     j_state: JObject,
     _j_payload: jbyteArray,
-) -> StateManagerResult<bool> {
+) -> StateManagerResult<Vec<u8>> {
     let state_manager = JNIStateManager::get_state_manager(env, j_state);
     //let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    //let transaction = Transaction::from_java(&request_payload)?;
     let resources = state_manager
         .state_manager
         .get_component_resources(SYSTEM_COMPONENT);
-    Ok(!resources.is_empty())
+    let amount = resources.get(&RADIX_TOKEN).cloned().unwrap_or(Decimal::zero());
+    Ok(amount.to_vec())
 }

@@ -77,7 +77,9 @@ import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStoreReader;
 import com.radixdlt.transactions.RawTransaction;
-import java.math.BigDecimal;
+import org.bouncycastle.util.Arrays;
+
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 
@@ -94,6 +96,8 @@ public class RustStateComputer {
 
   private static final TypeToken<Result<Boolean, StateManagerRuntimeError>> booleanType =
       new TypeToken<>() {};
+  private static final TypeToken<Result<byte[], StateManagerRuntimeError>> byteArrayType =
+          new TypeToken<>() {};
 
   public TransactionStoreReader getTransactionStoreReader() {
     return this.transactionStore;
@@ -112,10 +116,10 @@ public class RustStateComputer {
     return this.mempool.getTransactionsForProposal(count, transactionToExclude);
   }
 
-  public BigDecimal getComponentResources(ComponentAddress componentAddress) {
+  public BigInteger getComponentResources(ComponentAddress componentAddress) {
     var encodedResponse = resources(this.rustState, new byte[0]);
-    var exists = StateManagerResponse.decode(encodedResponse, booleanType);
-    return exists ? BigDecimal.ONE : BigDecimal.ZERO;
+    var amount = StateManagerResponse.decode(encodedResponse, byteArrayType);
+    return new BigInteger(1, Arrays.reverse(amount));
   }
 
   public void commit(List<RawTransaction> transactions, long committedStateVersion) {
