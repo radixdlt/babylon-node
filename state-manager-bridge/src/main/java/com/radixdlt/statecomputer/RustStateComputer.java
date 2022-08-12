@@ -76,6 +76,7 @@ import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStoreReader;
 import com.radixdlt.transactions.RawTransaction;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
 
@@ -110,6 +111,11 @@ public class RustStateComputer {
     return this.mempool.getTransactionsForProposal(count, transactionToExclude);
   }
 
+  public BigDecimal getComponentResources() {
+    get_component_resources(this.rustState, new byte[0]);
+    return BigDecimal.ONE;
+  }
+
   public void commit(List<RawTransaction> transactions, long committedStateVersion) {
     this.mempool.handleTransactionsCommitted(transactions);
     for (int i = 0; i < transactions.size(); i++) {
@@ -132,4 +138,7 @@ public class RustStateComputer {
   private static native byte[] verify(StateManager.RustState rustState, byte[] encodedArgs);
 
   private static native byte[] execute(StateManager.RustState rustState, byte[] encodedArgs);
+
+  private static native byte[] get_component_resources(
+      StateManager.RustState rustState, byte[] encodedArgs);
 }
