@@ -87,9 +87,13 @@ import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
+
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class REv2GenesisTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
@@ -146,7 +150,11 @@ public class REv2GenesisTest {
   }
 
   @Test
-  public void poor_mans_fuzz_test() {
+  public void state_reader_on_genesis_returns_correct_amount() {
     createInjector().injectMembers(this);
+
+    var amount = this.stateReader.getComponentResources();
+
+    assertThat(amount).isEqualTo(BigDecimal.ONE);
   }
 }

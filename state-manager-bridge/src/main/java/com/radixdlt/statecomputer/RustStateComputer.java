@@ -112,7 +112,7 @@ public class RustStateComputer {
   }
 
   public BigDecimal getComponentResources() {
-    get_component_resources(this.rustState, new byte[0]);
+    resources(this.rustState, new byte[0]);
     return BigDecimal.ONE;
   }
 
@@ -139,6 +139,6 @@ public class RustStateComputer {
 
   private static native byte[] execute(StateManager.RustState rustState, byte[] encodedArgs);
 
-  private static native byte[] get_component_resources(
+  private static native byte[] resources(
       StateManager.RustState rustState, byte[] encodedArgs);
 }

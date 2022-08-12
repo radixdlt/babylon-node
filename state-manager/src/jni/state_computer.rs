@@ -126,7 +126,7 @@ fn do_execute(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateMan
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_get_component_resources(
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_resources(
     env: JNIEnv,
     _class: JClass,
     j_state: JObject,
