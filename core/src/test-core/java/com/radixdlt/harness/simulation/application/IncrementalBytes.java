@@ -65,14 +65,14 @@
 package com.radixdlt.harness.simulation.application;
 
 import com.google.common.primitives.Longs;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 
 /** Submits unique bytes (incrementally) to a network */
 public class IncrementalBytes implements TransactionGenerator {
   private long transactionNumber = 0;
 
   @Override
-  public Transaction nextTransaction() {
-    return Transaction.create(Longs.toByteArray(transactionNumber++));
+  public RawTransaction nextTransaction() {
+    return RawTransaction.create(Longs.toByteArray(transactionNumber++));
   }
 }

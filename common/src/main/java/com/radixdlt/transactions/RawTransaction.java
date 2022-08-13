@@ -62,64 +62,77 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.transactions;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
-
-import com.google.inject.Guice;
-import com.google.inject.Key;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.rev2.REv2ExampleTransactions;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transaction.TransactionStore;
-import com.radixdlt.transactions.Transaction;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import org.junit.Test;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import java.util.Objects;
 
-public final class StateManagerTest {
+/**
+ * A wrapper around the raw bytes of a transaction payload (System or User Transaction)
+ *
+ * <p>The transaction is yet to be parsed, and may be invalid.
+ */
+public final class RawTransaction {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        RawTransaction.class,
+        codecs ->
+            StructCodec.with(
+                RawTransaction::new,
+                codecs.of(byte[].class),
+                codecs.of(HashCode.class),
+                (t, encoder) -> encoder.encode(t.payload, t.payloadHash)));
+  }
 
-  @Test
-  public void state_manager_concurrent_access_is_possible() throws Exception {
-    // Arrange
-    final var testModules =
-        List.of(new REv2StateManagerModule(), MempoolConfig.asModule(100, 1000L));
-    final var injectorNode1 = Guice.createInjector(testModules);
-    final var injectorNode2 = Guice.createInjector(testModules);
+  private final byte[] payload;
+  private final HashCode payloadHash;
 
-    // Act
-    var rand = new Random();
-    var cdl = new CountDownLatch(1000);
-    for (int i = 0; i < 1000; i++) {
-      new Thread(
-              () -> {
-                final var tx = HashUtils.random256();
-                final var stateVer = rand.nextLong();
-                final var transactionStore = injectorNode1.getInstance(TransactionStore.class);
-                transactionStore.insertTransaction(stateVer, tx.asBytes());
-                assertArrayEquals(
-                    tx.asBytes(), transactionStore.getTransactionAtStateVersion(stateVer));
-                cdl.countDown();
-              })
-          .start();
+  private RawTransaction(byte[] payload, HashCode payloadHash) {
+    this.payload = Objects.requireNonNull(payload);
+    this.payloadHash = Objects.requireNonNull(payloadHash);
+  }
+
+  private RawTransaction(byte[] payload) {
+    this.payload = Objects.requireNonNull(payload);
+    this.payloadHash = HashUtils.transactionIdHash(payload);
+  }
+
+  @JsonCreator
+  public static RawTransaction create(byte[] payload) {
+    return new RawTransaction(payload);
+  }
+
+  public HashCode getPayloadHash() {
+    return payloadHash;
+  }
+
+  @JsonValue
+  public byte[] getPayload() {
+    return payload;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(payloadHash);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof RawTransaction)) {
+      return false;
     }
-    final var transaction = Transaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
-    final var mempoolNode1 = injectorNode1.getInstance(new Key<Mempool<Transaction>>() {});
-    mempoolNode1.addTransaction(transaction);
-    try {
-      mempoolNode1.addTransaction(transaction);
-    } catch (Exception ignored) {
-    }
 
-    // Assert
-    assertThat(cdl.await(5, TimeUnit.SECONDS)).isTrue();
-    // Cleanup
-    injectorNode1.getInstance(StateManager.class).shutdown();
-    injectorNode2.getInstance(StateManager.class).shutdown();
+    RawTransaction other = (RawTransaction) o;
+    return Objects.equals(this.payloadHash, other.payloadHash);
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s{payloadHash=%s}", this.getClass().getSimpleName(), this.payloadHash);
   }
 }

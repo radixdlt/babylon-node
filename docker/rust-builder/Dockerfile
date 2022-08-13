@@ -5,7 +5,8 @@ RUN apt update; apt upgrade -y && \
     apt install -y curl && \
     apt install -y g++-x86-64-linux-gnu && \
     apt install -y g++-aarch64-linux-gnu libc6-dev-arm64-cross && \
-    apt install -y build-essential
+    apt install -y build-essential && \
+    apt install -y libclang-dev
 
 RUN rustup target add aarch64-unknown-linux-gnu && \
     rustup toolchain install stable-aarch64-unknown-linux-gnu

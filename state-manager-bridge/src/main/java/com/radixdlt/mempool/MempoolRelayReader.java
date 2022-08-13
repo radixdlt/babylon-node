@@ -62,10 +62,11 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.mempool;
 
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
+import java.util.List;
 
-public interface StatelessTransactionVerifier {
-  boolean verify(Transaction transaction);
+public interface MempoolRelayReader {
+  List<RawTransaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis);
 }

@@ -68,17 +68,17 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.lang.Option;
-import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.RustMempool;
+import com.radixdlt.mempool.MempoolRelayReader;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.StatelessTransactionVerifier;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transaction.RustTransactionStore;
-import com.radixdlt.transaction.TransactionStore;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transaction.TransactionStoreReader;
+import com.radixdlt.transactions.RawTransaction;
 
 public final class REv2StateManagerModule extends AbstractModule {
   @Provides
@@ -94,20 +94,28 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   @Provides
+  private MempoolRelayReader mempoolRelayReader(RustStateComputer stateComputer) {
+    return stateComputer.getMempoolRelayReader();
+  }
+
+  @Provides
+  private MempoolInserter<RawTransaction> mempoolInserter(RustStateComputer stateComputer) {
+    return stateComputer.getMempoolInserter();
+  }
+
+  @Provides
+  private TransactionStoreReader transactionStoreReader(RustStateComputer stateComputer) {
+    return stateComputer.getTransactionStoreReader();
+  }
+
+  @Provides
   @Singleton
-  private StatelessTransactionVerifier statelessVerifier(StateManager stateManager) {
+  private RustStateComputer rEv2StateComputer(StateManager stateManager) {
     return new RustStateComputer(stateManager.getRustState());
   }
 
   @Provides
-  @Singleton
-  private Mempool<Transaction> stateManagerMempool(StateManager stateManager) {
-    return new RustMempool(stateManager.getRustState());
-  }
-
-  @Provides
-  @Singleton
-  private TransactionStore stateManagerTransactionStore(StateManager stateManager) {
-    return new RustTransactionStore(stateManager.getRustState());
+  public REv2StateReader stateReader(RustStateComputer rustStateComputer) {
+    return rustStateComputer::getComponentXrdAmount;
   }
 }

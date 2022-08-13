@@ -67,6 +67,7 @@ package com.radixdlt.integration.targeted.staking;
 import static com.radixdlt.substate.TxAction.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -81,7 +82,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.identifiers.TID;
 import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolConfig;
@@ -170,14 +170,14 @@ public class UnstakingLockedTokensTest {
         });
   }
 
-  public REProcessedTxn waitForCommit(TID txnId) {
+  public REProcessedTxn waitForCommit(HashCode transactionPayloadHash) {
     var committed =
         runner.runNextEventsThrough(
             LedgerUpdate.class,
             u -> {
               var output = u.getStateComputerOutput().getInstance(REOutput.class);
               return output.getProcessedTxns().stream()
-                  .anyMatch(txn -> txn.getTxn().getId().equals(txnId));
+                  .anyMatch(txn -> txn.getTxn().getPayloadHash().equals(transactionPayloadHash));
             });
 
     return committed
@@ -185,7 +185,7 @@ public class UnstakingLockedTokensTest {
         .getInstance(REOutput.class)
         .getProcessedTxns()
         .stream()
-        .filter(t -> t.getTxn().getId().equals(txnId))
+        .filter(t -> t.getTxn().getPayloadHash().equals(transactionPayloadHash))
         .findFirst()
         .orElseThrow();
   }
@@ -195,7 +195,7 @@ public class UnstakingLockedTokensTest {
     var txBuilder = radixEngine.construct(request.feePayer(REAddr.ofPubKeyAccount(self)));
     var txn = txBuilder.signAndBuild(hashSigner::sign);
     radixEngineStateComputer.addToMempool(txn);
-    return waitForCommit(txn.getId());
+    return waitForCommit(txn.getPayloadHash());
   }
 
   @Test

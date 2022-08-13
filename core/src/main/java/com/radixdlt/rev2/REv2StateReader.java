@@ -62,10 +62,11 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.rev2;
 
-public interface TransactionStore {
-  void insertTransaction(long stateVersion, byte[] transactionBytes);
+import com.radixdlt.address.ComponentAddress;
+import java.math.BigInteger;
 
-  byte[] getTransactionAtStateVersion(long stateVersion);
+public interface REv2StateReader {
+  BigInteger getComponentXrdAmount(ComponentAddress componentAddress);
 }

@@ -62,93 +62,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.address;
 
-import com.google.common.collect.Lists;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.transactions.Transaction;
-import java.util.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+public final class ComponentAddress {
+  private static final int COMPONENT_ADDRESS_BYTES_LENGTH = 27;
+  public static final ComponentAddress SYSTEM_COMPONENT_ADDRESS =
+      new ComponentAddress(
+          new byte[] {
+            2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2
+          });
 
-public class REv2Mempool implements Mempool<Transaction> {
-  private static final Logger log = LogManager.getLogger();
-  private final Set<Transaction> data = new HashSet<>();
-  private final SystemCounters counters;
-  private final Random random;
-  private final int maxSize;
+  private final byte[] addressBytes;
 
-  public REv2Mempool(SystemCounters counters, int maxSize, Random random) {
-    if (maxSize <= 0) {
-      throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
+  private ComponentAddress(byte[] addressBytes) {
+    this.addressBytes = addressBytes;
+  }
+
+  public static ComponentAddress create(byte[] addressBytes) {
+    if (addressBytes.length != COMPONENT_ADDRESS_BYTES_LENGTH) {
+      throw new IllegalArgumentException("Invalid component address length");
     }
-    this.counters = Objects.requireNonNull(counters);
-    this.maxSize = maxSize;
-    this.random = Objects.requireNonNull(random);
+    return new ComponentAddress(addressBytes);
   }
 
-  @Override
-  public Transaction addTransaction(Transaction transaction)
-      throws MempoolFullException, MempoolDuplicateException {
-    if (this.data.size() >= maxSize) {
-      throw new MempoolFullException(this.data.size(), maxSize);
-    }
-    if (!this.data.add(transaction)) {
-      throw new MempoolDuplicateException(
-          String.format("Mempool already has transaction %s", transaction));
-    }
-
-    updateCounts();
-
-    return transaction;
-  }
-
-  @Override
-  public void handleTransactionsCommitted(List<Transaction> transactions) {
-    transactions.forEach(this.data::remove);
-    updateCounts();
-  }
-
-  @Override
-  public int getCount() {
-    return data.size();
-  }
-
-  @Override
-  public List<Transaction> getTransactionsForProposal(
-      int count, List<Transaction> preparedTransactions) {
-    int size = Math.min(count, this.data.size());
-    if (size > 0) {
-      List<Transaction> transactions = Lists.newArrayList();
-      var values = new ArrayList<>(this.data);
-      Collections.shuffle(values, random);
-
-      Iterator<Transaction> i = values.iterator();
-      while (transactions.size() < size && i.hasNext()) {
-        var a = i.next();
-        if (!preparedTransactions.contains(a)) {
-          transactions.add(a);
-        }
-      }
-      return transactions;
-    } else {
-      return Collections.emptyList();
-    }
-  }
-
-  @Override
-  public List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis) {
-    return List.of();
-  }
-
-  private void updateCounts() {
-    this.counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, this.data.size());
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s[%x:%s/%s]",
-        getClass().getSimpleName(), System.identityHashCode(this), this.data.size(), maxSize);
+  public byte[] getAddressBytes() {
+    return addressBytes;
   }
 }

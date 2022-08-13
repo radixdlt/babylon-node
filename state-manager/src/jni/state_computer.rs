@@ -64,11 +64,13 @@
 
 use crate::jni::dtos::JavaStructure;
 use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
+use jni::sys::{jbyteArray, jlong};
 use jni::JNIEnv;
+use scrypto::prelude::*;
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
+use crate::mempool::Mempool;
 use crate::result::StateManagerResult;
 use crate::types::Transaction;
 
@@ -92,6 +94,87 @@ fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateMana
     let state_manager = JNIStateManager::get_state_manager(env, j_state);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
     let transaction = Transaction::from_java(&request_payload)?;
-    let result = state_manager.decode_transaction(&transaction);
+    let result = state_manager.state_manager.decode_transaction(&transaction);
     Ok(result.is_ok())
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+    j_state_version: jlong,
+) -> jbyteArray {
+    let ret = do_commit(&env, j_state, j_payload, j_state_version).to_java();
+
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+fn do_commit(
+    env: &JNIEnv,
+    j_state: JObject,
+    j_payload: jbyteArray,
+    j_state_version: jlong,
+) -> StateManagerResult<()> {
+    let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
+    let transactions = Vec::<Transaction>::from_java(&request_payload)?;
+    for transaction in &transactions {
+        let validated_txn = state_manager
+            .state_manager
+            .decode_transaction(transaction)
+            .expect("Error on Byzantine quorum");
+        state_manager
+            .state_manager
+            .execute_transaction(validated_txn)
+            .expect("Error on Byzantine quorum");
+    }
+
+    for (i, transaction) in transactions.iter().enumerate() {
+        let state_version = j_state_version as u64 - u64::try_from(transactions.len() - i - 1).unwrap();
+        let transaction_bytes = transaction.payload.clone();
+        state_manager
+            .state_manager
+            .transaction_store
+            .insert_transaction(state_version, transaction_bytes);
+    }
+
+    state_manager
+        .state_manager
+        .mempool
+        .handle_committed_transactions(&transactions);
+
+    Ok(())
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_xrd(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = get_component_xrd(&env, j_state, j_payload).to_java();
+
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+fn get_component_xrd(
+    env: &JNIEnv,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> StateManagerResult<Vec<u8>> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload = jni_jbytearray_to_vector(env, j_payload)?;
+    let component_address =
+        ComponentAddress::try_from(request_payload.as_slice()).expect("Invalid address");
+    let resources = state_manager
+        .state_manager
+        .get_component_resources(component_address);
+    let amount = resources
+        .get(&RADIX_TOKEN)
+        .cloned()
+        .unwrap_or_else(Decimal::zero);
+    Ok(amount.to_vec())
 }

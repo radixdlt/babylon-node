@@ -75,7 +75,6 @@ import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
@@ -185,13 +184,12 @@ public abstract class DeterministicActorsTest {
             Amount.ofTokens(1000)),
         MempoolConfig.asModule(10, 10),
         reConfig,
-        new PersistedNodeForTestingModule(),
+        new PersistedNodeForTestingModule(ecKeyPair),
         new LastEventsModule(LedgerUpdate.class),
         FailOnEvent.asModule(InvalidProposedTransaction.class),
         new AbstractModule() {
           @Override
           protected void configure() {
-            bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
             bind(Environment.class)
                 .toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
             bindConstant()

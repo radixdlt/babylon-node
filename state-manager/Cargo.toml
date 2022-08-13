@@ -22,9 +22,11 @@ jni = "0.19.0"
 #   $ git push "develop-BLAH"
 # * Then use tag="develop-BLAH" in the below dependencies.
 #
-sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-db5aba34" }
-scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-db5aba34" }
-transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-db5aba34" }
+sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
+scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
+transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
+radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
+radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
 
 [lib]
 crate_type = ["cdylib"]

@@ -95,6 +95,8 @@ impl<T: JavaStructure> JavaStructure for Option<T> {}
 
 impl JavaStructure for bool {}
 
+impl JavaStructure for Vec<u8> {}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -125,18 +125,6 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_mempool_RustMempool_handleTransactionsCommitted(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = do_handle_transactions_committed(&env, j_state, j_payload).to_java();
-
-    jni_slice_to_jbytearray(&env, &ret)
-}
-
-#[no_mangle]
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
     env: JNIEnv,
     _class: JClass,
@@ -168,20 +156,19 @@ fn do_add(
     j_state: JObject,
     j_payload: jbyteArray,
 ) -> StateManagerResult<Result<Transaction, MempoolErrorJava>> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
     let transaction = Transaction::from_java(&request_payload)?;
 
     // TODO: Move decoding of transaction to a separate "zone"
     // TODO: Use notarized transaction in mempool
-    if let Err(decode_error) = state_manager.decode_transaction(&transaction) {
-        return Err(MempoolError::DecodeError(decode_error)).map_err_sm(|err| err.into());
+    if let Err(error) = state_manager.state_manager.decode_transaction(&transaction) {
+        return Err(MempoolError::TransactionValidationError(error)).map_err_sm(|err| err.into());
     }
 
     let result = state_manager
+        .state_manager
         .mempool
-        .lock()
-        .unwrap()
         .add_transaction(transaction);
 
     let mapped_result = result.map_err_sm(|err| err.into())?;
@@ -198,29 +185,9 @@ fn do_get_transactions_for_proposal(
     let args = GetTransactionArgs::from_java(&request_payload)?;
 
     let result = state_manager
+        .state_manager
         .mempool
-        .lock()
-        .unwrap()
         .get_proposal_transactions(args.count.into(), &args.prepared_transactions);
-
-    let mapped_result = result.map_err_sm(|err| err.into())?;
-    Ok(mapped_result)
-}
-
-fn do_handle_transactions_committed(
-    env: &JNIEnv,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transactions = Vec::<Transaction>::from_java(&request_payload)?;
-
-    let result = state_manager
-        .mempool
-        .lock()
-        .unwrap()
-        .handle_committed_transactions(&transactions);
 
     let mapped_result = result.map_err_sm(|err| err.into())?;
     Ok(mapped_result)
@@ -230,9 +197,8 @@ fn do_get_count(env: &JNIEnv, j_state: JObject) -> StateManagerResult<i32> {
     let state_manager = JNIStateManager::get_state_manager(env, j_state);
 
     let result: i32 = state_manager
+        .state_manager
         .mempool
-        .lock()
-        .unwrap()
         .get_count()
         .try_into()
         .unwrap();
@@ -245,13 +211,12 @@ fn do_get_transactions_to_relay(
     j_state: JObject,
     j_payload: jbyteArray,
 ) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
     let args = GetRelayTransactionsArgs::from_java(&request_payload)?;
     let result = state_manager
+        .state_manager
         .mempool
-        .lock()
-        .unwrap()
         .get_relay_transactions(args.initial_delay_millis, args.repeat_delay_millis);
 
     let mapped_result = result.map_err_sm(|err| err.into())?;
@@ -262,7 +227,7 @@ fn do_get_transactions_to_relay(
 enum MempoolErrorJava {
     Full { current_size: i64, max_size: i64 },
     Duplicate,
-    DecodeError(String),
+    TransactionValidationError(String),
 }
 
 impl JavaStructure for MempoolErrorJava {}
@@ -288,9 +253,9 @@ impl From<MempoolError> for StateManagerResult<MempoolErrorJava> {
                 })?,
             }),
             MempoolError::Duplicate => Ok(MempoolErrorJava::Duplicate),
-            MempoolError::DecodeError(decode_error) => {
-                Ok(MempoolErrorJava::DecodeError(format!("{:?}", decode_error)))
-            }
+            MempoolError::TransactionValidationError(error) => Ok(
+                MempoolErrorJava::TransactionValidationError(format!("{:?}", error)),
+            ),
         }
     }
 }

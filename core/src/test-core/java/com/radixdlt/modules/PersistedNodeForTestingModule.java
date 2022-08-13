@@ -70,6 +70,7 @@ import com.radixdlt.consensus.bft.PacemakerBackoffRate;
 import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
@@ -85,6 +86,12 @@ import com.radixdlt.utils.TimeSupplier;
 
 /** Helper class for modules to be used for recovery tests. */
 public final class PersistedNodeForTestingModule extends AbstractModule {
+  private final ECKeyPair keyPair;
+
+  public PersistedNodeForTestingModule(ECKeyPair keyPair) {
+    this.keyPair = keyPair;
+  }
+
   @Override
   public void configure() {
     bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
@@ -101,7 +108,7 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
     bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
     bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
-    install(new InMemoryBFTKeyModule());
+    install(new InMemoryBFTKeyModule(keyPair));
     install(new CryptoModule());
     install(new FunctionalRadixNodeModule());
     install(new RadixEngineStoreModule());

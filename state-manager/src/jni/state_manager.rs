@@ -71,7 +71,9 @@ use crate::transaction_store::TransactionStore;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use std::sync::Arc;
+
+use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
+use std::sync::MutexGuard;
 
 const POINTER_JNI_FIELD_NAME: &str = "stateManagerPointer";
 
@@ -95,7 +97,7 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
 }
 
 pub struct JNIStateManager {
-    state_manager: Arc<StateManager<SimpleMempool>>,
+    pub state_manager: StateManager<SimpleMempool, SerializedInMemorySubstateStore>,
 }
 
 impl JNIStateManager {
@@ -116,9 +118,10 @@ impl JNIStateManager {
 
         let mempool = SimpleMempool::new(mempool_config);
         let transaction_store = TransactionStore::new();
+        let substate_store = SerializedInMemorySubstateStore::with_bootstrap();
 
         // Build the state manager.
-        let state_manager = Arc::new(StateManager::new(mempool, transaction_store));
+        let state_manager = StateManager::new(mempool, transaction_store, substate_store);
 
         let jni_state_manager = JNIStateManager { state_manager };
 
@@ -133,13 +136,13 @@ impl JNIStateManager {
         drop(jni_state_manager);
     }
 
-    pub fn get_state_manager(
-        env: &JNIEnv,
-        interop_state: JObject,
-    ) -> Arc<StateManager<SimpleMempool>> {
-        let jni_state_manager: &JNIStateManager = &env
-            .get_rust_field(interop_state, POINTER_JNI_FIELD_NAME)
-            .unwrap();
-        Arc::clone(&jni_state_manager.state_manager)
+    /// Get a lock on the state manager
+    /// TODO: Optimize this lock out at some point
+    pub fn get_state_manager<'a>(
+        env: &'a JNIEnv,
+        interop_state: JObject<'a>,
+    ) -> MutexGuard<'a, JNIStateManager> {
+        env.get_rust_field(interop_state, POINTER_JNI_FIELD_NAME)
+            .unwrap()
     }
 }

@@ -70,12 +70,12 @@ import com.radixdlt.lang.Result;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.statemanager.StateManager.RustState;
 import com.radixdlt.statemanager.StateManagerResponse;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
 
 // This must become the new Mempool Interface.
-public class RustMempool implements Mempool<Transaction> {
+public class RustMempool {
   private final RustState rustState;
 
   public RustMempool(RustState rustState) {
@@ -83,15 +83,14 @@ public class RustMempool implements Mempool<Transaction> {
   }
 
   private static final TypeToken<
-          Result<Result<Transaction, MempoolError>, StateManagerRuntimeError>>
+          Result<Result<RawTransaction, MempoolError>, StateManagerRuntimeError>>
       addResponseType = new TypeToken<>() {};
   private static final TypeToken<
-          Result<Result<List<Transaction>, MempoolError>, StateManagerRuntimeError>>
+          Result<Result<List<RawTransaction>, MempoolError>, StateManagerRuntimeError>>
       listTransactionType = new TypeToken<>() {};
 
-  @Override
-  public Transaction addTransaction(Transaction transaction) throws MempoolRejectedException {
-    var encodedRequest = StateManagerSbor.sbor.encode(transaction, Transaction.class);
+  public RawTransaction addTransaction(RawTransaction transaction) throws MempoolRejectedException {
+    var encodedRequest = StateManagerSbor.sbor.encode(transaction, RawTransaction.class);
     var encodedResponse = add(this.rustState, encodedRequest);
     var result = StateManagerResponse.decode(encodedResponse, addResponseType);
 
@@ -101,7 +100,7 @@ public class RustMempool implements Mempool<Transaction> {
         case MempoolError.Full fullStatus -> throw new MempoolFullException(
             fullStatus.currentSize(), fullStatus.maxSize());
         case MempoolError.Duplicate ignored -> throw new MempoolDuplicateException(
-            String.format("Mempool already has transaction %s", transaction.getId()));
+            String.format("Mempool already has transaction %s", transaction.getPayloadHash()));
         case MempoolError.DecodeError e -> throw new MempoolRejectedException(e.errorDescription());
       }
     }
@@ -111,9 +110,8 @@ public class RustMempool implements Mempool<Transaction> {
     return processedTransaction;
   }
 
-  @Override
-  public List<Transaction> getTransactionsForProposal(
-      int count, List<Transaction> preparedTransactions) {
+  public List<RawTransaction> getTransactionsForProposal(
+      int count, List<RawTransaction> preparedTransactions) {
     if (count <= 0) {
       throw new IllegalArgumentException("State Manager Mempool: count must be > 0: " + count);
     }
@@ -129,8 +127,8 @@ public class RustMempool implements Mempool<Transaction> {
     return newTransactions;
   }
 
-  @Override
-  public List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis) {
+  public List<RawTransaction> getTransactionsToRelay(
+      long initialDelayMillis, long repeatDelayMillis) {
     var args = new GetRelayedTransactionsRustArgs(initialDelayMillis, repeatDelayMillis);
     var encodedRequest = StateManagerSbor.sbor.encode(args, GetRelayedTransactionsRustArgs.class);
     var encodedResponse = getTransactionsToRelay(this.rustState, encodedRequest);
@@ -140,19 +138,6 @@ public class RustMempool implements Mempool<Transaction> {
     return result.unwrap();
   }
 
-  @Override
-  public void handleTransactionsCommitted(List<Transaction> transactions) {
-    var encodedRequest =
-        StateManagerSbor.sbor.encode(transactions, new TypeToken<List<Transaction>>() {});
-    var encodedResponse = handleTransactionsCommitted(this.rustState, encodedRequest);
-    var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
-
-    // No error should be possible for this call at present
-    // But unwrap to make sure we didn't have one.
-    result.unwrap();
-  }
-
-  @Override
   public int getCount() {
     var encodedResponse = getCount(this.rustState);
     var transactionCount =
@@ -164,9 +149,6 @@ public class RustMempool implements Mempool<Transaction> {
   }
 
   private static native byte[] add(RustState rustState, byte[] transaction);
-
-  private static native byte[] handleTransactionsCommitted(
-      RustState rustState, byte[] transactions);
 
   private static native byte[] getCount(RustState rustState);
 

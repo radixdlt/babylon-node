@@ -80,7 +80,6 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
@@ -206,14 +205,13 @@ public class RecoveryTest {
         new AbstractModule() {
           @Override
           protected void configure() {
-            bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
             bind(Environment.class).toInstance(network.createSender(BFTNode.create(self.getKey())));
             bindConstant()
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
           }
         },
-        new PersistedNodeForTestingModule(),
+        new PersistedNodeForTestingModule(ecKeyPair),
         new TestP2PModule.Builder().build(),
         new TestMessagingModule.Builder().build());
   }

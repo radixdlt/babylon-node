@@ -62,29 +62,11 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.mempool;
 
-import static org.junit.Assert.assertEquals;
+import com.radixdlt.transactions.RawTransaction;
 
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.sbor.Sbor;
-import com.radixdlt.sbor.codec.CodecMap;
-import org.junit.Test;
-
-public class TransactionTest {
-
-  @Test
-  public void testSBORSerialization() {
-    var sbor =
-        new Sbor(
-            true, new CodecMap().register(TID::registerCodec).register(Transaction::registerCodec));
-
-    byte[] payload = new byte[10];
-    Transaction t0 = Transaction.create(payload);
-
-    var r0 = sbor.encode(t0, Transaction.class);
-    var t1 = sbor.decode(r0, Transaction.class);
-
-    assertEquals(t0, t1);
-  }
+public interface MempoolInserter<T> {
+  /** Add a transaction to the local mempool. */
+  T addTransaction(RawTransaction transaction) throws MempoolRejectedException;
 }

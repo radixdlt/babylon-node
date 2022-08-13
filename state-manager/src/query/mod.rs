@@ -62,33 +62,6 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+mod query_db;
 
-import com.radixdlt.transactions.Transaction;
-import java.util.List;
-
-/**
- * Basic mempool functionality.
- *
- * <p>Note that conceptually, a mempool can be thought of as a list indexable by hash.
- */
-public interface Mempool<T> {
-  /** Add a transaction to the local mempool. */
-  T addTransaction(Transaction transaction) throws MempoolRejectedException;
-
-  /**
-   * Retrieve a list of transactions from the local mempool for creating a proposal for consensus.
-   *
-   * @param count the number of transactions to retrieve
-   * @param preparedTransactions transactions used in the prepared vertex ahead of the proposal
-   *     which will need to be taken into account when choosing transactions
-   * @return A list of transactions for processing by consensus
-   */
-  List<Transaction> getTransactionsForProposal(int count, List<T> preparedTransactions);
-
-  List<Transaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis);
-
-  void handleTransactionsCommitted(List<T> transactions);
-
-  int getCount();
-}
+pub use query_db::ResourceAccounter;

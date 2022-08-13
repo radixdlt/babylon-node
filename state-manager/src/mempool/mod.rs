@@ -65,14 +65,14 @@
 use crate::jni::dtos::*;
 pub use crate::result::ToStateManagerError;
 use crate::types::Transaction;
-use sbor::DecodeError;
 use std::string::ToString;
+use transaction::errors::TransactionValidationError;
 
 #[derive(Debug, PartialEq)]
 pub enum MempoolError {
     Full { current_size: u64, max_size: u64 },
     Duplicate,
-    DecodeError(DecodeError), // TODO: Move outside of mempool error
+    TransactionValidationError(TransactionValidationError), // TODO: Move outside of mempool error
 }
 
 impl ToString for MempoolError {
@@ -83,17 +83,16 @@ impl ToString for MempoolError {
                 max_size,
             } => format!("Mempool Full [{} - {}]", current_size, max_size),
             MempoolError::Duplicate => "Duplicate Entry".to_string(),
-            MempoolError::DecodeError(error) => format!("Decode Error ({:?})", error),
+            MempoolError::TransactionValidationError(error) => {
+                format!("Transaction Error ({:?})", error)
+            }
         }
     }
 }
 
 pub trait Mempool {
     fn add_transaction(&mut self, transaction: Transaction) -> Result<Transaction, MempoolError>;
-    fn handle_committed_transactions(
-        &mut self,
-        transactions: &[Transaction],
-    ) -> Result<Vec<Transaction>, MempoolError>;
+    fn handle_committed_transactions(&mut self, transactions: &[Transaction]) -> Vec<Transaction>;
     fn get_count(&self) -> u64;
     fn get_proposal_transactions(
         &self,

@@ -65,7 +65,7 @@
 package com.radixdlt.serialization;
 
 import com.radixdlt.messaging.mempool.MempoolAddMessage;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 
 public class MempoolAddMessageSerializeTest extends SerializeMessageObject<MempoolAddMessage> {
@@ -74,7 +74,7 @@ public class MempoolAddMessageSerializeTest extends SerializeMessageObject<Mempo
   }
 
   private static MempoolAddMessage get() {
-    final var txn = Transaction.create(new byte[] {0, 1});
+    final var txn = RawTransaction.create(new byte[] {0, 1});
     return MempoolAddMessage.from(List.of(txn));
   }
 }

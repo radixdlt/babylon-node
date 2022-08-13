@@ -157,7 +157,7 @@ public class JacksonJsonMapper extends ObjectMapper {
     jsonModule.addSerializer(
         TID.class,
         new JacksonJsonObjectStringSerializer<>(
-            TID.class, JacksonCodecConstants.AID_STR_VALUE, TID::toString));
+            TID.class, JacksonCodecConstants.TID_STR_VALUE, TID::toString));
 
     jsonModule.addKeySerializer(
         TID.class,
@@ -165,7 +165,7 @@ public class JacksonJsonMapper extends ObjectMapper {
           @Override
           public void serialize(TID value, JsonGenerator gen, SerializerProvider provider)
               throws IOException {
-            gen.writeFieldName(JacksonCodecConstants.AID_STR_VALUE + value.toString());
+            gen.writeFieldName(JacksonCodecConstants.TID_STR_VALUE + value.toString());
           }
         });
 
@@ -192,16 +192,16 @@ public class JacksonJsonMapper extends ObjectMapper {
     jsonModule.addDeserializer(
         TID.class,
         new JacksonJsonObjectStringDeserializer<>(
-            TID.class, JacksonCodecConstants.AID_STR_VALUE, TID::from));
+            TID.class, JacksonCodecConstants.TID_STR_VALUE, TID::from));
     jsonModule.addKeyDeserializer(
         TID.class,
         new KeyDeserializer() {
           @Override
           public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
-            if (!key.startsWith(JacksonCodecConstants.AID_STR_VALUE)) {
+            if (!key.startsWith(JacksonCodecConstants.TID_STR_VALUE)) {
               throw new InvalidFormatException(
                   ctxt.getParser(),
-                  "Expecting prefix" + JacksonCodecConstants.AID_STR_VALUE,
+                  "Expecting prefix" + JacksonCodecConstants.TID_STR_VALUE,
                   key,
                   TID.class);
             }
