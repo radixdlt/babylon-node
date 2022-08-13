@@ -109,15 +109,9 @@ task buildRustForDocker(type: Exec) {
 
     // Trigger a custom error message on failure...
     ignoreExitValue true
-    def dockerComposeRun = "docker compose -f ../docker/rust-builder/build-sm.yaml run --env TARGET=$target build-sm"
-    def dockerBuildCmd = "DOCKER_BUILDKIT=1 docker build -f docker/rust-builder/Dockerfile" +
-            " --target=artifact" +
-            " --output type=local,dest=state-manager/target/${target}/debug/" +
-            " --build-arg TARGET=$target ."
-    def dockerCmd
     if (project.hasProperty('ci')){
         workingDir rootProject.projectDir
-        def outputDir="state-manager/target/x86_64-unknown-linux-gnu"
+        def outputDir="state-manager/target/$target"
         def dockerMultiStageCmd = """   
              set -x
              
@@ -125,19 +119,20 @@ task buildRustForDocker(type: Exec) {
              export DOCKER_BUILDKIT=1
              docker pull eu.gcr.io/dev-container-repo/rust-builder-base:latest || true 
              docker build -f docker/rust-builder/Dockerfile \\
-                 --target=base --build-arg TARGET=x86_64-unknown-linux-gnu --build-arg BUILDKIT_INLINE_CACHE=1 \\
+                 --target=base --build-arg TARGET=$target --build-arg BUILDKIT_INLINE_CACHE=1 \\
                  --cache-from=eu.gcr.io/dev-container-repo/rust-builder-base:latest \\
                  --tag eu.gcr.io/dev-container-repo/rust-builder-base:latest . 
              docker build -f docker/rust-builder/Dockerfile \\
-               --target=artifact --build-arg TARGET=x86_64-unknown-linux-gnu --build-arg BUILDKIT_INLINE_CACHE=1 \\
+               --target=artifact --build-arg TARGET=$target --build-arg BUILDKIT_INLINE_CACHE=1 \\
                --cache-from=eu.gcr.io/dev-container-repo/rust-builder-base:latest  \\
-               --output type=local,dest=state-manager/target/x86_64-unknown-linux-gnu/debug/ .
+               --output type=local,dest=state-manager/target/$target/debug/ .
              docker push eu.gcr.io/dev-container-repo/rust-builder-base:latest 
              [ -f $outputDir/debug/libstatemanager.so ]
                 """
 
         commandLine 'sh', '-c', dockerMultiStageCmd
     } else{
+        def dockerComposeRun = "docker compose -f ../docker/rust-builder/build-sm.yaml run --env TARGET=$target build-sm"
         commandLine 'sh', '-c', dockerComposeRun
     }
 
