@@ -62,50 +62,61 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+use scrypto::core::Network;
+use scrypto::crypto::EcdsaPublicKey;
+use scrypto::prelude::{AccessRule, EcdsaSignature, RADIX_TOKEN, SYSTEM_COMPONENT};
+use scrypto::to_struct;
+use transaction::builder::ManifestBuilder;
+use transaction::model::{
+    NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
+};
 
-import com.google.common.primitives.Bytes;
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.lang.Result;
-import com.radixdlt.statemanager.StateManagerResponse;
+pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
+    let manifest = ManifestBuilder::new(Network::InternalTestnet)
+        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
+        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+            builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
+        })
+        .build();
 
-public final class TransactionBuilder {
-  private static final TypeToken<Result<byte[], StateManagerRuntimeError>> byteArrayType =
-      new TypeToken<>() {};
+    let intent = TransactionIntent {
+        header: TransactionHeader {
+            version: 1,
+            network: Network::InternalTestnet,
+            start_epoch_inclusive: 0,
+            end_epoch_exclusive: 100,
+            nonce: 5,
+            notary_public_key: public_key,
+            notary_as_signatory: false,
+            cost_unit_limit: 1_000_000,
+            tip_percentage: 5,
+        },
+        manifest,
+    };
 
-  public static byte[] buildNewAccountManifest(ECPublicKey publicKey) {
-    var encodedResponse = account(publicKey.getCompressedBytes());
-    return StateManagerResponse.decode(encodedResponse, byteArrayType);
-  }
+    intent.to_bytes()
+}
 
-  public static byte[] combineForNotary(
-      byte[] manifest, ECPublicKey publicKey, ECDSASignature signature) {
-    var signatureBytes =
-        Bytes.concat(
-            com.radixdlt.utils.Bytes.trimLeadingZeros(signature.getR().toByteArray()),
-            com.radixdlt.utils.Bytes.trimLeadingZeros(signature.getS().toByteArray()));
-    var encodedResponse =
-        combineForNotary(manifest, publicKey.getCompressedBytes(), signatureBytes);
-    return StateManagerResponse.decode(encodedResponse, byteArrayType);
-  }
+pub fn combine_for_notary(
+    intent: TransactionIntent,
+    public_key: EcdsaPublicKey,
+    signature: EcdsaSignature,
+) -> Vec<u8> {
+    let signed_intent = SignedTransactionIntent {
+        intent,
+        intent_signatures: vec![(public_key, signature)],
+    };
+    signed_intent.to_bytes()
+}
 
-  public static byte[] combine(byte[] signedIntent, ECDSASignature signature) {
-    var signatureBytes =
-        Bytes.concat(
-            com.radixdlt.utils.Bytes.trimLeadingZeros(signature.getR().toByteArray()),
-            com.radixdlt.utils.Bytes.trimLeadingZeros(signature.getS().toByteArray()));
-
-    var encodedResponse = combine(signedIntent, signatureBytes);
-    return StateManagerResponse.decode(encodedResponse, byteArrayType);
-  }
-
-  private static native byte[] account(byte[] publicKey);
-
-  private static native byte[] combineForNotary(
-      byte[] manifest, byte[] publicKey, byte[] signature);
-
-  private static native byte[] combine(byte[] signedIntent, byte[] notarySignature);
+pub fn combine(
+    signed_intent: SignedTransactionIntent,
+    notary_signature: EcdsaSignature,
+) -> Vec<u8> {
+    let notarized = NotarizedTransaction {
+        signed_intent,
+        notary_signature,
+    };
+    notarized.to_bytes()
 }

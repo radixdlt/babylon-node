@@ -120,24 +120,29 @@ fn do_commit(
     let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
     let transactions = Vec::<Transaction>::from_java(&request_payload)?;
+
+    let mut to_store = Vec::new();
     for transaction in &transactions {
         let validated_txn = state_manager
             .state_manager
             .decode_transaction(transaction)
             .expect("Error on Byzantine quorum");
-        state_manager
+
+        let receipt = state_manager
             .state_manager
             .execute_transaction(validated_txn)
             .expect("Error on Byzantine quorum");
+
+        to_store.push((transaction.payload.clone(), receipt))
     }
 
-    for (i, transaction) in transactions.iter().enumerate() {
-        let state_version = j_state_version as u64 - u64::try_from(transactions.len() - i - 1).unwrap();
-        let transaction_bytes = transaction.payload.clone();
+    for (i, (txn_bytes, receipt)) in to_store.into_iter().enumerate() {
+        let state_version =
+            j_state_version as u64 - u64::try_from(transactions.len() - i - 1).unwrap();
         state_manager
             .state_manager
             .transaction_store
-            .insert_transaction(state_version, transaction_bytes);
+            .insert_transaction(state_version, txn_bytes, receipt);
     }
 
     state_manager

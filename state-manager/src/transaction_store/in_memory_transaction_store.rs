@@ -62,11 +62,23 @@
  * permissions under this License.
  */
 
+use radix_engine::transaction::TransactionReceipt;
+use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
 use std::collections::BTreeMap;
+
+/// TODO: Remove and use the real TransactionReceipt. This is currently a required struct
+/// TODO: as there is RC<RefCell<>> useage in some of the substates which does not play well
+/// TODO: with multithreaded structures.
+#[derive(Debug)]
+pub struct TemporaryTransactionReceipt {
+    pub new_package_addresses: Vec<PackageAddress>,
+    pub new_component_addresses: Vec<ComponentAddress>,
+    pub new_resource_addresses: Vec<ResourceAddress>,
+}
 
 #[derive(Debug)]
 pub struct TransactionStore {
-    in_memory_store: BTreeMap<u64, Vec<u8>>,
+    in_memory_store: BTreeMap<u64, (Vec<u8>, TemporaryTransactionReceipt)>,
 }
 
 impl TransactionStore {
@@ -76,11 +88,22 @@ impl TransactionStore {
         }
     }
 
-    pub fn insert_transaction(&mut self, state_version: u64, transaction_data: Vec<u8>) {
-        self.in_memory_store.insert(state_version, transaction_data);
+    pub fn insert_transaction(
+        &mut self,
+        state_version: u64,
+        transaction_data: Vec<u8>,
+        receipt: TransactionReceipt,
+    ) {
+        let receipt = TemporaryTransactionReceipt {
+            new_package_addresses: receipt.new_package_addresses,
+            new_component_addresses: receipt.new_component_addresses,
+            new_resource_addresses: receipt.new_resource_addresses,
+        };
+        self.in_memory_store
+            .insert(state_version, (transaction_data, receipt));
     }
 
-    pub fn get_transaction(&self, state_version: u64) -> &Vec<u8> {
+    pub fn get_transaction(&self, state_version: u64) -> &(Vec<u8>, TemporaryTransactionReceipt) {
         self.in_memory_store
             .get(&state_version)
             .expect("State version missing")

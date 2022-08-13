@@ -70,7 +70,7 @@ use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore};
-use radix_engine::transaction::{ExecutionConfig, TransactionExecutor};
+use radix_engine::transaction::{ExecutionConfig, TransactionExecutor, TransactionReceipt};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::core::Network;
 use scrypto::engine::types::RENodeId;
@@ -79,7 +79,7 @@ use std::collections::HashMap;
 use transaction::errors::TransactionValidationError;
 
 use crate::query::ResourceAccounter;
-use transaction::model::{ValidatedTransaction};
+use transaction::model::ValidatedTransaction;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
 pub struct StateManager<M: Mempool, S> {
@@ -122,19 +122,18 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
         }
     }
 
-
     pub fn execute_transaction(
         &mut self,
         transaction: ValidatedTransaction,
-    ) -> Result<(), TransactionValidationError> {
+    ) -> Result<TransactionReceipt, TransactionValidationError> {
         let mut transaction_executor = TransactionExecutor::new(
             &mut self.substate_store,
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
         );
-        transaction_executor.execute_and_commit(&transaction, &self.execution_config);
+        let receipt = transaction_executor.execute_and_commit(&transaction, &self.execution_config);
 
-        Ok(())
+        Ok(receipt)
     }
 
     pub fn decode_transaction(

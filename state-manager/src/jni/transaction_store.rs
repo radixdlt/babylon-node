@@ -77,11 +77,11 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
     let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
 
     // Only get the lock for transaction store
-    let transaction_data = state_manager
+    let (transaction_data, _) = state_manager
         .state_manager
         .transaction_store
         .get_transaction(j_state_version as u64);
 
-    env.byte_array_from_slice(transaction_data)
+    env.byte_array_from_slice(transaction_data.as_slice())
         .expect("Can't create jbyteArray for transaction data")
 }

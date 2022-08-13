@@ -87,13 +87,11 @@ public sealed interface MempoolError {
                     DecodeError::new,
                     codecs.of(String.class),
                     (t, encoder) -> encoder.encode(t.errorDescription)),
-
-                    EnumEntry.with(
-                            TransactionValidationError.class,
-                            TransactionValidationError::new,
-                            codecs.of(String.class),
-                            (t, encoder) -> encoder.encode(t.errorDescription))
-            ));
+                EnumEntry.with(
+                    TransactionValidationError.class,
+                    TransactionValidationError::new,
+                    codecs.of(String.class),
+                    (t, encoder) -> encoder.encode(t.errorDescription))));
   }
 
   record Full(long currentSize, long maxSize) implements MempoolError {}
