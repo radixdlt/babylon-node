@@ -114,7 +114,7 @@ task buildRustForDocker(type: Exec) {
         def outputDir="state-manager/target/$target"
         def rustBuilderRepo = "eu.gcr.io/dev-container-repo/rust-builder-base"
         def rustCacheRepo = "eu.gcr.io/dev-container-repo/rust-cache-packages"
-        def cacheTag = "latest"
+        def cacheTag = project.properties['cacheBranch'] ?: "latest"
         def dockerMultiStageCmd = """
              set -x
 

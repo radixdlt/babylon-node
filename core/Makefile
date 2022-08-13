@@ -27,11 +27,11 @@ gcloud-token: gcloud-authenticate
 
 .PHONY: build-sm
 build-sm: gcloud-token
-	cd .. && ./gradlew :state-manager:buildRustForDocker -Pci=true
+	cd .. && ./gradlew :state-manager:buildRustForDocker -Pci=true -PcacheBranch=$(GIT_BRANCH)
 
 .PHONY: build
 build-core:
-	cd .. && ./gradlew deb4docker -Pci=true
+	cd .. && ./gradlew deb4docker -Pci=true -PcacheBranch=$(GIT_BRANCH)
 
 
 .PHONY: package
