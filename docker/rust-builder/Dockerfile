@@ -25,14 +25,6 @@ ARG TARGET
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
 
-RUN USER=root cargo new dummy
-COPY state-manager/Cargo.toml ./dummy
-COPY state-manager/Cargo.lock ./dummy
-
-RUN mv ./dummy/src/main.rs ./dummy/src/lib.rs
-WORKDIR /app/dummy
-RUN cargo build --target=$TARGET
-
 WORKDIR /app
 COPY state-manager ./
 

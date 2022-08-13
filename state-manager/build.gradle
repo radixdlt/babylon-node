@@ -124,24 +124,15 @@ task buildRustForDocker(type: Exec) {
              if [ -d $outputDir ]; then rm -Rf $outputDir; fi
              export DOCKER_BUILDKIT=1
              docker pull eu.gcr.io/dev-container-repo/rust-builder-base:latest || true 
-             docker pull eu.gcr.io/dev-container-repo/rust-builder-prod-build:latest  || true 
              docker build -f docker/rust-builder/Dockerfile \\
                  --target=base --build-arg TARGET=x86_64-unknown-linux-gnu --build-arg BUILDKIT_INLINE_CACHE=1 \\
                  --cache-from=eu.gcr.io/dev-container-repo/rust-builder-base:latest \\
                  --tag eu.gcr.io/dev-container-repo/rust-builder-base:latest . 
              docker build -f docker/rust-builder/Dockerfile \\
-               --target=prod-build --build-arg TARGET=x86_64-unknown-linux-gnu --build-arg BUILDKIT_INLINE_CACHE=1 \\
-               --cache-from=eu.gcr.io/dev-container-repo/rust-builder-base:latest  \\
-               --cache-from=eu.gcr.io/dev-container-repo/rust-builder-prod-build:latest  \\
-               --tag eu.gcr.io/dev-container-repo/rust-builder-prod-build:latest . 
-              docker build -f docker/rust-builder/Dockerfile \\
                --target=artifact --build-arg TARGET=x86_64-unknown-linux-gnu --build-arg BUILDKIT_INLINE_CACHE=1 \\
                --cache-from=eu.gcr.io/dev-container-repo/rust-builder-base:latest  \\
-               --cache-from=eu.gcr.io/dev-container-repo/rust-builder-prod-build:latest \\
-               --cache-from=eu.gcr.io/dev-container-repo/rust-builder-prod-artifact:latest   \\
-               --output type=local,dest=state-manager/target/x86_64-unknown-linux-gnu/debug/ . 
+               --output type=local,dest=state-manager/target/x86_64-unknown-linux-gnu/debug/ .
              docker push eu.gcr.io/dev-container-repo/rust-builder-base:latest 
-             docker push eu.gcr.io/dev-container-repo/rust-builder-prod-build:latest
              [ -f $outputDir/debug/libstatemanager.so ]
                 """
 
