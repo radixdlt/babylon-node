@@ -31,7 +31,7 @@ COPY state-manager/Cargo.lock ./dummy
 RUN mv ./dummy/src/main.rs ./dummy/src/lib.rs
 WORKDIR /app/dummy
 RUN cargo build --target=$TARGET --release
-RUN rm -rf /app/*
+RUN rm -rf /app/dummy/*
 
 FROM cache-packages as prod-build
 WORKDIR /app
