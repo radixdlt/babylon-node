@@ -118,9 +118,9 @@ task buildRustForDocker(type: Exec) {
     if (project.hasProperty('ci')){
         workingDir rootProject.projectDir
         def dockerMultiStageCmd = """   
+             set -x
              docker pull eu.gcr.io/dev-container-repo/rust-builder-base:latest || true 
-             docker pull eu.gcr.io/dev-container-repo/rust-builder-base:latest || true 
-             docker push eu.gcr.io/dev-container-repo/rust-builder-prod-build:latest  || true 
+             docker pull eu.gcr.io/dev-container-repo/rust-builder-prod-build:latest  || true 
              docker build -f docker/rust-builder/Dockerfile \\
                  --target=base --build-arg TARGET=x86_64-unknown-linux-gnu --build-arg BUILDKIT_INLINE_CACHE=1 \\
                  --cache-from=eu.gcr.io/dev-container-repo/rust-builder-base:latest \\
