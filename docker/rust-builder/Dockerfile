@@ -36,9 +36,9 @@ RUN cargo build --target=$TARGET
 WORKDIR /app
 COPY state-manager ./
 
-RUN cargo build --target=$TARGET
-RUN mkdir -p /app/binary && cp -R target /app/output
+RUN cargo build --target=$TARGET --release
+RUN cp -R target/$TARGET/release/libstatemanager.so /
+RUN rm -rf /app
 
 FROM scratch as artifact
-ARG TARGET
-COPY --from=prod-build /app/output/$TARGET/debug/libstatemanager.so /
+COPY --from=prod-build /libstatemanager.so /
