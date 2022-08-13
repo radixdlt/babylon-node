@@ -19,12 +19,24 @@ public final class TransactionBuilder {
 
     public static byte[] combineForNotary(byte[] manifest, ECPublicKey publicKey, ECDSASignature signature) {
         var signatureBytes = Bytes.concat(
-                signature.getR().toByteArray(),
-                signature.getS().toByteArray()
+                com.radixdlt.utils.Bytes.trimLeadingZeros(signature.getR().toByteArray()),
+                com.radixdlt.utils.Bytes.trimLeadingZeros(signature.getS().toByteArray())
         );
-        return combine(manifest, publicKey.getCompressedBytes(), signatureBytes);
+        var encodedResponse = combineForNotary(manifest, publicKey.getCompressedBytes(), signatureBytes);
+        return StateManagerResponse.decode(encodedResponse, byteArrayType);
+    }
+
+    public static byte[] combine(byte[] signedIntent, ECDSASignature signature) {
+        var signatureBytes = Bytes.concat(
+                com.radixdlt.utils.Bytes.trimLeadingZeros(signature.getR().toByteArray()),
+                com.radixdlt.utils.Bytes.trimLeadingZeros(signature.getS().toByteArray())
+        );
+
+        var encodedResponse = combine(signedIntent, signatureBytes);
+        return StateManagerResponse.decode(encodedResponse, byteArrayType);
     }
 
     private static native byte[] account(byte[] publicKey);
-    private static native byte[] combine(byte[] manifest, byte[] publicKey, byte[] signature);
+    private static native byte[] combineForNotary(byte[] manifest, byte[] publicKey, byte[] signature);
+    private static native byte[] combine(byte[] signedIntent, byte[] notarySignature);
 }

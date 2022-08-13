@@ -76,12 +76,10 @@ use scrypto::core::Network;
 use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
 use std::collections::HashMap;
-use scrypto::to_struct;
-use transaction::builder::ManifestBuilder;
 use transaction::errors::TransactionValidationError;
 
 use crate::query::ResourceAccounter;
-use transaction::model::{NotarizedTransaction, ValidatedTransaction};
+use transaction::model::{ValidatedTransaction};
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
 pub struct StateManager<M: Mempool, S> {
