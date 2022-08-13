@@ -114,6 +114,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.util.encoders.Hex;
 import org.json.JSONObject;
 
 /** Generates the universe (genesis commit) for the Olympia Radix Engine */
@@ -245,12 +246,20 @@ public final class GenerateUniverses {
                       .forNodes()
                       .of(generatedValidatorKeys.get(i).getPublicKey()));
             });
+
+    final var genesisTxnBuilder = new StringBuilder();
+    for (var key : validatorKeys) {
+      genesisTxnBuilder.append(Hex.toHexString(key.getCompressedBytes()));
+    }
+
+    final var genesisTxn = genesisTxnBuilder.toString();
+
     if (validatorsCount > 0) {
-      System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", validatorsCount);
+      System.out.format("export RADIXDLT_GENESIS_TXN=%s%n", genesisTxn);
     } else {
       try (var writer = new BufferedWriter(new FileWriter("genesis.json"))) {
-        writer.write(
-            new JSONObject().put("genesis", Bytes.toHexString(genesis.getPayload())).toString());
+
+        writer.write(new JSONObject().put("genesis", genesisTxn).toString());
       }
     }
   }

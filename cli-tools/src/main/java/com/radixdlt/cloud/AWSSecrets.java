@@ -223,9 +223,10 @@ public class AWSSecrets {
       AWSSecretsOutputOptions awsSecretsOutputOptions,
       List<String> nodes,
       Boolean isStaker) {
-    Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
     for (var nodeName : nodes) {
+      Security.insertProviderAt(new BouncyCastleProvider(), 1);
+
       var keyStoreName = String.format("%s.ks", nodeName);
       var keyStoreSecretName = String.format("%s.ks", nodeName);
       var passwordName = "password";

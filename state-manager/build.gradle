@@ -109,10 +109,20 @@ task buildRustForDocker(type: Exec) {
 
     // Trigger a custom error message on failure...
     ignoreExitValue true
+    def dockerComposeRun = "docker compose -f ../docker/rust-builder/build-sm.yaml run --env TARGET=$target build-sm"
+    def dockerBuildCmd = "DOCKER_BUILDKIT=1 docker build -f docker/rust-builder/Dockerfile" +
+            " --target=artifact" +
+            " --output type=local,dest=state-manager/target/${target}/debug/" +
+            " --build-arg TARGET=$target ."
+    def dockerCmd
+    if (project.hasProperty('ci')){
+        workingDir rootProject.projectDir
+        dockerCmd=dockerBuildCmd
+    } else{
+        dockerCmd = dockerComposeRun
+    }
 
-    def dockerBuildCmd = "docker compose -f ../docker/rust-builder/build-sm.yaml run --env TARGET=$target build-sm"
-    commandLine 'sh', '-c', dockerBuildCmd
-
+    commandLine 'sh', '-c', dockerCmd
     doLast {
         if (executionResult.get().getExitValue() != 0) {
             logger.error(String.format(
