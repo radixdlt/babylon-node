@@ -19,10 +19,9 @@ ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
 
 CMD cargo build --target=${TARGET}
 
-FROM base as prod-build
+FROM base as cache-packages
 ARG TARGET
 
-ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
 
 RUN USER=root cargo new dummy
@@ -32,7 +31,9 @@ COPY state-manager/Cargo.lock ./dummy
 RUN mv ./dummy/src/main.rs ./dummy/src/lib.rs
 WORKDIR /app/dummy
 RUN cargo build --target=$TARGET --release
+RUN rm -rf /app/*
 
+FROM cache-packages as prod-build
 WORKDIR /app
 COPY state-manager ./
 
