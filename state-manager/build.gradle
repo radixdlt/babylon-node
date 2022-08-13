@@ -112,21 +112,21 @@ task buildRustForDocker(type: Exec) {
     if (project.hasProperty('ci')){
         workingDir rootProject.projectDir
         def outputDir="state-manager/target/$target"
-        def dockerMultiStageCmd = """   
+        def dockerMultiStageCmd = """
              set -x
-             
+
              if [ -d $outputDir ]; then rm -Rf $outputDir; fi
              export DOCKER_BUILDKIT=1
-             docker pull eu.gcr.io/dev-container-repo/rust-builder-base:latest || true 
+             docker pull eu.gcr.io/dev-container-repo/rust-builder-base:latest || true
              docker build -f docker/rust-builder/Dockerfile \\
                  --target=base --build-arg TARGET=$target --build-arg BUILDKIT_INLINE_CACHE=1 \\
                  --cache-from=eu.gcr.io/dev-container-repo/rust-builder-base:latest \\
-                 --tag eu.gcr.io/dev-container-repo/rust-builder-base:latest . 
+                 --tag eu.gcr.io/dev-container-repo/rust-builder-base:latest .
              docker build -f docker/rust-builder/Dockerfile \\
                --target=artifact --build-arg TARGET=$target --build-arg BUILDKIT_INLINE_CACHE=1 \\
                --cache-from=eu.gcr.io/dev-container-repo/rust-builder-base:latest  \\
                --output type=local,dest=state-manager/target/$target/debug/ .
-             docker push eu.gcr.io/dev-container-repo/rust-builder-base:latest 
+             docker push eu.gcr.io/dev-container-repo/rust-builder-base:latest || true
              [ -f $outputDir/debug/libstatemanager.so ]
                 """
 
