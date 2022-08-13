@@ -119,6 +119,7 @@ task buildRustForDocker(type: Exec) {
         workingDir rootProject.projectDir
         def dockerMultiStageCmd = """   
              set -x
+             export DOCKER_BUILDKIT=1
              docker pull eu.gcr.io/dev-container-repo/rust-builder-base:latest || true 
              docker pull eu.gcr.io/dev-container-repo/rust-builder-prod-build:latest  || true 
              docker build -f docker/rust-builder/Dockerfile \\
