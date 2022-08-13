@@ -86,11 +86,11 @@ public class Sha256Hasher implements Hasher {
 
   @Override
   public HashCode hashDsonEncoded(Object o) {
-    return HashUtils.sha256(serialization.toDson(o, DsonOutput.Output.HASH));
+    return HashUtils.sha256Twice(serialization.toDson(o, DsonOutput.Output.HASH));
   }
 
   @Override
   public HashCode hashBytes(byte[] bytes) {
-    return HashUtils.sha256(bytes);
+    return HashUtils.sha256Twice(bytes);
   }
 }

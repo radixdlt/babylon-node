@@ -112,7 +112,7 @@ public class ApiSerializationModifier extends BeanSerializerModifier {
         jsonGenerator.writeStartObject();
         serializer.unwrappingSerializer(null).serialize(o, jsonGenerator, serializerProvider);
         byte[] bytesToHash = hashDsonMapper.writeValueAsBytes(o);
-        HashCode hash = HashUtils.sha256(bytesToHash);
+        HashCode hash = HashUtils.sha256Twice(bytesToHash);
         jsonGenerator.writeObjectField("hid", hash);
         jsonGenerator.writeEndObject();
       } else {

@@ -89,7 +89,7 @@ public final class HashUtils {
 
   private static final SecureRandom secureRandom = new SecureRandom();
 
-  private static final HashHandler shaHashHandler = new SHAHashHandler();
+  private static final SHAHashHandler shaHashHandler = new SHAHashHandler();
 
   private static final HashCode ZERO_256 = zero(32);
 
@@ -107,7 +107,7 @@ public final class HashUtils {
   public static HashCode random256() {
     byte[] randomBytes = new byte[32];
     secureRandom.nextBytes(randomBytes);
-    return HashCode.fromBytes(shaHashHandler.hash256(randomBytes));
+    return HashCode.fromBytes(shaHashHandler.sha256Twice(randomBytes, 0, randomBytes.length));
   }
 
   /**
@@ -116,8 +116,8 @@ public final class HashUtils {
    * @param dataToBeHashed The data to hash
    * @return The digest by applying the 256-bit/32-byte hash function
    */
-  public static HashCode sha256(byte[] dataToBeHashed) {
-    return sha256(dataToBeHashed, 0, dataToBeHashed.length);
+  public static HashCode sha256Twice(byte[] dataToBeHashed) {
+    return sha256Twice(dataToBeHashed, 0, dataToBeHashed.length);
   }
 
   /**
@@ -128,8 +128,8 @@ public final class HashUtils {
    * @param length The number of bytes in the array to hash
    * @return The digest by applying the 256-bit/32-byte hash function.
    */
-  public static HashCode sha256(byte[] dataToBeHashed, int offset, int length) {
-    return HashCode.fromBytes(shaHashHandler.hash256(dataToBeHashed, offset, length));
+  public static HashCode sha256Twice(byte[] dataToBeHashed, int offset, int length) {
+    return HashCode.fromBytes(shaHashHandler.sha256Twice(dataToBeHashed, offset, length));
   }
 
   /**
@@ -138,8 +138,8 @@ public final class HashUtils {
    * @param dataToBeHashed The data to hash
    * @return The 512-bit/64-byte hash
    */
-  public static HashCode sha512(byte[] dataToBeHashed) {
-    return HashCode.fromBytes(shaHashHandler.hash512(dataToBeHashed));
+  public static HashCode sha512Twice(byte[] dataToBeHashed) {
+    return HashCode.fromBytes(shaHashHandler.sha512Twice(dataToBeHashed, 0, dataToBeHashed.length));
   }
 
   public static byte[] kec256(byte[]... input) {
@@ -169,7 +169,7 @@ public final class HashUtils {
    * @return calculated hash
    */
   public static HashCode transactionIdHash(byte[] payload) {
-    return sha256(payload);
+    return sha256Twice(payload);
   }
 
   private HashUtils() {
