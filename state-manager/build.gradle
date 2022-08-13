@@ -117,12 +117,35 @@ task buildRustForDocker(type: Exec) {
     def dockerCmd
     if (project.hasProperty('ci')){
         workingDir rootProject.projectDir
-        dockerCmd=dockerBuildCmd
+        def dockerMultiStageCmd = """   
+             docker pull eu.gcr.io/dev-container-repo/rust-builder-base:latest || true 
+             docker pull eu.gcr.io/dev-container-repo/rust-builder-base:latest || true 
+             docker push eu.gcr.io/dev-container-repo/rust-builder-prod-build:latest  || true 
+             docker build -f docker/rust-builder/Dockerfile \\
+                 --target=base --build-arg TARGET=x86_64-unknown-linux-gnu --build-arg BUILDKIT_INLINE_CACHE=1 \\
+                 --cache-from=eu.gcr.io/dev-container-repo/rust-builder-base:latest \\
+                 --tag eu.gcr.io/dev-container-repo/rust-builder-base:latest . 
+             docker build -f docker/rust-builder/Dockerfile \\
+               --target=prod-build --build-arg TARGET=x86_64-unknown-linux-gnu --build-arg BUILDKIT_INLINE_CACHE=1 \\
+               --cache-from=eu.gcr.io/dev-container-repo/rust-builder-base:latest  \\
+               --cache-from=eu.gcr.io/dev-container-repo/rust-builder-prod-build:latest  \\
+               --tag eu.gcr.io/dev-container-repo/rust-builder-prod-build:latest . 
+              docker build -f docker/rust-builder/Dockerfile \\
+               --target=artifact --build-arg TARGET=x86_64-unknown-linux-gnu --build-arg BUILDKIT_INLINE_CACHE=1 \\
+               --cache-from=eu.gcr.io/dev-container-repo/rust-builder-base:latest  \\
+               --cache-from=eu.gcr.io/dev-container-repo/rust-builder-prod-build:latest \\
+               --cache-from=eu.gcr.io/dev-container-repo/rust-builder-prod-artifact:latest   \\
+               --output type=local,dest=state-manager/target/x86_64-unknown-linux-gnu/debug/ . 
+             docker push eu.gcr.io/dev-container-repo/rust-builder-base:latest 
+             docker push eu.gcr.io/dev-container-repo/rust-builder-prod-build:latest
+                """
+
+        commandLine 'sh', '-c', dockerMultiStageCmd
     } else{
-        dockerCmd = dockerComposeRun
+        commandLine 'sh', '-c', dockerComposeRun
     }
 
-    commandLine 'sh', '-c', dockerCmd
+
     doLast {
         if (executionResult.get().getExitValue() != 0) {
             logger.error(String.format(
