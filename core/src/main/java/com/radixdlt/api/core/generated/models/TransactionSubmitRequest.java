@@ -79,10 +79,10 @@ public class TransactionSubmitRequest {
    * A notarized transaction encoded in the Radix transaction format, and then hex encoded.
    * @return notarizedTransaction
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "A notarized transaction encoded in the Radix transaction format, and then hex encoded.")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "A notarized transaction encoded in the Radix transaction format, and then hex encoded.")
   @JsonProperty(JSON_PROPERTY_NOTARIZED_TRANSACTION)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public String getNotarizedTransaction() {
     return notarizedTransaction;
@@ -90,7 +90,7 @@ public class TransactionSubmitRequest {
 
 
   @JsonProperty(JSON_PROPERTY_NOTARIZED_TRANSACTION)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setNotarizedTransaction(String notarizedTransaction) {
     this.notarizedTransaction = notarizedTransaction;
   }

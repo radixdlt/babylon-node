@@ -71,6 +71,9 @@ import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayReader;
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.statecomputer.preview.PreviewError;
+import com.radixdlt.statecomputer.preview.PreviewRequest;
+import com.radixdlt.statecomputer.preview.PreviewResult;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.transaction.RustTransactionStore;
@@ -78,6 +81,7 @@ import com.radixdlt.transaction.TransactionStoreReader;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiFunction;
 
 public class RustStateComputer {
   private final StateManager.RustState rustState;
@@ -124,12 +128,28 @@ public class RustStateComputer {
   }
 
   public boolean verify(RawTransaction transaction) {
-    var transactionBytes = StateManagerSbor.sbor.encode(transaction, RawTransaction.class);
-    var encodedResponse = verify(this.rustState, transactionBytes);
-    return StateManagerResponse.decode(encodedResponse, booleanType);
+    return callNativeFn(
+        transaction, RawTransaction.class, new TypeToken<>() {}, RustStateComputer::verify);
+  }
+
+  public Result<PreviewResult, PreviewError> preview(PreviewRequest previewRequest) {
+    return callNativeFn(
+        previewRequest, PreviewRequest.class, new TypeToken<>() {}, RustStateComputer::preview);
+  }
+
+  private <Req, Res> Res callNativeFn(
+      Req request,
+      Class<Req> requestClass,
+      TypeToken<Result<Res, StateManagerRuntimeError>> resultTypeToken,
+      BiFunction<StateManager.RustState, byte[], byte[]> nativeFn) {
+    final var encodedRequest = StateManagerSbor.sbor.encode(request, requestClass);
+    final var encodedResponse = nativeFn.apply(this.rustState, encodedRequest);
+    return StateManagerResponse.decode(encodedResponse, resultTypeToken);
   }
 
   private static native byte[] verify(StateManager.RustState rustState, byte[] encodedArgs);
+
+  private static native byte[] preview(StateManager.RustState rustState, byte[] encodedArgs);
 
   private static native byte[] execute(StateManager.RustState rustState, byte[] encodedArgs);
 }

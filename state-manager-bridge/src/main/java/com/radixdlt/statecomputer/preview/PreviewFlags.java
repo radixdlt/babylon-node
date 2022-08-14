@@ -62,64 +62,19 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::JavaStructure;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
+package com.radixdlt.statecomputer.preview;
 
-use crate::jni::state_manager::JNIStateManager;
-use crate::jni::utils::*;
-use crate::result::StateManagerResult;
-use crate::types::Transaction;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-//
-// JNI Interface
-//
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = do_verify(&env, j_state, j_payload).to_java();
-
-    jni_slice_to_jbytearray(&env, &ret)
-}
-
-fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<bool> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transaction = Transaction::from_java(&request_payload)?;
-    let result = state_manager.state_manager.decode_transaction(&transaction);
-    Ok(result.is_ok())
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_execute(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = do_execute(&env, j_state, j_payload).to_java();
-
-    jni_slice_to_jbytearray(&env, &ret)
-}
-
-fn do_execute(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<()> {
-    let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transaction = Transaction::from_java(&request_payload)?;
-    let validated_txn = state_manager
-        .state_manager
-        .decode_transaction(&transaction)
-        .expect("Error on Byzantine quorum");
-    state_manager
-        .state_manager
-        .execute_transaction(validated_txn)
-        .expect("Error on Byzantine quorum");
-
-    Ok(())
+public record PreviewFlags(boolean unlimitedLoan) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PreviewFlags.class,
+        codecs ->
+            StructCodec.with(
+                PreviewFlags::new,
+                codecs.of(boolean.class),
+                (t, encoder) -> encoder.encode(t.unlimitedLoan)));
+  }
 }

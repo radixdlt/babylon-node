@@ -81,9 +81,9 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PConfig;
@@ -136,7 +136,6 @@ public abstract class ApiTest {
   public void setup() {
     var injector =
         Guice.createInjector(
-            MempoolConfig.asModule(mempoolMaxSize, 10),
             new MainnetForksModule(),
             new RadixEngineForksLatestOnlyModule(
                 RERulesConfig.testingDefault()
@@ -146,7 +145,9 @@ public abstract class ApiTest {
                             Map.of(
                                 ValidatorRegisteredCopy.class, Amount.ofSubunits(UInt256.ONE))))),
             new ForksModule(),
-            new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+            new SingleNodeAndPeersDeterministicNetworkModule(
+                TEST_KEY,
+                StateComputerConfig.rev2(StateComputerConfig.REV2ProposerConfig.mempool())),
             new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),

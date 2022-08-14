@@ -134,7 +134,11 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
 
   public FunctionalRadixNodeModule() {
-    this(true, LedgerConfig.stateComputer(StateComputerConfig.rev1(), true));
+    this(StateComputerConfig.rev1());
+  }
+
+  public FunctionalRadixNodeModule(StateComputerConfig stateComputerConfig) {
+    this(true, LedgerConfig.stateComputer(stateComputerConfig, true));
   }
 
   public FunctionalRadixNodeModule(boolean epochs, LedgerConfig ledgerConfig) {

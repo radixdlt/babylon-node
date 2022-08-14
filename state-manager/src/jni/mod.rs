@@ -63,6 +63,7 @@
  */
 
 pub(crate) mod dtos;
+mod manifest_compiler;
 mod mempool;
 mod state_computer;
 mod state_manager;
