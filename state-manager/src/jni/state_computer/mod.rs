@@ -73,7 +73,6 @@ use scrypto::prelude::*;
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
-use crate::mempool::Mempool;
 use crate::result::{ResultStateManagerMaps, StateManagerResult};
 use crate::types::{CommitRequest, PreviewRequest, Transaction};
 
@@ -135,7 +134,6 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     j_payload: jbyteArray,
 ) -> jbyteArray {
     let ret = do_commit(&env, j_state, j_payload).to_java();
-
     jni_slice_to_jbytearray(&env, &ret)
 }
 
@@ -144,36 +142,7 @@ fn do_commit(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateMana
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
     let commit_request = CommitRequest::from_java(&request_payload)?;
 
-    let mut to_store = Vec::new();
-    for transaction in &commit_request.transactions {
-        let validated_txn = state_manager
-            .state_manager
-            .decode_transaction(transaction)
-            .expect("Error on Byzantine quorum");
-
-        let receipt = state_manager
-            .state_manager
-            .execute_transaction(validated_txn)
-            .expect("Error on Byzantine quorum");
-
-        to_store.push((transaction.payload.clone(), receipt))
-    }
-
-    for (i, (txn_bytes, receipt)) in to_store.into_iter().enumerate() {
-        let state_version = commit_request.state_version
-            - u64::try_from(commit_request.transactions.len() - i - 1).unwrap();
-        println!("StateVersion: {}", state_version);
-        state_manager
-            .state_manager
-            .transaction_store
-            .insert_transaction(state_version, txn_bytes, receipt);
-    }
-
-    state_manager
-        .state_manager
-        .mempool
-        .handle_committed_transactions(&commit_request.transactions);
-
+    state_manager.state_manager.commit(commit_request.transactions, commit_request.state_version);
     Ok(())
 }
 
@@ -185,7 +154,6 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXr
     j_payload: jbyteArray,
 ) -> jbyteArray {
     let ret = get_component_xrd(&env, j_state, j_payload).to_java();
-
     jni_slice_to_jbytearray(&env, &ret)
 }
 

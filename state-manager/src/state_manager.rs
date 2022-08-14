@@ -89,9 +89,9 @@ use transaction::signing::EcdsaPrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
 pub struct StateManager<M: Mempool, S> {
-    pub network: Network,
     pub mempool: M,
     pub transaction_store: TransactionStore,
+    network: Network,
     substate_store: S,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
@@ -130,7 +130,38 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
         }
     }
 
-    pub fn execute_transaction(
+    pub fn commit(
+        &mut self,
+        transactions: Vec<Transaction>,
+        state_version: u64
+    ) {
+        let mut to_store = Vec::new();
+        for transaction in &transactions {
+            let validated_txn = self
+                .decode_transaction(transaction)
+                .expect("Error on Byzantine quorum");
+
+            let receipt = self
+                .execute_transaction(validated_txn)
+                .expect("Error on Byzantine quorum");
+
+            to_store.push((transaction.payload.clone(), receipt))
+        }
+
+        for (i, (txn_bytes, receipt)) in to_store.into_iter().enumerate() {
+            let txn_state_version = state_version
+                - u64::try_from(transactions.len() - i - 1).unwrap();
+            self
+                .transaction_store
+                .insert_transaction(txn_state_version, txn_bytes, receipt);
+        }
+
+        self
+            .mempool
+            .handle_committed_transactions(&transactions);
+    }
+
+    fn execute_transaction(
         &mut self,
         transaction: ValidatedTransaction,
     ) -> Result<TransactionReceipt, TransactionValidationError> {
