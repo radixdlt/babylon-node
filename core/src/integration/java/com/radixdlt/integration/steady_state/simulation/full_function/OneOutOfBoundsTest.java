@@ -77,6 +77,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
@@ -112,9 +113,8 @@ public class OneOutOfBoundsTest {
     bftTestBuilder =
         SimulationTest.builder()
             .numNodes(4)
-            .pacemakerTimeout(3000)
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.oneOutOfBounds(50, 10000))
-            .fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
+            .fullFunctionNodes(ConsensusConfig.of(3000), SyncConfig.of(400L, 10, 2000L))
             .addRadixEngineConfigModules(
                 new MainnetForksModule(),
                 new RadixEngineForksLatestOnlyModule(

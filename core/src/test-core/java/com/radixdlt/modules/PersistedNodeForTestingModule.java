@@ -68,10 +68,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.PacemakerBackoffRate;
-import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
-import com.radixdlt.consensus.bft.PacemakerMaxExponent;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
@@ -107,10 +103,6 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
   public void configure() {
     bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
     bind(SyncConfig.class).toInstance(SyncConfig.of(500, 10, 3000, 10, Long.MAX_VALUE));
-    bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
-    bind(Long.class).annotatedWith(PacemakerBaseTimeoutMs.class).toInstance(1000L);
-    bind(Double.class).annotatedWith(PacemakerBackoffRate.class).toInstance(2.0);
-    bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
     bindConstant()
         .annotatedWith(DatabaseCacheSize.class)
         .to((long) (Runtime.getRuntime().maxMemory() * 0.125));
@@ -121,7 +113,9 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 
     install(new InMemoryBFTKeyModule(keyPair));
     install(new CryptoModule());
-    install(new FunctionalRadixNodeModule(stateComputerConfig));
+    install(
+        new FunctionalRadixNodeModule(
+            FunctionalRadixNodeModule.ConsensusConfig.of(200, 1000L, 2.0), stateComputerConfig));
     install(new RadixEngineStoreModule());
     install(new PersistenceModule());
     switch (stateComputerConfig) {

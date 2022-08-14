@@ -62,21 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.transfer;
+package com.radixdlt.rev2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.*;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolInserter;
@@ -88,11 +87,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transaction.TransactionStoreReader;
@@ -100,16 +95,20 @@ import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
-import java.util.stream.Stream;
 import org.junit.Test;
 
-public final class REv2TransferTest {
+public final class REv2ConsensusTransferTest {
 
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
   private static final Decimal GENESIS_AMOUNT = Decimal.of(24_000_000_000L);
 
+  private final DeterministicNetwork network =
+      new DeterministicNetwork(
+          List.of(BFTNode.create(TEST_KEY.getPublicKey())),
+          MessageSelector.firstSelector(),
+          MessageMutator.nothing());
+
   @Inject private DeterministicProcessor processor;
-  @Inject private DeterministicNetwork network;
   @Inject private MempoolInserter<RawTransaction> mempoolInserter;
   @Inject private TransactionStoreReader transactionStoreReader;
   @Inject private REv2StateReader stateReader;
@@ -125,38 +124,19 @@ public final class REv2TransferTest {
         new MockedPersistenceStoreModule(),
         new FunctionalRadixNodeModule(
             false,
+            FunctionalRadixNodeModule.ConsensusConfig.of(),
             FunctionalRadixNodeModule.LedgerConfig.stateComputer(
                 StateComputerConfig.rev2(StateComputerConfig.REV2ProposerConfig.mempool()), false)),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
+        new DeterministicEnvironmentModule(
+            network.createSender(BFTNode.create(TEST_KEY.getPublicKey()))),
         new AbstractModule() {
           @Override
           protected void configure() {
             bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
             bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
             bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-            bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
-            bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(100L);
-            bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
-            bindConstant()
-                .annotatedWith(PacemakerMaxExponent.class)
-                .to(0); // Use constant timeout for now
-          }
-
-          @Provides
-          @Singleton
-          public DeterministicNetwork network(@Self BFTNode self, PeersView peersView) {
-            return new DeterministicNetwork(
-                Stream.concat(Stream.of(self), peersView.peers().map(PeersView.PeerInfo::bftNode))
-                    .toList(),
-                MessageSelector.firstSelector(),
-                MessageMutator.nothing());
-          }
-
-          @Provides
-          @Singleton
-          Environment environment(@Self BFTNode self, DeterministicNetwork network) {
-            return network.createSender(self);
           }
         });
   }
@@ -178,23 +158,23 @@ public final class REv2TransferTest {
 
   @Test
   public void new_account_creates_transfer_of_xrd_to_account() throws Exception {
-    // Start single node network
+    // Arrange: Start single node network
     createInjector().injectMembers(this);
     var newAccountTransaction = createNewAccountTransaction();
+
+    // Act: Submit transaction to mempool and run consensus
     processor.start();
     for (int i = 0; i < 1000; i++) {
       var msg = network.nextMessage().value();
       processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
     }
-
-    // Submit transaction to mempool and run consensus
     mempoolInserter.addTransaction(newAccountTransaction);
     for (int i = 0; i < 1000; i++) {
       var msg = network.nextMessage().value();
       processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
     }
 
-    // Check transaction and post submission state
+    // Assert: Check transaction and post submission state
     var receipt = transactionStoreReader.getTransactionAtStateVersion(1);
     var componentAddress = receipt.getNewComponentAddresses().get(0);
     var accountAmount = stateReader.getComponentXrdAmount(componentAddress);

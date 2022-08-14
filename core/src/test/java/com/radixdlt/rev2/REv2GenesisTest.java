@@ -62,82 +62,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_ledger;
+package com.radixdlt.rev2;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.harness.simulation.NetworkDroppers;
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.SimulationTest.Builder;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
-import java.time.Duration;
-import java.util.stream.LongStream;
-import org.assertj.core.api.AssertionsForClassTypes;
+import com.google.inject.*;
+import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
+import com.radixdlt.keys.InMemoryBFTKeyModule;
+import com.radixdlt.ledger.MockedLedgerRecoveryModule;
+import com.radixdlt.messaging.TestMessagingModule;
+import com.radixdlt.modules.*;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
+import com.radixdlt.p2p.TestP2PModule;
+import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.utils.PrivateKeys;
+import com.radixdlt.utils.TimeSupplier;
+import java.util.List;
 import org.junit.Test;
 
-/**
- * When running a network with 3 nodes, where all proposals are dropped, leader should be able to
- * re-send his vote with a timeout flag and the vote should be accepted by all other nodes,
- * resulting in moving to a next round (once remaining two nodes also timeout). If the timeout
- * replacement votes are not accepted, then we loose a round because a node can only move to the
- * next round when it hasn't received the original non-timeout vote. This test checks that all nodes
- * only need a single timeout event to proceed to next round, even the node that initially received
- * a non-timeout vote (next leader), meaning that it must have successfully replaced a non-timeout
- * vote with a timeout vote in the same round.
- */
-public class TimeoutPreviousVoteWithDroppedProposalsTest {
-  private final Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numNodes(3)
-          .networkModules(
-              NetworkOrdering.inOrder(),
-              NetworkLatencies.fixed(),
-              NetworkDroppers.dropAllProposals())
-          .functionalNodeModule(FunctionalRadixNodeModule.justLedger())
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered());
+public final class REv2GenesisTest {
+  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+  private static final Decimal GENESIS_AMOUNT = Decimal.of(24_000_000_000L);
+
+  private final DeterministicNetwork network =
+      new DeterministicNetwork(
+          List.of(BFTNode.create(TEST_KEY.getPublicKey())),
+          MessageSelector.firstSelector(),
+          MessageMutator.nothing());
+
+  @Inject private REv2StateReader stateReader;
+
+  private Injector createInjector() {
+    return Guice.createInjector(
+        new CryptoModule(),
+        new TestMessagingModule.Builder().withDefaultRateLimit().build(),
+        new MockedLedgerRecoveryModule(),
+        new MockedConsensusRecoveryModule.Builder()
+            .withNodes(List.of(BFTNode.create(TEST_KEY.getPublicKey())))
+            .build(),
+        new MockedPersistenceStoreModule(),
+        new FunctionalRadixNodeModule(
+            false,
+            FunctionalRadixNodeModule.ConsensusConfig.of(),
+            FunctionalRadixNodeModule.LedgerConfig.stateComputer(
+                StateComputerConfig.rev2(StateComputerConfig.REV2ProposerConfig.mempool()), false)),
+        new TestP2PModule.Builder().build(),
+        new InMemoryBFTKeyModule(TEST_KEY),
+        new DeterministicEnvironmentModule(
+            network.createSender(BFTNode.create(TEST_KEY.getPublicKey()))),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+            bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
+            bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+          }
+        });
+  }
 
   @Test
-  public void sanity_test() {
-    // Arrangement
-    SimulationTest test = bftTestBuilder.build();
+  public void state_reader_on_genesis_returns_correct_amounts() {
+    // Arrange/Act
+    createInjector().injectMembers(this);
 
-    // Execution
-    final var runningTest = test.run(Duration.ofSeconds(10));
-    final var results = runningTest.awaitCompletion();
+    // Assert
+    var systemAmount =
+        this.stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_COMPONENT_ADDRESS);
+    assertThat(systemAmount).isEqualTo(GENESIS_AMOUNT);
 
-    // Post-Execution Assertions
-    final var statistics =
-        runningTest.getNetwork().getSystemCounters().values().stream()
-            .map(
-                s ->
-                    LongStream.of(
-                        s.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT),
-                        s.get(CounterType.BFT_PACEMAKER_TIMED_OUT_ROUNDS)))
-            .map(LongStream::summaryStatistics)
-            .collect(ImmutableList.toImmutableList());
-
-    statistics.forEach(
-        s -> {
-          // to make sure we've processed some rounds
-          assertTrue(s.getMin() > 2);
-
-          // this ensures that we only need a single timeout per round
-          // BFT_PACEMAKER_TIMEOUTS_SENT equal to BFT_PACEMAKER_TIMED_OUT_ROUNDS
-          assertEquals(s.getMin(), s.getMax());
-        });
-
-    assertThat(results)
-        .allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+    var emptyAccountAmount =
+        this.stateReader.getComponentXrdAmount(ComponentAddress.create(new byte[27]));
+    assertThat(emptyAccountAmount).isEqualTo(Decimal.of(0));
   }
 }

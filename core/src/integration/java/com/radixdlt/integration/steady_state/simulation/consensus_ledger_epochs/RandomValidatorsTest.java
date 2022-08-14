@@ -73,6 +73,7 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.Random;
@@ -90,7 +91,6 @@ public class RandomValidatorsTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .pacemakerTimeout(5000)
           .numNodes(numNodes)
           .addTestModules(
               ConsensusMonitors.safety(),
@@ -129,7 +129,10 @@ public class RandomValidatorsTest {
   public void
       given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
     SimulationTest bftTest =
-        bftTestBuilder.ledgerAndEpochs(Round.of(100), goodRandomEpochToNodesMapper()).build();
+        bftTestBuilder
+            .ledgerAndEpochs(
+                ConsensusConfig.of(5000), Round.of(100), goodRandomEpochToNodesMapper())
+            .build();
 
     final var checkResults = bftTest.run().awaitCompletion();
     assertThat(checkResults)
@@ -139,7 +142,9 @@ public class RandomValidatorsTest {
   @Test
   public void given_nondeterministic_randomized_validator_sets__then_should_fail() {
     SimulationTest bftTest =
-        bftTestBuilder.ledgerAndEpochs(Round.of(100), badRandomEpochToNodesMapper()).build();
+        bftTestBuilder
+            .ledgerAndEpochs(ConsensusConfig.of(5000), Round.of(100), badRandomEpochToNodesMapper())
+            .build();
 
     final var checkResults = bftTest.run().awaitCompletion();
     assertThat(checkResults).hasValueSatisfying(new Condition<>(Optional::isPresent, "Has error"));

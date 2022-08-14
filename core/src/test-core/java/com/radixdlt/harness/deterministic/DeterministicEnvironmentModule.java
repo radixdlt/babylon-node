@@ -62,71 +62,21 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+package com.radixdlt.harness.deterministic;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.modules.CryptoModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.rev2.modules.REv2StateComputerModule;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transactions.RawTransaction;
-import java.util.List;
-import org.junit.Test;
+import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.deterministic.network.ControlledSender;
 
-public class REv2Test {
-  private final Injector injector =
-      Guice.createInjector(
-          new CryptoModule(),
-          new REv2StateComputerModule(),
-          new REv2StateManagerModule(),
-          MempoolConfig.asModule(100, 1000L),
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
-              bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-            }
-          });
+public final class DeterministicEnvironmentModule extends AbstractModule {
+  private final ControlledSender controlledSender;
 
-  @Test
-  public void test_valid_rev2_transaction_passes() {
-    // Arrange
-    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var validTransaction = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
-
-    // Act
-    var result =
-        stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
-
-    // Assert
-    assertThat(result.getSuccessfullyExecutedTransactions()).hasSize(1);
-    assertThat(result.getFailedTransactions()).isEmpty();
+  public DeterministicEnvironmentModule(ControlledSender controlledSender) {
+    this.controlledSender = controlledSender;
   }
 
-  @Test
-  public void test_invalid_rev2_transaction_fails() {
-    // Arrange
-    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var validTransaction = RawTransaction.create(new byte[1]);
-
-    // Act
-    var result =
-        stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
-
-    // Assert
-    assertThat(result.getSuccessfullyExecutedTransactions()).isEmpty();
-    assertThat(result.getFailedTransactions()).hasSize(1);
+  @Override
+  protected void configure() {
+    bind(Environment.class).toInstance(controlledSender);
   }
 }

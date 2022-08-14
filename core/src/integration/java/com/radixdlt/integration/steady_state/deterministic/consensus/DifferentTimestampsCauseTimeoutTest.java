@@ -84,6 +84,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.DeterministicTest.DeterministicManualExecutor;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.utils.Pair;
 import java.util.Map;
 import java.util.Optional;
@@ -98,7 +99,7 @@ public class DifferentTimestampsCauseTimeoutTest {
         DeterministicTest.builder()
             .numNodes(numNodes)
             .messageMutator(mutateProposalsBy(0))
-            .buildWithoutEpochs()
+            .buildWithoutEpochs(ConsensusConfig.of())
             .createExecutor();
 
     executor.start();
@@ -136,7 +137,7 @@ public class DifferentTimestampsCauseTimeoutTest {
                 })
             .numNodes(numNodes)
             .messageMutator(mutateProposalsBy(1))
-            .buildWithoutEpochs()
+            .buildWithoutEpochs(ConsensusConfig.of())
             .createExecutor();
 
     executor.start();

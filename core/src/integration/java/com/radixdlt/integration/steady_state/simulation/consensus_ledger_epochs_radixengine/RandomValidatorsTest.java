@@ -77,6 +77,7 @@ import com.radixdlt.harness.simulation.application.NodeValidatorRandomRegistrato
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
@@ -94,7 +95,6 @@ public class RandomValidatorsTest {
       SimulationTest.builder()
           .numNodes(10)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .pacemakerTimeout(2000L)
           .addRadixEngineConfigModules(
               new MainnetForksModule(),
               new RadixEngineForksLatestOnlyModule(
@@ -113,7 +113,7 @@ public class RandomValidatorsTest {
                       50,
                       MSG.maxLength())),
               new ForksModule())
-          .ledgerAndRadixEngineWithEpochMaxRound()
+          .ledgerAndRadixEngineWithEpochMaxRound(ConsensusConfig.of(2000L))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

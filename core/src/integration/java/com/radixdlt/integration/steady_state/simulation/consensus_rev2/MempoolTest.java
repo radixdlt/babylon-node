@@ -86,10 +86,10 @@ public class MempoolTest {
       SimulationTest.builder()
           .numNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .pacemakerTimeout(1000)
           .functionalNodeModule(
               new FunctionalRadixNodeModule(
                   false,
+                  FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                   FunctionalRadixNodeModule.LedgerConfig.stateComputer(
                       StateComputerConfig.rev2(REV2ProposerConfig.mempool()), false)))
           .addTestModules(

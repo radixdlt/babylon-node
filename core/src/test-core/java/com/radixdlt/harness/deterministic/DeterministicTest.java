@@ -77,7 +77,6 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -88,6 +87,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.MempoolType;
 import com.radixdlt.modules.MockedCryptoModule;
@@ -136,7 +136,6 @@ public final class DeterministicTest {
         ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
     private MessageSelector messageSelector = MessageSelector.firstSelector();
     private MessageMutator messageMutator = MessageMutator.nothing();
-    private long pacemakerTimeout = 1000L;
     private Function<Long, IntStream> epochToNodeIndexesMapping;
     private EpochNodeWeightMapping epochNodeWeightMapping;
     private Module overrideModule = null;
@@ -195,20 +194,12 @@ public final class DeterministicTest {
       return this.messageMutator(combinedMutator);
     }
 
-    public Builder pacemakerTimeout(long pacemakerTimeout) {
-      if (pacemakerTimeout <= 0) {
-        throw new IllegalArgumentException(
-            "Pacemaker timeout must be positive: " + pacemakerTimeout);
-      }
-      this.pacemakerTimeout = pacemakerTimeout;
-      return this;
-    }
-
     public DeterministicTest buildWithEpochs(Round epochMaxRound) {
       Objects.requireNonNull(epochMaxRound);
       modules.add(
           new FunctionalRadixNodeModule(
               true,
+              ConsensusConfig.of(),
               LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false)));
       addEpochedConsensusProcessorModule(epochMaxRound);
       return build(true);
@@ -219,6 +210,7 @@ public final class DeterministicTest {
       modules.add(
           new FunctionalRadixNodeModule(
               true,
+              ConsensusConfig.of(),
               LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true)));
       modules.add(new InMemoryCommittedReaderModule());
       modules.add(
@@ -232,10 +224,11 @@ public final class DeterministicTest {
       return build(true);
     }
 
-    public DeterministicTest buildWithoutEpochs() {
+    public DeterministicTest buildWithoutEpochs(ConsensusConfig consensusConfig) {
       modules.add(
           new FunctionalRadixNodeModule(
               false,
+              consensusConfig,
               LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false)));
       return build(false);
     }
@@ -246,11 +239,6 @@ public final class DeterministicTest {
             @Override
             public void configure() {
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-              bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
-              bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(pacemakerTimeout);
-              bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
-              // Use constant timeout for now
-              bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
               bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
               bind(Random.class).toInstance(new Random(123456));
             }

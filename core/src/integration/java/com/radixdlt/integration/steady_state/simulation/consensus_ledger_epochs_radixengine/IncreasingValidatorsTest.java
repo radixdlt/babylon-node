@@ -75,6 +75,7 @@ import com.radixdlt.harness.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
@@ -87,7 +88,6 @@ public class IncreasingValidatorsTest {
   private final Builder bftTestBuilder =
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .pacemakerTimeout(3000)
           .numNodes(50) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware
           // pacemaker
           .addRadixEngineConfigModules(
@@ -95,7 +95,7 @@ public class IncreasingValidatorsTest {
               new RadixEngineForksLatestOnlyModule(
                   RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
               new ForksModule())
-          .ledgerAndRadixEngineWithEpochMaxRound()
+          .ledgerAndRadixEngineWithEpochMaxRound(ConsensusConfig.of(3000))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
