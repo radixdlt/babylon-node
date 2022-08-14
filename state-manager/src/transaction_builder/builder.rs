@@ -73,7 +73,7 @@ use transaction::model::{
 
 pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
     let manifest = ManifestBuilder::new(Network::InternalTestnet)
-        .lock_fee(10.into(), SYSTEM_COMPONENT)
+        .lock_fee(1000.into(), SYSTEM_COMPONENT)
         .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
@@ -89,7 +89,7 @@ pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u
             nonce: 5,
             notary_public_key: public_key,
             notary_as_signatory: false,
-            cost_unit_limit: 1_000_000,
+            cost_unit_limit: 10_000_000,
             tip_percentage: 5,
         },
         manifest,

@@ -66,7 +66,6 @@ package com.radixdlt.address;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.RawTransaction;
 
 public final class ComponentAddress {
   public static void registerCodec(CodecMap codecMap) {

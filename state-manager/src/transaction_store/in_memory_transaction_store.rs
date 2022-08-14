@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use radix_engine::transaction::TransactionReceipt;
+use radix_engine::transaction::{TransactionReceipt, TransactionStatus};
 use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
 use std::collections::BTreeMap;
 
@@ -71,6 +71,7 @@ use std::collections::BTreeMap;
 /// TODO: with multithreaded structures.
 #[derive(Debug)]
 pub struct TemporaryTransactionReceipt {
+    pub result: String,
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
@@ -95,6 +96,11 @@ impl TransactionStore {
         receipt: TransactionReceipt,
     ) {
         let receipt = TemporaryTransactionReceipt {
+            result: match receipt.status {
+                TransactionStatus::Succeeded(..) => "Success".to_string(),
+                TransactionStatus::Failed(error) => error.to_string(),
+                TransactionStatus::Rejected => "Rejected".to_string(),
+            },
             new_package_addresses: receipt.new_package_addresses,
             new_component_addresses: receipt.new_component_addresses,
             new_resource_addresses: receipt.new_resource_addresses,

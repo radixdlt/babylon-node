@@ -77,18 +77,26 @@ public final class ExecutedTransactionReceipt {
         (codecs) ->
             StructCodec.with(
                 ExecutedTransactionReceipt::new,
+                codecs.of(String.class),
                 codecs.of(new TypeToken<byte[]>() {}),
                 codecs.of(new TypeToken<List<ComponentAddress>>() {}),
-                (t, encoder) -> encoder.encode(t.transactionBytes, t.newComponentAddresses)));
+                (t, encoder) ->
+                    encoder.encode(t.result, t.transactionBytes, t.newComponentAddresses)));
   }
 
+  private String result;
   private final byte[] transactionBytes;
   private final List<ComponentAddress> newComponentAddresses;
 
   private ExecutedTransactionReceipt(
-      byte[] transactionBytes, List<ComponentAddress> new_component_addressses) {
+      String result, byte[] transactionBytes, List<ComponentAddress> new_component_addressses) {
+    this.result = result;
     this.transactionBytes = transactionBytes;
     this.newComponentAddresses = new_component_addressses;
+  }
+
+  public String getResult() {
+    return result;
   }
 
   public byte[] getTransactionBytes() {

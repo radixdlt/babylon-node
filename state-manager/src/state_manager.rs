@@ -116,7 +116,7 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
                 max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                 system_loan: DEFAULT_SYSTEM_LOAN,
                 is_system: false,
-                trace: false,
+                trace: true,
             },
             intent_hash_manager: TestIntentHashManager::new(),
         }

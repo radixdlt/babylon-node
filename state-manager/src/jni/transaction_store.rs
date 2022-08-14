@@ -78,6 +78,7 @@ pub struct ComponentAddressWrapper {
 
 #[derive(Encode, Decode, TypeId)]
 pub struct ExecutedTransactionReceipt {
+    result: String,
     transaction_data: Vec<u8>,
     new_component_addresses: Vec<ComponentAddressWrapper>,
 }
@@ -107,6 +108,7 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
     }
 
     let executed_receipt = ExecutedTransactionReceipt {
+        result: receipt.result.to_string(),
         transaction_data: transaction_data.clone(),
         new_component_addresses,
     };

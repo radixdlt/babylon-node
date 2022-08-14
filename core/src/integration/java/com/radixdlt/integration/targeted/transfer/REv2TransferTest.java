@@ -64,7 +64,10 @@
 
 package com.radixdlt.integration.targeted.transfer;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.*;
+import com.radixdlt.address.ComponentAddress;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -72,7 +75,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -82,7 +84,6 @@ import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
@@ -90,6 +91,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.TestP2PModule;
+import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transaction.TransactionStoreReader;
@@ -101,17 +103,20 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.Test;
 
-public class REv2TransferTest {
+public final class REv2TransferTest {
 
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
   private static final BigInteger ONE_TOKEN = BigInteger.TEN.pow(18);
+  private static final BigInteger GENESIS_AMOUNT = BigInteger.valueOf(24_000_000_000L).multiply(ONE_TOKEN);
 
-    @Inject private DeterministicProcessor processor;
-    @Inject private MempoolInserter<RawTransaction> mempoolInserter;
-    @Inject private DeterministicNetwork network;
-    @Inject private TransactionStoreReader transactionStoreReader;
+  @Inject private DeterministicProcessor processor;
+  @Inject private DeterministicNetwork network;
 
-    private Injector createInjector() {
+  @Inject private MempoolInserter<RawTransaction> mempoolInserter;
+  @Inject private TransactionStoreReader transactionStoreReader;
+  @Inject private REv2StateReader stateReader;
+
+  private Injector createInjector() {
     return Guice.createInjector(
         new CryptoModule(),
         new TestMessagingModule.Builder().withDefaultRateLimit().build(),
@@ -174,20 +179,29 @@ public class REv2TransferTest {
   }
 
   @Test
-  public void state_reader_on_genesis_returns_correct_amount() throws Exception {
+  public void new_account_creates_transfer_of_xrd_to_account() throws Exception {
+    // Start single node network
     createInjector().injectMembers(this);
-
     var newAccountTransaction = createNewAccountTransaction();
-    mempoolInserter.addTransaction(newAccountTransaction);
-
     processor.start();
     for (int i = 0; i < 1000; i++) {
-        var msg = network.nextMessage().value();
-        processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+      var msg = network.nextMessage().value();
+      processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
     }
 
+    // Submit transaction to mempool and run consensus
+    mempoolInserter.addTransaction(newAccountTransaction);
+    for (int i = 0; i < 1000; i++) {
+      var msg = network.nextMessage().value();
+      processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+    }
 
+    // Check transaction and post submission state
     var receipt = transactionStoreReader.getTransactionAtStateVersion(1);
     var componentAddress = receipt.getNewComponentAddresses().get(0);
+    var accountAmount = stateReader.getComponentXrdAmount(componentAddress);
+    assertThat(accountAmount).isEqualTo(ONE_TOKEN.multiply(BigInteger.valueOf(1000000)));
+    var systemAmount = stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_COMPONENT_ADDRESS);
+    assertThat(systemAmount).isLessThan(GENESIS_AMOUNT);
   }
 }
