@@ -65,8 +65,10 @@
 package com.radixdlt.transaction;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.address.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import java.util.List;
 
 public final class ExecutedTransactionReceipt {
   public static void registerCodec(CodecMap codecMap) {
@@ -76,16 +78,24 @@ public final class ExecutedTransactionReceipt {
             StructCodec.with(
                 ExecutedTransactionReceipt::new,
                 codecs.of(new TypeToken<byte[]>() {}),
-                (t, encoder) -> encoder.encode(t.transactionBytes)));
+                codecs.of(new TypeToken<List<ComponentAddress>>() {}),
+                (t, encoder) -> encoder.encode(t.transactionBytes, t.newComponentAddresses)));
   }
 
   private final byte[] transactionBytes;
+  private final List<ComponentAddress> newComponentAddresses;
 
-  private ExecutedTransactionReceipt(byte[] transactionBytes) {
+  private ExecutedTransactionReceipt(
+      byte[] transactionBytes, List<ComponentAddress> new_component_addressses) {
     this.transactionBytes = transactionBytes;
+    this.newComponentAddresses = new_component_addressses;
   }
 
   public byte[] getTransactionBytes() {
     return transactionBytes;
+  }
+
+  public List<ComponentAddress> getNewComponentAddresses() {
+    return newComponentAddresses;
   }
 }

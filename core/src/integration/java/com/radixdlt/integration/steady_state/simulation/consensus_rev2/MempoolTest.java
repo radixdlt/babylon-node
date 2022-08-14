@@ -116,7 +116,8 @@ public class MempoolTest {
     for (var node : runningTest.getNetwork().getNodes()) {
       var store = runningTest.getNetwork().getInstance(TransactionStoreReader.class, node);
       var receipt = store.getTransactionAtStateVersion(1);
-      assertThat(receipt.getTransactionBytes()).isEqualTo(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+      assertThat(receipt.getTransactionBytes())
+          .isEqualTo(REv2ExampleTransactions.VALID_TXN_BYTES_0);
     }
   }
 }

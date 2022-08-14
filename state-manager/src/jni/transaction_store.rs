@@ -72,8 +72,14 @@ use jni::JNIEnv;
 use sbor::*;
 
 #[derive(Encode, Decode, TypeId)]
+pub struct ComponentAddressWrapper {
+    address: Vec<u8>,
+}
+
+#[derive(Encode, Decode, TypeId)]
 pub struct ExecutedTransactionReceipt {
     transaction_data: Vec<u8>,
+    new_component_addresses: Vec<ComponentAddressWrapper>,
 }
 
 impl JavaStructure for ExecutedTransactionReceipt {}
@@ -88,13 +94,21 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
     let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
 
     // Only get the lock for transaction store
-    let (transaction_data, _) = state_manager
+    let (transaction_data, receipt) = state_manager
         .state_manager
         .transaction_store
         .get_transaction(j_state_version as u64);
 
+    let mut new_component_addresses = Vec::new();
+    for component_address in &receipt.new_component_addresses {
+        new_component_addresses.push(ComponentAddressWrapper {
+            address: component_address.to_vec(),
+        })
+    }
+
     let executed_receipt = ExecutedTransactionReceipt {
         transaction_data: transaction_data.clone(),
+        new_component_addresses,
     };
     let result: StateManagerResult<ExecutedTransactionReceipt> = Ok(executed_receipt);
 

@@ -64,7 +64,21 @@
 
 package com.radixdlt.address;
 
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.transactions.RawTransaction;
+
 public final class ComponentAddress {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ComponentAddress.class,
+        codecs ->
+            StructCodec.with(
+                ComponentAddress::new,
+                codecs.of(byte[].class),
+                (t, encoder) -> encoder.encode(t.addressBytes)));
+  }
+
   private static final int COMPONENT_ADDRESS_BYTES_LENGTH = 27;
   public static final ComponentAddress SYSTEM_COMPONENT_ADDRESS =
       new ComponentAddress(

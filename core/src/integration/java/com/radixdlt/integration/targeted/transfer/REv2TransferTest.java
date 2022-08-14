@@ -71,6 +71,8 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.deterministic.DeterministicProcessor;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -78,6 +80,7 @@ import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.messaging.TestMessagingModule;
+import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.StateComputerConfig;
@@ -89,6 +92,7 @@ import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transaction.TransactionStoreReader;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
@@ -102,11 +106,14 @@ public class REv2TransferTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
   private static final BigInteger ONE_TOKEN = BigInteger.TEN.pow(18);
 
-  @Inject private MempoolInserter<RawTransaction> mempoolInserter;
+    @Inject private DeterministicProcessor processor;
+    @Inject private MempoolInserter<RawTransaction> mempoolInserter;
+    @Inject private DeterministicNetwork network;
+    @Inject private TransactionStoreReader transactionStoreReader;
 
-  private Injector createInjector() {
+    private Injector createInjector() {
     return Guice.createInjector(
-        new MockedCryptoModule(),
+        new CryptoModule(),
         new TestMessagingModule.Builder().withDefaultRateLimit().build(),
         new MockedLedgerRecoveryModule(),
         new MockedConsensusRecoveryModule.Builder()
@@ -172,5 +179,15 @@ public class REv2TransferTest {
 
     var newAccountTransaction = createNewAccountTransaction();
     mempoolInserter.addTransaction(newAccountTransaction);
+
+    processor.start();
+    for (int i = 0; i < 1000; i++) {
+        var msg = network.nextMessage().value();
+        processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+    }
+
+
+    var receipt = transactionStoreReader.getTransactionAtStateVersion(1);
+    var componentAddress = receipt.getNewComponentAddresses().get(0);
   }
 }
