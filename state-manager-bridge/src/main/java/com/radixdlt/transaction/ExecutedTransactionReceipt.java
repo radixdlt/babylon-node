@@ -65,7 +65,7 @@
 package com.radixdlt.transaction;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.address.ComponentAddress;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import java.util.List;

@@ -104,10 +104,13 @@ public enum TypeId {
   TYPE_MAP(0x32),
 
   // Custom Start
-  TYPE_CUSTOM_START(0x80), // custom types start from 0x80 and values are encoded as `len + data`
-  TYPE_COMPONENT_ADDRESS(0x81),
-  TYPE_ECDSA_PUBLIC_KEY(0x91),
-  TYPE_ECDSA_SIGNATURE(0x92);
+  // custom types start from 0x80 and values are encoded as `len + data`
+  TYPE_CUSTOM_PACKAGE_ADDRESS(0x80),
+  TYPE_CUSTOM_COMPONENT_ADDRESS(0x81),
+  TYPE_CUSTOM_ECDSA_PUBLIC_KEY(0x91),
+  TYPE_CUSTOM_ECDSA_SIGNATURE(0x92),
+  TYPE_CUSTOM_DECIMAL(0xA1),
+  TYPE_CUSTOM_RESOURCE_ADDRESS(0xB6);
 
   private final byte id;
 

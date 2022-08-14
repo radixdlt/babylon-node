@@ -69,7 +69,7 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.CustomCodec;
+import com.radixdlt.sbor.codec.CustomTypeCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -95,8 +95,8 @@ public final class ECDSASignature {
     codecMap.register(
         ECDSASignature.class,
         codecs ->
-            new CustomCodec<>(
-                TypeId.TYPE_ECDSA_SIGNATURE,
+            new CustomTypeCodec<>(
+                TypeId.TYPE_CUSTOM_ECDSA_SIGNATURE,
                 ECDSASignature::getBytes,
                 k -> {
                   throw new UnsupportedOperationException("Decoding unsupported.");

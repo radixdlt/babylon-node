@@ -64,7 +64,6 @@
 
 package com.radixdlt.rev2;
 
-import com.radixdlt.address.ComponentAddress;
 import java.math.BigInteger;
 
 /** Reads REv2 state */

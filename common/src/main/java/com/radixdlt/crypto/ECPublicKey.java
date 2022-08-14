@@ -71,7 +71,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.CustomCodec;
+import com.radixdlt.sbor.codec.CustomTypeCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.Bytes;
@@ -87,8 +87,8 @@ public final class ECPublicKey {
     codecMap.register(
         ECPublicKey.class,
         codecs ->
-            new CustomCodec<>(
-                TypeId.TYPE_ECDSA_PUBLIC_KEY,
+            new CustomTypeCodec<>(
+                TypeId.TYPE_CUSTOM_ECDSA_PUBLIC_KEY,
                 ECPublicKey::getCompressedBytes,
                 k -> new ECPublicKey(ECKeyUtils.spec().getCurve().decodePoint(k))));
   }

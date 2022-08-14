@@ -69,6 +69,7 @@ import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.common.HandlerRoute;
 import com.radixdlt.api.core.routes.status.NetworkConfigurationHandler;
 import com.radixdlt.api.core.routes.status.NetworkSyncStatusHandler;
+import com.radixdlt.api.core.routes.transaction.TransactionPreviewHandler;
 import com.radixdlt.api.core.routes.transaction.TransactionSubmitHandler;
 import io.undertow.server.HttpHandler;
 
@@ -87,6 +88,7 @@ public class CoreApiModule extends AbstractModule {
     addRoute(routeBinder, "/status/network-configuration", NetworkConfigurationHandler.class);
     addRoute(routeBinder, "/status/network-sync", NetworkSyncStatusHandler.class);
     addRoute(routeBinder, "/transaction/submit", TransactionSubmitHandler.class);
+    addRoute(routeBinder, "/transaction/preview", TransactionPreviewHandler.class);
   }
 
   private void addRoute(

@@ -67,7 +67,6 @@ package com.radixdlt.integration.targeted.genesis;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.*;
-import com.radixdlt.address.ComponentAddress;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -86,6 +85,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.TestP2PModule;
+import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.utils.PrivateKeys;

@@ -66,12 +66,15 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
+import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerBackoffRate;
 import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
+import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
@@ -83,13 +86,21 @@ import com.radixdlt.rev1.modules.RadixEngineStoreModule;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.TimeSupplier;
+import java.util.List;
 
 /** Helper class for modules to be used for recovery tests. */
 public final class PersistedNodeForTestingModule extends AbstractModule {
   private final ECKeyPair keyPair;
+  private final StateComputerConfig stateComputerConfig;
 
   public PersistedNodeForTestingModule(ECKeyPair keyPair) {
     this.keyPair = keyPair;
+    this.stateComputerConfig = StateComputerConfig.rev1();
+  }
+
+  public PersistedNodeForTestingModule(ECKeyPair keyPair, StateComputerConfig stateComputerConfig) {
+    this.keyPair = keyPair;
+    this.stateComputerConfig = stateComputerConfig;
   }
 
   @Override
@@ -110,10 +121,23 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 
     install(new InMemoryBFTKeyModule(keyPair));
     install(new CryptoModule());
-    install(new FunctionalRadixNodeModule());
+    install(new FunctionalRadixNodeModule(stateComputerConfig));
     install(new RadixEngineStoreModule());
     install(new PersistenceModule());
-    install(new ConsensusRecoveryModule());
-    install(new LedgerRecoveryModule());
+    switch (stateComputerConfig) {
+      case StateComputerConfig.REv2StateComputerConfig unused -> {
+        // FIXME: a hack for tests that use rev2 (api); fix once ledger/consensus recovery are
+        // hooked up
+        install(new MockedLedgerRecoveryModule());
+        install(
+            new MockedConsensusRecoveryModule.Builder()
+                .withNodes(List.of(BFTNode.random()))
+                .build());
+      }
+      default -> {
+        install(new LedgerRecoveryModule());
+        install(new ConsensusRecoveryModule());
+      }
+    }
   }
 }

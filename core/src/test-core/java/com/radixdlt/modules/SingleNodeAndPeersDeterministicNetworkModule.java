@@ -81,14 +81,21 @@ import java.util.stream.Stream;
 /** Module which injects a full one node network */
 public final class SingleNodeAndPeersDeterministicNetworkModule extends AbstractModule {
   private final ECKeyPair self;
+  private final StateComputerConfig stateComputerConfig;
 
   public SingleNodeAndPeersDeterministicNetworkModule(ECKeyPair self) {
+    this(self, StateComputerConfig.rev1());
+  }
+
+  public SingleNodeAndPeersDeterministicNetworkModule(
+      ECKeyPair self, StateComputerConfig stateComputerConfig) {
     this.self = self;
+    this.stateComputerConfig = stateComputerConfig;
   }
 
   @Override
   protected void configure() {
-    install(new PersistedNodeForTestingModule(self));
+    install(new PersistedNodeForTestingModule(self, stateComputerConfig));
   }
 
   @Provides

@@ -63,123 +63,103 @@
  */
 
 use crate::jni::dtos::JavaStructure;
-use jni::objects::{JClass, JObject};
-use jni::sys::{jbyteArray, jlong};
-use jni::JNIEnv;
-use scrypto::prelude::*;
+use radix_engine::fee::FeeSummary;
+use radix_engine::transaction::{PreviewResult, TransactionStatus};
+use sbor::{Decode, Encode, TypeId};
+use scrypto::component::{ComponentAddress, PackageAddress};
+use scrypto::core::Level;
+use scrypto::math::Decimal;
+use scrypto::prelude::ResourceAddress;
 
-use crate::jni::state_manager::JNIStateManager;
-use crate::jni::utils::*;
-use crate::mempool::Mempool;
 use crate::result::StateManagerResult;
-use crate::types::Transaction;
+use crate::types::PreviewError;
 
-//
-// JNI Interface
-//
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = do_verify(&env, j_state, j_payload).to_java();
-
-    jni_slice_to_jbytearray(&env, &ret)
+#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+pub struct PreviewErrorJava {
+    message: String,
 }
 
-fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<bool> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transaction = Transaction::from_java(&request_payload)?;
-    let result = state_manager.state_manager.decode_transaction(&transaction);
-    Ok(result.is_ok())
-}
+impl JavaStructure for PreviewErrorJava {}
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-    j_state_version: jlong,
-) -> jbyteArray {
-    let ret = do_commit(&env, j_state, j_payload, j_state_version).to_java();
-
-    jni_slice_to_jbytearray(&env, &ret)
-}
-
-fn do_commit(
-    env: &JNIEnv,
-    j_state: JObject,
-    j_payload: jbyteArray,
-    j_state_version: jlong,
-) -> StateManagerResult<()> {
-    let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transactions = Vec::<Transaction>::from_java(&request_payload)?;
-
-    let mut to_store = Vec::new();
-    for transaction in &transactions {
-        let validated_txn = state_manager
-            .state_manager
-            .decode_transaction(transaction)
-            .expect("Error on Byzantine quorum");
-
-        let receipt = state_manager
-            .state_manager
-            .execute_transaction(validated_txn)
-            .expect("Error on Byzantine quorum");
-
-        to_store.push((transaction.payload.clone(), receipt))
+impl From<PreviewError> for StateManagerResult<PreviewErrorJava> {
+    fn from(err: PreviewError) -> Self {
+        let msg: String = match err {
+            PreviewError::InvalidManifest => "Invalid manifest".to_string(),
+            PreviewError::InvalidSignerPublicKey => "Invalid signer public key".to_string(),
+            PreviewError::EngineError(engine_preview_error) => {
+                format!("Preview execution failed: {:?}", engine_preview_error)
+            }
+        };
+        Ok(PreviewErrorJava { message: msg })
     }
+}
 
-    for (i, (txn_bytes, receipt)) in to_store.into_iter().enumerate() {
-        let state_version =
-            j_state_version as u64 - u64::try_from(transactions.len() - i - 1).unwrap();
-        state_manager
-            .state_manager
-            .transaction_store
-            .insert_transaction(state_version, txn_bytes, receipt);
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum TransactionStatusJava {
+    Rejected,
+    Succeeded(Vec<Vec<u8>>),
+    Failed(String),
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct FeeSummaryJava {
+    pub loan_fully_repaid: bool,
+    pub cost_unit_limit: u32,
+    pub cost_units_consumed: u32,
+    pub cost_unit_price: Decimal,
+    pub tip_percentage: u32,
+    pub burned: Decimal,
+    pub tipped: Decimal,
+}
+
+impl From<FeeSummary> for FeeSummaryJava {
+    fn from(fee_summary: FeeSummary) -> Self {
+        FeeSummaryJava {
+            loan_fully_repaid: fee_summary.loan_fully_repaid,
+            cost_unit_limit: fee_summary.cost_unit_limit,
+            cost_units_consumed: fee_summary.cost_unit_consumed,
+            cost_unit_price: fee_summary.cost_unit_price,
+            tip_percentage: fee_summary.tip_percentage,
+            burned: fee_summary.burned,
+            tipped: fee_summary.tipped,
+        }
     }
-
-    state_manager
-        .state_manager
-        .mempool
-        .handle_committed_transactions(&transactions);
-
-    Ok(())
 }
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_xrd(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = get_component_xrd(&env, j_state, j_payload).to_java();
-
-    jni_slice_to_jbytearray(&env, &ret)
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct PreviewResultJava {
+    status: TransactionStatusJava,
+    fee_summary: FeeSummaryJava,
+    application_logs: Vec<(Level, String)>,
+    new_package_addresses: Vec<PackageAddress>,
+    new_component_addresses: Vec<ComponentAddress>,
+    new_resource_addresses: Vec<ResourceAddress>,
 }
 
-fn get_component_xrd(
-    env: &JNIEnv,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> StateManagerResult<Vec<u8>> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload = jni_jbytearray_to_vector(env, j_payload)?;
-    let component_address =
-        ComponentAddress::try_from(request_payload.as_slice()).expect("Invalid address");
-    let resources = state_manager
-        .state_manager
-        .get_component_resources(component_address);
-    let amount = resources
-        .get(&RADIX_TOKEN)
-        .cloned()
-        .unwrap_or_else(Decimal::zero);
-    Ok(amount.to_vec())
+impl JavaStructure for PreviewResultJava {}
+
+impl From<PreviewResult> for PreviewResultJava {
+    fn from(result: PreviewResult) -> Self {
+        let receipt = result.receipt;
+        PreviewResultJava {
+            status: receipt.status.into(),
+            fee_summary: receipt.fee_summary.into(),
+            application_logs: receipt.application_logs,
+            new_package_addresses: receipt.new_package_addresses,
+            new_component_addresses: receipt.new_component_addresses,
+            new_resource_addresses: receipt.new_resource_addresses,
+        }
+    }
+}
+
+impl From<TransactionStatus> for TransactionStatusJava {
+    fn from(status: TransactionStatus) -> Self {
+        match status {
+            TransactionStatus::Rejected => TransactionStatusJava::Rejected,
+            TransactionStatus::Succeeded(output) => TransactionStatusJava::Succeeded(output),
+            TransactionStatus::Failed(error) => {
+                TransactionStatusJava::Failed(format!("{:?}", error))
+            }
+        }
+    }
 }

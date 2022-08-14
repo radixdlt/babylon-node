@@ -62,32 +62,39 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor.codec;
+package com.radixdlt.rev2;
 
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.CustomTypeCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
-import com.radixdlt.sbor.coding.DecoderApi;
-import com.radixdlt.sbor.coding.EncoderApi;
-import java.util.function.Function;
+import java.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
-public record CustomCodec<T>(TypeId typeId, Function<T, byte[]> encode, Function<byte[], T> decode)
-    implements Codec<T> {
+public record PackageAddress(byte[] value) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PackageAddress.class,
+        codecs ->
+            new CustomTypeCodec<>(
+                TypeId.TYPE_CUSTOM_PACKAGE_ADDRESS, PackageAddress::value, PackageAddress::new));
+  }
 
-  @Override
-  public TypeId getTypeId() {
-    return typeId;
+  public String toHexString() {
+    return Hex.toHexString(value);
   }
 
   @Override
-  public void encodeWithoutTypeId(EncoderApi encoder, T value) {
-    var bytes = this.encode.apply(value);
-    encoder.writeInt(bytes.length);
-    encoder.writeBytes(bytes);
+  public String toString() {
+    return toHexString();
   }
 
   @Override
-  public T decodeWithoutTypeId(DecoderApi decoder) {
-    var length = decoder.readInt();
-    var bytes = decoder.readBytes(length);
-    return this.decode.apply(bytes);
+  public int hashCode() {
+    return Arrays.hashCode(value);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof PackageAddress other && Arrays.equals(this.value, other.value);
   }
 }

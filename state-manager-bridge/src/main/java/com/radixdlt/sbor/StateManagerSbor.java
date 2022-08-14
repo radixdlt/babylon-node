@@ -65,7 +65,6 @@
 package com.radixdlt.sbor;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.address.ComponentAddress;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
@@ -74,11 +73,19 @@ import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
 import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
 import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.rev2.*;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.statecomputer.preview.FeeSummary;
+import com.radixdlt.statecomputer.preview.PreviewError;
+import com.radixdlt.statecomputer.preview.PreviewFlags;
+import com.radixdlt.statecomputer.preview.PreviewRequest;
+import com.radixdlt.statecomputer.preview.PreviewResult;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transaction.ExecutedTransactionReceipt;
 import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
 public final class StateManagerSbor {
 
@@ -93,16 +100,28 @@ public final class StateManagerSbor {
   }
 
   public static void registerCodecsWithCodecMap(CodecMap codecMap) {
+    UInt32.registerCodec(codecMap);
+    UInt64.registerCodec(codecMap);
     RustMempoolConfig.registerCodec(codecMap);
     StateManagerConfig.registerCodec(codecMap);
     RawTransaction.registerCodec(codecMap);
+    PreviewFlags.registerCodec(codecMap);
+    PreviewRequest.registerCodec(codecMap);
+    PreviewResult.registerCodec(codecMap);
+    PreviewError.registerCodec(codecMap);
+    TransactionStatus.registerCodec(codecMap);
+    Decimal.registerCodec(codecMap);
+    LogLevel.registerCodec(codecMap);
+    ComponentAddress.registerCodec(codecMap);
+    PackageAddress.registerCodec(codecMap);
+    ResourceAddress.registerCodec(codecMap);
+    FeeSummary.registerCodec(codecMap);
     TID.registerCodec(codecMap);
     StateManagerRuntimeError.registerCodec(codecMap);
     MempoolError.registerCodec(codecMap);
     GetTransactionsForProposalRustArgs.registerCodec(codecMap);
     GetRelayedTransactionsRustArgs.registerCodec(codecMap);
     ExecutedTransactionReceipt.registerCodec(codecMap);
-    ComponentAddress.registerCodec(codecMap);
     ECPublicKey.registerCodec(codecMap);
     ECDSASignature.registerCodec(codecMap);
   }

@@ -64,25 +64,32 @@
 
 use crate::jni::dtos::*;
 use crate::mempool::{Mempool, MempoolConfig};
+use crate::query::ResourceAccounter;
 use crate::transaction_store::TransactionStore;
-use crate::types::Transaction;
+use crate::types::{PreviewError, PreviewRequest, Transaction};
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore};
-use radix_engine::transaction::{ExecutionConfig, TransactionExecutor, TransactionReceipt};
+use radix_engine::transaction::{
+    ExecutionConfig, PreviewExecutor, PreviewResult, TransactionExecutor, TransactionReceipt,
+};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::core::Network;
 use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
+use scrypto::prelude::{scrypto_decode, EcdsaPublicKey};
 use std::collections::HashMap;
 use transaction::errors::TransactionValidationError;
-
-use crate::query::ResourceAccounter;
-use transaction::model::ValidatedTransaction;
+use transaction::model::{
+    PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent, TransactionManifest,
+    ValidatedTransaction,
+};
+use transaction::signing::EcdsaPrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
 pub struct StateManager<M: Mempool, S> {
+    pub network: Network,
     pub mempool: M,
     pub transaction_store: TransactionStore,
     substate_store: S,
@@ -100,6 +107,7 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
         substate_store: S,
     ) -> StateManager<M, S> {
         StateManager {
+            network: Network::LocalSimulator,
             mempool,
             transaction_store,
             substate_store,
@@ -145,6 +153,57 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
             &self.intent_hash_manager,
             &self.validation_config,
         )
+    }
+
+    pub fn preview(
+        &mut self,
+        preview_request: &PreviewRequest,
+    ) -> Result<PreviewResult, PreviewError> {
+        let manifest: TransactionManifest =
+            scrypto_decode(&preview_request.manifest).map_err(|_| PreviewError::InvalidManifest)?;
+
+        let signer_public_keys: Result<Vec<EcdsaPublicKey>, PreviewError> = preview_request
+            .signer_public_keys
+            .iter()
+            .map(|pk| {
+                EcdsaPublicKey::try_from(&pk[..]).map_err(|_| PreviewError::InvalidSignerPublicKey)
+            })
+            .collect();
+
+        // not really used for preview
+        let notary_private_key = EcdsaPrivateKey::from_u64(2).unwrap();
+
+        let preview_intent = PreviewIntent {
+            intent: TransactionIntent {
+                header: TransactionHeader {
+                    version: 1,
+                    network: self.network.clone(),
+                    start_epoch_inclusive: 0,
+                    end_epoch_exclusive: 100,
+                    nonce: preview_request.nonce,
+                    notary_public_key: notary_private_key.public_key(),
+                    notary_as_signatory: false,
+                    cost_unit_limit: preview_request.cost_unit_limit,
+                    tip_percentage: preview_request.tip_percentage,
+                },
+                manifest,
+            },
+            signer_public_keys: signer_public_keys?,
+            flags: PreviewFlags {
+                unlimited_loan: preview_request.flags.unlimited_loan,
+            },
+        };
+
+        let result = PreviewExecutor::new(
+            &mut self.substate_store,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
+            &self.intent_hash_manager,
+        )
+        .execute(preview_intent)
+        .map_err(PreviewError::EngineError)?;
+
+        Ok(result)
     }
 }
 
