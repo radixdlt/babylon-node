@@ -118,8 +118,9 @@ public class RustStateComputer {
   }
 
   public BigInteger getComponentXrdAmount(ComponentAddress componentAddress) {
-    // TODO: Use SBOR custom component address codec
-    var encodedResponse = xrd(this.rustState, componentAddress.value());
+    final var encodedRequest =
+        StateManagerSbor.sbor.encode(componentAddress, ComponentAddress.class);
+    var encodedResponse = componentXrdAmount(this.rustState, encodedRequest);
     var amount = StateManagerResponse.decode(encodedResponse, byteArrayType);
     return new BigInteger(1, Arrays.reverse(amount));
   }
@@ -157,5 +158,6 @@ public class RustStateComputer {
   private static native byte[] commit(
       StateManager.RustState rustState, byte[] encodedTransaction, long committedStateVersion);
 
-  private static native byte[] xrd(StateManager.RustState rustState, byte[] encodedArgs);
+  private static native byte[] componentXrdAmount(
+      StateManager.RustState rustState, byte[] encodedArgs);
 }

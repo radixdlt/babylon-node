@@ -68,7 +68,7 @@ use std::collections::BTreeMap;
 
 /// TODO: Remove and use the real TransactionReceipt. This is currently a required struct
 /// TODO: as there is RC<RefCell<>> useage in some of the substates which does not play well
-/// TODO: with multithreaded structures.
+/// TODO: with the babylon node multithreaded structures.
 #[derive(Debug)]
 pub struct TemporaryTransactionReceipt {
     pub result: String,

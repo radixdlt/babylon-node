@@ -183,7 +183,7 @@ fn do_commit(
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_xrd(
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXrdAmount(
     env: JNIEnv,
     _class: JClass,
     j_state: JObject,
@@ -201,8 +201,7 @@ fn get_component_xrd(
 ) -> StateManagerResult<Vec<u8>> {
     let state_manager = JNIStateManager::get_state_manager(env, j_state);
     let request_payload = jni_jbytearray_to_vector(env, j_payload)?;
-    let component_address =
-        ComponentAddress::try_from(request_payload.as_slice()).expect("Invalid address");
+    let component_address = ComponentAddress::from_java(&request_payload)?;
     let resources = state_manager
         .state_manager
         .get_component_resources(component_address);

@@ -86,15 +86,11 @@ struct GetTransactionArgs {
     prepared_transactions: Vec<Transaction>,
 }
 
-impl JavaStructure for GetRelayTransactionsArgs {}
-
 #[derive(Encode, Decode, TypeId)]
 struct GetRelayTransactionsArgs {
     initial_delay_millis: u64,
     repeat_delay_millis: u64,
 }
-
-impl JavaStructure for GetTransactionArgs {}
 
 //
 // JNI Interface
@@ -229,8 +225,6 @@ enum MempoolErrorJava {
     Duplicate,
     TransactionValidationError(String),
 }
-
-impl JavaStructure for MempoolErrorJava {}
 
 impl From<MempoolError> for StateManagerResult<MempoolErrorJava> {
     fn from(err: MempoolError) -> Self {

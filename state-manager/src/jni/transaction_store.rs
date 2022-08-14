@@ -79,8 +79,6 @@ pub struct ExecutedTransactionReceipt {
     new_component_addresses: Vec<ComponentAddress>,
 }
 
-impl JavaStructure for ExecutedTransactionReceipt {}
-
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransactionAtStateVersion(
     env: JNIEnv,

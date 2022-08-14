@@ -222,5 +222,3 @@ impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager
 pub struct StateManagerConfig {
     pub mempool_config: Option<MempoolConfig>,
 }
-
-impl JavaStructure for StateManagerConfig {}
