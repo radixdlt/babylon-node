@@ -130,11 +130,7 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
         }
     }
 
-    pub fn commit(
-        &mut self,
-        transactions: Vec<Transaction>,
-        state_version: u64
-    ) {
+    pub fn commit(&mut self, transactions: Vec<Transaction>, state_version: u64) {
         let mut to_store = Vec::new();
         for transaction in &transactions {
             let validated_txn = self
@@ -149,16 +145,13 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
         }
 
         for (i, (txn_bytes, receipt)) in to_store.into_iter().enumerate() {
-            let txn_state_version = state_version
-                - u64::try_from(transactions.len() - i - 1).unwrap();
-            self
-                .transaction_store
+            let txn_state_version =
+                state_version - u64::try_from(transactions.len() - i - 1).unwrap();
+            self.transaction_store
                 .insert_transaction(txn_state_version, txn_bytes, receipt);
         }
 
-        self
-            .mempool
-            .handle_committed_transactions(&transactions);
+        self.mempool.handle_committed_transactions(&transactions);
     }
 
     fn execute_transaction(
@@ -242,10 +235,11 @@ impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager
     pub fn get_component_resources(
         &self,
         component_address: ComponentAddress,
-    ) -> HashMap<ResourceAddress, Decimal> {
+    ) -> Option<HashMap<ResourceAddress, Decimal>> {
         let mut resource_accounter = ResourceAccounter::new(&self.substate_store);
-        resource_accounter.add_resources(RENodeId::Component(component_address));
-        resource_accounter.into_map()
+        resource_accounter
+            .add_resources(RENodeId::Component(component_address))
+            .map_or(Option::None, |()| Some(resource_accounter.into_map()))
     }
 }
 

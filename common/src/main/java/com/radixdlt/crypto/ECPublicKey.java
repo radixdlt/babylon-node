@@ -90,7 +90,7 @@ public final class ECPublicKey {
             new CustomTypeCodec<>(
                 TypeId.TYPE_CUSTOM_ECDSA_PUBLIC_KEY,
                 ECPublicKey::getCompressedBytes,
-                k -> new ECPublicKey(ECKeyUtils.spec().getCurve().decodePoint(k))));
+                ECPublicKey::fromCompressedBytesUnchecked));
   }
 
   public static final int COMPRESSED_BYTES = 33; // 32 + header byte
@@ -149,6 +149,10 @@ public final class ECPublicKey {
 
   public byte[] getCompressedBytes() {
     return compressed;
+  }
+
+  private static ECPublicKey fromCompressedBytesUnchecked(byte[] key) {
+    return new ECPublicKey(ECKeyUtils.spec().getCurve().decodePoint(key));
   }
 
   public boolean verify(HashCode hash, ECDSASignature signature) {

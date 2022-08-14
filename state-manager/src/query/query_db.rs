@@ -71,6 +71,11 @@ use scrypto::values::ScryptoValue;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
+#[derive(Debug)]
+pub enum ResourceAccounterError {
+    RENodeNotFound(RENodeId),
+}
+
 pub struct ResourceAccounter<'s, S: ReadableSubstateStore + QueryableSubstateStore> {
     substate_store: &'s S,
     accounting: HashMap<ResourceAddress, Decimal>,
@@ -84,7 +89,7 @@ impl<'s, S: ReadableSubstateStore + QueryableSubstateStore> ResourceAccounter<'s
         }
     }
 
-    pub fn add_resources(&mut self, node_id: RENodeId) {
+    pub fn add_resources(&mut self, node_id: RENodeId) -> Result<(), ResourceAccounterError> {
         match node_id {
             RENodeId::Vault(vault_id) => {
                 if let Some(output_value) = self
@@ -101,6 +106,8 @@ impl<'s, S: ReadableSubstateStore + QueryableSubstateStore> ResourceAccounter<'s
                             e.insert(vault.total_amount());
                         }
                     }
+                } else {
+                    return Err(ResourceAccounterError::RENodeNotFound(node_id));
                 }
             }
             RENodeId::KeyValueStore(kv_store_id) => {
@@ -108,9 +115,11 @@ impl<'s, S: ReadableSubstateStore + QueryableSubstateStore> ResourceAccounter<'s
                 for (_, v) in map.iter() {
                     if let Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(Some(entry))) = v
                     {
-                        let value = ScryptoValue::from_slice(entry).unwrap();
+                        let value = ScryptoValue::from_slice(entry)
+                            .expect("Key Value Store Entry should be parseable.");
                         for child_node_id in value.stored_node_ids() {
                             self.add_resources(child_node_id)
+                                .expect("Broken Node Store");
                         }
                     }
                 }
@@ -121,14 +130,20 @@ impl<'s, S: ReadableSubstateStore + QueryableSubstateStore> ResourceAccounter<'s
                     .get_substate(&SubstateId::ComponentState(component_address))
                 {
                     let component_state: ComponentState = output_value.substate.into();
-                    let value = ScryptoValue::from_slice(component_state.state()).unwrap();
+                    let value = ScryptoValue::from_slice(component_state.state())
+                        .expect("Component should be parseable.");
                     for child_node_id in value.stored_node_ids() {
                         self.add_resources(child_node_id)
+                            .expect("Broken Node Store");
                     }
+                } else {
+                    return Err(ResourceAccounterError::RENodeNotFound(node_id));
                 }
             }
             _ => {}
-        }
+        };
+
+        Ok(())
     }
 
     pub fn into_map(self) -> HashMap<ResourceAddress, Decimal> {

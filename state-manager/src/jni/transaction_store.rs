@@ -88,7 +88,6 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
 ) -> jbyteArray {
     let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
 
-    // Only get the lock for transaction store
     let (transaction_data, receipt) = state_manager
         .state_manager
         .transaction_store

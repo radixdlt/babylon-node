@@ -103,7 +103,7 @@ public final class REv2GenesisTest {
 
   private Injector createInjector() {
     return Guice.createInjector(
-        new MockedCryptoModule(),
+        new CryptoModule(),
         new TestMessagingModule.Builder().withDefaultRateLimit().build(),
         new MockedLedgerRecoveryModule(),
         new MockedConsensusRecoveryModule.Builder()

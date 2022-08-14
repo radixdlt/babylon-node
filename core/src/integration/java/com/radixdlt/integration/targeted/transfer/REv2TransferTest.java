@@ -110,7 +110,6 @@ public final class REv2TransferTest {
 
   @Inject private DeterministicProcessor processor;
   @Inject private DeterministicNetwork network;
-
   @Inject private MempoolInserter<RawTransaction> mempoolInserter;
   @Inject private TransactionStoreReader transactionStoreReader;
   @Inject private REv2StateReader stateReader;

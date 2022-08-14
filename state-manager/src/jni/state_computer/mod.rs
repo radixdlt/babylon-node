@@ -142,7 +142,9 @@ fn do_commit(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateMana
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
     let commit_request = CommitRequest::from_java(&request_payload)?;
 
-    state_manager.state_manager.commit(commit_request.transactions, commit_request.state_version);
+    state_manager
+        .state_manager
+        .commit(commit_request.transactions, commit_request.state_version);
     Ok(())
 }
 
@@ -169,8 +171,7 @@ fn get_component_xrd(
         .state_manager
         .get_component_resources(component_address);
     let amount = resources
-        .get(&RADIX_TOKEN)
-        .cloned()
+        .map(|r| r.get(&RADIX_TOKEN).cloned().unwrap_or_else(Decimal::zero))
         .unwrap_or_else(Decimal::zero);
     Ok(amount)
 }
