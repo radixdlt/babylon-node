@@ -76,6 +76,7 @@ import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.*;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.preview.FeeSummary;
 import com.radixdlt.statecomputer.preview.PreviewError;
 import com.radixdlt.statecomputer.preview.PreviewFlags;
@@ -124,6 +125,7 @@ public final class StateManagerSbor {
     ExecutedTransactionReceipt.registerCodec(codecMap);
     ECPublicKey.registerCodec(codecMap);
     ECDSASignature.registerCodec(codecMap);
+    CommitRequest.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

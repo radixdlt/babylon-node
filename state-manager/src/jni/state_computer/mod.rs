@@ -67,7 +67,7 @@ mod dto;
 use crate::jni::dtos::JavaStructure;
 use dto::*;
 use jni::objects::{JClass, JObject};
-use jni::sys::{jbyteArray, jlong};
+use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use scrypto::prelude::*;
 
@@ -75,7 +75,7 @@ use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
 use crate::mempool::Mempool;
 use crate::result::{ResultStateManagerMaps, StateManagerResult};
-use crate::types::{PreviewRequest, Transaction};
+use crate::types::{CommitRequest, PreviewRequest, Transaction};
 
 //
 // JNI Interface
@@ -133,25 +133,19 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     _class: JClass,
     j_state: JObject,
     j_payload: jbyteArray,
-    j_state_version: jlong,
 ) -> jbyteArray {
-    let ret = do_commit(&env, j_state, j_payload, j_state_version).to_java();
+    let ret = do_commit(&env, j_state, j_payload).to_java();
 
     jni_slice_to_jbytearray(&env, &ret)
 }
 
-fn do_commit(
-    env: &JNIEnv,
-    j_state: JObject,
-    j_payload: jbyteArray,
-    j_state_version: jlong,
-) -> StateManagerResult<()> {
+fn do_commit(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<()> {
     let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transactions = Vec::<Transaction>::from_java(&request_payload)?;
+    let commit_request = CommitRequest::from_java(&request_payload)?;
 
     let mut to_store = Vec::new();
-    for transaction in &transactions {
+    for transaction in &commit_request.transactions {
         let validated_txn = state_manager
             .state_manager
             .decode_transaction(transaction)
@@ -166,8 +160,9 @@ fn do_commit(
     }
 
     for (i, (txn_bytes, receipt)) in to_store.into_iter().enumerate() {
-        let state_version =
-            j_state_version as u64 - u64::try_from(transactions.len() - i - 1).unwrap();
+        let state_version = commit_request.state_version
+            - u64::try_from(commit_request.transactions.len() - i - 1).unwrap();
+        println!("StateVersion: {}", state_version);
         state_manager
             .state_manager
             .transaction_store
@@ -177,7 +172,7 @@ fn do_commit(
     state_manager
         .state_manager
         .mempool
-        .handle_committed_transactions(&transactions);
+        .handle_committed_transactions(&commit_request.transactions);
 
     Ok(())
 }

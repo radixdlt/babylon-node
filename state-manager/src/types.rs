@@ -93,3 +93,9 @@ pub enum PreviewError {
     InvalidSignerPublicKey,
     EngineError(EnginePreviewError),
 }
+
+#[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
+pub struct CommitRequest {
+    pub transactions: Vec<Transaction>,
+    pub state_version: u64,
+}

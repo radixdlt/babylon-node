@@ -73,6 +73,7 @@ import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.preview.PreviewError;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
 import com.radixdlt.statecomputer.preview.PreviewResult;
@@ -121,10 +122,9 @@ public class RustStateComputer {
         RustStateComputer::componentXrdAmount);
   }
 
-  public void commit(List<RawTransaction> transactions, long committedStateVersion) {
-    var encodedTransactions =
-        StateManagerSbor.sbor.encode(transactions, new TypeToken<List<RawTransaction>>() {});
-    commit(this.rustState, encodedTransactions, committedStateVersion);
+  public void commit(CommitRequest commitRequest) {
+    final var encodedRequest = StateManagerSbor.sbor.encode(commitRequest, CommitRequest.class);
+    commit(this.rustState, encodedRequest);
   }
 
   public boolean verify(RawTransaction transaction) {
@@ -151,8 +151,7 @@ public class RustStateComputer {
 
   private static native byte[] preview(StateManager.RustState rustState, byte[] encodedArgs);
 
-  private static native byte[] commit(
-      StateManager.RustState rustState, byte[] encodedTransaction, long committedStateVersion);
+  private static native byte[] commit(StateManager.RustState rustState, byte[] encodedArgs);
 
   private static native byte[] componentXrdAmount(
       StateManager.RustState rustState, byte[] encodedArgs);

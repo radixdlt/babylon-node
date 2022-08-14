@@ -62,92 +62,24 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.statecomputer.commit;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStoreState;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.commit.CommitRequest;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt64;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-/** REv2 State Computer implementation */
-public final class REv2StateComputer implements StateComputerLedger.StateComputer {
-  private static final Logger log = LogManager.getLogger();
-
-  private final RustStateComputer stateComputer;
-  private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
-
-  public REv2StateComputer(
-      RustStateComputer stateComputer, EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher) {
-    this.stateComputer = stateComputer;
-    this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
-  }
-
-  @Override
-  public void addToMempool(MempoolAdd mempoolAdd, BFTNode origin) {
-    mempoolAdd
-        .transactions()
-        .forEach(
-            transaction -> {
-              try {
-                stateComputer.getMempoolInserter().addTransaction(transaction);
-              } catch (MempoolRejectedException e) {
-                log.error(e);
-              }
-            });
-  }
-
-  @Override
-  public List<RawTransaction> getTransactionsForProposal(
-      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
-    var transactionsNotToInclude =
-        executedTransactions.stream()
-            .map(StateComputerLedger.ExecutedTransaction::transaction)
-            .toList();
-    return stateComputer.getTransactionsForProposal(1, transactionsNotToInclude);
-  }
-
-  @Override
-  public StateComputerLedger.StateComputerResult prepare(
-      List<StateComputerLedger.ExecutedTransaction> previous,
-      List<RawTransaction> proposedTransactions,
-      RoundDetails roundDetails) {
-    var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-    var invalidTransactions = new HashMap<RawTransaction, Exception>();
-
-    for (var transaction : proposedTransactions) {
-      var success = stateComputer.verify(transaction);
-      if (success) {
-        successfulTransactions.add(new REv2ExecutedTransaction(transaction));
-      } else {
-        invalidTransactions.put(transaction, new InvalidREv2Transaction());
-      }
-    }
-
-    return new StateComputerLedger.StateComputerResult(successfulTransactions, invalidTransactions);
-  }
-
-  @Override
-  public void commit(
-      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-    var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
-    var commitRequest = new CommitRequest(txnsAndProof.getTransactions(), stateVersion);
-    stateComputer.commit(commitRequest);
-    var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
-    ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
+public record CommitRequest(List<RawTransaction> transactions, UInt64 stateVersion) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        CommitRequest.class,
+        codecs ->
+            StructCodec.with(
+                CommitRequest::new,
+                codecs.of(new TypeToken<List<RawTransaction>>() {}),
+                codecs.of(UInt64.class),
+                (t, encoder) -> encoder.encode(t.transactions, t.stateVersion)));
   }
 }
