@@ -64,7 +64,6 @@
 
 package com.radixdlt.transaction;
 
-import com.google.common.primitives.Bytes;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
@@ -85,22 +84,16 @@ public final class TransactionBuilder {
 
   public static byte[] combineForNotary(
       byte[] manifest, ECPublicKey publicKey, ECDSASignature signature) {
-    var signatureBytes =
-        Bytes.concat(
-            com.radixdlt.utils.Bytes.trimLeadingZeros(signature.getR().toByteArray()),
-            com.radixdlt.utils.Bytes.trimLeadingZeros(signature.getS().toByteArray()));
-    var encodedResponse =
-        combineForNotary(manifest, publicKey.getCompressedBytes(), signatureBytes);
+
+    var encodedPublicKey = StateManagerSbor.sbor.encode(publicKey, ECPublicKey.class);
+    var encodedSignature = StateManagerSbor.sbor.encode(signature, ECDSASignature.class);
+    var encodedResponse = combineForNotary(manifest, encodedPublicKey, encodedSignature);
     return StateManagerResponse.decode(encodedResponse, byteArrayType);
   }
 
   public static byte[] combine(byte[] signedIntent, ECDSASignature signature) {
-    var signatureBytes =
-        Bytes.concat(
-            com.radixdlt.utils.Bytes.trimLeadingZeros(signature.getR().toByteArray()),
-            com.radixdlt.utils.Bytes.trimLeadingZeros(signature.getS().toByteArray()));
-
-    var encodedResponse = combine(signedIntent, signatureBytes);
+    var encodedSignature = StateManagerSbor.sbor.encode(signature, ECDSASignature.class);
+    var encodedResponse = combine(signedIntent, encodedSignature);
     return StateManagerResponse.decode(encodedResponse, byteArrayType);
   }
 

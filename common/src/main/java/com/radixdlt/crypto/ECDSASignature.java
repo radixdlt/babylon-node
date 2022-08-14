@@ -68,6 +68,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.CustomCodec;
+import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -88,6 +91,18 @@ import org.bouncycastle.util.encoders.Hex;
  */
 @SerializerId2("sig")
 public final class ECDSASignature {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ECDSASignature.class,
+        codecs ->
+            new CustomCodec<>(
+                TypeId.TYPE_ECDSA_SIGNATURE,
+                ECDSASignature::getBytes,
+                k -> {
+                  throw new UnsupportedOperationException("Decoding unsupported.");
+                }));
+  }
+
   // Placeholder for the serializer ID
   @JsonProperty(SerializerConstants.SERIALIZER_NAME)
   @DsonOutput(Output.ALL)
@@ -165,8 +180,13 @@ public final class ECDSASignature {
     return toHexString();
   }
 
+  public byte[] getBytes() {
+    return com.google.common.primitives.Bytes.concat(
+        Bytes.trimLeadingZeros(r.toByteArray()), Bytes.trimLeadingZeros(s.toByteArray()));
+  }
+
   public String toHexString() {
-    return Bytes.toHexString(getJsonR()) + Bytes.toHexString(getJsonS());
+    return Bytes.toHexString(getBytes());
   }
 
   @Override

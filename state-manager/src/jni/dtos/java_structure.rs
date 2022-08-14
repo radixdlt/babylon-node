@@ -66,7 +66,7 @@ use crate::result::{StateManagerError, StateManagerResult, ERRCODE_SBOR};
 use sbor::{decode_with_type, encode_with_type};
 
 pub use sbor::{Decode, Encode, TypeId};
-use scrypto::crypto::EcdsaPublicKey;
+use scrypto::crypto::{EcdsaPublicKey, EcdsaSignature};
 
 /**
  * This is a tagging interface.
@@ -99,6 +99,8 @@ impl JavaStructure for bool {}
 impl JavaStructure for Vec<u8> {}
 
 impl JavaStructure for EcdsaPublicKey {}
+
+impl JavaStructure for EcdsaSignature {}
 
 #[cfg(test)]
 mod tests {

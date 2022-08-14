@@ -66,6 +66,7 @@ package com.radixdlt.sbor;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.address.ComponentAddress;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.identifiers.TID;
@@ -103,6 +104,7 @@ public final class StateManagerSbor {
     ExecutedTransactionReceipt.registerCodec(codecMap);
     ComponentAddress.registerCodec(codecMap);
     ECPublicKey.registerCodec(codecMap);
+    ECDSASignature.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

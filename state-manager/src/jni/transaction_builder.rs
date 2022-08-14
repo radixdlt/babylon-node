@@ -73,9 +73,8 @@ use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use sbor::encode_with_type;
 use scrypto::buffer::scrypto_decode;
-use scrypto::crypto::{sha256, EcdsaPublicKey, EcdsaSignature};
+use scrypto::crypto::{EcdsaPublicKey, EcdsaSignature};
 use transaction::model::{SignedTransactionIntent, TransactionIntent};
-use transaction::validation::verify_ecdsa;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountManifest(
@@ -103,16 +102,11 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_combineForNo
     let manifest: Vec<u8> = jni_jbytearray_to_vector(&env, manifest).unwrap();
     let intent: TransactionIntent = scrypto_decode(manifest.as_slice()).unwrap();
 
-    let public_key: Vec<u8> = jni_jbytearray_to_vector(&env, public_key).unwrap();
-    let public_key = EcdsaPublicKey::try_from(public_key.as_slice()).unwrap();
+    let encoded_public_key: Vec<u8> = jni_jbytearray_to_vector(&env, public_key).unwrap();
+    let public_key = EcdsaPublicKey::from_java(&encoded_public_key).unwrap();
 
-    let signature: Vec<u8> = jni_jbytearray_to_vector(&env, signature).unwrap();
-    let signature = EcdsaSignature::try_from(signature.as_slice()).expect("Invalid signature");
-
-    if !verify_ecdsa(&intent.to_bytes(), &public_key, &signature) {
-        let hash = sha256(sha256(intent.to_bytes()));
-        panic!("Invalid signature on hash {:?}", hash);
-    }
+    let encoded_signature: Vec<u8> = jni_jbytearray_to_vector(&env, signature).unwrap();
+    let signature = EcdsaSignature::from_java(&encoded_signature).expect("Invalid signature");
 
     let signed_manifest = combine_for_notary(intent, public_key, signature);
     let result: StateManagerResult<Vec<u8>> = Ok(signed_manifest);
@@ -129,8 +123,10 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_combine(
 ) -> jbyteArray {
     let signed_intent: Vec<u8> = jni_jbytearray_to_vector(&env, signed_intent).unwrap();
     let signed_intent: SignedTransactionIntent = scrypto_decode(signed_intent.as_slice()).unwrap();
-    let signature: Vec<u8> = jni_jbytearray_to_vector(&env, signature).unwrap();
-    let signature = EcdsaSignature::try_from(signature.as_slice()).expect("Invalid signature");
+
+    let encoded_signature: Vec<u8> = jni_jbytearray_to_vector(&env, signature).unwrap();
+    let signature = EcdsaSignature::from_java(&encoded_signature).expect("Invalid signature");
+
     let notarized_transaction = combine(signed_intent, signature);
     let result: StateManagerResult<Vec<u8>> = Ok(notarized_transaction);
     let encoded = encode_with_type(&result);
