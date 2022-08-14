@@ -74,6 +74,7 @@ import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.transaction.ExecutedTransactionReceipt;
 import com.radixdlt.transactions.RawTransaction;
 
 public final class StateManagerSbor {
@@ -97,6 +98,7 @@ public final class StateManagerSbor {
     MempoolError.registerCodec(codecMap);
     GetTransactionsForProposalRustArgs.registerCodec(codecMap);
     GetRelayedTransactionsRustArgs.registerCodec(codecMap);
+    ExecutedTransactionReceipt.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

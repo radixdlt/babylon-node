@@ -101,8 +101,6 @@ public class REv2TransferTest {
 
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
   private static final BigInteger ONE_TOKEN = BigInteger.TEN.pow(18);
-  private static final BigInteger GENESIS_AMOUNT =
-      BigInteger.valueOf(24).multiply(BigInteger.TEN.pow(9)).multiply(ONE_TOKEN);
 
   @Inject private MempoolInserter<RawTransaction> mempoolInserter;
 

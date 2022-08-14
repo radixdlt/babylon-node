@@ -62,61 +62,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
+package com.radixdlt.transaction;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.application.REV2TransactionGenerator;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.rev2.REv2ExampleTransactions;
-import com.radixdlt.transaction.TransactionStoreReader;
-import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Test;
+public final class ExecutedTransactionReceipt {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ExecutedTransactionReceipt.class,
+        (codecs) ->
+            StructCodec.with(
+                ExecutedTransactionReceipt::new,
+                codecs.of(new TypeToken<byte[]>() {}),
+                (t, encoder) -> encoder.encode(t.transactionBytes)));
+  }
 
-public class MempoolTest {
-  private final SimulationTest.Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numNodes(4)
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .pacemakerTimeout(1000)
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  FunctionalRadixNodeModule.LedgerConfig.stateComputer(
-                      StateComputerConfig.rev2(REV2ProposerConfig.mempool()), false)))
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered())
-          .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class);
+  private final byte[] transactionBytes;
 
-  @Test
-  public void sanity_test() {
-    // Arrange
-    var simulationTest = bftTestBuilder.build();
+  private ExecutedTransactionReceipt(byte[] transactionBytes) {
+    this.transactionBytes = transactionBytes;
+  }
 
-    // Run
-    var runningTest = simulationTest.run();
-    final var checkResults = runningTest.awaitCompletion();
-
-    // Post-run assertions
-    assertThat(checkResults)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    for (var node : runningTest.getNetwork().getNodes()) {
-      var store = runningTest.getNetwork().getInstance(TransactionStoreReader.class, node);
-      var receipt = store.getTransactionAtStateVersion(1);
-      assertThat(receipt.getTransactionBytes()).isEqualTo(REv2ExampleTransactions.VALID_TXN_BYTES_0);
-    }
+  public byte[] getTransactionBytes() {
+    return transactionBytes;
   }
 }

@@ -62,10 +62,21 @@
  * permissions under this License.
  */
 
+use crate::jni::dtos::JavaStructure;
 use crate::jni::state_manager::JNIStateManager;
+use crate::jni::utils::jni_slice_to_jbytearray;
+use crate::result::StateManagerResult;
 use jni::objects::{JClass, JObject};
 use jni::sys::{jbyteArray, jlong};
 use jni::JNIEnv;
+use sbor::*;
+
+#[derive(Encode, Decode, TypeId)]
+pub struct ExecutedTransactionReceipt {
+    transaction_data: Vec<u8>,
+}
+
+impl JavaStructure for ExecutedTransactionReceipt {}
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransactionAtStateVersion(
@@ -82,6 +93,10 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
         .transaction_store
         .get_transaction(j_state_version as u64);
 
-    env.byte_array_from_slice(transaction_data.as_slice())
-        .expect("Can't create jbyteArray for transaction data")
+    let executed_receipt = ExecutedTransactionReceipt {
+        transaction_data: transaction_data.clone(),
+    };
+    let result: StateManagerResult<ExecutedTransactionReceipt> = Ok(executed_receipt);
+
+    jni_slice_to_jbytearray(&env, &result.to_java())
 }
