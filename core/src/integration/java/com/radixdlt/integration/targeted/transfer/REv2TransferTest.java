@@ -91,6 +91,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.transaction.TransactionBuilder;
@@ -98,7 +99,6 @@ import com.radixdlt.transaction.TransactionStoreReader;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.Test;
@@ -106,9 +106,7 @@ import org.junit.Test;
 public final class REv2TransferTest {
 
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-  private static final BigInteger ONE_TOKEN = BigInteger.TEN.pow(18);
-  private static final BigInteger GENESIS_AMOUNT =
-      BigInteger.valueOf(24_000_000_000L).multiply(ONE_TOKEN);
+  private static final Decimal GENESIS_AMOUNT = Decimal.of(24_000_000_000L);
 
   @Inject private DeterministicProcessor processor;
   @Inject private DeterministicNetwork network;
@@ -201,7 +199,7 @@ public final class REv2TransferTest {
     var receipt = transactionStoreReader.getTransactionAtStateVersion(1);
     var componentAddress = receipt.getNewComponentAddresses().get(0);
     var accountAmount = stateReader.getComponentXrdAmount(componentAddress);
-    assertThat(accountAmount).isEqualTo(ONE_TOKEN.multiply(BigInteger.valueOf(1000000)));
+    assertThat(accountAmount).isEqualTo(Decimal.of(1_000_000L));
     var systemAmount = stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_COMPONENT_ADDRESS);
     assertThat(systemAmount).isLessThan(GENESIS_AMOUNT);
   }

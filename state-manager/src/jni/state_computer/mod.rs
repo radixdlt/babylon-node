@@ -198,7 +198,7 @@ fn get_component_xrd(
     env: &JNIEnv,
     j_state: JObject,
     j_payload: jbyteArray,
-) -> StateManagerResult<Vec<u8>> {
+) -> StateManagerResult<Decimal> {
     let state_manager = JNIStateManager::get_state_manager(env, j_state);
     let request_payload = jni_jbytearray_to_vector(env, j_payload)?;
     let component_address = ComponentAddress::from_java(&request_payload)?;
@@ -209,5 +209,5 @@ fn get_component_xrd(
         .get(&RADIX_TOKEN)
         .cloned()
         .unwrap_or_else(Decimal::zero);
-    Ok(amount.to_vec())
+    Ok(amount)
 }

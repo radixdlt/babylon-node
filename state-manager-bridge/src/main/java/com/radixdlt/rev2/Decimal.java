@@ -76,7 +76,7 @@ import org.bouncycastle.util.Arrays;
 
 /** Decimal represents a 128 bit representation of a fixed-scale decimal number. */
 @SecurityCritical(SecurityKind.NUMERIC)
-public class Decimal {
+public class Decimal implements Comparable<Decimal> {
   private static final int SCALE = 18;
 
   public static void registerCodec(CodecMap codecMap) {
@@ -101,6 +101,11 @@ public class Decimal {
     this.underlyingValue = Objects.requireNonNull(underlyingValue);
   }
 
+  public static Decimal of(long amount) {
+    var scaledBigInteger = BigInteger.valueOf(amount).multiply(BigInteger.TEN.pow(SCALE));
+    return new Decimal(new BigDecimal(scaledBigInteger, SCALE));
+  }
+
   @Override
   public String toString() {
     return underlyingValue.toPlainString();
@@ -115,5 +120,10 @@ public class Decimal {
   public boolean equals(Object o) {
     return o instanceof Decimal other
         && Objects.equals(this.underlyingValue, other.underlyingValue);
+  }
+
+  @Override
+  public int compareTo(Decimal o) {
+    return this.underlyingValue.compareTo(o.underlyingValue);
   }
 }

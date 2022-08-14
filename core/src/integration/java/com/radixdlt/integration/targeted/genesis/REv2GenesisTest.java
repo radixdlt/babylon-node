@@ -86,20 +86,18 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.Test;
 
 public final class REv2GenesisTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-  private static final BigInteger ONE_TOKEN = BigInteger.TEN.pow(18);
-  private static final BigInteger GENESIS_AMOUNT =
-      BigInteger.valueOf(24).multiply(BigInteger.TEN.pow(9)).multiply(ONE_TOKEN);
+  private static final Decimal GENESIS_AMOUNT = Decimal.of(24_000_000_000L);
 
   @Inject private REv2StateReader stateReader;
 
@@ -162,6 +160,6 @@ public final class REv2GenesisTest {
 
     var emptyAccountAmount =
         this.stateReader.getComponentXrdAmount(ComponentAddress.create(new byte[27]));
-    assertThat(emptyAccountAmount).isEqualTo(BigInteger.ZERO);
+    assertThat(emptyAccountAmount).isEqualTo(Decimal.of(0));
   }
 }

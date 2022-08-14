@@ -71,6 +71,7 @@ import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayReader;
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.statecomputer.preview.PreviewError;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
@@ -80,11 +81,9 @@ import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStoreReader;
 import com.radixdlt.transactions.RawTransaction;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
-import org.bouncycastle.util.Arrays;
 
 public class RustStateComputer {
   private final StateManager.RustState rustState;
@@ -96,9 +95,6 @@ public class RustStateComputer {
     this.mempool = new RustMempool(rustState);
     this.transactionStore = new RustTransactionStore(rustState);
   }
-
-  private static final TypeToken<Result<byte[], StateManagerRuntimeError>> byteArrayType =
-      new TypeToken<>() {};
 
   public TransactionStoreReader getTransactionStoreReader() {
     return this.transactionStore;
@@ -117,12 +113,12 @@ public class RustStateComputer {
     return this.mempool.getTransactionsForProposal(count, transactionToExclude);
   }
 
-  public BigInteger getComponentXrdAmount(ComponentAddress componentAddress) {
-    final var encodedRequest =
-        StateManagerSbor.sbor.encode(componentAddress, ComponentAddress.class);
-    var encodedResponse = componentXrdAmount(this.rustState, encodedRequest);
-    var amount = StateManagerResponse.decode(encodedResponse, byteArrayType);
-    return new BigInteger(1, Arrays.reverse(amount));
+  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
+    return callNativeFn(
+        componentAddress,
+        ComponentAddress.class,
+        new TypeToken<>() {},
+        RustStateComputer::componentXrdAmount);
   }
 
   public void commit(List<RawTransaction> transactions, long committedStateVersion) {
