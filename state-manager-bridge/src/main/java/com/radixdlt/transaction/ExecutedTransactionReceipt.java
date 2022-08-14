@@ -70,6 +70,7 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import java.util.List;
 
+/** Receipt for a transaction which has been executed */
 public final class ExecutedTransactionReceipt {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -84,7 +85,7 @@ public final class ExecutedTransactionReceipt {
                     encoder.encode(t.result, t.transactionBytes, t.newComponentAddresses)));
   }
 
-  private String result;
+  private final String result;
   private final byte[] transactionBytes;
   private final List<ComponentAddress> newComponentAddresses;
 

@@ -83,11 +83,6 @@ public sealed interface MempoolError {
                     (t, encoder) -> encoder.encode(t.currentSize, t.maxSize)),
                 EnumEntry.noFields(Duplicate.class, Duplicate::new),
                 EnumEntry.with(
-                    DecodeError.class,
-                    DecodeError::new,
-                    codecs.of(String.class),
-                    (t, encoder) -> encoder.encode(t.errorDescription)),
-                EnumEntry.with(
                     TransactionValidationError.class,
                     TransactionValidationError::new,
                     codecs.of(String.class),
@@ -97,8 +92,6 @@ public sealed interface MempoolError {
   record Full(long currentSize, long maxSize) implements MempoolError {}
 
   record Duplicate() implements MempoolError {}
-
-  record DecodeError(String errorDescription) implements MempoolError {}
 
   record TransactionValidationError(String errorDescription) implements MempoolError {}
 }

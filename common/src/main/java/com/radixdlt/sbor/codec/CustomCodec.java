@@ -62,35 +62,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.address;
+package com.radixdlt.sbor.codec;
 
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.CustomCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
+import com.radixdlt.sbor.coding.DecoderApi;
+import com.radixdlt.sbor.coding.EncoderApi;
+import java.util.function.Function;
 
-/** REv2 Address of a component */
-public record ComponentAddress(byte[] addressBytes) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        ComponentAddress.class,
-        codecs ->
-            new CustomCodec<>(
-                TypeId.TYPE_COMPONENT_ADDRESS,
-                ComponentAddress::addressBytes,
-                ComponentAddress::create));
+public record CustomCodec<T>(TypeId typeId, Function<T, byte[]> encode, Function<byte[], T> decode)
+    implements Codec<T> {
+
+  @Override
+  public TypeId getTypeId() {
+    return typeId;
   }
 
-  private static final int COMPONENT_ADDRESS_BYTES_LENGTH = 27;
-  public static final ComponentAddress SYSTEM_COMPONENT_ADDRESS =
-      ComponentAddress.create(
-          new byte[] {
-            2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2
-          });
+  @Override
+  public void encodeWithoutTypeId(EncoderApi encoder, T value) {
+    var bytes = this.encode.apply(value);
+    encoder.writeInt(bytes.length);
+    encoder.writeBytes(bytes);
+  }
 
-  public static ComponentAddress create(byte[] addressBytes) {
-    if (addressBytes.length != COMPONENT_ADDRESS_BYTES_LENGTH) {
-      throw new IllegalArgumentException("Invalid component address length");
-    }
-    return new ComponentAddress(addressBytes);
+  @Override
+  public T decodeWithoutTypeId(DecoderApi decoder) {
+    var length = decoder.readInt();
+    var bytes = decoder.readBytes(length);
+    return this.decode.apply(bytes);
   }
 }

@@ -101,7 +101,6 @@ public class RustMempool {
             fullStatus.currentSize(), fullStatus.maxSize());
         case MempoolError.Duplicate ignored -> throw new MempoolDuplicateException(
             String.format("Mempool already has transaction %s", transaction.getPayloadHash()));
-        case MempoolError.DecodeError e -> throw new MempoolRejectedException(e.errorDescription());
         case MempoolError.TransactionValidationError e -> throw new MempoolRejectedException(
             e.errorDescription());
       }

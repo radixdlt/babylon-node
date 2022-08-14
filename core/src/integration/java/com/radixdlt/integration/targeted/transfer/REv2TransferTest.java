@@ -107,7 +107,8 @@ public final class REv2TransferTest {
 
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
   private static final BigInteger ONE_TOKEN = BigInteger.TEN.pow(18);
-  private static final BigInteger GENESIS_AMOUNT = BigInteger.valueOf(24_000_000_000L).multiply(ONE_TOKEN);
+  private static final BigInteger GENESIS_AMOUNT =
+      BigInteger.valueOf(24_000_000_000L).multiply(ONE_TOKEN);
 
   @Inject private DeterministicProcessor processor;
   @Inject private DeterministicNetwork network;

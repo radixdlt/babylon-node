@@ -70,17 +70,13 @@ use jni::objects::{JClass, JObject};
 use jni::sys::{jbyteArray, jlong};
 use jni::JNIEnv;
 use sbor::*;
-
-#[derive(Encode, Decode, TypeId)]
-pub struct ComponentAddressWrapper {
-    address: Vec<u8>,
-}
+use scrypto::prelude::ComponentAddress;
 
 #[derive(Encode, Decode, TypeId)]
 pub struct ExecutedTransactionReceipt {
     result: String,
     transaction_data: Vec<u8>,
-    new_component_addresses: Vec<ComponentAddressWrapper>,
+    new_component_addresses: Vec<ComponentAddress>,
 }
 
 impl JavaStructure for ExecutedTransactionReceipt {}
@@ -100,17 +96,10 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
         .transaction_store
         .get_transaction(j_state_version as u64);
 
-    let mut new_component_addresses = Vec::new();
-    for component_address in &receipt.new_component_addresses {
-        new_component_addresses.push(ComponentAddressWrapper {
-            address: component_address.to_vec(),
-        })
-    }
-
     let executed_receipt = ExecutedTransactionReceipt {
         result: receipt.result.to_string(),
         transaction_data: transaction_data.clone(),
-        new_component_addresses,
+        new_component_addresses: receipt.new_component_addresses.clone(),
     };
     let result: StateManagerResult<ExecutedTransactionReceipt> = Ok(executed_receipt);
 
