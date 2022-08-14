@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::jni::dtos::JavaStructure;
 use crate::jni::utils::{jni_jbytearray_to_vector, jni_slice_to_jbytearray};
 use crate::result::StateManagerResult;
 use crate::transaction_builder::{
@@ -77,13 +78,14 @@ use transaction::model::{SignedTransactionIntent, TransactionIntent};
 use transaction::validation::verify_ecdsa;
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_account(
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountManifest(
     env: JNIEnv,
     _class: JClass,
     j_payload: jbyteArray,
 ) -> jbyteArray {
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(&env, j_payload).unwrap();
-    let public_key = EcdsaPublicKey::try_from(request_payload.as_slice()).unwrap();
+    let public_key = EcdsaPublicKey::from_java(&request_payload).unwrap();
+
     let unsigned_manifest = create_new_account_unsigned_manifest(public_key);
     let result: StateManagerResult<Vec<u8>> = Ok(unsigned_manifest);
     let encoded = encode_with_type(&result);

@@ -105,7 +105,8 @@ public enum TypeId {
 
   // Custom Start
   TYPE_CUSTOM_START(0x80), // custom types start from 0x80 and values are encoded as `len + data`
-  TYPE_COMPONENT_ADDRESS(0x81);
+  TYPE_COMPONENT_ADDRESS(0x81),
+  TYPE_ECDSA_PUBLIC_KEY(0x91);
 
   private final byte id;
 

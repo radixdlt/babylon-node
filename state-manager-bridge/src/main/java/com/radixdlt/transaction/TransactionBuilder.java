@@ -70,6 +70,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Result;
+import com.radixdlt.sbor.StateManagerSbor;
 import com.radixdlt.statemanager.StateManagerResponse;
 
 public final class TransactionBuilder {
@@ -77,7 +78,8 @@ public final class TransactionBuilder {
       new TypeToken<>() {};
 
   public static byte[] buildNewAccountManifest(ECPublicKey publicKey) {
-    var encodedResponse = account(publicKey.getCompressedBytes());
+    var encodedRequest = StateManagerSbor.sbor.encode(publicKey, ECPublicKey.class);
+    var encodedResponse = newAccountManifest(encodedRequest);
     return StateManagerResponse.decode(encodedResponse, byteArrayType);
   }
 
@@ -102,7 +104,7 @@ public final class TransactionBuilder {
     return StateManagerResponse.decode(encodedResponse, byteArrayType);
   }
 
-  private static native byte[] account(byte[] publicKey);
+  private static native byte[] newAccountManifest(byte[] publicKey);
 
   private static native byte[] combineForNotary(
       byte[] manifest, byte[] publicKey, byte[] signature);
