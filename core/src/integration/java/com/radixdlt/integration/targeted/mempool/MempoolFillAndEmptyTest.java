@@ -66,38 +66,47 @@ package com.radixdlt.integration.targeted.mempool;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.radixdlt.application.tokens.Amount;
+import com.google.common.util.concurrent.RateLimiter;
+import com.google.inject.*;
+import com.radixdlt.consensus.MockedConsensusRecoveryModule;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.integration.Slow;
+import com.radixdlt.keys.InMemoryBFTKeyModule;
+import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.modules.CryptoModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RERulesConfig;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.targeted.mempool.MempoolFillerModule;
-import com.radixdlt.targeted.mempool.MempoolFillerUpdate;
-import com.radixdlt.targeted.mempool.ScheduledMempoolFill;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
-import java.util.Set;
-import org.junit.Rule;
+
+import java.util.List;
+
+import com.radixdlt.utils.TimeSupplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.TemporaryFolder;
 
 /**
  * Test which fills a mempool and then empties it checking to make sure there are no stragglers left
@@ -105,63 +114,85 @@ import org.junit.rules.TemporaryFolder;
  */
 @Category(Slow.class)
 public final class MempoolFillAndEmptyTest {
+  private static final Logger logger = LogManager.getLogger();
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  @Inject private DeterministicProcessor processor;
-  @Inject private DeterministicNetwork network;
-  @Inject private EventDispatcher<MempoolFillerUpdate> mempoolFillerUpdateEventDispatcher;
-  @Inject private EventDispatcher<ScheduledMempoolFill> scheduledMempoolFillEventDispatcher;
+  private final DeterministicNetwork network =
+          new DeterministicNetwork(
+                  List.of(BFTNode.create(TEST_KEY.getPublicKey())),
+                  MessageSelector.firstSelector(),
+                  MessageMutator.nothing());
+  private final REV2TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
+
   @Inject private SystemCounters systemCounters;
+  @Inject private DeterministicProcessor processor;
+  @Inject private MempoolInserter<RawTransaction> mempoolInserter;
+  @Inject private MempoolReader mempoolReader;
 
   private Injector createInjector() {
     return Guice.createInjector(
-        MempoolConfig.of(1000, 10).asModule(),
-        new MainnetForksModule(),
-        new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
-        new ForksModule(),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
-        new MockedGenesisModule(
-            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(1000)),
-        new MempoolFillerModule(),
-        new TestP2PModule.Builder().build(),
-        new TestMessagingModule.Builder().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath());
-          }
-        });
+            new CryptoModule(),
+            new TestMessagingModule.Builder().withDefaultRateLimit().build(),
+            new MockedLedgerRecoveryModule(),
+            new MockedConsensusRecoveryModule.Builder()
+                    .withNodes(List.of(BFTNode.create(TEST_KEY.getPublicKey())))
+                    .build(),
+            new MockedPersistenceStoreModule(),
+            new FunctionalRadixNodeModule(
+                    false,
+                    FunctionalRadixNodeModule.ConsensusConfig.of(),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputer(
+                            StateComputerConfig.rev2(StateComputerConfig.REV2ProposerConfig.mempool(MempoolConfig.of(1000))), false)),
+            new TestP2PModule.Builder().build(),
+            new InMemoryBFTKeyModule(TEST_KEY),
+            new DeterministicEnvironmentModule(
+                    network.createSender(BFTNode.create(TEST_KEY.getPublicKey()))),
+            new AbstractModule() {
+              @Override
+              protected void configure() {
+                bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+                bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
+                bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+              }
+            });
   }
 
-  private void fillAndEmptyMempool() {
-    while (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) < 1000) {
+  private void fillAndEmptyMempool() throws Exception {
+
+    var rateLimiter = RateLimiter.create(0.5);
+
+    while (mempoolReader.getCount() < 1000) {
+      if (rateLimiter.tryAcquire()) {
+        logger.info("Filling Mempool...  Current Size: {}", mempoolReader.getCount());
+      }
       ControlledMessage msg = network.nextMessage().value();
       processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-      if (msg.message() instanceof EpochRoundUpdate) {
-        scheduledMempoolFillEventDispatcher.dispatch(ScheduledMempoolFill.create());
+      if (msg.message() instanceof RoundUpdate || msg.message() instanceof EpochRoundUpdate) {
+        for (int i = 0; i < 50; i++) {
+          try {
+            mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
+          } catch (MempoolFullException ignored) {
+          }
+        }
       }
     }
 
     for (int i = 0; i < 10000; i++) {
+      if (rateLimiter.tryAcquire()) {
+        logger.info("Emptying Mempool...  Current Size: {}", mempoolReader.getCount());
+      }
       ControlledMessage msg = network.nextMessage().value();
       processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-      if (systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE) == 0) {
+      if (mempoolReader.getCount() == 0) {
         break;
       }
     }
-
-    assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE)).isZero();
   }
 
   @Test
-  public void check_that_full_mempool_empties_itself() {
+  public void check_that_full_mempool_empties_itself() throws Exception {
     createInjector().injectMembers(this);
     processor.start();
-
-    mempoolFillerUpdateEventDispatcher.dispatch(MempoolFillerUpdate.enable(50, true));
 
     for (int i = 0; i < 10; i++) {
       fillAndEmptyMempool();
@@ -169,7 +200,7 @@ public final class MempoolFillAndEmptyTest {
 
     assertThat(
             systemCounters.get(
-                SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
-        .isZero();
+                    SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
+            .isZero();
   }
 }

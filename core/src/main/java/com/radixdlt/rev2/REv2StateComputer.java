@@ -64,6 +64,7 @@
 
 package com.radixdlt.rev2;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStoreState;
@@ -78,9 +79,14 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt64;
+
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -118,7 +124,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         executedTransactions.stream()
             .map(StateComputerLedger.ExecutedTransaction::transaction)
             .toList();
-    return stateComputer.getTransactionsForProposal(1, transactionsNotToInclude);
+    return stateComputer.getTransactionsForProposal(5, transactionsNotToInclude);
   }
 
   @Override
@@ -146,7 +152,13 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
     var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
     var commitRequest = new CommitRequest(txnsAndProof.getTransactions(), stateVersion);
+    var stopwatch = Stopwatch.createStarted();
     stateComputer.commit(commitRequest);
+
+    var numTxns = txnsAndProof.getTransactions().size();
+    var elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+    log.info("ExecutionTime {} txns {} ms ({} sec/txn)", numTxns, elapsed, ((double) elapsed )/ (numTxns * 1000L));
+
     var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
   }
