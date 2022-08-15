@@ -73,6 +73,8 @@ import com.radixdlt.harness.simulation.application.REV2TransactionGenerator;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.rev2.REv2ExampleTransactions;
@@ -89,8 +91,8 @@ public class MempoolTest {
           .functionalNodeModule(
               new FunctionalRadixNodeModule(
                   false,
-                  FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                  FunctionalRadixNodeModule.LedgerConfig.stateComputer(
+                  ConsensusConfig.of(1000),
+                  LedgerConfig.stateComputer(
                       StateComputerConfig.rev2(REV2ProposerConfig.mempool()), false)))
           .addTestModules(
               ConsensusMonitors.safety(),

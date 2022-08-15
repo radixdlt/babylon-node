@@ -66,7 +66,7 @@ use crate::jni::dtos::JavaStructure;
 use crate::jni::utils::{jni_jbytearray_to_vector, jni_slice_to_jbytearray};
 use crate::result::StateManagerResult;
 use crate::transaction_builder::{
-    combine, combine_for_notary, create_new_account_unsigned_manifest,
+    create_new_account_unsigned_manifest, create_notarized_bytes, create_signed_intent_bytes,
 };
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
@@ -92,7 +92,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountMa
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_combineForNotary(
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createSignedIntentBytes(
     env: JNIEnv,
     _class: JClass,
     manifest: jbyteArray,
@@ -108,14 +108,14 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_combineForNo
     let encoded_signature: Vec<u8> = jni_jbytearray_to_vector(&env, signature).unwrap();
     let signature = EcdsaSignature::from_java(&encoded_signature).expect("Invalid signature");
 
-    let signed_manifest = combine_for_notary(intent, public_key, signature);
+    let signed_manifest = create_signed_intent_bytes(intent, public_key, signature);
     let result: StateManagerResult<Vec<u8>> = Ok(signed_manifest);
     let encoded = encode_with_type(&result);
     jni_slice_to_jbytearray(&env, &encoded)
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_combine(
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createNotarizedBytes(
     env: JNIEnv,
     _class: JClass,
     signed_intent: jbyteArray,
@@ -127,7 +127,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_combine(
     let encoded_signature: Vec<u8> = jni_jbytearray_to_vector(&env, signature).unwrap();
     let signature = EcdsaSignature::from_java(&encoded_signature).expect("Invalid signature");
 
-    let notarized_transaction = combine(signed_intent, signature);
+    let notarized_transaction = create_notarized_bytes(signed_intent, signature);
     let result: StateManagerResult<Vec<u8>> = Ok(notarized_transaction);
     let encoded = encode_with_type(&result);
     jni_slice_to_jbytearray(&env, &encoded)

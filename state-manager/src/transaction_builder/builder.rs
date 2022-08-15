@@ -98,7 +98,7 @@ pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u
     intent.to_bytes()
 }
 
-pub fn combine_for_notary(
+pub fn create_signed_intent_bytes(
     intent: TransactionIntent,
     public_key: EcdsaPublicKey,
     signature: EcdsaSignature,
@@ -110,7 +110,7 @@ pub fn combine_for_notary(
     signed_intent.to_bytes()
 }
 
-pub fn combine(
+pub fn create_notarized_bytes(
     signed_intent: SignedTransactionIntent,
     notary_signature: EcdsaSignature,
 ) -> Vec<u8> {

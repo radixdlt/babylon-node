@@ -71,6 +71,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import java.util.Objects;
 import java.util.function.Function;
 
 /** In memory Hash signing and identity handling */
@@ -78,7 +79,7 @@ public final class InMemoryBFTKeyModule extends AbstractModule {
   private final ECKeyPair keyPair;
 
   public InMemoryBFTKeyModule(ECKeyPair keyPair) {
-    this.keyPair = keyPair;
+    this.keyPair = Objects.requireNonNull(keyPair);
   }
 
   @Override

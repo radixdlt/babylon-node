@@ -147,12 +147,12 @@ public final class REv2ConsensusTransferTest {
 
     var intentSignature = TEST_KEY.sign(hashedManifest);
     var signedIntent =
-        TransactionBuilder.combineForNotary(
+        TransactionBuilder.createSignedIntentBytes(
             unsignedManifest, TEST_KEY.getPublicKey(), intentSignature);
     var hashedSignedIntent = HashUtils.sha256(signedIntent).asBytes();
 
     var notarySignature = TEST_KEY.sign(hashedSignedIntent);
-    var transactionPayload = TransactionBuilder.combine(signedIntent, notarySignature);
+    var transactionPayload = TransactionBuilder.createNotarizedBytes(signedIntent, notarySignature);
     return RawTransaction.create(transactionPayload);
   }
 

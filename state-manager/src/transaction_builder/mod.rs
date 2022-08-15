@@ -64,4 +64,6 @@
 
 mod builder;
 
-pub use builder::{combine, combine_for_notary, create_new_account_unsigned_manifest};
+pub use builder::{
+    create_new_account_unsigned_manifest, create_notarized_bytes, create_signed_intent_bytes,
+};

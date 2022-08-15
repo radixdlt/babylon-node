@@ -82,25 +82,25 @@ public final class TransactionBuilder {
     return StateManagerResponse.decode(encodedResponse, byteArrayType);
   }
 
-  public static byte[] combineForNotary(
+  public static byte[] createSignedIntentBytes(
       byte[] manifest, ECPublicKey publicKey, ECDSASignature signature) {
 
     var encodedPublicKey = StateManagerSbor.sbor.encode(publicKey, ECPublicKey.class);
     var encodedSignature = StateManagerSbor.sbor.encode(signature, ECDSASignature.class);
-    var encodedResponse = combineForNotary(manifest, encodedPublicKey, encodedSignature);
+    var encodedResponse = createSignedIntentBytes(manifest, encodedPublicKey, encodedSignature);
     return StateManagerResponse.decode(encodedResponse, byteArrayType);
   }
 
-  public static byte[] combine(byte[] signedIntent, ECDSASignature signature) {
+  public static byte[] createNotarizedBytes(byte[] signedIntent, ECDSASignature signature) {
     var encodedSignature = StateManagerSbor.sbor.encode(signature, ECDSASignature.class);
-    var encodedResponse = combine(signedIntent, encodedSignature);
+    var encodedResponse = createNotarizedBytes(signedIntent, encodedSignature);
     return StateManagerResponse.decode(encodedResponse, byteArrayType);
   }
 
   private static native byte[] newAccountManifest(byte[] publicKey);
 
-  private static native byte[] combineForNotary(
+  private static native byte[] createSignedIntentBytes(
       byte[] manifest, byte[] publicKey, byte[] signature);
 
-  private static native byte[] combine(byte[] signedIntent, byte[] notarySignature);
+  private static native byte[] createNotarizedBytes(byte[] signedIntent, byte[] notarySignature);
 }
