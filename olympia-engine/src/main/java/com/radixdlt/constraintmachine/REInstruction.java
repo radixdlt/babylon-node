@@ -128,7 +128,9 @@ public final class REInstruction {
       @Override
       public Object read(REParser.ParserState parserState, ByteBuffer buf)
           throws DeserializeException {
-        var substateId = SubstateId.ofSubstate(parserState.txnId(), parserState.upSubstateCount());
+        var substateId =
+            SubstateId.ofSubstate(
+                parserState.transactionPayloadHash(), parserState.upSubstateCount());
         var start = buf.position();
         buf.position(start + buf.remaining());
         return new UpSubstate(substateId, buf.array(), start, buf.limit() - start);
@@ -148,7 +150,7 @@ public final class REInstruction {
         int index =
             REFieldSerialization.deserializeUnsignedShort(
                 buf, 0, parserState.upSubstateCount() - 1);
-        return SubstateId.ofSubstate(parserState.txnId(), index);
+        return SubstateId.ofSubstate(parserState.transactionPayloadHash(), index);
       }
     },
     VREAD((byte) 0x5, REOp.READ, LengthType.VARIABLE, SubstateId.BYTES + 1, 512) {
@@ -167,7 +169,7 @@ public final class REInstruction {
         var index =
             REFieldSerialization.deserializeUnsignedShort(
                 buf, 0, parserState.upSubstateCount() - 1);
-        var parent = SubstateId.ofSubstate(parserState.txnId(), index);
+        var parent = SubstateId.ofSubstate(parserState.transactionPayloadHash(), index);
         var bytes = new byte[buf.remaining()];
         buf.get(bytes, 0, buf.remaining());
         return SubstateId.ofVirtualSubstate(parent, bytes);
@@ -187,7 +189,7 @@ public final class REInstruction {
         var index =
             REFieldSerialization.deserializeUnsignedShort(
                 buf, 0, parserState.upSubstateCount() - 1);
-        return SubstateId.ofSubstate(parserState.txnId(), index);
+        return SubstateId.ofSubstate(parserState.transactionPayloadHash(), index);
       }
     },
     VDOWN((byte) 0x9, REOp.DOWN, LengthType.VARIABLE, SubstateId.BYTES + 1, 512) {
@@ -206,7 +208,7 @@ public final class REInstruction {
         var index =
             REFieldSerialization.deserializeUnsignedShort(
                 buf, 0, parserState.upSubstateCount() - 1);
-        var parent = SubstateId.ofSubstate(parserState.txnId(), index);
+        var parent = SubstateId.ofSubstate(parserState.transactionPayloadHash(), index);
         var bytes = new byte[buf.remaining()];
         buf.get(bytes);
         return SubstateId.ofVirtualSubstate(parent, bytes);

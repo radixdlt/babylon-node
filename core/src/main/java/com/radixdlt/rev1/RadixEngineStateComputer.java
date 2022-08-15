@@ -102,7 +102,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.substate.*;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -164,14 +164,14 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   public record RadixEngineTransaction(
-      Transaction transaction, REProcessedTxn processed, PermissionLevel permissionLevel)
+      RawTransaction transaction, REProcessedTxn processed, PermissionLevel permissionLevel)
       implements ExecutedTransaction {}
 
   public REProcessedTxn test(byte[] payload, boolean isSigned) throws RadixEngineException {
     synchronized (lock) {
       var txn =
           isSigned
-              ? Transaction.create(payload)
+              ? RawTransaction.create(payload)
               : TxLowLevelBuilder.newBuilder(payload).sig(ECDSASignature.zeroSignature()).build();
 
       var checker = radixEngine.transientBranch();
@@ -184,11 +184,11 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
   }
 
-  public REProcessedTxn addToMempool(Transaction transaction) throws MempoolRejectedException {
+  public REProcessedTxn addToMempool(RawTransaction transaction) throws MempoolRejectedException {
     return addToMempool(transaction, null);
   }
 
-  public REProcessedTxn addToMempool(Transaction transaction, BFTNode origin)
+  public REProcessedTxn addToMempool(RawTransaction transaction, BFTNode origin)
       throws MempoolRejectedException {
     synchronized (lock) {
       try {
@@ -220,15 +220,16 @@ public final class RadixEngineStateComputer implements StateComputer {
                 addToMempool(txn, origin);
               } catch (MempoolDuplicateException ex) {
                 log.trace(
-                    "Transaction {} was not added as it was already in the mempool", txn.getId());
+                    "Transaction {} was not added as it was already in the mempool",
+                    txn.getPayloadHash());
               } catch (MempoolRejectedException ex) {
-                log.debug("Transaction {} was not added to the mempool", txn.getId(), ex);
+                log.debug("Transaction {} was not added to the mempool", txn.getPayloadHash(), ex);
               }
             });
   }
 
   @Override
-  public List<Transaction> getTransactionsForProposal(
+  public List<RawTransaction> getTransactionsForProposal(
       List<ExecutedTransaction> executedTransactions) {
     synchronized (lock) {
       var cmds =
@@ -245,7 +246,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   @Override
   public StateComputerResult prepare(
       List<ExecutedTransaction> previousTransactions,
-      List<Transaction> proposedTransactions,
+      List<RawTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     synchronized (lock) {
       var transientBranch = this.radixEngine.transientBranch();
@@ -257,7 +258,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
       successBuilder.add(systemUpdateTransaction);
 
-      var exceptionBuilder = ImmutableMap.<Transaction, Exception>builder();
+      var exceptionBuilder = ImmutableMap.<RawTransaction, Exception>builder();
       var nextValidatorSet =
           systemUpdateTransaction.processed().getEvents().stream()
               .filter(REEvent.NextValidatorSetEvent.class::isInstance)
@@ -300,7 +301,7 @@ public final class RadixEngineStateComputer implements StateComputer {
       } catch (RadixEngineException e) {
         throw new IllegalStateException(
             "Re-execution of already prepared transaction failed: "
-                + radixEngineTransaction.processed.getTxn().getId(),
+                + radixEngineTransaction.processed.getTxn().getPayloadHash(),
             e);
       }
     }
@@ -361,9 +362,9 @@ public final class RadixEngineStateComputer implements StateComputer {
   private void executeUserTransactions(
       BFTNode proposer,
       RadixEngineBranch<LedgerAndBFTProof> branch,
-      List<Transaction> nextTransactions,
+      List<RawTransaction> nextTransactions,
       ImmutableList.Builder<ExecutedTransaction> successBuilder,
-      ImmutableMap.Builder<Transaction, Exception> errorBuilder) {
+      ImmutableMap.Builder<RawTransaction, Exception> errorBuilder) {
     // TODO: This check should probably be done before getting into state computer
     this.maxSigsPerRound.ifPresent(
         max -> {

@@ -109,19 +109,19 @@ public class HashUtilsTest {
   public void testHashValues256() {
     assertArrayEquals(
         Bytes.fromHexString("7ef0ca626bbb058dd443bb78e33b888bdec8295c96e51f5545f96370870c10b9"),
-        HashUtils.sha256(Longs.toByteArray(0L)).asBytes());
+        HashUtils.sha256Twice(Longs.toByteArray(0L)).asBytes());
     assertArrayEquals(
         Bytes.fromHexString("3ae5c198d17634e79059c2cd735491553d22c4e09d1d9fea3ecf214565df2284"),
-        HashUtils.sha256(Longs.toByteArray(1L)).asBytes());
+        HashUtils.sha256Twice(Longs.toByteArray(1L)).asBytes());
     assertArrayEquals(
         Bytes.fromHexString("d03524a98786b780bd640979dc49316702799f46bb8029e29aaf3e7d3b8b7c3e"),
-        HashUtils.sha256(Longs.toByteArray(10L)).asBytes());
+        HashUtils.sha256Twice(Longs.toByteArray(10L)).asBytes());
     assertArrayEquals(
         Bytes.fromHexString("43c1dd54b91ef646f74dc83f2238292bc3340e34cfdb2057aba0193a662409c5"),
-        HashUtils.sha256(Longs.toByteArray(100L)).asBytes());
+        HashUtils.sha256Twice(Longs.toByteArray(100L)).asBytes());
     assertArrayEquals(
         Bytes.fromHexString("4bba9cc5d36a21b9d09cd16bbd83d0472f9b95afd2d7aa1621bb6fa580c99bfc"),
-        HashUtils.sha256(Longs.toByteArray(1_000L)).asBytes());
+        HashUtils.sha256Twice(Longs.toByteArray(1_000L)).asBytes());
   }
 
   @Test
@@ -130,27 +130,27 @@ public class HashUtilsTest {
         Bytes.fromHexString(
             "d6f117761cef5715fcb3fe49a3cf2ebb268acec9e9d87a1e8812a8aa811a1d02ed636b9d04694c160fd071e687772d0cc2e1"
                 + "c3990da4435409c7b1f7b87fa632"),
-        HashUtils.sha512(Longs.toByteArray(0L)).asBytes());
+        HashUtils.sha512Twice(Longs.toByteArray(0L)).asBytes());
     assertArrayEquals(
         Bytes.fromHexString(
             "ec9d8eba8da254c20b3681454bdb3425ba144b7d36421ceffa796bad78d7e66c3439c73a6bbb2d985883b0ff081cfa3ebbac"
                 + "90c580065bad0eb1e9bee74eb0c9"),
-        HashUtils.sha512(Longs.toByteArray(1L)).asBytes());
+        HashUtils.sha512Twice(Longs.toByteArray(1L)).asBytes());
     assertArrayEquals(
         Bytes.fromHexString(
             "78a037d80204606de0f166a625d3fdc81de417da21bf0f5d7c9b756d73a4decd770c349f21fd5141329d0f2a639c143b3094"
                 + "2cc044ff7d0d95209107c38e045c"),
-        HashUtils.sha512(Longs.toByteArray(10L)).asBytes());
+        HashUtils.sha512Twice(Longs.toByteArray(10L)).asBytes());
     assertArrayEquals(
         Bytes.fromHexString(
             "1cb75a3020fda027b89157eebde70134c281e719f700e84b9f12607b3ab3ae286c34c144e8b444eb0fd163948d00bcae900b"
                 + "2c08d263c7127fc1bf85f43c28a0"),
-        HashUtils.sha512(Longs.toByteArray(100L)).asBytes());
+        HashUtils.sha512Twice(Longs.toByteArray(100L)).asBytes());
     assertArrayEquals(
         Bytes.fromHexString(
             "66c0a8301d6a3cc9ad2151af74ad748d10ecfe83a5b1c765a5e31c72916f238f1de2006f2fcb12f634948e13200f354c6f47"
                 + "fc183c7208c1a022575e761c4222"),
-        HashUtils.sha512(Longs.toByteArray(1_000L)).asBytes());
+        HashUtils.sha512Twice(Longs.toByteArray(1_000L)).asBytes());
   }
 
   @Test
@@ -158,7 +158,7 @@ public class HashUtilsTest {
     byte[] data = "Hello Radix".getBytes(StandardCharsets.UTF_8);
 
     byte[] singleHash = sha2bits256Once(data).asBytes();
-    byte[] doubleHash = HashUtils.sha256(data).asBytes();
+    byte[] doubleHash = HashUtils.sha256Twice(data).asBytes();
 
     // These hashes as just the result of running the sha256 once and output the values
     // These are then used as reference for other libraries, especially Swift which
@@ -183,7 +183,7 @@ public class HashUtilsTest {
   public void verify_hash256_twice() {
     testEncodeToHashedBytesFromString(
         "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
-        HashUtils::sha256,
+        HashUtils::sha256Twice,
         "0cffe17f68954dac3a84fb1458bd5ec99209449749b2b308b7cb55812f9563af");
   }
 

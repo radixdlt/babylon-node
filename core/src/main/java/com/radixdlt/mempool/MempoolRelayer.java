@@ -72,7 +72,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -85,21 +85,22 @@ public final class MempoolRelayer {
   private final PeersView peersView;
   private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
   private final SystemCounters counters;
-  private final Mempool<?> mempool;
+
+  private final MempoolRelayReader mempoolRelayReader;
   private final long initialDelayMillis;
   private final long repeatDelayMillis;
   private final int maxPeers;
 
   @Inject
   public MempoolRelayer(
-      Mempool<?> mempool,
+      MempoolRelayReader mempoolRelayReader,
       RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
       PeersView peersView,
       @MempoolRelayInitialDelayMs long initialDelayMillis,
       @MempoolRelayRepeatDelayMs long repeatDelayMillis,
       @MempoolRelayMaxPeers int maxPeers,
       SystemCounters counters) {
-    this.mempool = mempool;
+    this.mempoolRelayReader = mempoolRelayReader;
     this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
     this.peersView = Objects.requireNonNull(peersView);
     this.initialDelayMillis = initialDelayMillis;
@@ -119,7 +120,7 @@ public final class MempoolRelayer {
   public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
     return ev -> {
       final var transactions =
-          mempool.getTransactionsToRelay(initialDelayMillis, repeatDelayMillis);
+          this.mempoolRelayReader.getTransactionsToRelay(initialDelayMillis, repeatDelayMillis);
       if (!transactions.isEmpty()) {
         relayTransactions(transactions, ImmutableList.of());
       }
@@ -127,7 +128,7 @@ public final class MempoolRelayer {
   }
 
   private void relayTransactions(
-      List<Transaction> transactions, ImmutableList<BFTNode> ignorePeers) {
+      List<RawTransaction> transactions, ImmutableList<BFTNode> ignorePeers) {
     final var mempoolAddMsg = MempoolAdd.create(transactions);
     final var peers =
         this.peersView.peers().map(PeersView.PeerInfo::bftNode).collect(Collectors.toList());

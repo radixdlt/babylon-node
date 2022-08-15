@@ -62,36 +62,39 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::JavaStructure;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
+package com.radixdlt.rev2;
 
-use crate::jni::state_manager::JNIStateManager;
-use crate::jni::utils::*;
-use crate::result::StateManagerResult;
-use crate::types::Transaction;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.CustomTypeCodec;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import java.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
-//
-// JNI Interface
-//
+public record ResourceAddress(byte[] value) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ResourceAddress.class,
+        codecs ->
+            new CustomTypeCodec<>(
+                TypeId.TYPE_CUSTOM_RESOURCE_ADDRESS, ResourceAddress::value, ResourceAddress::new));
+  }
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
-    env: JNIEnv,
-    _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = do_verify(&env, j_state, j_payload).to_java();
+  public String toHexString() {
+    return Hex.toHexString(value);
+  }
 
-    jni_slice_to_jbytearray(&env, &ret)
-}
+  @Override
+  public String toString() {
+    return toHexString();
+  }
 
-fn do_verify(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<bool> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transaction = Transaction::from_java(&request_payload)?;
-    let result = state_manager.decode_transaction(&transaction);
-    Ok(result.is_ok())
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(value);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof ResourceAddress other && Arrays.equals(this.value, other.value);
+  }
 }

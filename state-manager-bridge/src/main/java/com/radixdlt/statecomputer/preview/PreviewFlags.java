@@ -62,10 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.statecomputer.preview;
 
-public interface TransactionStore {
-  void insertTransaction(long stateVersion, byte[] transactionBytes);
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-  byte[] getTransactionAtStateVersion(long stateVersion);
+public record PreviewFlags(boolean unlimitedLoan) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PreviewFlags.class,
+        codecs ->
+            StructCodec.with(
+                PreviewFlags::new,
+                codecs.of(boolean.class),
+                (t, encoder) -> encoder.encode(t.unlimitedLoan)));
+  }
 }

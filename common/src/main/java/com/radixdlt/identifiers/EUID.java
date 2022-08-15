@@ -153,7 +153,7 @@ public final class EUID implements Comparable<EUID> {
    * @return An EUID by taking the 256-bit digest of provided {@code bytes}.
    */
   public static EUID sha256(byte[] bytes) {
-    return new EUID(HashUtils.sha256(bytes));
+    return new EUID(HashUtils.sha256Twice(bytes));
   }
 
   /**

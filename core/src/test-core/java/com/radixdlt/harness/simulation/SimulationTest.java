@@ -126,7 +126,7 @@ import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SyncConfig;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -527,7 +527,7 @@ public final class SimulationTest {
 
               @Genesis
               @Provides
-              Transaction genesis(@Genesis CommittedTransactionsWithProof txnsAndProof) {
+              RawTransaction genesis(@Genesis CommittedTransactionsWithProof txnsAndProof) {
                 return txnsAndProof.getTransactions().get(0);
               }
             });

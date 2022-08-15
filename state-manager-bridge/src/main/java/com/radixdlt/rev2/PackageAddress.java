@@ -62,29 +62,39 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.rev2;
 
-import static org.junit.Assert.assertEquals;
-
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.sbor.Sbor;
 import com.radixdlt.sbor.codec.CodecMap;
-import org.junit.Test;
+import com.radixdlt.sbor.codec.CustomTypeCodec;
+import com.radixdlt.sbor.codec.constants.TypeId;
+import java.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
-public class TransactionTest {
+public record PackageAddress(byte[] value) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PackageAddress.class,
+        codecs ->
+            new CustomTypeCodec<>(
+                TypeId.TYPE_CUSTOM_PACKAGE_ADDRESS, PackageAddress::value, PackageAddress::new));
+  }
 
-  @Test
-  public void testSBORSerialization() {
-    var sbor =
-        new Sbor(
-            true, new CodecMap().register(TID::registerCodec).register(Transaction::registerCodec));
+  public String toHexString() {
+    return Hex.toHexString(value);
+  }
 
-    byte[] payload = new byte[10];
-    Transaction t0 = Transaction.create(payload);
+  @Override
+  public String toString() {
+    return toHexString();
+  }
 
-    var r0 = sbor.encode(t0, Transaction.class);
-    var t1 = sbor.decode(r0, Transaction.class);
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(value);
+  }
 
-    assertEquals(t0, t1);
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof PackageAddress other && Arrays.equals(this.value, other.value);
   }
 }

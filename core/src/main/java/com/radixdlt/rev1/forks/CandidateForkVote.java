@@ -81,7 +81,7 @@ public record CandidateForkVote(HashCode payload) {
    * nonce, but it is not taken into account when the system counts the votes.
    */
   public static final HashCode FORK_VOTE_NONCE =
-      HashUtils.sha256("olympia".getBytes(StandardCharsets.US_ASCII));
+      HashUtils.sha256Twice("olympia".getBytes(StandardCharsets.US_ASCII));
 
   public static final int NAME_LEN = 16;
   public static final int CANDIDATE_FORK_HASH_LEN = 8;
@@ -138,7 +138,7 @@ public record CandidateForkVote(HashCode payload) {
   }
 
   private static byte[] nonceHash(ECPublicKey publicKey) {
-    return HashUtils.sha256(Bytes.concat(FORK_VOTE_NONCE.asBytes(), publicKey.getBytes()))
+    return HashUtils.sha256Twice(Bytes.concat(FORK_VOTE_NONCE.asBytes(), publicKey.getBytes()))
         .asBytes();
   }
 
@@ -154,7 +154,7 @@ public record CandidateForkVote(HashCode payload) {
             .reduce(new byte[0], Bytes::concat);
 
     final var fullHash =
-        HashUtils.sha256(
+        HashUtils.sha256Twice(
             Bytes.concat(
                 nameBytes,
                 thresholdsBytes,

@@ -62,10 +62,104 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+use crate::jni::dtos::JavaStructure;
+use radix_engine::fee::FeeSummary;
+use radix_engine::transaction::{PreviewResult, TransactionStatus};
+use sbor::{Decode, Encode, TypeId};
+use scrypto::component::{ComponentAddress, PackageAddress};
+use scrypto::core::Level;
+use scrypto::math::Decimal;
+use scrypto::prelude::ResourceAddress;
 
-import com.radixdlt.transactions.Transaction;
+use crate::result::StateManagerResult;
+use crate::types::PreviewError;
 
-public interface StatelessTransactionVerifier {
-  boolean verify(Transaction transaction);
+#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+pub struct PreviewErrorJava {
+    message: String,
+}
+
+impl JavaStructure for PreviewErrorJava {}
+
+impl From<PreviewError> for StateManagerResult<PreviewErrorJava> {
+    fn from(err: PreviewError) -> Self {
+        let msg: String = match err {
+            PreviewError::InvalidManifest => "Invalid manifest".to_string(),
+            PreviewError::InvalidSignerPublicKey => "Invalid signer public key".to_string(),
+            PreviewError::EngineError(engine_preview_error) => {
+                format!("Preview execution failed: {:?}", engine_preview_error)
+            }
+        };
+        Ok(PreviewErrorJava { message: msg })
+    }
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum TransactionStatusJava {
+    Rejected,
+    Succeeded(Vec<Vec<u8>>),
+    Failed(String),
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct FeeSummaryJava {
+    pub loan_fully_repaid: bool,
+    pub cost_unit_limit: u32,
+    pub cost_units_consumed: u32,
+    pub cost_unit_price: Decimal,
+    pub tip_percentage: u32,
+    pub burned: Decimal,
+    pub tipped: Decimal,
+}
+
+impl From<FeeSummary> for FeeSummaryJava {
+    fn from(fee_summary: FeeSummary) -> Self {
+        FeeSummaryJava {
+            loan_fully_repaid: fee_summary.loan_fully_repaid,
+            cost_unit_limit: fee_summary.cost_unit_limit,
+            cost_units_consumed: fee_summary.cost_unit_consumed,
+            cost_unit_price: fee_summary.cost_unit_price,
+            tip_percentage: fee_summary.tip_percentage,
+            burned: fee_summary.burned,
+            tipped: fee_summary.tipped,
+        }
+    }
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct PreviewResultJava {
+    status: TransactionStatusJava,
+    fee_summary: FeeSummaryJava,
+    application_logs: Vec<(Level, String)>,
+    new_package_addresses: Vec<PackageAddress>,
+    new_component_addresses: Vec<ComponentAddress>,
+    new_resource_addresses: Vec<ResourceAddress>,
+}
+
+impl JavaStructure for PreviewResultJava {}
+
+impl From<PreviewResult> for PreviewResultJava {
+    fn from(result: PreviewResult) -> Self {
+        let receipt = result.receipt;
+        PreviewResultJava {
+            status: receipt.status.into(),
+            fee_summary: receipt.fee_summary.into(),
+            application_logs: receipt.application_logs,
+            new_package_addresses: receipt.new_package_addresses,
+            new_component_addresses: receipt.new_component_addresses,
+            new_resource_addresses: receipt.new_resource_addresses,
+        }
+    }
+}
+
+impl From<TransactionStatus> for TransactionStatusJava {
+    fn from(status: TransactionStatus) -> Self {
+        match status {
+            TransactionStatus::Rejected => TransactionStatusJava::Rejected,
+            TransactionStatus::Succeeded(output) => TransactionStatusJava::Succeeded(output),
+            TransactionStatus::Failed(error) => {
+                TransactionStatusJava::Failed(format!("{:?}", error))
+            }
+        }
+    }
 }

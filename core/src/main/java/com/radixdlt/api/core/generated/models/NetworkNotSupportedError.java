@@ -33,6 +33,7 @@ import com.radixdlt.api.core.generated.models.MempoolFullError;
 import com.radixdlt.api.core.generated.models.NetworkIdentifier;
 import com.radixdlt.api.core.generated.models.NetworkNotSupportedError;
 import com.radixdlt.api.core.generated.models.NetworkNotSupportedErrorAllOf;
+import com.radixdlt.api.core.generated.models.PreviewError;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -56,6 +57,7 @@ import com.radixdlt.api.common.JSON;
   @JsonSubTypes.Type(value = InvalidTransactionError.class, name = "InvalidTransactionError"),
   @JsonSubTypes.Type(value = MempoolFullError.class, name = "MempoolFullError"),
   @JsonSubTypes.Type(value = NetworkNotSupportedError.class, name = "NetworkNotSupportedError"),
+  @JsonSubTypes.Type(value = PreviewError.class, name = "PreviewError"),
 })
 
 public class NetworkNotSupportedError extends CoreErrorDetails {
@@ -145,6 +147,7 @@ static {
   mappings.put("InvalidTransactionError", InvalidTransactionError.class);
   mappings.put("MempoolFullError", MempoolFullError.class);
   mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
+  mappings.put("PreviewError", PreviewError.class);
   mappings.put("NetworkNotSupportedError", NetworkNotSupportedError.class);
   JSON.registerDiscriminator(NetworkNotSupportedError.class, "type", mappings);
 }

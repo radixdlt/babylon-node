@@ -83,7 +83,7 @@ import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.targeted.mempool.SimpleMempool;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -99,13 +99,13 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
   @Override
   protected void configure() {
     bind(new TypeLiteral<Mempool<?>>() {})
-        .to(new TypeLiteral<Mempool<Transaction>>() {})
+        .to(new TypeLiteral<Mempool<RawTransaction>>() {})
         .in(Scopes.SINGLETON);
   }
 
   @Provides
   @Singleton
-  private Mempool<Transaction> mempool(
+  private Mempool<RawTransaction> mempool(
       SystemCounters systemCounters, Random random, @MempoolMaxSize int mempoolMaxSize) {
     return new SimpleMempool(systemCounters, mempoolMaxSize, random);
   }
@@ -113,7 +113,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
   @Provides
   @Singleton
   private StateComputerLedger.StateComputer stateComputer(
-      Mempool<Transaction> mempool,
+      Mempool<RawTransaction> mempool,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
       SystemCounters counters) {
     return new StateComputerLedger.StateComputer() {
@@ -134,7 +134,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       }
 
       @Override
-      public List<Transaction> getTransactionsForProposal(
+      public List<RawTransaction> getTransactionsForProposal(
           List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
         return mempool.getTransactionsForProposal(1, List.of());
       }
@@ -142,7 +142,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       @Override
       public StateComputerLedger.StateComputerResult prepare(
           List<StateComputerLedger.ExecutedTransaction> previous,
-          List<Transaction> proposedTransactions,
+          List<RawTransaction> proposedTransactions,
           RoundDetails roundDetails) {
         return new StateComputerLedger.StateComputerResult(
             proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),

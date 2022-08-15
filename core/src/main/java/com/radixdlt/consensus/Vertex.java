@@ -77,7 +77,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
@@ -171,12 +171,15 @@ public final class Vertex {
   }
 
   public static Vertex create(
-      QuorumCertificate parentQC, Round round, List<Transaction> transactions, BFTNode proposer) {
+      QuorumCertificate parentQC,
+      Round round,
+      List<RawTransaction> transactions,
+      BFTNode proposer) {
     if (round.number() == 0) {
       throw new IllegalArgumentException("Only genesis can have round 0.");
     }
 
-    var transactionBytes = transactions.stream().map(Transaction::getPayload).toList();
+    var transactionBytes = transactions.stream().map(RawTransaction::getPayload).toList();
 
     return new Vertex(parentQC, round, transactionBytes, proposer, false);
   }
@@ -207,10 +210,10 @@ public final class Vertex {
     return round;
   }
 
-  public List<Transaction> getTransactions() {
+  public List<RawTransaction> getTransactions() {
     return transactions == null
         ? List.of()
-        : transactions.stream().map(Transaction::create).toList();
+        : transactions.stream().map(RawTransaction::create).toList();
   }
 
   @JsonProperty("round")

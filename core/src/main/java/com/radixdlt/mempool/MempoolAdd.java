@@ -64,18 +64,18 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.transactions.Transaction;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
 
 /** Message to attempt to add transactions to the mempool */
-public record MempoolAdd(List<Transaction> transactions) {
-  public static MempoolAdd create(Transaction transaction) {
+public record MempoolAdd(List<RawTransaction> transactions) {
+  public static MempoolAdd create(RawTransaction transaction) {
     Objects.requireNonNull(transaction);
     return new MempoolAdd(List.of(transaction));
   }
 
-  public static MempoolAdd create(List<Transaction> transactions) {
+  public static MempoolAdd create(List<RawTransaction> transactions) {
     Objects.requireNonNull(transactions);
     return new MempoolAdd(transactions);
   }
