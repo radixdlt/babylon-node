@@ -19,7 +19,7 @@ jobs:
 
   build:
     name: Build image
-    runs-on: ubuntu-22.04
+    runs-on: babylon-runner
     steps:
       - uses: actions/checkout@v2
         with:
