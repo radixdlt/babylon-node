@@ -74,7 +74,13 @@ dependencies {
 }
 
 compileJava {
-    dependsOn(":state-manager:buildRustDebug")
+    if (System.getenv("SKIP_NATIVE_RUST_BUILD") == "TRUE") {
+        println("As SKIP_NATIVE_RUST_BUILD=TRUE, you will need to build the state-manager rust manually.")
+    } else {
+        println("The rust build required for the node will first run. (This requires cargo to be installed lcoally with rustup).")
+        println("This can be skipped with SKIP_NATIVE_RUST_BUILD=TRUE, if building the rust separately.")
+        dependsOn(":state-manager:buildRustDebug")
+    }
 }
 
 jacocoTestReport {
