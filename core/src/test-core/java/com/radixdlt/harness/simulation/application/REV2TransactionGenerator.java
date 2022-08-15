@@ -64,13 +64,28 @@
 
 package com.radixdlt.harness.simulation.application;
 
-import com.radixdlt.rev2.REv2ExampleTransactions;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.PrivateKeys;
 
 /** Generates a valid transaction for REV2 */
-public class REV2TransactionGenerator implements TransactionGenerator {
+public final class REV2TransactionGenerator implements TransactionGenerator {
+  private int currentKey = 1;
+
   @Override
   public RawTransaction nextTransaction() {
-    return RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+    final ECKeyPair key = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
+    var manifest = TransactionBuilder.buildNewAccountManifest(key.getPublicKey());
+    var hashedManifest = HashUtils.sha256Twice(manifest);
+    var signedIntent =
+        TransactionBuilder.createSignedIntentBytes(
+            manifest, key.getPublicKey(), key.sign(hashedManifest.asBytes()));
+    var hashedSignedIntent = HashUtils.sha256Twice(signedIntent);
+    var notarized =
+        TransactionBuilder.createNotarizedBytes(
+            signedIntent, key.sign(hashedSignedIntent.asBytes()));
+    return RawTransaction.create(notarized);
   }
 }

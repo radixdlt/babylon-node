@@ -116,24 +116,24 @@ public final class MempoolFillAndEmptyTest {
 
   private Injector createInjector() {
     return Guice.createInjector(
-            MempoolConfig.of(1000, 10).asModule(),
-            new MainnetForksModule(),
-            new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
-            new ForksModule(),
-            new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
-            new MockedGenesisModule(
-                    Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(1000)),
-            new MempoolFillerModule(),
-            new TestP2PModule.Builder().build(),
-            new TestMessagingModule.Builder().build(),
-            new AbstractModule() {
-              @Override
-              protected void configure() {
-                bindConstant()
-                        .annotatedWith(DatabaseLocation.class)
-                        .to(folder.getRoot().getAbsolutePath());
-              }
-            });
+        MempoolConfig.of(1000, 10).asModule(),
+        new MainnetForksModule(),
+        new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
+        new ForksModule(),
+        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+        new MockedGenesisModule(
+            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(1000)),
+        new MempoolFillerModule(),
+        new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build(),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            bindConstant()
+                .annotatedWith(DatabaseLocation.class)
+                .to(folder.getRoot().getAbsolutePath());
+          }
+        });
   }
 
   private void fillAndEmptyMempool() {
@@ -169,7 +169,7 @@ public final class MempoolFillAndEmptyTest {
 
     assertThat(
             systemCounters.get(
-                    SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
-            .isZero();
+                SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
+        .isZero();
   }
 }

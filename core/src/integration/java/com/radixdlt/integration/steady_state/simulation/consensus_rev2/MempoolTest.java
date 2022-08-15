@@ -70,16 +70,16 @@ import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.application.REV2TransactionGenerator;
-import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.rev2.REv2ExampleTransactions;
 import com.radixdlt.transaction.TransactionStoreReader;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -92,9 +92,10 @@ public class MempoolTest {
           .functionalNodeModule(
               new FunctionalRadixNodeModule(
                   false,
-                  ConsensusConfig.of(1000),
+                  ConsensusConfig.of(4000),
                   LedgerConfig.stateComputer(
-                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))), false)))
+                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))),
+                      false)))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
@@ -116,11 +117,17 @@ public class MempoolTest {
     // Post-run assertions
     assertThat(checkResults)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    for (var node : runningTest.getNetwork().getNodes()) {
-      var store = runningTest.getNetwork().getInstance(TransactionStoreReader.class, node);
-      var receipt = store.getTransactionAtStateVersion(1);
-      assertThat(receipt.getTransactionBytes())
-          .isEqualTo(REv2ExampleTransactions.VALID_TXN_BYTES_0);
-    }
+    var firstTransactions =
+        runningTest.getNetwork().getNodes().stream()
+            .map(
+                node -> {
+                  var store =
+                      runningTest.getNetwork().getInstance(TransactionStoreReader.class, node);
+                  var receipt = store.getTransactionAtStateVersion(1);
+                  var bytes = receipt.getTransactionBytes();
+                  return RawTransaction.create(bytes);
+                });
+    // All nodes have the same first transaction
+    assertThat(firstTransactions.distinct().count()).isEqualTo(1);
   }
 }
