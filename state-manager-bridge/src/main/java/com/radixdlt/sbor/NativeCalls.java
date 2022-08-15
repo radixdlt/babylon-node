@@ -62,20 +62,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.sbor;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.exceptions.StateManagerRuntimeException;
+import com.radixdlt.lang.Functions;
 import com.radixdlt.lang.Result;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.sbor.codec.Codec;
+import com.radixdlt.statemanager.StateManager;
 
-public final class StateManagerResponse {
+public interface NativeCalls {
+  record Func0<Res>(
+      StateManager.RustState rustState,
+      Codec<Result<Res, StateManagerRuntimeError>> responseCodec,
+      Functions.Func1<StateManager.RustState, byte[]> nativeFunction) {
+    public static <Res> Func0<Res> with(
+        StateManager.RustState rustState,
+        TypeToken<Result<Res, StateManagerRuntimeError>> responseType,
+        Functions.Func1<StateManager.RustState, byte[]> nativeFunction) {
+      return new Func0<>(rustState, StateManagerSbor.resolveCodec(responseType), nativeFunction);
+    }
 
-  public static <T> T decode(
-      byte[] stateManagerResponse, TypeToken<Result<T, StateManagerRuntimeError>> type) {
-    var result = StateManagerSbor.sbor.decode(stateManagerResponse, type);
+    public Res call() {
+      final var encodedResponse = nativeFunction.apply(rustState);
+      return handleStateManagerResponse(StateManagerSbor.decode(encodedResponse, responseCodec));
+    }
+  }
 
+  record Func1<Req, Res>(
+      StateManager.RustState rustState,
+      Codec<Req> requestCodec,
+      Codec<Result<Res, StateManagerRuntimeError>> responseCodec,
+      Functions.Func2<StateManager.RustState, byte[], byte[]> nativeFunction) {
+    public static <Req, Res> Func1<Req, Res> with(
+        StateManager.RustState rustState,
+        TypeToken<Req> requestType,
+        TypeToken<Result<Res, StateManagerRuntimeError>> responseType,
+        Functions.Func2<StateManager.RustState, byte[], byte[]> nativeFunction) {
+      return new Func1<>(
+          rustState,
+          StateManagerSbor.resolveCodec(requestType),
+          StateManagerSbor.resolveCodec(responseType),
+          nativeFunction);
+    }
+
+    public Res call(Req request) {
+      final var encodedRequest = StateManagerSbor.encode(request, requestCodec);
+      final var encodedResponse = nativeFunction.apply(rustState, encodedRequest);
+      return handleStateManagerResponse(StateManagerSbor.decode(encodedResponse, responseCodec));
+    }
+  }
+
+  static <Res> Res handleStateManagerResponse(Result<Res, StateManagerRuntimeError> result) {
     // Handle System/Runtime Errors
     if (result.isError()) {
       throw new StateManagerRuntimeException(result.unwrapError());

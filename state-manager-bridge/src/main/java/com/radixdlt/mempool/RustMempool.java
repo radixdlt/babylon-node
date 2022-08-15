@@ -65,34 +65,68 @@
 package com.radixdlt.mempool;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Result;
-import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statemanager.StateManager.RustState;
-import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
 
-// This must become the new Mempool Interface.
 public class RustMempool {
-  private final RustState rustState;
+  private static native byte[] add(RustState rustState, byte[] transaction);
+
+  private final NativeCalls.Func1<RawTransaction, Result<RawTransaction, MempoolError>> addFunc;
+
+  private static native byte[] getTransactionsForProposal(RustState rustState, byte[] encodedArgs);
+
+  private final NativeCalls.Func1<
+          GetTransactionsForProposalRustArgs, Result<List<RawTransaction>, MempoolError>>
+      getTransactionsForProposalFunc;
+
+  private static native byte[] getTransactionsToRelay(RustState rustState, byte[] encodedArgs);
+
+  private final NativeCalls.Func1<
+          GetRelayedTransactionsRustArgs, Result<List<RawTransaction>, MempoolError>>
+      getTransactionsToRelayFunc;
+
+  private static native byte[] getCount(RustState rustState);
+
+  private final NativeCalls.Func0<Integer> getCountFunc;
+
+  private static native byte[] handleTransactionsCommitted(
+      RustState rustState, byte[] transactions);
+
+  private final NativeCalls.Func1<List<RawTransaction>, Result<List<RawTransaction>, MempoolError>>
+      handleTransactionsCommittedFunc;
 
   public RustMempool(RustState rustState) {
-    this.rustState = Objects.requireNonNull(rustState);
+    Objects.requireNonNull(rustState);
+    addFunc =
+        NativeCalls.Func1.with(
+            rustState, new TypeToken<>() {}, new TypeToken<>() {}, RustMempool::add);
+    getTransactionsForProposalFunc =
+        NativeCalls.Func1.with(
+            rustState,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            RustMempool::getTransactionsForProposal);
+    getTransactionsToRelayFunc =
+        NativeCalls.Func1.with(
+            rustState,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            RustMempool::getTransactionsToRelay);
+    getCountFunc = NativeCalls.Func0.with(rustState, new TypeToken<>() {}, RustMempool::getCount);
+    handleTransactionsCommittedFunc =
+        NativeCalls.Func1.with(
+            rustState,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            RustMempool::handleTransactionsCommitted);
   }
 
-  private static final TypeToken<
-          Result<Result<RawTransaction, MempoolError>, StateManagerRuntimeError>>
-      addResponseType = new TypeToken<>() {};
-  private static final TypeToken<
-          Result<Result<List<RawTransaction>, MempoolError>, StateManagerRuntimeError>>
-      listTransactionType = new TypeToken<>() {};
-
   public RawTransaction addTransaction(RawTransaction transaction) throws MempoolRejectedException {
-    var encodedRequest = StateManagerSbor.sbor.encode(transaction, RawTransaction.class);
-    var encodedResponse = add(this.rustState, encodedRequest);
-    var result = StateManagerResponse.decode(encodedResponse, addResponseType);
+    var result = addFunc.call(transaction);
 
     // Handle Errors.
     if (result.isError()) {
@@ -106,8 +140,7 @@ public class RustMempool {
     }
 
     // No error is possible for this call at present, so unwrap should be safe
-    var processedTransaction = result.unwrap();
-    return processedTransaction;
+    return result.unwrap();
   }
 
   public List<RawTransaction> getTransactionsForProposal(
@@ -116,57 +149,30 @@ public class RustMempool {
       throw new IllegalArgumentException("State Manager Mempool: count must be > 0: " + count);
     }
 
-    var args = new GetTransactionsForProposalRustArgs(count, preparedTransactions);
-    var encodedRequest =
-        StateManagerSbor.sbor.encode(args, GetTransactionsForProposalRustArgs.class);
-    var encodedResponse = getTransactionsForProposal(this.rustState, encodedRequest);
-    var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
+    final var args = new GetTransactionsForProposalRustArgs(count, preparedTransactions);
+    final var result = getTransactionsForProposalFunc.call(args);
 
     // No error is possible for this call at present, so unwrap should be safe
-    var newTransactions = result.unwrap();
-    return newTransactions;
+    return result.unwrap();
   }
 
   public List<RawTransaction> getTransactionsToRelay(
       long initialDelayMillis, long repeatDelayMillis) {
     var args = new GetRelayedTransactionsRustArgs(initialDelayMillis, repeatDelayMillis);
-    var encodedRequest = StateManagerSbor.sbor.encode(args, GetRelayedTransactionsRustArgs.class);
-    var encodedResponse = getTransactionsToRelay(this.rustState, encodedRequest);
-    var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
+    var result = getTransactionsToRelayFunc.call(args);
 
     // No error is possible for this call at present, so unwrap should be safe
     return result.unwrap();
   }
 
   public void handleTransactionsCommitted(List<RawTransaction> transactions) {
-    var encodedRequest =
-        StateManagerSbor.sbor.encode(transactions, new TypeToken<List<RawTransaction>>() {});
-    var encodedResponse = handleTransactionsCommitted(this.rustState, encodedRequest);
-    var result = StateManagerResponse.decode(encodedResponse, listTransactionType);
+    var result = handleTransactionsCommittedFunc.call(transactions);
 
-    // No error should be possible for this call at present
-    // But unwrap to make sure we didn't have one.
+    // No error is possible for this call at present, so unwrap should be safe
     result.unwrap();
   }
 
   public int getCount() {
-    var encodedResponse = getCount(this.rustState);
-    var transactionCount =
-        StateManagerResponse.decode(
-            encodedResponse, new TypeToken<Result<Integer, StateManagerRuntimeError>>() {});
-
-    // Not A Result
-    return transactionCount;
+    return getCountFunc.call();
   }
-
-  private static native byte[] add(RustState rustState, byte[] transaction);
-
-  private static native byte[] handleTransactionsCommitted(
-      RustState rustState, byte[] transactions);
-
-  private static native byte[] getCount(RustState rustState);
-
-  private static native byte[] getTransactionsForProposal(RustState rustState, byte[] encodedArgs);
-
-  private static native byte[] getTransactionsToRelay(RustState rustState, byte[] encodedArgs);
 }

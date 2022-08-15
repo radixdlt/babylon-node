@@ -65,6 +65,7 @@
 package com.radixdlt.sbor;
 
 import com.google.common.hash.HashCode;
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
@@ -77,6 +78,7 @@ import com.radixdlt.rev2.LogLevel;
 import com.radixdlt.rev2.PackageAddress;
 import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.rev2.TransactionStatus;
+import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.statecomputer.preview.FeeSummary;
@@ -90,8 +92,7 @@ import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
 public final class StateManagerSbor {
-
-  public static final Sbor sbor = createSborForStateManager();
+  private static final Sbor sbor = createSborForStateManager();
 
   private static Sbor createSborForStateManager() {
     return new Sbor(
@@ -99,6 +100,22 @@ public final class StateManagerSbor {
         new CodecMap()
             .register(StateManagerSbor::registerCodecsWithCodecMap)
             .register(StateManagerSbor::registerCodecsForExistingTypes));
+  }
+
+  public static <T> byte[] encode(T value, Codec<T> codec) {
+    return sbor.encode(value, codec);
+  }
+
+  public static <T> T decode(byte[] sborBytes, Codec<T> codec) {
+    return sbor.decode(sborBytes, codec);
+  }
+
+  public static <T> Codec<T> resolveCodec(TypeToken<T> typeToken) {
+    return sbor.resolveCodec(typeToken);
+  }
+
+  public static <T> Codec<T> resolve() {
+    return sbor.resolveCodec(new TypeToken<>() {});
   }
 
   public static void registerCodecsWithCodecMap(CodecMap codecMap) {
