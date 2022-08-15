@@ -97,7 +97,7 @@ public final class ECDSASignature {
         codecs ->
             new CustomTypeCodec<>(
                 TypeId.TYPE_CUSTOM_ECDSA_SIGNATURE,
-                ECDSASignature::getBytes,
+                ECDSASignature::getConcatRSBytes,
                 k -> {
                   throw new UnsupportedOperationException("Decoding unsupported.");
                 }));
@@ -180,13 +180,13 @@ public final class ECDSASignature {
     return toHexString();
   }
 
-  public byte[] getBytes() {
+  public byte[] getConcatRSBytes() {
     return com.google.common.primitives.Bytes.concat(
-        Bytes.trimLeadingZeros(r.toByteArray()), Bytes.trimLeadingZeros(s.toByteArray()));
+        Bytes.bigIntegerToBytes(r, 32), Bytes.bigIntegerToBytes(s, 32));
   }
 
   public String toHexString() {
-    return Bytes.toHexString(getBytes());
+    return Bytes.toHexString(getConcatRSBytes());
   }
 
   @Override
