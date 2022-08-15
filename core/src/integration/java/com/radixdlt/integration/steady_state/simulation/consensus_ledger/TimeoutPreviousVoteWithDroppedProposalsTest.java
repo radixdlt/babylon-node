@@ -77,6 +77,9 @@ import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.time.Duration;
 import java.util.stream.LongStream;
@@ -101,7 +104,13 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
               NetworkOrdering.inOrder(),
               NetworkLatencies.fixed(),
               NetworkDroppers.dropAllProposals())
-          .functionalNodeModule(FunctionalRadixNodeModule.justLedger())
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  ConsensusConfig.of(1000L),
+                  LedgerConfig.stateComputer(
+                      StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE),
+                      false)))
           .addTestModules(
               ConsensusMonitors.safety(),
               LedgerMonitors.consensusToLedger(),
