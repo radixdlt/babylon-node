@@ -261,7 +261,7 @@ public final class REParser {
   }
 
   private HashCode calculatePayloadHash(RawTransaction transaction, int sigPosition) {
-    return HashUtils.sha256(transaction.getPayload(), 0, sigPosition); // This is a double hash
+    return HashUtils.sha256Twice(transaction.getPayload(), 0, sigPosition); // This is a double hash
   }
 
   private REInstruction readInstruction(ParserState parserState, ByteBuffer buf)

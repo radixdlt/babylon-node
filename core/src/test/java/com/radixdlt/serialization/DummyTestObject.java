@@ -135,7 +135,7 @@ public final class DummyTestObject extends BasicContainer {
       this.bfalse = false;
       this.num = 0x123456789abcdefL;
       this.id = new EUID(UInt128.from(r.nextLong(), r.nextLong()));
-      this.theHash = HashUtils.sha256(randomData);
+      this.theHash = HashUtils.sha256Twice(randomData);
       this.bytes = randomData.clone();
       this.string = getClass().getName();
       this.array = new ArrayList<>(Collections.nCopies(10, id));

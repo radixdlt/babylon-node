@@ -202,7 +202,7 @@ public final class REAddr {
     var dataToHash = new byte[33 + nameBytes.length];
     System.arraycopy(publicKey.getCompressedBytes(), 0, dataToHash, 0, 33);
     System.arraycopy(nameBytes, 0, dataToHash, 33, nameBytes.length);
-    var hash = HashUtils.sha256(dataToHash);
+    var hash = HashUtils.sha256Twice(dataToHash);
     return Arrays.copyOfRange(hash.asBytes(), 32 - HASHED_KEY_BYTES, 32);
   }
 

@@ -137,7 +137,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
     }
 
     try {
-      return fromPrivateKey(HashUtils.sha256(seed).asBytes());
+      return fromPrivateKey(HashUtils.sha256Twice(seed).asBytes());
     } catch (PrivateKeyException | PublicKeyException e) {
       throw new IllegalStateException("Should always be able to create private key from seed", e);
     }

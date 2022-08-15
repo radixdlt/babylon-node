@@ -93,7 +93,7 @@ class SHAHashHandler implements HashHandler {
    */
   @Override
   public byte[] hash256(byte[] data, int offset, int length) {
-    return hash256Twice(data, offset, length);
+    return sha256Twice(data, offset, length);
   }
 
   /**
@@ -104,10 +104,10 @@ class SHAHashHandler implements HashHandler {
    */
   @Override
   public byte[] hash512(byte[] data, int offset, int length) {
-    return hash512Twice(data, offset, length);
+    return sha512Twice(data, offset, length);
   }
 
-  private byte[] hash256Twice(byte[] data, int offset, int length) {
+  public byte[] sha256Twice(byte[] data, int offset, int length) {
     final MessageDigest hash256DigesterOuterLocal = hash256DigesterOuter.get();
     final MessageDigest hash256DigesterInnerLocal = hash256DigesterInner.get();
     hash256DigesterOuterLocal.reset();
@@ -116,7 +116,7 @@ class SHAHashHandler implements HashHandler {
     return hash256DigesterOuterLocal.digest(hash256DigesterInnerLocal.digest());
   }
 
-  private byte[] hash512Twice(byte[] data, int offset, int length) {
+  public byte[] sha512Twice(byte[] data, int offset, int length) {
     final MessageDigest hash512DigesterLocal = hash512Digester.get();
     hash512DigesterLocal.reset();
     hash512DigesterLocal.update(data, offset, length);
