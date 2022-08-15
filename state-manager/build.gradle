@@ -117,7 +117,7 @@ task buildRustForDocker(type: Exec) {
     def dockerCmd
     if (project.hasProperty('ci')){
         workingDir rootProject.projectDir
-        dockerCmd=dockerBuildCmd
+        dockerCmd = dockerBuildCmd
     } else{
         dockerCmd = dockerComposeRun
     }
