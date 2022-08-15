@@ -137,7 +137,7 @@ public class MempoolTest {
         new RadixEngineForksLatestOnlyModule(
             RERulesConfig.testingDefault().removeSigsPerRoundLimit()),
         new ForksModule(),
-        MempoolConfig.asModule(10, 10, 200, 500, 10),
+        new MempoolConfig(10, 10, 200, 500, 10).asModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
         new MockedGenesisModule(
             Set.of(VALIDATOR_KEY.getPublicKey()), Amount.ofTokens(1000), Amount.ofTokens(100)),

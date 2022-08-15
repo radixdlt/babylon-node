@@ -91,7 +91,7 @@ public class REv2StateComputerTest {
           new CryptoModule(),
           new REv2StateComputerModule(),
           new REv2StateManagerModule(),
-          MempoolConfig.asModule(100, 1000L),
+          MempoolConfig.of(100, 1000).asModule(),
           new AbstractModule() {
             @Override
             protected void configure() {

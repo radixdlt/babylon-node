@@ -62,30 +62,13 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.simulation.application;
+package com.radixdlt.mempool;
 
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
-import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
 
-/** Generates a valid transaction for REV2 */
-public final class REV2TransactionGenerator implements TransactionGenerator {
-  private int currentKey = 1;
+public interface MempoolReader {
+  List<RawTransaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis);
 
-  @Override
-  public RawTransaction nextTransaction() {
-    final ECKeyPair key = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
-    var manifest = TransactionBuilder.buildNewAccountManifest(key.getPublicKey());
-    var hashedManifest = HashUtils.sha256Twice(manifest);
-    var signedIntent =
-        TransactionBuilder.createSignedIntentBytes(
-            manifest, key.getPublicKey(), key.sign(hashedManifest.asBytes()));
-    var hashedSignedIntent = HashUtils.sha256Twice(signedIntent);
-    var notarized =
-        TransactionBuilder.createNotarizedBytes(
-            signedIntent, key.sign(hashedSignedIntent.asBytes()));
-    return RawTransaction.create(notarized);
-  }
+  int getCount();
 }

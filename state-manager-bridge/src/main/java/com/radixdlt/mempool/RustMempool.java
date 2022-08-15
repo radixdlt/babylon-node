@@ -75,7 +75,7 @@ import java.util.List;
 import java.util.Objects;
 
 // This must become the new Mempool Interface.
-public class RustMempool {
+public class RustMempool implements MempoolReader {
   private final RustState rustState;
 
   public RustMempool(RustState rustState) {
@@ -128,6 +128,7 @@ public class RustMempool {
     return newTransactions;
   }
 
+  @Override
   public List<RawTransaction> getTransactionsToRelay(
       long initialDelayMillis, long repeatDelayMillis) {
     var args = new GetRelayedTransactionsRustArgs(initialDelayMillis, repeatDelayMillis);
@@ -139,6 +140,7 @@ public class RustMempool {
     return result.unwrap();
   }
 
+  @Override
   public int getCount() {
     var encodedResponse = getCount(this.rustState);
     var transactionCount =

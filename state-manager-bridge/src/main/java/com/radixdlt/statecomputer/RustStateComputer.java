@@ -68,7 +68,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Result;
 import com.radixdlt.mempool.MempoolInserter;
-import com.radixdlt.mempool.MempoolRelayReader;
+import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
@@ -101,8 +101,8 @@ public class RustStateComputer {
     return this.transactionStore;
   }
 
-  public MempoolRelayReader getMempoolRelayReader() {
-    return this.mempool::getTransactionsToRelay;
+  public MempoolReader getMempoolReader() {
+    return this.mempool;
   }
 
   public MempoolInserter<RawTransaction> getMempoolInserter() {

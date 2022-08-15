@@ -124,7 +124,7 @@ public abstract class AbstractRadixEngineTest {
   public void setup() {
     var injector =
         Guice.createInjector(
-            MempoolConfig.asModule(mempoolMaxSize, 10),
+            MempoolConfig.of(mempoolMaxSize, 10).asModule(),
             new MainnetForksModule(),
             new RadixEngineForksLatestOnlyModule(
                 RERulesConfig.testingDefault()

@@ -108,7 +108,7 @@ public class PacemakerTest {
 
   private Injector createRunner() {
     return Guice.createInjector(
-        MempoolConfig.asModule(10, 10),
+        MempoolConfig.of(10, 10).asModule(),
         new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(),
         new ForksModule(),
