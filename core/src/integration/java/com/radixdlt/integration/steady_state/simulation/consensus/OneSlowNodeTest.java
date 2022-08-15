@@ -71,6 +71,7 @@ import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -90,7 +91,7 @@ public class OneSlowNodeTest {
           .networkModules(
               NetworkOrdering.inOrder(),
               NetworkLatencies.oneSlowProposalSender(minLatency, maxLatency))
-          .pacemakerTimeout(synchronousTimeout)
+          .consensusOnly(ConsensusConfig.of(synchronousTimeout))
           .addTestModules(ConsensusMonitors.safety(), ConsensusMonitors.directParents());
 
   /**

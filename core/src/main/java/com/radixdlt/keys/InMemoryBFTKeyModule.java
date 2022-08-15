@@ -71,35 +71,42 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import java.util.Objects;
 import java.util.function.Function;
 
 /** In memory Hash signing and identity handling */
 public final class InMemoryBFTKeyModule extends AbstractModule {
+  private final ECKeyPair keyPair;
+
+  public InMemoryBFTKeyModule(ECKeyPair keyPair) {
+    this.keyPair = Objects.requireNonNull(keyPair);
+  }
+
   @Override
   public void configure() {
     bind(HashSigner.class).annotatedWith(LocalSigner.class).to(HashSigner.class);
   }
 
   @Provides
-  public HashSigner hashSigner(@Self ECKeyPair self) {
-    return self::sign;
+  public HashSigner hashSigner() {
+    return keyPair::sign;
   }
 
   @Provides
   @Self
-  ECPublicKey node(@Self BFTNode bftNode) {
-    return bftNode.getKey();
+  ECPublicKey publicKey() {
+    return keyPair.getPublicKey();
   }
 
   @Provides
   @Self
-  public BFTNode node(@Self ECKeyPair self) {
-    return BFTNode.create(self.getPublicKey());
+  public BFTNode node() {
+    return BFTNode.create(keyPair.getPublicKey());
   }
 
   @Provides
   @Self
-  String name(Function<ECPublicKey, String> nodeToString, @Self ECPublicKey key) {
-    return nodeToString.apply(key);
+  String name(Function<ECPublicKey, String> nodeToString) {
+    return nodeToString.apply(keyPair.getPublicKey());
   }
 }

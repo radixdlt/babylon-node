@@ -140,7 +140,7 @@ public final class ConsensusMonitors {
         return new EventNeverOccursInvariant<>(
             nodeEvents,
             LocalTimeoutOccurrence.class,
-            timeout -> timeout.getRound().gt(Round.of(1)));
+            timeout -> timeout.getRound().gt(Round.of(4)));
       }
 
       @ProvidesIntoMap

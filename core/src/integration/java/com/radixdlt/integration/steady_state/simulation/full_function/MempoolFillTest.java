@@ -79,6 +79,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.rev1.checkpoint.TokenIssuance;
@@ -100,7 +101,7 @@ public class MempoolFillTest {
       SimulationTest.builder()
           .numNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .fullFunctionNodes(SyncConfig.of(800L, 10, 5000L))
+          .fullFunctionNodes(ConsensusConfig.of(), SyncConfig.of(800L, 10, 5000L))
           .addRadixEngineConfigModules(
               new MainnetForksModule(), new RadixEngineForksLatestOnlyModule(), new ForksModule())
           .addNodeModule(

@@ -80,6 +80,7 @@ import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.network.SimulationNetwork.MessageInTransit;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -155,7 +156,7 @@ public final class InvalidQcIsIgnoredTest {
                 NetworkLatencies.fixed(),
                 NetworkMessageModifiers.modifyProposals(REPLACE_PROPOSALS_QC_WITH_INVALID_SIGS),
                 NetworkMessageModifiers.modifyVotes(REPLACE_VOTES_QC_WITH_INVALID_SIGS))
-            .pacemakerTimeout(1000)
+            .consensusOnly(ConsensusConfig.of(1000))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .numNodes(3)
             .build();

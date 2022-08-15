@@ -65,26 +65,25 @@
 package com.radixdlt.sbor;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
 import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
 import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.rev2.LogLevel;
-import com.radixdlt.rev2.PackageAddress;
-import com.radixdlt.rev2.ResourceAddress;
-import com.radixdlt.rev2.TransactionStatus;
+import com.radixdlt.rev2.*;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.preview.FeeSummary;
 import com.radixdlt.statecomputer.preview.PreviewError;
 import com.radixdlt.statecomputer.preview.PreviewFlags;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
 import com.radixdlt.statecomputer.preview.PreviewResult;
 import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.transaction.ExecutedTransactionReceipt;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
@@ -114,8 +113,8 @@ public final class StateManagerSbor {
     TransactionStatus.registerCodec(codecMap);
     Decimal.registerCodec(codecMap);
     LogLevel.registerCodec(codecMap);
-    PackageAddress.registerCodec(codecMap);
     ComponentAddress.registerCodec(codecMap);
+    PackageAddress.registerCodec(codecMap);
     ResourceAddress.registerCodec(codecMap);
     FeeSummary.registerCodec(codecMap);
     TID.registerCodec(codecMap);
@@ -123,6 +122,10 @@ public final class StateManagerSbor {
     MempoolError.registerCodec(codecMap);
     GetTransactionsForProposalRustArgs.registerCodec(codecMap);
     GetRelayedTransactionsRustArgs.registerCodec(codecMap);
+    ExecutedTransactionReceipt.registerCodec(codecMap);
+    ECPublicKey.registerCodec(codecMap);
+    ECDSASignature.registerCodec(codecMap);
+    CommitRequest.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

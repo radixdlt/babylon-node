@@ -75,6 +75,7 @@ import com.radixdlt.harness.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
@@ -92,7 +93,7 @@ public class SanityTest {
               new MainnetForksModule(),
               new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
               new ForksModule())
-          .ledgerAndRadixEngineWithEpochMaxRound()
+          .ledgerAndRadixEngineWithEpochMaxRound(ConsensusConfig.of())
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

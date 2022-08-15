@@ -73,6 +73,7 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SyncConfig;
 import java.util.Collection;
@@ -107,8 +108,7 @@ public class FNodesNeverReceiveProposalDropperTest {
                 NetworkOrdering.inOrder(),
                 NetworkLatencies.fixed(10),
                 NetworkDroppers.fNodesAllReceivedProposalsDropped())
-            .pacemakerTimeout(3000)
-            .ledgerAndSync(SyncConfig.of(200L, 10, 200L))
+            .ledgerAndSync(ConsensusConfig.of(3000), SyncConfig.of(200L, 10, 200L))
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),

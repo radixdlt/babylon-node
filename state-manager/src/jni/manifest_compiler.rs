@@ -132,5 +132,3 @@ impl From<&str> for CompileManifestErrorJava {
         }
     }
 }
-
-impl JavaStructure for CompileManifestErrorJava {}

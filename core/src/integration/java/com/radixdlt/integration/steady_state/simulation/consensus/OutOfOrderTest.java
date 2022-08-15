@@ -72,6 +72,7 @@ import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.Collection;
 import java.util.List;
@@ -109,7 +110,7 @@ public final class OutOfOrderTest {
                 NetworkOrdering.outOfOrder(),
                 NetworkLatencies.random(minLatency, maxLatency),
                 NetworkDroppers.fRandomProposalsPerRoundDropped())
-            .pacemakerTimeout(5000)
+            .consensusOnly(ConsensusConfig.of(5000))
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
