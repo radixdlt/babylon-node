@@ -70,6 +70,7 @@ import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.application.REV2TransactionGenerator;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -93,10 +94,10 @@ public class MempoolTest {
                   false,
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputer(
-                      StateComputerConfig.rev2(REV2ProposerConfig.mempool()), false)))
+                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))), false)))
           .addTestModules(
               ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
               ConsensusMonitors.noTimeouts(),
               ConsensusMonitors.directParents(),
               LedgerMonitors.consensusToLedger(),

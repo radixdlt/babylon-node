@@ -138,7 +138,7 @@ public class SanityTest {
                         10,
                         MSG.maxLength())),
                 new ForksModule())
-            .addNodeModule(MempoolConfig.asModule(1000, 10))
+            .addNodeModule(MempoolConfig.of(1000, 10).asModule())
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(3, TimeUnit.SECONDS),

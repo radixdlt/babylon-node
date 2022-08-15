@@ -370,7 +370,7 @@ public final class SimulationTest {
               consensusConfig,
               LedgerConfig.stateComputer(
                   StateComputerConfig.mocked(MempoolType.LOCAL_ONLY), false));
-      this.modules.add(MempoolConfig.asModule(10, 10));
+      this.modules.add(MempoolConfig.of(10, 10).asModule());
       return this;
     }
 
@@ -383,7 +383,7 @@ public final class SimulationTest {
             @Override
             protected void configure() {
               bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(List.of());
-              install(MempoolConfig.asModule(100, 10));
+              install(MempoolConfig.of(100, 10).asModule());
             }
 
             @Provides
@@ -440,6 +440,7 @@ public final class SimulationTest {
             public void configure() {
               var multibinder = Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
               multibinder.addBinding().to(LocalMempoolPeriodicSubmitter.class);
+              bind(txnGeneratorClass).in(Scopes.SINGLETON);
               bind(TransactionGenerator.class).to(txnGeneratorClass);
             }
 

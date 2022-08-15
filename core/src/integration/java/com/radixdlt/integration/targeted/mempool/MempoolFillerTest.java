@@ -121,7 +121,7 @@ public class MempoolFillerTest {
         new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(),
         new ForksModule(),
-        MempoolConfig.asModule(10, 10),
+        MempoolConfig.of(10, 10).asModule(),
         new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(100)),

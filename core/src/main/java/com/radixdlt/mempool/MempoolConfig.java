@@ -67,21 +67,16 @@ package com.radixdlt.mempool;
 import com.google.inject.AbstractModule;
 
 /** Configuration parameters for mempool. */
-public final class MempoolConfig {
-  private MempoolConfig() {
-    throw new IllegalStateException("Cannot instantiate.");
+public record MempoolConfig(int maxSize, long throttleMs, long relayInitialDelayMillis, long relayRepeatDelayMillis, int relayMaxPeers) {
+  public static MempoolConfig of(int maxSize) {
+    return new MempoolConfig(maxSize, 10000, 60000, 60000, 100);
   }
 
-  public static AbstractModule asModule(int maxSize, long throttleMs) {
-    return asModule(maxSize, throttleMs, 60000, 60000, 100);
+  public static MempoolConfig of(int maxSize, long throttleMs) {
+    return new MempoolConfig(maxSize, throttleMs, 60000, 60000, 100);
   }
 
-  public static AbstractModule asModule(
-      int maxSize,
-      long throttleMs,
-      long relayInitialDelayMillis,
-      long relayRepeatDelayMillis,
-      int relayMaxPeers) {
+  public AbstractModule asModule() {
     return new AbstractModule() {
       @Override
       protected void configure() {

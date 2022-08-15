@@ -279,9 +279,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 bindConstant().annotatedWith(MempoolMaxSize.class).to(0);
                 install(new REv2StatelessComputerModule());
               }
-              case REV2ProposerConfig.Mempool ignored -> {
+              case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolReceiverModule());
-                install(MempoolConfig.asModule(100, 10000));
+                install(mempool.config().asModule());
                 install(new REv2StateComputerModule());
               }
             }

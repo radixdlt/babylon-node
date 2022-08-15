@@ -151,7 +151,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Mempool configuration
     var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
-    install(MempoolConfig.asModule(mempoolMaxSize, 5, 60000, 60000, 100));
+    install(new MempoolConfig(mempoolMaxSize, 5, 60000, 60000, 100).asModule());
 
     // Sync configuration
     final long syncPatience = properties.get("sync.patience", 5000L);
