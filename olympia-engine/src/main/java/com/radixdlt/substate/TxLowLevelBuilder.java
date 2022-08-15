@@ -361,7 +361,7 @@ public final class TxLowLevelBuilder {
   }
 
   public HashCode hashToSign() {
-    return HashUtils.sha256(blob()); // this is a double hash
+    return HashUtils.sha256Twice(blob()); // this is a double hash
   }
 
   public TxLowLevelBuilder sig(ECDSASignature signature) {

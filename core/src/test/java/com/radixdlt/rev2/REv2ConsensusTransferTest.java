@@ -143,13 +143,13 @@ public final class REv2ConsensusTransferTest {
 
   private static RawTransaction createNewAccountTransaction() {
     var unsignedManifest = TransactionBuilder.buildNewAccountManifest(TEST_KEY.getPublicKey());
-    var hashedManifest = HashUtils.sha256(unsignedManifest).asBytes();
+    var hashedManifest = HashUtils.sha256Twice(unsignedManifest).asBytes();
 
     var intentSignature = TEST_KEY.sign(hashedManifest);
     var signedIntent =
         TransactionBuilder.createSignedIntentBytes(
             unsignedManifest, TEST_KEY.getPublicKey(), intentSignature);
-    var hashedSignedIntent = HashUtils.sha256(signedIntent).asBytes();
+    var hashedSignedIntent = HashUtils.sha256Twice(signedIntent).asBytes();
 
     var notarySignature = TEST_KEY.sign(hashedSignedIntent);
     var transactionPayload = TransactionBuilder.createNotarizedBytes(signedIntent, notarySignature);

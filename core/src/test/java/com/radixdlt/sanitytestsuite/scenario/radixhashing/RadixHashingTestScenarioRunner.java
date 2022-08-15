@@ -85,7 +85,8 @@ public final class RadixHashingTestScenarioRunner
 
   @Override
   public void doRunTestVector(RadixHashingTestVector testVector) throws AssertionError {
-    var hashHex = Bytes.toHexString(HashUtils.sha256(testVector.input.bytesToHash()).asBytes());
+    var hashHex =
+        Bytes.toHexString(HashUtils.sha256Twice(testVector.input.bytesToHash()).asBytes());
 
     assertEquals(testVector.expected.hashOfHash, hashHex);
   }
