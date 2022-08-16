@@ -73,6 +73,8 @@ import com.radixdlt.harness.simulation.application.REV2TransactionGenerator;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.rev2.REv2ExampleTransactions;
@@ -86,11 +88,11 @@ public class MempoolTest {
       SimulationTest.builder()
           .numNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .pacemakerTimeout(1000)
           .functionalNodeModule(
               new FunctionalRadixNodeModule(
                   false,
-                  FunctionalRadixNodeModule.LedgerConfig.stateComputer(
+                  ConsensusConfig.of(1000),
+                  LedgerConfig.stateComputer(
                       StateComputerConfig.rev2(REV2ProposerConfig.mempool()), false)))
           .addTestModules(
               ConsensusMonitors.safety(),
@@ -115,8 +117,9 @@ public class MempoolTest {
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
     for (var node : runningTest.getNetwork().getNodes()) {
       var store = runningTest.getNetwork().getInstance(TransactionStoreReader.class, node);
-      var txn = store.getTransactionAtStateVersion(1);
-      assertThat(txn).isEqualTo(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+      var receipt = store.getTransactionAtStateVersion(1);
+      assertThat(receipt.getTransactionBytes())
+          .isEqualTo(REv2ExampleTransactions.VALID_TXN_BYTES_0);
     }
   }
 }

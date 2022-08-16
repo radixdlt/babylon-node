@@ -64,10 +64,17 @@
 
 package com.radixdlt.transaction;
 
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.exceptions.StateManagerRuntimeError;
+import com.radixdlt.lang.Result;
 import com.radixdlt.statemanager.StateManager.RustState;
+import com.radixdlt.statemanager.StateManagerResponse;
 import java.util.Objects;
 
 public final class RustTransactionStore implements TransactionStoreReader {
+
+  private static final TypeToken<Result<ExecutedTransactionReceipt, StateManagerRuntimeError>>
+      receiptType = new TypeToken<>() {};
 
   private final RustState rustState;
 
@@ -75,17 +82,11 @@ public final class RustTransactionStore implements TransactionStoreReader {
     this.rustState = Objects.requireNonNull(rustState);
   }
 
-  public void insertTransaction(long stateVersion, byte[] transactionBytes) {
-    insertTransaction(this.rustState, stateVersion, transactionBytes);
-  }
-
   @Override
-  public byte[] getTransactionAtStateVersion(long stateVersion) {
-    return getTransactionAtStateVersion(this.rustState, stateVersion);
+  public ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion) {
+    var encodedResponse = getTransactionAtStateVersion(this.rustState, stateVersion);
+    return StateManagerResponse.decode(encodedResponse, receiptType);
   }
-
-  private static native void insertTransaction(
-      RustState rustState, long stateVersion, byte[] transactionBytes);
 
   private static native byte[] getTransactionAtStateVersion(RustState rustState, long stateVersion);
 }

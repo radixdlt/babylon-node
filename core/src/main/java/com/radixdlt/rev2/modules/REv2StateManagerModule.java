@@ -72,6 +72,7 @@ import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRelayReader;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
@@ -110,5 +111,10 @@ public final class REv2StateManagerModule extends AbstractModule {
   @Singleton
   private RustStateComputer rEv2StateComputer(StateManager stateManager) {
     return new RustStateComputer(stateManager.getRustState());
+  }
+
+  @Provides
+  public REv2StateReader stateReader(RustStateComputer rustStateComputer) {
+    return rustStateComputer::getComponentXrdAmount;
   }
 }

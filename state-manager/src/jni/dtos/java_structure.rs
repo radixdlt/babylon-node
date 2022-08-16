@@ -74,7 +74,15 @@ pub use sbor::{Decode, Encode, TypeId};
  * In general, some structs - such as eg "Transaction" are okay to be shared with Java.
  * But errors should be explicitly mapped to a corresponding Java error, for unmapping on the Java side.
  */
-pub trait JavaStructure: Encode + Decode + TypeId {
+pub trait JavaStructure {
+    fn from_java(data: &[u8]) -> StateManagerResult<Self>
+    where
+        Self: Sized;
+
+    fn to_java(&self) -> Vec<u8>;
+}
+
+impl<T: Encode + Decode + TypeId> JavaStructure for T {
     fn from_java(data: &[u8]) -> StateManagerResult<Self> {
         decode_with_type(data).map_err(|e| {
             StateManagerError::create(ERRCODE_SBOR, format!("SBOR Decode Failed: {:?}", e))
@@ -85,17 +93,6 @@ pub trait JavaStructure: Encode + Decode + TypeId {
         encode_with_type(self)
     }
 }
-
-// Tag general structures
-impl JavaStructure for () {}
-
-impl<T: JavaStructure, E: JavaStructure> JavaStructure for Result<T, E> {}
-
-impl<T: JavaStructure> JavaStructure for Option<T> {}
-
-impl JavaStructure for bool {}
-
-impl JavaStructure for Vec<u8> {}
 
 #[cfg(test)]
 mod tests {
@@ -112,8 +109,6 @@ mod tests {
         bytes_b: Vec<u8>,
         a: TypeA,
     }
-
-    impl JavaStructure for TypeB {}
 
     #[test]
     fn local_sbor_test_transaction() {

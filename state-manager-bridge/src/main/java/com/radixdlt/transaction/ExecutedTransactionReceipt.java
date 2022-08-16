@@ -62,71 +62,49 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.transaction;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.modules.CryptoModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.rev2.modules.REv2StateComputerModule;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.transactions.RawTransaction;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 import java.util.List;
-import org.junit.Test;
 
-public class REv2Test {
-  private final Injector injector =
-      Guice.createInjector(
-          new CryptoModule(),
-          new REv2StateComputerModule(),
-          new REv2StateManagerModule(),
-          MempoolConfig.asModule(100, 1000L),
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
-              bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-            }
-          });
-
-  @Test
-  public void test_valid_rev2_transaction_passes() {
-    // Arrange
-    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var validTransaction = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
-
-    // Act
-    var result =
-        stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
-
-    // Assert
-    assertThat(result.getSuccessfullyExecutedTransactions()).hasSize(1);
-    assertThat(result.getFailedTransactions()).isEmpty();
+/** Receipt for a transaction which has been executed */
+public final class ExecutedTransactionReceipt {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ExecutedTransactionReceipt.class,
+        (codecs) ->
+            StructCodec.with(
+                ExecutedTransactionReceipt::new,
+                codecs.of(String.class),
+                codecs.of(new TypeToken<byte[]>() {}),
+                codecs.of(new TypeToken<List<ComponentAddress>>() {}),
+                (t, encoder) ->
+                    encoder.encode(t.result, t.transactionBytes, t.newComponentAddresses)));
   }
 
-  @Test
-  public void test_invalid_rev2_transaction_fails() {
-    // Arrange
-    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var validTransaction = RawTransaction.create(new byte[1]);
+  private final String result;
+  private final byte[] transactionBytes;
+  private final List<ComponentAddress> newComponentAddresses;
 
-    // Act
-    var result =
-        stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
+  private ExecutedTransactionReceipt(
+      String result, byte[] transactionBytes, List<ComponentAddress> new_component_addressses) {
+    this.result = result;
+    this.transactionBytes = transactionBytes;
+    this.newComponentAddresses = new_component_addressses;
+  }
 
-    // Assert
-    assertThat(result.getSuccessfullyExecutedTransactions()).isEmpty();
-    assertThat(result.getFailedTransactions()).hasSize(1);
+  public String getResult() {
+    return result;
+  }
+
+  public byte[] getTransactionBytes() {
+    return transactionBytes;
+  }
+
+  public List<ComponentAddress> getNewComponentAddresses() {
+    return newComponentAddresses;
   }
 }

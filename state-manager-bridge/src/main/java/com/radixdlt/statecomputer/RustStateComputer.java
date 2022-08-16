@@ -70,7 +70,10 @@ import com.radixdlt.lang.Result;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayReader;
 import com.radixdlt.mempool.RustMempool;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.preview.PreviewError;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
 import com.radixdlt.statecomputer.preview.PreviewResult;
@@ -94,9 +97,6 @@ public class RustStateComputer {
     this.transactionStore = new RustTransactionStore(rustState);
   }
 
-  private static final TypeToken<Result<Boolean, StateManagerRuntimeError>> booleanType =
-      new TypeToken<>() {};
-
   public TransactionStoreReader getTransactionStoreReader() {
     return this.transactionStore;
   }
@@ -114,17 +114,17 @@ public class RustStateComputer {
     return this.mempool.getTransactionsForProposal(count, transactionToExclude);
   }
 
-  public void commit(List<RawTransaction> transactions, long committedStateVersion) {
-    this.mempool.handleTransactionsCommitted(transactions);
-    for (int i = 0; i < transactions.size(); i++) {
-      var transaction = transactions.get(i);
+  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
+    return callNativeFn(
+        componentAddress,
+        ComponentAddress.class,
+        new TypeToken<>() {},
+        RustStateComputer::componentXrdAmount);
+  }
 
-      var transactionBytes = StateManagerSbor.sbor.encode(transaction, RawTransaction.class);
-      execute(this.rustState, transactionBytes);
-
-      var transactionStateVersion = committedStateVersion - transactions.size() + i;
-      this.transactionStore.insertTransaction(transactionStateVersion, transaction.getPayload());
-    }
+  public void commit(CommitRequest commitRequest) {
+    final var encodedRequest = StateManagerSbor.sbor.encode(commitRequest, CommitRequest.class);
+    commit(this.rustState, encodedRequest);
   }
 
   public boolean verify(RawTransaction transaction) {
@@ -151,5 +151,8 @@ public class RustStateComputer {
 
   private static native byte[] preview(StateManager.RustState rustState, byte[] encodedArgs);
 
-  private static native byte[] execute(StateManager.RustState rustState, byte[] encodedArgs);
+  private static native byte[] commit(StateManager.RustState rustState, byte[] encodedArgs);
+
+  private static native byte[] componentXrdAmount(
+      StateManager.RustState rustState, byte[] encodedArgs);
 }

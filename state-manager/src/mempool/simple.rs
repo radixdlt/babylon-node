@@ -143,17 +143,14 @@ impl Mempool for SimpleMempool {
         }
     }
 
-    fn handle_committed_transactions(
-        &mut self,
-        transactions: &[Transaction],
-    ) -> Result<Vec<Transaction>, MempoolError> {
+    fn handle_committed_transactions(&mut self, transactions: &[Transaction]) -> Vec<Transaction> {
         let mut removed = Vec::new();
         for t in transactions {
             if self.data.remove(&t.id).is_some() {
                 removed.push(t.clone())
             };
         }
-        Ok(removed)
+        removed
     }
 
     fn get_count(&self) -> u64 {
@@ -292,18 +289,14 @@ mod tests {
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv2));
 
-        let rc = mp.handle_committed_transactions(&Vec::from([tv1.clone()]));
-        assert!(rc.is_ok());
-        let rem = rc.unwrap();
+        let rem = mp.handle_committed_transactions(&Vec::from([tv1.clone()]));
         assert!(rem.contains(&tv1));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 1);
         assert!(mp.data.contains_key(&tv2.id));
         assert!(!mp.data.contains_key(&tv1.id));
 
-        let rc = mp.handle_committed_transactions(&Vec::from([tv2.clone()]));
-        assert!(rc.is_ok());
-        let rem = rc.unwrap();
+        let rem = mp.handle_committed_transactions(&Vec::from([tv2.clone()]));
         assert!(rem.contains(&tv2));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 0);
@@ -311,9 +304,7 @@ mod tests {
         assert!(!mp.data.contains_key(&tv1.id));
 
         // mempool is empty. Should return no transactions.
-        let rc = mp.handle_committed_transactions(&Vec::from([tv3, tv2, tv1]));
-        assert!(rc.is_ok());
-        let rem = rc.unwrap();
+        let rem = mp.handle_committed_transactions(&Vec::from([tv3, tv2, tv1]));
         assert!(rem.is_empty());
     }
 

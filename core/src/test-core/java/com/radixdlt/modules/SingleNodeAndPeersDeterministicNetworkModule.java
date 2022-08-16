@@ -95,8 +95,7 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
 
   @Override
   protected void configure() {
-    bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(self);
-    install(new PersistedNodeForTestingModule(stateComputerConfig));
+    install(new PersistedNodeForTestingModule(self, stateComputerConfig));
   }
 
   @Provides

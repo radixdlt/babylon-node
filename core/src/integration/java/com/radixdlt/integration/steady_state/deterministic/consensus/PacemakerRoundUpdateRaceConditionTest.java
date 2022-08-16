@@ -80,6 +80,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.utils.KeyComparator;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -112,7 +113,6 @@ public class PacemakerRoundUpdateRaceConditionTest {
             .numNodes(numNodes)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(messUpMessagesForNodeUnderTest())
-            .pacemakerTimeout(pacemakerTimeout)
             .overrideWithIncorrectModule(
                 new AbstractModule() {
                   @ProvidesIntoSet
@@ -148,7 +148,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
                         sortedValidators.get(((int) round.number() - 1) % sortedValidators.size());
                   }
                 })
-            .buildWithoutEpochs()
+            .buildWithoutEpochs(ConsensusConfig.of(pacemakerTimeout))
             .runUntil(nodeUnderTestReachesRound(Round.of(3)));
 
     final var counters = test.getSystemCounters(nodeUnderTestIndex);

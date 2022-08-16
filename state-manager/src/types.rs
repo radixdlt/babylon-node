@@ -62,28 +62,20 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::*;
 use radix_engine::transaction::PreviewError as EnginePreviewError;
 use sbor::{Decode, Encode, TypeId};
 use transaction::model::PreviewFlags;
-
-impl JavaStructure for i32 {}
-impl JavaStructure for Vec<Transaction> {}
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]
 pub struct TId {
     pub bytes: Vec<u8>,
 }
 
-impl JavaStructure for TId {}
-
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]
 pub struct Transaction {
     pub payload: Vec<u8>,
     pub id: TId,
 }
-
-impl JavaStructure for Transaction {}
 
 #[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
 pub struct PreviewRequest {
@@ -95,11 +87,15 @@ pub struct PreviewRequest {
     pub flags: PreviewFlags,
 }
 
-impl JavaStructure for PreviewRequest {}
-
 #[derive(Debug)]
 pub enum PreviewError {
     InvalidManifest,
     InvalidSignerPublicKey,
     EngineError(EnginePreviewError),
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
+pub struct CommitRequest {
+    pub transactions: Vec<Transaction>,
+    pub state_version: u64,
 }

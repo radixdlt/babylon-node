@@ -31,6 +31,8 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
+      - name: Install libclang-dev
+        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
       - name: Cache SonarCloud packages
         uses: actions/cache@v1
         with:
@@ -68,6 +70,8 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
+      - name: Install libclang-dev
+        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
       - name: Cache Gradle packages
         uses: actions/cache@v1
         with:
@@ -97,6 +101,8 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
+      - name: Install libclang-dev
+        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
       - name: Cache Gradle packages
         uses: actions/cache@v1
         with:

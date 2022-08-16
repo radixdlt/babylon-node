@@ -80,6 +80,7 @@ import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.consensus.SyncMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SyncConfig;
 import java.util.concurrent.TimeUnit;
@@ -127,8 +128,8 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
                       ImmutableList.of(nonValidatorSyncNodeKey));
                 })
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(10))
-            .pacemakerTimeout(3000)
             .ledgerAndEpochsAndSync(
+                ConsensusConfig.of(3000),
                 Round.of(100),
                 (unused) -> VALIDATORS_INDICES.stream().mapToInt(i -> i),
                 SyncConfig.of(1000L, 10, 500L, 10, Long.MAX_VALUE))

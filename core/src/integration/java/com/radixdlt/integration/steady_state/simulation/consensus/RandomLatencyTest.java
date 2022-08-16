@@ -72,6 +72,7 @@ import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -97,7 +98,8 @@ public class RandomLatencyTest {
               NetworkOrdering.inOrder(),
               NetworkLatencies.random(minLatency, maxLatency),
               NetworkDroppers.bftSyncMessagesDropped())
-          .pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
+          .consensusOnly(
+              ConsensusConfig.of(synchronousTimeout)) // Since no syncing needed 6*MTT required
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(synchronousTimeout, TimeUnit.MILLISECONDS),

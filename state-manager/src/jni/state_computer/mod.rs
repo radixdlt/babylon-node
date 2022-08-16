@@ -69,11 +69,12 @@ use dto::*;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use scrypto::prelude::*;
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
 use crate::result::{ResultStateManagerMaps, StateManagerResult};
-use crate::types::{PreviewRequest, Transaction};
+use crate::types::{CommitRequest, PreviewRequest, Transaction};
 
 //
 // JNI Interface
@@ -126,29 +127,51 @@ fn do_preview(
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_execute(
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     env: JNIEnv,
     _class: JClass,
     j_state: JObject,
     j_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_execute(&env, j_state, j_payload).to_java();
-
+    let ret = do_commit(&env, j_state, j_payload).to_java();
     jni_slice_to_jbytearray(&env, &ret)
 }
 
-fn do_execute(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<()> {
+fn do_commit(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateManagerResult<()> {
     let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transaction = Transaction::from_java(&request_payload)?;
-    let validated_txn = state_manager
-        .state_manager
-        .decode_transaction(&transaction)
-        .expect("Error on Byzantine quorum");
+    let commit_request = CommitRequest::from_java(&request_payload)?;
+
     state_manager
         .state_manager
-        .execute_transaction(validated_txn)
-        .expect("Error on Byzantine quorum");
-
+        .commit(commit_request.transactions, commit_request.state_version);
     Ok(())
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXrdAmount(
+    env: JNIEnv,
+    _class: JClass,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = get_component_xrd(&env, j_state, j_payload).to_java();
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+fn get_component_xrd(
+    env: &JNIEnv,
+    j_state: JObject,
+    j_payload: jbyteArray,
+) -> StateManagerResult<Decimal> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state);
+    let request_payload = jni_jbytearray_to_vector(env, j_payload)?;
+    let component_address = ComponentAddress::from_java(&request_payload)?;
+    let resources = state_manager
+        .state_manager
+        .get_component_resources(component_address);
+    let amount = resources
+        .map(|r| r.get(&RADIX_TOKEN).cloned().unwrap_or_else(Decimal::zero))
+        .unwrap_or_else(Decimal::zero);
+    Ok(amount)
 }

@@ -72,8 +72,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
-use radix_engine::ledger::{OutputValue, ReadableSubstateStore, WriteableSubstateStore};
-use scrypto::engine::types::SubstateId;
+use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use std::sync::MutexGuard;
 
 const POINTER_JNI_FIELD_NAME: &str = "stateManagerPointer";
@@ -97,20 +96,8 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
     JNIStateManager::cleanup(&env, interop_state);
 }
 
-pub struct TemporaryStore;
-
-impl ReadableSubstateStore for TemporaryStore {
-    fn get_substate(&self, _substate_id: &SubstateId) -> Option<OutputValue> {
-        None
-    }
-}
-
-impl WriteableSubstateStore for TemporaryStore {
-    fn put_substate(&mut self, _substate_id: SubstateId, _substate: OutputValue) {}
-}
-
 pub struct JNIStateManager {
-    pub state_manager: StateManager<SimpleMempool, TemporaryStore>,
+    pub state_manager: StateManager<SimpleMempool, SerializedInMemorySubstateStore>,
 }
 
 impl JNIStateManager {
@@ -131,7 +118,7 @@ impl JNIStateManager {
 
         let mempool = SimpleMempool::new(mempool_config);
         let transaction_store = TransactionStore::new();
-        let substate_store = TemporaryStore;
+        let substate_store = SerializedInMemorySubstateStore::with_bootstrap();
 
         // Build the state manager.
         let state_manager = StateManager::new(mempool, transaction_store, substate_store);

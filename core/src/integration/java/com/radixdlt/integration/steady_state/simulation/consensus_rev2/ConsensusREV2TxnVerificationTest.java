@@ -72,6 +72,7 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
@@ -86,10 +87,10 @@ public class ConsensusREV2TxnVerificationTest {
       SimulationTest.builder()
           .numNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .pacemakerTimeout(1000)
           .functionalNodeModule(
               new FunctionalRadixNodeModule(
                   false,
+                  ConsensusConfig.of(1000),
                   LedgerConfig.stateComputer(
                       StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer()), false)))
           .addTestModules(

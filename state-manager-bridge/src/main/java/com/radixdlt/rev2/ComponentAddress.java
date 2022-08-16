@@ -81,6 +81,20 @@ public record ComponentAddress(byte[] value) {
                 ComponentAddress::new));
   }
 
+  private static final int COMPONENT_ADDRESS_BYTES_LENGTH = 27;
+  public static final ComponentAddress SYSTEM_COMPONENT_ADDRESS =
+      ComponentAddress.create(
+          new byte[] {
+            2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2
+          });
+
+  public static ComponentAddress create(byte[] addressBytes) {
+    if (addressBytes.length != COMPONENT_ADDRESS_BYTES_LENGTH) {
+      throw new IllegalArgumentException("Invalid component address length");
+    }
+    return new ComponentAddress(addressBytes);
+  }
+
   public String toHexString() {
     return Hex.toHexString(value);
   }

@@ -75,7 +75,9 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.UInt64;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -142,7 +144,9 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   @Override
   public void commit(
       CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-    stateComputer.commit(txnsAndProof.getTransactions(), txnsAndProof.getProof().getStateVersion());
+    var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
+    var commitRequest = new CommitRequest(txnsAndProof.getTransactions(), stateVersion);
+    stateComputer.commit(commitRequest);
     var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
   }
