@@ -277,12 +277,6 @@ public final class SimulationTest {
       return numNodes(numNodes, ImmutableList.of(UInt256.ONE));
     }
 
-    public Builder consensusOnly(ConsensusConfig consensusConfig) {
-      this.functionalNodeModule =
-          new FunctionalRadixNodeModule(false, consensusConfig, LedgerConfig.mocked());
-      return this;
-    }
-
     public Builder ledgerAndEpochs(
         ConsensusConfig consensusConfig,
         Round epochMaxRound,
