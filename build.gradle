@@ -77,7 +77,7 @@ plugins {
 /*
 define default value for the rust binary build type
 */
-ext.buildVersion = project.findProperty('rustBinaryBuildType') ?: 'debug'
+ext.rustBinaryBuildType = project.findProperty('rustBinaryBuildType') ?: 'debug'
 
 /*
  * Creates a nice version name we can use for built assets; from the git version.
