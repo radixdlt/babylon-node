@@ -99,10 +99,8 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
-
-import java.util.List;
-
 import com.radixdlt.utils.TimeSupplier;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -113,15 +111,15 @@ import org.junit.experimental.categories.Category;
  * behind.
  */
 @Category(Slow.class)
-public final class MempoolFillAndEmptyTest {
+public final class REv2MempoolFillAndEmptyTest {
   private static final Logger logger = LogManager.getLogger();
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
   private final DeterministicNetwork network =
-          new DeterministicNetwork(
-                  List.of(BFTNode.create(TEST_KEY.getPublicKey())),
-                  MessageSelector.firstSelector(),
-                  MessageMutator.nothing());
+      new DeterministicNetwork(
+          List.of(BFTNode.create(TEST_KEY.getPublicKey())),
+          MessageSelector.firstSelector(),
+          MessageMutator.nothing());
   private final REV2TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
 
   @Inject private SystemCounters systemCounters;
@@ -131,30 +129,32 @@ public final class MempoolFillAndEmptyTest {
 
   private Injector createInjector() {
     return Guice.createInjector(
-            new CryptoModule(),
-            new TestMessagingModule.Builder().withDefaultRateLimit().build(),
-            new MockedLedgerRecoveryModule(),
-            new MockedConsensusRecoveryModule.Builder()
-                    .withNodes(List.of(BFTNode.create(TEST_KEY.getPublicKey())))
-                    .build(),
-            new MockedPersistenceStoreModule(),
-            new FunctionalRadixNodeModule(
-                    false,
-                    FunctionalRadixNodeModule.ConsensusConfig.of(),
-                    FunctionalRadixNodeModule.LedgerConfig.stateComputer(
-                            StateComputerConfig.rev2(StateComputerConfig.REV2ProposerConfig.mempool(MempoolConfig.of(1000))), false)),
-            new TestP2PModule.Builder().build(),
-            new InMemoryBFTKeyModule(TEST_KEY),
-            new DeterministicEnvironmentModule(
-                    network.createSender(BFTNode.create(TEST_KEY.getPublicKey()))),
-            new AbstractModule() {
-              @Override
-              protected void configure() {
-                bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-                bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-                bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-              }
-            });
+        new CryptoModule(),
+        new TestMessagingModule.Builder().withDefaultRateLimit().build(),
+        new MockedLedgerRecoveryModule(),
+        new MockedConsensusRecoveryModule.Builder()
+            .withNodes(List.of(BFTNode.create(TEST_KEY.getPublicKey())))
+            .build(),
+        new MockedPersistenceStoreModule(),
+        new FunctionalRadixNodeModule(
+            false,
+            FunctionalRadixNodeModule.ConsensusConfig.of(),
+            FunctionalRadixNodeModule.LedgerConfig.stateComputer(
+                StateComputerConfig.rev2(
+                    StateComputerConfig.REV2ProposerConfig.mempool(MempoolConfig.of(1000))),
+                false)),
+        new TestP2PModule.Builder().build(),
+        new InMemoryBFTKeyModule(TEST_KEY),
+        new DeterministicEnvironmentModule(
+            network.createSender(BFTNode.create(TEST_KEY.getPublicKey()))),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+            bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
+            bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+          }
+        });
   }
 
   private void fillAndEmptyMempool() throws Exception {
@@ -200,7 +200,7 @@ public final class MempoolFillAndEmptyTest {
 
     assertThat(
             systemCounters.get(
-                    SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
-            .isZero();
+                SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
+        .isZero();
   }
 }
