@@ -73,32 +73,6 @@ import java.util.List;
 import java.util.Objects;
 
 public class RustMempool {
-  private static native byte[] add(RustState rustState, byte[] transaction);
-
-  private final NativeCalls.Func1<RawTransaction, Result<RawTransaction, MempoolError>> addFunc;
-
-  private static native byte[] getTransactionsForProposal(RustState rustState, byte[] encodedArgs);
-
-  private final NativeCalls.Func1<
-          GetTransactionsForProposalRustArgs, Result<List<RawTransaction>, MempoolError>>
-      getTransactionsForProposalFunc;
-
-  private static native byte[] getTransactionsToRelay(RustState rustState, byte[] encodedArgs);
-
-  private final NativeCalls.Func1<
-          GetRelayedTransactionsRustArgs, Result<List<RawTransaction>, MempoolError>>
-      getTransactionsToRelayFunc;
-
-  private static native byte[] getCount(RustState rustState);
-
-  private final NativeCalls.Func0<Integer> getCountFunc;
-
-  private static native byte[] handleTransactionsCommitted(
-      RustState rustState, byte[] transactions);
-
-  private final NativeCalls.Func1<List<RawTransaction>, Result<List<RawTransaction>, MempoolError>>
-      handleTransactionsCommittedFunc;
-
   public RustMempool(RustState rustState) {
     Objects.requireNonNull(rustState);
     addFunc =
@@ -117,12 +91,6 @@ public class RustMempool {
             new TypeToken<>() {},
             RustMempool::getTransactionsToRelay);
     getCountFunc = NativeCalls.Func0.with(rustState, new TypeToken<>() {}, RustMempool::getCount);
-    handleTransactionsCommittedFunc =
-        NativeCalls.Func1.with(
-            rustState,
-            new TypeToken<>() {},
-            new TypeToken<>() {},
-            RustMempool::handleTransactionsCommitted);
   }
 
   public RawTransaction addTransaction(RawTransaction transaction) throws MempoolRejectedException {
@@ -135,7 +103,8 @@ public class RustMempool {
             fullStatus.currentSize(), fullStatus.maxSize());
         case MempoolError.Duplicate ignored -> throw new MempoolDuplicateException(
             String.format("Mempool already has transaction %s", transaction.getPayloadHash()));
-        case MempoolError.DecodeError e -> throw new MempoolRejectedException(e.errorDescription());
+        case MempoolError.TransactionValidationError e -> throw new MempoolRejectedException(
+            e.errorDescription());
       }
     }
 
@@ -165,14 +134,27 @@ public class RustMempool {
     return result.unwrap();
   }
 
-  public void handleTransactionsCommitted(List<RawTransaction> transactions) {
-    var result = handleTransactionsCommittedFunc.call(transactions);
-
-    // No error is possible for this call at present, so unwrap should be safe
-    result.unwrap();
-  }
-
   public int getCount() {
     return getCountFunc.call();
   }
+
+  private static native byte[] add(RustState rustState, byte[] transaction);
+
+  private final NativeCalls.Func1<RawTransaction, Result<RawTransaction, MempoolError>> addFunc;
+
+  private static native byte[] getTransactionsForProposal(RustState rustState, byte[] encodedArgs);
+
+  private final NativeCalls.Func1<
+          GetTransactionsForProposalRustArgs, Result<List<RawTransaction>, MempoolError>>
+      getTransactionsForProposalFunc;
+
+  private static native byte[] getTransactionsToRelay(RustState rustState, byte[] encodedArgs);
+
+  private final NativeCalls.Func1<
+          GetRelayedTransactionsRustArgs, Result<List<RawTransaction>, MempoolError>>
+      getTransactionsToRelayFunc;
+
+  private static native byte[] getCount(RustState rustState);
+
+  private final NativeCalls.Func0<Integer> getCountFunc;
 }

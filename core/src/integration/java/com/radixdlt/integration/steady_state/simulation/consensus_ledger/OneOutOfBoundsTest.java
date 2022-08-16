@@ -91,7 +91,6 @@ public class OneOutOfBoundsTest {
               NetworkOrdering.inOrder(),
               NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency))
           .functionalNodeModule(FunctionalRadixNodeModule.justLedger())
-          .pacemakerTimeout(1000)
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(4, TimeUnit.SECONDS),

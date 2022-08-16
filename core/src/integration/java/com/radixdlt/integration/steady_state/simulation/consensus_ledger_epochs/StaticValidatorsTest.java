@@ -71,6 +71,7 @@ import com.radixdlt.harness.simulation.*;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -82,7 +83,6 @@ public class StaticValidatorsTest {
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .numNodes(4)
-          .pacemakerTimeout(1000)
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
@@ -95,7 +95,8 @@ public class StaticValidatorsTest {
       long epochRounds, long epochRoundsCheck) {
     SimulationTest bftTest =
         bftTestBuilder
-            .ledgerAndEpochs(Round.of(epochRounds), e -> IntStream.range(0, 4))
+            .ledgerAndEpochs(
+                ConsensusConfig.of(1000), Round.of(epochRounds), e -> IntStream.range(0, 4))
             .addTestModules(ConsensusMonitors.epochMaxRound(Round.of(epochRoundsCheck)))
             .build();
 

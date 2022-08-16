@@ -83,6 +83,7 @@ import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.RadixEngineStateComputer;
 import com.radixdlt.rev1.forks.CandidateForkVote;
@@ -113,7 +114,7 @@ public final class CoordinatedForkSanityTest {
         SimulationTest.builder()
             .numNodes(NUM_VALIDATORS, Collections.nCopies(NUM_VALIDATORS, UInt256.ONE))
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .fullFunctionNodes(SyncConfig.of(400L, 10, 2000L))
+            .fullFunctionNodes(ConsensusConfig.of(), SyncConfig.of(400L, 10, 2000L))
             .addRadixEngineConfigModules(new MockedForksModule(2), new ForksModule())
             .addNodeModule(MempoolConfig.asModule(1000, 10))
             .addTestModules(

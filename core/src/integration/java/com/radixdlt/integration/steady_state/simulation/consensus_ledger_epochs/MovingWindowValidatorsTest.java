@@ -73,6 +73,7 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -101,8 +102,8 @@ public class MovingWindowValidatorsTest {
     SimulationTest bftTest =
         bftTestBuilder
             .numNodes(4)
-            .ledgerAndEpochs(Round.of(100), windowedEpochToNodesMapper(1, 4))
-            .pacemakerTimeout(5000)
+            .ledgerAndEpochs(
+                ConsensusConfig.of(5000), Round.of(100), windowedEpochToNodesMapper(1, 4))
             .addTestModules(
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
                 ConsensusMonitors.epochMaxRound(Round.of(100)))
@@ -117,8 +118,8 @@ public class MovingWindowValidatorsTest {
     SimulationTest bftTest =
         bftTestBuilder
             .numNodes(4)
-            .ledgerAndEpochs(Round.of(100), windowedEpochToNodesMapper(3, 4))
-            .pacemakerTimeout(1000)
+            .ledgerAndEpochs(
+                ConsensusConfig.of(1000), Round.of(100), windowedEpochToNodesMapper(3, 4))
             .addTestModules(
                 ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
                 ConsensusMonitors.epochMaxRound(Round.of(100)))
@@ -133,8 +134,8 @@ public class MovingWindowValidatorsTest {
     SimulationTest bftTest =
         bftTestBuilder
             .numNodes(100)
-            .ledgerAndEpochs(Round.of(100), windowedEpochToNodesMapper(25, 50))
-            .pacemakerTimeout(5000)
+            .ledgerAndEpochs(
+                ConsensusConfig.of(5000), Round.of(100), windowedEpochToNodesMapper(25, 50))
             .addTestModules(
                 ConsensusMonitors.liveness(
                     5, TimeUnit.SECONDS), // High timeout to make Travis happy
@@ -151,8 +152,8 @@ public class MovingWindowValidatorsTest {
     SimulationTest bftTest =
         bftTestBuilder
             .numNodes(100)
-            .ledgerAndEpochs(Round.of(1), windowedEpochToNodesMapper(25, 50))
-            .pacemakerTimeout(5000)
+            .ledgerAndEpochs(
+                ConsensusConfig.of(5000), Round.of(1), windowedEpochToNodesMapper(25, 50))
             .addTestModules(
                 ConsensusMonitors.epochMaxRound(Round.of(1)),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS) // High timeout to make Travis happy

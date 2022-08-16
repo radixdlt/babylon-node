@@ -62,7 +62,6 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::JavaStructure;
 use sbor::{Decode, Encode, TypeId};
 
 // System Errors.
@@ -88,8 +87,6 @@ impl StateManagerError {
         StateManagerResult::Err(StateManagerError::create(error_code, error_msg))
     }
 }
-
-impl JavaStructure for StateManagerError {}
 
 pub trait ToStateManagerError {
     fn to_state_manager_error(&self) -> StateManagerError;

@@ -84,7 +84,6 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
@@ -102,6 +101,7 @@ import com.radixdlt.ledger.*;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.MempoolType;
 import com.radixdlt.modules.MockedCryptoModule;
@@ -178,9 +178,8 @@ public final class SimulationTest {
 
   public static class Builder {
     private ImmutableList<ECKeyPair> initialNodes = ImmutableList.of(ECKeyPair.generateNew());
-    private long pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
     private FunctionalRadixNodeModule functionalNodeModule =
-        new FunctionalRadixNodeModule(false, LedgerConfig.mocked());
+        new FunctionalRadixNodeModule(false, ConsensusConfig.of(), LedgerConfig.mocked());
 
     private Module initialNodesModule;
     private final ImmutableList.Builder<Module> testModules = ImmutableList.builder();
@@ -218,11 +217,6 @@ public final class SimulationTest {
 
     public Builder addNetworkModule(Module networkModule) {
       this.networkModule = Modules.combine(this.networkModule, networkModule);
-      return this;
-    }
-
-    public Builder pacemakerTimeout(long pacemakerTimeout) {
-      this.pacemakerTimeout = pacemakerTimeout;
       return this;
     }
 
@@ -283,11 +277,20 @@ public final class SimulationTest {
       return numNodes(numNodes, ImmutableList.of(UInt256.ONE));
     }
 
+    public Builder consensusOnly(ConsensusConfig consensusConfig) {
+      this.functionalNodeModule =
+          new FunctionalRadixNodeModule(false, consensusConfig, LedgerConfig.mocked());
+      return this;
+    }
+
     public Builder ledgerAndEpochs(
-        Round epochMaxRound, Function<Long, IntStream> epochToNodeIndexMapper) {
+        ConsensusConfig consensusConfig,
+        Round epochMaxRound,
+        Function<Long, IntStream> epochToNodeIndexMapper) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               true,
+              consensusConfig,
               LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false));
       this.epochToNodeIndexMapper = epochToNodeIndexMapper;
       this.modules.add(
@@ -306,10 +309,11 @@ public final class SimulationTest {
       return this;
     }
 
-    public Builder ledgerAndSync(SyncConfig syncConfig) {
+    public Builder ledgerAndSync(ConsensusConfig consensusConfig, SyncConfig syncConfig) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               false,
+              consensusConfig,
               LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true));
       modules.add(
           new AbstractModule() {
@@ -321,10 +325,10 @@ public final class SimulationTest {
       return this;
     }
 
-    public Builder fullFunctionNodes(SyncConfig syncConfig) {
+    public Builder fullFunctionNodes(ConsensusConfig consensusConfig, SyncConfig syncConfig) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
-              true, LedgerConfig.stateComputer(StateComputerConfig.rev1(), true));
+              true, consensusConfig, LedgerConfig.stateComputer(StateComputerConfig.rev1(), true));
       modules.add(
           new AbstractModule() {
             @Override
@@ -338,12 +342,15 @@ public final class SimulationTest {
     }
 
     public Builder ledgerAndEpochsAndSync(
+        ConsensusConfig consensusConfig,
         Round epochMaxRound,
         Function<Long, IntStream> epochToNodeIndexMapper,
         SyncConfig syncConfig) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
-              true, LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true));
+              true,
+              consensusConfig,
+              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true));
       this.epochToNodeIndexMapper = epochToNodeIndexMapper;
       modules.add(
           new AbstractModule() {
@@ -356,20 +363,21 @@ public final class SimulationTest {
       return this;
     }
 
-    public Builder ledgerAndMempool() {
+    public Builder ledgerAndMempool(ConsensusConfig consensusConfig) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               false,
+              consensusConfig,
               LedgerConfig.stateComputer(
                   StateComputerConfig.mocked(MempoolType.LOCAL_ONLY), false));
       this.modules.add(MempoolConfig.asModule(10, 10));
       return this;
     }
 
-    public Builder ledgerAndRadixEngineWithEpochMaxRound() {
+    public Builder ledgerAndRadixEngineWithEpochMaxRound(ConsensusConfig consensusConfig) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
-              true, LedgerConfig.stateComputer(StateComputerConfig.rev1(), false));
+              true, consensusConfig, LedgerConfig.stateComputer(StateComputerConfig.rev1(), false));
       this.modules.add(
           new AbstractModule() {
             @Override
@@ -467,12 +475,6 @@ public final class SimulationTest {
             public void configure() {
               bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
               bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-              bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
-              bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(pacemakerTimeout);
-              bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
-              bindConstant()
-                  .annotatedWith(PacemakerMaxExponent.class)
-                  .to(0); // Use constant timeout for now
               bind(NodeEvents.class).toInstance(nodeEvents);
             }
           });

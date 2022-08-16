@@ -242,13 +242,12 @@ public class OneNodeAlwaysAliveSafetyTest {
                 10,
                 MSG.maxLength())),
         new ForksModule(),
-        new PersistedNodeForTestingModule(),
+        new PersistedNodeForTestingModule(ecKeyPair),
         new TestP2PModule.Builder().build(),
         new TestMessagingModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {
-            bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(ecKeyPair);
             bind(Environment.class)
                 .toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
             bindConstant()

@@ -74,6 +74,7 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Random;
@@ -98,9 +99,8 @@ public class OneNodeNeverSendEpochResponseTest {
               NetworkOrdering.inOrder(),
               NetworkLatencies.fixed(),
               NetworkDroppers.oneNodePerEpochLedgerStatusUpdateDropped())
-          .pacemakerTimeout(1000)
           .numNodes(numNodes)
-          .ledgerAndEpochs(Round.of(4), randomEpochToNodesMapper())
+          .ledgerAndEpochs(ConsensusConfig.of(1000), Round.of(4), randomEpochToNodesMapper())
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5, TimeUnit.SECONDS),

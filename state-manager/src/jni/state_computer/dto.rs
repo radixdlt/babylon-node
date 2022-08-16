@@ -62,7 +62,6 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::JavaStructure;
 use radix_engine::fee::FeeSummary;
 use radix_engine::transaction::{PreviewResult, TransactionStatus};
 use sbor::{Decode, Encode, TypeId};
@@ -78,8 +77,6 @@ use crate::types::PreviewError;
 pub struct PreviewErrorJava {
     message: String,
 }
-
-impl JavaStructure for PreviewErrorJava {}
 
 impl From<PreviewError> for StateManagerResult<PreviewErrorJava> {
     fn from(err: PreviewError) -> Self {
@@ -135,8 +132,6 @@ pub struct PreviewResultJava {
     new_component_addresses: Vec<ComponentAddress>,
     new_resource_addresses: Vec<ResourceAddress>,
 }
-
-impl JavaStructure for PreviewResultJava {}
 
 impl From<PreviewResult> for PreviewResultJava {
     fn from(result: PreviewResult) -> Self {

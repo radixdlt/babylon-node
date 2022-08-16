@@ -76,6 +76,7 @@ import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SometimesByzantineCommittedReader;
@@ -117,8 +118,7 @@ public class ByzantineSyncTest {
                         LedgerUpdate.class, reader.ledgerUpdateEventProcessor());
                   }
                 })
-            .pacemakerTimeout(3000)
-            .ledgerAndSync(SyncConfig.of(200L, 10, 1000L));
+            .ledgerAndSync(ConsensusConfig.of(3000), SyncConfig.of(200L, 10, 1000L));
   }
 
   @Test

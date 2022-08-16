@@ -79,6 +79,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.Mempools;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -90,8 +91,7 @@ public class MempoolSanityTest {
       SimulationTest.builder()
           .numNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .ledgerAndMempool()
-          .pacemakerTimeout(3000)
+          .ledgerAndMempool(ConsensusConfig.of(3000))
           .addMempoolSubmissionsSteadyState(IncrementalBytes.class);
 
   /** TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else */

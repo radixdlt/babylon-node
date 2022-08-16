@@ -74,6 +74,7 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -92,7 +93,7 @@ public class ProposerLoadBalancedTest {
             .messageSelector(MessageSelector.firstSelector())
             .messageMutator(mutator())
             .epochNodeWeightMapping(mapping)
-            .buildWithoutEpochs()
+            .buildWithoutEpochs(ConsensusConfig.of())
             .runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     return IntStream.range(0, numNodes)

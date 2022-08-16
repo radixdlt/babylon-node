@@ -67,5 +67,6 @@ mod manifest_compiler;
 mod mempool;
 mod state_computer;
 mod state_manager;
+mod transaction_builder;
 mod transaction_store;
 mod utils;

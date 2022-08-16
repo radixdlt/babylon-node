@@ -65,11 +65,13 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.mempool.*;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.NativeCalls;
+import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.preview.PreviewError;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
 import com.radixdlt.statecomputer.preview.PreviewResult;
@@ -92,16 +94,19 @@ public class RustStateComputer {
     verifyFunc =
         NativeCalls.Func1.with(
             rustState, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::verify);
-    executeFunc =
-        NativeCalls.Func1.with(
-            rustState, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::execute);
     previewFunc =
         NativeCalls.Func1.with(
             rustState, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::preview);
+    commitFunc =
+        NativeCalls.Func1.with(
+            rustState, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::commit);
+    componentXrdAmountFunc =
+        NativeCalls.Func1.with(
+            rustState,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            RustStateComputer::componentXrdAmount);
   }
-
-  private static final TypeToken<Result<Boolean, StateManagerRuntimeError>> booleanType =
-      new TypeToken<>() {};
 
   public TransactionStoreReader getTransactionStoreReader() {
     return this.transactionStore;
@@ -120,16 +125,12 @@ public class RustStateComputer {
     return this.mempool.getTransactionsForProposal(count, transactionToExclude);
   }
 
-  public void commit(List<RawTransaction> transactions, long committedStateVersion) {
-    this.mempool.handleTransactionsCommitted(transactions);
-    for (int i = 0; i < transactions.size(); i++) {
-      var transaction = transactions.get(i);
+  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
+    return componentXrdAmountFunc.call(componentAddress);
+  }
 
-      executeFunc.call(transaction);
-
-      var transactionStateVersion = committedStateVersion - transactions.size() + i;
-      this.transactionStore.insertTransaction(transactionStateVersion, transaction.getPayload());
-    }
+  public void commit(CommitRequest commitRequest) {
+    commitFunc.call(commitRequest);
   }
 
   public boolean verify(RawTransaction transaction) {
@@ -148,7 +149,12 @@ public class RustStateComputer {
 
   private static native byte[] preview(StateManager.RustState rustState, byte[] encodedArgs);
 
-  private final NativeCalls.Func1<RawTransaction, Unit> executeFunc;
+  private final NativeCalls.Func1<CommitRequest, Unit> commitFunc;
 
-  private static native byte[] execute(StateManager.RustState rustState, byte[] encodedArgs);
+  private static native byte[] commit(StateManager.RustState rustState, byte[] encodedArgs);
+
+  private final NativeCalls.Func1<ComponentAddress, Decimal> componentXrdAmountFunc;
+
+  private static native byte[] componentXrdAmount(
+      StateManager.RustState rustState, byte[] encodedArgs);
 }

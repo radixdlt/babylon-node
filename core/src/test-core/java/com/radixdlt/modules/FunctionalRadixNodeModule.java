@@ -66,8 +66,12 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.radixdlt.consensus.bft.PacemakerBackoffRate;
+import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
+import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.ledger.MockedLedgerModule;
@@ -91,6 +95,44 @@ import com.radixdlt.statecomputer.RandomTransactionGenerator;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
+  public static final class ConsensusConfig {
+    private final int bftSyncPatienceMillis;
+    private final long pacemakerBaseTimeoutMs;
+    private final double pacemakerBackoffRate;
+
+    private ConsensusConfig(
+        int bftSyncPatienceMillis, long pacemakerBaseTimeoutMs, double pacemakerBackoffRate) {
+      this.bftSyncPatienceMillis = bftSyncPatienceMillis;
+      this.pacemakerBaseTimeoutMs = pacemakerBaseTimeoutMs;
+      this.pacemakerBackoffRate = pacemakerBackoffRate;
+    }
+
+    public static ConsensusConfig of(
+        int bftSyncPatienceMillis, long pacemakerBaseTimeoutMs, double pacemakerBackoffRate) {
+      return new ConsensusConfig(
+          bftSyncPatienceMillis, pacemakerBaseTimeoutMs, pacemakerBackoffRate);
+    }
+
+    public static ConsensusConfig of(long pacemakerBaseTimeoutMs) {
+      return new ConsensusConfig(200, pacemakerBaseTimeoutMs, 2.0);
+    }
+
+    public static ConsensusConfig of() {
+      return new ConsensusConfig(200, 12 * 50, 2.0);
+    }
+
+    private AbstractModule asModule() {
+      return new AbstractModule() {
+        @Override
+        protected void configure() {
+          bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(bftSyncPatienceMillis);
+          bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(pacemakerBaseTimeoutMs);
+          bindConstant().annotatedWith(PacemakerBackoffRate.class).to(pacemakerBackoffRate);
+          bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
+        }
+      };
+    }
+  }
 
   public sealed interface LedgerConfig {
     static LedgerConfig mocked() {
@@ -128,27 +170,33 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   }
 
   private final boolean epochs;
+  private final ConsensusConfig consensusConfig;
   private final LedgerConfig ledgerConfig;
 
   // FIXME: This is required for now for shared syncing, remove after refactor
   private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
 
   public FunctionalRadixNodeModule() {
-    this(StateComputerConfig.rev1());
+    this(ConsensusConfig.of(), StateComputerConfig.rev1());
   }
 
-  public FunctionalRadixNodeModule(StateComputerConfig stateComputerConfig) {
-    this(true, LedgerConfig.stateComputer(stateComputerConfig, true));
+  public FunctionalRadixNodeModule(
+      ConsensusConfig consensusConfig, StateComputerConfig stateComputerConfig) {
+    this(true, consensusConfig, LedgerConfig.stateComputer(stateComputerConfig, true));
   }
 
-  public FunctionalRadixNodeModule(boolean epochs, LedgerConfig ledgerConfig) {
+  public FunctionalRadixNodeModule(
+      boolean epochs, ConsensusConfig consensusConfig, LedgerConfig ledgerConfig) {
     this.epochs = epochs;
+    this.consensusConfig = consensusConfig;
     this.ledgerConfig = ledgerConfig;
   }
 
   public static FunctionalRadixNodeModule justLedger() {
     return new FunctionalRadixNodeModule(
-        false, LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false));
+        false,
+        ConsensusConfig.of(),
+        LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false));
   }
 
   public boolean supportsEpochs() {
@@ -169,6 +217,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     install(new DispatcherModule());
 
     // Consensus
+    install(consensusConfig.asModule());
     install(new ConsensusModule());
     if (this.epochs) {
       install(new EpochsConsensusModule());

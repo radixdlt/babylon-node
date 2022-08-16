@@ -73,6 +73,7 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.sync.SyncConfig;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -91,10 +92,10 @@ public class RandomValidatorsTest {
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .ledgerAndEpochsAndSync(
+              ConsensusConfig.of(5000),
               Round.of(3),
               goodRandomEpochToNodesMapper(),
               syncConfig) // TODO: investigate why this fails with Round.of(10)
-          .pacemakerTimeout(5000)
           .numNodes(numNodes)
           .addTestModules(
               ConsensusMonitors.safety(),

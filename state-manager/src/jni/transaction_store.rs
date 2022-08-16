@@ -62,30 +62,21 @@
  * permissions under this License.
  */
 
+use crate::jni::dtos::JavaStructure;
 use crate::jni::state_manager::JNIStateManager;
+use crate::jni::utils::jni_slice_to_jbytearray;
+use crate::result::StateManagerResult;
 use jni::objects::{JClass, JObject};
 use jni::sys::{jbyteArray, jlong};
 use jni::JNIEnv;
+use sbor::*;
+use scrypto::prelude::ComponentAddress;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_insertTransaction(
-    env: JNIEnv,
-    _class: JClass,
-    interop_state: JObject,
-    j_state_version: jlong,
-    j_transaction_bytes: jbyteArray,
-) {
-    let mut state_manager = JNIStateManager::get_state_manager(&env, interop_state);
-
-    let transaction_bytes: Vec<u8> = env
-        .convert_byte_array(j_transaction_bytes)
-        .expect("Can't convert transaction data byte array to vec");
-
-    // Only get the lock for transaction store
-    state_manager
-        .state_manager
-        .transaction_store
-        .insert_transaction(j_state_version as u64, transaction_bytes);
+#[derive(Encode, Decode, TypeId)]
+pub struct ExecutedTransactionReceipt {
+    result: String,
+    transaction_data: Vec<u8>,
+    new_component_addresses: Vec<ComponentAddress>,
 }
 
 #[no_mangle]
@@ -97,12 +88,17 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
 ) -> jbyteArray {
     let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
 
-    // Only get the lock for transaction store
-    let transaction_data = state_manager
+    let (transaction_data, receipt) = state_manager
         .state_manager
         .transaction_store
         .get_transaction(j_state_version as u64);
 
-    env.byte_array_from_slice(transaction_data)
-        .expect("Can't create jbyteArray for transaction data")
+    let executed_receipt = ExecutedTransactionReceipt {
+        result: receipt.result.to_string(),
+        transaction_data: transaction_data.clone(),
+        new_component_addresses: receipt.new_component_addresses.clone(),
+    };
+    let result: StateManagerResult<ExecutedTransactionReceipt> = Ok(executed_receipt);
+
+    jni_slice_to_jbytearray(&env, &result.to_java())
 }

@@ -75,6 +75,7 @@ import com.radixdlt.harness.simulation.application.NodeValidatorRandomRegistrato
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
@@ -104,7 +105,7 @@ public class RandomVoteAndRoundTimeoutDropperTest {
               new RadixEngineForksLatestOnlyModule(
                   RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
               new ForksModule())
-          .ledgerAndRadixEngineWithEpochMaxRound()
+          .ledgerAndRadixEngineWithEpochMaxRound(ConsensusConfig.of())
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(20, TimeUnit.SECONDS),

@@ -64,20 +64,23 @@
 
 use crate::jni::dtos::*;
 use crate::mempool::{Mempool, MempoolConfig};
+use crate::query::ResourceAccounter;
 use crate::transaction_store::TransactionStore;
 use crate::types::{PreviewError, PreviewRequest, Transaction};
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore};
 use radix_engine::transaction::{
-    ExecutionConfig, PreviewExecutor, PreviewResult, TransactionExecutor,
+    ExecutionConfig, PreviewExecutor, PreviewResult, TransactionExecutor, TransactionReceipt,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::core::Network;
+use scrypto::engine::types::RENodeId;
+use scrypto::prelude::*;
 use scrypto::prelude::{scrypto_decode, EcdsaPublicKey};
+use std::collections::HashMap;
 use transaction::errors::TransactionValidationError;
-
 use transaction::model::{
     PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent, TransactionManifest,
     ValidatedTransaction,
@@ -85,11 +88,11 @@ use transaction::model::{
 use transaction::signing::EcdsaPrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
-pub struct StateManager<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> {
-    pub network: Network,
+pub struct StateManager<M: Mempool, S> {
     pub mempool: M,
     pub transaction_store: TransactionStore,
-    pub substate_store: S,
+    network: Network,
+    substate_store: S,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
     validation_config: ValidationConfig,
@@ -127,18 +130,42 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
         }
     }
 
-    pub fn execute_transaction(
+    pub fn commit(&mut self, transactions: Vec<Transaction>, state_version: u64) {
+        let mut to_store = Vec::new();
+        for transaction in &transactions {
+            let validated_txn = self
+                .decode_transaction(transaction)
+                .expect("Error on Byzantine quorum");
+
+            let receipt = self
+                .execute_transaction(validated_txn)
+                .expect("Error on Byzantine quorum");
+
+            to_store.push((transaction.payload.clone(), receipt))
+        }
+
+        for (i, (txn_bytes, receipt)) in to_store.into_iter().enumerate() {
+            let txn_state_version =
+                state_version - u64::try_from(transactions.len() - i - 1).unwrap();
+            self.transaction_store
+                .insert_transaction(txn_state_version, txn_bytes, receipt);
+        }
+
+        self.mempool.handle_committed_transactions(&transactions);
+    }
+
+    fn execute_transaction(
         &mut self,
         transaction: ValidatedTransaction,
-    ) -> Result<(), TransactionValidationError> {
+    ) -> Result<TransactionReceipt, TransactionValidationError> {
         let mut transaction_executor = TransactionExecutor::new(
             &mut self.substate_store,
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
         );
-        transaction_executor.execute_and_commit(&transaction, &self.execution_config);
+        let receipt = transaction_executor.execute_and_commit(&transaction, &self.execution_config);
 
-        Ok(())
+        Ok(receipt)
     }
 
     pub fn decode_transaction(
@@ -204,9 +231,19 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
     }
 }
 
+impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager<M, S> {
+    pub fn get_component_resources(
+        &self,
+        component_address: ComponentAddress,
+    ) -> Option<HashMap<ResourceAddress, Decimal>> {
+        let mut resource_accounter = ResourceAccounter::new(&self.substate_store);
+        resource_accounter
+            .add_resources(RENodeId::Component(component_address))
+            .map_or(Option::None, |()| Some(resource_accounter.into_map()))
+    }
+}
+
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct StateManagerConfig {
     pub mempool_config: Option<MempoolConfig>,
 }
-
-impl JavaStructure for StateManagerConfig {}

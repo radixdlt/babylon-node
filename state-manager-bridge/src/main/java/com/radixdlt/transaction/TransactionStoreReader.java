@@ -65,5 +65,5 @@
 package com.radixdlt.transaction;
 
 public interface TransactionStoreReader {
-  byte[] getTransactionAtStateVersion(long stateVersion);
+  ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion);
 }
