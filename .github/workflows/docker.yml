@@ -61,6 +61,8 @@ jobs:
         run: |
             sudo apt-get update && sudo apt-get install make
             cd core && make build-core
+      - name: Create docker context
+        run: docker context create docker
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
