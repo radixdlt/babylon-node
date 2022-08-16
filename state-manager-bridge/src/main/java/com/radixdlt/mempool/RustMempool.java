@@ -64,11 +64,17 @@
 
 package com.radixdlt.mempool;
 
+import static com.radixdlt.lang.Tuple.tuple;
+
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statemanager.StateManager.RustState;
 import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.Objects;
 
@@ -90,7 +96,9 @@ public class RustMempool {
             new TypeToken<>() {},
             new TypeToken<>() {},
             RustMempool::getTransactionsToRelay);
-    getCountFunc = NativeCalls.Func0.with(rustState, new TypeToken<>() {}, RustMempool::getCount);
+    getCountFunc =
+        NativeCalls.Func1.with(
+            rustState, new TypeToken<>() {}, new TypeToken<>() {}, RustMempool::getCount);
   }
 
   public RawTransaction addTransaction(RawTransaction transaction) throws MempoolRejectedException {
@@ -118,8 +126,9 @@ public class RustMempool {
       throw new IllegalArgumentException("State Manager Mempool: count must be > 0: " + count);
     }
 
-    final var args = new GetTransactionsForProposalRustArgs(count, preparedTransactions);
-    final var result = getTransactionsForProposalFunc.call(args);
+    final var result =
+        getTransactionsForProposalFunc.call(
+            tuple(UInt32.fromNonNegativeInt(count), preparedTransactions));
 
     // No error is possible for this call at present, so unwrap should be safe
     return result.unwrap();
@@ -127,34 +136,37 @@ public class RustMempool {
 
   public List<RawTransaction> getTransactionsToRelay(
       long initialDelayMillis, long repeatDelayMillis) {
-    var args = new GetRelayedTransactionsRustArgs(initialDelayMillis, repeatDelayMillis);
-    var result = getTransactionsToRelayFunc.call(args);
+    var result =
+        getTransactionsToRelayFunc.call(
+            tuple(
+                UInt64.fromNonNegativeLong(initialDelayMillis),
+                UInt64.fromNonNegativeLong(repeatDelayMillis)));
 
     // No error is possible for this call at present, so unwrap should be safe
     return result.unwrap();
   }
 
   public int getCount() {
-    return getCountFunc.call();
+    return getCountFunc.call(Unit.unit());
   }
 
-  private static native byte[] add(RustState rustState, byte[] transaction);
+  private static native byte[] add(RustState rustState, byte[] payload);
 
   private final NativeCalls.Func1<RawTransaction, Result<RawTransaction, MempoolError>> addFunc;
 
-  private static native byte[] getTransactionsForProposal(RustState rustState, byte[] encodedArgs);
+  private static native byte[] getTransactionsForProposal(RustState rustState, byte[] payload);
 
   private final NativeCalls.Func1<
-          GetTransactionsForProposalRustArgs, Result<List<RawTransaction>, MempoolError>>
+          Tuple.Tuple2<UInt32, List<RawTransaction>>, Result<List<RawTransaction>, MempoolError>>
       getTransactionsForProposalFunc;
 
-  private static native byte[] getTransactionsToRelay(RustState rustState, byte[] encodedArgs);
+  private static native byte[] getTransactionsToRelay(RustState rustState, byte[] payload);
 
   private final NativeCalls.Func1<
-          GetRelayedTransactionsRustArgs, Result<List<RawTransaction>, MempoolError>>
+          Tuple.Tuple2<UInt64, UInt64>, Result<List<RawTransaction>, MempoolError>>
       getTransactionsToRelayFunc;
 
-  private static native byte[] getCount(RustState rustState);
+  private static native byte[] getCount(RustState rustState, byte[] payload);
 
-  private final NativeCalls.Func0<Integer> getCountFunc;
+  private final NativeCalls.Func1<Unit, Integer> getCountFunc;
 }

@@ -70,8 +70,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.GetRelayedTransactionsRustArgs;
-import com.radixdlt.mempool.GetTransactionsForProposalRustArgs;
+import com.radixdlt.manifest.CompileManifestError;
 import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.*;
@@ -137,12 +136,11 @@ public final class StateManagerSbor {
     TID.registerCodec(codecMap);
     StateManagerRuntimeError.registerCodec(codecMap);
     MempoolError.registerCodec(codecMap);
-    GetTransactionsForProposalRustArgs.registerCodec(codecMap);
-    GetRelayedTransactionsRustArgs.registerCodec(codecMap);
     ExecutedTransactionReceipt.registerCodec(codecMap);
     ECPublicKey.registerCodec(codecMap);
     ECDSASignature.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
+    CompileManifestError.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

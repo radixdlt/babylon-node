@@ -82,13 +82,13 @@ pub struct ExecutedTransactionReceipt {
 extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransactionAtStateVersion(
     env: JNIEnv,
     _class: JClass,
-    jni_sm_instance_state: JObject,
-    jni_request_payload: jbyteArray,
+    sm_instance: JObject,
+    request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_state_manager_sbor_call(
         env,
-        jni_sm_instance_state,
-        jni_request_payload,
+        sm_instance,
+        request_payload,
         do_get_transaction_at_state_version,
     )
 }

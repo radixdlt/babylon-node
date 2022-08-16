@@ -89,6 +89,5 @@ public final class RustTransactionStore implements TransactionStoreReader {
   private final NativeCalls.Func1<UInt64, ExecutedTransactionReceipt>
       getTransactionAtStateVersionFunc;
 
-  private static native byte[] getTransactionAtStateVersion(
-      RustState rustState, byte[] requestPayload);
+  private static native byte[] getTransactionAtStateVersion(RustState rustState, byte[] payload);
 }

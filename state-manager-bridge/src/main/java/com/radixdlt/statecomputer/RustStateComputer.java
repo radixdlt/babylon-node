@@ -143,18 +143,17 @@ public class RustStateComputer {
 
   private final NativeCalls.Func1<RawTransaction, Boolean> verifyFunc;
 
-  private static native byte[] verify(StateManager.RustState rustState, byte[] encodedArgs);
+  private static native byte[] verify(StateManager.RustState rustState, byte[] payload);
 
   private final NativeCalls.Func1<PreviewRequest, Result<PreviewResult, PreviewError>> previewFunc;
 
-  private static native byte[] preview(StateManager.RustState rustState, byte[] encodedArgs);
+  private static native byte[] preview(StateManager.RustState rustState, byte[] payload);
 
   private final NativeCalls.Func1<CommitRequest, Unit> commitFunc;
 
-  private static native byte[] commit(StateManager.RustState rustState, byte[] encodedArgs);
+  private static native byte[] commit(StateManager.RustState rustState, byte[] payload);
 
   private final NativeCalls.Func1<ComponentAddress, Decimal> componentXrdAmountFunc;
 
-  private static native byte[] componentXrdAmount(
-      StateManager.RustState rustState, byte[] encodedArgs);
+  private static native byte[] componentXrdAmount(StateManager.RustState rustState, byte[] payload);
 }

@@ -114,24 +114,6 @@ public interface NativeCalls {
     }
   }
 
-  record Func1NativeParam<Req, Res>(
-      StateManager.RustState rustState,
-      Codec<Result<Res, StateManagerRuntimeError>> responseCodec,
-      Functions.Func2<StateManager.RustState, Req, byte[]> nativeFunction) {
-    public static <Req, Res> Func1NativeParam<Req, Res> with(
-        StateManager.RustState rustState,
-        TypeToken<Result<Res, StateManagerRuntimeError>> responseType,
-        Functions.Func2<StateManager.RustState, Req, byte[]> nativeFunction) {
-      return new Func1NativeParam<>(
-          rustState, StateManagerSbor.resolveCodec(responseType), nativeFunction);
-    }
-
-    public Res call(Req request) {
-      final var encodedResponse = nativeFunction.apply(rustState, request);
-      return handleStateManagerResponse(StateManagerSbor.decode(encodedResponse, responseCodec));
-    }
-  }
-
   record StaticFunc1<Req, Res>(
       Codec<Req> requestCodec,
       Codec<Result<Res, StateManagerRuntimeError>> responseCodec,
