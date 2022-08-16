@@ -334,7 +334,6 @@ public final class SimulationTest {
             @Override
             protected void configure() {
               bind(SyncConfig.class).toInstance(syncConfig);
-              bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(List.of());
             }
           });
 

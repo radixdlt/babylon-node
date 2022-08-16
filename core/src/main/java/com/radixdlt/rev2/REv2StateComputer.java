@@ -79,11 +79,9 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt64;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

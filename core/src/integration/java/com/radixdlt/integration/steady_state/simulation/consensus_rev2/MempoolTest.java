@@ -92,7 +92,7 @@ public class MempoolTest {
           .functionalNodeModule(
               new FunctionalRadixNodeModule(
                   false,
-                  ConsensusConfig.of(4000),
+                  ConsensusConfig.of(1000),
                   LedgerConfig.stateComputer(
                       StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))),
                       false)))

@@ -102,7 +102,7 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
   @Override
   public void configure() {
     bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-    bind(SyncConfig.class).toInstance(SyncConfig.of(500, 10, 3000, 10, Long.MAX_VALUE));
+    bind(SyncConfig.class).toInstance(new SyncConfig(500, 10, 3000, 10, Long.MAX_VALUE));
     bindConstant()
         .annotatedWith(DatabaseCacheSize.class)
         .to((long) (Runtime.getRuntime().maxMemory() * 0.125));
