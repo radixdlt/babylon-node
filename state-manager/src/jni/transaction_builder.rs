@@ -63,7 +63,6 @@
  */
 
 use crate::jni::dtos::JavaStructure;
-use crate::jni::utils::{jni_jbytearray_to_vector, jni_slice_to_jbytearray};
 use crate::result::StateManagerResult;
 use crate::transaction_builder::{
     create_new_account_unsigned_manifest, create_notarized_bytes, create_signed_intent_bytes,
@@ -74,27 +73,21 @@ use jni::JNIEnv;
 use scrypto::crypto::{EcdsaPublicKey, EcdsaSignature};
 use transaction::model::{SignedTransactionIntent, TransactionIntent};
 
+use super::utils::{jni_static_sbor_call, jni_static_sbor_call_flatten_result};
+
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountManifest(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    let encoded_response = do_create_new_account_manifest(&env, request_payload).to_java();
-
-    jni_slice_to_jbytearray(&env, &encoded_response)
+    jni_static_sbor_call(env, request_payload, do_create_new_account_manifest)
 }
 
-type CreateNewAccountManifestArgs = EcdsaPublicKey;
+fn do_create_new_account_manifest(args: EcdsaPublicKey) -> Vec<u8> {
+    let public_key = args;
 
-fn do_create_new_account_manifest(
-    env: &JNIEnv,
-    request_payload: jbyteArray,
-) -> StateManagerResult<Vec<u8>> {
-    let public_key =
-        CreateNewAccountManifestArgs::from_java(&jni_jbytearray_to_vector(env, request_payload)?)?;
-
-    Ok(create_new_account_unsigned_manifest(public_key))
+    create_new_account_unsigned_manifest(public_key)
 }
 
 #[no_mangle]
@@ -103,19 +96,13 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createSigned
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    let encoded_response = do_create_signed_intent_bytes(&env, request_payload).to_java();
-
-    jni_slice_to_jbytearray(&env, &encoded_response)
+    jni_static_sbor_call_flatten_result(env, request_payload, do_create_signed_intent_bytes)
 }
 
-type CreateSignedIntentBytesArgs = (Vec<u8>, EcdsaPublicKey, EcdsaSignature);
-
 fn do_create_signed_intent_bytes(
-    env: &JNIEnv,
-    request_payload: jbyteArray,
+    args: (Vec<u8>, EcdsaPublicKey, EcdsaSignature),
 ) -> StateManagerResult<Vec<u8>> {
-    let (intent_bytes, public_key, signature) =
-        CreateSignedIntentBytesArgs::from_java(&jni_jbytearray_to_vector(env, request_payload)?)?;
+    let (intent_bytes, public_key, signature) = args;
 
     // It's passed through to us as bytes - and need to decode these bytes
     let intent = TransactionIntent::from_java(&intent_bytes)?;
@@ -129,19 +116,11 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createNotari
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    let encoded_response = do_create_notarized_bytes(&env, request_payload).to_java();
-
-    jni_slice_to_jbytearray(&env, &encoded_response)
+    jni_static_sbor_call_flatten_result(env, request_payload, do_create_notarized_bytes)
 }
 
-type CreateNotarizedBytesArgs = (Vec<u8>, EcdsaSignature);
-
-fn do_create_notarized_bytes(
-    env: &JNIEnv,
-    request_payload: jbyteArray,
-) -> StateManagerResult<Vec<u8>> {
-    let (signed_intent_bytes, signature) =
-        CreateNotarizedBytesArgs::from_java(&jni_jbytearray_to_vector(env, request_payload)?)?;
+fn do_create_notarized_bytes(args: (Vec<u8>, EcdsaSignature)) -> StateManagerResult<Vec<u8>> {
+    let (signed_intent_bytes, signature) = args;
 
     // It's passed through to us as bytes - and need to decode these bytes
     let signed_intent = SignedTransactionIntent::from_java(&signed_intent_bytes)?;

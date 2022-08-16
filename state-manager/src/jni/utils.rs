@@ -62,10 +62,16 @@
  * permissions under this License.
  */
 
-use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use jni::{objects::JObject, sys::jbyteArray};
 
 use crate::result::{StateManagerError, StateManagerResult, ERRCODE_JNI};
+use sbor::{Decode, Encode, TypeId};
+
+use super::{
+    dtos::JavaStructure,
+    state_manager::{ActualStateManager, JNIStateManager},
+};
 
 pub fn jni_jbytearray_to_vector(
     env: &JNIEnv,
@@ -86,4 +92,119 @@ pub fn jni_slice_to_jbytearray(env: &JNIEnv, slice: &[u8]) -> jbyteArray {
     // by having a static bytearray to return in this extremely remote
     // case.
     env.byte_array_from_slice(slice).unwrap()
+}
+
+pub fn jni_static_sbor_call<
+    Args: JavaStructure + Encode + Decode + TypeId,
+    Response: JavaStructure + Encode + Decode + TypeId,
+>(
+    env: JNIEnv,
+    jni_request_payload: jbyteArray,
+    method: impl FnOnce(Args) -> Response,
+) -> jbyteArray {
+    let response_result = jni_static_sbor_call_inner(&env, jni_request_payload, method);
+    jni_slice_to_jbytearray(&env, &response_result.to_java())
+}
+
+fn jni_static_sbor_call_inner<Args: JavaStructure, Response: JavaStructure>(
+    env: &JNIEnv,
+    jni_request_payload: jbyteArray,
+    method: impl FnOnce(Args) -> Response,
+) -> StateManagerResult<Response> {
+    let vec_payload = jni_jbytearray_to_vector(env, jni_request_payload)?;
+    let args = Args::from_java(&vec_payload)?;
+
+    let response = method(args);
+    Ok(response)
+}
+
+pub fn jni_static_sbor_call_flatten_result<
+    Args: JavaStructure + Encode + Decode + TypeId,
+    Response: JavaStructure + Encode + Decode + TypeId,
+>(
+    env: JNIEnv,
+    jni_request_payload: jbyteArray,
+    method: impl FnOnce(Args) -> StateManagerResult<Response>,
+) -> jbyteArray {
+    let response_result =
+        jni_static_sbor_call_flatten_result_inner(&env, jni_request_payload, method);
+    jni_slice_to_jbytearray(&env, &response_result.to_java())
+}
+
+fn jni_static_sbor_call_flatten_result_inner<Args: JavaStructure, Response: JavaStructure>(
+    env: &JNIEnv,
+    jni_request_payload: jbyteArray,
+    method: impl FnOnce(Args) -> StateManagerResult<Response>,
+) -> StateManagerResult<Response> {
+    let vec_payload = jni_jbytearray_to_vector(env, jni_request_payload)?;
+    let args = Args::from_java(&vec_payload)?;
+
+    let response = method(args)?;
+    Ok(response)
+}
+
+pub fn jni_state_manager_sbor_call<
+    Args: JavaStructure + Encode + Decode + TypeId,
+    Response: JavaStructure + Encode + Decode + TypeId,
+>(
+    env: JNIEnv,
+    jni_sm_instance_state: JObject,
+    jni_request_payload: jbyteArray,
+    method: impl FnOnce(&mut ActualStateManager, Args) -> Response,
+) -> jbyteArray {
+    let response_result =
+        jni_state_manager_sbor_call_inner(&env, jni_sm_instance_state, jni_request_payload, method);
+    jni_slice_to_jbytearray(&env, &response_result.to_java())
+}
+
+fn jni_state_manager_sbor_call_inner<Args: JavaStructure, Response: JavaStructure>(
+    env: &JNIEnv,
+    jni_sm_instance_state: JObject,
+    jni_request_payload: jbyteArray,
+    method: impl FnOnce(&mut ActualStateManager, Args) -> Response,
+) -> StateManagerResult<Response> {
+    let vec_payload = jni_jbytearray_to_vector(env, jni_request_payload)?;
+    let args = Args::from_java(&vec_payload)?;
+
+    let mut jni_state_manager = JNIStateManager::get_state_manager(env, jni_sm_instance_state);
+
+    let response = method(&mut jni_state_manager.state_manager, args);
+    Ok(response)
+}
+
+#[allow(dead_code)]
+pub fn jni_state_manager_sbor_call_flatten_result<
+    Args: JavaStructure + Encode + Decode + TypeId,
+    Response: JavaStructure + Encode + Decode + TypeId,
+>(
+    env: JNIEnv,
+    jni_sm_instance_state: JObject,
+    jni_request_payload: jbyteArray,
+    method: impl FnOnce(&mut ActualStateManager, Args) -> StateManagerResult<Response>,
+) -> jbyteArray {
+    let response_result = jni_state_manager_sbor_call_flatten_result_inner(
+        &env,
+        jni_sm_instance_state,
+        jni_request_payload,
+        method,
+    );
+    jni_slice_to_jbytearray(&env, &response_result.to_java())
+}
+
+fn jni_state_manager_sbor_call_flatten_result_inner<
+    Args: JavaStructure,
+    Response: JavaStructure,
+>(
+    env: &JNIEnv,
+    jni_sm_instance_state: JObject,
+    jni_request_payload: jbyteArray,
+    method: impl FnOnce(&mut ActualStateManager, Args) -> StateManagerResult<Response>,
+) -> StateManagerResult<Response> {
+    let vec_payload = jni_jbytearray_to_vector(env, jni_request_payload)?;
+    let args = Args::from_java(&vec_payload)?;
+
+    let mut jni_state_manager = JNIStateManager::get_state_manager(env, jni_sm_instance_state);
+
+    let response = method(&mut jni_state_manager.state_manager, args)?;
+    Ok(response)
 }
