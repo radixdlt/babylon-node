@@ -18,7 +18,7 @@ jobs:
           access_token: ${{ github.token }}
 
   build_deb:
-    name: Build image
+    name: Build debian package
     runs-on: babylon-runner
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
