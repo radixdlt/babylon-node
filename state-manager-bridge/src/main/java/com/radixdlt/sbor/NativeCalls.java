@@ -114,6 +114,45 @@ public interface NativeCalls {
     }
   }
 
+  record Func1NativeParam<Req, Res>(
+      StateManager.RustState rustState,
+      Codec<Result<Res, StateManagerRuntimeError>> responseCodec,
+      Functions.Func2<StateManager.RustState, Req, byte[]> nativeFunction) {
+    public static <Req, Res> Func1NativeParam<Req, Res> with(
+        StateManager.RustState rustState,
+        TypeToken<Result<Res, StateManagerRuntimeError>> responseType,
+        Functions.Func2<StateManager.RustState, Req, byte[]> nativeFunction) {
+      return new Func1NativeParam<>(
+          rustState, StateManagerSbor.resolveCodec(responseType), nativeFunction);
+    }
+
+    public Res call(Req request) {
+      final var encodedResponse = nativeFunction.apply(rustState, request);
+      return handleStateManagerResponse(StateManagerSbor.decode(encodedResponse, responseCodec));
+    }
+  }
+
+  record StaticFunc1<Req, Res>(
+      Codec<Req> requestCodec,
+      Codec<Result<Res, StateManagerRuntimeError>> responseCodec,
+      Functions.Func1<byte[], byte[]> nativeFunction) {
+    public static <Req, Res> StaticFunc1<Req, Res> with(
+        TypeToken<Req> requestType,
+        TypeToken<Result<Res, StateManagerRuntimeError>> responseType,
+        Functions.Func1<byte[], byte[]> nativeFunction) {
+      return new StaticFunc1<>(
+          StateManagerSbor.resolveCodec(requestType),
+          StateManagerSbor.resolveCodec(responseType),
+          nativeFunction);
+    }
+
+    public Res call(Req request) {
+      final var encodedRequest = StateManagerSbor.encode(request, requestCodec);
+      final var encodedResponse = nativeFunction.apply(encodedRequest);
+      return handleStateManagerResponse(StateManagerSbor.decode(encodedResponse, responseCodec));
+    }
+  }
+
   static <Res> Res handleStateManagerResponse(Result<Res, StateManagerRuntimeError> result) {
     // Handle System/Runtime Errors
     if (result.isError()) {
