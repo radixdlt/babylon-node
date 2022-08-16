@@ -84,7 +84,7 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class MempoolTest {
+public class MempoolToLedgerTest {
   private final SimulationTest.Builder bftTestBuilder =
       SimulationTest.builder()
           .numNodes(4)
@@ -93,9 +93,8 @@ public class MempoolTest {
               new FunctionalRadixNodeModule(
                   false,
                   ConsensusConfig.of(1000),
-                  LedgerConfig.stateComputer(
-                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))),
-                      false)))
+                  LedgerConfig.stateComputerNoSync(
+                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))))))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(10, TimeUnit.SECONDS),

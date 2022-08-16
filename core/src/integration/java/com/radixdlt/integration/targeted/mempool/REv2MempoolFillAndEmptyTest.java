@@ -139,10 +139,9 @@ public final class REv2MempoolFillAndEmptyTest {
         new FunctionalRadixNodeModule(
             false,
             FunctionalRadixNodeModule.ConsensusConfig.of(),
-            FunctionalRadixNodeModule.LedgerConfig.stateComputer(
+            FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
-                    StateComputerConfig.REV2ProposerConfig.mempool(MempoolConfig.of(1000))),
-                false)),
+                    StateComputerConfig.REV2ProposerConfig.mempool(MempoolConfig.of(1000))))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(

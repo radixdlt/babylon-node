@@ -99,9 +99,15 @@ import java.time.Duration;
 
 /** Module which manages synchronization of committed transactions across nodes */
 public class SyncServiceModule extends AbstractModule {
+  private final SyncConfig syncConfig;
+
+  public SyncServiceModule(SyncConfig syncConfig) {
+    this.syncConfig = syncConfig;
+  }
 
   @Override
   public void configure() {
+    bind(SyncConfig.class).toInstance(this.syncConfig);
     bind(LocalSyncService.class).in(Scopes.SINGLETON);
     bind(RemoteSyncService.class).in(Scopes.SINGLETON);
   }

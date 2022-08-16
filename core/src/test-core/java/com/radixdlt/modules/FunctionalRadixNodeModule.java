@@ -91,6 +91,8 @@ import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.REv2StatelessComputerModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
+import com.radixdlt.sync.SyncConfig;
+import java.util.Optional;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
@@ -138,13 +140,18 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       return new MockedLedgerConfig();
     }
 
-    static LedgerConfig stateComputer(StateComputerConfig stateComputerConfig, boolean sync) {
-      return new StateComputerLedgerConfig(stateComputerConfig, sync);
+    static LedgerConfig stateComputerNoSync(StateComputerConfig stateComputerConfig) {
+      return new StateComputerLedgerConfig(stateComputerConfig, Optional.empty());
+    }
+
+    static LedgerConfig stateComputerWithSync(
+        StateComputerConfig stateComputerConfig, SyncConfig syncConfig) {
+      return new StateComputerLedgerConfig(stateComputerConfig, Optional.of(syncConfig));
     }
 
     default boolean hasSync() {
       if (this instanceof StateComputerLedgerConfig c) {
-        return c.sync;
+        return c.syncConfig.isPresent();
       }
       return false;
     }
@@ -159,8 +166,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
   public static final class MockedLedgerConfig implements LedgerConfig {}
 
-  public record StateComputerLedgerConfig(StateComputerConfig config, boolean sync)
-      implements LedgerConfig {}
+  public record StateComputerLedgerConfig(
+      StateComputerConfig config, Optional<SyncConfig> syncConfig) implements LedgerConfig {}
 
   public enum MempoolType {
     NONE,
@@ -175,13 +182,16 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   // FIXME: This is required for now for shared syncing, remove after refactor
   private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
 
-  public FunctionalRadixNodeModule() {
-    this(ConsensusConfig.of(), StateComputerConfig.rev1());
+  public FunctionalRadixNodeModule(SyncConfig syncConfig) {
+    this(ConsensusConfig.of(), StateComputerConfig.rev1(), syncConfig);
   }
 
   public FunctionalRadixNodeModule(
-      ConsensusConfig consensusConfig, StateComputerConfig stateComputerConfig) {
-    this(true, consensusConfig, LedgerConfig.stateComputer(stateComputerConfig, true));
+      ConsensusConfig consensusConfig,
+      StateComputerConfig stateComputerConfig,
+      SyncConfig syncConfig) {
+    this(
+        true, consensusConfig, LedgerConfig.stateComputerWithSync(stateComputerConfig, syncConfig));
   }
 
   public FunctionalRadixNodeModule(
@@ -195,7 +205,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     return new FunctionalRadixNodeModule(
         false,
         ConsensusConfig.of(),
-        LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false));
+        LedgerConfig.stateComputerNoSync(StateComputerConfig.mocked(MempoolType.NONE)));
   }
 
   public boolean supportsEpochs() {
@@ -231,16 +241,16 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         install(new LedgerModule());
 
         // Sync
-        if (stateComputerLedgerConfig.sync) {
-          install(new SyncServiceModule());
-          if (this.epochs) {
-            install(new EpochsSyncModule());
-          } else {
-            install(new NoEpochsSyncModule());
-          }
-        } else {
-          install(mockedSyncServiceModule);
-        }
+        stateComputerLedgerConfig.syncConfig.ifPresentOrElse(
+            syncConfig -> {
+              install(new SyncServiceModule(syncConfig));
+              if (this.epochs) {
+                install(new EpochsSyncModule());
+              } else {
+                install(new NoEpochsSyncModule());
+              }
+            },
+            () -> install(mockedSyncServiceModule));
 
         switch (stateComputerLedgerConfig.config) {
           case MockedStateComputerConfig c -> {
