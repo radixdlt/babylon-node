@@ -23,7 +23,6 @@ jobs:
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}
-      json: ${{ steps.meta.outputs.json }}
     steps:
       - uses: actions/checkout@v2
         with:
