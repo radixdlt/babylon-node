@@ -147,7 +147,6 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
     var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
     var commitRequest = new CommitRequest(txnsAndProof.getTransactions(), stateVersion);
-    var stopwatch = Stopwatch.createStarted();
     stateComputer.commit(commitRequest);
 
     var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());

@@ -18,28 +18,32 @@ FROM base as mapped-volume-build
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
 
-CMD cargo build --target=${TARGET}
+CMD cargo build --target=${TARGET} --release
 
-FROM base as prod-build
+FROM base as cache-packages
 ARG TARGET
 
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
 
+# First - we build a dummy rust file, to cache the compilation of all our dependencies in a Docker layer
 RUN USER=root cargo new dummy
 COPY state-manager/Cargo.toml ./dummy
 COPY state-manager/Cargo.lock ./dummy
 
 RUN mv ./dummy/src/main.rs ./dummy/src/lib.rs
 WORKDIR /app/dummy
-RUN cargo build --target=$TARGET
+RUN cargo build --target=$TARGET --release
+RUN rm -rf /app/dummy/*
 
+FROM cache-packages as prod-build
 WORKDIR /app
+# Now - we copy in everything, and do the actual built
 COPY state-manager ./
 
-RUN cargo build --target=$TARGET
-RUN mkdir -p /app/binary && cp -R target /app/output
+RUN cargo build --target=$TARGET --release
+RUN cp -R target/$TARGET/release/libstatemanager.so /
+RUN rm -rf /app
 
 FROM scratch as artifact
-ARG TARGET
-COPY --from=prod-build /app/output/$TARGET/debug/libstatemanager.so /
+COPY --from=prod-build /libstatemanager.so /
