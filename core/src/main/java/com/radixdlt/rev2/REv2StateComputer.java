@@ -153,6 +153,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var proofBytes = serialization.toDson(txnsAndProof.getProof(), DsonOutput.Output.ALL);
     var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
     var commitRequest = new CommitRequest(txnsAndProof.getTransactions(), stateVersion, proofBytes);
+
     stateComputer.commit(commitRequest);
 
     var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
