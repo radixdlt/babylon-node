@@ -78,7 +78,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.transaction.TransactionStoreReader;
+import com.radixdlt.transaction.TransactionAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -121,7 +121,7 @@ public class MempoolToLedgerTest {
             .map(
                 node -> {
                   var store =
-                      runningTest.getNetwork().getInstance(TransactionStoreReader.class, node);
+                      runningTest.getNetwork().getInstance(TransactionAndProofReader.class, node);
                   var receipt = store.getTransactionAtStateVersion(1);
                   var bytes = receipt.getTransactionBytes();
                   return RawTransaction.create(bytes);

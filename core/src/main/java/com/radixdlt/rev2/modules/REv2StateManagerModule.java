@@ -76,7 +76,7 @@ import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transaction.TransactionStoreReader;
+import com.radixdlt.transaction.TransactionAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 
 public final class REv2StateManagerModule extends AbstractModule {
@@ -103,7 +103,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   @Provides
-  private TransactionStoreReader transactionStoreReader(RustStateComputer stateComputer) {
+  private TransactionAndProofReader transactionStoreReader(RustStateComputer stateComputer) {
     return stateComputer.getTransactionStoreReader();
   }
 

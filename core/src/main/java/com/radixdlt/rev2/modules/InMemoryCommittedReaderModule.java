@@ -76,8 +76,11 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 public class InMemoryCommittedReaderModule extends AbstractModule {
   @Override
   public void configure() {
-    bind(InMemoryTransactionsAndProofReader.Store.class).toInstance(new InMemoryTransactionsAndProofReader.Store());
-    bind(TransactionsAndProofReader.class).to(InMemoryTransactionsAndProofReader.class).in(Scopes.SINGLETON);
+    bind(InMemoryTransactionsAndProofReader.Store.class)
+        .toInstance(new InMemoryTransactionsAndProofReader.Store());
+    bind(TransactionsAndProofReader.class)
+        .to(InMemoryTransactionsAndProofReader.class)
+        .in(Scopes.SINGLETON);
   }
 
   @Singleton

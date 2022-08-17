@@ -91,7 +91,7 @@ use transaction::validation::{TestIntentHashManager, TransactionValidator, Valid
 pub struct StateManager<M: Mempool, S> {
     pub mempool: M,
     pub transaction_store: TransactionStore,
-    proof_store: ProofStore,
+    pub proof_store: ProofStore,
     network: Network,
     substate_store: S,
     wasm_engine: DefaultWasmEngine,

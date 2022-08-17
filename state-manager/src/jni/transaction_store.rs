@@ -102,3 +102,22 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
 
     jni_slice_to_jbytearray(&env, &result.to_java())
 }
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getNextProof(
+    env: JNIEnv,
+    _class: JClass,
+    interop_state: JObject,
+    j_state_version: jlong,
+) -> jbyteArray {
+    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
+
+    let maybe_proof = state_manager
+        .state_manager
+        .proof_store
+        .get_next_proof(j_state_version as u64);
+
+    let result: StateManagerResult<Option<Vec<u8>>> = Ok(maybe_proof);
+
+    jni_slice_to_jbytearray(&env, &result.to_java())
+}

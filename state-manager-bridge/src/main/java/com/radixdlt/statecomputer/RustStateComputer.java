@@ -80,7 +80,7 @@ import com.radixdlt.statecomputer.preview.PreviewResult;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerResponse;
 import com.radixdlt.transaction.RustTransactionStore;
-import com.radixdlt.transaction.TransactionStoreReader;
+import com.radixdlt.transaction.TransactionAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
@@ -97,7 +97,7 @@ public class RustStateComputer {
     this.transactionStore = new RustTransactionStore(rustState);
   }
 
-  public TransactionStoreReader getTransactionStoreReader() {
+  public TransactionAndProofReader getTransactionStoreReader() {
     return this.transactionStore;
   }
 

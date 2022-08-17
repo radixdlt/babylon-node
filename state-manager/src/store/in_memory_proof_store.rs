@@ -79,4 +79,13 @@ impl ProofStore {
     pub fn insert_proof(&mut self, state_version: u64, proof_bytes: Vec<u8>) {
         self.in_memory_store.insert(state_version, proof_bytes);
     }
+
+    /// Returns the next proof from a state version (excluded)
+    pub fn get_next_proof(&self, state_version: u64) -> Option<Vec<u8>> {
+        let next_state_version = state_version + 1;
+        self.in_memory_store
+            .range(next_state_version..)
+            .next()
+            .map(|(_, proof)| proof.clone())
+    }
 }

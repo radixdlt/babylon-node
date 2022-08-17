@@ -64,6 +64,10 @@
 
 package com.radixdlt.transaction;
 
-public interface TransactionStoreReader {
+import java.util.Optional;
+
+public interface TransactionAndProofReader {
   ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion);
+
+  Optional<byte[]> getNextProof(long stateVersion);
 }
