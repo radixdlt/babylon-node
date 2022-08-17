@@ -27,12 +27,11 @@ gcloud-token: gcloud-authenticate
 
 .PHONY: build-sm
 build-sm: gcloud-token
-	cd .. && SKIP_NATIVE_RUST_BUILD=TRUE  ./gradlew :state-manager:buildRustForDocker -Pci=true -PcacheBranch=$(GIT_BRANCH)
+	cd .. && SKIP_NATIVE_RUST_BUILD=TRUE  ./gradlew :state-manager:buildRustForDocker -Pci=true -PcacheBranch=$(GIT_BRANCH) -PrustBinaryBuildType=release
 
 .PHONY: build
 build-core:
-	cd .. && SKIP_NATIVE_RUST_BUILD=TRUE ./gradlew deb4docker -Pci=true -PcacheBranch=$(GIT_BRANCH)
-
+	cd .. && SKIP_NATIVE_RUST_BUILD=TRUE ./gradlew deb4docker -Pci=true -PcacheBranch=$(GIT_BRANCH) -PrustBinaryBuildType=release
 
 .PHONY: package
 package: build-core

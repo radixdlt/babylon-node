@@ -133,15 +133,19 @@ task buildRustForDocker(type: Exec) {
              docker build -f docker/rust-builder/Dockerfile \\
                --target=artifact --build-arg TARGET=$target --build-arg BUILDKIT_INLINE_CACHE=1 \\
                --cache-from=$rustBuilderRepo:$cacheTag --cache-from=$rustCacheRepo:$cacheTag  \\
-               --output type=local,dest=state-manager/target/$target/debug/ .
+               --output type=local,dest=state-manager/target/$target/${project.property("rustBinaryBuildType")}/ .
              docker push $rustBuilderRepo:$cacheTag || true
              docker push $rustCacheRepo:$cacheTag || true
-             [ -f $outputDir/debug/libstatemanager.so ]
+             [ -f $outputDir/${project.property("rustBinaryBuildType")}/libstatemanager.so ]
                 """
 
         commandLine 'sh', '-c', dockerMultiStageCmd
     } else{
-        def dockerComposeRun = "docker compose -f ../docker/rust-builder/build-sm.yaml run --env TARGET=$target build-sm"
+        def env_rust_binary_type = project.property("rustBinaryBuildType") == "debug" ? "" : "--${project.property("rustBinaryBuildType")}"
+        def dockerComposeRun = """
+            docker compose -f ../docker/rust-builder/build-sm.yaml run \\
+                --env TARGET=$target  --env RUST_BINARY_TYPE=${env_rust_binary_type} build-sm
+            """
         commandLine 'sh', '-c', dockerComposeRun
     }
 
