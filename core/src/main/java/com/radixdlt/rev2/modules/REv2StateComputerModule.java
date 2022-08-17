@@ -84,8 +84,7 @@ public class REv2StateComputerModule extends AbstractModule {
   public REv2StateComputer stateComputer(
       RustStateComputer rustStateComputer,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-      Serialization serialization
-  ) {
+      Serialization serialization) {
     return new REv2StateComputer(rustStateComputer, ledgerUpdateDispatcher, serialization);
   }
 }

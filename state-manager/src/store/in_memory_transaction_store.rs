@@ -62,6 +62,68 @@
  * permissions under this License.
  */
 
-mod in_memory_transaction_store;
+use radix_engine::transaction::{TransactionReceipt, TransactionStatus};
+use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
+use std::collections::BTreeMap;
 
-pub use in_memory_transaction_store::TransactionStore;
+/// TODO: Remove and use the real TransactionReceipt. This is currently a required struct
+/// TODO: as there is RC<RefCell<>> useage in some of the substates which does not play well
+/// TODO: with the babylon node multithreaded structures.
+#[derive(Debug)]
+pub struct TemporaryTransactionReceipt {
+    pub result: String,
+    pub new_package_addresses: Vec<PackageAddress>,
+    pub new_component_addresses: Vec<ComponentAddress>,
+    pub new_resource_addresses: Vec<ResourceAddress>,
+}
+
+#[derive(Debug)]
+pub struct TransactionStore {
+    in_memory_store: BTreeMap<u64, (Vec<u8>, TemporaryTransactionReceipt)>,
+}
+
+impl TransactionStore {
+    pub fn new() -> TransactionStore {
+        TransactionStore {
+            in_memory_store: BTreeMap::new(),
+        }
+    }
+
+    pub fn insert_transactions(
+        &mut self,
+        transactions: Vec<(Vec<u8>, TransactionReceipt)>,
+        state_version: u64,
+    ) {
+        let first_state_version = state_version - u64::try_from(transactions.len() - 1).unwrap();
+        for (i, (txn_bytes, receipt)) in transactions.into_iter().enumerate() {
+            let txn_state_version = first_state_version + i as u64;
+            self.insert_transaction(txn_state_version, txn_bytes, receipt);
+        }
+    }
+
+    fn insert_transaction(
+        &mut self,
+        state_version: u64,
+        transaction_data: Vec<u8>,
+        receipt: TransactionReceipt,
+    ) {
+        let receipt = TemporaryTransactionReceipt {
+            result: match receipt.status {
+                TransactionStatus::Succeeded(..) => "Success".to_string(),
+                TransactionStatus::Failed(error) => error.to_string(),
+                TransactionStatus::Rejected => "Rejected".to_string(),
+            },
+            new_package_addresses: receipt.new_package_addresses,
+            new_component_addresses: receipt.new_component_addresses,
+            new_resource_addresses: receipt.new_resource_addresses,
+        };
+        self.in_memory_store
+            .insert(state_version, (transaction_data, receipt));
+    }
+
+    pub fn get_transaction(&self, state_version: u64) -> &(Vec<u8>, TemporaryTransactionReceipt) {
+        self.in_memory_store
+            .get(&state_version)
+            .expect("State version missing")
+    }
+}

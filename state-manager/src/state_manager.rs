@@ -65,7 +65,7 @@
 use crate::jni::dtos::*;
 use crate::mempool::{Mempool, MempoolConfig};
 use crate::query::ResourceAccounter;
-use crate::transaction_store::TransactionStore;
+use crate::store::{ProofStore, TransactionStore};
 use crate::types::{CommitRequest, PreviewError, PreviewRequest, Transaction};
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
@@ -91,6 +91,7 @@ use transaction::validation::{TestIntentHashManager, TransactionValidator, Valid
 pub struct StateManager<M: Mempool, S> {
     pub mempool: M,
     pub transaction_store: TransactionStore,
+    proof_store: ProofStore,
     network: Network,
     substate_store: S,
     wasm_engine: DefaultWasmEngine,
@@ -110,6 +111,7 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
             network: Network::LocalSimulator,
             mempool,
             transaction_store,
+            proof_store: ProofStore::new(),
             substate_store,
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),
@@ -144,8 +146,12 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
             to_store.push((transaction.payload.clone(), receipt))
         }
 
-        self.transaction_store.commit(to_store, commit_request.state_version, commit_request.proof);
-        self.mempool.handle_committed_transactions(&commit_request.transactions);
+        self.transaction_store
+            .insert_transactions(to_store, commit_request.state_version);
+        self.proof_store
+            .insert_proof(commit_request.state_version, commit_request.proof);
+        self.mempool
+            .handle_committed_transactions(&commit_request.transactions);
     }
 
     fn execute_transaction(

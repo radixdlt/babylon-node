@@ -74,7 +74,6 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -98,8 +97,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   public REv2StateComputer(
       RustStateComputer stateComputer,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
-      Serialization serialization
-  ) {
+      Serialization serialization) {
     this.stateComputer = stateComputer;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
     this.serialization = serialization;
