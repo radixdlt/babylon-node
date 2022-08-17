@@ -17,9 +17,12 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-  build:
-    name: Build image
-    runs-on: ubuntu-22.04
+  build_deb:
+    name: Build debian package
+    runs-on: babylon-runner
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -61,6 +64,35 @@ jobs:
         run: |
             sudo apt-get update && sudo apt-get install make
             cd core && make build-core
+      - name: Upload generated debian package
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: deb4docker
+          path: "${{ github.workspace }}/docker/*.deb"
+
+
+  build_push_container:
+    name: Build core node docker container
+    needs:
+      - build_deb
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Download generated debian package
+        uses: actions/download-artifact@v3
+        with:
+          name: deb4docker
+          path: docker
+      - name: Display structure of downloaded files
+        run: ls -R docker
+      - name: Login to GCR
+        uses: docker/login-action@v1
+        with:
+          registry: eu.gcr.io
+          username: _json_key
+          password: ${{ secrets.GCR_EU_DEV_JSON_KEY }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -72,5 +104,5 @@ jobs:
           context: docker
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ needs.build_deb.outputs.tags }}
+          labels: ${{ needs.build_deb.outputs.labels }}
