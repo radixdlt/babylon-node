@@ -62,51 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.rev2_consensus_mempool_ledger_sync;
+package com.radixdlt.harness.invariants;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.google.inject.*;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.invariants.REv2FirstTransactionChecker;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.MempoolInserter;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.sync.SyncConfig;
+import com.google.inject.Injector;
+import com.radixdlt.transaction.REv2TransactionStore;
 import com.radixdlt.transactions.RawTransaction;
-import org.junit.Test;
+import java.util.List;
 
-public final class SanityTest {
-  private final DeterministicTest bftTest =
-      DeterministicTest.builder()
-          .numNodes(10)
-          .messageSelector(firstSelector())
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  ConsensusConfig.of(1000),
-                  LedgerConfig.stateComputerWithSync(
-                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))),
-                      SyncConfig.of(5000, 10, 3000L))));
+/** Verifies that all nodes agree on the first transaction */
+public final class REv2FirstTransactionChecker {
+  public static void verify(List<Injector> nodeInjectors) {
+    var firstTransactions =
+        nodeInjectors.stream()
+            .map(
+                injector -> {
+                  var store = injector.getInstance(REv2TransactionStore.class);
+                  var receipt = store.getTransactionAtStateVersion(1);
+                  var bytes = receipt.getTransactionBytes();
+                  return RawTransaction.create(bytes);
+                });
 
-  @Test
-  public void sanity_test() throws Exception {
-    var transactionGenerator = new REV2TransactionGenerator();
-    for (int i = 0; i < 50; i++) {
-      bftTest.runForCount(1000);
-
-      var mempoolInserter =
-          bftTest.getInstance(
-              i % bftTest.numNodes(),
-              Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
-      mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
-    }
-
-    REv2FirstTransactionChecker.verify(bftTest.getNodeInjectors());
+    // All nodes have the same first transaction
+    assertThat(firstTransactions.distinct().count()).isEqualTo(1);
   }
 }

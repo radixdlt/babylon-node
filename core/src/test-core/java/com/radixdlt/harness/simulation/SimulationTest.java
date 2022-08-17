@@ -716,6 +716,10 @@ public final class SimulationTest {
       return network;
     }
 
+    public List<Injector> getNodeInjectors() {
+      return network.getNodes().stream().map(network::getNodeInjector).collect(Collectors.toList());
+    }
+
     public Map<Monitor, Optional<TestInvariantError>> awaitCompletion() {
       return this.resultObservable
           .blockingStream()

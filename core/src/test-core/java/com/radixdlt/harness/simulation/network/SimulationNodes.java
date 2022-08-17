@@ -184,6 +184,8 @@ public class SimulationNodes {
 
     <T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node);
 
+    Injector getNodeInjector(BFTNode node);
+
     <T> T getInstance(Class<T> clazz, BFTNode node);
 
     <T> T getInstance(Key<T> clazz, BFTNode node);
@@ -313,6 +315,11 @@ public class SimulationNodes {
     @Override
     public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass, BFTNode node) {
       return getInstance(Environment.class, node).getDispatcher(eventClass);
+    }
+
+    @Override
+    public Injector getNodeInjector(BFTNode node) {
+      return nodes.get(node);
     }
 
     @Override

@@ -65,10 +65,8 @@
 package com.radixdlt.harness.deterministic;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
-import com.google.inject.Key;
+import com.google.inject.*;
 import com.google.inject.Module;
-import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
@@ -104,6 +102,7 @@ import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Function;
@@ -285,6 +284,10 @@ public final class DeterministicTest {
 
   public DeterministicNodes getNodes() {
     return this.nodes;
+  }
+
+  public List<Injector> getNodeInjectors() {
+    return this.nodes.getNodeInjectors();
   }
 
   public interface DeterministicManualExecutor {

@@ -66,6 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.rev2_consensus_mempool_
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.harness.invariants.REv2FirstTransactionChecker;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
@@ -79,8 +80,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.sync.SyncConfig;
-import com.radixdlt.transaction.REv2TransactionStore;
-import com.radixdlt.transactions.RawTransaction;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -118,17 +117,7 @@ public class SanityTest {
     // Post-run assertions
     assertThat(checkResults)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    var firstTransactions =
-        runningTest.getNetwork().getNodes().stream()
-            .map(
-                node -> {
-                  var store =
-                      runningTest.getNetwork().getInstance(REv2TransactionStore.class, node);
-                  var receipt = store.getTransactionAtStateVersion(1);
-                  var bytes = receipt.getTransactionBytes();
-                  return RawTransaction.create(bytes);
-                });
-    // All nodes have the same first transaction
-    assertThat(firstTransactions.distinct().count()).isEqualTo(1);
+
+    REv2FirstTransactionChecker.verify(runningTest.getNodeInjectors());
   }
 }

@@ -164,6 +164,10 @@ public final class DeterministicNodes {
     }
   }
 
+  public List<Injector> getNodeInjectors() {
+    return this.nodeInstances;
+  }
+
   public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {
     return this.nodeInstances.get(nodeIndex).getInstance(instanceClass);
   }
