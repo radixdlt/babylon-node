@@ -143,6 +143,7 @@ task buildRustForDocker(type: Exec) {
     } else{
         def env_rust_binary_type = project.property("rustBinaryBuildType") == "debug" ? "" : "--${project.property("rustBinaryBuildType")}"
         def dockerComposeRun = """
+            docker compose -f ../docker/rust-builder/build-sm.yaml build
             docker compose -f ../docker/rust-builder/build-sm.yaml run \\
                 --env TARGET=$target  --env RUST_BINARY_TYPE=${env_rust_binary_type} build-sm
             """
