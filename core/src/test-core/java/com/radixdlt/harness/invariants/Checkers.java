@@ -67,13 +67,15 @@ package com.radixdlt.harness.invariants;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.inject.Injector;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.transaction.REv2TransactionStore;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 
-/** Verifies that all nodes agree on the first transaction */
-public final class REv2FirstTransactionChecker {
-  public static void verify(List<Injector> nodeInjectors) {
+/** Checkers for use with integration and simulation tests */
+public final class Checkers {
+  /** Verifies that all nodes agree on the first transaction */
+  public static void verifyFirstTransactionEquivalent(List<Injector> nodeInjectors) {
     var firstTransactions =
         nodeInjectors.stream()
             .map(
@@ -86,5 +88,13 @@ public final class REv2FirstTransactionChecker {
 
     // All nodes have the same first transaction
     assertThat(firstTransactions.distinct().count()).isEqualTo(1);
+  }
+
+  public static void verifyNoInvalidSyncResponses(List<Injector> nodeInjectors) {
+    for (var injector : nodeInjectors) {
+      var systemCounters = injector.getInstance(SystemCounters.class);
+      assertThat(systemCounters.get(SystemCounters.CounterType.SYNC_INVALID_RESPONSES_RECEIVED))
+          .isEqualTo(0);
+    }
   }
 }

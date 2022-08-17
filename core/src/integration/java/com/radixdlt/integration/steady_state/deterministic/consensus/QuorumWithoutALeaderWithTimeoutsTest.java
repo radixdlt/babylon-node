@@ -88,10 +88,10 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
 
   private final Random random = new Random(123456);
 
-  private void run(int numNodes, long numRounds) {
+  private void run(int numValidatorNodes, long numRounds) {
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numValidatorNodes, 0)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropAllNonTimeoutVotes())
             .functionalNodeModule(
@@ -102,7 +102,7 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
                         StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
             .runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
-    for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
+    for (int nodeIndex = 0; nodeIndex < numValidatorNodes; ++nodeIndex) {
       final SystemCounters counters = test.getInstance(nodeIndex, SystemCounters.class);
       final long numberOfIndirectParents =
           counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);

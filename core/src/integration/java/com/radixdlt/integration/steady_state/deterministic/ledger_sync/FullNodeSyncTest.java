@@ -90,7 +90,7 @@ public class FullNodeSyncTest {
 
     final var bftTest =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numNodes, 0)
             .messageSelector(firstSelector())
             .epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
             .buildWithEpochsAndSync(epochMaxRound, syncConfig)

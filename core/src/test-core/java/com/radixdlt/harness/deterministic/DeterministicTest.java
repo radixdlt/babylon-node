@@ -99,6 +99,7 @@ import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.KeyComparator;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
@@ -132,6 +133,9 @@ public final class DeterministicTest {
   public static class Builder {
     private ImmutableList<BFTNode> nodes =
         ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
+    private ImmutableList<BFTNode> initialValidatorNodes =
+        ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
+
     private MessageSelector messageSelector = MessageSelector.firstSelector();
     private MessageMutator messageMutator = MessageMutator.nothing();
     private Function<Long, IntStream> epochToNodeIndexesMapping;
@@ -143,14 +147,17 @@ public final class DeterministicTest {
       // Nothing to do here
     }
 
-    public Builder numNodes(int numNodes) {
+    public Builder numNodes(int numInitialValidators, int numFullNodes) {
       this.nodes =
-          Stream.generate(ECKeyPair::generateNew)
-              .limit(numNodes)
+          PrivateKeys.numeric(1)
+              .limit(numFullNodes + numInitialValidators)
               .map(ECKeyPair::getPublicKey)
               .sorted(KeyComparator.instance())
               .map(BFTNode::create)
               .collect(ImmutableList.toImmutableList());
+      this.initialValidatorNodes =
+          this.nodes.stream().limit(numInitialValidators).collect(ImmutableList.toImmutableList());
+
       return this;
     }
 
@@ -237,7 +244,8 @@ public final class DeterministicTest {
 
       MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder =
           new MockedConsensusRecoveryModule.Builder(withEpoch);
-      mockedConsensusRecoveryModuleBuilder.withNodes(nodes);
+      mockedConsensusRecoveryModuleBuilder.withNodes(initialValidatorNodes);
+
       if (this.epochNodeWeightMapping != null) {
         mockedConsensusRecoveryModuleBuilder.withEpochNodeWeightMapping(
             this.epochNodeWeightMapping);

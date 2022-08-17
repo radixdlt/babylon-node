@@ -101,7 +101,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
               }
 
               var transactions =
-                  LongStream.range(Math.max(stateVersion, 1), proof.getStateVersion() + 1)
+                  LongStream.rangeClosed(stateVersion + 1, proof.getStateVersion())
                       .mapToObj(
                           i -> {
                             var receipt = transactionStore.getTransactionAtStateVersion(i);

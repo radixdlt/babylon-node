@@ -66,7 +66,7 @@ package com.radixdlt.integration.steady_state.simulation.rev2_consensus_mempool_
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.harness.invariants.REv2FirstTransactionChecker;
+import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
@@ -118,6 +118,6 @@ public class SanityTest {
     assertThat(checkResults)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 
-    REv2FirstTransactionChecker.verify(runningTest.getNodeInjectors());
+    Checkers.verifyFirstTransactionEquivalent(runningTest.getNodeInjectors());
   }
 }

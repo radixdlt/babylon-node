@@ -97,7 +97,7 @@ public class MovingWindowValidatorsTest {
   private void run(int numNodes, int windowSize, long maxEpoch, Round epochMaxRound) {
     DeterministicTest bftTest =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numNodes, 0)
             .messageMutator(mutator())
             .messageSelector(firstSelector())
             .epochNodeIndexesMapping(windowedEpochToNodesMapper(windowSize, numNodes))

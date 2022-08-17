@@ -129,6 +129,7 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -143,7 +144,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /** High level BFT Simulation Test Runner */
 public final class SimulationTest {
@@ -239,9 +239,7 @@ public final class SimulationTest {
      */
     public Builder numNodes(int numNodes, Iterable<UInt256> initialStakes) {
       this.initialNodes =
-          Stream.generate(ECKeyPair::generateNew)
-              .limit(numNodes)
-              .collect(ImmutableList.toImmutableList());
+          PrivateKeys.numeric(1).limit(numNodes).collect(ImmutableList.toImmutableList());
 
       final var stakesIterator = repeatLast(initialStakes);
       final var initialStakesMap =

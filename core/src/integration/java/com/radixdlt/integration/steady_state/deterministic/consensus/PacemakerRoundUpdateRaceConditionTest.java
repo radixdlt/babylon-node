@@ -103,7 +103,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
 
   private static final Random random = new Random(123456);
 
-  private static final int numNodes = 4;
+  private static final int numValidatorNodes = 4;
   private static final int nodeUnderTestIndex = 2; // leader for round 2
   private static final long pacemakerTimeout = 1000L;
   private static final long additionalMessageDelay = pacemakerTimeout + 1000L;
@@ -112,7 +112,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
   public void test_pacemaker_round_update_race_condition() {
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numValidatorNodes, 0)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(messUpMessagesForNodeUnderTest())
             .overrideWithIncorrectModule(

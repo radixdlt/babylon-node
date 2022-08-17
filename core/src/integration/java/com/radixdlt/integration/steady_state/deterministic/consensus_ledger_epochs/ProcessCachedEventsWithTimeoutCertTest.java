@@ -89,7 +89,7 @@ public class ProcessCachedEventsWithTimeoutCertTest {
   public void process_cached_sync_event_with_tc_test() {
     final var test =
         DeterministicTest.builder()
-            .numNodes(5)
+            .numNodes(5, 0)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutators(
                 dropProposalToNodes(Round.of(1), ImmutableList.of(TEST_NODE)),

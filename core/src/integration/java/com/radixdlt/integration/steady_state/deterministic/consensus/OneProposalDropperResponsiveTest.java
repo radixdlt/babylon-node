@@ -82,12 +82,12 @@ public class OneProposalDropperResponsiveTest {
   private final Random random = new Random(123456);
 
   private void runOneProposalDropperResponsiveTest(
-      int numNodes, Function<Round, Integer> nodeToDropFunction) {
+      int numValidatorNodes, Function<Round, Integer> nodeToDropFunction) {
     DeterministicTest.builder()
-        .numNodes(numNodes)
+        .numNodes(numValidatorNodes, 0)
         .messageSelector(MessageSelector.randomSelector(random))
         .messageMutator(
-            MessageMutator.dropTimeouts().andThen(dropNode(numNodes, nodeToDropFunction)))
+            MessageMutator.dropTimeouts().andThen(dropNode(numValidatorNodes, nodeToDropFunction)))
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,

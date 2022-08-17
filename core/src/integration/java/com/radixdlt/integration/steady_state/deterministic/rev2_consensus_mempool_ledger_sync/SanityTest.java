@@ -68,7 +68,8 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 
 import com.google.inject.*;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.invariants.REv2FirstTransactionChecker;
+import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -82,9 +83,9 @@ import com.radixdlt.transactions.RawTransaction;
 import org.junit.Test;
 
 public final class SanityTest {
-  private final DeterministicTest bftTest =
+  private final DeterministicTest test =
       DeterministicTest.builder()
-          .numNodes(10)
+          .numNodes(10, 10)
           .messageSelector(firstSelector())
           .functionalNodeModule(
               new FunctionalRadixNodeModule(
@@ -94,19 +95,21 @@ public final class SanityTest {
                       StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))),
                       SyncConfig.of(5000, 10, 3000L))));
 
+  private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
+
   @Test
   public void sanity_test() throws Exception {
-    var transactionGenerator = new REV2TransactionGenerator();
-    for (int i = 0; i < 50; i++) {
-      bftTest.runForCount(1000);
-
+    // Run
+    for (int i = 0; i < 100; i++) {
+      test.runForCount(1000);
       var mempoolInserter =
-          bftTest.getInstance(
-              i % bftTest.numNodes(),
-              Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+          test.getInstance(
+              i % test.numNodes(), Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
       mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
     }
 
-    REv2FirstTransactionChecker.verify(bftTest.getNodeInjectors());
+    // Post-run assertions
+    Checkers.verifyFirstTransactionEquivalent(test.getNodeInjectors());
+    Checkers.verifyNoInvalidSyncResponses(test.getNodeInjectors());
   }
 }

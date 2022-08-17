@@ -89,12 +89,13 @@ public class FProposalDropperResponsiveTest {
   private final Random random = new Random(123456789);
 
   private void runFProposalDropperResponsiveTest(
-      int numNodes, Function<Round, Set<Integer>> nodesToDropFunction) {
+      int numValidatorNodes, Function<Round, Set<Integer>> nodesToDropFunction) {
     DeterministicTest.builder()
-        .numNodes(numNodes)
+        .numNodes(numValidatorNodes, 0)
         .messageSelector(MessageSelector.randomSelector(random))
         .messageMutator(
-            MessageMutator.dropTimeouts().andThen(dropNodes(numNodes, nodesToDropFunction)))
+            MessageMutator.dropTimeouts()
+                .andThen(dropNodes(numValidatorNodes, nodesToDropFunction)))
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,

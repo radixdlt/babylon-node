@@ -95,11 +95,11 @@ import org.junit.Test;
 public class DifferentTimestampsCauseTimeoutTest {
   @Test
   public void when_four_nodes_receive_qcs_with_same_timestamps__quorum_is_achieved() {
-    final int numNodes = 4;
+    final int numValidatorNodes = 4;
 
     DeterministicManualExecutor executor =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numValidatorNodes, 0)
             .messageMutator(mutateProposalsBy(0))
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
@@ -128,7 +128,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 
   @Test
   public void when_four_nodes_receive_qcs_with_different_timestamps__quorum_is_not_achieved() {
-    final int numNodes = 4;
+    final int numValidatorNodes = 4;
 
     // TODO: this test isn't exactly right and should be updated so that
     // TODO: byzantine node sends different sets of valid QCs to each node
@@ -142,7 +142,7 @@ public class DifferentTimestampsCauseTimeoutTest {
                     bind(HashSigner.class).toInstance(h -> ECDSASignature.zeroSignature());
                   }
                 })
-            .numNodes(numNodes)
+            .numNodes(numValidatorNodes, 0)
             .messageMutator(mutateProposalsBy(1))
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(

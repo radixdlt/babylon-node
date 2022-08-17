@@ -88,11 +88,12 @@ import org.junit.Test;
 
 public class ProposerLoadBalancedTest {
 
-  private ImmutableList<Long> run(int numNodes, long numRounds, EpochNodeWeightMapping mapping) {
+  private ImmutableList<Long> run(
+      int numValidatorNodes, long numRounds, EpochNodeWeightMapping mapping) {
 
     DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numValidatorNodes, 0)
             .messageSelector(MessageSelector.firstSelector())
             .messageMutator(mutator())
             .epochNodeWeightMapping(mapping)
@@ -104,7 +105,7 @@ public class ProposerLoadBalancedTest {
                         StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
             .runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
-    return IntStream.range(0, numNodes)
+    return IntStream.range(0, numValidatorNodes)
         .mapToObj(i -> test.getInstance(i, SystemCounters.class))
         .map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
         .collect(ImmutableList.toImmutableList());

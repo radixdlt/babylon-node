@@ -85,14 +85,14 @@ import org.junit.Test;
 
 public class RandomChannelOrderResponsiveTest {
 
-  private void run(int numNodes, long roundsToRun) {
-    assertEquals(0, roundsToRun % numNodes);
+  private void run(int numValidatorNodes, long roundsToRun) {
+    assertEquals(0, roundsToRun % numValidatorNodes);
 
     final Random random = new Random(12345);
 
     DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numValidatorNodes, 0)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(MessageMutator.dropTimeouts())
             .functionalNodeModule(
@@ -104,17 +104,18 @@ public class RandomChannelOrderResponsiveTest {
             .runUntil(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
 
     List<Long> proposalsMade =
-        IntStream.range(0, numNodes)
+        IntStream.range(0, numValidatorNodes)
             .mapToObj(i -> test.getInstance(i, SystemCounters.class))
             .map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
             .collect(ImmutableList.toImmutableList());
 
-    final long numRounds = roundsToRun / numNodes;
+    final long numRounds = roundsToRun / numValidatorNodes;
 
     assertThat(proposalsMade)
-        .hasSize(numNodes)
+        .hasSize(numValidatorNodes)
         .areAtLeast(
-            numNodes - 1, new Condition<>(l -> l == numRounds, "has as many proposals as rounds"))
+            numValidatorNodes - 1,
+            new Condition<>(l -> l == numRounds, "has as many proposals as rounds"))
         // the last round in the epoch doesn't have a proposal
         .areAtMost(1, new Condition<>(l -> l == numRounds - 1, "has one less proposal"));
   }
