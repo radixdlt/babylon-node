@@ -222,15 +222,6 @@ public final class DeterministicTest {
       return build(true);
     }
 
-    public DeterministicTest buildWithoutEpochs(ConsensusConfig consensusConfig) {
-      modules.add(
-          new FunctionalRadixNodeModule(
-              false,
-              consensusConfig,
-              LedgerConfig.stateComputerNoSync(StateComputerConfig.mocked(MempoolType.NONE))));
-      return build(false);
-    }
-
     private DeterministicTest build(boolean withEpoch) {
       modules.add(
           new AbstractModule() {

@@ -69,7 +69,9 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -86,7 +88,12 @@ public class OneProposalDropperResponsiveTest {
         .messageSelector(MessageSelector.randomSelector(random))
         .messageMutator(
             MessageMutator.dropTimeouts().andThen(dropNode(numNodes, nodeToDropFunction)))
-        .buildWithoutEpochs(ConsensusConfig.of())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                ConsensusConfig.of(),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
         .runForCount(30_000);
   }
 

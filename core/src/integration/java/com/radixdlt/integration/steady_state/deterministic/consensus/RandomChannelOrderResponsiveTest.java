@@ -72,7 +72,9 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.List;
@@ -93,7 +95,12 @@ public class RandomChannelOrderResponsiveTest {
             .numNodes(numNodes)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(MessageMutator.dropTimeouts())
-            .buildWithoutEpochs(ConsensusConfig.of())
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    ConsensusConfig.of(),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                        StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
             .runUntil(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
 
     List<Long> proposalsMade =

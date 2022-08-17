@@ -70,7 +70,9 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -93,7 +95,12 @@ public class FProposalDropperResponsiveTest {
         .messageSelector(MessageSelector.randomSelector(random))
         .messageMutator(
             MessageMutator.dropTimeouts().andThen(dropNodes(numNodes, nodesToDropFunction)))
-        .buildWithoutEpochs(ConsensusConfig.of())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                ConsensusConfig.of(),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
         .runForCount(30_000);
   }
 
