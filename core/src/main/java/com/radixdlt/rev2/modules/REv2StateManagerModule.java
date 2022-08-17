@@ -73,10 +73,13 @@ import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.REv2StateReader;
+import com.radixdlt.rev2.REv2TransactionsAndProofReader;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transaction.TransactionAndProofReader;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.REv2TransactionStore;
 import com.radixdlt.transactions.RawTransaction;
 
 public final class REv2StateManagerModule extends AbstractModule {
@@ -103,7 +106,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   @Provides
-  private TransactionAndProofReader transactionStoreReader(RustStateComputer stateComputer) {
+  private REv2TransactionStore transactionStoreReader(RustStateComputer stateComputer) {
     return stateComputer.getTransactionStoreReader();
   }
 
@@ -116,5 +119,13 @@ public final class REv2StateManagerModule extends AbstractModule {
   @Provides
   public REv2StateReader stateReader(RustStateComputer rustStateComputer) {
     return rustStateComputer::getComponentXrdAmount;
+  }
+
+  @Provides
+  @Singleton
+  public TransactionsAndProofReader transactionsAndProofReader(
+      RustStateComputer stateComputer, Serialization serialization) {
+    var transactionStore = stateComputer.getTransactionStoreReader();
+    return new REv2TransactionsAndProofReader(transactionStore, serialization);
   }
 }

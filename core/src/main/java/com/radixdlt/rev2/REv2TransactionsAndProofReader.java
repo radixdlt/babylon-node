@@ -62,12 +62,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.rev2;
 
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.REv2TransactionStore;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
-public interface TransactionAndProofReader {
-  ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion);
+public final class REv2TransactionsAndProofReader implements TransactionsAndProofReader {
+  private final REv2TransactionStore transactionStore;
+  private final Serialization serialization;
 
-  Optional<byte[]> getNextProof(long stateVersion);
+  public REv2TransactionsAndProofReader(
+      REv2TransactionStore transactionStore, Serialization serialization) {
+    this.transactionStore = transactionStore;
+    this.serialization = serialization;
+  }
+
+  @Override
+  public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
+    var stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+    var proofBytes = this.transactionStore.getNextProof(stateVersion);
+    return proofBytes
+        .map(
+            b -> {
+              final LedgerProof proof;
+              try {
+                proof = serialization.fromDson(b, LedgerProof.class);
+              } catch (DeserializeException e) {
+                throw new RuntimeException(e);
+              }
+
+              var transactions =
+                  LongStream.range(stateVersion, proof.getStateVersion() + 1)
+                      .mapToObj(
+                          i -> {
+                            var receipt = transactionStore.getTransactionAtStateVersion(i);
+                            return RawTransaction.create(receipt.getTransactionBytes());
+                          })
+                      .collect(Collectors.toList());
+
+              return CommittedTransactionsWithProof.create(transactions, proof);
+            })
+        .orElse(null);
+  }
+
+  @Override
+  public Optional<LedgerProof> getEpochProof(long epoch) {
+    return Optional.empty();
+  }
+
+  @Override
+  public Optional<LedgerProof> getLastProof() {
+    return Optional.empty();
+  }
 }

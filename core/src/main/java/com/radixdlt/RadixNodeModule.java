@@ -87,7 +87,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
-import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
@@ -186,7 +185,6 @@ public final class RadixNodeModule extends AbstractModule {
     install(new REv2StateManagerModule());
     install(new MockedPersistenceStoreModule());
     install(new REv2StateComputerModule());
-    install(new InMemoryCommittedReaderModule());
 
     // Storage
     install(new DatabasePropertiesModule());

@@ -73,7 +73,7 @@ import com.radixdlt.statemanager.StateManagerResponse;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class RustTransactionStore implements TransactionAndProofReader {
+public final class RustTransactionStore implements REv2TransactionStore {
   private static final TypeToken<Result<Option<byte[]>, StateManagerRuntimeError>> nextProofType =
       new TypeToken<>() {};
 
