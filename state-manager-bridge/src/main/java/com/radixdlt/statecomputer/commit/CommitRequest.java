@@ -71,7 +71,7 @@ import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 
-public record CommitRequest(List<RawTransaction> transactions, UInt64 stateVersion) {
+public record CommitRequest(List<RawTransaction> transactions, UInt64 stateVersion, byte[] proofBytes) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CommitRequest.class,
@@ -80,6 +80,7 @@ public record CommitRequest(List<RawTransaction> transactions, UInt64 stateVersi
                 CommitRequest::new,
                 codecs.of(new TypeToken<List<RawTransaction>>() {}),
                 codecs.of(UInt64.class),
-                (t, encoder) -> encoder.encode(t.transactions, t.stateVersion)));
+                codecs.of(new TypeToken<byte[]>() {}),
+                (t, encoder) -> encoder.encode(t.transactions, t.stateVersion, t.proofBytes)));
   }
 }
