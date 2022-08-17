@@ -151,7 +151,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
             .buildWithoutEpochs(ConsensusConfig.of(pacemakerTimeout))
             .runUntil(nodeUnderTestReachesRound(Round.of(3)));
 
-    final var counters = test.getSystemCounters(nodeUnderTestIndex);
+    final var counters = test.getInstance(nodeUnderTestIndex, SystemCounters.class);
     assertThat(counters.get(SystemCounters.CounterType.BFT_VOTE_QUORUMS))
         .isEqualTo(2); // ensure that quorum was formed
     assertThat(counters.get(SystemCounters.CounterType.BFT_PACEMAKER_TIMEOUTS_SENT))

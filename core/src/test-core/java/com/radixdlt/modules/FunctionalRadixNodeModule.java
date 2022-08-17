@@ -162,6 +162,13 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       }
       return false;
     }
+
+    default boolean isREV2() {
+      if (this instanceof StateComputerLedgerConfig c) {
+        return c.config instanceof REv2StateComputerConfig;
+      }
+      return false;
+    }
   }
 
   public static final class MockedLedgerConfig implements LedgerConfig {}
@@ -214,6 +221,10 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
   public boolean supportsREv1() {
     return this.ledgerConfig.isREV1();
+  }
+
+  public boolean supportsREv2() {
+    return this.ledgerConfig.isREV2();
   }
 
   public boolean supportsSync() {

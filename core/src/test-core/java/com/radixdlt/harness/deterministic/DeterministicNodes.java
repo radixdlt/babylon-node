@@ -164,7 +164,11 @@ public final class DeterministicNodes {
     }
   }
 
-  public SystemCounters getSystemCounters(int nodeIndex) {
-    return this.nodeInstances.get(nodeIndex).getInstance(SystemCounters.class);
+  public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {
+    return this.nodeInstances.get(nodeIndex).getInstance(instanceClass);
+  }
+
+  public <T> T getInstance(int nodeIndex, Key<T> key) {
+    return this.nodeInstances.get(nodeIndex).getInstance(key);
   }
 }

@@ -62,73 +62,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.ledger_sync;
+package com.radixdlt.integration.steady_state.deterministic.rev2_consensus_mempool_ledger_sync;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.bft.Round;
+import com.google.inject.*;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.transaction.REv2TransactionStore;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.stream.IntStream;
 import org.junit.Test;
 
-public class FullNodeSyncTest {
-  /* maximum state lag is a single transaction */
-  private static final int FULL_NODE_MAX_BEHIND_STATE_VER = 1;
-
-  private void run(int numNodes, int numValidators, Round epochMaxRound, long targetStateVersion) {
-    final var syncConfig =
-        new SyncConfig(
-            500L,
-            0 /* unused */,
-            0L /* unused */,
-            numNodes, /* send ledger status update to all nodes */
-            Integer.MAX_VALUE /* no rate limiting */);
-
-    final var bftTest =
-        DeterministicTest.builder()
-            .numNodes(numNodes)
-            .messageSelector(firstSelector())
-            .epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
-            .buildWithEpochsAndSync(epochMaxRound, syncConfig)
-            .runUntil(DeterministicTest.ledgerStateVersionOnNode(targetStateVersion, numNodes - 1));
-
-    final var validatorsCounters =
-        IntStream.range(0, numValidators)
-            .mapToObj(i -> bftTest.getInstance(i, SystemCounters.class));
-
-    final var validatorsMaxStateVersion =
-        validatorsCounters
-            .map(sc -> sc.get(CounterType.LEDGER_STATE_VERSION))
-            .max(Long::compareTo)
-            .get();
-
-    final var nonValidatorsStateVersions =
-        IntStream.range(numValidators, numNodes - numValidators)
-            .mapToObj(i -> bftTest.getInstance(i, SystemCounters.class))
-            .map(sc -> sc.get(CounterType.LEDGER_STATE_VERSION))
-            .toList();
-
-    nonValidatorsStateVersions.forEach(
-        stateVersion ->
-            assertTrue(stateVersion + FULL_NODE_MAX_BEHIND_STATE_VER >= validatorsMaxStateVersion));
-  }
+public final class SanityTest {
+  private final DeterministicTest bftTest =
+      DeterministicTest.builder()
+          .numNodes(10)
+          .messageSelector(firstSelector())
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  ConsensusConfig.of(1000),
+                  LedgerConfig.stateComputerWithSync(
+                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))),
+                      SyncConfig.of(5000, 10, 3000L))));
 
   @Test
-  public void total_five_nodes_and_a_single_full_node() {
-    this.run(5, 4, Round.of(100), 1000L);
-  }
+  public void sanity_test() throws Exception {
+    var transactionGenerator = new REV2TransactionGenerator();
+    for (int i = 0; i < 50; i++) {
+      bftTest.runForCount(1000);
 
-  @Test
-  public void total_50_nodes_and_just_4_validators_two_rounds_per_epoch() {
-    this.run(50, 4, Round.of(2), 500L);
-  }
+      var mempoolInserter =
+          bftTest.getInstance(
+              i % bftTest.numNodes(),
+              Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+      mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
+    }
 
-  @Test
-  public void total_three_nodes_and_a_single_full_node_10k_rounds_per_epoch() {
-    this.run(3, 2, Round.of(10000), 1000L);
+    // Post-run assertions
+    var firstTransactions =
+        IntStream.range(0, bftTest.numNodes())
+            .mapToObj(
+                nodeIndex -> {
+                  var store =
+                      bftTest.getInstance(
+                          nodeIndex, Key.get(new TypeLiteral<REv2TransactionStore>() {}));
+                  var receipt = store.getTransactionAtStateVersion(1);
+                  var bytes = receipt.getTransactionBytes();
+                  return RawTransaction.create(bytes);
+                });
+
+    // All nodes have the same first transaction
+    assertThat(firstTransactions.distinct().count()).isEqualTo(1);
   }
 }

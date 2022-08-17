@@ -75,6 +75,7 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -97,7 +98,7 @@ public class ProposerLoadBalancedTest {
             .runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     return IntStream.range(0, numNodes)
-        .mapToObj(test::getSystemCounters)
+        .mapToObj(i -> test.getInstance(i, SystemCounters.class))
         .map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
         .collect(ImmutableList.toImmutableList());
   }

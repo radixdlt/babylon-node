@@ -99,7 +99,7 @@ public class ProcessCachedEventsWithTimeoutCertTest {
             .runUntil(nodeVotesForRound(Round.of(3), TEST_NODE));
 
     // just to check if the node indeed needed to sync
-    final var counters = test.getSystemCounters(TEST_NODE);
+    final var counters = test.getInstance(TEST_NODE, SystemCounters.class);
     assertThat(counters.get(SystemCounters.CounterType.BFT_TIMEOUT_QUORUMS)).isEqualTo(0);
     assertThat(counters.get(SystemCounters.CounterType.BFT_VOTE_QUORUMS)).isEqualTo(0);
   }

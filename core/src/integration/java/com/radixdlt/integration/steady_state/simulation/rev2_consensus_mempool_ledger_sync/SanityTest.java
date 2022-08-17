@@ -64,6 +64,8 @@
 
 package com.radixdlt.integration.steady_state.simulation.rev2_consensus_mempool_ledger_sync;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
@@ -79,12 +81,9 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.transaction.REv2TransactionStore;
 import com.radixdlt.transactions.RawTransaction;
+import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
-
-import java.util.concurrent.TimeUnit;
-
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 public class SanityTest {
   private final SimulationTest.Builder bftTestBuilder =
@@ -96,7 +95,8 @@ public class SanityTest {
                   false,
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputerWithSync(
-                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))), SyncConfig.of(5000, 10, 3000L))))
+                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))),
+                      SyncConfig.of(5000, 10, 3000L))))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(10, TimeUnit.SECONDS),

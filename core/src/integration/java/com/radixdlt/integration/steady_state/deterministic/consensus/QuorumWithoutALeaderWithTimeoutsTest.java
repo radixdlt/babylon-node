@@ -96,7 +96,7 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
             .runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
-      final SystemCounters counters = test.getSystemCounters(nodeIndex);
+      final SystemCounters counters = test.getInstance(nodeIndex, SystemCounters.class);
       final long numberOfIndirectParents =
           counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
       final long totalNumberOfTimeouts = counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);

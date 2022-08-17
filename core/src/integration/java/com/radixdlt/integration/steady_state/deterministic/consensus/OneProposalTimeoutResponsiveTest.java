@@ -102,7 +102,7 @@ public class OneProposalTimeoutResponsiveTest {
             : requiredTimeouts / 2; // otherwise, every 2nd timeout forms a TC
 
     for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
-      SystemCounters counters = test.getSystemCounters(nodeIndex);
+      SystemCounters counters = test.getInstance(nodeIndex, SystemCounters.class);
       long numberOfIndirectParents = counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
       long totalNumberOfTimeouts = counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
       long totalNumberOfTimeoutQuorums = counters.get(CounterType.BFT_TIMEOUT_QUORUMS);

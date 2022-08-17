@@ -174,7 +174,7 @@ public class MovingWindowValidatorsTest {
 
   private static LinkedList<SystemCounters> systemCounters(DeterministicTest bftTest) {
     return IntStream.range(0, bftTest.numNodes())
-        .mapToObj(bftTest::getSystemCounters)
+        .mapToObj(i -> bftTest.getInstance(i, SystemCounters.class))
         .collect(Collectors.toCollection(LinkedList::new));
   }
 

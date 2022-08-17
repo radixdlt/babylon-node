@@ -66,6 +66,7 @@ package com.radixdlt.harness.deterministic;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
@@ -92,13 +93,12 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.MempoolType;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochMaxRound;
-import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.TimeSupplier;
@@ -165,6 +165,11 @@ public final class DeterministicTest {
     public Builder overrideWithIncorrectModule(Module module) {
       this.overrideModule = module;
       return this;
+    }
+
+    public DeterministicTest functionalNodeModule(FunctionalRadixNodeModule module) {
+      modules.add(module);
+      return build(false);
     }
 
     public Builder epochNodeIndexesMapping(Function<Long, IntStream> epochToNodeIndexesMapping) {
@@ -406,8 +411,12 @@ public final class DeterministicTest {
     };
   }
 
-  public SystemCounters getSystemCounters(int nodeIndex) {
-    return this.nodes.getSystemCounters(nodeIndex);
+  public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {
+    return this.nodes.getInstance(nodeIndex, instanceClass);
+  }
+
+  public <T> T getInstance(int nodeIndex, Key<T> key) {
+    return this.nodes.getInstance(nodeIndex, key);
   }
 
   public int numNodes() {
