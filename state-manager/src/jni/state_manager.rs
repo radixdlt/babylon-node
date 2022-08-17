@@ -96,8 +96,9 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
     JNIStateManager::cleanup(&env, interop_state);
 }
 
+pub type ActualStateManager = StateManager<SimpleMempool, SerializedInMemorySubstateStore>;
 pub struct JNIStateManager {
-    pub state_manager: StateManager<SimpleMempool, SerializedInMemorySubstateStore>,
+    pub state_manager: ActualStateManager,
 }
 
 impl JNIStateManager {

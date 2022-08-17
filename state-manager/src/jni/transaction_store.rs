@@ -62,15 +62,14 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::JavaStructure;
-use crate::jni::state_manager::JNIStateManager;
-use crate::jni::utils::jni_slice_to_jbytearray;
-use crate::result::StateManagerResult;
 use jni::objects::{JClass, JObject};
-use jni::sys::{jbyteArray, jlong};
+use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use sbor::*;
 use scrypto::prelude::ComponentAddress;
+
+use super::state_manager::ActualStateManager;
+use super::utils::jni_state_manager_sbor_call;
 
 #[derive(Encode, Decode, TypeId)]
 pub struct ExecutedTransactionReceipt {
@@ -80,44 +79,48 @@ pub struct ExecutedTransactionReceipt {
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransactionAtStateVersion(
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getTransactionAtStateVersion(
     env: JNIEnv,
     _class: JClass,
-    interop_state: JObject,
-    j_state_version: jlong,
+    sm_instance: JObject,
+    request_payload: jbyteArray,
 ) -> jbyteArray {
-    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
+    jni_state_manager_sbor_call(
+        env,
+        sm_instance,
+        request_payload,
+        do_get_transaction_at_state_version,
+    )
+}
 
+fn do_get_transaction_at_state_version(
+    state_manager: &mut ActualStateManager,
+    state_version: u64,
+) -> ExecutedTransactionReceipt {
     let (transaction_data, receipt) = state_manager
-        .state_manager
         .transaction_store
-        .get_transaction(j_state_version as u64);
+        .get_transaction(state_version);
 
-    let executed_receipt = ExecutedTransactionReceipt {
+    ExecutedTransactionReceipt {
         result: receipt.result.to_string(),
         transaction_data: transaction_data.clone(),
         new_component_addresses: receipt.new_component_addresses.clone(),
-    };
-    let result: StateManagerResult<ExecutedTransactionReceipt> = Ok(executed_receipt);
-
-    jni_slice_to_jbytearray(&env, &result.to_java())
+    }
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getNextProof(
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getNextProof(
     env: JNIEnv,
     _class: JClass,
-    interop_state: JObject,
-    j_state_version: jlong,
+    sm_instance: JObject,
+    request_payload: jbyteArray,
 ) -> jbyteArray {
-    let state_manager = JNIStateManager::get_state_manager(&env, interop_state);
+    jni_state_manager_sbor_call(env, sm_instance, request_payload, do_get_next_proof)
+}
 
-    let maybe_proof = state_manager
-        .state_manager
-        .proof_store
-        .get_next_proof(j_state_version as u64);
-
-    let result: StateManagerResult<Option<Vec<u8>>> = Ok(maybe_proof);
-
-    jni_slice_to_jbytearray(&env, &result.to_java())
+fn do_get_next_proof(
+    state_manager: &mut ActualStateManager,
+    state_version: u64,
+) -> Option<Vec<u8>> {
+    state_manager.proof_store.get_next_proof(state_version)
 }

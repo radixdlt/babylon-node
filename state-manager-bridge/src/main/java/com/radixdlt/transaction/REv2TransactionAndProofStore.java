@@ -68,8 +68,9 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
+import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statemanager.StateManager.RustState;
-import com.radixdlt.statemanager.StateManagerResponse;
+import com.radixdlt.utils.UInt64;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -77,27 +78,36 @@ public final class REv2TransactionAndProofStore {
   private static final TypeToken<Result<Option<byte[]>, StateManagerRuntimeError>> nextProofType =
       new TypeToken<>() {};
 
-  private static final TypeToken<Result<ExecutedTransactionReceipt, StateManagerRuntimeError>>
-      receiptType = new TypeToken<>() {};
-
-  private final RustState rustState;
-
   public REv2TransactionAndProofStore(RustState rustState) {
-    this.rustState = Objects.requireNonNull(rustState);
+    Objects.requireNonNull(rustState);
+    this.getTransactionAtStateVersionFunc =
+        NativeCalls.Func1.with(
+            rustState,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            REv2TransactionAndProofStore::getTransactionAtStateVersion);
+    this.getNextProofFunc =
+        NativeCalls.Func1.with(
+            rustState,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            REv2TransactionAndProofStore::getNextProof);
   }
 
   public ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion) {
-    var encodedResponse = getTransactionAtStateVersion(this.rustState, stateVersion);
-    return StateManagerResponse.decode(encodedResponse, receiptType);
+    return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
   }
 
   public Optional<byte[]> getNextProof(long stateVersion) {
-    var encodedResponse = getNextProof(this.rustState, stateVersion);
-    var proof = StateManagerResponse.decode(encodedResponse, nextProofType);
-    return proof.toOptional();
+    return this.getNextProofFunc.call(UInt64.fromNonNegativeLong(stateVersion)).toOptional();
   }
 
-  private static native byte[] getTransactionAtStateVersion(RustState rustState, long stateVersion);
+  private final NativeCalls.Func1<UInt64, ExecutedTransactionReceipt>
+      getTransactionAtStateVersionFunc;
 
-  private static native byte[] getNextProof(RustState rustState, long stateVersion);
+  private static native byte[] getTransactionAtStateVersion(RustState rustState, byte[] payload);
+
+  private final NativeCalls.Func1<UInt64, Option<byte[]>> getNextProofFunc;
+
+  private static native byte[] getNextProof(RustState rustState, byte[] payload);
 }

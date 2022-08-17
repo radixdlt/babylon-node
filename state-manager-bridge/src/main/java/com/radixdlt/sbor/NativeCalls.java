@@ -62,29 +62,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.sbor;
 
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.sbor.codec.core.LongCodec;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.exceptions.StateManagerRuntimeError;
+import com.radixdlt.exceptions.StateManagerRuntimeException;
+import com.radixdlt.lang.Functions;
+import com.radixdlt.lang.Result;
+import com.radixdlt.sbor.codec.Codec;
+import com.radixdlt.statemanager.StateManager;
 
-public class GetRelayedTransactionsRustArgs {
-  long initialDelayMillis;
-  long repeatDelayMillis;
+public interface NativeCalls {
+  record Func0<Res>(
+      StateManager.RustState rustState,
+      Codec<Result<Res, StateManagerRuntimeError>> responseCodec,
+      Functions.Func1<StateManager.RustState, byte[]> nativeFunction) {
+    public static <Res> Func0<Res> with(
+        StateManager.RustState rustState,
+        TypeToken<Result<Res, StateManagerRuntimeError>> responseType,
+        Functions.Func1<StateManager.RustState, byte[]> nativeFunction) {
+      return new Func0<>(rustState, StateManagerSbor.resolveCodec(responseType), nativeFunction);
+    }
 
-  public GetRelayedTransactionsRustArgs(long initialDelayMillis, long repeatDelayMillis) {
-    this.initialDelayMillis = initialDelayMillis;
-    this.repeatDelayMillis = repeatDelayMillis;
+    public Res call() {
+      final var encodedResponse = nativeFunction.apply(rustState);
+      return handleStateManagerResponse(StateManagerSbor.decode(encodedResponse, responseCodec));
+    }
   }
 
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        GetRelayedTransactionsRustArgs.class,
-        codecs ->
-            StructCodec.with(
-                GetRelayedTransactionsRustArgs::new,
-                new LongCodec(false),
-                new LongCodec(false),
-                (a, encoder) -> encoder.encode(a.initialDelayMillis, a.repeatDelayMillis)));
+  record Func1<Req, Res>(
+      StateManager.RustState rustState,
+      Codec<Req> requestCodec,
+      Codec<Result<Res, StateManagerRuntimeError>> responseCodec,
+      Functions.Func2<StateManager.RustState, byte[], byte[]> nativeFunction) {
+    public static <Req, Res> Func1<Req, Res> with(
+        StateManager.RustState rustState,
+        TypeToken<Req> requestType,
+        TypeToken<Result<Res, StateManagerRuntimeError>> responseType,
+        Functions.Func2<StateManager.RustState, byte[], byte[]> nativeFunction) {
+      return new Func1<>(
+          rustState,
+          StateManagerSbor.resolveCodec(requestType),
+          StateManagerSbor.resolveCodec(responseType),
+          nativeFunction);
+    }
+
+    public Res call(Req request) {
+      final var encodedRequest = StateManagerSbor.encode(request, requestCodec);
+      final var encodedResponse = nativeFunction.apply(rustState, encodedRequest);
+      return handleStateManagerResponse(StateManagerSbor.decode(encodedResponse, responseCodec));
+    }
+  }
+
+  record StaticFunc1<Req, Res>(
+      Codec<Req> requestCodec,
+      Codec<Result<Res, StateManagerRuntimeError>> responseCodec,
+      Functions.Func1<byte[], byte[]> nativeFunction) {
+    public static <Req, Res> StaticFunc1<Req, Res> with(
+        TypeToken<Req> requestType,
+        TypeToken<Result<Res, StateManagerRuntimeError>> responseType,
+        Functions.Func1<byte[], byte[]> nativeFunction) {
+      return new StaticFunc1<>(
+          StateManagerSbor.resolveCodec(requestType),
+          StateManagerSbor.resolveCodec(responseType),
+          nativeFunction);
+    }
+
+    public Res call(Req request) {
+      final var encodedRequest = StateManagerSbor.encode(request, requestCodec);
+      final var encodedResponse = nativeFunction.apply(encodedRequest);
+      return handleStateManagerResponse(StateManagerSbor.decode(encodedResponse, responseCodec));
+    }
+  }
+
+  static <Res> Res handleStateManagerResponse(Result<Res, StateManagerRuntimeError> result) {
+    // Handle System/Runtime Errors
+    if (result.isError()) {
+      throw new StateManagerRuntimeException(result.unwrapError());
+    }
+
+    return result.unwrap();
   }
 }

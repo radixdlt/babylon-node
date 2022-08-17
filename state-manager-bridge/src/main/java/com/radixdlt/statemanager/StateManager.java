@@ -64,6 +64,7 @@
 
 package com.radixdlt.statemanager;
 
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.StateManagerSbor;
 import java.util.Objects;
 
@@ -88,7 +89,8 @@ public final class StateManager implements AutoCloseable {
 
   public static StateManager createAndInitialize(StateManagerConfig config) {
     final var rustState = new RustState();
-    final var encodedConfig = StateManagerSbor.sbor.encode(config);
+    final var encodedConfig =
+        StateManagerSbor.encode(config, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
     init(rustState, encodedConfig);
     return new StateManager(rustState);
   }

@@ -62,7 +62,6 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::JavaStructure;
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -73,31 +72,20 @@ use std::str;
 use std::str::FromStr;
 use transaction::manifest::{compile, CompileError};
 
+use super::utils::jni_static_sbor_call;
+
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_manifest_ManifestCompiler_compile(
     env: JNIEnv,
     _class: JClass,
-    j_manifest_bytes: jbyteArray,
-    j_network_bytes: jbyteArray,
+    request_payload: jbyteArray,
 ) -> jbyteArray {
-    let manifest_bytes: Vec<u8> = env
-        .convert_byte_array(j_manifest_bytes)
-        .expect("Can't convert manifest byte array to vec");
-
-    let network_bytes: Vec<u8> = env
-        .convert_byte_array(j_network_bytes)
-        .expect("Can't convert network byte array to vec");
-
-    let result = do_compile(manifest_bytes, network_bytes);
-
-    env.byte_array_from_slice(&result.to_java())
-        .expect("Can't create jbyteArray for compiled manifest")
+    jni_static_sbor_call(env, request_payload, do_compile)
 }
 
-fn do_compile(
-    manifest_bytes: Vec<u8>,
-    network_bytes: Vec<u8>,
-) -> Result<Vec<u8>, CompileManifestErrorJava> {
+fn do_compile(args: (Vec<u8>, Vec<u8>)) -> Result<Vec<u8>, CompileManifestErrorJava> {
+    let (manifest_bytes, network_bytes) = args;
+
     let manifest_str = str::from_utf8(&manifest_bytes)
         .map_err(|_e| CompileManifestErrorJava::from("Invalid utf-8 string (manifest)"))?;
 
