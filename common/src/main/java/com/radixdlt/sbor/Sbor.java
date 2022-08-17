@@ -130,4 +130,8 @@ public final class Sbor {
   public <T> Codec<T> createCodec(CodecMap.ClassCodecCreator<T> codecCreator) {
     return codecCreator.create(codecResolver);
   }
+
+  public <T> Codec<T> resolveCodec(TypeToken<T> type) {
+    return codecResolver.of(type);
+  }
 }

@@ -62,13 +62,11 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::JavaStructure;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use sbor::{Decode, Encode, TypeId};
 
-use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
 use crate::mempool::*;
 use crate::result::{
@@ -76,21 +74,7 @@ use crate::result::{
 };
 use crate::types::Transaction;
 
-//
-// Temporary Structures. This will be removed once we have the final Rust/Java interface.
-//
-
-#[derive(Encode, Decode, TypeId)]
-struct GetTransactionArgs {
-    count: u32,
-    prepared_transactions: Vec<Transaction>,
-}
-
-#[derive(Encode, Decode, TypeId)]
-struct GetRelayTransactionsArgs {
-    initial_delay_millis: u64,
-    repeat_delay_millis: u64,
-}
+use super::state_manager::ActualStateManager;
 
 //
 // JNI Interface
@@ -100,124 +84,102 @@ struct GetRelayTransactionsArgs {
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
     env: JNIEnv,
     _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
+    sm_instance: JObject,
+    request_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_add(&env, j_state, j_payload).to_java();
+    jni_state_manager_sbor_call_flatten_result(env, sm_instance, request_payload, do_add)
+}
 
-    jni_slice_to_jbytearray(&env, &ret)
+fn do_add(
+    state_manager: &mut ActualStateManager,
+    args: Transaction,
+) -> StateManagerResult<Result<Transaction, MempoolErrorJava>> {
+    let transaction = args;
+
+    // TODO: Move decoding of transaction to a separate "zone"
+    // TODO: Use notarized transaction in mempool
+    let decode_result = state_manager.decode_transaction(&transaction);
+
+    if let Err(error) = decode_result {
+        return Err(MempoolError::TransactionValidationError(error)).map_err_sm(|err| err.into());
+    }
+
+    state_manager
+        .mempool
+        .add_transaction(transaction)
+        .map_err_sm(|err| err.into())
 }
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForProposal(
     env: JNIEnv,
     _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
+    sm_instance: JObject,
+    request_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_get_transactions_for_proposal(&env, j_state, j_payload).to_java();
+    jni_state_manager_sbor_call_flatten_result(
+        env,
+        sm_instance,
+        request_payload,
+        do_get_transactions_for_proposal,
+    )
+}
 
-    jni_slice_to_jbytearray(&env, &ret)
+fn do_get_transactions_for_proposal(
+    state_manager: &mut ActualStateManager,
+    args: (u32, Vec<Transaction>),
+) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
+    let (count, prepared_transactions) = args;
+    state_manager
+        .mempool
+        .get_proposal_transactions(count.into(), &prepared_transactions)
+        .map_err_sm(|err| err.into())
 }
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
     env: JNIEnv,
     _class: JClass,
-    j_state: JObject,
+    sm_instance: JObject,
+    request_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_get_count(&env, j_state).to_java();
+    jni_state_manager_sbor_call(env, sm_instance, request_payload, do_get_count)
+}
 
-    jni_slice_to_jbytearray(&env, &ret)
+fn do_get_count(state_manager: &mut ActualStateManager, _args: ()) -> i32 {
+    state_manager.mempool.get_count().try_into().unwrap()
 }
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
     env: JNIEnv,
     _class: JClass,
-    j_state: JObject,
-    j_payload: jbyteArray,
+    sm_instance: JObject,
+    request_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_get_transactions_to_relay(&env, j_state, j_payload).to_java();
-
-    jni_slice_to_jbytearray(&env, &ret)
-}
-
-//
-// JNI -> Rust
-//
-
-fn do_add(
-    env: &JNIEnv,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> StateManagerResult<Result<Transaction, MempoolErrorJava>> {
-    let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let transaction = Transaction::from_java(&request_payload)?;
-
-    // TODO: Move decoding of transaction to a separate "zone"
-    // TODO: Use notarized transaction in mempool
-    if let Err(error) = state_manager.state_manager.decode_transaction(&transaction) {
-        return Err(MempoolError::TransactionValidationError(error)).map_err_sm(|err| err.into());
-    }
-
-    let result = state_manager
-        .state_manager
-        .mempool
-        .add_transaction(transaction);
-
-    let mapped_result = result.map_err_sm(|err| err.into())?;
-    Ok(mapped_result)
-}
-
-fn do_get_transactions_for_proposal(
-    env: &JNIEnv,
-    j_state: JObject,
-    j_payload: jbyteArray,
-) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let args = GetTransactionArgs::from_java(&request_payload)?;
-
-    let result = state_manager
-        .state_manager
-        .mempool
-        .get_proposal_transactions(args.count.into(), &args.prepared_transactions);
-
-    let mapped_result = result.map_err_sm(|err| err.into())?;
-    Ok(mapped_result)
-}
-
-fn do_get_count(env: &JNIEnv, j_state: JObject) -> StateManagerResult<i32> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state);
-
-    let result: i32 = state_manager
-        .state_manager
-        .mempool
-        .get_count()
-        .try_into()
-        .unwrap();
-
-    Ok(result)
+    jni_state_manager_sbor_call_flatten_result(
+        env,
+        sm_instance,
+        request_payload,
+        do_get_transactions_to_relay,
+    )
 }
 
 fn do_get_transactions_to_relay(
-    env: &JNIEnv,
-    j_state: JObject,
-    j_payload: jbyteArray,
+    state_manager: &mut ActualStateManager,
+    args: (u64, u64),
 ) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
-    let mut state_manager = JNIStateManager::get_state_manager(env, j_state);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, j_payload)?;
-    let args = GetRelayTransactionsArgs::from_java(&request_payload)?;
-    let result = state_manager
-        .state_manager
-        .mempool
-        .get_relay_transactions(args.initial_delay_millis, args.repeat_delay_millis);
+    let (initial_delay_millis, repeat_delay_millis) = args;
 
-    let mapped_result = result.map_err_sm(|err| err.into())?;
-    Ok(mapped_result)
+    state_manager
+        .mempool
+        .get_relay_transactions(initial_delay_millis, repeat_delay_millis)
+        .map_err_sm(|err| err.into())
 }
+
+//
+// DTO Models + Mapping
+//
 
 #[derive(Debug, PartialEq, TypeId, Encode, Decode)]
 enum MempoolErrorJava {

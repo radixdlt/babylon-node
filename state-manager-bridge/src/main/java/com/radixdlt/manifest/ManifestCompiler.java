@@ -64,10 +64,12 @@
 
 package com.radixdlt.manifest;
 
+import static com.radixdlt.lang.Tuple.tuple;
+
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
-import com.radixdlt.sbor.Sbor;
-import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.sbor.NativeCalls;
 import java.nio.charset.StandardCharsets;
 
 public final class ManifestCompiler {
@@ -76,21 +78,18 @@ public final class ManifestCompiler {
     System.loadLibrary("statemanager");
   }
 
-  private static final Sbor sbor;
-
-  static {
-    final var codecMap = new CodecMap();
-    CompileManifestError.registerCodec(codecMap);
-    sbor = new Sbor(true, codecMap);
-  }
-
   // TODO: use Network enum once it's in sync with rev2
   public static Result<byte[], CompileManifestError> compile(String manifest, String network) {
     final var manifestBytes = manifest.getBytes(StandardCharsets.UTF_8);
     final var networkBytes = network.getBytes(StandardCharsets.UTF_8);
-    final var resultBytes = compile(manifestBytes, networkBytes);
-    return sbor.decode(resultBytes, new TypeToken<>() {});
+    return compileFunc.call(tuple(manifestBytes, networkBytes));
   }
 
-  private static native byte[] compile(byte[] manifest, byte[] network);
+  private static final NativeCalls.StaticFunc1<
+          Tuple.Tuple2<byte[], byte[]>, Result<byte[], CompileManifestError>>
+      compileFunc =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {}, new TypeToken<>() {}, ManifestCompiler::compile);
+
+  private static native byte[] compile(byte[] payload);
 }
