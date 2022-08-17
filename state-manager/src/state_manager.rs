@@ -66,7 +66,7 @@ use crate::jni::dtos::*;
 use crate::mempool::{Mempool, MempoolConfig};
 use crate::query::ResourceAccounter;
 use crate::transaction_store::TransactionStore;
-use crate::types::{PreviewError, PreviewRequest, Transaction};
+use crate::types::{CommitRequest, PreviewError, PreviewRequest, Transaction};
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
@@ -130,9 +130,9 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
         }
     }
 
-    pub fn commit(&mut self, transactions: Vec<Transaction>, state_version: u64) {
+    pub fn commit(&mut self, commit_request: CommitRequest) {
         let mut to_store = Vec::new();
-        for transaction in &transactions {
+        for transaction in &commit_request.transactions {
             let validated_txn = self
                 .decode_transaction(transaction)
                 .expect("Error on Byzantine quorum");
@@ -144,14 +144,8 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
             to_store.push((transaction.payload.clone(), receipt))
         }
 
-        for (i, (txn_bytes, receipt)) in to_store.into_iter().enumerate() {
-            let txn_state_version =
-                state_version - u64::try_from(transactions.len() - i - 1).unwrap();
-            self.transaction_store
-                .insert_transaction(txn_state_version, txn_bytes, receipt);
-        }
-
-        self.mempool.handle_committed_transactions(&transactions);
+        self.transaction_store.commit(to_store, commit_request.state_version, commit_request.proof);
+        self.mempool.handle_committed_transactions(&commit_request.transactions);
     }
 
     fn execute_transaction(

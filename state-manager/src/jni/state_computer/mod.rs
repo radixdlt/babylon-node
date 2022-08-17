@@ -144,7 +144,7 @@ fn do_commit(env: &JNIEnv, j_state: JObject, j_payload: jbyteArray) -> StateMana
 
     state_manager
         .state_manager
-        .commit(commit_request.transactions, commit_request.state_version);
+        .commit(commit_request);
     Ok(())
 }
 

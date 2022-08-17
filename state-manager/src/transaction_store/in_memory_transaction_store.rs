@@ -89,7 +89,15 @@ impl TransactionStore {
         }
     }
 
-    pub fn insert_transaction(
+    pub fn commit(&mut self, transactions: Vec<(Vec<u8>, TransactionReceipt)>, state_version: u64, proof_bytes: Vec<u8>) {
+        let first_state_version = state_version - u64::try_from(transactions.len() - 1).unwrap();
+        for (i, (txn_bytes, receipt)) in transactions.into_iter().enumerate() {
+            let txn_state_version = first_state_version + i as u64;
+            self.insert_transaction(txn_state_version, txn_bytes, receipt);
+        }
+    }
+
+    fn insert_transaction(
         &mut self,
         state_version: u64,
         transaction_data: Vec<u8>,
