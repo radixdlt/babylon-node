@@ -181,7 +181,7 @@ public class RadixEngineStateComputerTest {
         bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(engineStore);
         bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 
-        install(MempoolConfig.asModule(10, 10));
+        install(MempoolConfig.of(10, 10).asModule());
         install(new MainnetForksModule());
         install(new RadixEngineForksLatestOnlyModule());
         install(new ForksModule());

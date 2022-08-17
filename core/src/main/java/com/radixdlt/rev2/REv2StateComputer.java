@@ -118,7 +118,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         executedTransactions.stream()
             .map(StateComputerLedger.ExecutedTransaction::transaction)
             .toList();
-    return stateComputer.getTransactionsForProposal(1, transactionsNotToInclude);
+    return stateComputer.getTransactionsForProposal(10, transactionsNotToInclude);
   }
 
   @Override
@@ -147,6 +147,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
     var commitRequest = new CommitRequest(txnsAndProof.getTransactions(), stateVersion);
     stateComputer.commit(commitRequest);
+
     var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
   }

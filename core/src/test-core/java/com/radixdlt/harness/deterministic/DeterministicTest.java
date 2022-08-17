@@ -67,7 +67,6 @@ package com.radixdlt.harness.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
@@ -200,7 +199,7 @@ public final class DeterministicTest {
           new FunctionalRadixNodeModule(
               true,
               ConsensusConfig.of(),
-              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false)));
+              LedgerConfig.stateComputerNoSync(StateComputerConfig.mocked(MempoolType.NONE))));
       addEpochedConsensusProcessorModule(epochMaxRound);
       return build(true);
     }
@@ -211,15 +210,9 @@ public final class DeterministicTest {
           new FunctionalRadixNodeModule(
               true,
               ConsensusConfig.of(),
-              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true)));
+              LedgerConfig.stateComputerWithSync(
+                  StateComputerConfig.mocked(MempoolType.NONE), syncConfig)));
       modules.add(new InMemoryCommittedReaderModule());
-      modules.add(
-          new AbstractModule() {
-            @Provides
-            private SyncConfig syncConfig() {
-              return syncConfig;
-            }
-          });
       addEpochedConsensusProcessorModule(epochMaxRound);
       return build(true);
     }
@@ -229,7 +222,7 @@ public final class DeterministicTest {
           new FunctionalRadixNodeModule(
               false,
               consensusConfig,
-              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false)));
+              LedgerConfig.stateComputerNoSync(StateComputerConfig.mocked(MempoolType.NONE))));
       return build(false);
     }
 

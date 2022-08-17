@@ -151,11 +151,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Mempool configuration
     var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
-    install(MempoolConfig.asModule(mempoolMaxSize, 5, 60000, 60000, 100));
-
-    // Sync configuration
-    final long syncPatience = properties.get("sync.patience", 5000L);
-    bind(SyncConfig.class).toInstance(SyncConfig.of(syncPatience, 10, 3000L));
+    install(new MempoolConfig(mempoolMaxSize, 5, 60000, 60000, 100).asModule());
 
     // System (e.g. time, random)
     install(new SystemModule());
@@ -178,7 +174,8 @@ public final class RadixNodeModule extends AbstractModule {
     install(new MempoolRelayerModule());
 
     // Sync
-    install(new SyncServiceModule());
+    final long syncPatience = properties.get("sync.patience", 5000L);
+    install(new SyncServiceModule(SyncConfig.of(syncPatience, 10, 3000L)));
 
     // Epochs - Consensus
     install(new EpochsConsensusModule());

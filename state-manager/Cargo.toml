@@ -30,3 +30,6 @@ radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag=
 
 [lib]
 crate_type = ["cdylib"]
+
+[profile.dev]
+opt-level = 3

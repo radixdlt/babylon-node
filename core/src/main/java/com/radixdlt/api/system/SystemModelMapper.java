@@ -123,7 +123,7 @@ public final class SystemModelMapper {
     return new SyncConfiguration()
         .syncCheckInterval(syncConfig.syncCheckInterval())
         .syncCheckMaxPeers(syncConfig.syncCheckMaxPeers())
-        .requestTimeout(syncConfig.syncRequestTimeout())
+        .requestTimeout(syncConfig.requestTimeout())
         .ledgerStatusUpdateMaxPeersToNotify(syncConfig.ledgerStatusUpdateMaxPeersToNotify())
         .maxLedgerUpdatesRate(BigDecimal.valueOf(syncConfig.maxLedgerUpdatesRate()));
   }

@@ -70,7 +70,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.constraintmachine.REProcessedTxn;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolRelayReader;
+import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.rev1.RadixEngineMempool;
 import com.radixdlt.rev1.RadixEngineStateComputer;
 
@@ -83,7 +83,7 @@ public class RadixEngineStateComputerModule extends AbstractModule {
         .to(RadixEngineStateComputer.class)
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<Mempool<?>>() {}).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
-    bind(MempoolRelayReader.class).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
+    bind(MempoolReader.class).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
 
     bind(new TypeLiteral<Mempool<REProcessedTxn>>() {})
         .to(RadixEngineMempool.class)

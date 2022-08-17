@@ -81,6 +81,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.modules.StateComputerConfig;
@@ -147,7 +148,8 @@ public abstract class ApiTest {
             new ForksModule(),
             new SingleNodeAndPeersDeterministicNetworkModule(
                 TEST_KEY,
-                StateComputerConfig.rev2(StateComputerConfig.REV2ProposerConfig.mempool())),
+                StateComputerConfig.rev2(
+                    StateComputerConfig.REV2ProposerConfig.mempool(MempoolConfig.of(10)))),
             new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),

@@ -116,7 +116,7 @@ public final class CoordinatedForkSanityTest {
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
             .fullFunctionNodes(ConsensusConfig.of(), SyncConfig.of(400L, 10, 2000L))
             .addRadixEngineConfigModules(new MockedForksModule(2), new ForksModule())
-            .addNodeModule(MempoolConfig.asModule(1000, 10))
+            .addNodeModule(MempoolConfig.of(1000, 10).asModule())
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

@@ -112,8 +112,8 @@ public class RustStateComputer {
     return this.transactionStore;
   }
 
-  public MempoolRelayReader getMempoolRelayReader() {
-    return this.mempool::getTransactionsToRelay;
+  public MempoolReader getMempoolReader() {
+    return this.mempool;
   }
 
   public MempoolInserter<RawTransaction> getMempoolInserter() {

@@ -200,7 +200,7 @@ public class RecoveryTest {
                 10,
                 MSG.maxLength())),
         new ForksModule(),
-        MempoolConfig.asModule(10, 10),
+        MempoolConfig.of(10, 10).asModule(),
         new LastEventsModule(EpochRoundUpdate.class, Vote.class),
         new AbstractModule() {
           @Override

@@ -78,6 +78,7 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.CryptoModule;
@@ -125,8 +126,9 @@ public final class REv2ConsensusTransferTest {
         new FunctionalRadixNodeModule(
             false,
             FunctionalRadixNodeModule.ConsensusConfig.of(),
-            FunctionalRadixNodeModule.LedgerConfig.stateComputer(
-                StateComputerConfig.rev2(StateComputerConfig.REV2ProposerConfig.mempool()), false)),
+            FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                StateComputerConfig.rev2(
+                    StateComputerConfig.REV2ProposerConfig.mempool(MempoolConfig.of(1))))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(

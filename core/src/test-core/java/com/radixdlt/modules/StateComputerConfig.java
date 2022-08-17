@@ -64,6 +64,8 @@
 
 package com.radixdlt.modules;
 
+import com.radixdlt.mempool.MempoolConfig;
+
 /** Configuration options for the state computer */
 public sealed interface StateComputerConfig {
   static StateComputerConfig mocked(FunctionalRadixNodeModule.MempoolType mempoolType) {
@@ -91,12 +93,12 @@ public sealed interface StateComputerConfig {
       return new HalfCorrectProposer();
     }
 
-    static REV2ProposerConfig mempool() {
-      return new Mempool();
+    static REV2ProposerConfig mempool(MempoolConfig config) {
+      return new Mempool(config);
     }
 
     record HalfCorrectProposer() implements REV2ProposerConfig {}
 
-    record Mempool() implements REV2ProposerConfig {}
+    record Mempool(MempoolConfig config) implements REV2ProposerConfig {}
   }
 }

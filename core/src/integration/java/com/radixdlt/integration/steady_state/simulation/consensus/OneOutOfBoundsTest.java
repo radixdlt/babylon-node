@@ -71,7 +71,9 @@ import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -87,7 +89,9 @@ public class OneOutOfBoundsTest {
           .networkModules(
               NetworkOrdering.inOrder(),
               NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency))
-          .consensusOnly(ConsensusConfig.of(synchronousTimeout))
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false, ConsensusConfig.of(synchronousTimeout), LedgerConfig.mocked()))
           .addTestModules(
               ConsensusMonitors.safety(),
               // FIXME: Should be 2 * synchronousTimeout, and can be set back to that once message

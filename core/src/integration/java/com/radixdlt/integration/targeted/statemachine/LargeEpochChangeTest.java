@@ -142,7 +142,7 @@ public class LargeEpochChangeTest {
 
   private Injector createInjector() {
     return Guice.createInjector(
-        MempoolConfig.asModule(1000, 10),
+        MempoolConfig.of(1000, 10).asModule(),
         new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(
             new RERulesConfig(

@@ -182,7 +182,7 @@ public abstract class DeterministicActorsTest {
             nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
             Amount.ofTokens(100000),
             Amount.ofTokens(1000)),
-        MempoolConfig.asModule(10, 10),
+        MempoolConfig.of(10, 10).asModule(),
         reConfig,
         new PersistedNodeForTestingModule(ecKeyPair),
         new LastEventsModule(LedgerUpdate.class),

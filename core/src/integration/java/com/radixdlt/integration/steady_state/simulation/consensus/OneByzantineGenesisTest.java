@@ -74,7 +74,9 @@ import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -84,7 +86,8 @@ public class OneByzantineGenesisTest {
   SimulationTest.Builder bftTestBuilder =
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .consensusOnly(ConsensusConfig.of(1000))
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(false, ConsensusConfig.of(1000), LedgerConfig.mocked()))
           .addTestModules(ConsensusMonitors.safety());
 
   @Test

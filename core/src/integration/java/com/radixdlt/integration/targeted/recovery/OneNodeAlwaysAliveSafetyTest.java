@@ -224,7 +224,7 @@ public class OneNodeAlwaysAliveSafetyTest {
             nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
             Amount.ofTokens(1000000),
             Amount.ofTokens(10000)),
-        MempoolConfig.asModule(10, 10),
+        MempoolConfig.of(10, 10).asModule(),
         new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(
             new RERulesConfig(

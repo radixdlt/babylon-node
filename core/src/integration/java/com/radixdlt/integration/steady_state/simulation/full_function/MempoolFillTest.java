@@ -108,7 +108,7 @@ public class MempoolFillTest {
               new AbstractModule() {
                 @Override
                 protected void configure() {
-                  install(MempoolConfig.asModule(1000, 200));
+                  install(MempoolConfig.of(1000, 200).asModule());
                   install(new MempoolFillerModule());
                 }
 
@@ -152,7 +152,9 @@ public class MempoolFillTest {
   @Ignore("Travis not playing nicely with timeouts so disable for now until fixed.")
   public void filler_should_overwhelm_unratelimited_mempool() {
     SimulationTest simulationTest =
-        bftTestBuilder.addOverrideModuleToAllInitialNodes(MempoolConfig.asModule(100, 0)).build();
+        bftTestBuilder
+            .addOverrideModuleToAllInitialNodes(MempoolConfig.of(100, 0).asModule())
+            .build();
 
     final var results = simulationTest.run().awaitCompletion();
     assertThat(results).hasValueSatisfying(new Condition<>(Optional::isPresent, "Error exists"));

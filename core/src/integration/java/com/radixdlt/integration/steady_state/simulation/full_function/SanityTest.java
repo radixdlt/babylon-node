@@ -109,7 +109,7 @@ public class SanityTest {
             .fullFunctionNodes(ConsensusConfig.of(3000), SyncConfig.of(400L, 10, 2000L))
             .addRadixEngineConfigModules(
                 new MainnetForksModule(), new RadixEngineForksLatestOnlyModule(), new ForksModule())
-            .addNodeModule(MempoolConfig.asModule(1000, 10))
+            .addNodeModule(MempoolConfig.of(1000, 10).asModule())
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(2, TimeUnit.SECONDS),

@@ -80,6 +80,8 @@ import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -116,7 +118,9 @@ public class FProposalsPerRoundDropperTest {
                 NetworkOrdering.inOrder(),
                 NetworkLatencies.fixed(10),
                 NetworkDroppers.fRandomProposalsPerRoundDropped())
-            .consensusOnly(FunctionalRadixNodeModule.ConsensusConfig.of(5000))
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false, ConsensusConfig.of(5000), LedgerConfig.mocked()))
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.vertexRequestRate(75), // Conservative check

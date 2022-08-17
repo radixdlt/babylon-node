@@ -70,7 +70,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolMaxSize;
-import com.radixdlt.mempool.MempoolRelayReader;
+import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -93,8 +93,8 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   @Provides
-  private MempoolRelayReader mempoolRelayReader(RustStateComputer stateComputer) {
-    return stateComputer.getMempoolRelayReader();
+  private MempoolReader mempoolRelayReader(RustStateComputer stateComputer) {
+    return stateComputer.getMempoolReader();
   }
 
   @Provides

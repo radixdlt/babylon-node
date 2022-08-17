@@ -289,7 +289,7 @@ public final class LocalSyncService {
 
     peersToAsk.forEach(peer -> statusRequestDispatcher.dispatch(peer, StatusRequest.create()));
     this.syncCheckReceiveStatusTimeoutDispatcher.dispatch(
-        SyncCheckReceiveStatusTimeout.create(), this.syncConfig.syncCheckReceiveStatusTimeout());
+        SyncCheckReceiveStatusTimeout.create(), this.syncConfig.requestTimeout());
 
     return SyncCheckState.init(currentState.getCurrentHeader(), peersToAsk);
   }
@@ -432,7 +432,7 @@ public final class LocalSyncService {
     final var requestId = requestIdCounter.incrementAndGet();
     this.syncRequestDispatcher.dispatch(peer, SyncRequest.create(currentHeader.toDto()));
     this.syncRequestTimeoutDispatcher.dispatch(
-        SyncRequestTimeout.create(peer, requestId), this.syncConfig.syncRequestTimeout());
+        SyncRequestTimeout.create(peer, requestId), this.syncConfig.requestTimeout());
 
     return currentState.withPendingRequest(peer, requestId);
   }

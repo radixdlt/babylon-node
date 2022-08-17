@@ -108,9 +108,8 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
               new FunctionalRadixNodeModule(
                   false,
                   ConsensusConfig.of(1000L),
-                  LedgerConfig.stateComputer(
-                      StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE),
-                      false)))
+                  LedgerConfig.stateComputerNoSync(
+                      StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
           .addTestModules(
               ConsensusMonitors.safety(),
               LedgerMonitors.consensusToLedger(),

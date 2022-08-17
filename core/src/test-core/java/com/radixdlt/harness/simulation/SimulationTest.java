@@ -277,12 +277,6 @@ public final class SimulationTest {
       return numNodes(numNodes, ImmutableList.of(UInt256.ONE));
     }
 
-    public Builder consensusOnly(ConsensusConfig consensusConfig) {
-      this.functionalNodeModule =
-          new FunctionalRadixNodeModule(false, consensusConfig, LedgerConfig.mocked());
-      return this;
-    }
-
     public Builder ledgerAndEpochs(
         ConsensusConfig consensusConfig,
         Round epochMaxRound,
@@ -291,7 +285,7 @@ public final class SimulationTest {
           new FunctionalRadixNodeModule(
               true,
               consensusConfig,
-              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), false));
+              LedgerConfig.stateComputerNoSync(StateComputerConfig.mocked(MempoolType.NONE)));
       this.epochToNodeIndexMapper = epochToNodeIndexMapper;
       this.modules.add(
           new AbstractModule() {
@@ -314,29 +308,17 @@ public final class SimulationTest {
           new FunctionalRadixNodeModule(
               false,
               consensusConfig,
-              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true));
-      modules.add(
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bind(SyncConfig.class).toInstance(syncConfig);
-            }
-          });
+              LedgerConfig.stateComputerWithSync(
+                  StateComputerConfig.mocked(MempoolType.NONE), syncConfig));
       return this;
     }
 
     public Builder fullFunctionNodes(ConsensusConfig consensusConfig, SyncConfig syncConfig) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
-              true, consensusConfig, LedgerConfig.stateComputer(StateComputerConfig.rev1(), true));
-      modules.add(
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bind(SyncConfig.class).toInstance(syncConfig);
-              bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(List.of());
-            }
-          });
+              true,
+              consensusConfig,
+              LedgerConfig.stateComputerWithSync(StateComputerConfig.rev1(), syncConfig));
 
       return this;
     }
@@ -350,14 +332,14 @@ public final class SimulationTest {
           new FunctionalRadixNodeModule(
               true,
               consensusConfig,
-              LedgerConfig.stateComputer(StateComputerConfig.mocked(MempoolType.NONE), true));
+              LedgerConfig.stateComputerWithSync(
+                  StateComputerConfig.mocked(MempoolType.NONE), syncConfig));
       this.epochToNodeIndexMapper = epochToNodeIndexMapper;
       modules.add(
           new AbstractModule() {
             @Override
             protected void configure() {
               bind(Round.class).annotatedWith(EpochMaxRound.class).toInstance(epochMaxRound);
-              bind(SyncConfig.class).toInstance(syncConfig);
             }
           });
       return this;
@@ -368,22 +350,21 @@ public final class SimulationTest {
           new FunctionalRadixNodeModule(
               false,
               consensusConfig,
-              LedgerConfig.stateComputer(
-                  StateComputerConfig.mocked(MempoolType.LOCAL_ONLY), false));
-      this.modules.add(MempoolConfig.asModule(10, 10));
+              LedgerConfig.stateComputerNoSync(StateComputerConfig.mocked(MempoolType.LOCAL_ONLY)));
+      this.modules.add(MempoolConfig.of(10, 10).asModule());
       return this;
     }
 
     public Builder ledgerAndRadixEngineWithEpochMaxRound(ConsensusConfig consensusConfig) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
-              true, consensusConfig, LedgerConfig.stateComputer(StateComputerConfig.rev1(), false));
+              true, consensusConfig, LedgerConfig.stateComputerNoSync(StateComputerConfig.rev1()));
       this.modules.add(
           new AbstractModule() {
             @Override
             protected void configure() {
               bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(List.of());
-              install(MempoolConfig.asModule(100, 10));
+              install(MempoolConfig.of(100, 10).asModule());
             }
 
             @Provides
@@ -440,6 +421,7 @@ public final class SimulationTest {
             public void configure() {
               var multibinder = Multibinder.newSetBinder(binder(), SimulationNetworkActor.class);
               multibinder.addBinding().to(LocalMempoolPeriodicSubmitter.class);
+              bind(txnGeneratorClass).in(Scopes.SINGLETON);
               bind(TransactionGenerator.class).to(txnGeneratorClass);
             }
 

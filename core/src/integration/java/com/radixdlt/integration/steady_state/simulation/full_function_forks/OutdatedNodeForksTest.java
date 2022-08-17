@@ -127,7 +127,7 @@ public final class OutdatedNodeForksTest {
                 // the
                 // genesis fork
                 )
-            .addNodeModule(MempoolConfig.asModule(1000, 10))
+            .addNodeModule(MempoolConfig.of(1000, 10).asModule())
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

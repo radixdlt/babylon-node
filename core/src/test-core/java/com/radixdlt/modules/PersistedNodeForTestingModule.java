@@ -102,7 +102,6 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
   @Override
   public void configure() {
     bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-    bind(SyncConfig.class).toInstance(SyncConfig.of(500, 10, 3000, 10, Long.MAX_VALUE));
     bindConstant()
         .annotatedWith(DatabaseCacheSize.class)
         .to((long) (Runtime.getRuntime().maxMemory() * 0.125));
@@ -115,7 +114,9 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
     install(new CryptoModule());
     install(
         new FunctionalRadixNodeModule(
-            FunctionalRadixNodeModule.ConsensusConfig.of(200, 1000L, 2.0), stateComputerConfig));
+            FunctionalRadixNodeModule.ConsensusConfig.of(200, 1000L, 2.0),
+            stateComputerConfig,
+            new SyncConfig(500, 10, 3000, 10, Long.MAX_VALUE)));
     install(new RadixEngineStoreModule());
     install(new PersistenceModule());
     switch (stateComputerConfig) {

@@ -86,14 +86,14 @@ public final class MempoolRelayer {
   private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
   private final SystemCounters counters;
 
-  private final MempoolRelayReader mempoolRelayReader;
+  private final MempoolReader mempoolRelayReader;
   private final long initialDelayMillis;
   private final long repeatDelayMillis;
   private final int maxPeers;
 
   @Inject
   public MempoolRelayer(
-      MempoolRelayReader mempoolRelayReader,
+      MempoolReader mempoolRelayReader,
       RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
       PeersView peersView,
       @MempoolRelayInitialDelayMs long initialDelayMillis,

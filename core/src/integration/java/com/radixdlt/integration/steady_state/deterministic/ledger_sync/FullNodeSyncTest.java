@@ -80,7 +80,7 @@ public class FullNodeSyncTest {
 
   private void run(int numNodes, int numValidators, Round epochMaxRound, long targetStateVersion) {
     final var syncConfig =
-        SyncConfig.of(
+        new SyncConfig(
             500L,
             0 /* unused */,
             0L /* unused */,

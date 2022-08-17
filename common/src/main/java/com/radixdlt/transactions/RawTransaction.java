@@ -123,11 +123,10 @@ public final class RawTransaction {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof RawTransaction)) {
+    if (!(o instanceof RawTransaction other)) {
       return false;
     }
 
-    RawTransaction other = (RawTransaction) o;
     return Objects.equals(this.payloadHash, other.payloadHash);
   }
 

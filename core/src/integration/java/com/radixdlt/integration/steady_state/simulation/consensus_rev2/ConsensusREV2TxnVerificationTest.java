@@ -91,8 +91,8 @@ public class ConsensusREV2TxnVerificationTest {
               new FunctionalRadixNodeModule(
                   false,
                   ConsensusConfig.of(1000),
-                  LedgerConfig.stateComputer(
-                      StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer()), false)))
+                  LedgerConfig.stateComputerNoSync(
+                      StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer()))))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

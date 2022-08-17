@@ -62,93 +62,71 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.mempool;
+package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.mempool.*;
-import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.p2p.PeersView;
-import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.RadixEngineStateComputer;
-import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.targeted.mempool.MempoolFillerModule;
-import com.radixdlt.targeted.mempool.MempoolFillerUpdate;
-import com.radixdlt.targeted.mempool.ScheduledMempoolFill;
-import com.radixdlt.utils.PrivateKeys;
-import java.util.Set;
-import org.assertj.core.api.Condition;
-import org.junit.Rule;
+import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkOrdering;
+import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.transaction.TransactionStoreReader;
+import com.radixdlt.transactions.RawTransaction;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-/**
- * Technically this is a unit test for MempoolFiller, but MempoolFiller is used only for integration
- * tests.
- */
-public class MempoolFillerTest {
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  @Inject @Self private BFTNode self;
-  @Inject private Hasher hasher;
-  @Inject private DeterministicProcessor processor;
-  @Inject private DeterministicNetwork network;
-  @Inject private RadixEngineStateComputer stateComputer;
-  @Inject private SystemCounters systemCounters;
-  @Inject private PeersView peersView;
-
-  private Injector getInjector() {
-    return Guice.createInjector(
-        new MainnetForksModule(),
-        new RadixEngineForksLatestOnlyModule(),
-        new ForksModule(),
-        MempoolConfig.asModule(10, 10),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
-        new MockedGenesisModule(
-            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(10000000000L), Amount.ofTokens(100)),
-        new TestP2PModule.Builder().build(),
-        new TestMessagingModule.Builder().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            install(new MempoolFillerModule());
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath());
-          }
-        });
-  }
+public class MempoolToLedgerTest {
+  private final SimulationTest.Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  ConsensusConfig.of(1000),
+                  LedgerConfig.stateComputerNoSync(
+                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))))))
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered())
+          .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class);
 
   @Test
-  public void mempool_fill_starts_filling_mempool() {
+  public void sanity_test() {
     // Arrange
-    getInjector().injectMembers(this);
+    var simulationTest = bftTestBuilder.build();
 
-    // Act
-    processor.handleMessage(self, MempoolFillerUpdate.enable(15, true), null);
-    processor.handleMessage(self, ScheduledMempoolFill.create(), null);
+    // Run
+    var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
 
-    // Assert
-    assertThat(network.allMessages())
-        .areAtLeast(1, new Condition<>(m -> m.message() instanceof MempoolAdd, "Has mempool add"));
+    // Post-run assertions
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    var firstTransactions =
+        runningTest.getNetwork().getNodes().stream()
+            .map(
+                node -> {
+                  var store =
+                      runningTest.getNetwork().getInstance(TransactionStoreReader.class, node);
+                  var receipt = store.getTransactionAtStateVersion(1);
+                  var bytes = receipt.getTransactionBytes();
+                  return RawTransaction.create(bytes);
+                });
+    // All nodes have the same first transaction
+    assertThat(firstTransactions.distinct().count()).isEqualTo(1);
   }
 }

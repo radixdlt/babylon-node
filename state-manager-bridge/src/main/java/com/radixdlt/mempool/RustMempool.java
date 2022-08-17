@@ -78,7 +78,8 @@ import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.Objects;
 
-public class RustMempool {
+public class RustMempool implements MempoolReader {
+
   public RustMempool(RustState rustState) {
     Objects.requireNonNull(rustState);
     addFunc =
@@ -134,6 +135,7 @@ public class RustMempool {
     return result.unwrap();
   }
 
+  @Override
   public List<RawTransaction> getTransactionsToRelay(
       long initialDelayMillis, long repeatDelayMillis) {
     var result =
@@ -146,6 +148,7 @@ public class RustMempool {
     return result.unwrap();
   }
 
+  @Override
   public int getCount() {
     return getCountFunc.call(Unit.unit());
   }
