@@ -62,27 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
-
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+package com.radixdlt.integration.steady_state.simulation.rev2_consensus_mempool_ledger_sync;
 
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.statecomputer.StatelessComputer;
-import java.util.concurrent.TimeUnit;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.transaction.REv2TransactionStore;
+import com.radixdlt.transactions.RawTransaction;
 import org.assertj.core.api.AssertionsForClassTypes;
-import org.assertj.core.data.Offset;
 import org.junit.Test;
 
-public class ConsensusREV2TxnVerificationTest {
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
+public class SanityTest {
   private final SimulationTest.Builder bftTestBuilder =
       SimulationTest.builder()
           .numNodes(4)
@@ -91,18 +95,19 @@ public class ConsensusREV2TxnVerificationTest {
               new FunctionalRadixNodeModule(
                   false,
                   ConsensusConfig.of(1000),
-                  LedgerConfig.stateComputerNoSync(
-                      StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer()))))
+                  LedgerConfig.stateComputerWithSync(
+                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))), SyncConfig.of(5000, 10, 3000L))))
           .addTestModules(
               ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
               ConsensusMonitors.noTimeouts(),
               ConsensusMonitors.directParents(),
               LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered());
+              LedgerMonitors.ordered())
+          .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class);
 
   @Test
-  public void test_half_valid_half_invalid_rev2_transactions() {
+  public void sanity_test() {
     // Arrange
     var simulationTest = bftTestBuilder.build();
 
@@ -113,15 +118,17 @@ public class ConsensusREV2TxnVerificationTest {
     // Post-run assertions
     assertThat(checkResults)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    for (var node : runningTest.getNetwork().getNodes()) {
-      var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
-
-      // The current proposal generator for REv2 produces half correct transactions and half
-      // invalid.
-      // This part verifies that this actually happened.
-      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
-      assertThat(statelessComputer.getInvalidCount())
-          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(4));
-    }
+    var firstTransactions =
+        runningTest.getNetwork().getNodes().stream()
+            .map(
+                node -> {
+                  var store =
+                      runningTest.getNetwork().getInstance(REv2TransactionStore.class, node);
+                  var receipt = store.getTransactionAtStateVersion(1);
+                  var bytes = receipt.getTransactionBytes();
+                  return RawTransaction.create(bytes);
+                });
+    // All nodes have the same first transaction
+    assertThat(firstTransactions.distinct().count()).isEqualTo(1);
   }
 }

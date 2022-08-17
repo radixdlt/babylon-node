@@ -550,7 +550,7 @@ public final class SimulationTest {
 
       // Runners
       modules.add(new RxEnvironmentModule());
-      if (this.functionalNodeModule.supportsSync()) {
+      if (this.functionalNodeModule.supportsSync() && this.functionalNodeModule.supportsREv1()) {
         modules.add(new InMemoryCommittedReaderModule());
         modules.add(new InMemoryForksEpochStoreModule());
       }

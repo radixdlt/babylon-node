@@ -62,65 +62,66 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.integration.steady_state.simulation.rev2_consensus_ledger;
 
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.transaction.REv2TransactionStore;
-import com.radixdlt.transactions.RawTransaction;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-public final class REv2TransactionsAndProofReader implements TransactionsAndProofReader {
-  private final REv2TransactionStore transactionStore;
-  private final Serialization serialization;
+import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkOrdering;
+import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.statecomputer.StatelessComputer;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.assertj.core.data.Offset;
+import org.junit.Test;
 
-  public REv2TransactionsAndProofReader(
-      REv2TransactionStore transactionStore, Serialization serialization) {
-    this.transactionStore = transactionStore;
-    this.serialization = serialization;
-  }
+public class HalfValidTxnTest {
+  private final SimulationTest.Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  ConsensusConfig.of(1000),
+                  LedgerConfig.stateComputerNoSync(
+                      StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer()))))
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered());
 
-  @Override
-  public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
-    var stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-    var proofBytes = this.transactionStore.getNextProof(stateVersion);
-    return proofBytes
-        .map(
-            b -> {
-              final LedgerProof proof;
-              try {
-                proof = serialization.fromDson(b, LedgerProof.class);
-              } catch (DeserializeException e) {
-                throw new RuntimeException(e);
-              }
+  @Test
+  public void test_half_valid_half_invalid_rev2_transactions() {
+    // Arrange
+    var simulationTest = bftTestBuilder.build();
 
-              var transactions =
-                  LongStream.range(Math.max(stateVersion, 1), proof.getStateVersion() + 1)
-                      .mapToObj(
-                          i -> {
-                            var receipt = transactionStore.getTransactionAtStateVersion(i);
-                            return RawTransaction.create(receipt.getTransactionBytes());
-                          })
-                      .collect(Collectors.toList());
+    // Run
+    var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
 
-              return CommittedTransactionsWithProof.create(transactions, proof);
-            })
-        .orElse(null);
-  }
+    // Post-run assertions
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    for (var node : runningTest.getNetwork().getNodes()) {
+      var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
 
-  @Override
-  public Optional<LedgerProof> getEpochProof(long epoch) {
-    return Optional.empty();
-  }
-
-  @Override
-  public Optional<LedgerProof> getLastProof() {
-    return Optional.empty();
+      // The current proposal generator for REv2 produces half correct transactions and half
+      // invalid.
+      // This part verifies that this actually happened.
+      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
+      assertThat(statelessComputer.getInvalidCount())
+          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(4));
+    }
   }
 }

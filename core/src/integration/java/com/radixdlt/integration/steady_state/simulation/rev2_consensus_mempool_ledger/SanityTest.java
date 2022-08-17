@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
+package com.radixdlt.integration.steady_state.simulation.rev2_consensus_mempool_ledger;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -84,7 +84,7 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class MempoolToLedgerTest {
+public class SanityTest {
   private final SimulationTest.Builder bftTestBuilder =
       SimulationTest.builder()
           .numNodes(4)
