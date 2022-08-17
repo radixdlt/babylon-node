@@ -160,7 +160,7 @@ public final class InvalidQcIsIgnoredTest {
                 NetworkMessageModifiers.modifyVotes(REPLACE_VOTES_QC_WITH_INVALID_SIGS))
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
-                    false, ConsensusConfig.of(5000), LedgerConfig.mocked()))
+                    false, ConsensusConfig.of(1000), LedgerConfig.mocked()))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .numNodes(3)
             .build();

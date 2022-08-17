@@ -64,7 +64,6 @@
 
 package com.radixdlt.rev2;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStoreState;
@@ -147,7 +146,6 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
     var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
     var commitRequest = new CommitRequest(txnsAndProof.getTransactions(), stateVersion);
-    var stopwatch = Stopwatch.createStarted();
     stateComputer.commit(commitRequest);
 
     var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());

@@ -87,7 +87,7 @@ public class OneByzantineGenesisTest {
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .functionalNodeModule(
-              new FunctionalRadixNodeModule(false, ConsensusConfig.of(5000), LedgerConfig.mocked()))
+              new FunctionalRadixNodeModule(false, ConsensusConfig.of(1000), LedgerConfig.mocked()))
           .addTestModules(ConsensusMonitors.safety());
 
   @Test
