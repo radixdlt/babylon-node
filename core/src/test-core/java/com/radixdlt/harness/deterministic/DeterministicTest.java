@@ -97,7 +97,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochMaxRound;
-import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
+import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.KeyComparator;

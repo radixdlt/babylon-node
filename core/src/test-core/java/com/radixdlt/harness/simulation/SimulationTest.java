@@ -121,7 +121,7 @@ import com.radixdlt.rev1.forks.NoOpForksEpochStore;
 import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
 import com.radixdlt.rev1.modules.LedgerRecoveryModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
-import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
+import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
 import com.radixdlt.sync.SyncConfig;

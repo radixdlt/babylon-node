@@ -76,7 +76,7 @@ import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.rev2.InMemoryTransactionsAndProofReader;
+import com.radixdlt.store.InMemoryTransactionsAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;

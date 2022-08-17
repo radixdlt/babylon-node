@@ -94,7 +94,7 @@ import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.forks.InMemoryForksEpochStore;
-import com.radixdlt.rev2.InMemoryTransactionsAndProofReader;
+import com.radixdlt.store.InMemoryTransactionsAndProofReader;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Maybe;
