@@ -70,19 +70,19 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.rev2.InMemoryCommittedReader;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.rev2.InMemoryTransactionsAndProofReader;
+import com.radixdlt.sync.TransactionsAndProofReader;
 
 public class InMemoryCommittedReaderModule extends AbstractModule {
   @Override
   public void configure() {
-    bind(InMemoryCommittedReader.Store.class).toInstance(new InMemoryCommittedReader.Store());
-    bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
+    bind(InMemoryTransactionsAndProofReader.Store.class).toInstance(new InMemoryTransactionsAndProofReader.Store());
+    bind(TransactionsAndProofReader.class).to(InMemoryTransactionsAndProofReader.class).in(Scopes.SINGLETON);
   }
 
   @Singleton
   @ProvidesIntoSet
-  public EventProcessorOnDispatch<?> eventProcessor(InMemoryCommittedReader reader) {
+  public EventProcessorOnDispatch<?> eventProcessor(InMemoryTransactionsAndProofReader reader) {
     return new EventProcessorOnDispatch<>(LedgerUpdate.class, reader.updateProcessor());
   }
 }

@@ -99,7 +99,7 @@ import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import io.reactivex.rxjava3.disposables.Disposable;
 import java.io.File;
@@ -371,7 +371,9 @@ public final class RadixShell {
     public void writeLedgerSyncToFile(String fileName) throws IOException {
       final var start = System.currentTimeMillis();
       LedgerFileSync.writeToFile(
-          fileName, getInstance(Serialization.class), getInstance(CommittedReader.class));
+          fileName,
+          getInstance(Serialization.class),
+          getInstance(TransactionsAndProofReader.class));
       final var time = System.currentTimeMillis() - start;
       System.out.printf("Dump finished. Took %ss%n", time / 1000);
     }

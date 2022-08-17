@@ -78,9 +78,9 @@ import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SometimesByzantineCommittedReader;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -104,7 +104,7 @@ public class ByzantineSyncTest {
                 new AbstractModule() {
                   @Override
                   protected void configure() {
-                    bind(CommittedReader.class)
+                    bind(TransactionsAndProofReader.class)
                         .to(SometimesByzantineCommittedReader.class)
                         .in(Scopes.SINGLETON);
                     bind(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);

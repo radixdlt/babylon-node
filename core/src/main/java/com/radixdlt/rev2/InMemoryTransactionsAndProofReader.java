@@ -71,7 +71,7 @@ import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Map.Entry;
@@ -80,7 +80,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 /** A correct in memory committed reader used for testing */
-public final class InMemoryCommittedReader implements CommittedReader {
+public final class InMemoryTransactionsAndProofReader implements TransactionsAndProofReader {
   public static final class Store {
     final TreeMap<Long, CommittedTransactionsWithProof> committedTransactionRuns = new TreeMap<>();
     final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
@@ -91,7 +91,7 @@ public final class InMemoryCommittedReader implements CommittedReader {
   private final Store store;
 
   @Inject
-  InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier, Store store) {
+  InMemoryTransactionsAndProofReader(LedgerAccumulatorVerifier accumulatorVerifier, Store store) {
     this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
     this.store = store;
   }
@@ -121,7 +121,7 @@ public final class InMemoryCommittedReader implements CommittedReader {
   }
 
   @Override
-  public CommittedTransactionsWithProof getNextCommittedTransactionRun(DtoLedgerProof start) {
+  public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
     synchronized (lock) {
       final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
       Entry<Long, CommittedTransactionsWithProof> entry =

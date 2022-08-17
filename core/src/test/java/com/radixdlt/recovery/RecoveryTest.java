@@ -109,7 +109,7 @@ import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Collection;
 import java.util.List;
@@ -221,8 +221,8 @@ public class RecoveryTest {
         Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {}));
   }
 
-  private CommittedReader getCommittedReader() {
-    return currentInjector.getInstance(CommittedReader.class);
+  private TransactionsAndProofReader getCommittedReader() {
+    return currentInjector.getInstance(TransactionsAndProofReader.class);
   }
 
   private EpochRound getLastEpochRound() {

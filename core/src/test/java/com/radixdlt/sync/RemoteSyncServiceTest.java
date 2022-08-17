@@ -102,7 +102,7 @@ public class RemoteSyncServiceTest {
   private RemoteSyncService processor;
   private PeersView peersView;
   private LocalSyncService localSyncService;
-  private CommittedReader reader;
+  private TransactionsAndProofReader reader;
   private RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
   private RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
   private RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher;
@@ -111,7 +111,7 @@ public class RemoteSyncServiceTest {
   public void setUp() {
     this.peersView = mock(PeersView.class);
     this.localSyncService = mock(LocalSyncService.class);
-    this.reader = mock(CommittedReader.class);
+    this.reader = mock(TransactionsAndProofReader.class);
     this.statusResponseDispatcher = rmock(RemoteEventDispatcher.class);
     this.syncResponseDispatcher = rmock(RemoteEventDispatcher.class);
     this.statusUpdateDispatcher = rmock(RemoteEventDispatcher.class);
@@ -149,7 +149,7 @@ public class RemoteSyncServiceTest {
     LedgerProof verifiedHeader = mock(LedgerProof.class);
     when(verifiedHeader.toDto()).thenReturn(header);
     when(committedTransactionsWithProof.getProof()).thenReturn(verifiedHeader);
-    when(reader.getNextCommittedTransactionRun(any())).thenReturn(committedTransactionsWithProof);
+    when(reader.getTransactions(any())).thenReturn(committedTransactionsWithProof);
     processor.syncRequestEventProcessor().process(node, SyncRequest.create(header));
     verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
   }
@@ -160,7 +160,7 @@ public class RemoteSyncServiceTest {
     var transactionsWithProof = mock(CommittedTransactionsWithProof.class);
     var verifiedHeader = mock(LedgerProof.class);
     when(transactionsWithProof.getProof()).thenReturn(verifiedHeader);
-    when(reader.getNextCommittedTransactionRun(any())).thenReturn(transactionsWithProof);
+    when(reader.getTransactions(any())).thenReturn(transactionsWithProof);
 
     processor.syncRequestEventProcessor().process(node, SyncRequest.create(null));
     verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
@@ -185,7 +185,7 @@ public class RemoteSyncServiceTest {
     when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
     when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
     processor.syncRequestEventProcessor().process(BFTNode.random(), SyncRequest.create(header));
-    when(reader.getNextCommittedTransactionRun(any())).thenReturn(null);
+    when(reader.getTransactions(any())).thenReturn(null);
     verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
   }
 

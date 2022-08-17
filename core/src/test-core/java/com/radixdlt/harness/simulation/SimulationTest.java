@@ -124,8 +124,8 @@ import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
@@ -368,11 +368,10 @@ public final class SimulationTest {
             }
 
             @Provides
-            CommittedReader committedReader() {
-              return new CommittedReader() {
+            TransactionsAndProofReader committedReader() {
+              return new TransactionsAndProofReader() {
                 @Override
-                public CommittedTransactionsWithProof getNextCommittedTransactionRun(
-                    DtoLedgerProof start) {
+                public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
                   return null;
                 }
 
@@ -505,7 +504,7 @@ public final class SimulationTest {
                         Amount.ofTokens(10000)));
                 bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
                 bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-                bind(CommittedReader.class).toInstance(new NoOpCommittedReader());
+                bind(TransactionsAndProofReader.class).toInstance(new NoOpCommittedReader());
                 bind(ForksEpochStore.class).toInstance(new NoOpForksEpochStore());
               }
 

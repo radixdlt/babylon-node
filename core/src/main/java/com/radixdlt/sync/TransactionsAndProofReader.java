@@ -70,8 +70,8 @@ import com.radixdlt.ledger.DtoLedgerProof;
 import java.util.Optional;
 
 /** Reader of committed transactions */
-public interface CommittedReader {
-  CommittedTransactionsWithProof getNextCommittedTransactionRun(DtoLedgerProof start);
+public interface TransactionsAndProofReader {
+  CommittedTransactionsWithProof getTransactions(DtoLedgerProof start);
 
   Optional<LedgerProof> getEpochProof(long epoch);
 

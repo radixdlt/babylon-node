@@ -94,8 +94,8 @@ import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.forks.InMemoryForksEpochStore;
-import com.radixdlt.rev2.InMemoryCommittedReader;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.rev2.InMemoryTransactionsAndProofReader;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
@@ -368,9 +368,11 @@ public class SimulationNodes {
                                     .getInstance(
                                         new Key<InMemoryEngineStore<LedgerAndBFTProof>>() {})
                                     .getStore());
-                        bind(InMemoryCommittedReader.Store.class)
+                        bind(InMemoryTransactionsAndProofReader.Store.class)
                             .toInstance(
-                                existingNode.getInstance(InMemoryCommittedReader.class).getStore());
+                                existingNode
+                                    .getInstance(InMemoryTransactionsAndProofReader.class)
+                                    .getStore());
                         bind(InMemoryForksEpochStore.Store.class)
                             .toInstance(
                                 existingNode.getInstance(InMemoryForksEpochStore.class).getStore());
