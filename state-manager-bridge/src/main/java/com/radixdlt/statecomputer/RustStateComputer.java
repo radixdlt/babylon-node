@@ -79,8 +79,7 @@ import com.radixdlt.statecomputer.preview.PreviewRequest;
 import com.radixdlt.statecomputer.preview.PreviewResult;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerResponse;
-import com.radixdlt.transaction.REv2TransactionStore;
-import com.radixdlt.transaction.RustTransactionStore;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
@@ -89,15 +88,15 @@ import java.util.function.BiFunction;
 public class RustStateComputer {
   private final StateManager.RustState rustState;
   private final RustMempool mempool;
-  private final RustTransactionStore transactionStore;
+  private final REv2TransactionAndProofStore transactionStore;
 
   public RustStateComputer(StateManager.RustState rustState) {
     this.rustState = Objects.requireNonNull(rustState);
     this.mempool = new RustMempool(rustState);
-    this.transactionStore = new RustTransactionStore(rustState);
+    this.transactionStore = new REv2TransactionAndProofStore(rustState);
   }
 
-  public REv2TransactionStore getTransactionStoreReader() {
+  public REv2TransactionAndProofStore getTransactionAndProofStore() {
     return this.transactionStore;
   }
 

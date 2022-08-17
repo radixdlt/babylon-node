@@ -70,18 +70,18 @@ import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.transaction.REv2TransactionStore;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 public final class REv2TransactionsAndProofReader implements TransactionsAndProofReader {
-  private final REv2TransactionStore transactionStore;
+  private final REv2TransactionAndProofStore transactionStore;
   private final Serialization serialization;
 
   public REv2TransactionsAndProofReader(
-      REv2TransactionStore transactionStore, Serialization serialization) {
+      REv2TransactionAndProofStore transactionStore, Serialization serialization) {
     this.transactionStore = transactionStore;
     this.serialization = serialization;
   }

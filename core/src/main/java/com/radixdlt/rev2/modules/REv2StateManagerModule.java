@@ -79,7 +79,7 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.transaction.REv2TransactionStore;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
 
 public final class REv2StateManagerModule extends AbstractModule {
@@ -106,8 +106,8 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   @Provides
-  private REv2TransactionStore transactionStoreReader(RustStateComputer stateComputer) {
-    return stateComputer.getTransactionStoreReader();
+  private REv2TransactionAndProofStore transactionAndProofStore(RustStateComputer stateComputer) {
+    return stateComputer.getTransactionAndProofStore();
   }
 
   @Provides
@@ -124,8 +124,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   @Provides
   @Singleton
   public TransactionsAndProofReader transactionsAndProofReader(
-      RustStateComputer stateComputer, Serialization serialization) {
-    var transactionStore = stateComputer.getTransactionStoreReader();
-    return new REv2TransactionsAndProofReader(transactionStore, serialization);
+      REv2TransactionAndProofStore transactionAndProofStore, Serialization serialization) {
+    return new REv2TransactionsAndProofReader(transactionAndProofStore, serialization);
   }
 }

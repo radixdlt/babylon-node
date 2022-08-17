@@ -90,7 +90,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
-import com.radixdlt.transaction.REv2TransactionStore;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -111,7 +111,7 @@ public final class REv2ConsensusTransferTest {
 
   @Inject private DeterministicProcessor processor;
   @Inject private MempoolInserter<RawTransaction> mempoolInserter;
-  @Inject private REv2TransactionStore transactionStoreReader;
+  @Inject private REv2TransactionAndProofStore transactionStoreReader;
   @Inject private REv2StateReader stateReader;
 
   private Injector createInjector() {

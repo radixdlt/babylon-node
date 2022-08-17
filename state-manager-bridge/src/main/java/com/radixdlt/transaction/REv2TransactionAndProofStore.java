@@ -73,7 +73,7 @@ import com.radixdlt.statemanager.StateManagerResponse;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class RustTransactionStore implements REv2TransactionStore {
+public final class REv2TransactionAndProofStore {
   private static final TypeToken<Result<Option<byte[]>, StateManagerRuntimeError>> nextProofType =
       new TypeToken<>() {};
 
@@ -82,17 +82,15 @@ public final class RustTransactionStore implements REv2TransactionStore {
 
   private final RustState rustState;
 
-  public RustTransactionStore(RustState rustState) {
+  public REv2TransactionAndProofStore(RustState rustState) {
     this.rustState = Objects.requireNonNull(rustState);
   }
 
-  @Override
   public ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion) {
     var encodedResponse = getTransactionAtStateVersion(this.rustState, stateVersion);
     return StateManagerResponse.decode(encodedResponse, receiptType);
   }
 
-  @Override
   public Optional<byte[]> getNextProof(long stateVersion) {
     var encodedResponse = getNextProof(this.rustState, stateVersion);
     var proof = StateManagerResponse.decode(encodedResponse, nextProofType);

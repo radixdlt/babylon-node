@@ -68,7 +68,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.inject.Injector;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.transaction.REv2TransactionStore;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 
@@ -80,7 +80,7 @@ public final class Checkers {
         nodeInjectors.stream()
             .map(
                 injector -> {
-                  var store = injector.getInstance(REv2TransactionStore.class);
+                  var store = injector.getInstance(REv2TransactionAndProofStore.class);
                   var receipt = store.getTransactionAtStateVersion(1);
                   var bytes = receipt.getTransactionBytes();
                   return RawTransaction.create(bytes);
