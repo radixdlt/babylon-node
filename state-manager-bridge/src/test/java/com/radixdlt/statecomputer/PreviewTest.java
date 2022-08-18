@@ -73,6 +73,7 @@ import com.radixdlt.manifest.ManifestCompiler;
 import com.radixdlt.rev2.TransactionStatus;
 import com.radixdlt.statecomputer.preview.PreviewFlags;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.utils.UInt32;
@@ -86,7 +87,7 @@ public final class PreviewTest {
   public void test_successful_preview() {
     // Arrange
     try (final var stateManager =
-        StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
+        StateManager.createAndInitialize(new StateManagerConfig(Option.none(), new REv2DatabaseConfig.InMemory()))) {
       final var stateComputer = new RustStateComputer(stateManager.getRustState());
       final var manifest = ManifestCompiler.compile("CLEAR_AUTH_ZONE;", "LocalSimulator").unwrap();
       final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
@@ -115,7 +116,7 @@ public final class PreviewTest {
   public void test_decode_error_result() {
     // Arrange
     try (final var stateManager =
-        StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
+        StateManager.createAndInitialize(new StateManagerConfig(Option.none(), new REv2DatabaseConfig.InMemory()))) {
       final var stateComputer = new RustStateComputer(stateManager.getRustState());
       final var manifest = Hex.decode("00"); // invalid manifest
       final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();

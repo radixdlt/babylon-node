@@ -248,6 +248,12 @@ impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
+pub enum DatabaseConfig {
+    InMemory,
+}
+
+#[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct StateManagerConfig {
     pub mempool_config: Option<MempoolConfig>,
+    pub db_config: DatabaseConfig,
 }
