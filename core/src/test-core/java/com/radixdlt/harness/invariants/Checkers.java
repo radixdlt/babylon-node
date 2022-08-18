@@ -71,26 +71,29 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.ExecutedTransactionReceipt;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transactions.RawTransaction;
 import java.util.HashMap;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Checkers for use with integration and simulation tests */
 public final class Checkers {
-  /** Verifies that all nodes agree on the first transaction */
-  public static void verifyFirstTransactionEquivalent(List<Injector> nodeInjectors) {
-    var firstTransactions =
-        nodeInjectors.stream()
-            .map(
-                injector -> {
-                  var store = injector.getInstance(REv2TransactionAndProofStore.class);
-                  var receipt = store.getTransactionAtStateVersion(1);
-                  var bytes = receipt.getTransactionBytes();
-                  return RawTransaction.create(bytes);
-                });
+  private static Logger logger = LogManager.getLogger();
 
-    // All nodes have the same first transaction
-    assertThat(firstTransactions.distinct().count()).isEqualTo(1);
+  /** Verifies that all nodes agree on the first transaction */
+  public static void verifyNodesSyncedToVersion(List<Injector> nodeInjectors, long stateVersion) {
+    var stateVersionStatistics =
+        nodeInjectors.stream()
+            .mapToLong(
+                injector -> {
+                  var reader = injector.getInstance(TransactionsAndProofReader.class);
+                  var nodeStateVersion = reader.getLastProof().orElseThrow().getStateVersion();
+                  assertThat(nodeStateVersion).isGreaterThanOrEqualTo(stateVersion);
+                  return nodeStateVersion;
+                })
+            .summaryStatistics();
+
+    logger.info("StateVersionStats: {}", stateVersionStatistics);
   }
 
   /** Verifies that all nodes agree on the first transaction */

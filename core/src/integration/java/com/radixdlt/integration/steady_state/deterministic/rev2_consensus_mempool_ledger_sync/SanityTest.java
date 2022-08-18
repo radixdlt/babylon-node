@@ -109,7 +109,7 @@ public final class SanityTest {
     }
 
     // Post-run assertions
-    Checkers.verifyFirstTransactionEquivalent(test.getNodeInjectors());
+    Checkers.verifyNodesSyncedToVersion(test.getNodeInjectors(), 20);
     Checkers.verifyEquivalentLedgerTransactions(test.getNodeInjectors());
     Checkers.verifyNoInvalidSyncResponses(test.getNodeInjectors());
   }
