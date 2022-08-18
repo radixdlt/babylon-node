@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
-use std::collections::BTreeMap;
 use crate::types::TId;
+use std::collections::BTreeMap;
 
 #[derive(Debug)]
 pub struct ProofStore {
@@ -79,14 +79,27 @@ impl ProofStore {
         }
     }
 
-    pub fn insert_hashes_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
+    pub fn insert_tids_and_proof(
+        &mut self,
+        state_version: u64,
+        ids: Vec<TId>,
+        proof_bytes: Vec<u8>,
+    ) {
         let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
         for (index, id) in ids.into_iter().enumerate() {
             let txn_state_version = first_state_version + index as u64;
             self.in_memory_txid_store.insert(txn_state_version, id);
         }
 
-        self.in_memory_proof_store.insert(state_version, proof_bytes);
+        self.in_memory_proof_store
+            .insert(state_version, proof_bytes);
+    }
+
+    pub fn get_tid(&self, state_version: u64) -> TId {
+        self.in_memory_txid_store
+            .get(&state_version)
+            .cloned()
+            .unwrap()
     }
 
     /// Returns the next proof from a state version (excluded)

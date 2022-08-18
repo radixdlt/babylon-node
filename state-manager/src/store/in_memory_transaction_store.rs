@@ -62,9 +62,10 @@
  * permissions under this License.
  */
 
+use crate::types::{TId, Transaction};
 use radix_engine::transaction::{TransactionReceipt, TransactionStatus};
 use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 /// TODO: Remove and use the real TransactionReceipt. This is currently a required struct
 /// TODO: as there is RC<RefCell<>> useage in some of the substates which does not play well
@@ -79,34 +80,23 @@ pub struct TemporaryTransactionReceipt {
 
 #[derive(Debug)]
 pub struct TransactionStore {
-    in_memory_store: BTreeMap<u64, (Vec<u8>, TemporaryTransactionReceipt)>,
+    in_memory_store: HashMap<TId, (Vec<u8>, TemporaryTransactionReceipt)>,
 }
 
 impl TransactionStore {
     pub fn new() -> TransactionStore {
         TransactionStore {
-            in_memory_store: BTreeMap::new(),
+            in_memory_store: HashMap::new(),
         }
     }
 
-    pub fn insert_transactions(
-        &mut self,
-        transactions: Vec<(Vec<u8>, TransactionReceipt)>,
-        state_version: u64,
-    ) {
-        let first_state_version = state_version - u64::try_from(transactions.len() - 1).unwrap();
-        for (i, (txn_bytes, receipt)) in transactions.into_iter().enumerate() {
-            let txn_state_version = first_state_version + i as u64;
-            self.insert_transaction(txn_state_version, txn_bytes, receipt);
+    pub fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
+        for (txn, receipt) in transactions {
+            self.insert_transaction(txn, receipt);
         }
     }
 
-    fn insert_transaction(
-        &mut self,
-        state_version: u64,
-        transaction_data: Vec<u8>,
-        receipt: TransactionReceipt,
-    ) {
+    fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
         let receipt = TemporaryTransactionReceipt {
             result: match receipt.status {
                 TransactionStatus::Succeeded(..) => "Success".to_string(),
@@ -117,13 +107,13 @@ impl TransactionStore {
             new_component_addresses: receipt.new_component_addresses,
             new_resource_addresses: receipt.new_resource_addresses,
         };
-        self.in_memory_store
-            .insert(state_version, (transaction_data, receipt));
+        self.in_memory_store.insert(
+            transaction.id.clone(),
+            (transaction.payload.clone(), receipt),
+        );
     }
 
-    pub fn get_transaction(&self, state_version: u64) -> &(Vec<u8>, TemporaryTransactionReceipt) {
-        self.in_memory_store
-            .get(&state_version)
-            .expect("State version missing")
+    pub fn get_transaction(&self, tid: &TId) -> &(Vec<u8>, TemporaryTransactionReceipt) {
+        self.in_memory_store.get(tid).expect("Transaction missing")
     }
 }

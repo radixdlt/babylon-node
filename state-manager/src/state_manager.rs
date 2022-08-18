@@ -144,14 +144,16 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
                 .execute_transaction(validated_txn)
                 .expect("Error on Byzantine quorum");
 
-            to_store.push((transaction.payload.clone(), receipt));
+            to_store.push((transaction, receipt));
             ids.push(transaction.id.clone());
         }
 
-        self.transaction_store
-            .insert_transactions(to_store, commit_request.state_version);
-        self.proof_store
-            .insert_hashes_and_proof(commit_request.state_version, ids, commit_request.proof);
+        self.transaction_store.insert_transactions(to_store);
+        self.proof_store.insert_tids_and_proof(
+            commit_request.state_version,
+            ids,
+            commit_request.proof,
+        );
         self.mempool
             .handle_committed_transactions(&commit_request.transactions);
     }

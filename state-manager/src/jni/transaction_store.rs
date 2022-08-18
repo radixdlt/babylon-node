@@ -62,12 +62,12 @@
  * permissions under this License.
  */
 
+use crate::types::TId;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use sbor::*;
 use scrypto::prelude::ComponentAddress;
-use crate::types::TId;
 
 use super::state_manager::ActualStateManager;
 use super::utils::jni_state_manager_sbor_call;
@@ -98,9 +98,9 @@ fn do_get_transaction_at_state_version(
     state_manager: &mut ActualStateManager,
     state_version: u64,
 ) -> ExecutedTransactionReceipt {
-    let (transaction_data, receipt) = state_manager
-        .transaction_store
-        .get_transaction(state_version);
+    let tid = state_manager.proof_store.get_tid(state_version);
+
+    let (transaction_data, receipt) = state_manager.transaction_store.get_transaction(&tid);
 
     ExecutedTransactionReceipt {
         result: receipt.result.to_string(),
