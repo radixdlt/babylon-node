@@ -68,6 +68,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statemanager.StateManager.RustState;
 import com.radixdlt.utils.UInt64;
@@ -90,9 +91,12 @@ public final class REv2TransactionAndProofStore {
             new TypeToken<>() {},
             new TypeToken<>() {},
             REv2TransactionAndProofStore::getNextProof);
-    this.getLastProof =
-        NativeCalls.Func0.with(
-            rustState, new TypeToken<>() {}, REv2TransactionAndProofStore::getLastProof);
+    this.getLastProofFunc =
+        NativeCalls.Func1.with(
+            rustState,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            REv2TransactionAndProofStore::getLastProof);
   }
 
   public ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion) {
@@ -104,7 +108,7 @@ public final class REv2TransactionAndProofStore {
   }
 
   public Optional<byte[]> getLastProof() {
-    return this.getLastProof.call().toOptional();
+    return this.getLastProofFunc.call(Unit.unit()).toOptional();
   }
 
   private final NativeCalls.Func1<UInt64, ExecutedTransactionReceipt>
@@ -117,7 +121,7 @@ public final class REv2TransactionAndProofStore {
 
   private static native byte[] getNextProof(RustState rustState, byte[] payload);
 
-  private final NativeCalls.Func0<Option<byte[]>> getLastProof;
+  private final NativeCalls.Func1<Unit, Option<byte[]>> getLastProofFunc;
 
-  private static native byte[] getLastProof(RustState rustState);
+  private static native byte[] getLastProof(RustState rustState, byte[] payload);
 }

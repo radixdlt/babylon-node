@@ -68,8 +68,11 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.inject.Injector;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.ExecutedTransactionReceipt;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
+import java.util.HashMap;
 import java.util.List;
 
 /** Checkers for use with integration and simulation tests */
@@ -88,6 +91,32 @@ public final class Checkers {
 
     // All nodes have the same first transaction
     assertThat(firstTransactions.distinct().count()).isEqualTo(1);
+  }
+
+  /** Verifies that all nodes agree on the first transaction */
+  public static void verifyEquivalentLedgerTransactions(List<Injector> nodeInjectors) {
+    var receipts = new HashMap<Long, ExecutedTransactionReceipt>();
+
+    for (var injector : nodeInjectors) {
+      var reader = injector.getInstance(TransactionsAndProofReader.class);
+      reader
+          .getLastProof()
+          .ifPresent(
+              proof -> {
+                var store = injector.getInstance(REv2TransactionAndProofStore.class);
+                for (long txnStateVersion = 1;
+                    txnStateVersion <= proof.getStateVersion();
+                    txnStateVersion++) {
+                  var receipt = store.getTransactionAtStateVersion(1);
+                  var curReceipt = receipts.get(txnStateVersion);
+                  if (curReceipt != null) {
+                    assertThat(curReceipt).isEqualTo(receipt);
+                  } else {
+                    receipts.put(txnStateVersion, receipt);
+                  }
+                }
+              });
+    }
   }
 
   public static void verifyNoInvalidSyncResponses(List<Injector> nodeInjectors) {

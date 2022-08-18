@@ -119,5 +119,6 @@ public class SanityTest {
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 
     Checkers.verifyFirstTransactionEquivalent(runningTest.getNodeInjectors());
+    Checkers.verifyEquivalentLedgerTransactions(runningTest.getNodeInjectors());
   }
 }
