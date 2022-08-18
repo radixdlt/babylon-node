@@ -72,9 +72,8 @@ use crate::mempool::*;
 use crate::result::{
     ResultStateManagerMaps, StateManagerError, StateManagerResult, ERRCODE_INTERFACE_CASTS,
 };
+use crate::state_manager::StateManager;
 use crate::types::Transaction;
-
-use super::state_manager::ActualStateManager;
 
 //
 // JNI Interface
@@ -91,7 +90,7 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
 }
 
 fn do_add(
-    state_manager: &mut ActualStateManager,
+    state_manager: &mut dyn StateManager,
     args: Transaction,
 ) -> StateManagerResult<Result<Transaction, MempoolErrorJava>> {
     let transaction = args;
@@ -105,7 +104,7 @@ fn do_add(
     }
 
     state_manager
-        .mempool
+        .mempool()
         .add_transaction(transaction)
         .map_err_sm(|err| err.into())
 }
@@ -126,12 +125,12 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
 }
 
 fn do_get_transactions_for_proposal(
-    state_manager: &mut ActualStateManager,
+    state_manager: &mut dyn StateManager,
     args: (u32, Vec<Transaction>),
 ) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
     let (count, prepared_transactions) = args;
     state_manager
-        .mempool
+        .mempool()
         .get_proposal_transactions(count.into(), &prepared_transactions)
         .map_err_sm(|err| err.into())
 }
@@ -146,8 +145,8 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
     jni_state_manager_sbor_call(env, sm_instance, request_payload, do_get_count)
 }
 
-fn do_get_count(state_manager: &mut ActualStateManager, _args: ()) -> i32 {
-    state_manager.mempool.get_count().try_into().unwrap()
+fn do_get_count(state_manager: &mut dyn StateManager, _args: ()) -> i32 {
+    state_manager.mempool().get_count().try_into().unwrap()
 }
 
 #[no_mangle]
@@ -166,13 +165,13 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
 }
 
 fn do_get_transactions_to_relay(
-    state_manager: &mut ActualStateManager,
+    state_manager: &mut dyn StateManager,
     args: (u64, u64),
 ) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
     let (initial_delay_millis, repeat_delay_millis) = args;
 
     state_manager
-        .mempool
+        .mempool()
         .get_relay_transactions(initial_delay_millis, repeat_delay_millis)
         .map_err_sm(|err| err.into())
 }

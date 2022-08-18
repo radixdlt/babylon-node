@@ -62,61 +62,58 @@
  * permissions under this License.
  */
 
-use scrypto::args;
-use scrypto::core::Network;
-use scrypto::crypto::EcdsaPublicKey;
-use scrypto::prelude::{AccessRule, Decimal, EcdsaSignature, RADIX_TOKEN, SYSTEM_COMPONENT};
-use transaction::builder::ManifestBuilder;
-use transaction::model::{
-    NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
-};
+package com.radixdlt.api;
 
-pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
-    let manifest = ManifestBuilder::new(Network::InternalTestnet)
-        .lock_fee(Decimal::from(1000), SYSTEM_COMPONENT)
-        .call_method(SYSTEM_COMPONENT, "free_xrd", args!())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
-        })
-        .build();
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
-    let intent = TransactionIntent {
-        header: TransactionHeader {
-            version: 1,
-            network: Network::InternalTestnet,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
-            nonce: 5,
-            notary_public_key: public_key,
-            notary_as_signatory: false,
-            cost_unit_limit: 10_000_000,
-            tip_percentage: 5,
-        },
-        manifest,
-    };
+import com.radixdlt.lang.Option;
+import com.radixdlt.statemanager.CoreApiServerConfig;
+import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.utils.FreePortFinder;
+import com.radixdlt.utils.UInt32;
+import java.io.OutputStreamWriter;
+import java.net.ConnectException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import org.junit.Test;
 
-    intent.to_bytes()
-}
+/** Just a simple test to check that the server is up & running. */
+/* TODO: remove at some point */
+public final class CoreApiServerTest {
+  @Test
+  public void test_core_api_server_start_shutdown() throws Exception {
+    // Arrange
+    final var port = FreePortFinder.findFreeLocalPort();
+    final var config = new CoreApiServerConfig(true, "127.0.0.1", UInt32.fromNonNegativeInt(port));
+    try (final var stateManager =
+        StateManager.createAndInitialize(
+            new StateManagerConfig(Option.none(), Option.some(config)))) {
+      // Act
+      final var statusCode = mkNetworkConfigurationRequest(port);
 
-pub fn create_signed_intent_bytes(
-    intent: TransactionIntent,
-    public_key: EcdsaPublicKey,
-    signature: EcdsaSignature,
-) -> Vec<u8> {
-    let signed_intent = SignedTransactionIntent {
-        intent,
-        intent_signatures: vec![(public_key, signature)],
-    };
-    signed_intent.to_bytes()
-}
+      // Assert: the server should be up
+      assertEquals(200, statusCode);
+    } // Act: shutdown the state manager (`close()` call via try-with-resources)
 
-pub fn create_notarized_bytes(
-    signed_intent: SignedTransactionIntent,
-    notary_signature: EcdsaSignature,
-) -> Vec<u8> {
-    let notarized = NotarizedTransaction {
-        signed_intent,
-        notary_signature,
-    };
-    notarized.to_bytes()
+    // Assert: the server should be shut down
+    assertThrows(ConnectException.class, () -> mkNetworkConfigurationRequest(port));
+  }
+
+  private static int mkNetworkConfigurationRequest(int port) throws Exception {
+    final var url = new URL("http://127.0.0.1:" + port + "/core/status/network-configuration");
+    final var conn = (HttpURLConnection) url.openConnection();
+    conn.setRequestMethod("POST");
+    conn.setRequestProperty("Content-Type", "application/json");
+    conn.setDoOutput(true);
+    final var os = conn.getOutputStream();
+    final var osw = new OutputStreamWriter(os, StandardCharsets.UTF_8);
+    os.write("{}".getBytes(StandardCharsets.UTF_8));
+    osw.flush();
+    osw.close();
+    os.close();
+    return conn.getResponseCode();
+  }
 }

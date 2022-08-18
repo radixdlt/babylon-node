@@ -99,7 +99,10 @@ fn do_verify(
     let state_manager = JNIStateManager::get_state_manager(env, sm_instance);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
     let transaction = Transaction::from_java(&request_payload)?;
-    let result = state_manager.state_manager.decode_transaction(&transaction);
+    let result = state_manager
+        .lock()
+        .expect("Can't acquire a state manager mutex lock")
+        .decode_transaction(&transaction);
     Ok(result.is_ok())
 }
 
@@ -119,11 +122,12 @@ fn do_preview(
     sm_instance: JObject,
     request_payload: jbyteArray,
 ) -> StateManagerResult<Result<PreviewResultJava, PreviewErrorJava>> {
-    let mut state_manager = JNIStateManager::get_state_manager(env, sm_instance);
+    let state_manager = JNIStateManager::get_state_manager(env, sm_instance);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
     let preview_request = PreviewRequest::from_java(&request_payload)?;
     let preview_result: Result<PreviewResultJava, PreviewErrorJava> = state_manager
-        .state_manager
+        .lock()
+        .expect("Can't acquire a state manager mutex lock")
         .preview(&preview_request)
         .map(|result| result.into())
         .map_err_sm(|err| err.into())?;
@@ -146,12 +150,13 @@ fn do_commit(
     sm_instance: JObject,
     request_payload: jbyteArray,
 ) -> StateManagerResult<()> {
-    let mut state_manager = JNIStateManager::get_state_manager(env, sm_instance);
+    let state_manager = JNIStateManager::get_state_manager(env, sm_instance);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
     let commit_request = CommitRequest::from_java(&request_payload)?;
 
     state_manager
-        .state_manager
+        .lock()
+        .expect("Can't acquire a state manager mutex lock")
         .commit(commit_request.transactions, commit_request.state_version);
     Ok(())
 }
@@ -176,7 +181,8 @@ fn get_component_xrd(
     let request_payload = jni_jbytearray_to_vector(env, request_payload)?;
     let component_address = ComponentAddress::from_java(&request_payload)?;
     let resources = state_manager
-        .state_manager
+        .lock()
+        .expect("Can't acquire a state manager mutex lock")
         .get_component_resources(component_address);
     let amount = resources
         .map(|r| r.get(&RADIX_TOKEN).cloned().unwrap_or_else(Decimal::zero))

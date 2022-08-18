@@ -64,6 +64,7 @@
 
 extern crate core;
 
+mod core_api;
 mod jni;
 mod mempool;
 mod query;

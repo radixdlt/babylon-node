@@ -98,7 +98,7 @@ configurations {
 }
 
 dependencies {
-    implementation project(':core')
+    implementation project(path: ':core', configuration: 'mainAndTestCoreArtifacts')
     implementation project(':common')
     implementation project(':olympia-engine')
 

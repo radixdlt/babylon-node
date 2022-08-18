@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2ptest;
+package com.radixdlt.utils;
 
 import java.io.IOException;
 import java.net.DatagramSocket;

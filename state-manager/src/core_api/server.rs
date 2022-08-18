@@ -62,61 +62,128 @@
  * permissions under this License.
  */
 
-use scrypto::args;
-use scrypto::core::Network;
-use scrypto::crypto::EcdsaPublicKey;
-use scrypto::prelude::{AccessRule, Decimal, EcdsaSignature, RADIX_TOKEN, SYSTEM_COMPONENT};
-use transaction::builder::ManifestBuilder;
-use transaction::model::{
-    NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
+use crate::core_api::generated::models;
+use crate::core_api::generated::models::{
+    Bech32Hrps, NetworkConfigurationResponse, NetworkConfigurationResponseVersion,
+    NetworkIdentifier,
+};
+use crate::core_api::generated::server::MakeService;
+use crate::core_api::generated::{
+    Api, StatusNetworkConfigurationPostResponse, StatusNetworkSyncPostResponse,
+    TransactionPreviewPostResponse, TransactionSubmitPostResponse, API_VERSION,
 };
 
-pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
-    let manifest = ManifestBuilder::new(Network::InternalTestnet)
-        .lock_fee(Decimal::from(1000), SYSTEM_COMPONENT)
-        .call_method(SYSTEM_COMPONENT, "free_xrd", args!())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
-        })
-        .build();
+use crate::state_manager::StateManager;
+use async_trait::async_trait;
 
-    let intent = TransactionIntent {
-        header: TransactionHeader {
-            version: 1,
-            network: Network::InternalTestnet,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
-            nonce: 5,
-            notary_public_key: public_key,
-            notary_as_signatory: false,
-            cost_unit_limit: 10_000_000,
-            tip_percentage: 5,
-        },
-        manifest,
-    };
+use scrypto::address::get_network_hrp_set;
 
-    intent.to_bytes()
+use std::future::Future;
+use std::marker::PhantomData;
+
+use std::sync::{Arc, Mutex};
+
+use swagger::ApiError;
+use swagger::EmptyContext;
+use swagger::{Has, XSpanIdString};
+
+pub async fn create<F>(
+    bind_addr: &str,
+    shutdown_signal: F,
+    state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>,
+) where
+    F: Future<Output = ()>,
+{
+    let server = Server::new(state_manager);
+
+    let service = MakeService::new(server);
+    let service =
+        crate::core_api::generated::context::MakeAddContext::<_, EmptyContext>::new(service);
+
+    let bind_addr = bind_addr.parse().expect("Failed to parse bind address");
+    hyper::server::Server::bind(&bind_addr)
+        .serve(service)
+        .with_graceful_shutdown(shutdown_signal)
+        .await
+        .unwrap();
 }
 
-pub fn create_signed_intent_bytes(
-    intent: TransactionIntent,
-    public_key: EcdsaPublicKey,
-    signature: EcdsaSignature,
-) -> Vec<u8> {
-    let signed_intent = SignedTransactionIntent {
-        intent,
-        intent_signatures: vec![(public_key, signature)],
-    };
-    signed_intent.to_bytes()
+#[derive(Clone)]
+pub struct Server<C> {
+    state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>,
+    marker: PhantomData<C>,
 }
 
-pub fn create_notarized_bytes(
-    signed_intent: SignedTransactionIntent,
-    notary_signature: EcdsaSignature,
-) -> Vec<u8> {
-    let notarized = NotarizedTransaction {
-        signed_intent,
-        notary_signature,
-    };
-    notarized.to_bytes()
+impl<C> Server<C> {
+    pub fn new(state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>) -> Self {
+        Server {
+            state_manager,
+            marker: PhantomData,
+        }
+    }
+}
+
+#[async_trait]
+impl<C> Api<C> for Server<C>
+where
+    C: Has<XSpanIdString> + Send + Sync,
+{
+    async fn status_network_configuration_post(
+        &self,
+        _network_configuration_request: models::NetworkConfigurationRequest,
+        _context: &C,
+    ) -> Result<StatusNetworkConfigurationPostResponse, ApiError> {
+        let network = &self
+            .state_manager
+            .lock()
+            .expect("Can't acquire state manager lock")
+            .network()
+            .clone();
+
+        let hrp_set = get_network_hrp_set(network);
+
+        Ok(
+            StatusNetworkConfigurationPostResponse::NetworkConfiguration(
+                NetworkConfigurationResponse {
+                    version: NetworkConfigurationResponseVersion {
+                        core_version: env!("CARGO_PKG_VERSION").to_string(),
+                        api_version: API_VERSION.to_string(),
+                    },
+                    network_identifier: NetworkIdentifier {
+                        network: format!("{:?}", network),
+                    },
+                    bech32_human_readable_parts: Bech32Hrps {
+                        account_hrp: hrp_set.account_component.to_string(),
+                        validator_hrp: "TODO".to_string(),
+                        node_hrp: "TODO".to_string(),
+                        resource_hrp_suffix: hrp_set.resource.to_string(),
+                    },
+                },
+            ),
+        )
+    }
+
+    async fn status_network_sync_post(
+        &self,
+        _network_sync_status_request: models::NetworkSyncStatusRequest,
+        _context: &C,
+    ) -> Result<StatusNetworkSyncPostResponse, ApiError> {
+        Err("To be implemented".into())
+    }
+
+    async fn transaction_preview_post(
+        &self,
+        _transaction_preview_request: models::TransactionPreviewRequest,
+        _context: &C,
+    ) -> Result<TransactionPreviewPostResponse, ApiError> {
+        Err("To be implemented".into())
+    }
+
+    async fn transaction_submit_post(
+        &self,
+        _transaction_submit_request: models::TransactionSubmitRequest,
+        _context: &C,
+    ) -> Result<TransactionSubmitPostResponse, ApiError> {
+        Err("To be implemented".into())
+    }
 }

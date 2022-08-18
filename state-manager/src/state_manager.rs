@@ -88,49 +88,36 @@ use transaction::model::{
 use transaction::signing::EcdsaPrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
-pub struct StateManager<M: Mempool, S> {
-    pub mempool: M,
-    pub transaction_store: TransactionStore,
-    network: Network,
-    substate_store: S,
-    wasm_engine: DefaultWasmEngine,
-    wasm_instrumenter: WasmInstrumenter,
-    validation_config: ValidationConfig,
-    execution_config: ExecutionConfig,
-    intent_hash_manager: TestIntentHashManager,
+pub trait StateManager {
+    fn network(&self) -> &Network;
+
+    fn commit(&mut self, transactions: Vec<Transaction>, state_version: u64);
+
+    fn decode_transaction(
+        &self,
+        txn: &Transaction,
+    ) -> Result<ValidatedTransaction, TransactionValidationError>;
+
+    fn preview(&mut self, preview_request: &PreviewRequest) -> Result<PreviewResult, PreviewError>;
+
+    fn get_component_resources(
+        &self,
+        component_address: ComponentAddress,
+    ) -> Option<HashMap<ResourceAddress, Decimal>>;
+
+    fn mempool(&mut self) -> &mut dyn Mempool;
+
+    fn transaction_store(&mut self) -> &mut TransactionStore;
 }
 
-impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager<M, S> {
-    pub fn new(
-        mempool: M,
-        transaction_store: TransactionStore,
-        substate_store: S,
-    ) -> StateManager<M, S> {
-        StateManager {
-            network: Network::LocalSimulator,
-            mempool,
-            transaction_store,
-            substate_store,
-            wasm_engine: DefaultWasmEngine::new(),
-            wasm_instrumenter: WasmInstrumenter::new(),
-            validation_config: ValidationConfig {
-                network: Network::InternalTestnet,
-                current_epoch: 1,
-                max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-                min_tip_percentage: 0,
-            },
-            execution_config: ExecutionConfig {
-                cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-                max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                system_loan: DEFAULT_SYSTEM_LOAN,
-                is_system: false,
-                trace: false,
-            },
-            intent_hash_manager: TestIntentHashManager::new(),
-        }
+impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateStore>
+    StateManager for StateManagerImpl<M, S>
+{
+    fn network(&self) -> &Network {
+        &self.network
     }
 
-    pub fn commit(&mut self, transactions: Vec<Transaction>, state_version: u64) {
+    fn commit(&mut self, transactions: Vec<Transaction>, state_version: u64) {
         let mut to_store = Vec::new();
         for transaction in &transactions {
             let validated_txn = self
@@ -154,21 +141,7 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
         self.mempool.handle_committed_transactions(&transactions);
     }
 
-    fn execute_transaction(
-        &mut self,
-        transaction: ValidatedTransaction,
-    ) -> Result<TransactionReceipt, TransactionValidationError> {
-        let mut transaction_executor = TransactionExecutor::new(
-            &mut self.substate_store,
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
-        );
-        let receipt = transaction_executor.execute_and_commit(&transaction, &self.execution_config);
-
-        Ok(receipt)
-    }
-
-    pub fn decode_transaction(
+    fn decode_transaction(
         &self,
         txn: &Transaction,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
@@ -179,10 +152,7 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
         )
     }
 
-    pub fn preview(
-        &mut self,
-        preview_request: &PreviewRequest,
-    ) -> Result<PreviewResult, PreviewError> {
+    fn preview(&mut self, preview_request: &PreviewRequest) -> Result<PreviewResult, PreviewError> {
         let manifest: TransactionManifest =
             scrypto_decode(&preview_request.manifest).map_err(|_| PreviewError::InvalidManifest)?;
 
@@ -229,10 +199,8 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
 
         Ok(result)
     }
-}
 
-impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager<M, S> {
-    pub fn get_component_resources(
+    fn get_component_resources(
         &self,
         component_address: ComponentAddress,
     ) -> Option<HashMap<ResourceAddress, Decimal>> {
@@ -241,9 +209,82 @@ impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager
             .add_resources(RENodeId::Component(component_address))
             .map_or(Option::None, |()| Some(resource_accounter.into_map()))
     }
+
+    fn mempool(&mut self) -> &mut dyn Mempool {
+        &mut self.mempool
+    }
+
+    fn transaction_store(&mut self) -> &mut TransactionStore {
+        &mut self.transaction_store
+    }
+}
+
+pub struct StateManagerImpl<M: Mempool, S> {
+    pub mempool: M,
+    pub transaction_store: TransactionStore,
+    network: Network,
+    substate_store: S,
+    wasm_engine: DefaultWasmEngine,
+    wasm_instrumenter: WasmInstrumenter,
+    validation_config: ValidationConfig,
+    execution_config: ExecutionConfig,
+    intent_hash_manager: TestIntentHashManager,
+}
+
+impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManagerImpl<M, S> {
+    pub fn new(
+        mempool: M,
+        transaction_store: TransactionStore,
+        substate_store: S,
+    ) -> StateManagerImpl<M, S> {
+        StateManagerImpl {
+            network: Network::LocalSimulator,
+            mempool,
+            transaction_store,
+            substate_store,
+            wasm_engine: DefaultWasmEngine::new(),
+            wasm_instrumenter: WasmInstrumenter::new(),
+            validation_config: ValidationConfig {
+                network: Network::InternalTestnet,
+                current_epoch: 1,
+                max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+                min_tip_percentage: 0,
+            },
+            execution_config: ExecutionConfig {
+                cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+                system_loan: DEFAULT_SYSTEM_LOAN,
+                is_system: false,
+                trace: false,
+            },
+            intent_hash_manager: TestIntentHashManager::new(),
+        }
+    }
+
+    fn execute_transaction(
+        &mut self,
+        transaction: ValidatedTransaction,
+    ) -> Result<TransactionReceipt, TransactionValidationError> {
+        let mut transaction_executor = TransactionExecutor::new(
+            &mut self.substate_store,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
+        );
+        let receipt = transaction_executor.execute_and_commit(&transaction, &self.execution_config);
+
+        Ok(receipt)
+    }
+}
+
+#[derive(Debug, TypeId, Encode, Decode, Clone)]
+pub struct CoreApiServerConfig {
+    pub enabled: bool,
+    pub bind_interface: String,
+    pub port: u32,
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct StateManagerConfig {
     pub mempool_config: Option<MempoolConfig>,
+    pub core_api_server_config: Option<CoreApiServerConfig>,
 }

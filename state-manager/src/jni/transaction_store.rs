@@ -62,13 +62,13 @@
  * permissions under this License.
  */
 
+use crate::state_manager::StateManager;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use sbor::*;
 use scrypto::prelude::ComponentAddress;
 
-use super::state_manager::ActualStateManager;
 use super::utils::jni_state_manager_sbor_call;
 
 #[derive(Encode, Decode, TypeId)]
@@ -94,11 +94,11 @@ extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransac
 }
 
 fn do_get_transaction_at_state_version(
-    state_manager: &mut ActualStateManager,
+    state_manager: &mut dyn StateManager,
     state_version: u64,
 ) -> ExecutedTransactionReceipt {
     let (transaction_data, receipt) = state_manager
-        .transaction_store
+        .transaction_store()
         .get_transaction(state_version);
 
     ExecutedTransactionReceipt {

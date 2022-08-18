@@ -105,6 +105,20 @@ configurations {
     testcoreImplementation.extendsFrom testImplementation
 }
 
+// Expose the test-core artifacts for use in other projects
+configurations {
+    mainAndTestCoreArtifacts
+}
+
+task mainAndTestCoreArtifactsJar(type: Jar) {
+    from sourceSets.main.output
+    from sourceSets.testcore.output
+}
+
+artifacts {
+    mainAndTestCoreArtifacts mainAndTestCoreArtifactsJar
+}
+
 sourceSets {
     test {
         java {

@@ -22,11 +22,33 @@ jni = "0.19.0"
 #   $ git push "develop-BLAH"
 # * Then use tag="develop-BLAH" in the below dependencies.
 #
-sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
-scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
-transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
-radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
-radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
+sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="lukasz-9e915091" }
+scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="lukasz-9e915091" }
+transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="lukasz-9e915091" }
+radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="lukasz-9e915091" }
+radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="lukasz-9e915091" }
+
+# Core API server deps
+async-trait = "0.1.24"
+chrono = { version = "0.4", features = ["serde"] }
+futures = "0.3"
+swagger = "5.0.2"
+log = "0.4.0"
+mime = "0.3"
+tokio = { version = "0.2", features = ["rt-threaded", "macros", "stream"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+hyper = {version = "0.13" }
+serde_ignored = {version = "0.1.1" }
+url = {version = "2.1" }
+lazy_static = { version = "1.4" }
+regex = {version = "1.3" }
+# Conversion
+frunk = { version = "0.3.0" }
+frunk_derives = { version = "0.3.0" }
+frunk_core = { version = "0.3.0" }
+frunk-enum-derive = { version = "0.2.0" }
+frunk-enum-core = { version = "0.2.0" }
 
 [lib]
 crate_type = ["cdylib"]
