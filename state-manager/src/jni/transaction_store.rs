@@ -125,3 +125,17 @@ fn do_get_next_proof(
 ) -> Option<(Vec<TId>, Vec<u8>)> {
     state_manager.proof_store.get_next_proof(state_version)
 }
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLastProof(
+    env: JNIEnv,
+    _class: JClass,
+    sm_instance: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_state_manager_sbor_call(env, sm_instance, request_payload, do_get_last_proof)
+}
+
+fn do_get_last_proof(state_manager: &mut ActualStateManager, _args: ()) -> Option<Vec<u8>> {
+    state_manager.proof_store.get_last_proof()
+}

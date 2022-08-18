@@ -90,6 +90,9 @@ public final class REv2TransactionAndProofStore {
             new TypeToken<>() {},
             new TypeToken<>() {},
             REv2TransactionAndProofStore::getNextProof);
+    this.getLastProof =
+        NativeCalls.Func0.with(
+            rustState, new TypeToken<>() {}, REv2TransactionAndProofStore::getLastProof);
   }
 
   public ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion) {
@@ -98,6 +101,10 @@ public final class REv2TransactionAndProofStore {
 
   public Optional<Tuple.Tuple2<List<HashCode>, byte[]>> getNextProof(long stateVersion) {
     return this.getNextProofFunc.call(UInt64.fromNonNegativeLong(stateVersion)).toOptional();
+  }
+
+  public Optional<byte[]> getLastProof() {
+    return this.getLastProof.call().toOptional();
   }
 
   private final NativeCalls.Func1<UInt64, ExecutedTransactionReceipt>
@@ -109,4 +116,8 @@ public final class REv2TransactionAndProofStore {
       getNextProofFunc;
 
   private static native byte[] getNextProof(RustState rustState, byte[] payload);
+
+  private final NativeCalls.Func0<Option<byte[]>> getLastProof;
+
+  private static native byte[] getLastProof(RustState rustState);
 }

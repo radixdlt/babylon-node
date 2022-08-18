@@ -116,4 +116,11 @@ impl ProofStore {
                 (ids, proof.clone())
             })
     }
+
+    pub fn get_last_proof(&self) -> Option<Vec<u8>> {
+        self.in_memory_proof_store
+            .iter()
+            .next_back()
+            .map(|(_, bytes)| bytes.clone())
+    }
 }
