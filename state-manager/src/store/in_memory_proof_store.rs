@@ -63,27 +63,36 @@
  */
 
 use std::collections::BTreeMap;
+use crate::types::TId;
 
 #[derive(Debug)]
 pub struct ProofStore {
-    in_memory_store: BTreeMap<u64, Vec<u8>>,
+    in_memory_proof_store: BTreeMap<u64, Vec<u8>>,
+    in_memory_txid_store: BTreeMap<u64, TId>,
 }
 
 impl ProofStore {
     pub fn new() -> Self {
         ProofStore {
-            in_memory_store: BTreeMap::new(),
+            in_memory_proof_store: BTreeMap::new(),
+            in_memory_txid_store: BTreeMap::new(),
         }
     }
 
-    pub fn insert_proof(&mut self, state_version: u64, proof_bytes: Vec<u8>) {
-        self.in_memory_store.insert(state_version, proof_bytes);
+    pub fn insert_hashes_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
+        let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
+        for (index, id) in ids.into_iter().enumerate() {
+            let txn_state_version = first_state_version + index as u64;
+            self.in_memory_txid_store.insert(txn_state_version, id);
+        }
+
+        self.in_memory_proof_store.insert(state_version, proof_bytes);
     }
 
     /// Returns the next proof from a state version (excluded)
     pub fn get_next_proof(&self, state_version: u64) -> Option<Vec<u8>> {
         let next_state_version = state_version + 1;
-        self.in_memory_store
+        self.in_memory_proof_store
             .range(next_state_version..)
             .next()
             .map(|(_, proof)| proof.clone())

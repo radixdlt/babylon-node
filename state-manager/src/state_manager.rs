@@ -134,6 +134,7 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
 
     pub fn commit(&mut self, commit_request: CommitRequest) {
         let mut to_store = Vec::new();
+        let mut ids = Vec::new();
         for transaction in &commit_request.transactions {
             let validated_txn = self
                 .decode_transaction(transaction)
@@ -143,13 +144,14 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
                 .execute_transaction(validated_txn)
                 .expect("Error on Byzantine quorum");
 
-            to_store.push((transaction.payload.clone(), receipt))
+            to_store.push((transaction.payload.clone(), receipt));
+            ids.push(transaction.id.clone());
         }
 
         self.transaction_store
             .insert_transactions(to_store, commit_request.state_version);
         self.proof_store
-            .insert_proof(commit_request.state_version, commit_request.proof);
+            .insert_hashes_and_proof(commit_request.state_version, ids, commit_request.proof);
         self.mempool
             .handle_committed_transactions(&commit_request.transactions);
     }
