@@ -115,7 +115,7 @@ public class SanityTest {
     // Post-run assertions
     assertThat(checkResults)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    Checkers.verifyNodesSyncedToVersion(runningTest.getNodeInjectors(), 1);
-    Checkers.verifyEquivalentLedgerTransactions(runningTest.getNodeInjectors());
+    Checkers.assertNodesSyncedToVersionAtleast(runningTest.getNodeInjectors(), 1);
+    Checkers.assertLedgerTransactionsSafety(runningTest.getNodeInjectors());
   }
 }

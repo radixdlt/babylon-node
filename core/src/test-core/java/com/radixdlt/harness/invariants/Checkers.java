@@ -78,10 +78,10 @@ import org.apache.logging.log4j.Logger;
 
 /** Checkers for use with integration and simulation tests */
 public final class Checkers {
-  private static Logger logger = LogManager.getLogger();
+  private static final Logger logger = LogManager.getLogger();
 
-  /** Verifies that all nodes agree on the first transaction */
-  public static void verifyNodesSyncedToVersion(List<Injector> nodeInjectors, long stateVersion) {
+  /** Verifies that all nodes have synced to atleast some given stateVersion */
+  public static void assertNodesSyncedToVersionAtleast(List<Injector> nodeInjectors, long stateVersion) {
     var stateVersionStatistics =
         nodeInjectors.stream()
             .mapToLong(
@@ -96,8 +96,8 @@ public final class Checkers {
     logger.info("StateVersionStats: {}", stateVersionStatistics);
   }
 
-  /** Verifies that all nodes agree on the first transaction */
-  public static void verifyEquivalentLedgerTransactions(List<Injector> nodeInjectors) {
+  /** Verifies that all nodes agree on the transactions they've synced to */
+  public static void assertLedgerTransactionsSafety(List<Injector> nodeInjectors) {
     var receipts = new HashMap<Long, ExecutedTransactionReceipt>();
 
     for (var injector : nodeInjectors) {
@@ -110,7 +110,7 @@ public final class Checkers {
                 for (long txnStateVersion = 1;
                     txnStateVersion <= proof.getStateVersion();
                     txnStateVersion++) {
-                  var receipt = store.getTransactionAtStateVersion(1);
+                  var receipt = store.getTransactionAtStateVersion(txnStateVersion);
                   var curReceipt = receipts.get(txnStateVersion);
                   if (curReceipt != null) {
                     assertThat(curReceipt).isEqualTo(receipt);
@@ -122,7 +122,7 @@ public final class Checkers {
     }
   }
 
-  public static void verifyNoInvalidSyncResponses(List<Injector> nodeInjectors) {
+  public static void assertNoInvalidSyncResponses(List<Injector> nodeInjectors) {
     for (var injector : nodeInjectors) {
       var systemCounters = injector.getInstance(SystemCounters.class);
       assertThat(systemCounters.get(SystemCounters.CounterType.SYNC_INVALID_RESPONSES_RECEIVED))

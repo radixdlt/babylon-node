@@ -72,7 +72,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.utils.Longs;
 import java.math.BigInteger;
 import java.util.function.Function;
 
@@ -91,7 +90,7 @@ public final class MockedKeyModule extends AbstractModule {
       System.arraycopy(h, 0, concat, 0, 32);
       System.arraycopy(node.getKey().getBytes(), 0, concat, 32, 32);
 
-      var hashCode = Longs.toByteArray(hashFunction.hashBytes(concat).asLong());
+      var hashCode = hashFunction.hashBytes(concat).asBytes();
       counters.increment(SystemCounters.CounterType.SIGNATURES_SIGNED);
 
       return ECDSASignature.create(new BigInteger(1, hashCode), new BigInteger(1, hashCode), 0);
