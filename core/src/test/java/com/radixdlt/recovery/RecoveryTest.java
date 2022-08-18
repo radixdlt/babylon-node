@@ -96,6 +96,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.p2p.TestP2PModule;
@@ -322,12 +323,17 @@ public class RecoveryTest {
 
     // Assert
     assertThat(network.allMessages())
-        .hasSize(3)
+        .hasSize(4)
         .haveExactly(
             1,
             new Condition<>(
                 msg -> Epoched.isInstance(msg.message(), ScheduledLocalTimeout.class),
                 "A single epoched scheduled timeout has been emitted"))
+        .haveExactly(
+            1,
+            new Condition<>(
+                msg -> msg.message() instanceof MempoolRelayTrigger,
+                "A single mempool relay trigger has been emitted"))
         .haveExactly(
             1,
             new Condition<>(

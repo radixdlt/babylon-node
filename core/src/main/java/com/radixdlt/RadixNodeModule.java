@@ -166,6 +166,7 @@ public final class RadixNodeModule extends AbstractModule {
     install(new MempoolReceiverModule());
 
     // Mempool Relay
+    install(new MempoolRelayConfig(5, 60000, 60000, 100).asModule());
     install(new MempoolRelayerModule());
 
     // Sync
@@ -178,9 +179,7 @@ public final class RadixNodeModule extends AbstractModule {
     install(new EpochsSyncModule());
 
     // State Computer
-    // Mempool configuration
     var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
-    install(new MempoolRelayConfig(5, 60000, 60000, 100).asModule());
     install(new REv2StateManagerModule(mempoolMaxSize));
     install(new MockedPersistenceStoreModule());
     install(new REv2StateComputerModule());

@@ -290,6 +290,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(new REv2StatelessComputerModule());
               }
               case REV2ProposerConfig.Mempool mempool -> {
+                install(new MempoolRelayerModule());
                 install(new MempoolReceiverModule());
                 install(mempool.config().asModule());
                 install(new REv2StateComputerModule());

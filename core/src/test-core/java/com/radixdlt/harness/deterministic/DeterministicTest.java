@@ -328,6 +328,17 @@ public final class DeterministicTest {
     };
   }
 
+  public DeterministicTest runForCount(int count, Predicate<ControlledMessage> predicate) {
+    this.nodes.start();
+
+    for (int i = 0; i < count; i++) {
+      Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
+      this.nodes.handleMessage(nextMsg);
+    }
+
+    return this;
+  }
+
   public DeterministicTest runForCount(int count) {
     this.nodes.start();
 

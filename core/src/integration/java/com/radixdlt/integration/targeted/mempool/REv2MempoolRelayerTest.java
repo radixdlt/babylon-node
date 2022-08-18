@@ -62,103 +62,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.integration.targeted.mempool;
 
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStoreState;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.commit.CommitRequest;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.transactions.RawTransaction;
-import com.radixdlt.utils.UInt64;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Collectors;
+import org.junit.Test;
 
-/** REv2 State Computer implementation */
-public final class REv2StateComputer implements StateComputerLedger.StateComputer {
-  private static final Logger log = LogManager.getLogger();
+public final class REv2MempoolRelayerTest {
+  private final int MEMPOOL_SIZE = 1000;
 
-  private final RustStateComputer stateComputer;
-  private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
-  private final Serialization serialization;
+  private final DeterministicTest test =
+      DeterministicTest.builder()
+          .numNodes(1, 20)
+          .messageSelector(firstSelector())
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                  FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSync(
+                      StateComputerConfig.rev2(
+                          StateComputerConfig.REV2ProposerConfig.mempool(
+                              MEMPOOL_SIZE, new MempoolRelayConfig(0, 0, 0, 100))),
+                      SyncConfig.of(5000, 10, 3000L))));
 
-  public REv2StateComputer(
-      RustStateComputer stateComputer,
-      EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
-      Serialization serialization) {
-    this.stateComputer = stateComputer;
-    this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
-    this.serialization = serialization;
-  }
+  private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
 
-  @Override
-  public void addToMempool(MempoolAdd mempoolAdd, BFTNode origin) {
-    mempoolAdd
-        .transactions()
-        .forEach(
-            transaction -> {
-              try {
-                stateComputer.getMempoolInserter().addTransaction(transaction);
-              } catch (MempoolFullException ignored) {
-              } catch (MempoolRejectedException e) {
-                log.error(e);
-              }
-            });
-  }
-
-  @Override
-  public List<RawTransaction> getTransactionsForProposal(
-      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
-    var transactionsNotToInclude =
-        executedTransactions.stream()
-            .map(StateComputerLedger.ExecutedTransaction::transaction)
-            .toList();
-    return stateComputer.getTransactionsForProposal(10, transactionsNotToInclude);
-  }
-
-  @Override
-  public StateComputerLedger.StateComputerResult prepare(
-      List<StateComputerLedger.ExecutedTransaction> previous,
-      List<RawTransaction> proposedTransactions,
-      RoundDetails roundDetails) {
-    var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-    var invalidTransactions = new HashMap<RawTransaction, Exception>();
-
-    for (var transaction : proposedTransactions) {
-      var success = stateComputer.verify(transaction);
-      if (success) {
-        successfulTransactions.add(new REv2ExecutedTransaction(transaction));
-      } else {
-        invalidTransactions.put(transaction, new InvalidREv2Transaction());
-      }
+  @Test
+  public void relayer_fills_mempool_of_all_nodes() throws Exception {
+    // Arrange: Fill node1 mempool
+    var mempoolInserter =
+        test.getInstance(1, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+    for (int i = 0; i < MEMPOOL_SIZE; i++) {
+      mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
     }
 
-    return new StateComputerLedger.StateComputerResult(successfulTransactions, invalidTransactions);
-  }
+    // Run all nodes except validator node0
+    test.runForCount(
+        100, m -> m.channelId().senderIndex() != 0 && m.channelId().receiverIndex() != 0);
 
-  @Override
-  public void commit(
-      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-    var proofBytes = serialization.toDson(txnsAndProof.getProof(), DsonOutput.Output.ALL);
-    var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
-    var commitRequest = new CommitRequest(txnsAndProof.getTransactions(), stateVersion, proofBytes);
-
-    stateComputer.commit(commitRequest);
-
-    var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
-    ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
+    // Post-run assertions
+    Checkers.assertNodesHaveExactMempoolCount(
+        test.getNodeInjectors().stream().skip(1).collect(Collectors.toList()), MEMPOOL_SIZE);
   }
 }

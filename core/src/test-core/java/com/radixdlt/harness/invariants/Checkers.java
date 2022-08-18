@@ -67,6 +67,7 @@ package com.radixdlt.harness.invariants;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.inject.Injector;
+import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.ExecutedTransactionReceipt;
@@ -79,6 +80,15 @@ import org.apache.logging.log4j.Logger;
 /** Checkers for use with integration and simulation tests */
 public final class Checkers {
   private static Logger logger = LogManager.getLogger();
+
+  /** Assert that all nodes have an exact mempool count */
+  public static void assertNodesHaveExactMempoolCount(List<Injector> nodeInjectors, int count) {
+    nodeInjectors.forEach(
+        injector -> {
+          var reader = injector.getInstance(MempoolReader.class);
+          assertThat(reader.getCount()).isEqualTo(count);
+        });
+  }
 
   /** Verifies that all nodes agree on the first transaction */
   public static void verifyNodesSyncedToVersion(List<Injector> nodeInjectors, long stateVersion) {

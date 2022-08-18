@@ -87,7 +87,6 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.FailOnEvent;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.networks.Network;
@@ -243,8 +242,6 @@ public abstract class DeterministicActorsTest {
       for (var actor : actors) {
         actor.tryExecute(deterministicRunner, random);
       }
-      deterministicRunner.dispatchToAll(
-          new Key<EventDispatcher<MempoolRelayTrigger>>() {}, MempoolRelayTrigger.create());
       deterministicRunner.dispatchToAll(
           new Key<EventDispatcher<SyncCheckTrigger>>() {}, SyncCheckTrigger.create());
     }

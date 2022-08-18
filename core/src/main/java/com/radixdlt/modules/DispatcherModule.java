@@ -145,8 +145,8 @@ public class DispatcherModule extends AbstractModule {
     bind(new TypeLiteral<EventDispatcher<MempoolAddSuccess>>() {})
         .toProvider(Dispatchers.dispatcherProvider(MempoolAddSuccess.class))
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<EventDispatcher<MempoolRelayTrigger>>() {})
-        .toProvider(Dispatchers.dispatcherProvider(MempoolRelayTrigger.class))
+    bind(new TypeLiteral<ScheduledEventDispatcher<MempoolRelayTrigger>>() {})
+        .toProvider(Dispatchers.scheduledDispatcherProvider(MempoolRelayTrigger.class))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
         .toProvider(
