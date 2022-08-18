@@ -69,7 +69,9 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt64;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public record CommitRequest(
     List<RawTransaction> transactions, UInt64 stateVersion, byte[] proofBytes) {
@@ -83,5 +85,34 @@ public record CommitRequest(
                 codecs.of(UInt64.class),
                 codecs.of(new TypeToken<byte[]>() {}),
                 (t, encoder) -> encoder.encode(t.transactions, t.stateVersion, t.proofBytes)));
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    CommitRequest that = (CommitRequest) o;
+    return Objects.equals(transactions, that.transactions)
+        && Objects.equals(stateVersion, that.stateVersion)
+        && Arrays.equals(proofBytes, that.proofBytes);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(transactions, stateVersion);
+    result = 31 * result + Arrays.hashCode(proofBytes);
+    return result;
+  }
+
+  @Override
+  public String toString() {
+    return "CommitRequest{"
+        + "transactions="
+        + transactions
+        + ", stateVersion="
+        + stateVersion
+        + ", proofBytes="
+        + Arrays.toString(proofBytes)
+        + '}';
   }
 }
