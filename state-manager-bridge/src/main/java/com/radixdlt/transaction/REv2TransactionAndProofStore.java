@@ -64,13 +64,17 @@
 
 package com.radixdlt.transaction;
 
+import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statemanager.StateManager.RustState;
 import com.radixdlt.utils.UInt64;
+
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -98,7 +102,7 @@ public final class REv2TransactionAndProofStore {
     return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
   }
 
-  public Optional<byte[]> getNextProof(long stateVersion) {
+  public Optional<Tuple.Tuple2<List<HashCode>, byte[]>> getNextProof(long stateVersion) {
     return this.getNextProofFunc.call(UInt64.fromNonNegativeLong(stateVersion)).toOptional();
   }
 
@@ -107,7 +111,7 @@ public final class REv2TransactionAndProofStore {
 
   private static native byte[] getTransactionAtStateVersion(RustState rustState, byte[] payload);
 
-  private final NativeCalls.Func1<UInt64, Option<byte[]>> getNextProofFunc;
+  private final NativeCalls.Func1<UInt64, Option<Tuple.Tuple2<List<HashCode>, byte[]>>> getNextProofFunc;
 
   private static native byte[] getNextProof(RustState rustState, byte[] payload);
 }

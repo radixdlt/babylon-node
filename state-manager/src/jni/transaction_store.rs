@@ -67,6 +67,7 @@ use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use sbor::*;
 use scrypto::prelude::ComponentAddress;
+use crate::types::TId;
 
 use super::state_manager::ActualStateManager;
 use super::utils::jni_state_manager_sbor_call;
@@ -121,6 +122,6 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 fn do_get_next_proof(
     state_manager: &mut ActualStateManager,
     state_version: u64,
-) -> Option<Vec<u8>> {
+) -> Option<(Vec<TId>, Vec<u8>)> {
     state_manager.proof_store.get_next_proof(state_version)
 }

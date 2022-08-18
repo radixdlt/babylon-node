@@ -90,11 +90,17 @@ impl ProofStore {
     }
 
     /// Returns the next proof from a state version (excluded)
-    pub fn get_next_proof(&self, state_version: u64) -> Option<Vec<u8>> {
+    pub fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
         let next_state_version = state_version + 1;
         self.in_memory_proof_store
             .range(next_state_version..)
             .next()
-            .map(|(_, proof)| proof.clone())
+            .map(|(v, proof)| {
+                let mut ids = Vec::new();
+                for (_, id) in self.in_memory_txid_store.range(next_state_version..=*v) {
+                    ids.push(id.clone());
+                }
+                (ids, proof.clone())
+            })
     }
 }

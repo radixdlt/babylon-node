@@ -95,7 +95,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
             b -> {
               final LedgerProof proof;
               try {
-                proof = serialization.fromDson(b, LedgerProof.class);
+                proof = serialization.fromDson(b.last(), LedgerProof.class);
               } catch (DeserializeException e) {
                 throw new RuntimeException(e);
               }
