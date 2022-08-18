@@ -82,7 +82,7 @@ import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.rev1.forks.ForkBuilder;
 import com.radixdlt.rev1.forks.ForksEpochStore;
@@ -113,7 +113,7 @@ public final class OutdatedNodeForksTest {
         SimulationTest.builder()
             .numNodes(numValidators, Collections.nCopies(numValidators, UInt256.ONE))
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .fullFunctionNodes(ConsensusConfig.of(), SyncConfig.of(400L, 10, 2000L))
+            .fullFunctionNodes(ConsensusConfig.of(), SyncConfig.of(400L, 10, 2000L), 1000)
             .addRadixEngineConfigModules(new MockedForksModule(2L), new ForksModule())
             .addOverrideModuleToInitialNodes(
                 nodes -> {
@@ -127,7 +127,7 @@ public final class OutdatedNodeForksTest {
                 // the
                 // genesis fork
                 )
-            .addNodeModule(MempoolConfig.of(1000, 10).asModule())
+            .addNodeModule(MempoolRelayConfig.of(10).asModule())
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

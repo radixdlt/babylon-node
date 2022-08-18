@@ -77,6 +77,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.utils.UInt256;
@@ -102,7 +103,7 @@ public class ProposerLoadBalancedTest {
                     false,
                     ConsensusConfig.of(),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
+                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
             .runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     return IntStream.range(0, numValidatorNodes)

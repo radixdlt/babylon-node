@@ -64,15 +64,28 @@
 
 package com.radixdlt.mempool;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.google.inject.AbstractModule;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+/** Configuration parameters for mempool. */
+public record MempoolRelayConfig(
+    long throttleMs, long relayInitialDelayMillis, long relayRepeatDelayMillis, int relayMaxPeers) {
+  public static MempoolRelayConfig of() {
+    return new MempoolRelayConfig(10000, 60000, 60000, 100);
+  }
 
-/** Maximum number of txns a mempool should store */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface MempoolMaxSize {}
+  public static MempoolRelayConfig of(long throttleMs) {
+    return new MempoolRelayConfig(throttleMs, 60000, 60000, 100);
+  }
+
+  public AbstractModule asModule() {
+    return new AbstractModule() {
+      @Override
+      protected void configure() {
+        bindConstant().annotatedWith(MempoolThrottleMs.class).to(throttleMs);
+        bindConstant().annotatedWith(MempoolRelayInitialDelayMs.class).to(relayInitialDelayMillis);
+        bindConstant().annotatedWith(MempoolRelayRepeatDelayMs.class).to(relayRepeatDelayMillis);
+        bindConstant().annotatedWith(MempoolRelayMaxPeers.class).to(relayMaxPeers);
+      }
+    };
+  }
+}

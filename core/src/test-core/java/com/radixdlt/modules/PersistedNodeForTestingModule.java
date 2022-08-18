@@ -90,14 +90,13 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
   private final ECKeyPair keyPair;
   private final StateComputerConfig stateComputerConfig;
 
-  public PersistedNodeForTestingModule(ECKeyPair keyPair) {
-    this.keyPair = keyPair;
-    this.stateComputerConfig = StateComputerConfig.rev1();
-  }
-
   public PersistedNodeForTestingModule(ECKeyPair keyPair, StateComputerConfig stateComputerConfig) {
     this.keyPair = keyPair;
     this.stateComputerConfig = stateComputerConfig;
+  }
+
+  public static PersistedNodeForTestingModule rev1(ECKeyPair keyPair, int mempoolSize) {
+    return new PersistedNodeForTestingModule(keyPair, StateComputerConfig.rev1(mempoolSize));
   }
 
   @Override

@@ -70,8 +70,8 @@ import com.google.inject.*;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -92,7 +92,8 @@ public final class SanityTest {
                   false,
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputerWithSync(
-                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))),
+                      StateComputerConfig.rev2(
+                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())),
                       SyncConfig.of(5000, 10, 3000L))));
 
   private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();

@@ -95,7 +95,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.p2p.TestP2PModule;
@@ -200,7 +200,7 @@ public class RecoveryTest {
                 10,
                 MSG.maxLength())),
         new ForksModule(),
-        MempoolConfig.of(10, 10).asModule(),
+        MempoolRelayConfig.of(10).asModule(),
         new LastEventsModule(EpochRoundUpdate.class, Vote.class),
         new AbstractModule() {
           @Override
@@ -211,7 +211,7 @@ public class RecoveryTest {
                 .to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
           }
         },
-        new PersistedNodeForTestingModule(ecKeyPair),
+        PersistedNodeForTestingModule.rev1(ecKeyPair, 10),
         new TestP2PModule.Builder().build(),
         new TestMessagingModule.Builder().build());
   }

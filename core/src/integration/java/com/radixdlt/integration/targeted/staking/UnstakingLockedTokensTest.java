@@ -84,7 +84,7 @@ import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.keys.LocalSigner;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.p2p.TestP2PModule;
@@ -151,11 +151,11 @@ public class UnstakingLockedTokensTest {
 
   private Injector createInjector() {
     return Guice.createInjector(
-        MempoolConfig.of(1000, 10).asModule(),
+        MempoolRelayConfig.of(10).asModule(),
         new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
         new ForksModule(),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+        SingleNodeAndPeersDeterministicNetworkModule.rev1(TEST_KEY, 1000),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(110), Amount.ofTokens(100)),
         new TestP2PModule.Builder().build(),

@@ -92,7 +92,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.p2p.TestP2PModule;
@@ -263,7 +263,7 @@ public class RecoveryLivenessTest {
             nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
             Amount.ofTokens(100000),
             Amount.ofTokens(1000)),
-        MempoolConfig.of(10, 10).asModule(),
+        MempoolRelayConfig.of(10).asModule(),
         new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(
             new RERulesConfig(
@@ -281,7 +281,7 @@ public class RecoveryLivenessTest {
                 10,
                 MSG.maxLength())),
         new ForksModule(),
-        new PersistedNodeForTestingModule(ecKeyPair),
+        PersistedNodeForTestingModule.rev1(ecKeyPair, 10),
         new LastEventsModule(EpochRoundUpdate.class),
         new AbstractModule() {
           @Override

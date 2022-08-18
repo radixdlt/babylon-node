@@ -78,7 +78,7 @@ import com.radixdlt.harness.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.rev1.forks.ForkOverwritesWithShorterEpochsModule;
 import com.radixdlt.rev1.forks.ForksModule;
@@ -119,7 +119,7 @@ public class SanityTest {
         SimulationTest.builder()
             .numNodes(4)
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .fullFunctionNodes(ConsensusConfig.of(3000), SyncConfig.of(400L, 10, 2000L))
+            .fullFunctionNodes(ConsensusConfig.of(3000), SyncConfig.of(400L, 10, 2000L), 1000)
             .addRadixEngineConfigModules(
                 new MainnetForksModule(),
                 new ForkOverwritesWithShorterEpochsModule(
@@ -138,7 +138,7 @@ public class SanityTest {
                         10,
                         MSG.maxLength())),
                 new ForksModule())
-            .addNodeModule(MempoolConfig.of(1000, 10).asModule())
+            .addNodeModule(MempoolRelayConfig.of(10).asModule())
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(3, TimeUnit.SECONDS),

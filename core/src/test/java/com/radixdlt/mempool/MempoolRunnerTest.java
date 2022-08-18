@@ -135,7 +135,7 @@ public final class MempoolRunnerTest {
         bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
         Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
-        install(MempoolConfig.of(100, 10).asModule());
+        install(MempoolRelayConfig.of(10).asModule());
         install(new MockedKeyModule());
         install(new MockedCryptoModule());
         install(new RxEnvironmentModule());

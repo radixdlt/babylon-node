@@ -79,7 +79,7 @@ import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
@@ -124,7 +124,7 @@ public abstract class AbstractRadixEngineTest {
   public void setup() {
     var injector =
         Guice.createInjector(
-            MempoolConfig.of(mempoolMaxSize, 10).asModule(),
+            MempoolRelayConfig.of(10).asModule(),
             new MainnetForksModule(),
             new RadixEngineForksLatestOnlyModule(
                 RERulesConfig.testingDefault()
@@ -134,7 +134,7 @@ public abstract class AbstractRadixEngineTest {
                             Map.of(ValidatorRegisteredCopy.class, Amount.ofSubunits(UInt256.ONE))))
                     .overrideMaxMessageLen(maxMessageLen)),
             new ForksModule(),
-            new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+            SingleNodeAndPeersDeterministicNetworkModule.rev1(TEST_KEY, mempoolMaxSize),
             new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),
             new AbstractModule() {
               @Override

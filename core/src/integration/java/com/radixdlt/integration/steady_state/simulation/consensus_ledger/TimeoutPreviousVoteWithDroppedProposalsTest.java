@@ -109,7 +109,7 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
                   false,
                   ConsensusConfig.of(1000L),
                   LedgerConfig.stateComputerNoSync(
-                      StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
+                      StateComputerConfig.mocked(new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
           .addTestModules(
               ConsensusMonitors.safety(),
               LedgerMonitors.consensusToLedger(),

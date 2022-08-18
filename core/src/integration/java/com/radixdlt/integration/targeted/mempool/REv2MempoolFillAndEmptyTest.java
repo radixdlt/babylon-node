@@ -82,10 +82,10 @@ import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
-import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -142,7 +142,7 @@ public final class REv2MempoolFillAndEmptyTest {
             FunctionalRadixNodeModule.ConsensusConfig.of(),
             FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSync(
                 StateComputerConfig.rev2(
-                    StateComputerConfig.REV2ProposerConfig.mempool(MempoolConfig.of(1000))),
+                    StateComputerConfig.REV2ProposerConfig.mempool(1000, MempoolRelayConfig.of())),
                 SyncConfig.of(5000, 10, 3000L))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),

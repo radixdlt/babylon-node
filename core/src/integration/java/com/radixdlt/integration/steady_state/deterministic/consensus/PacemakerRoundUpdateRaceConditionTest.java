@@ -83,6 +83,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.utils.KeyComparator;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -155,7 +156,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
                     false,
                     ConsensusConfig.of(pacemakerTimeout),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
+                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
             .runUntil(nodeUnderTestReachesRound(Round.of(3)));
 
     final var counters = test.getInstance(nodeUnderTestIndex, SystemCounters.class);
