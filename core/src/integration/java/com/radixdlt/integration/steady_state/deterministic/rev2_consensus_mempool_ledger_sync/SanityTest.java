@@ -99,7 +99,7 @@ public final class SanityTest {
   private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
 
   @Test
-  public void sanity_test() throws Exception {
+  public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() throws Exception {
     // Run
     for (int i = 0; i < 100; i++) {
       test.runForCount(1000);
@@ -110,8 +110,8 @@ public final class SanityTest {
     }
 
     // Post-run assertions
-    Checkers.verifyNodesSyncedToVersion(test.getNodeInjectors(), 20);
-    Checkers.verifyEquivalentLedgerTransactions(test.getNodeInjectors());
-    Checkers.verifyNoInvalidSyncResponses(test.getNodeInjectors());
+    Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
+    Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
+    Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
   }
 }

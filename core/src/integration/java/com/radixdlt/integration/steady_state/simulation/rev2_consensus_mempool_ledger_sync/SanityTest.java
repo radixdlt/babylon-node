@@ -107,7 +107,7 @@ public class SanityTest {
           .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class);
 
   @Test
-  public void sanity_test() {
+  public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() {
     // Arrange
     var simulationTest = bftTestBuilder.build();
 
@@ -118,8 +118,7 @@ public class SanityTest {
     // Post-run assertions
     assertThat(checkResults)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-
-    Checkers.verifyNodesSyncedToVersion(runningTest.getNodeInjectors(), 1);
-    Checkers.verifyEquivalentLedgerTransactions(runningTest.getNodeInjectors());
+    Checkers.assertNodesSyncedToVersionAtleast(runningTest.getNodeInjectors(), 1);
+    Checkers.assertLedgerTransactionsSafety(runningTest.getNodeInjectors());
   }
 }
