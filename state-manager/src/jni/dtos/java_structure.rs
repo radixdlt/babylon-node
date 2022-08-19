@@ -104,7 +104,7 @@ mod tests {
         bytes_a: Vec<u8>,
     }
 
-    #[derive(Debug, TypeId, Encode, Decode, PartialEq)]
+    #[derive(Debug, TypeId, Encode, Decode, PartialEq, Eq)]
     pub struct TypeB {
         bytes_b: Vec<u8>,
         a: TypeA,

@@ -97,7 +97,10 @@ public final class Checkers {
     logger.info("StateVersionStats: {}", stateVersionStatistics);
   }
 
-  /** Verifies that all nodes agree on the transactions they've synced to */
+  /**
+   * Checks that a safety break has not occurred at the ledger transaction level. That is, all nodes
+   * should agree on the order and result of transaction execution.
+   */
   public static void assertLedgerTransactionsSafety(List<Injector> nodeInjectors) {
     var receipts = new HashMap<Long, ExecutedTransactionReceipt>();
 
