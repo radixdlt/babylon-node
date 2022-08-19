@@ -64,7 +64,10 @@
 
 package com.radixdlt.modules;
 
+import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
 
 /** Configuration options for the state computer */
 public sealed interface StateComputerConfig {
@@ -102,14 +105,14 @@ public sealed interface StateComputerConfig {
 
   sealed interface REV2ProposerConfig {
     static REV2ProposerConfig halfCorrectProposer() {
-      return new HalfCorrectProposer();
+      return new Generated(new HalfCorrectREv2TransactionGenerator());
     }
 
     static REV2ProposerConfig mempool(int mempoolMaxSize, MempoolRelayConfig config) {
       return new Mempool(mempoolMaxSize, config);
     }
 
-    record HalfCorrectProposer() implements REV2ProposerConfig {}
+    record Generated(ProposalGenerator generator) implements REV2ProposerConfig {}
 
     record Mempool(int mempoolMaxSize, MempoolRelayConfig config) implements REV2ProposerConfig {}
   }

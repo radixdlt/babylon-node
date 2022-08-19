@@ -285,8 +285,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           case REv2StateComputerConfig rev2Config -> {
             int mempoolSize = 0;
             switch (rev2Config.proposerConfig()) {
-              case REV2ProposerConfig.HalfCorrectProposer ignored -> {
-                bind(ProposalGenerator.class).to(HalfCorrectREv2TransactionGenerator.class);
+              case REV2ProposerConfig.Generated generated -> {
+                bind(ProposalGenerator.class).toInstance(generated.generator());
                 install(new REv2StatelessComputerModule());
               }
               case REV2ProposerConfig.Mempool mempool -> {
