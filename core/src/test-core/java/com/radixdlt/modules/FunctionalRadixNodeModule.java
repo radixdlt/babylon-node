@@ -78,7 +78,6 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
-import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.modules.StateComputerConfig.*;
 import com.radixdlt.rev1.MockedMempoolStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerModule;
@@ -283,26 +282,19 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             install(new ReV1DispatcherModule());
           }
           case REv2StateComputerConfig rev2Config -> {
-            final Option<RustMempoolConfig> mempoolConfig;
-            final boolean ledger;
             switch (rev2Config.proposerConfig()) {
               case REV2ProposerConfig.Generated generated -> {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
                 install(new REv2StatelessComputerModule());
-                mempoolConfig = Option.none();
-                ledger = false;
+                install(new REv2StateManagerModule(Option.none(), false));
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule());
                 install(new MempoolReceiverModule());
-                install(mempool.config().asModule());
-                mempoolConfig = Option.some(new RustMempoolConfig(mempool.mempoolMaxSize()));
-                ledger = true;
+                install(mempool.relayConfig().asModule());
+                install(new REv2StateManagerModule(Option.some(mempool.mempoolConfig()), true));
               }
-              default -> throw new IllegalStateException(
-                  "Unexpected value: " + rev2Config.proposerConfig());
             }
-            install(new REv2StateManagerModule(mempoolConfig, ledger));
           }
         }
       }

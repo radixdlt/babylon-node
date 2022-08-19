@@ -66,6 +66,7 @@ package com.radixdlt.modules;
 
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
 
 /** Configuration options for the state computer */
@@ -108,11 +109,12 @@ public sealed interface StateComputerConfig {
     }
 
     static REV2ProposerConfig mempool(int mempoolMaxSize, MempoolRelayConfig config) {
-      return new Mempool(mempoolMaxSize, config);
+      return new Mempool(new RustMempoolConfig(mempoolMaxSize), config);
     }
 
     record Generated(ProposalGenerator generator) implements REV2ProposerConfig {}
 
-    record Mempool(int mempoolMaxSize, MempoolRelayConfig config) implements REV2ProposerConfig {}
+    record Mempool(RustMempoolConfig mempoolConfig, MempoolRelayConfig relayConfig)
+        implements REV2ProposerConfig {}
   }
 }
