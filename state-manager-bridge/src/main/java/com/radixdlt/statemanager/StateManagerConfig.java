@@ -70,7 +70,8 @@ import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
-public record StateManagerConfig(Option<RustMempoolConfig> mempoolConfigOpt, REv2DatabaseConfig databaseConfig) {
+public record StateManagerConfig(
+    Option<RustMempoolConfig> mempoolConfigOpt, REv2DatabaseConfig databaseConfig) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateManagerConfig.class,

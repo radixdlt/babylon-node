@@ -75,6 +75,7 @@ import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.sync.TransactionsAndProofReader;
@@ -92,7 +93,8 @@ public final class REv2StateManagerModule extends AbstractModule {
   @Singleton
   StateManager stateManager() {
     var mempoolConfig = new RustMempoolConfig(this.mempoolMaxSize);
-    return StateManager.createAndInitialize(new StateManagerConfig(Option.some(mempoolConfig)));
+    return StateManager.createAndInitialize(
+        new StateManagerConfig(Option.some(mempoolConfig), new REv2DatabaseConfig.InMemory()));
   }
 
   @Provides
