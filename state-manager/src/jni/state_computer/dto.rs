@@ -73,7 +73,7 @@ use scrypto::prelude::ResourceAddress;
 use crate::result::StateManagerResult;
 use crate::types::PreviewError;
 
-#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
 pub struct PreviewErrorJava {
     message: String,
 }

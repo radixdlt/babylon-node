@@ -91,7 +91,8 @@ public final class Checkers {
   }
 
   /** Verifies that all nodes have synced to atleast some given stateVersion */
-  public static void assertNodesSyncedToVersionAtleast(List<Injector> nodeInjectors, long stateVersion) {
+  public static void assertNodesSyncedToVersionAtleast(
+      List<Injector> nodeInjectors, long stateVersion) {
     var stateVersionStatistics =
         nodeInjectors.stream()
             .mapToLong(
