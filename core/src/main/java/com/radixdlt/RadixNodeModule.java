@@ -91,10 +91,12 @@ import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statemanager.CoreApiServerConfig;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.IOUtils;
+import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -105,8 +107,11 @@ import org.json.JSONObject;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
-  private static final int DEFAULT_CORE_PORT = 3333;
-  private static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
+  private static final int DEFAULT_CORE_API_PORT = 3333;
+  private static final int DEFAULT_SYSTEM_API_PORT = 3334;
+  private static final String DEFAULT_CORE_API_BIND_ADDRESS = "0.0.0.0";
+  private static final String DEFAULT_SYSTEM_API_BIND_ADDRESS = "127.0.0.1";
+
   private static final Logger log = LogManager.getLogger();
 
   private final RuntimeProperties properties;
@@ -183,7 +188,12 @@ public final class RadixNodeModule extends AbstractModule {
     install(new EpochsSyncModule());
 
     // State Computer
-    install(new REv2StateManagerModule());
+    final var coreApiBindAddress =
+        properties.get("api.core.bind_address", DEFAULT_CORE_API_BIND_ADDRESS);
+    final var coreApiPort = properties.get("api.core.port", DEFAULT_CORE_API_PORT);
+    final var coreApiServerConfig =
+        new CoreApiServerConfig(true, coreApiBindAddress, UInt32.fromNonNegativeInt(coreApiPort));
+    install(new REv2StateManagerModule(coreApiServerConfig));
     install(new MockedPersistenceStoreModule());
     install(new REv2StateComputerModule());
     install(new InMemoryCommittedReaderModule());
@@ -230,11 +240,10 @@ public final class RadixNodeModule extends AbstractModule {
     install(new P2PModule(properties));
 
     // API
-    var bindAddress = properties.get("api.bind.address", DEFAULT_BIND_ADDRESS);
-    var port = properties.get("api.port", DEFAULT_CORE_PORT);
-    var enableTransactions = properties.get("api.transactions.enable", false);
-    var enableSign = properties.get("api.sign.enable", false);
-    install(new ApiModule(bindAddress, port, enableTransactions, enableSign));
+    final var systemApiBindAddress =
+        properties.get("api.system.bind_address", DEFAULT_SYSTEM_API_BIND_ADDRESS);
+    final var systemApiPort = properties.get("api.system.port", DEFAULT_SYSTEM_API_PORT);
+    install(new ApiModule(systemApiBindAddress, systemApiPort));
 
     // Capabilities
     var capabilitiesLedgerSyncEnabled =

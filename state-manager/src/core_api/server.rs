@@ -69,8 +69,8 @@ use crate::core_api::generated::models::{
 };
 use crate::core_api::generated::server::MakeService;
 use crate::core_api::generated::{
-    Api, StatusNetworkConfigurationPostResponse, StatusNetworkSyncPostResponse,
-    TransactionPreviewPostResponse, TransactionSubmitPostResponse, API_VERSION,
+    Api, StatusNetworkConfigurationPostResponse, TransactionPreviewPostResponse,
+    TransactionSubmitPostResponse, API_VERSION,
 };
 
 use crate::state_manager::StateManager;
@@ -161,14 +161,6 @@ where
                 },
             ),
         )
-    }
-
-    async fn status_network_sync_post(
-        &self,
-        _network_sync_status_request: models::NetworkSyncStatusRequest,
-        _context: &C,
-    ) -> Result<StatusNetworkSyncPostResponse, ApiError> {
-        Err("To be implemented".into())
     }
 
     async fn transaction_preview_post(

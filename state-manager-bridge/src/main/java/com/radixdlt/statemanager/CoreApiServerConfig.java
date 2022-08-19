@@ -80,4 +80,7 @@ public record CoreApiServerConfig(boolean enabled, String bindInterface, UInt32 
                 codecs.of(UInt32.class),
                 (t, encoder) -> encoder.encode(t.enabled, t.bindInterface, t.port)));
   }
+
+  public static CoreApiServerConfig DISABLED =
+      new CoreApiServerConfig(false, "127.0.0.1", UInt32.fromNonNegativeInt(0));
 }

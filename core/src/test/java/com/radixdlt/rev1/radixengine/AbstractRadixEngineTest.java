@@ -64,10 +64,7 @@
 
 package com.radixdlt.rev1.radixengine;
 
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -155,8 +152,6 @@ public abstract class AbstractRadixEngineTest {
                         23456);
                 bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
                 var runtimeProperties = mock(RuntimeProperties.class);
-                when(runtimeProperties.get(eq("api.transactions.enable"), anyBoolean()))
-                    .thenReturn(true);
                 bind(RuntimeProperties.class).toInstance(runtimeProperties);
               }
             });

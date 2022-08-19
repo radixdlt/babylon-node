@@ -26,18 +26,6 @@ pub enum StatusNetworkConfigurationPostResponse {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[must_use]
-pub enum StatusNetworkSyncPostResponse {
-    /// Network Status
-    NetworkStatus
-    (models::NetworkSyncStatusResponse)
-    ,
-    /// An error occurred
-    AnErrorOccurred
-    (models::ErrorResponse)
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[must_use]
 pub enum TransactionPreviewPostResponse {
     /// Transaction preview response
     TransactionPreviewResponse
@@ -73,12 +61,6 @@ pub trait Api<C: Send + Sync> {
         network_configuration_request: models::NetworkConfigurationRequest,
         context: &C) -> Result<StatusNetworkConfigurationPostResponse, ApiError>;
 
-    /// Get Network Sync Status
-    async fn status_network_sync_post(
-        &self,
-        network_sync_status_request: models::NetworkSyncStatusRequest,
-        context: &C) -> Result<StatusNetworkSyncPostResponse, ApiError>;
-
     /// Preview a transaction against the latest network state
     async fn transaction_preview_post(
         &self,
@@ -106,12 +88,6 @@ pub trait ApiNoContext<C: Send + Sync> {
         &self,
         network_configuration_request: models::NetworkConfigurationRequest,
         ) -> Result<StatusNetworkConfigurationPostResponse, ApiError>;
-
-    /// Get Network Sync Status
-    async fn status_network_sync_post(
-        &self,
-        network_sync_status_request: models::NetworkSyncStatusRequest,
-        ) -> Result<StatusNetworkSyncPostResponse, ApiError>;
 
     /// Preview a transaction against the latest network state
     async fn transaction_preview_post(
@@ -158,16 +134,6 @@ impl<T: Api<C> + Send + Sync, C: Clone + Send + Sync> ApiNoContext<C> for Contex
     {
         let context = self.context().clone();
         self.api().status_network_configuration_post(network_configuration_request, &context).await
-    }
-
-    /// Get Network Sync Status
-    async fn status_network_sync_post(
-        &self,
-        network_sync_status_request: models::NetworkSyncStatusRequest,
-        ) -> Result<StatusNetworkSyncPostResponse, ApiError>
-    {
-        let context = self.context().clone();
-        self.api().status_network_sync_post(network_sync_status_request, &context).await
     }
 
     /// Preview a transaction against the latest network state

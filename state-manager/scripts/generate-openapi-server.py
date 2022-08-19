@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     logging.info('Generating code from specs...')
 
-    generate_models("core-api", core_api_spec_temp_filename, os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, "core-api"), CORE_API_GENERATED_DESTINATION)
+    generate_models(core_api_spec_temp_filename, os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, "core-api"), CORE_API_GENERATED_DESTINATION)
 
     logging.info("Code has been created.")
 

@@ -74,17 +74,27 @@ import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statemanager.CoreApiServerConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transaction.TransactionStoreReader;
 import com.radixdlt.transactions.RawTransaction;
+import java.util.Objects;
 
 public final class REv2StateManagerModule extends AbstractModule {
+
+  private final CoreApiServerConfig coreApiServerConfig;
+
+  public REv2StateManagerModule(CoreApiServerConfig coreApiServerConfig) {
+    this.coreApiServerConfig = Objects.requireNonNull(coreApiServerConfig);
+  }
+
   @Provides
   @Singleton
-  StateManager stateManager(RustMempoolConfig mempoolConfig) {
+  StateManager stateManager(
+      RustMempoolConfig mempoolConfig, CoreApiServerConfig coreApiServerConfig) {
     return StateManager.createAndInitialize(
-        new StateManagerConfig(Option.some(mempoolConfig), Option.none()));
+        new StateManagerConfig(Option.some(mempoolConfig), Option.some(coreApiServerConfig)));
   }
 
   @Provides
@@ -117,5 +127,11 @@ public final class REv2StateManagerModule extends AbstractModule {
   @Provides
   public REv2StateReader stateReader(RustStateComputer rustStateComputer) {
     return rustStateComputer::getComponentXrdAmount;
+  }
+
+  @Provides
+  @Singleton
+  public CoreApiServerConfig coreApiServerConfig() {
+    return coreApiServerConfig;
   }
 }

@@ -1,9 +1,10 @@
-/*
- * Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+/* Copyright 2021 Radix Publishing Ltd incorporated in Jersey (Channel Islands).
+ *
  * Licensed under the Radix License, Version 1.0 (the "License"); you may not use this
  * file except in compliance with the License. You may obtain a copy of the License at:
  *
  * radixfoundation.org/licenses/LICENSE-v1
+ *
  * The Licensor hereby grants permission for the Canonical version of the Work to be
  * published, distributed and used under or by reference to the Licensor’s trademark
  * Radix ® and use of any unregistered trade names, logos or get-up.
@@ -61,33 +62,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core.generated;
+package com.radixdlt.api.system.routes;
 
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
-import org.junit.Test;
-import org.reflections.Reflections;
+import com.google.inject.Inject;
+import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.generated.models.*;
+import com.radixdlt.monitoring.SystemCounters;
+import java.util.Objects;
 
-import java.util.Set;
+public final class NetworkSyncStatusHandler
+    extends SystemGetJsonHandler<NetworkSyncStatusResponse> {
+  private final SystemCounters systemCounters;
 
-public class ModelEqualsVerifierTest {
-	@Test
-	public void verify_all_subtypes_correctly_override_equals_and_hash_code() {
-		final Set<Class<?>> subTypes = getGeneratedClasses();
-		subTypes.forEach(clazz -> {
-			EqualsVerifier.forClass(clazz)
-				.usingGetClass()
-				.withRedefinedSuperclass()
-				.suppress(Warning.NONFINAL_FIELDS)
-				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-				.verify();
-		});
-	}
+  @Inject
+  NetworkSyncStatusHandler(SystemCounters systemCounters) {
+    this.systemCounters = Objects.requireNonNull(systemCounters);
+  }
 
-	private Set<Class<?>> getGeneratedClasses() {
-		return new Reflections("com.radixdlt.api.core").getTypesAnnotatedWith(JsonPropertyOrder.class);
-	}
+  @Override
+  public NetworkSyncStatusResponse handleRequest() {
+    return new NetworkSyncStatusResponse().syncStatus(getSyncStatus());
+  }
+
+  private SyncStatus getSyncStatus() {
+    return new SyncStatus()
+        .currentStateVersion(systemCounters.get(SystemCounters.CounterType.LEDGER_STATE_VERSION))
+        .targetStateVersion(
+            systemCounters.get(SystemCounters.CounterType.SYNC_TARGET_STATE_VERSION));
+  }
 }
