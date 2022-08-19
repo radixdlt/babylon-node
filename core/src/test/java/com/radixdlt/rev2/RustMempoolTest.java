@@ -77,7 +77,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public final class RustMempoolTest {
@@ -229,7 +228,6 @@ public final class RustMempoolTest {
   }
 
   @Test
-  @Ignore
   public void test_rust_mempool_getRelayTxns() throws Exception {
     final var mempoolSize = 3;
     final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
