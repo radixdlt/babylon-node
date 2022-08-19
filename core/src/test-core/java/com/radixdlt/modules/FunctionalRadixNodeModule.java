@@ -74,9 +74,11 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
+import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.modules.StateComputerConfig.*;
 import com.radixdlt.rev1.MockedMempoolStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerModule;
@@ -84,7 +86,6 @@ import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
 import com.radixdlt.rev1.ReV1DispatcherModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
-import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedSyncServiceModule;
 import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
@@ -283,21 +284,24 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             install(new ReV1DispatcherModule());
           }
           case REv2StateComputerConfig rev2Config -> {
-            int mempoolSize = 0;
+            final Option<RustMempoolConfig> mempoolConfig;
             switch (rev2Config.proposerConfig()) {
               case REV2ProposerConfig.Generated generated -> {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
                 install(new REv2StatelessComputerModule());
+                mempoolConfig = Option.none();
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule());
                 install(new MempoolReceiverModule());
                 install(mempool.config().asModule());
                 install(new REv2StateComputerModule());
-                mempoolSize = mempool.mempoolMaxSize();
+                mempoolConfig = Option.some(new RustMempoolConfig(mempool.mempoolMaxSize()));
               }
+              default -> throw new IllegalStateException(
+                  "Unexpected value: " + rev2Config.proposerConfig());
             }
-            install(new REv2StateManagerModule(mempoolSize));
+            install(new REv2StateManagerModule(mempoolConfig));
           }
         }
       }

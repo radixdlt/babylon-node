@@ -76,10 +76,12 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.MempoolRelayerModule;
+import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.messaging.MessagingModule;
 import com.radixdlt.modules.*;
 import com.radixdlt.networks.Addressing;
@@ -180,7 +182,8 @@ public final class RadixNodeModule extends AbstractModule {
 
     // State Computer
     var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
-    install(new REv2StateManagerModule(mempoolMaxSize));
+    var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
+    install(new REv2StateManagerModule(Option.some(mempoolConfig)));
     install(new MockedPersistenceStoreModule());
     install(new REv2StateComputerModule());
 

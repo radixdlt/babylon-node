@@ -72,9 +72,9 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
@@ -90,8 +90,7 @@ public class REv2StateComputerTest {
       Guice.createInjector(
           new CryptoModule(),
           new REv2StateComputerModule(),
-          new REv2StateManagerModule(100),
-          MempoolRelayConfig.of(1000).asModule(),
+          new REv2StateManagerModule(Option.none()),
           new AbstractModule() {
             @Override
             protected void configure() {

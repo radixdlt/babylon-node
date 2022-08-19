@@ -67,6 +67,7 @@ package com.radixdlt.rev2.modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
@@ -83,44 +84,27 @@ import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
 
 public final class REv2StateManagerModule extends AbstractModule {
-  private final int mempoolMaxSize;
+  private final Option<RustMempoolConfig> mempoolConfig;
 
-  public REv2StateManagerModule(int mempoolMaxSize) {
-    this.mempoolMaxSize = mempoolMaxSize;
+  public REv2StateManagerModule(Option<RustMempoolConfig> mempoolConfig) {
+    this.mempoolConfig = mempoolConfig;
   }
 
-  @Provides
-  @Singleton
-  StateManager stateManager() {
-    var mempoolConfig = new RustMempoolConfig(this.mempoolMaxSize);
-    return StateManager.createAndInitialize(
-        new StateManagerConfig(Option.some(mempoolConfig), new REv2DatabaseConfig.InMemory()));
-  }
-
-  @Provides
-  private MempoolReader mempoolRelayReader(RustStateComputer stateComputer) {
-    return stateComputer.getMempoolReader();
-  }
-
-  @Provides
-  private MempoolInserter<RawTransaction> mempoolInserter(RustStateComputer stateComputer) {
-    return stateComputer.getMempoolInserter();
-  }
-
-  @Provides
-  private REv2TransactionAndProofStore transactionAndProofStore(RustStateComputer stateComputer) {
-    return stateComputer.getTransactionAndProofStore();
-  }
-
-  @Provides
-  @Singleton
-  private RustStateComputer rEv2StateComputer(StateManager stateManager) {
-    return new RustStateComputer(stateManager.getRustState());
-  }
-
-  @Provides
-  public REv2StateReader stateReader(RustStateComputer rustStateComputer) {
-    return rustStateComputer::getComponentXrdAmount;
+  @Override
+  public void configure() {
+    var stateManager =
+        StateManager.createAndInitialize(
+            new StateManagerConfig(mempoolConfig, new REv2DatabaseConfig.InMemory()));
+    var stateComputer = new RustStateComputer(stateManager.getRustState());
+    bind(RustStateComputer.class).toInstance(stateComputer);
+    bind(REv2TransactionAndProofStore.class)
+        .toInstance(stateComputer.getTransactionAndProofStore());
+    bind(REv2StateReader.class).toInstance(stateComputer::getComponentXrdAmount);
+    if (mempoolConfig.isPresent()) {
+      bind(MempoolReader.class).toInstance(stateComputer.getMempoolReader());
+      bind(new TypeLiteral<MempoolInserter<RawTransaction>>() {})
+          .toInstance(stateComputer.getMempoolInserter());
+    }
   }
 
   @Provides

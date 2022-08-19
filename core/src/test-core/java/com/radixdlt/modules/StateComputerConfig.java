@@ -65,7 +65,6 @@
 package com.radixdlt.modules;
 
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
 
