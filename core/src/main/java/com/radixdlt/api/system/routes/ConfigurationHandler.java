@@ -109,6 +109,9 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
 
   @Override
   public SystemConfigurationResponse handleRequest() {
+    // TODO: Mempool MaxSize configuration needs to move to a separate handler or
+    // TODO: different handling mechanism. Set to 0 here for now so that Configuration
+    // TODO: API doesn't break.
     return new SystemConfigurationResponse()
         .bft(
             new BFTConfiguration()
