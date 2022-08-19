@@ -76,6 +76,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
@@ -98,9 +99,10 @@ public class MockedCryptoModule extends AbstractModule {
       byte[] concat = new byte[64];
       System.arraycopy(hash.asBytes(), 0, concat, 0, hash.asBytes().length);
       System.arraycopy(pubKey.getBytes(), 0, concat, 32, 32);
-      long hashCode = hashFunction.hashBytes(concat).asLong();
+      var hashCode = hashFunction.hashBytes(concat).asBytes();
       counters.increment(SystemCounters.CounterType.SIGNATURES_VERIFIED);
-      return sig.getR().longValue() == hashCode;
+      var hashCodeBI = new BigInteger(1, hashCode);
+      return sig.getR().equals(hashCodeBI);
     };
   }
 

@@ -62,71 +62,66 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
+package com.radixdlt.transaction;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import com.google.common.hash.HashCode;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.NativeCalls;
+import com.radixdlt.statemanager.StateManager.RustState;
+import com.radixdlt.utils.UInt64;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.transaction.TransactionStoreReader;
-import com.radixdlt.transactions.RawTransaction;
-import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Test;
-
-public class MempoolToLedgerTest {
-  private final SimulationTest.Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numNodes(4)
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  ConsensusConfig.of(1000),
-                  LedgerConfig.stateComputerNoSync(
-                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))))))
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered())
-          .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class);
-
-  @Test
-  public void sanity_test() {
-    // Arrange
-    var simulationTest = bftTestBuilder.build();
-
-    // Run
-    var runningTest = simulationTest.run();
-    final var checkResults = runningTest.awaitCompletion();
-
-    // Post-run assertions
-    assertThat(checkResults)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    var firstTransactions =
-        runningTest.getNetwork().getNodes().stream()
-            .map(
-                node -> {
-                  var store =
-                      runningTest.getNetwork().getInstance(TransactionStoreReader.class, node);
-                  var receipt = store.getTransactionAtStateVersion(1);
-                  var bytes = receipt.getTransactionBytes();
-                  return RawTransaction.create(bytes);
-                });
-    // All nodes have the same first transaction
-    assertThat(firstTransactions.distinct().count()).isEqualTo(1);
+public final class REv2TransactionAndProofStore {
+  public REv2TransactionAndProofStore(RustState rustState) {
+    Objects.requireNonNull(rustState);
+    this.getTransactionAtStateVersionFunc =
+        NativeCalls.Func1.with(
+            rustState,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            REv2TransactionAndProofStore::getTransactionAtStateVersion);
+    this.getNextProofFunc =
+        NativeCalls.Func1.with(
+            rustState,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            REv2TransactionAndProofStore::getNextProof);
+    this.getLastProofFunc =
+        NativeCalls.Func1.with(
+            rustState,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            REv2TransactionAndProofStore::getLastProof);
   }
+
+  public ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion) {
+    return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
+  }
+
+  public Optional<Tuple.Tuple2<List<HashCode>, byte[]>> getNextProof(long stateVersion) {
+    return this.getNextProofFunc.call(UInt64.fromNonNegativeLong(stateVersion)).toOptional();
+  }
+
+  public Optional<byte[]> getLastProof() {
+    return this.getLastProofFunc.call(Unit.unit()).toOptional();
+  }
+
+  private final NativeCalls.Func1<UInt64, ExecutedTransactionReceipt>
+      getTransactionAtStateVersionFunc;
+
+  private static native byte[] getTransactionAtStateVersion(RustState rustState, byte[] payload);
+
+  private final NativeCalls.Func1<UInt64, Option<Tuple.Tuple2<List<HashCode>, byte[]>>>
+      getNextProofFunc;
+
+  private static native byte[] getNextProof(RustState rustState, byte[] payload);
+
+  private final NativeCalls.Func1<Unit, Option<byte[]>> getLastProofFunc;
+
+  private static native byte[] getLastProof(RustState rustState, byte[] payload);
 }

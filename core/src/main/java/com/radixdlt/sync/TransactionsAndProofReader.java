@@ -62,6 +62,18 @@
  * permissions under this License.
  */
 
-mod in_memory_transaction_store;
+package com.radixdlt.sync;
 
-pub use in_memory_transaction_store::TransactionStore;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.DtoLedgerProof;
+import java.util.Optional;
+
+/** Reader of committed transactions */
+public interface TransactionsAndProofReader {
+  CommittedTransactionsWithProof getTransactions(DtoLedgerProof start);
+
+  Optional<LedgerProof> getEpochProof(long epoch);
+
+  Optional<LedgerProof> getLastProof();
+}

@@ -75,7 +75,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Compress;
 import java.io.FileInputStream;
@@ -91,7 +91,7 @@ public final class LedgerFileSync {
 
   /** Writes node's ledger sync data to a file. */
   public static void writeToFile(
-      String fileName, Serialization serialization, CommittedReader committedReader)
+      String fileName, Serialization serialization, TransactionsAndProofReader committedReader)
       throws IOException {
     final var initialProof = committedReader.getEpochProof(1L);
     final var endProofOpt = committedReader.getLastProof();
@@ -99,7 +99,7 @@ public final class LedgerFileSync {
       final var endProof = endProofOpt.get();
       try (var out = new FileOutputStream(fileName)) {
         var currentProof = initialProof.get();
-        var nextTransactions = committedReader.getNextCommittedTransactionRun(currentProof.toDto());
+        var nextTransactions = committedReader.getTransactions(currentProof.toDto());
         while (nextTransactions != null
             && nextTransactions.getProof().getStateVersion() <= endProof.getStateVersion()) {
           final var transactionsWithProofDto =
@@ -111,7 +111,7 @@ public final class LedgerFileSync {
           out.write(ByteBuffer.allocate(4).putInt(serialized.length).array());
           out.write(serialized);
           currentProof = nextTransactions.getProof();
-          nextTransactions = committedReader.getNextCommittedTransactionRun(currentProof.toDto());
+          nextTransactions = committedReader.getTransactions(currentProof.toDto());
         }
       }
     }

@@ -98,4 +98,5 @@ pub enum PreviewError {
 pub struct CommitRequest {
     pub transactions: Vec<Transaction>,
     pub state_version: u64,
+    pub proof: Vec<u8>,
 }

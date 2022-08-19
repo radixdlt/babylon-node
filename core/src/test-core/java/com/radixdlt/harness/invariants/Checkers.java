@@ -62,8 +62,75 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.harness.invariants;
 
-public interface TransactionStoreReader {
-  ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion);
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
+import com.google.inject.Injector;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.ExecutedTransactionReceipt;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import java.util.HashMap;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+/** Checkers for use with integration and simulation tests */
+public final class Checkers {
+  private static final Logger logger = LogManager.getLogger();
+
+  /** Verifies that all nodes have synced to atleast some given stateVersion */
+  public static void assertNodesSyncedToVersionAtleast(
+      List<Injector> nodeInjectors, long stateVersion) {
+    var stateVersionStatistics =
+        nodeInjectors.stream()
+            .mapToLong(
+                injector -> {
+                  var reader = injector.getInstance(TransactionsAndProofReader.class);
+                  var nodeStateVersion = reader.getLastProof().orElseThrow().getStateVersion();
+                  assertThat(nodeStateVersion).isGreaterThanOrEqualTo(stateVersion);
+                  return nodeStateVersion;
+                })
+            .summaryStatistics();
+
+    logger.info("StateVersionStats: {}", stateVersionStatistics);
+  }
+
+  /**
+   * Checks that a safety break has not occurred at the ledger transaction level. That is, all nodes
+   * should agree on the order and result of transaction execution.
+   */
+  public static void assertLedgerTransactionsSafety(List<Injector> nodeInjectors) {
+    var receipts = new HashMap<Long, ExecutedTransactionReceipt>();
+
+    for (var injector : nodeInjectors) {
+      var reader = injector.getInstance(TransactionsAndProofReader.class);
+      reader
+          .getLastProof()
+          .ifPresent(
+              proof -> {
+                var store = injector.getInstance(REv2TransactionAndProofStore.class);
+                for (long txnStateVersion = 1;
+                    txnStateVersion <= proof.getStateVersion();
+                    txnStateVersion++) {
+                  var receipt = store.getTransactionAtStateVersion(txnStateVersion);
+                  var curReceipt = receipts.get(txnStateVersion);
+                  if (curReceipt != null) {
+                    assertThat(curReceipt).isEqualTo(receipt);
+                  } else {
+                    receipts.put(txnStateVersion, receipt);
+                  }
+                }
+              });
+    }
+  }
+
+  public static void assertNoInvalidSyncResponses(List<Injector> nodeInjectors) {
+    for (var injector : nodeInjectors) {
+      var systemCounters = injector.getInstance(SystemCounters.class);
+      assertThat(systemCounters.get(SystemCounters.CounterType.SYNC_INVALID_RESPONSES_RECEIVED))
+          .isEqualTo(0);
+    }
+  }
 }

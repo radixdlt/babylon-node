@@ -62,32 +62,8 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+mod in_memory_proof_store;
+mod in_memory_transaction_store;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.sbor.NativeCalls;
-import com.radixdlt.statemanager.StateManager.RustState;
-import com.radixdlt.utils.UInt64;
-import java.util.Objects;
-
-public final class RustTransactionStore implements TransactionStoreReader {
-  public RustTransactionStore(RustState rustState) {
-    Objects.requireNonNull(rustState);
-    getTransactionAtStateVersionFunc =
-        NativeCalls.Func1.with(
-            rustState,
-            new TypeToken<>() {},
-            new TypeToken<>() {},
-            RustTransactionStore::getTransactionAtStateVersion);
-  }
-
-  @Override
-  public ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion) {
-    return getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
-  }
-
-  private final NativeCalls.Func1<UInt64, ExecutedTransactionReceipt>
-      getTransactionAtStateVersionFunc;
-
-  private static native byte[] getTransactionAtStateVersion(RustState rustState, byte[] payload);
-}
+pub use in_memory_proof_store::ProofStore;
+pub use in_memory_transaction_store::TransactionStore;

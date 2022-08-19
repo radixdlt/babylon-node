@@ -150,9 +150,7 @@ fn do_commit(
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
     let commit_request = CommitRequest::from_java(&request_payload)?;
 
-    state_manager
-        .state_manager
-        .commit(commit_request.transactions, commit_request.state_version);
+    state_manager.state_manager.commit(commit_request);
     Ok(())
 }
 

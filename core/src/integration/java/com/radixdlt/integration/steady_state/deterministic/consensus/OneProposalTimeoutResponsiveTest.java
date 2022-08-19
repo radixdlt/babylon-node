@@ -71,7 +71,9 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.Random;
@@ -80,29 +82,34 @@ import org.junit.Test;
 public class OneProposalTimeoutResponsiveTest {
   private final Random random = new Random(123456);
 
-  private void run(int numNodes, long numRounds, long dropPeriod) {
+  private void run(int numValidatorNodes, long numRounds, long dropPeriod) {
     DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numValidatorNodes, 0)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropSomeProposals(dropPeriod))
-            .buildWithoutEpochs(ConsensusConfig.of())
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    ConsensusConfig.of(),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                        StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
             .runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     long requiredIndirectParents =
-        numNodes <= 3
+        numValidatorNodes <= 3
             ? 0 // there are no indirect parents for 3 nodes (QC is always formed)
             : (numRounds - 1) / dropPeriod; // Edge case if dropPeriod a factor of numRounds
 
     long requiredTimeouts = numRounds / dropPeriod * 2;
 
     long timeoutQuorums =
-        numNodes <= 3
+        numValidatorNodes <= 3
             ? 0 // no timeout quorums for 3 nodes
             : requiredTimeouts / 2; // otherwise, every 2nd timeout forms a TC
 
-    for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
-      SystemCounters counters = test.getSystemCounters(nodeIndex);
+    for (int nodeIndex = 0; nodeIndex < numValidatorNodes; ++nodeIndex) {
+      SystemCounters counters = test.getInstance(nodeIndex, SystemCounters.class);
       long numberOfIndirectParents = counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
       long totalNumberOfTimeouts = counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
       long totalNumberOfTimeoutQuorums = counters.get(CounterType.BFT_TIMEOUT_QUORUMS);

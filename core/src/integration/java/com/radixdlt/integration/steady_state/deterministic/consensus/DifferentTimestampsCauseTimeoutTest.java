@@ -84,7 +84,9 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.DeterministicTest.DeterministicManualExecutor;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.utils.Pair;
 import java.util.Map;
 import java.util.Optional;
@@ -93,13 +95,18 @@ import org.junit.Test;
 public class DifferentTimestampsCauseTimeoutTest {
   @Test
   public void when_four_nodes_receive_qcs_with_same_timestamps__quorum_is_achieved() {
-    final int numNodes = 4;
+    final int numValidatorNodes = 4;
 
     DeterministicManualExecutor executor =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numValidatorNodes, 0)
             .messageMutator(mutateProposalsBy(0))
-            .buildWithoutEpochs(ConsensusConfig.of())
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    ConsensusConfig.of(),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                        StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
             .createExecutor();
 
     executor.start();
@@ -121,7 +128,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 
   @Test
   public void when_four_nodes_receive_qcs_with_different_timestamps__quorum_is_not_achieved() {
-    final int numNodes = 4;
+    final int numValidatorNodes = 4;
 
     // TODO: this test isn't exactly right and should be updated so that
     // TODO: byzantine node sends different sets of valid QCs to each node
@@ -135,9 +142,14 @@ public class DifferentTimestampsCauseTimeoutTest {
                     bind(HashSigner.class).toInstance(h -> ECDSASignature.zeroSignature());
                   }
                 })
-            .numNodes(numNodes)
+            .numNodes(numValidatorNodes, 0)
             .messageMutator(mutateProposalsBy(1))
-            .buildWithoutEpochs(ConsensusConfig.of())
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    ConsensusConfig.of(),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                        StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
             .createExecutor();
 
     executor.start();

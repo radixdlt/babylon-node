@@ -74,6 +74,8 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.rev1.RoundDetails;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.transactions.RawTransaction;
@@ -90,11 +92,15 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   private final RustStateComputer stateComputer;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
+  private final Serialization serialization;
 
   public REv2StateComputer(
-      RustStateComputer stateComputer, EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher) {
+      RustStateComputer stateComputer,
+      EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
+      Serialization serialization) {
     this.stateComputer = stateComputer;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
+    this.serialization = serialization;
   }
 
   @Override
@@ -144,8 +150,10 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   @Override
   public void commit(
       CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
+    var proofBytes = serialization.toDson(txnsAndProof.getProof(), DsonOutput.Output.ALL);
     var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
-    var commitRequest = new CommitRequest(txnsAndProof.getTransactions(), stateVersion);
+    var commitRequest = new CommitRequest(txnsAndProof.getTransactions(), stateVersion, proofBytes);
+
     stateComputer.commit(commitRequest);
 
     var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());

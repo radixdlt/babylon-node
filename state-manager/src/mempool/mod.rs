@@ -68,7 +68,7 @@ use crate::types::Transaction;
 use std::string::ToString;
 use transaction::errors::TransactionValidationError;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum MempoolError {
     Full { current_size: u64, max_size: u64 },
     Duplicate,

@@ -73,7 +73,7 @@ import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.store.BerkeleyAdditionalStore;
 import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.TransactionsAndProofReader;
 
 public class RadixEngineStoreModule extends AbstractModule {
   @Override
@@ -82,7 +82,7 @@ public class RadixEngineStoreModule extends AbstractModule {
     bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {})
         .to(BerkeleyLedgerEntryStore.class)
         .in(Scopes.SINGLETON);
-    bind(CommittedReader.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
+    bind(TransactionsAndProofReader.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
     bind(ForksEpochStore.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
     Multibinder.newSetBinder(binder(), BerkeleyAdditionalStore.class);
   }

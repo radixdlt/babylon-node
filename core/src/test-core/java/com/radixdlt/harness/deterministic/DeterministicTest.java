@@ -65,9 +65,8 @@
 package com.radixdlt.harness.deterministic;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
+import com.google.inject.*;
 import com.google.inject.Module;
-import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
@@ -92,18 +91,19 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.MempoolType;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochMaxRound;
-import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.KeyComparator;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Function;
@@ -133,6 +133,9 @@ public final class DeterministicTest {
   public static class Builder {
     private ImmutableList<BFTNode> nodes =
         ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
+    private ImmutableList<BFTNode> initialValidatorNodes =
+        ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
+
     private MessageSelector messageSelector = MessageSelector.firstSelector();
     private MessageMutator messageMutator = MessageMutator.nothing();
     private Function<Long, IntStream> epochToNodeIndexesMapping;
@@ -144,14 +147,17 @@ public final class DeterministicTest {
       // Nothing to do here
     }
 
-    public Builder numNodes(int numNodes) {
+    public Builder numNodes(int numInitialValidators, int numFullNodes) {
       this.nodes =
-          Stream.generate(ECKeyPair::generateNew)
-              .limit(numNodes)
+          PrivateKeys.numeric(1)
+              .limit(numFullNodes + numInitialValidators)
               .map(ECKeyPair::getPublicKey)
               .sorted(KeyComparator.instance())
               .map(BFTNode::create)
               .collect(ImmutableList.toImmutableList());
+      this.initialValidatorNodes =
+          this.nodes.stream().limit(numInitialValidators).collect(ImmutableList.toImmutableList());
+
       return this;
     }
 
@@ -165,6 +171,11 @@ public final class DeterministicTest {
     public Builder overrideWithIncorrectModule(Module module) {
       this.overrideModule = module;
       return this;
+    }
+
+    public DeterministicTest functionalNodeModule(FunctionalRadixNodeModule module) {
+      modules.add(module);
+      return build(false);
     }
 
     public Builder epochNodeIndexesMapping(Function<Long, IntStream> epochToNodeIndexesMapping) {
@@ -217,15 +228,6 @@ public final class DeterministicTest {
       return build(true);
     }
 
-    public DeterministicTest buildWithoutEpochs(ConsensusConfig consensusConfig) {
-      modules.add(
-          new FunctionalRadixNodeModule(
-              false,
-              consensusConfig,
-              LedgerConfig.stateComputerNoSync(StateComputerConfig.mocked(MempoolType.NONE))));
-      return build(false);
-    }
-
     private DeterministicTest build(boolean withEpoch) {
       modules.add(
           new AbstractModule() {
@@ -242,7 +244,8 @@ public final class DeterministicTest {
 
       MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder =
           new MockedConsensusRecoveryModule.Builder(withEpoch);
-      mockedConsensusRecoveryModuleBuilder.withNodes(nodes);
+      mockedConsensusRecoveryModuleBuilder.withNodes(initialValidatorNodes);
+
       if (this.epochNodeWeightMapping != null) {
         mockedConsensusRecoveryModuleBuilder.withEpochNodeWeightMapping(
             this.epochNodeWeightMapping);
@@ -289,6 +292,10 @@ public final class DeterministicTest {
 
   public DeterministicNodes getNodes() {
     return this.nodes;
+  }
+
+  public List<Injector> getNodeInjectors() {
+    return this.nodes.getNodeInjectors();
   }
 
   public interface DeterministicManualExecutor {
@@ -406,8 +413,12 @@ public final class DeterministicTest {
     };
   }
 
-  public SystemCounters getSystemCounters(int nodeIndex) {
-    return this.nodes.getSystemCounters(nodeIndex);
+  public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {
+    return this.nodes.getInstance(nodeIndex, instanceClass);
+  }
+
+  public <T> T getInstance(int nodeIndex, Key<T> key) {
+    return this.nodes.getInstance(nodeIndex, key);
   }
 
   public int numNodes() {

@@ -126,7 +126,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.substate.*;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
@@ -187,7 +187,7 @@ public class RadixEngineStateComputerTest {
         install(new ForksModule());
 
         // HACK
-        bind(CommittedReader.class).toInstance(new NoOpCommittedReader());
+        bind(TransactionsAndProofReader.class).toInstance(new NoOpCommittedReader());
         bind(ForksEpochStore.class).toInstance(new NoOpForksEpochStore());
 
         bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);

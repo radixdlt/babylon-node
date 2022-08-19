@@ -69,6 +69,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.rev2.REv2StateComputer;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 
 public class REv2StateComputerModule extends AbstractModule {
@@ -81,7 +82,9 @@ public class REv2StateComputerModule extends AbstractModule {
   @Provides
   @Singleton
   public REv2StateComputer stateComputer(
-      RustStateComputer rustStateComputer, EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher) {
-    return new REv2StateComputer(rustStateComputer, ledgerUpdateDispatcher);
+      RustStateComputer rustStateComputer,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      Serialization serialization) {
+    return new REv2StateComputer(rustStateComputer, ledgerUpdateDispatcher, serialization);
   }
 }

@@ -121,14 +121,15 @@ import com.radixdlt.rev1.forks.NoOpForksEpochStore;
 import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
 import com.radixdlt.rev1.modules.LedgerRecoveryModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
-import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -143,7 +144,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /** High level BFT Simulation Test Runner */
 public final class SimulationTest {
@@ -239,9 +239,7 @@ public final class SimulationTest {
      */
     public Builder numNodes(int numNodes, Iterable<UInt256> initialStakes) {
       this.initialNodes =
-          Stream.generate(ECKeyPair::generateNew)
-              .limit(numNodes)
-              .collect(ImmutableList.toImmutableList());
+          PrivateKeys.numeric(1).limit(numNodes).collect(ImmutableList.toImmutableList());
 
       final var stakesIterator = repeatLast(initialStakes);
       final var initialStakesMap =
@@ -368,11 +366,10 @@ public final class SimulationTest {
             }
 
             @Provides
-            CommittedReader committedReader() {
-              return new CommittedReader() {
+            TransactionsAndProofReader committedReader() {
+              return new TransactionsAndProofReader() {
                 @Override
-                public CommittedTransactionsWithProof getNextCommittedTransactionRun(
-                    DtoLedgerProof start) {
+                public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
                   return null;
                 }
 
@@ -505,7 +502,7 @@ public final class SimulationTest {
                         Amount.ofTokens(10000)));
                 bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
                 bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-                bind(CommittedReader.class).toInstance(new NoOpCommittedReader());
+                bind(TransactionsAndProofReader.class).toInstance(new NoOpCommittedReader());
                 bind(ForksEpochStore.class).toInstance(new NoOpForksEpochStore());
               }
 
@@ -551,7 +548,7 @@ public final class SimulationTest {
 
       // Runners
       modules.add(new RxEnvironmentModule());
-      if (this.functionalNodeModule.supportsSync()) {
+      if (this.functionalNodeModule.supportsSync() && !this.functionalNodeModule.supportsREv2()) {
         modules.add(new InMemoryCommittedReaderModule());
         modules.add(new InMemoryForksEpochStoreModule());
       }
@@ -715,6 +712,10 @@ public final class SimulationTest {
 
     public SimulationNodes.RunningNetwork getNetwork() {
       return network;
+    }
+
+    public List<Injector> getNodeInjectors() {
+      return network.getNodes().stream().map(network::getNodeInjector).collect(Collectors.toList());
     }
 
     public Map<Monitor, Optional<TestInvariantError>> awaitCompletion() {

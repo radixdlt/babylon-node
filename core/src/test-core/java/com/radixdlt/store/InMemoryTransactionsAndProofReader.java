@@ -62,56 +62,102 @@
  * permissions under this License.
  */
 
-use radix_engine::transaction::{TransactionReceipt, TransactionStatus};
-use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
-use std::collections::BTreeMap;
+package com.radixdlt.store;
 
-/// TODO: Remove and use the real TransactionReceipt. This is currently a required struct
-/// TODO: as there is RC<RefCell<>> useage in some of the substates which does not play well
-/// TODO: with the babylon node multithreaded structures.
-#[derive(Debug)]
-pub struct TemporaryTransactionReceipt {
-    pub result: String,
-    pub new_package_addresses: Vec<PackageAddress>,
-    pub new_component_addresses: Vec<ComponentAddress>,
-    pub new_resource_addresses: Vec<ResourceAddress>,
-}
+import com.google.inject.Inject;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.DtoLedgerProof;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transactions.RawTransaction;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.TreeMap;
 
-#[derive(Debug)]
-pub struct TransactionStore {
-    in_memory_store: BTreeMap<u64, (Vec<u8>, TemporaryTransactionReceipt)>,
-}
+/** A correct in memory committed reader used for testing */
+public final class InMemoryTransactionsAndProofReader implements TransactionsAndProofReader {
+  public static final class Store {
+    final TreeMap<Long, CommittedTransactionsWithProof> committedTransactionRuns = new TreeMap<>();
+    final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
+  }
 
-impl TransactionStore {
-    pub fn new() -> TransactionStore {
-        TransactionStore {
-            in_memory_store: BTreeMap::new(),
+  private final Object lock = new Object();
+  private final LedgerAccumulatorVerifier accumulatorVerifier;
+  private final Store store;
+
+  @Inject
+  InMemoryTransactionsAndProofReader(LedgerAccumulatorVerifier accumulatorVerifier, Store store) {
+    this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
+    this.store = store;
+  }
+
+  @SuppressWarnings("unchecked")
+  public EventProcessor<LedgerUpdate> updateProcessor() {
+    return update -> {
+      synchronized (lock) {
+        var transactions = update.getNewTransactions();
+        long firstVersion = update.getTail().getStateVersion() - transactions.size() + 1;
+        for (long version = firstVersion;
+            version <= update.getTail().getStateVersion();
+            version++) {
+          int index = (int) (version - firstVersion);
+          store.committedTransactionRuns.put(
+              version,
+              CommittedTransactionsWithProof.create(
+                  transactions.subList(index, transactions.size()), update.getTail()));
         }
-    }
 
-    pub fn insert_transaction(
-        &mut self,
-        state_version: u64,
-        transaction_data: Vec<u8>,
-        receipt: TransactionReceipt,
-    ) {
-        let receipt = TemporaryTransactionReceipt {
-            result: match receipt.status {
-                TransactionStatus::Succeeded(..) => "Success".to_string(),
-                TransactionStatus::Failed(error) => error.to_string(),
-                TransactionStatus::Rejected => "Rejected".to_string(),
-            },
-            new_package_addresses: receipt.new_package_addresses,
-            new_component_addresses: receipt.new_component_addresses,
-            new_resource_addresses: receipt.new_resource_addresses,
-        };
-        self.in_memory_store
-            .insert(state_version, (transaction_data, receipt));
-    }
+        if (update.getTail().isEndOfEpoch()) {
+          final var nextEpoch = update.getTail().getNextEpoch();
+          this.store.epochProofs.put(nextEpoch, update.getTail());
+        }
+      }
+    };
+  }
 
-    pub fn get_transaction(&self, state_version: u64) -> &(Vec<u8>, TemporaryTransactionReceipt) {
-        self.in_memory_store
-            .get(&state_version)
-            .expect("State version missing")
+  @Override
+  public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
+    synchronized (lock) {
+      final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+      Entry<Long, CommittedTransactionsWithProof> entry =
+          store.committedTransactionRuns.higherEntry(stateVersion);
+
+      if (entry != null) {
+        List<RawTransaction> transactions =
+            accumulatorVerifier
+                .verifyAndGetExtension(
+                    start.getLedgerHeader().getAccumulatorState(),
+                    entry.getValue().getTransactions(),
+                    RawTransaction::getPayloadHash,
+                    entry.getValue().getProof().getAccumulatorState())
+                .orElseThrow(() -> new RuntimeException());
+
+        return CommittedTransactionsWithProof.create(transactions, entry.getValue().getProof());
+      }
+
+      return null;
     }
+  }
+
+  @Override
+  public Optional<LedgerProof> getEpochProof(long epoch) {
+    synchronized (lock) {
+      return Optional.ofNullable(store.epochProofs.get(epoch));
+    }
+  }
+
+  @Override
+  public Optional<LedgerProof> getLastProof() {
+    return Optional.ofNullable(store.committedTransactionRuns.lastEntry())
+        .map(p -> p.getValue().getProof());
+  }
+
+  public Store getStore() {
+    return store;
+  }
 }

@@ -74,7 +74,10 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -85,19 +88,25 @@ import org.junit.Test;
 
 public class ProposerLoadBalancedTest {
 
-  private ImmutableList<Long> run(int numNodes, long numRounds, EpochNodeWeightMapping mapping) {
+  private ImmutableList<Long> run(
+      int numValidatorNodes, long numRounds, EpochNodeWeightMapping mapping) {
 
     DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numValidatorNodes, 0)
             .messageSelector(MessageSelector.firstSelector())
             .messageMutator(mutator())
             .epochNodeWeightMapping(mapping)
-            .buildWithoutEpochs(ConsensusConfig.of())
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    ConsensusConfig.of(),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                        StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
             .runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
-    return IntStream.range(0, numNodes)
-        .mapToObj(test::getSystemCounters)
+    return IntStream.range(0, numValidatorNodes)
+        .mapToObj(i -> test.getInstance(i, SystemCounters.class))
         .map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
         .collect(ImmutableList.toImmutableList());
   }

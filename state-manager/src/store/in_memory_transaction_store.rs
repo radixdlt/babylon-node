@@ -62,73 +62,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.consensus;
+use crate::types::{TId, Transaction};
+use radix_engine::transaction::{TransactionReceipt, TransactionStatus};
+use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
+use std::collections::HashMap;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.junit.Assert.assertEquals;
+/// TODO: Remove and use the real TransactionReceipt. This is currently a required struct
+/// TODO: as there is RC<RefCell<>> useage in some of the substates which does not play well
+/// TODO: with the babylon node multithreaded structures.
+#[derive(Debug)]
+pub struct TemporaryTransactionReceipt {
+    pub result: String,
+    pub new_package_addresses: Vec<PackageAddress>,
+    pub new_component_addresses: Vec<ComponentAddress>,
+    pub new_resource_addresses: Vec<ResourceAddress>,
+}
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.IntStream;
-import org.assertj.core.api.Condition;
-import org.junit.Test;
+#[derive(Debug)]
+pub struct TransactionStore {
+    in_memory_store: HashMap<TId, (Vec<u8>, TemporaryTransactionReceipt)>,
+}
 
-public class RandomChannelOrderResponsiveTest {
+impl TransactionStore {
+    pub fn new() -> TransactionStore {
+        TransactionStore {
+            in_memory_store: HashMap::new(),
+        }
+    }
 
-  private void run(int numValidatorNodes, long roundsToRun) {
-    assertEquals(0, roundsToRun % numValidatorNodes);
+    pub fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
+        for (txn, receipt) in transactions {
+            self.insert_transaction(txn, receipt);
+        }
+    }
 
-    final Random random = new Random(12345);
+    fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
+        let receipt = TemporaryTransactionReceipt {
+            result: match receipt.status {
+                TransactionStatus::Succeeded(..) => "Success".to_string(),
+                TransactionStatus::Failed(error) => error.to_string(),
+                TransactionStatus::Rejected => "Rejected".to_string(),
+            },
+            new_package_addresses: receipt.new_package_addresses,
+            new_component_addresses: receipt.new_component_addresses,
+            new_resource_addresses: receipt.new_resource_addresses,
+        };
+        self.in_memory_store.insert(
+            transaction.id.clone(),
+            (transaction.payload.clone(), receipt),
+        );
+    }
 
-    DeterministicTest test =
-        DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
-            .messageSelector(MessageSelector.randomSelector(random))
-            .messageMutator(MessageMutator.dropTimeouts())
-            .functionalNodeModule(
-                new FunctionalRadixNodeModule(
-                    false,
-                    ConsensusConfig.of(),
-                    FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
-            .runUntil(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
-
-    List<Long> proposalsMade =
-        IntStream.range(0, numValidatorNodes)
-            .mapToObj(i -> test.getInstance(i, SystemCounters.class))
-            .map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
-            .collect(ImmutableList.toImmutableList());
-
-    final long numRounds = roundsToRun / numValidatorNodes;
-
-    assertThat(proposalsMade)
-        .hasSize(numValidatorNodes)
-        .areAtLeast(
-            numValidatorNodes - 1,
-            new Condition<>(l -> l == numRounds, "has as many proposals as rounds"))
-        // the last round in the epoch doesn't have a proposal
-        .areAtMost(1, new Condition<>(l -> l == numRounds - 1, "has one less proposal"));
-  }
-
-  @Test
-  public void
-      when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-    run(4, 4 * 25000L);
-  }
-
-  @Test
-  public void
-      when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-    run(100, 100 * 5L);
-  }
+    pub fn get_transaction(&self, tid: &TId) -> &(Vec<u8>, TemporaryTransactionReceipt) {
+        self.in_memory_store.get(tid).expect("Transaction missing")
+    }
 }

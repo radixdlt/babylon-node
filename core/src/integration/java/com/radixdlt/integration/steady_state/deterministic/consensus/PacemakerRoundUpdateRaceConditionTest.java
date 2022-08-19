@@ -80,7 +80,9 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.utils.KeyComparator;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -101,7 +103,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
 
   private static final Random random = new Random(123456);
 
-  private static final int numNodes = 4;
+  private static final int numValidatorNodes = 4;
   private static final int nodeUnderTestIndex = 2; // leader for round 2
   private static final long pacemakerTimeout = 1000L;
   private static final long additionalMessageDelay = pacemakerTimeout + 1000L;
@@ -110,7 +112,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
   public void test_pacemaker_round_update_race_condition() {
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numValidatorNodes, 0)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(messUpMessagesForNodeUnderTest())
             .overrideWithIncorrectModule(
@@ -148,10 +150,15 @@ public class PacemakerRoundUpdateRaceConditionTest {
                         sortedValidators.get(((int) round.number() - 1) % sortedValidators.size());
                   }
                 })
-            .buildWithoutEpochs(ConsensusConfig.of(pacemakerTimeout))
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    ConsensusConfig.of(pacemakerTimeout),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                        StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
             .runUntil(nodeUnderTestReachesRound(Round.of(3)));
 
-    final var counters = test.getSystemCounters(nodeUnderTestIndex);
+    final var counters = test.getInstance(nodeUnderTestIndex, SystemCounters.class);
     assertThat(counters.get(SystemCounters.CounterType.BFT_VOTE_QUORUMS))
         .isEqualTo(2); // ensure that quorum was formed
     assertThat(counters.get(SystemCounters.CounterType.BFT_PACEMAKER_TIMEOUTS_SENT))

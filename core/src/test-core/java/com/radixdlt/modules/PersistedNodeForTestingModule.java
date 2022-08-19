@@ -79,6 +79,7 @@ import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
 import com.radixdlt.rev1.modules.LedgerRecoveryModule;
 import com.radixdlt.rev1.modules.PersistenceModule;
 import com.radixdlt.rev1.modules.RadixEngineStoreModule;
+import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.utils.TimeSupplier;
@@ -117,8 +118,6 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
             FunctionalRadixNodeModule.ConsensusConfig.of(200, 1000L, 2.0),
             stateComputerConfig,
             new SyncConfig(500, 10, 3000, 10, Long.MAX_VALUE)));
-    install(new RadixEngineStoreModule());
-    install(new PersistenceModule());
     switch (stateComputerConfig) {
       case StateComputerConfig.REv2StateComputerConfig unused -> {
         // FIXME: a hack for tests that use rev2 (api); fix once ledger/consensus recovery are
@@ -128,8 +127,11 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
             new MockedConsensusRecoveryModule.Builder()
                 .withNodes(List.of(BFTNode.random()))
                 .build());
+        install(new MockedPersistenceStoreModule());
       }
       default -> {
+        install(new PersistenceModule());
+        install(new RadixEngineStoreModule());
         install(new LedgerRecoveryModule());
         install(new ConsensusRecoveryModule());
       }

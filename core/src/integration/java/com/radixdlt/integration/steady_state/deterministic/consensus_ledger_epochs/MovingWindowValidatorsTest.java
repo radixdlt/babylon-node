@@ -97,7 +97,7 @@ public class MovingWindowValidatorsTest {
   private void run(int numNodes, int windowSize, long maxEpoch, Round epochMaxRound) {
     DeterministicTest bftTest =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numNodes, 0)
             .messageMutator(mutator())
             .messageSelector(firstSelector())
             .epochNodeIndexesMapping(windowedEpochToNodesMapper(windowSize, numNodes))
@@ -174,7 +174,7 @@ public class MovingWindowValidatorsTest {
 
   private static LinkedList<SystemCounters> systemCounters(DeterministicTest bftTest) {
     return IntStream.range(0, bftTest.numNodes())
-        .mapToObj(bftTest::getSystemCounters)
+        .mapToObj(i -> bftTest.getInstance(i, SystemCounters.class))
         .collect(Collectors.toCollection(LinkedList::new));
   }
 

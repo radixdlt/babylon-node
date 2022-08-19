@@ -62,73 +62,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.consensus;
+use crate::types::TId;
+use std::collections::BTreeMap;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.junit.Assert.assertEquals;
+#[derive(Debug)]
+pub struct ProofStore {
+    in_memory_proof_store: BTreeMap<u64, Vec<u8>>,
+    in_memory_txid_store: BTreeMap<u64, TId>,
+}
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.IntStream;
-import org.assertj.core.api.Condition;
-import org.junit.Test;
+impl ProofStore {
+    pub fn new() -> Self {
+        ProofStore {
+            in_memory_proof_store: BTreeMap::new(),
+            in_memory_txid_store: BTreeMap::new(),
+        }
+    }
 
-public class RandomChannelOrderResponsiveTest {
+    pub fn insert_tids_and_proof(
+        &mut self,
+        state_version: u64,
+        ids: Vec<TId>,
+        proof_bytes: Vec<u8>,
+    ) {
+        let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
+        for (index, id) in ids.into_iter().enumerate() {
+            let txn_state_version = first_state_version + index as u64;
+            self.in_memory_txid_store.insert(txn_state_version, id);
+        }
 
-  private void run(int numValidatorNodes, long roundsToRun) {
-    assertEquals(0, roundsToRun % numValidatorNodes);
+        self.in_memory_proof_store
+            .insert(state_version, proof_bytes);
+    }
 
-    final Random random = new Random(12345);
+    pub fn get_tid(&self, state_version: u64) -> TId {
+        self.in_memory_txid_store
+            .get(&state_version)
+            .cloned()
+            .unwrap()
+    }
 
-    DeterministicTest test =
-        DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
-            .messageSelector(MessageSelector.randomSelector(random))
-            .messageMutator(MessageMutator.dropTimeouts())
-            .functionalNodeModule(
-                new FunctionalRadixNodeModule(
-                    false,
-                    ConsensusConfig.of(),
-                    FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
-            .runUntil(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
+    /// Returns the next proof from a state version (excluded)
+    pub fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
+        let next_state_version = state_version + 1;
+        self.in_memory_proof_store
+            .range(next_state_version..)
+            .next()
+            .map(|(v, proof)| {
+                let mut ids = Vec::new();
+                for (_, id) in self.in_memory_txid_store.range(next_state_version..=*v) {
+                    ids.push(id.clone());
+                }
+                (ids, proof.clone())
+            })
+    }
 
-    List<Long> proposalsMade =
-        IntStream.range(0, numValidatorNodes)
-            .mapToObj(i -> test.getInstance(i, SystemCounters.class))
-            .map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
-            .collect(ImmutableList.toImmutableList());
-
-    final long numRounds = roundsToRun / numValidatorNodes;
-
-    assertThat(proposalsMade)
-        .hasSize(numValidatorNodes)
-        .areAtLeast(
-            numValidatorNodes - 1,
-            new Condition<>(l -> l == numRounds, "has as many proposals as rounds"))
-        // the last round in the epoch doesn't have a proposal
-        .areAtMost(1, new Condition<>(l -> l == numRounds - 1, "has one less proposal"));
-  }
-
-  @Test
-  public void
-      when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-    run(4, 4 * 25000L);
-  }
-
-  @Test
-  public void
-      when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-    run(100, 100 * 5L);
-  }
+    pub fn get_last_proof(&self) -> Option<Vec<u8>> {
+        self.in_memory_proof_store
+            .iter()
+            .next_back()
+            .map(|(_, bytes)| bytes.clone())
+    }
 }

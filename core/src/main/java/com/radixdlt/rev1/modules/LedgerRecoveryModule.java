@@ -86,7 +86,7 @@ import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LastStoredProof;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.Optional;
 
 /** Recovery for ledger */
@@ -97,7 +97,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
   LedgerProof lastStoredProof(
       // TODO: Remove this by moving the genesis committedDispatcher.dispatch to getRadixEngine
       RadixEngine<LedgerAndBFTProof> radixEngine,
-      CommittedReader committedReader,
+      TransactionsAndProofReader committedReader,
       @Genesis CommittedTransactionsWithProof genesis,
       EventDispatcher<REOutput> committedDispatcher // FIXME: this is hack so client can get genesis
       ) {
@@ -134,7 +134,7 @@ public final class LedgerRecoveryModule extends AbstractModule {
   @Singleton
   @LastEpochProof
   LedgerProof lastEpochProof(
-      CommittedReader committedReader, @LastStoredProof LedgerProof lastStoredProof) {
+      TransactionsAndProofReader committedReader, @LastStoredProof LedgerProof lastStoredProof) {
     if (lastStoredProof.isEndOfEpoch()) {
       return lastStoredProof;
     }

@@ -98,7 +98,7 @@ public final class RemoteSyncService {
 
   private final PeersView peersView;
   private final LocalSyncService localSyncService; // TODO: consider removing this dependency
-  private final CommittedReader committedReader;
+  private final TransactionsAndProofReader committedReader;
   private final RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
   private final RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
   private final RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher;
@@ -113,7 +113,7 @@ public final class RemoteSyncService {
   public RemoteSyncService(
       PeersView peersView,
       LocalSyncService localSyncService,
-      CommittedReader committedReader,
+      TransactionsAndProofReader committedReader,
       RemoteEventDispatcher<StatusResponse> statusResponseDispatcher,
       RemoteEventDispatcher<SyncResponse> syncResponseDispatcher,
       RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher,
@@ -169,7 +169,7 @@ public final class RemoteSyncService {
 
   private CommittedTransactionsWithProof getTransactionsWithProofForSyncRequest(
       DtoLedgerProof startHeader) {
-    return committedReader.getNextCommittedTransactionRun(startHeader);
+    return committedReader.getTransactions(startHeader);
   }
 
   public RemoteEventProcessor<StatusRequest> statusRequestEventProcessor() {

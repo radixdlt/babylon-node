@@ -68,7 +68,9 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /** Receipt for a transaction which has been executed */
 public final class ExecutedTransactionReceipt {
@@ -106,5 +108,22 @@ public final class ExecutedTransactionReceipt {
 
   public List<ComponentAddress> getNewComponentAddresses() {
     return newComponentAddresses;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    ExecutedTransactionReceipt receipt = (ExecutedTransactionReceipt) o;
+    return Objects.equals(result, receipt.result)
+        && Arrays.equals(transactionBytes, receipt.transactionBytes)
+        && Objects.equals(newComponentAddresses, receipt.newComponentAddresses);
+  }
+
+  @Override
+  public int hashCode() {
+    int result1 = Objects.hash(result, newComponentAddresses);
+    result1 = 31 * result1 + Arrays.hashCode(transactionBytes);
+    return result1;
   }
 }

@@ -62,102 +62,55 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.integration.steady_state.deterministic.rev2_consensus_mempool_ledger_sync;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.CommittedReader;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+
+import com.google.inject.*;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
+import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.transactions.RawTransaction;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.TreeMap;
+import org.junit.Test;
 
-/** A correct in memory committed reader used for testing */
-public final class InMemoryCommittedReader implements CommittedReader {
-  public static final class Store {
-    final TreeMap<Long, CommittedTransactionsWithProof> committedTransactionRuns = new TreeMap<>();
-    final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
-  }
+public final class SanityTest {
+  private final DeterministicTest test =
+      DeterministicTest.builder()
+          .numNodes(10, 10)
+          .messageSelector(firstSelector())
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  ConsensusConfig.of(1000),
+                  LedgerConfig.stateComputerWithSync(
+                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))),
+                      SyncConfig.of(5000, 10, 3000L))));
 
-  private final Object lock = new Object();
-  private final LedgerAccumulatorVerifier accumulatorVerifier;
-  private final Store store;
+  private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
 
-  @Inject
-  InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier, Store store) {
-    this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
-    this.store = store;
-  }
-
-  @SuppressWarnings("unchecked")
-  public EventProcessor<LedgerUpdate> updateProcessor() {
-    return update -> {
-      synchronized (lock) {
-        var transactions = update.getNewTransactions();
-        long firstVersion = update.getTail().getStateVersion() - transactions.size() + 1;
-        for (long version = firstVersion;
-            version <= update.getTail().getStateVersion();
-            version++) {
-          int index = (int) (version - firstVersion);
-          store.committedTransactionRuns.put(
-              version,
-              CommittedTransactionsWithProof.create(
-                  transactions.subList(index, transactions.size()), update.getTail()));
-        }
-
-        if (update.getTail().isEndOfEpoch()) {
-          final var nextEpoch = update.getTail().getNextEpoch();
-          this.store.epochProofs.put(nextEpoch, update.getTail());
-        }
-      }
-    };
-  }
-
-  @Override
-  public CommittedTransactionsWithProof getNextCommittedTransactionRun(DtoLedgerProof start) {
-    synchronized (lock) {
-      final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-      Entry<Long, CommittedTransactionsWithProof> entry =
-          store.committedTransactionRuns.higherEntry(stateVersion);
-
-      if (entry != null) {
-        List<RawTransaction> transactions =
-            accumulatorVerifier
-                .verifyAndGetExtension(
-                    start.getLedgerHeader().getAccumulatorState(),
-                    entry.getValue().getTransactions(),
-                    RawTransaction::getPayloadHash,
-                    entry.getValue().getProof().getAccumulatorState())
-                .orElseThrow(() -> new RuntimeException());
-
-        return CommittedTransactionsWithProof.create(transactions, entry.getValue().getProof());
-      }
-
-      return null;
+  @Test
+  public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() throws Exception {
+    // Run
+    for (int i = 0; i < 100; i++) {
+      test.runForCount(1000);
+      var mempoolInserter =
+          test.getInstance(
+              i % test.numNodes(), Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+      mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
     }
-  }
 
-  @Override
-  public Optional<LedgerProof> getEpochProof(long epoch) {
-    synchronized (lock) {
-      return Optional.ofNullable(store.epochProofs.get(epoch));
-    }
-  }
-
-  @Override
-  public Optional<LedgerProof> getLastProof() {
-    return Optional.ofNullable(store.committedTransactionRuns.lastEntry())
-        .map(p -> p.getValue().getProof());
-  }
-
-  public Store getStore() {
-    return store;
+    // Post-run assertions
+    Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
+    Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
+    Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
   }
 }
