@@ -87,7 +87,6 @@ import com.radixdlt.rev1.ReV1DispatcherModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
 import com.radixdlt.rev2.modules.MockedSyncServiceModule;
-import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.REv2StatelessComputerModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
@@ -285,23 +284,25 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           }
           case REv2StateComputerConfig rev2Config -> {
             final Option<RustMempoolConfig> mempoolConfig;
+            final boolean ledger;
             switch (rev2Config.proposerConfig()) {
               case REV2ProposerConfig.Generated generated -> {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
                 install(new REv2StatelessComputerModule());
                 mempoolConfig = Option.none();
+                ledger = false;
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule());
                 install(new MempoolReceiverModule());
                 install(mempool.config().asModule());
-                install(new REv2StateComputerModule());
                 mempoolConfig = Option.some(new RustMempoolConfig(mempool.mempoolMaxSize()));
+                ledger = true;
               }
               default -> throw new IllegalStateException(
                   "Unexpected value: " + rev2Config.proposerConfig());
             }
-            install(new REv2StateManagerModule(mempoolConfig));
+            install(new REv2StateManagerModule(mempoolConfig, ledger));
           }
         }
       }

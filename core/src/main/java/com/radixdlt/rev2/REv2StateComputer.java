@@ -65,6 +65,7 @@
 package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
@@ -95,6 +96,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
   private final Serialization serialization;
 
+  @Inject
   public REv2StateComputer(
       RustStateComputer stateComputer,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,

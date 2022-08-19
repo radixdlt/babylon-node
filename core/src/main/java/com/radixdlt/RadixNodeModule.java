@@ -90,7 +90,6 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
-import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncConfig;
@@ -183,9 +182,8 @@ public final class RadixNodeModule extends AbstractModule {
     // State Computer
     var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
-    install(new REv2StateManagerModule(Option.some(mempoolConfig)));
+    install(new REv2StateManagerModule(Option.some(mempoolConfig), true));
     install(new MockedPersistenceStoreModule());
-    install(new REv2StateComputerModule());
 
     // Storage
     install(new DatabasePropertiesModule());

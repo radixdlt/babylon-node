@@ -64,17 +64,15 @@
 
 package com.radixdlt.rev2.modules;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.radixdlt.lang.Option;
+import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.rev2.REv2StateComputer;
 import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.REv2TransactionsAndProofReader;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
@@ -85,9 +83,11 @@ import com.radixdlt.transactions.RawTransaction;
 
 public final class REv2StateManagerModule extends AbstractModule {
   private final Option<RustMempoolConfig> mempoolConfig;
+  private final boolean ledger;
 
-  public REv2StateManagerModule(Option<RustMempoolConfig> mempoolConfig) {
+  public REv2StateManagerModule(Option<RustMempoolConfig> mempoolConfig, boolean ledger) {
     this.mempoolConfig = mempoolConfig;
+    this.ledger = ledger;
   }
 
   @Override
@@ -97,20 +97,21 @@ public final class REv2StateManagerModule extends AbstractModule {
             new StateManagerConfig(mempoolConfig, new REv2DatabaseConfig.InMemory()));
     var stateComputer = new RustStateComputer(stateManager.getRustState());
     bind(RustStateComputer.class).toInstance(stateComputer);
-    bind(REv2TransactionAndProofStore.class)
-        .toInstance(stateComputer.getTransactionAndProofStore());
-    bind(REv2StateReader.class).toInstance(stateComputer::getComponentXrdAmount);
+
+    if (ledger) {
+      bind(REv2TransactionAndProofStore.class)
+          .toInstance(stateComputer.getTransactionAndProofStore());
+      bind(REv2StateReader.class).toInstance(stateComputer::getComponentXrdAmount);
+      bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
+      bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
+      bind(REv2StateComputer.class).in(Scopes.SINGLETON);
+      bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
+    }
+
     if (mempoolConfig.isPresent()) {
       bind(MempoolReader.class).toInstance(stateComputer.getMempoolReader());
       bind(new TypeLiteral<MempoolInserter<RawTransaction>>() {})
           .toInstance(stateComputer.getMempoolInserter());
     }
-  }
-
-  @Provides
-  @Singleton
-  public TransactionsAndProofReader transactionsAndProofReader(
-      REv2TransactionAndProofStore transactionAndProofStore, Serialization serialization) {
-    return new REv2TransactionsAndProofReader(transactionAndProofStore, serialization);
   }
 }

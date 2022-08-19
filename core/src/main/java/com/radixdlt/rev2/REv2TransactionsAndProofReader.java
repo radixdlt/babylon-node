@@ -64,6 +64,7 @@
 
 package com.radixdlt.rev2;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
@@ -80,6 +81,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
   private final REv2TransactionAndProofStore transactionStore;
   private final Serialization serialization;
 
+  @Inject
   public REv2TransactionsAndProofReader(
       REv2TransactionAndProofStore transactionStore, Serialization serialization) {
     this.transactionStore = transactionStore;

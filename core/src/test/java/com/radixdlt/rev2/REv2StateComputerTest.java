@@ -79,7 +79,6 @@ import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
@@ -89,8 +88,7 @@ public class REv2StateComputerTest {
   private final Injector injector =
       Guice.createInjector(
           new CryptoModule(),
-          new REv2StateComputerModule(),
-          new REv2StateManagerModule(Option.none()),
+          new REv2StateManagerModule(Option.none(), true),
           new AbstractModule() {
             @Override
             protected void configure() {
