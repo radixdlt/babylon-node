@@ -72,7 +72,7 @@ import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -93,7 +93,8 @@ public class SanityTest {
                   false,
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputerNoSync(
-                      StateComputerConfig.rev2(REV2ProposerConfig.mempool(MempoolConfig.of(100))))))
+                      StateComputerConfig.rev2(
+                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())))))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(10, TimeUnit.SECONDS),

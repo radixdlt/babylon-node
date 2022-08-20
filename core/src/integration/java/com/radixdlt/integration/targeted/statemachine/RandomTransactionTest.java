@@ -74,7 +74,7 @@ import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.p2p.TestP2PModule;
@@ -108,11 +108,11 @@ public class RandomTransactionTest {
 
   private Injector createInjector() {
     return Guice.createInjector(
-        MempoolConfig.of(1000, 10).asModule(),
+        MempoolRelayConfig.of(10).asModule(),
         new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(),
         new ForksModule(),
-        new SingleNodeAndPeersDeterministicNetworkModule(TEST_KEY),
+        SingleNodeAndPeersDeterministicNetworkModule.rev1(TEST_KEY, 1000),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(100000), Amount.ofTokens(1000)),
         new TestP2PModule.Builder().build(),

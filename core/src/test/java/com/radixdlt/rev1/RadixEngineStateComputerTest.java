@@ -107,7 +107,7 @@ import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
@@ -181,7 +181,7 @@ public class RadixEngineStateComputerTest {
         bind(new TypeLiteral<EngineStore<LedgerAndBFTProof>>() {}).toInstance(engineStore);
         bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 
-        install(MempoolConfig.of(10, 10).asModule());
+        install(MempoolRelayConfig.of(10).asModule());
         install(new MainnetForksModule());
         install(new RadixEngineForksLatestOnlyModule());
         install(new ForksModule());
@@ -246,7 +246,7 @@ public class RadixEngineStateComputerTest {
   public void setup() throws RadixEngineException {
     this.engineStore = new InMemoryEngineStore<>();
     Guice.createInjector(
-            new RadixEngineStateComputerModule(),
+            new RadixEngineStateComputerModule(10),
             new RadixEngineModule(),
             new MockedGenesisModule(
                 registeredNodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),

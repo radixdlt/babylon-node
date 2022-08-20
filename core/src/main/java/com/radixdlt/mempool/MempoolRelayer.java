@@ -69,6 +69,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;
@@ -84,6 +85,8 @@ import javax.inject.Inject;
 public final class MempoolRelayer {
   private final PeersView peersView;
   private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
+
+  private final ScheduledEventDispatcher<MempoolRelayTrigger> triggerDispatcher;
   private final SystemCounters counters;
 
   private final MempoolReader mempoolRelayReader;
@@ -95,6 +98,7 @@ public final class MempoolRelayer {
   public MempoolRelayer(
       MempoolReader mempoolRelayReader,
       RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
+      ScheduledEventDispatcher<MempoolRelayTrigger> triggerDispatcher,
       PeersView peersView,
       @MempoolRelayInitialDelayMs long initialDelayMillis,
       @MempoolRelayRepeatDelayMs long repeatDelayMillis,
@@ -102,11 +106,16 @@ public final class MempoolRelayer {
       SystemCounters counters) {
     this.mempoolRelayReader = mempoolRelayReader;
     this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
+    this.triggerDispatcher = Objects.requireNonNull(triggerDispatcher);
     this.peersView = Objects.requireNonNull(peersView);
     this.initialDelayMillis = initialDelayMillis;
     this.repeatDelayMillis = repeatDelayMillis;
     this.maxPeers = maxPeers;
     this.counters = Objects.requireNonNull(counters);
+  }
+
+  public void start() {
+    this.triggerDispatcher.dispatch(MempoolRelayTrigger.create(), 10000);
   }
 
   public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
@@ -124,6 +133,8 @@ public final class MempoolRelayer {
       if (!transactions.isEmpty()) {
         relayTransactions(transactions, ImmutableList.of());
       }
+
+      this.triggerDispatcher.dispatch(MempoolRelayTrigger.create(), 10000);
     };
   }
 

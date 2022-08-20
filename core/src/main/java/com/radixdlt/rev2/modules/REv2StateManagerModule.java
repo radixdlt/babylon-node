@@ -69,7 +69,6 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.MempoolInserter;
-import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.REv2StateReader;
@@ -83,16 +82,17 @@ import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
 
 public final class REv2StateManagerModule extends AbstractModule {
-  @Provides
-  @Singleton
-  StateManager stateManager(RustMempoolConfig mempoolConfig) {
-    return StateManager.createAndInitialize(new StateManagerConfig(Option.some(mempoolConfig)));
+  private final int mempoolMaxSize;
+
+  public REv2StateManagerModule(int mempoolMaxSize) {
+    this.mempoolMaxSize = mempoolMaxSize;
   }
 
   @Provides
   @Singleton
-  private RustMempoolConfig stateManagerMempoolConfig(@MempoolMaxSize int maxSize) {
-    return new RustMempoolConfig(maxSize);
+  StateManager stateManager() {
+    var mempoolConfig = new RustMempoolConfig(this.mempoolMaxSize);
+    return StateManager.createAndInitialize(new StateManagerConfig(Option.some(mempoolConfig)));
   }
 
   @Provides

@@ -74,7 +74,6 @@ import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.sync.SyncConfig;
@@ -83,7 +82,6 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
 
   private final long pacemakerTimeout;
   private final int bftSyncPatienceMillis;
-  private final int mempoolMaxSize;
   private final long mempoolThrottleMs;
   private final SyncConfig syncConfig;
   private final P2PConfig p2PConfig;
@@ -95,7 +93,6 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
       @Self ECPublicKey self,
       @PacemakerBaseTimeoutMs long pacemakerTimeout,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
-      @MempoolMaxSize int mempoolMaxSize,
       @MempoolThrottleMs long mempoolThrottleMs,
       SyncConfig syncConfig,
       P2PConfig p2PConfig,
@@ -104,7 +101,6 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
     this.self = self;
     this.pacemakerTimeout = pacemakerTimeout;
     this.bftSyncPatienceMillis = bftSyncPatienceMillis;
-    this.mempoolMaxSize = mempoolMaxSize;
     this.mempoolThrottleMs = mempoolThrottleMs;
     this.syncConfig = syncConfig;
     this.p2PConfig = p2PConfig;
@@ -113,12 +109,15 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
 
   @Override
   public SystemConfigurationResponse handleRequest() {
+    // TODO: Mempool MaxSize configuration needs to move to a separate handler or
+    // TODO: different handling mechanism. Set to 0 here for now so that Configuration
+    // TODO: API doesn't break.
     return new SystemConfigurationResponse()
         .bft(
             new BFTConfiguration()
                 .bftSyncPatience(bftSyncPatienceMillis)
                 .pacemakerTimeout(pacemakerTimeout))
-        .mempool(new MempoolConfiguration().maxSize(mempoolMaxSize).throttle(mempoolThrottleMs))
+        .mempool(new MempoolConfiguration().maxSize(0).throttle(mempoolThrottleMs))
         .sync(systemModelMapper.syncConfiguration(syncConfig))
         .networking(systemModelMapper.networkingConfiguration(self, p2PConfig));
   }

@@ -64,26 +64,38 @@
 
 package com.radixdlt.modules;
 
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 
 /** Configuration options for the state computer */
 public sealed interface StateComputerConfig {
-  static StateComputerConfig mocked(FunctionalRadixNodeModule.MempoolType mempoolType) {
+  static StateComputerConfig mocked(MockedMempoolConfig mempoolType) {
     return new MockedStateComputerConfig(mempoolType);
   }
 
-  static StateComputerConfig rev1() {
-    return new REv1StateComputerConfig();
+  static StateComputerConfig rev1(int mempoolSize) {
+    return new REv1StateComputerConfig(mempoolSize);
   }
 
   static StateComputerConfig rev2(REV2ProposerConfig proposerConfig) {
     return new REv2StateComputerConfig(proposerConfig);
   }
 
-  record MockedStateComputerConfig(FunctionalRadixNodeModule.MempoolType mempoolType)
+  sealed interface MockedMempoolConfig {
+    static MockedMempoolConfig noMempool() {
+      return new NoMempool();
+    }
+
+    record NoMempool() implements MockedMempoolConfig {}
+
+    record LocalOnly(int mempoolSize) implements MockedMempoolConfig {}
+
+    record Relayed(int mempoolSize) implements MockedMempoolConfig {}
+  }
+
+  record MockedStateComputerConfig(MockedMempoolConfig mempoolType)
       implements StateComputerConfig {}
 
-  record REv1StateComputerConfig() implements StateComputerConfig {}
+  record REv1StateComputerConfig(int mempoolSize) implements StateComputerConfig {}
 
   record REv2StateComputerConfig(REV2ProposerConfig proposerConfig)
       implements StateComputerConfig {}
@@ -93,12 +105,12 @@ public sealed interface StateComputerConfig {
       return new HalfCorrectProposer();
     }
 
-    static REV2ProposerConfig mempool(MempoolConfig config) {
-      return new Mempool(config);
+    static REV2ProposerConfig mempool(int mempoolMaxSize, MempoolRelayConfig config) {
+      return new Mempool(mempoolMaxSize, config);
     }
 
     record HalfCorrectProposer() implements REV2ProposerConfig {}
 
-    record Mempool(MempoolConfig config) implements REV2ProposerConfig {}
+    record Mempool(int mempoolMaxSize, MempoolRelayConfig config) implements REV2ProposerConfig {}
   }
 }

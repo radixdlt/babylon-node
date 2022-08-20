@@ -81,7 +81,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.p2p.TestP2PModule;
@@ -121,7 +121,7 @@ public class MutableTokenAndResourceFeeTest {
 
   private Injector createInjector() {
     return Guice.createInjector(
-        MempoolConfig.of(1000, 10).asModule(),
+        MempoolRelayConfig.of(10).asModule(),
         new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(
             RERulesConfig.testingDefault()
@@ -129,7 +129,7 @@ public class MutableTokenAndResourceFeeTest {
                     FeeTable.create(
                         Amount.zero(), Map.of(TokenResource.class, Amount.ofTokens(1))))),
         new ForksModule(),
-        new SingleNodeAndPeersDeterministicNetworkModule(VALIDATOR_KEY),
+        SingleNodeAndPeersDeterministicNetworkModule.rev1(VALIDATOR_KEY, 1000),
         new TestP2PModule.Builder().build(),
         new TestMessagingModule.Builder().build(),
         new MockedGenesisModule(

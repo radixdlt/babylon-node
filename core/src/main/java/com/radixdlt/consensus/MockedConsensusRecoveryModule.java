@@ -95,7 +95,6 @@ public class MockedConsensusRecoveryModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    super.configure();
     if (this.builder.withEpoch) {
       bind(new TypeLiteral<Function<Long, BFTValidatorSet>>() {})
           .toInstance(this.builder.validatorSetMapping()::apply);

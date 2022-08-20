@@ -72,6 +72,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -93,7 +94,7 @@ public class OneProposalDropperResponsiveTest {
                 false,
                 ConsensusConfig.of(),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.mocked(FunctionalRadixNodeModule.MempoolType.NONE))))
+                    StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
         .runForCount(30_000);
   }
 

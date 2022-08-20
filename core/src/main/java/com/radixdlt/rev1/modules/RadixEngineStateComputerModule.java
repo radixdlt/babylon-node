@@ -64,21 +64,26 @@
 
 package com.radixdlt.rev1.modules;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolReader;
+import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.RadixEngineMempool;
 import com.radixdlt.rev1.RadixEngineStateComputer;
 
 public class RadixEngineStateComputerModule extends AbstractModule {
+  private final int mempoolSize;
+
+  public RadixEngineStateComputerModule(int mempoolSize) {
+    this.mempoolSize = mempoolSize;
+  }
+
   @Override
   protected void configure() {
     bind(RadixEngineStateComputer.class).in(Scopes.SINGLETON);
-    bind(RadixEngineMempool.class).in(Scopes.SINGLETON);
     bind(StateComputerLedger.StateComputer.class)
         .to(RadixEngineStateComputer.class)
         .in(Scopes.SINGLETON);
@@ -88,5 +93,11 @@ public class RadixEngineStateComputerModule extends AbstractModule {
     bind(new TypeLiteral<Mempool<REProcessedTxn>>() {})
         .to(RadixEngineMempool.class)
         .in(Scopes.SINGLETON);
+  }
+
+  @Provides
+  @Singleton
+  RadixEngineMempool mempool(RadixEngine<LedgerAndBFTProof> radixEngine) {
+    return new RadixEngineMempool(radixEngine, this.mempoolSize);
   }
 }

@@ -98,12 +98,11 @@ import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
 import com.radixdlt.ledger.*;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.MempoolType;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
@@ -283,7 +282,9 @@ public final class SimulationTest {
           new FunctionalRadixNodeModule(
               true,
               consensusConfig,
-              LedgerConfig.stateComputerNoSync(StateComputerConfig.mocked(MempoolType.NONE)));
+              LedgerConfig.stateComputerNoSync(
+                  StateComputerConfig.mocked(
+                      new StateComputerConfig.MockedMempoolConfig.NoMempool())));
       this.epochToNodeIndexMapper = epochToNodeIndexMapper;
       this.modules.add(
           new AbstractModule() {
@@ -307,16 +308,20 @@ public final class SimulationTest {
               false,
               consensusConfig,
               LedgerConfig.stateComputerWithSync(
-                  StateComputerConfig.mocked(MempoolType.NONE), syncConfig));
+                  StateComputerConfig.mocked(
+                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                  syncConfig));
       return this;
     }
 
-    public Builder fullFunctionNodes(ConsensusConfig consensusConfig, SyncConfig syncConfig) {
+    public Builder fullFunctionNodes(
+        ConsensusConfig consensusConfig, SyncConfig syncConfig, int mempoolSize) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               true,
               consensusConfig,
-              LedgerConfig.stateComputerWithSync(StateComputerConfig.rev1(), syncConfig));
+              LedgerConfig.stateComputerWithSync(
+                  StateComputerConfig.rev1(mempoolSize), syncConfig));
 
       return this;
     }
@@ -331,7 +336,9 @@ public final class SimulationTest {
               true,
               consensusConfig,
               LedgerConfig.stateComputerWithSync(
-                  StateComputerConfig.mocked(MempoolType.NONE), syncConfig));
+                  StateComputerConfig.mocked(
+                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                  syncConfig));
       this.epochToNodeIndexMapper = epochToNodeIndexMapper;
       modules.add(
           new AbstractModule() {
@@ -348,21 +355,25 @@ public final class SimulationTest {
           new FunctionalRadixNodeModule(
               false,
               consensusConfig,
-              LedgerConfig.stateComputerNoSync(StateComputerConfig.mocked(MempoolType.LOCAL_ONLY)));
-      this.modules.add(MempoolConfig.of(10, 10).asModule());
+              LedgerConfig.stateComputerNoSync(
+                  StateComputerConfig.mocked(
+                      new StateComputerConfig.MockedMempoolConfig.LocalOnly(10))));
+      this.modules.add(MempoolRelayConfig.of(10).asModule());
       return this;
     }
 
     public Builder ledgerAndRadixEngineWithEpochMaxRound(ConsensusConfig consensusConfig) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
-              true, consensusConfig, LedgerConfig.stateComputerNoSync(StateComputerConfig.rev1()));
+              true,
+              consensusConfig,
+              LedgerConfig.stateComputerNoSync(StateComputerConfig.rev1(100)));
       this.modules.add(
           new AbstractModule() {
             @Override
             protected void configure() {
               bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(List.of());
-              install(MempoolConfig.of(100, 10).asModule());
+              install(MempoolRelayConfig.of(10).asModule());
             }
 
             @Provides

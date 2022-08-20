@@ -87,7 +87,6 @@ import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.MempoolType;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
@@ -210,7 +209,9 @@ public final class DeterministicTest {
           new FunctionalRadixNodeModule(
               true,
               ConsensusConfig.of(),
-              LedgerConfig.stateComputerNoSync(StateComputerConfig.mocked(MempoolType.NONE))));
+              LedgerConfig.stateComputerNoSync(
+                  StateComputerConfig.mocked(
+                      new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
       addEpochedConsensusProcessorModule(epochMaxRound);
       return build(true);
     }
@@ -222,7 +223,9 @@ public final class DeterministicTest {
               true,
               ConsensusConfig.of(),
               LedgerConfig.stateComputerWithSync(
-                  StateComputerConfig.mocked(MempoolType.NONE), syncConfig)));
+                  StateComputerConfig.mocked(
+                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                  syncConfig)));
       modules.add(new InMemoryCommittedReaderModule());
       addEpochedConsensusProcessorModule(epochMaxRound);
       return build(true);
@@ -323,6 +326,17 @@ public final class DeterministicTest {
         nodes.handleMessage(nextMsg);
       }
     };
+  }
+
+  public DeterministicTest runForCount(int count, Predicate<ControlledMessage> predicate) {
+    this.nodes.start();
+
+    for (int i = 0; i < count; i++) {
+      Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
+      this.nodes.handleMessage(nextMsg);
+    }
+
+    return this;
   }
 
   public DeterministicTest runForCount(int count) {

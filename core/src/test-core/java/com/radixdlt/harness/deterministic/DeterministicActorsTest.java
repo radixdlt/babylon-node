@@ -86,8 +86,7 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.FailOnEvent;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.mempool.MempoolConfig;
-import com.radixdlt.mempool.MempoolRelayTrigger;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.networks.Network;
@@ -182,9 +181,9 @@ public abstract class DeterministicActorsTest {
             nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
             Amount.ofTokens(100000),
             Amount.ofTokens(1000)),
-        MempoolConfig.of(10, 10).asModule(),
+        MempoolRelayConfig.of(10).asModule(),
         reConfig,
-        new PersistedNodeForTestingModule(ecKeyPair),
+        PersistedNodeForTestingModule.rev1(ecKeyPair, 10),
         new LastEventsModule(LedgerUpdate.class),
         FailOnEvent.asModule(InvalidProposedTransaction.class),
         new AbstractModule() {
@@ -243,8 +242,6 @@ public abstract class DeterministicActorsTest {
       for (var actor : actors) {
         actor.tryExecute(deterministicRunner, random);
       }
-      deterministicRunner.dispatchToAll(
-          new Key<EventDispatcher<MempoolRelayTrigger>>() {}, MempoolRelayTrigger.create());
       deterministicRunner.dispatchToAll(
           new Key<EventDispatcher<SyncCheckTrigger>>() {}, SyncCheckTrigger.create());
     }

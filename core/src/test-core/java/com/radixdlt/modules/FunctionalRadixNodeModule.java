@@ -75,7 +75,6 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.ledger.MockedLedgerModule;
-import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
@@ -176,22 +175,12 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   public record StateComputerLedgerConfig(
       StateComputerConfig config, Optional<SyncConfig> syncConfig) implements LedgerConfig {}
 
-  public enum MempoolType {
-    NONE,
-    LOCAL_ONLY,
-    RELAYED,
-  }
-
   private final boolean epochs;
   private final ConsensusConfig consensusConfig;
   private final LedgerConfig ledgerConfig;
 
   // FIXME: This is required for now for shared syncing, remove after refactor
   private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
-
-  public FunctionalRadixNodeModule(SyncConfig syncConfig) {
-    this(ConsensusConfig.of(), StateComputerConfig.rev1(), syncConfig);
-  }
 
   public FunctionalRadixNodeModule(
       ConsensusConfig consensusConfig,
@@ -212,7 +201,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     return new FunctionalRadixNodeModule(
         false,
         ConsensusConfig.of(),
-        LedgerConfig.stateComputerNoSync(StateComputerConfig.mocked(MempoolType.NONE)));
+        LedgerConfig.stateComputerNoSync(
+            StateComputerConfig.mocked(new MockedMempoolConfig.NoMempool())));
   }
 
   public boolean supportsEpochs() {
@@ -266,7 +256,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         switch (stateComputerLedgerConfig.config) {
           case MockedStateComputerConfig c -> {
             switch (c.mempoolType()) {
-              case NONE -> {
+              case MockedMempoolConfig.NoMempool ignored -> {
                 bind(ProposalGenerator.class).to(RandomTransactionGenerator.class);
                 if (!this.epochs) {
                   install(new MockedStateComputerModule());
@@ -274,38 +264,40 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                   install(new MockedStateComputerWithEpochsModule());
                 }
               }
-              case LOCAL_ONLY -> {
+              case MockedMempoolConfig.LocalOnly localOnly -> {
                 install(new MempoolReceiverModule());
-                install(new MockedMempoolStateComputerModule());
+                install(new MockedMempoolStateComputerModule(localOnly.mempoolSize()));
               }
-              case RELAYED -> {
+              case MockedMempoolConfig.Relayed relayed -> {
                 install(new MempoolReceiverModule());
                 install(new MempoolRelayerModule());
-                install(new MockedMempoolStateComputerModule());
+                install(new MockedMempoolStateComputerModule(relayed.mempoolSize()));
               }
             }
           }
-          case REv1StateComputerConfig ignored -> {
+          case REv1StateComputerConfig config -> {
             install(new MempoolReceiverModule());
             install(new MempoolRelayerModule());
-            install(new RadixEngineStateComputerModule());
+            install(new RadixEngineStateComputerModule(config.mempoolSize()));
             install(new RadixEngineModule());
             install(new ReV1DispatcherModule());
           }
           case REv2StateComputerConfig rev2Config -> {
+            int mempoolSize = 0;
             switch (rev2Config.proposerConfig()) {
               case REV2ProposerConfig.HalfCorrectProposer ignored -> {
                 bind(ProposalGenerator.class).to(HalfCorrectREv2TransactionGenerator.class);
-                bindConstant().annotatedWith(MempoolMaxSize.class).to(0);
                 install(new REv2StatelessComputerModule());
               }
               case REV2ProposerConfig.Mempool mempool -> {
+                install(new MempoolRelayerModule());
                 install(new MempoolReceiverModule());
                 install(mempool.config().asModule());
                 install(new REv2StateComputerModule());
+                mempoolSize = mempool.mempoolMaxSize();
               }
             }
-            install(new REv2StateManagerModule());
+            install(new REv2StateManagerModule(mempoolSize));
           }
         }
       }

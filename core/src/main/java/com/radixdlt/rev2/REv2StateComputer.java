@@ -72,6 +72,7 @@ import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.serialization.DsonOutput;
@@ -111,6 +112,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             transaction -> {
               try {
                 stateComputer.getMempoolInserter().addTransaction(transaction);
+              } catch (MempoolFullException ignored) {
               } catch (MempoolRejectedException e) {
                 log.error(e);
               }
