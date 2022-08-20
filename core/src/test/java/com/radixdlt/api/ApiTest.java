@@ -149,7 +149,9 @@ public abstract class ApiTest {
             new SingleNodeAndPeersDeterministicNetworkModule(
                 TEST_KEY,
                 StateComputerConfig.rev2(
-                    StateComputerConfig.REV2ProposerConfig.mempool(10, MempoolRelayConfig.of()))),
+                    StateComputerConfig.REV2ProposerConfig.mempool(
+                        mempoolMaxSize, MempoolRelayConfig.of()),
+                    false)),
             new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),

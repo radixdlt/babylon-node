@@ -79,8 +79,8 @@ public sealed interface StateComputerConfig {
     return new REv1StateComputerConfig(mempoolSize);
   }
 
-  static StateComputerConfig rev2(REV2ProposerConfig proposerConfig) {
-    return new REv2StateComputerConfig(proposerConfig);
+  static StateComputerConfig rev2(REV2ProposerConfig proposerConfig, boolean ledger) {
+    return new REv2StateComputerConfig(proposerConfig, ledger);
   }
 
   sealed interface MockedMempoolConfig {
@@ -100,7 +100,7 @@ public sealed interface StateComputerConfig {
 
   record REv1StateComputerConfig(int mempoolSize) implements StateComputerConfig {}
 
-  record REv2StateComputerConfig(REV2ProposerConfig proposerConfig)
+  record REv2StateComputerConfig(REV2ProposerConfig proposerConfig, boolean ledger)
       implements StateComputerConfig {}
 
   sealed interface REV2ProposerConfig {

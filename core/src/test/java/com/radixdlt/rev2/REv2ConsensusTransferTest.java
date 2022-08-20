@@ -128,7 +128,8 @@ public final class REv2ConsensusTransferTest {
             FunctionalRadixNodeModule.ConsensusConfig.of(),
             FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
-                    StateComputerConfig.REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))),
+                    StateComputerConfig.REV2ProposerConfig.mempool(1, MempoolRelayConfig.of()),
+                    true))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(
