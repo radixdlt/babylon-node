@@ -64,7 +64,10 @@
 
 use crate::jni::dtos::JavaStructure;
 use crate::result::StateManagerResult;
-use crate::transaction_builder::{create_1mb_txn_manifest, create_new_account_unsigned_manifest, create_notarized_bytes, create_signed_intent_bytes};
+use crate::transaction_builder::{
+    create_1mb_txn_manifest, create_new_account_unsigned_manifest, create_notarized_bytes,
+    create_signed_intent_bytes,
+};
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;

@@ -123,7 +123,7 @@ import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.DurationParser;
@@ -302,26 +302,26 @@ public final class SimulationTest {
       return this;
     }
 
-    public Builder ledgerAndSync(ConsensusConfig consensusConfig, SyncConfig syncConfig) {
+    public Builder ledgerAndSync(ConsensusConfig consensusConfig, SyncRelayConfig syncRelayConfig) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               false,
               consensusConfig,
-              LedgerConfig.stateComputerWithSync(
+              LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mocked(
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()),
-                  syncConfig));
+                  syncRelayConfig));
       return this;
     }
 
     public Builder fullFunctionNodes(
-        ConsensusConfig consensusConfig, SyncConfig syncConfig, int mempoolSize) {
+        ConsensusConfig consensusConfig, SyncRelayConfig syncRelayConfig, int mempoolSize) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               true,
               consensusConfig,
-              LedgerConfig.stateComputerWithSync(
-                  StateComputerConfig.rev1(mempoolSize), syncConfig));
+              LedgerConfig.stateComputerWithSyncRelay(
+                  StateComputerConfig.rev1(mempoolSize), syncRelayConfig));
 
       return this;
     }
@@ -330,15 +330,15 @@ public final class SimulationTest {
         ConsensusConfig consensusConfig,
         Round epochMaxRound,
         Function<Long, IntStream> epochToNodeIndexMapper,
-        SyncConfig syncConfig) {
+        SyncRelayConfig syncRelayConfig) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               true,
               consensusConfig,
-              LedgerConfig.stateComputerWithSync(
+              LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mocked(
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()),
-                  syncConfig));
+                  syncRelayConfig));
       this.epochToNodeIndexMapper = epochToNodeIndexMapper;
       modules.add(
           new AbstractModule() {

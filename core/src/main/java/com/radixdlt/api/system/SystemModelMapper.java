@@ -90,7 +90,7 @@ import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -119,13 +119,13 @@ public final class SystemModelMapper {
         .nodeAddress(addressing.forNodes().of(self));
   }
 
-  public SyncConfiguration syncConfiguration(SyncConfig syncConfig) {
+  public SyncConfiguration syncConfiguration(SyncRelayConfig syncRelayConfig) {
     return new SyncConfiguration()
-        .syncCheckInterval(syncConfig.syncCheckInterval())
-        .syncCheckMaxPeers(syncConfig.syncCheckMaxPeers())
-        .requestTimeout(syncConfig.requestTimeout())
-        .ledgerStatusUpdateMaxPeersToNotify(syncConfig.ledgerStatusUpdateMaxPeersToNotify())
-        .maxLedgerUpdatesRate(BigDecimal.valueOf(syncConfig.maxLedgerUpdatesRate()));
+        .syncCheckInterval(syncRelayConfig.syncCheckInterval())
+        .syncCheckMaxPeers(syncRelayConfig.syncCheckMaxPeers())
+        .requestTimeout(syncRelayConfig.requestTimeout())
+        .ledgerStatusUpdateMaxPeersToNotify(syncRelayConfig.ledgerStatusUpdateMaxPeersToNotify())
+        .maxLedgerUpdatesRate(BigDecimal.valueOf(syncRelayConfig.maxLedgerUpdatesRate()));
   }
 
   public NetworkingMetrics networkingMetrics(SystemCounters counters) {

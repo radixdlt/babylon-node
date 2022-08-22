@@ -92,7 +92,7 @@ import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.store.DatabasePropertiesModule;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -172,7 +172,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Sync
     final long syncPatience = properties.get("sync.patience", 5000L);
-    install(new SyncServiceModule(SyncConfig.of(syncPatience, 10, 3000L)));
+    install(new SyncServiceModule(SyncRelayConfig.of(syncPatience, 10, 3000L)));
 
     // Epochs - Consensus
     install(new EpochsConsensusModule());

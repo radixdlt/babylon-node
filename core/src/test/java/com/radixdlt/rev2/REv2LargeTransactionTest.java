@@ -100,85 +100,85 @@ import org.junit.Test;
 
 public final class REv2LargeTransactionTest {
 
-    private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
-    private final DeterministicNetwork network =
-            new DeterministicNetwork(
-                    List.of(BFTNode.create(TEST_KEY.getPublicKey())),
-                    MessageSelector.firstSelector(),
-                    MessageMutator.nothing());
+  private final DeterministicNetwork network =
+      new DeterministicNetwork(
+          List.of(BFTNode.create(TEST_KEY.getPublicKey())),
+          MessageSelector.firstSelector(),
+          MessageMutator.nothing());
 
-    @Inject private DeterministicProcessor processor;
-    @Inject private MempoolInserter<RawTransaction> mempoolInserter;
-    @Inject private REv2TransactionAndProofStore transactionStoreReader;
-    @Inject private REv2StateReader stateReader;
+  @Inject private DeterministicProcessor processor;
+  @Inject private MempoolInserter<RawTransaction> mempoolInserter;
+  @Inject private REv2TransactionAndProofStore transactionStoreReader;
+  @Inject private REv2StateReader stateReader;
 
-    private Injector createInjector() {
-        return Guice.createInjector(
-                new CryptoModule(),
-                new TestMessagingModule.Builder().withDefaultRateLimit().build(),
-                new MockedLedgerRecoveryModule(),
-                new MockedConsensusRecoveryModule.Builder()
-                        .withNodes(List.of(BFTNode.create(TEST_KEY.getPublicKey())))
-                        .build(),
-                new MockedPersistenceStoreModule(),
-                new FunctionalRadixNodeModule(
-                        false,
-                        FunctionalRadixNodeModule.ConsensusConfig.of(),
-                        FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                                StateComputerConfig.rev2(
-                                        StateComputerConfig.REV2ProposerConfig.mempool(1, MempoolRelayConfig.of()),
-                                        true))),
-                new TestP2PModule.Builder().build(),
-                new InMemoryBFTKeyModule(TEST_KEY),
-                new DeterministicEnvironmentModule(
-                        network.createSender(BFTNode.create(TEST_KEY.getPublicKey()))),
-                new AbstractModule() {
-                    @Override
-                    protected void configure() {
-                        bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-                        bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-                        bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-                    }
-                });
+  private Injector createInjector() {
+    return Guice.createInjector(
+        new CryptoModule(),
+        new TestMessagingModule.Builder().withDefaultRateLimit().build(),
+        new MockedLedgerRecoveryModule(),
+        new MockedConsensusRecoveryModule.Builder()
+            .withNodes(List.of(BFTNode.create(TEST_KEY.getPublicKey())))
+            .build(),
+        new MockedPersistenceStoreModule(),
+        new FunctionalRadixNodeModule(
+            false,
+            FunctionalRadixNodeModule.ConsensusConfig.of(),
+            FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                StateComputerConfig.rev2(
+                    StateComputerConfig.REV2ProposerConfig.mempool(1, MempoolRelayConfig.of()),
+                    true))),
+        new TestP2PModule.Builder().build(),
+        new InMemoryBFTKeyModule(TEST_KEY),
+        new DeterministicEnvironmentModule(
+            network.createSender(BFTNode.create(TEST_KEY.getPublicKey()))),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+            bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
+            bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+          }
+        });
+  }
+
+  private static RawTransaction create1MBTransaction() {
+    var unsignedManifest = TransactionBuilder.build1MBManifest(TEST_KEY.getPublicKey());
+    var hashedManifest = HashUtils.sha256Twice(unsignedManifest).asBytes();
+
+    var intentSignature = TEST_KEY.sign(hashedManifest);
+    var signedIntent =
+        TransactionBuilder.createSignedIntentBytes(
+            unsignedManifest, TEST_KEY.getPublicKey(), intentSignature);
+    var hashedSignedIntent = HashUtils.sha256Twice(signedIntent).asBytes();
+
+    var notarySignature = TEST_KEY.sign(hashedSignedIntent);
+    var transactionPayload = TransactionBuilder.createNotarizedBytes(signedIntent, notarySignature);
+    return RawTransaction.create(transactionPayload);
+  }
+
+  @Test
+  public void large_transaction_should_be_committable() throws Exception {
+    // Arrange: Start single node network
+    createInjector().injectMembers(this);
+    var newAccountTransaction = create1MBTransaction();
+
+    // Act: Submit transaction to mempool and run consensus
+    processor.start();
+    for (int i = 0; i < 1000; i++) {
+      var msg = network.nextMessage().value();
+      processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
+    }
+    mempoolInserter.addTransaction(newAccountTransaction);
+    for (int i = 0; i < 1000; i++) {
+      var msg = network.nextMessage().value();
+      processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
     }
 
-    private static RawTransaction create1MBTransaction() {
-        var unsignedManifest = TransactionBuilder.build1MBManifest(TEST_KEY.getPublicKey());
-        var hashedManifest = HashUtils.sha256Twice(unsignedManifest).asBytes();
-
-        var intentSignature = TEST_KEY.sign(hashedManifest);
-        var signedIntent =
-                TransactionBuilder.createSignedIntentBytes(
-                        unsignedManifest, TEST_KEY.getPublicKey(), intentSignature);
-        var hashedSignedIntent = HashUtils.sha256Twice(signedIntent).asBytes();
-
-        var notarySignature = TEST_KEY.sign(hashedSignedIntent);
-        var transactionPayload = TransactionBuilder.createNotarizedBytes(signedIntent, notarySignature);
-        return RawTransaction.create(transactionPayload);
-    }
-
-    @Test
-    public void large_transaction_should_be_committable() throws Exception {
-        // Arrange: Start single node network
-        createInjector().injectMembers(this);
-        var newAccountTransaction = create1MBTransaction();
-
-        // Act: Submit transaction to mempool and run consensus
-        processor.start();
-        for (int i = 0; i < 1000; i++) {
-            var msg = network.nextMessage().value();
-            processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-        }
-        mempoolInserter.addTransaction(newAccountTransaction);
-        for (int i = 0; i < 1000; i++) {
-            var msg = network.nextMessage().value();
-            processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-        }
-
-        // Assert: Check transaction and post submission state
-        var receipt = transactionStoreReader.getTransactionAtStateVersion(1);
-        var receiptTransaction = RawTransaction.create(receipt.getTransactionBytes());
-        assertThat(newAccountTransaction).isEqualTo(receiptTransaction);
-    }
+    // Assert: Check transaction and post submission state
+    var receipt = transactionStoreReader.getTransactionAtStateVersion(1);
+    var receiptTransaction = RawTransaction.create(receipt.getTransactionBytes());
+    assertThat(newAccountTransaction).isEqualTo(receiptTransaction);
+  }
 }

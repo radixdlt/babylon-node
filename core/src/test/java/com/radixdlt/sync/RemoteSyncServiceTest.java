@@ -129,7 +129,7 @@ public class RemoteSyncServiceTest {
             statusResponseDispatcher,
             syncResponseDispatcher,
             statusUpdateDispatcher,
-            new SyncConfig(5000L, 10, 5000L, 10, 50),
+            new SyncRelayConfig(5000L, 10, 5000L, 10, 50),
             mock(SystemCounters.class),
             Comparator.comparingLong(AccumulatorState::getStateVersion),
             initialHeader);

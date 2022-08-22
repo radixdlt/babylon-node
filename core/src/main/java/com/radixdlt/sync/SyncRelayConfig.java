@@ -65,13 +65,14 @@
 package com.radixdlt.sync;
 
 /** Configuration parameters for ledger sync. */
-public record SyncConfig(
+public record SyncRelayConfig(
     long requestTimeout,
     int syncCheckMaxPeers,
     long syncCheckInterval,
     int ledgerStatusUpdateMaxPeersToNotify,
     double maxLedgerUpdatesRate) {
-  public static SyncConfig of(long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval) {
-    return new SyncConfig(requestTimeout, syncCheckMaxPeers, syncCheckInterval, 10, 50);
+  public static SyncRelayConfig of(
+      long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval) {
+    return new SyncRelayConfig(requestTimeout, syncCheckMaxPeers, syncCheckInterval, 10, 50);
   }
 }

@@ -102,7 +102,7 @@ public final class RemoteSyncService {
   private final RemoteEventDispatcher<StatusResponse> statusResponseDispatcher;
   private final RemoteEventDispatcher<SyncResponse> syncResponseDispatcher;
   private final RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher;
-  private final SyncConfig syncConfig;
+  private final SyncRelayConfig syncRelayConfig;
   private final SystemCounters systemCounters;
   private final Comparator<AccumulatorState> accComparator;
   private final RateLimiter ledgerStatusUpdateSendRateLimiter;
@@ -117,20 +117,21 @@ public final class RemoteSyncService {
       RemoteEventDispatcher<StatusResponse> statusResponseDispatcher,
       RemoteEventDispatcher<SyncResponse> syncResponseDispatcher,
       RemoteEventDispatcher<LedgerStatusUpdate> statusUpdateDispatcher,
-      SyncConfig syncConfig,
+      SyncRelayConfig syncRelayConfig,
       SystemCounters systemCounters,
       Comparator<AccumulatorState> accComparator,
       @LastProof LedgerProof initialHeader) {
     this.peersView = Objects.requireNonNull(peersView);
     this.localSyncService = Objects.requireNonNull(localSyncService);
     this.committedReader = Objects.requireNonNull(committedReader);
-    this.syncConfig = Objects.requireNonNull(syncConfig);
+    this.syncRelayConfig = Objects.requireNonNull(syncRelayConfig);
     this.statusResponseDispatcher = Objects.requireNonNull(statusResponseDispatcher);
     this.syncResponseDispatcher = Objects.requireNonNull(syncResponseDispatcher);
     this.statusUpdateDispatcher = Objects.requireNonNull(statusUpdateDispatcher);
     this.systemCounters = systemCounters;
     this.accComparator = Objects.requireNonNull(accComparator);
-    this.ledgerStatusUpdateSendRateLimiter = RateLimiter.create(syncConfig.maxLedgerUpdatesRate());
+    this.ledgerStatusUpdateSendRateLimiter =
+        RateLimiter.create(syncRelayConfig.maxLedgerUpdatesRate());
 
     this.currentHeader = initialHeader;
   }
@@ -205,7 +206,7 @@ public final class RemoteSyncService {
     Collections.shuffle(currentPeers);
 
     currentPeers.stream()
-        .limit(syncConfig.ledgerStatusUpdateMaxPeersToNotify())
+        .limit(syncRelayConfig.ledgerStatusUpdateMaxPeersToNotify())
         .map(PeersView.PeerInfo::bftNode)
         .forEach(
             peer -> {

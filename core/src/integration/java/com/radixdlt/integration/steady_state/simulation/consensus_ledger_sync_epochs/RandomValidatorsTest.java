@@ -74,7 +74,7 @@ import com.radixdlt.harness.simulation.SimulationTest.Builder;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -86,7 +86,7 @@ import org.junit.Test;
 public class RandomValidatorsTest {
   private static final int numNodes = 10;
 
-  private final SyncConfig syncConfig = SyncConfig.of(200L, 10, 200L);
+  private final SyncRelayConfig syncRelayConfig = SyncRelayConfig.of(200L, 10, 200L);
 
   private final Builder bftTestBuilder =
       SimulationTest.builder()
@@ -95,7 +95,7 @@ public class RandomValidatorsTest {
               ConsensusConfig.of(5000),
               Round.of(3),
               goodRandomEpochToNodesMapper(),
-              syncConfig) // TODO: investigate why this fails with Round.of(10)
+              syncRelayConfig) // TODO: investigate why this fails with Round.of(10)
           .numNodes(numNodes)
           .addTestModules(
               ConsensusMonitors.safety(),

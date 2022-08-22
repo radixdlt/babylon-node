@@ -71,7 +71,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import java.util.stream.IntStream;
 import org.junit.Test;
 
@@ -81,7 +81,7 @@ public class FullNodeSyncTest {
 
   private void run(int numNodes, int numValidators, Round epochMaxRound, long targetStateVersion) {
     final var syncConfig =
-        new SyncConfig(
+        new SyncRelayConfig(
             500L,
             0 /* unused */,
             0L /* unused */,

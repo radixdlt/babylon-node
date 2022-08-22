@@ -78,7 +78,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
 import org.junit.Test;
 
@@ -91,10 +91,10 @@ public final class SanityTest {
               new FunctionalRadixNodeModule(
                   false,
                   ConsensusConfig.of(1000),
-                  LedgerConfig.stateComputerWithSync(
+                  LedgerConfig.stateComputerWithSyncRelay(
                       StateComputerConfig.rev2(
                           REV2ProposerConfig.mempool(100, MempoolRelayConfig.of()), true),
-                      SyncConfig.of(5000, 10, 3000L))));
+                      SyncRelayConfig.of(5000, 10, 3000L))));
 
   private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
 

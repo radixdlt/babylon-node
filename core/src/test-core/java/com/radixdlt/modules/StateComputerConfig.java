@@ -64,16 +64,11 @@
 
 package com.radixdlt.modules;
 
-import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
-import com.radixdlt.transactions.RawTransaction;
-
-import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -116,12 +111,13 @@ public sealed interface StateComputerConfig {
       return new Generated(new HalfCorrectREv2TransactionGenerator());
     }
 
-    static REV2ProposerConfig transactionGenerator(TransactionGenerator transactionGenerator, long count) {
-      return new Generated((round, prepared) ->
-        Stream.generate(transactionGenerator::nextTransaction)
-                        .limit(count)
-                                .collect(Collectors.toList())
-      );
+    static REV2ProposerConfig transactionGenerator(
+        TransactionGenerator transactionGenerator, long count) {
+      return new Generated(
+          (round, prepared) ->
+              Stream.generate(transactionGenerator::nextTransaction)
+                  .limit(count)
+                  .collect(Collectors.toList()));
     }
 
     static REV2ProposerConfig mempool(int mempoolMaxSize, MempoolRelayConfig config) {

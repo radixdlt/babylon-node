@@ -79,7 +79,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SometimesByzantineCommittedReader;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
@@ -118,7 +118,7 @@ public class ByzantineSyncTest {
                         LedgerUpdate.class, reader.ledgerUpdateEventProcessor());
                   }
                 })
-            .ledgerAndSync(ConsensusConfig.of(3000), SyncConfig.of(200L, 10, 1000L));
+            .ledgerAndSync(ConsensusConfig.of(3000), SyncRelayConfig.of(200L, 10, 1000L));
   }
 
   @Test

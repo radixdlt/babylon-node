@@ -89,8 +89,7 @@ import com.radixdlt.rev2.modules.MockedSyncServiceModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.REv2StatelessComputerModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
-import com.radixdlt.sync.SyncConfig;
-import java.util.Optional;
+import com.radixdlt.sync.SyncRelayConfig;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
@@ -139,17 +138,22 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     }
 
     static LedgerConfig stateComputerNoSync(StateComputerConfig stateComputerConfig) {
-      return new StateComputerLedgerConfig(stateComputerConfig, Optional.empty());
+      return new StateComputerLedgerConfig(stateComputerConfig, new SyncConfig.None());
     }
 
-    static LedgerConfig stateComputerWithSync(
-        StateComputerConfig stateComputerConfig, SyncConfig syncConfig) {
-      return new StateComputerLedgerConfig(stateComputerConfig, Optional.of(syncConfig));
+    static LedgerConfig stateComputerMockedSync(StateComputerConfig stateComputerConfig) {
+      return new StateComputerLedgerConfig(stateComputerConfig, new SyncConfig.Mocked());
     }
 
-    default boolean hasSync() {
+    static LedgerConfig stateComputerWithSyncRelay(
+        StateComputerConfig stateComputerConfig, SyncRelayConfig syncRelayConfig) {
+      return new StateComputerLedgerConfig(
+          stateComputerConfig, new SyncConfig.Relayed(syncRelayConfig));
+    }
+
+    default boolean hasSyncRelay() {
       if (this instanceof StateComputerLedgerConfig c) {
-        return c.syncConfig.isPresent();
+        return c.syncConfig instanceof SyncConfig.Relayed;
       }
       return false;
     }
@@ -171,8 +175,16 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
   public static final class MockedLedgerConfig implements LedgerConfig {}
 
-  public record StateComputerLedgerConfig(
-      StateComputerConfig config, Optional<SyncConfig> syncConfig) implements LedgerConfig {}
+  public record StateComputerLedgerConfig(StateComputerConfig config, SyncConfig syncConfig)
+      implements LedgerConfig {}
+
+  public sealed interface SyncConfig {
+    record Relayed(SyncRelayConfig config) implements SyncConfig {}
+
+    record Mocked() implements SyncConfig {}
+
+    record None() implements SyncConfig {}
+  }
 
   private final boolean epochs;
   private final ConsensusConfig consensusConfig;
@@ -184,9 +196,11 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   public FunctionalRadixNodeModule(
       ConsensusConfig consensusConfig,
       StateComputerConfig stateComputerConfig,
-      SyncConfig syncConfig) {
+      SyncRelayConfig syncRelayConfig) {
     this(
-        true, consensusConfig, LedgerConfig.stateComputerWithSync(stateComputerConfig, syncConfig));
+        true,
+        consensusConfig,
+        LedgerConfig.stateComputerWithSyncRelay(stateComputerConfig, syncRelayConfig));
   }
 
   public FunctionalRadixNodeModule(
@@ -217,7 +231,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   }
 
   public boolean supportsSync() {
-    return this.ledgerConfig.hasSync();
+    return this.ledgerConfig.hasSyncRelay();
   }
 
   @Override
@@ -241,16 +255,18 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         install(new LedgerModule());
 
         // Sync
-        stateComputerLedgerConfig.syncConfig.ifPresentOrElse(
-            syncConfig -> {
-              install(new SyncServiceModule(syncConfig));
-              if (this.epochs) {
-                install(new EpochsSyncModule());
-              } else {
-                install(new NoEpochsSyncModule());
-              }
-            },
-            () -> install(mockedSyncServiceModule));
+        switch (stateComputerLedgerConfig.syncConfig) {
+          case SyncConfig.Relayed relayed -> {
+            install(new SyncServiceModule(relayed.config()));
+            if (this.epochs) {
+              install(new EpochsSyncModule());
+            } else {
+              install(new NoEpochsSyncModule());
+            }
+          }
+          case SyncConfig.Mocked ignored -> install(mockedSyncServiceModule);
+          case SyncConfig.None ignored -> {}
+        }
 
         switch (stateComputerLedgerConfig.config) {
           case MockedStateComputerConfig c -> {

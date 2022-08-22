@@ -76,8 +76,8 @@ public final class TransactionBuilder {
   }
 
   private static final NativeCalls.StaticFunc1<ECPublicKey, byte[]> buildLargeManifestFunc =
-          NativeCalls.StaticFunc1.with(
-                  new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::build1MBManifest);
+      NativeCalls.StaticFunc1.with(
+          new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::build1MBManifest);
 
   private static native byte[] build1MBManifest(byte[] requestPayload);
 

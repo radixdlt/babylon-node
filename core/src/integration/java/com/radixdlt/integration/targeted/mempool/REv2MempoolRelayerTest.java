@@ -76,7 +76,7 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.stream.Collectors;
 import org.junit.Test;
@@ -92,11 +92,12 @@ public final class REv2MempoolRelayerTest {
               new FunctionalRadixNodeModule(
                   false,
                   FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                  FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSync(
+                  FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                       StateComputerConfig.rev2(
                           StateComputerConfig.REV2ProposerConfig.mempool(
-                              MEMPOOL_SIZE, new MempoolRelayConfig(0, 0, 0, 100)), true),
-                      SyncConfig.of(5000, 10, 3000L))));
+                              MEMPOOL_SIZE, new MempoolRelayConfig(0, 0, 0, 100)),
+                          true),
+                      SyncRelayConfig.of(5000, 10, 3000L))));
 
   private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
 

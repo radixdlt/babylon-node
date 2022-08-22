@@ -97,7 +97,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
@@ -140,10 +140,11 @@ public final class REv2MempoolFillAndEmptyTest {
         new FunctionalRadixNodeModule(
             false,
             FunctionalRadixNodeModule.ConsensusConfig.of(),
-            FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSync(
+            FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
-                    StateComputerConfig.REV2ProposerConfig.mempool(1000, MempoolRelayConfig.of()), true),
-                SyncConfig.of(5000, 10, 3000L))),
+                    StateComputerConfig.REV2ProposerConfig.mempool(1000, MempoolRelayConfig.of()),
+                    true),
+                SyncRelayConfig.of(5000, 10, 3000L))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(
