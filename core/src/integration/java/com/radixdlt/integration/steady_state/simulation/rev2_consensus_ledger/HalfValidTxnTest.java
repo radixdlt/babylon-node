@@ -92,7 +92,7 @@ public class HalfValidTxnTest {
                   false,
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputerNoSync(
-                      StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer()))))
+                      StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer(), false))))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

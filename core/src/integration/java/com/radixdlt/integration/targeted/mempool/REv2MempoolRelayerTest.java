@@ -95,7 +95,7 @@ public final class REv2MempoolRelayerTest {
                   FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSync(
                       StateComputerConfig.rev2(
                           StateComputerConfig.REV2ProposerConfig.mempool(
-                              MEMPOOL_SIZE, new MempoolRelayConfig(0, 0, 0, 100))),
+                              MEMPOOL_SIZE, new MempoolRelayConfig(0, 0, 0, 100)), true),
                       SyncConfig.of(5000, 10, 3000L))));
 
   private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();

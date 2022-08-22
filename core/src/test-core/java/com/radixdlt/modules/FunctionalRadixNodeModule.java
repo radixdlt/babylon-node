@@ -282,10 +282,13 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             install(new ReV1DispatcherModule());
           }
           case REv2StateComputerConfig rev2Config -> {
+            if (!rev2Config.ledger()) {
+              install(new REv2StatelessComputerModule());
+            }
+
             switch (rev2Config.proposerConfig()) {
               case REV2ProposerConfig.Generated generated -> {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
-                install(new REv2StatelessComputerModule());
                 install(new REv2StateManagerModule(Option.none(), rev2Config.ledger()));
               }
               case REV2ProposerConfig.Mempool mempool -> {

@@ -94,7 +94,7 @@ public class SanityTest {
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputerNoSync(
                       StateComputerConfig.rev2(
-                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())))))
+                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of()), true))))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(10, TimeUnit.SECONDS),

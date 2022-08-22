@@ -93,7 +93,7 @@ public final class SanityTest {
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputerWithSync(
                       StateComputerConfig.rev2(
-                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())),
+                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of()), true),
                       SyncConfig.of(5000, 10, 3000L))));
 
   private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();

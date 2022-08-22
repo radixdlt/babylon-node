@@ -62,8 +62,44 @@
  * permissions under this License.
  */
 
-mod builder;
+package com.radixdlt.integration.targeted.storage;
 
-pub use builder::{
-    create_1mb_txn_manifest, create_new_account_unsigned_manifest, create_notarized_bytes, create_signed_intent_bytes,
-};
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.rev2.REv2OneMBTransactionGenerator;
+import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.transactions.RawTransaction;
+import java.util.stream.Collectors;
+import org.junit.Test;
+
+public final class TransactionDBSizeStressTest {
+  private final DeterministicTest test =
+      DeterministicTest.builder()
+          .numNodes(1, 0)
+          .messageSelector(firstSelector())
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                  FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                      StateComputerConfig.rev2(
+                              REV2ProposerConfig.transactionGenerator(new REv2OneMBTransactionGenerator(), 10), true))));
+
+  @Test
+  public void test() {
+    for (int i = 0; i < 100; i++) {
+      test.runForCount(100);
+    }
+  }
+}
