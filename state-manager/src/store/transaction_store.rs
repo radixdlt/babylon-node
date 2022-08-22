@@ -62,10 +62,22 @@
  * permissions under this License.
  */
 
-mod in_memory_proof_store;
-mod in_memory_transaction_store;
-mod transaction_store;
+use crate::types::{TId, Transaction};
+use radix_engine::transaction::TransactionReceipt;
+use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
 
-pub use in_memory_proof_store::ProofStore;
-pub use in_memory_transaction_store::InMemoryTransactionStore;
-pub use transaction_store::{TemporaryTransactionReceipt, TransactionStore};
+/// TODO: Remove and use the real TransactionReceipt. This is currently a required struct
+/// TODO: as there is RC<RefCell<>> useage in some of the substates which does not play well
+/// TODO: with the babylon node multithreaded structures.
+#[derive(Debug)]
+pub struct TemporaryTransactionReceipt {
+    pub result: String,
+    pub new_package_addresses: Vec<PackageAddress>,
+    pub new_component_addresses: Vec<ComponentAddress>,
+    pub new_resource_addresses: Vec<ResourceAddress>,
+}
+
+pub trait TransactionStore {
+    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>);
+    fn get_transaction(&self, tid: &TId) -> &(Vec<u8>, TemporaryTransactionReceipt);
+}

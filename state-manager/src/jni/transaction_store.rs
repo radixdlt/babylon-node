@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::store::TransactionStore;
 use crate::types::TId;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
