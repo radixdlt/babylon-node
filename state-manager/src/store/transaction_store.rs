@@ -69,7 +69,7 @@ use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
 /// TODO: Remove and use the real TransactionReceipt. This is currently a required struct
 /// TODO: as there is RC<RefCell<>> useage in some of the substates which does not play well
 /// TODO: with the babylon node multithreaded structures.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct TemporaryTransactionReceipt {
     pub result: String,
     pub new_package_addresses: Vec<PackageAddress>,
@@ -79,5 +79,5 @@ pub struct TemporaryTransactionReceipt {
 
 pub trait TransactionStore {
     fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>);
-    fn get_transaction(&self, tid: &TId) -> &(Vec<u8>, TemporaryTransactionReceipt);
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt);
 }

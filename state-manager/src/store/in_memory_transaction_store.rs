@@ -104,7 +104,10 @@ impl TransactionStore for InMemoryTransactionStore {
         }
     }
 
-    fn get_transaction(&self, tid: &TId) -> &(Vec<u8>, TemporaryTransactionReceipt) {
-        self.in_memory_store.get(tid).expect("Transaction missing")
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
+        self.in_memory_store
+            .get(tid)
+            .cloned()
+            .expect("Transaction missing")
     }
 }
