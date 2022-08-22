@@ -71,6 +71,16 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.NativeCalls;
 
 public final class TransactionBuilder {
+  public static byte[] build1MBManifest(ECPublicKey publicKey) {
+    return buildLargeManifestFunc.call(publicKey);
+  }
+
+  private static final NativeCalls.StaticFunc1<ECPublicKey, byte[]> buildLargeManifestFunc =
+          NativeCalls.StaticFunc1.with(
+                  new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::build1MBManifest);
+
+  private static native byte[] build1MBManifest(byte[] requestPayload);
+
   public static byte[] buildNewAccountManifest(ECPublicKey publicKey) {
     return newAccountManifestFunc.call(publicKey);
   }

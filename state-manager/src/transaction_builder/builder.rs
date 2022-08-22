@@ -62,9 +62,11 @@
  * permissions under this License.
  */
 
+use std::collections::HashMap;
 use scrypto::core::Network;
 use scrypto::crypto::EcdsaPublicKey;
-use scrypto::prelude::{AccessRule, EcdsaSignature, RADIX_TOKEN, SYSTEM_COMPONENT};
+use scrypto::prelude::{AccessRule, EcdsaSignature, MintParams, Mutability, RADIX_TOKEN, ResourceMethodAuthKey, SYSTEM_COMPONENT};
+use scrypto::resource::ResourceType;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{
@@ -78,6 +80,41 @@ pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
         })
+        .build();
+
+    let intent = TransactionIntent {
+        header: TransactionHeader {
+            version: 1,
+            network: Network::InternalTestnet,
+            start_epoch_inclusive: 0,
+            end_epoch_exclusive: 100,
+            nonce: 5,
+            notary_public_key: public_key,
+            notary_as_signatory: false,
+            cost_unit_limit: 10_000_000,
+            tip_percentage: 5,
+        },
+        manifest,
+    };
+
+    intent.to_bytes()
+}
+
+pub fn create_1mb_txn_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
+    let mut metadata = HashMap::new();
+    let large_string = "s".repeat(1024 * 1024).to_string();
+    metadata.insert("key".to_string(), large_string);
+    let access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> = HashMap::new();
+    let initial_supply: Option<MintParams> = None;
+
+    let manifest = ManifestBuilder::new(Network::InternalTestnet)
+        .lock_fee(1000.into(), SYSTEM_COMPONENT)
+        .call_method(SYSTEM_COMPONENT, "new_resource", to_struct!(
+            ResourceType::NonFungible,
+            metadata,
+            access_rules,
+            initial_supply
+        ))
         .build();
 
     let intent = TransactionIntent {

@@ -64,9 +64,7 @@
 
 use crate::jni::dtos::JavaStructure;
 use crate::result::StateManagerResult;
-use crate::transaction_builder::{
-    create_new_account_unsigned_manifest, create_notarized_bytes, create_signed_intent_bytes,
-};
+use crate::transaction_builder::{create_1mb_txn_manifest, create_new_account_unsigned_manifest, create_notarized_bytes, create_signed_intent_bytes};
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -84,10 +82,21 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountMa
     jni_static_sbor_call(env, request_payload, do_create_new_account_manifest)
 }
 
-fn do_create_new_account_manifest(args: EcdsaPublicKey) -> Vec<u8> {
-    let public_key = args;
-
+fn do_create_new_account_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
     create_new_account_unsigned_manifest(public_key)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_build1MBManifest(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, do_build_1mb_manifest)
+}
+
+fn do_build_1mb_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
+    create_1mb_txn_manifest(public_key)
 }
 
 #[no_mangle]
