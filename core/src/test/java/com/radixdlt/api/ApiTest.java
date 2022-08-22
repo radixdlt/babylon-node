@@ -72,15 +72,11 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.radixdlt.api.common.JSON;
-import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
@@ -91,15 +87,8 @@ import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.p2p.addressbook.AddressBook;
-import com.radixdlt.rev1.REOutput;
-import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RERulesConfig;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import io.undertow.io.Sender;
 import io.undertow.server.HttpHandler;
@@ -107,8 +96,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.util.HeaderMap;
 import java.io.ByteArrayInputStream;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Rule;
@@ -137,22 +124,12 @@ public abstract class ApiTest {
   public void setup() {
     var injector =
         Guice.createInjector(
-            new MainnetForksModule(),
-            new RadixEngineForksLatestOnlyModule(
-                RERulesConfig.testingDefault()
-                    .overrideFeeTable(
-                        FeeTable.create(
-                            Amount.ofSubunits(UInt256.ONE),
-                            Map.of(
-                                ValidatorRegisteredCopy.class, Amount.ofSubunits(UInt256.ONE))))),
-            new ForksModule(),
             new SingleNodeAndPeersDeterministicNetworkModule(
                 TEST_KEY,
                 StateComputerConfig.rev2(
                     StateComputerConfig.REV2ProposerConfig.mempool(
                         mempoolMaxSize, MempoolRelayConfig.of()),
-                    false)),
-            new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),
+                    true)),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),
             new AbstractModule() {
@@ -196,16 +173,6 @@ public abstract class ApiTest {
 
   protected final void start() {
     runner.start();
-  }
-
-  protected final void runUntilCommitted(TID txnId) {
-    runner.runNextEventsThrough(
-        LedgerUpdate.class,
-        u -> {
-          var output = u.getStateComputerOutput().getInstance(REOutput.class);
-          return output.getProcessedTxns().stream()
-              .anyMatch(txn -> txn.getTxn().getPayloadHash().equals(txnId));
-        });
   }
 
   private HttpServerExchange exchange(Exception e, Sender sender) {

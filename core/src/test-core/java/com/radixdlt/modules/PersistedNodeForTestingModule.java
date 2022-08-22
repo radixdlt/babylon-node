@@ -118,7 +118,7 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
             stateComputerConfig,
             new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)));
     switch (stateComputerConfig) {
-      case StateComputerConfig.REv2StateComputerConfig unused -> {
+      case StateComputerConfig.REv2StateComputerConfig ignored -> {
         // FIXME: a hack for tests that use rev2 (api); fix once ledger/consensus recovery are
         // hooked up
         install(new MockedLedgerRecoveryModule());
