@@ -138,7 +138,7 @@ task buildRustForDocker(type: Exec) {
                --output type=local,dest=state-manager/target/$target/${project.property("rustBinaryBuildType")}/ .
              docker push $rustBuilderRepo:$cacheTag || true
              docker push $rustCacheRepo:$cacheTag || true
-             [ -f $outputDir/${project.property("rustBinaryBuildType")}/libstatemanager.so ]
+             [ -f $outputDir/${project.property("rustBinaryBuildType")}/libcorerust.so ]
                 """
 
         commandLine 'sh', '-c', dockerMultiStageCmd

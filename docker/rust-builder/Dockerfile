@@ -42,8 +42,8 @@ WORKDIR /app
 COPY state-manager ./
 
 RUN cargo build --target=$TARGET --release
-RUN cp -R target/$TARGET/release/libstatemanager.so /
+RUN cp -R target/$TARGET/release/libcorerust.so /
 RUN rm -rf /app
 
 FROM scratch as artifact
-COPY --from=prod-build /libstatemanager.so /
+COPY --from=prod-build /libcorerust.so /
