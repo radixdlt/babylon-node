@@ -97,6 +97,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -104,10 +105,8 @@ import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.TemporaryFolder;
 
 /**
  * Test which fills a mempool and then empties it checking to make sure there are no stragglers left
@@ -124,8 +123,6 @@ public final class REv2MempoolFillAndEmptyTest {
           MessageSelector.firstSelector(),
           MessageMutator.nothing());
   private final REV2TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
-
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   @Inject private SystemCounters systemCounters;
   @Inject private DeterministicProcessor processor;
@@ -146,9 +143,8 @@ public final class REv2MempoolFillAndEmptyTest {
             FunctionalRadixNodeModule.ConsensusConfig.of(),
             FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
-                    folder.getRoot().getAbsolutePath(),
-                    StateComputerConfig.REV2ProposerConfig.mempool(1000, MempoolRelayConfig.of()),
-                    true),
+                    REv2DatabaseConfig.inMemory(),
+                    StateComputerConfig.REV2ProposerConfig.mempool(1000, MempoolRelayConfig.of())),
                 SyncRelayConfig.of(5000, 10, 3000L))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),

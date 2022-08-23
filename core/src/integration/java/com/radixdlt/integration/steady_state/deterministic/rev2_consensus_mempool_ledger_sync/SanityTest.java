@@ -78,6 +78,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
 import org.junit.Rule;
@@ -86,26 +87,26 @@ import org.junit.rules.TemporaryFolder;
 
 public final class SanityTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  private final DeterministicTest test =
-      DeterministicTest.builder()
-          .numNodes(10, 10)
-          .messageSelector(firstSelector())
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  ConsensusConfig.of(1000),
-                  LedgerConfig.stateComputerWithSyncRelay(
-                      StateComputerConfig.rev2(
-                          folder.getRoot().getAbsolutePath(),
-                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of()),
-                          true),
-                      SyncRelayConfig.of(5000, 10, 3000L))));
-
   private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(10, 10)
+        .messageSelector(firstSelector())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.rev2(
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())),
+                    SyncRelayConfig.of(5000, 10, 3000L))));
+  }
 
   @Test
   public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() throws Exception {
+    var test = createTest();
     // Run
     for (int i = 0; i < 100; i++) {
       test.runForCount(1000);

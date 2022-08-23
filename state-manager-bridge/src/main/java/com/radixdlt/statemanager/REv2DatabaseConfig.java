@@ -92,6 +92,10 @@ public sealed interface REv2DatabaseConfig {
     return new None();
   }
 
+  static REv2DatabaseConfig rocksDB(String databasePath) {
+    return new RocksDB(databasePath);
+  }
+
   static boolean isNone(REv2DatabaseConfig config) {
     return (config instanceof None);
   }

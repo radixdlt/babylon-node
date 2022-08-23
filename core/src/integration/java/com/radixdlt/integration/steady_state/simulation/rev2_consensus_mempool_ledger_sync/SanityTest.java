@@ -79,6 +79,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -99,9 +100,8 @@ public class SanityTest {
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputerWithSyncRelay(
                       StateComputerConfig.rev2(
-                          folder.getRoot().getAbsolutePath(),
-                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of()),
-                          true),
+                          REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())),
                       SyncRelayConfig.of(5000, 10, 3000L))))
           .addTestModules(
               ConsensusMonitors.safety(),
