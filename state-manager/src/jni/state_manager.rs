@@ -67,7 +67,9 @@ use crate::jni::utils::*;
 use crate::mempool::simple::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{DatabaseConfig, StateManager, StateManagerConfig};
-use crate::store::{InMemoryTransactionStore, RocksDBTransactionStore, TransactionStore};
+use crate::store::{
+    InMemoryTransactionStore, NullTransactionStore, RocksDBTransactionStore, TransactionStore,
+};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -123,6 +125,7 @@ impl JNIStateManager {
             DatabaseConfig::RocksDB(path) => {
                 Box::new(RocksDBTransactionStore::new(PathBuf::from(path)))
             }
+            DatabaseConfig::None => Box::new(NullTransactionStore),
         };
 
         let mempool = SimpleMempool::new(mempool_config);

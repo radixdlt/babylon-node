@@ -251,6 +251,7 @@ impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager
 pub enum DatabaseConfig {
     InMemory,
     RocksDB(String),
+    None,
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]

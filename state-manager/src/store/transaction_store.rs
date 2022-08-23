@@ -82,3 +82,15 @@ pub trait TransactionStore {
     fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>);
     fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt);
 }
+
+pub struct NullTransactionStore;
+
+impl TransactionStore for NullTransactionStore {
+    fn insert_transactions(&mut self, _transactions: Vec<(&Transaction, TransactionReceipt)>) {
+        panic!("Unexpected call to NullTransactionStore");
+    }
+
+    fn get_transaction(&self, _tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
+        panic!("Unexpected call to NullTransactionStore");
+    }
+}
