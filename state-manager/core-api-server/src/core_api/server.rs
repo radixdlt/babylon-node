@@ -169,7 +169,7 @@ where
         _transaction_preview_request: models::TransactionPreviewRequest,
         _context: &C,
     ) -> Result<TransactionPreviewPostResponse, ApiError> {
-        Err("To be implemented".into())
+        Err(ApiError("To be implemented".into()))
     }
 
     async fn transaction_submit_post(
@@ -177,7 +177,7 @@ where
         _transaction_submit_request: models::TransactionSubmitRequest,
         _context: &C,
     ) -> Result<TransactionSubmitPostResponse, ApiError> {
-        Err("To be implemented".into())
+        Err(ApiError("To be implemented".into()))
     }
 }
 

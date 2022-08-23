@@ -2939,7 +2939,7 @@ pub struct TransactionPreviewResponse {
     pub transaction_fee: models::FeeSummary,
 
     #[serde(rename = "logs")]
-    pub logs: Vec<models::TransactionPreviewResponseLogs>,
+    pub logs: Vec<models::TransactionPreviewResponseLogsInner>,
 
     /// A list of new package addresses
     #[serde(rename = "new_package_addresses")]
@@ -2956,7 +2956,7 @@ pub struct TransactionPreviewResponse {
 }
 
 impl TransactionPreviewResponse {
-    pub fn new(transaction_status: models::TransactionStatus, transaction_fee: models::FeeSummary, logs: Vec<models::TransactionPreviewResponseLogs>, new_package_addresses: Vec<String>, new_component_addresses: Vec<String>, new_resource_addresses: Vec<String>, ) -> TransactionPreviewResponse {
+    pub fn new(transaction_status: models::TransactionStatus, transaction_fee: models::FeeSummary, logs: Vec<models::TransactionPreviewResponseLogsInner>, new_package_addresses: Vec<String>, new_component_addresses: Vec<String>, new_resource_addresses: Vec<String>, ) -> TransactionPreviewResponse {
         TransactionPreviewResponse {
             transaction_status: transaction_status,
             transaction_fee: transaction_fee,
@@ -3008,7 +3008,7 @@ impl std::str::FromStr for TransactionPreviewResponse {
         struct IntermediateRep {
             pub transaction_status: Vec<models::TransactionStatus>,
             pub transaction_fee: Vec<models::FeeSummary>,
-            pub logs: Vec<Vec<models::TransactionPreviewResponseLogs>>,
+            pub logs: Vec<Vec<models::TransactionPreviewResponseLogsInner>>,
             pub new_package_addresses: Vec<Vec<String>>,
             pub new_component_addresses: Vec<Vec<String>>,
             pub new_resource_addresses: Vec<Vec<String>>,
@@ -3095,7 +3095,7 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct TransactionPreviewResponseLogs {
+pub struct TransactionPreviewResponseLogsInner {
     #[serde(rename = "level")]
     pub level: String,
 
@@ -3104,19 +3104,19 @@ pub struct TransactionPreviewResponseLogs {
 
 }
 
-impl TransactionPreviewResponseLogs {
-    pub fn new(level: String, message: String, ) -> TransactionPreviewResponseLogs {
-        TransactionPreviewResponseLogs {
+impl TransactionPreviewResponseLogsInner {
+    pub fn new(level: String, message: String, ) -> TransactionPreviewResponseLogsInner {
+        TransactionPreviewResponseLogsInner {
             level: level,
             message: message,
         }
     }
 }
 
-/// Converts the TransactionPreviewResponseLogs value to the Query Parameters representation (style=form, explode=false)
+/// Converts the TransactionPreviewResponseLogsInner value to the Query Parameters representation (style=form, explode=false)
 /// specified in https://swagger.io/docs/specification/serialization/
 /// Should be implemented in a serde serializer
-impl std::string::ToString for TransactionPreviewResponseLogs {
+impl std::string::ToString for TransactionPreviewResponseLogsInner {
     fn to_string(&self) -> String {
         let mut params: Vec<String> = vec![];
 
@@ -3131,10 +3131,10 @@ impl std::string::ToString for TransactionPreviewResponseLogs {
     }
 }
 
-/// Converts Query Parameters representation (style=form, explode=false) to a TransactionPreviewResponseLogs value
+/// Converts Query Parameters representation (style=form, explode=false) to a TransactionPreviewResponseLogsInner value
 /// as specified in https://swagger.io/docs/specification/serialization/
 /// Should be implemented in a serde deserializer
-impl std::str::FromStr for TransactionPreviewResponseLogs {
+impl std::str::FromStr for TransactionPreviewResponseLogsInner {
     type Err = String;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
@@ -3154,14 +3154,14 @@ impl std::str::FromStr for TransactionPreviewResponseLogs {
         while key_result.is_some() {
             let val = match string_iter.next() {
                 Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing TransactionPreviewResponseLogs".to_string())
+                None => return std::result::Result::Err("Missing value while parsing TransactionPreviewResponseLogsInner".to_string())
             };
 
             if let Some(key) = key_result {
                 match key {
                     "level" => intermediate_rep.level.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "message" => intermediate_rep.message.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing TransactionPreviewResponseLogs".to_string())
+                    _ => return std::result::Result::Err("Unexpected key while parsing TransactionPreviewResponseLogsInner".to_string())
                 }
             }
 
@@ -3170,41 +3170,41 @@ impl std::str::FromStr for TransactionPreviewResponseLogs {
         }
 
         // Use the intermediate representation to return the struct
-        std::result::Result::Ok(TransactionPreviewResponseLogs {
-            level: intermediate_rep.level.into_iter().next().ok_or("level missing in TransactionPreviewResponseLogs".to_string())?,
-            message: intermediate_rep.message.into_iter().next().ok_or("message missing in TransactionPreviewResponseLogs".to_string())?,
+        std::result::Result::Ok(TransactionPreviewResponseLogsInner {
+            level: intermediate_rep.level.into_iter().next().ok_or("level missing in TransactionPreviewResponseLogsInner".to_string())?,
+            message: intermediate_rep.message.into_iter().next().ok_or("message missing in TransactionPreviewResponseLogsInner".to_string())?,
         })
     }
 }
 
-// Methods for converting between header::IntoHeaderValue<TransactionPreviewResponseLogs> and hyper::header::HeaderValue
+// Methods for converting between header::IntoHeaderValue<TransactionPreviewResponseLogsInner> and hyper::header::HeaderValue
 
 
-impl std::convert::TryFrom<header::IntoHeaderValue<TransactionPreviewResponseLogs>> for hyper::header::HeaderValue {
+impl std::convert::TryFrom<header::IntoHeaderValue<TransactionPreviewResponseLogsInner>> for hyper::header::HeaderValue {
     type Error = String;
 
-    fn try_from(hdr_value: header::IntoHeaderValue<TransactionPreviewResponseLogs>) -> std::result::Result<Self, Self::Error> {
+    fn try_from(hdr_value: header::IntoHeaderValue<TransactionPreviewResponseLogsInner>) -> std::result::Result<Self, Self::Error> {
         let hdr_value = hdr_value.to_string();
         match hyper::header::HeaderValue::from_str(&hdr_value) {
              std::result::Result::Ok(value) => std::result::Result::Ok(value),
              std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for TransactionPreviewResponseLogs - value: {} is invalid {}",
+                 format!("Invalid header value for TransactionPreviewResponseLogsInner - value: {} is invalid {}",
                      hdr_value, e))
         }
     }
 }
 
 
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<TransactionPreviewResponseLogs> {
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<TransactionPreviewResponseLogsInner> {
     type Error = String;
 
     fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
         match hdr_value.to_str() {
              std::result::Result::Ok(value) => {
-                    match <TransactionPreviewResponseLogs as std::str::FromStr>::from_str(value) {
+                    match <TransactionPreviewResponseLogsInner as std::str::FromStr>::from_str(value) {
                         std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
                         std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into TransactionPreviewResponseLogs - {}",
+                            format!("Unable to convert header value '{}' into TransactionPreviewResponseLogsInner - {}",
                                 value, err))
                     }
              },
