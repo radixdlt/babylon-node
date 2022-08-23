@@ -97,15 +97,25 @@ impl TransactionStore {
     }
 
     fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
+        let entity_changes = receipt
+            .result
+            .get_commit_result()
+            .map(|c| &c.entity_changes);
         let receipt = TemporaryTransactionReceipt {
-            result: match receipt.status {
-                TransactionStatus::Succeeded(..) => "Success".to_string(),
-                TransactionStatus::Failed(error) => error.to_string(),
-                TransactionStatus::Rejected => "Rejected".to_string(),
+            result: match receipt.result.get_status() {
+                TransactionStatus::Success(..) => "Success".to_string(),
+                TransactionStatus::Failure(error) => format!("Error: {}", error),
+                TransactionStatus::Rejection(error) => format!("Rejected: {}", error),
             },
-            new_package_addresses: receipt.new_package_addresses,
-            new_component_addresses: receipt.new_component_addresses,
-            new_resource_addresses: receipt.new_resource_addresses,
+            new_package_addresses: entity_changes
+                .map(|c| c.new_package_addresses.clone())
+                .unwrap_or_default(),
+            new_component_addresses: entity_changes
+                .map(|c| c.new_component_addresses.clone())
+                .unwrap_or_default(),
+            new_resource_addresses: entity_changes
+                .map(|c| c.new_resource_addresses.clone())
+                .unwrap_or_default(),
         };
         self.in_memory_store.insert(
             transaction.id.clone(),

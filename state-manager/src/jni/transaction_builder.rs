@@ -70,7 +70,7 @@ use crate::transaction_builder::{
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use scrypto::crypto::{EcdsaPublicKey, EcdsaSignature};
+use scrypto::prelude::{EcdsaPublicKey, EcdsaSignature, NetworkDefinition};
 use transaction::model::{SignedTransactionIntent, TransactionIntent};
 
 use super::utils::{jni_static_sbor_call, jni_static_sbor_call_flatten_result};
@@ -84,10 +84,10 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountMa
     jni_static_sbor_call(env, request_payload, do_create_new_account_manifest)
 }
 
-fn do_create_new_account_manifest(args: EcdsaPublicKey) -> Vec<u8> {
-    let public_key = args;
+fn do_create_new_account_manifest(args: (NetworkDefinition, EcdsaPublicKey)) -> Vec<u8> {
+    let (network_definition, public_key) = args;
 
-    create_new_account_unsigned_manifest(public_key)
+    create_new_account_unsigned_manifest(&network_definition, public_key)
 }
 
 #[no_mangle]

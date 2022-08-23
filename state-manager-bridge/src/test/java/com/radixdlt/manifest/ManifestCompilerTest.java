@@ -66,7 +66,7 @@ package com.radixdlt.manifest;
 
 import static org.junit.Assert.assertTrue;
 
-import java.util.Locale;
+import com.radixdlt.rev2.NetworkDefinition;
 import org.junit.Test;
 
 public final class ManifestCompilerTest {
@@ -88,10 +88,8 @@ public final class ManifestCompilerTest {
 			DROP_PROOF Proof("proof1");
 			DROP_PROOF Proof("proof2");""";
 
-    final var network = "LocalSimulator";
-
     // Act
-    final var result = ManifestCompiler.compile(manifest, network);
+    final var result = ManifestCompiler.compile(NetworkDefinition.LOCAL_SIMULATOR, manifest);
 
     // Assert
     assertTrue(result.isSuccess());
@@ -100,8 +98,9 @@ public final class ManifestCompilerTest {
 
   @Test
   public void test_compile_manifest_error() {
-    final var result = ManifestCompiler.compile("CLEAR_AUTH_ZONE;", "InvalidNetwork");
+    final var result =
+        ManifestCompiler.compile(NetworkDefinition.INT_TEST_NET, "INVALID INSTRUCTION;");
     assertTrue(result.isError());
-    assertTrue(result.unwrapError().message().toLowerCase(Locale.ROOT).contains("network"));
+    assertTrue(result.unwrapError().message().contains("UnknownIdentifier"));
   }
 }

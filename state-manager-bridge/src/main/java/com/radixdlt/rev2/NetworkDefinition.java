@@ -64,87 +64,28 @@
 
 package com.radixdlt.rev2;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.google.inject.*;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
-import com.radixdlt.keys.InMemoryBFTKeyModule;
-import com.radixdlt.ledger.MockedLedgerRecoveryModule;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.*;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
-import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.TimeSupplier;
-import java.util.List;
-import org.junit.Test;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-public final class REv2GenesisTest {
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-  private static final Decimal GENESIS_AMOUNT = Decimal.of(24_000_000_000L);
-
-  private final DeterministicNetwork network =
-      new DeterministicNetwork(
-          List.of(BFTNode.create(TEST_KEY.getPublicKey())),
-          MessageSelector.firstSelector(),
-          MessageMutator.nothing());
-
-  @Inject private REv2StateReader stateReader;
-
-  private Injector createInjector() {
-    return Guice.createInjector(
-        new CryptoModule(),
-        new TestMessagingModule.Builder().withDefaultRateLimit().build(),
-        new MockedLedgerRecoveryModule(),
-        new MockedConsensusRecoveryModule.Builder()
-            .withNodes(List.of(BFTNode.create(TEST_KEY.getPublicKey())))
-            .build(),
-        new MockedPersistenceStoreModule(),
-        new FunctionalRadixNodeModule(
-            false,
-            FunctionalRadixNodeModule.ConsensusConfig.of(),
-            FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                StateComputerConfig.rev2(
-                    StateComputerConfig.REV2ProposerConfig.mempool(0, MempoolRelayConfig.of())))),
-        new TestP2PModule.Builder().build(),
-        new InMemoryBFTKeyModule(TEST_KEY),
-        new DeterministicEnvironmentModule(
-            network.createSender(BFTNode.create(TEST_KEY.getPublicKey()))),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            bindConstant().annotatedWith(NetworkId.class).to(Network.INTEGRATIONTESTNET.getId());
-            bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-            bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-            bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-          }
-        });
+public record NetworkDefinition(byte id, String logical_name, String hrp_suffix) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        NetworkDefinition.class,
+        codecs ->
+            StructCodec.with(
+                NetworkDefinition::new,
+                codecs.of(byte.class),
+                codecs.of(String.class),
+                codecs.of(String.class),
+                (t, encoder) -> encoder.encode(t.id, t.logical_name, t.hrp_suffix)));
   }
 
-  @Test
-  public void state_reader_on_genesis_returns_correct_amounts() {
-    // Arrange/Act
-    createInjector().injectMembers(this);
-
-    // Assert
-    var systemAmount =
-        this.stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_COMPONENT_ADDRESS);
-    assertThat(systemAmount).isEqualTo(GENESIS_AMOUNT);
-
-    var emptyAccountAmount =
-        this.stateReader.getComponentXrdAmount(ComponentAddress.create(new byte[27]));
-    assertThat(emptyAccountAmount).isEqualTo(Decimal.of(0));
+  public static NetworkDefinition from(Network network) {
+    return new NetworkDefinition(
+        network.getByteId(), network.getLogicalName(), network.getHrpSuffix());
   }
+
+  public static NetworkDefinition LOCAL_SIMULATOR = NetworkDefinition.from(Network.LOCALSIMULATOR);
+  public static NetworkDefinition INT_TEST_NET = NetworkDefinition.from(Network.INTEGRATIONTESTNET);
 }

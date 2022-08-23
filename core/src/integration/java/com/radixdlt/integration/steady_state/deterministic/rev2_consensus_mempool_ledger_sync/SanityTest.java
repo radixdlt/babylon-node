@@ -77,6 +77,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.sync.SyncConfig;
 import com.radixdlt.transactions.RawTransaction;
@@ -96,7 +97,8 @@ public final class SanityTest {
                           REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())),
                       SyncConfig.of(5000, 10, 3000L))));
 
-  private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
+  private final TransactionGenerator transactionGenerator =
+      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
   @Test
   public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() throws Exception {

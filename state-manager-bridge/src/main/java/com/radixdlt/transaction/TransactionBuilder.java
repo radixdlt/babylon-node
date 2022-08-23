@@ -64,31 +64,35 @@
 
 package com.radixdlt.transaction;
 
+import static com.radixdlt.lang.Tuple.tuple;
+
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sbor.NativeCalls;
 
 public final class TransactionBuilder {
-  public static byte[] buildNewAccountManifest(ECPublicKey publicKey) {
-    return newAccountManifestFunc.call(publicKey);
+  public static byte[] buildNewAccountIntent(NetworkDefinition network, ECPublicKey publicKey) {
+    return newAccountManifestFunc.call(tuple(network, publicKey));
   }
 
   public static byte[] createSignedIntentBytes(
       byte[] intent, ECPublicKey publicKey, ECDSASignature signature) {
-    return createSignedIntentBytesFunc.call(Tuple.tuple(intent, publicKey, signature));
+    return createSignedIntentBytesFunc.call(tuple(intent, publicKey, signature));
   }
 
   public static byte[] createNotarizedBytes(byte[] signedIntent, ECDSASignature signature) {
-    return createNotarizedBytesFunc.call(Tuple.tuple(signedIntent, signature));
+    return createNotarizedBytesFunc.call(tuple(signedIntent, signature));
   }
 
   private static native byte[] newAccountManifest(byte[] requestPayload);
 
-  private static final NativeCalls.StaticFunc1<ECPublicKey, byte[]> newAccountManifestFunc =
-      NativeCalls.StaticFunc1.with(
-          new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::newAccountManifest);
+  private static final NativeCalls.StaticFunc1<Tuple.Tuple2<NetworkDefinition, ECPublicKey>, byte[]>
+      newAccountManifestFunc =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::newAccountManifest);
 
   private static native byte[] createSignedIntentBytes(byte[] requestPayload);
 

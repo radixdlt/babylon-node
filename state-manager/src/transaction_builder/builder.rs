@@ -62,19 +62,22 @@
  * permissions under this License.
  */
 
-use scrypto::core::Network;
-use scrypto::crypto::EcdsaPublicKey;
-use scrypto::prelude::{AccessRule, EcdsaSignature, RADIX_TOKEN, SYSTEM_COMPONENT};
-use scrypto::to_struct;
+use scrypto::prelude::{
+    args, AccessRule, EcdsaPublicKey, EcdsaSignature, NetworkDefinition, RADIX_TOKEN,
+    SYSTEM_COMPONENT,
+};
 use transaction::builder::ManifestBuilder;
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
 };
 
-pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
-    let manifest = ManifestBuilder::new(Network::InternalTestnet)
+pub fn create_new_account_unsigned_manifest(
+    network_definition: &NetworkDefinition,
+    public_key: EcdsaPublicKey,
+) -> Vec<u8> {
+    let manifest = ManifestBuilder::new(network_definition.clone())
         .lock_fee(1000.into(), SYSTEM_COMPONENT)
-        .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
+        .call_method(SYSTEM_COMPONENT, "free_xrd", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
         })
@@ -83,7 +86,7 @@ pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u
     let intent = TransactionIntent {
         header: TransactionHeader {
             version: 1,
-            network: Network::InternalTestnet,
+            network_id: network_definition.id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 5,

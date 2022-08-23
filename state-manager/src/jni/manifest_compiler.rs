@@ -65,11 +65,10 @@
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use radix_engine::types::NetworkDefinition;
 use sbor::{Decode, Encode, TypeId};
-use scrypto::core::Network;
 use scrypto::prelude::scrypto_encode;
 use std::str;
-use std::str::FromStr;
 use transaction::manifest::{compile, CompileError};
 
 use super::utils::jni_static_sbor_call;
@@ -83,19 +82,10 @@ extern "system" fn Java_com_radixdlt_manifest_ManifestCompiler_compile(
     jni_static_sbor_call(env, request_payload, do_compile)
 }
 
-fn do_compile(args: (Vec<u8>, Vec<u8>)) -> Result<Vec<u8>, CompileManifestErrorJava> {
-    let (manifest_bytes, network_bytes) = args;
+fn do_compile(args: (NetworkDefinition, String)) -> Result<Vec<u8>, CompileManifestErrorJava> {
+    let (network, manifest_str) = args;
 
-    let manifest_str = str::from_utf8(&manifest_bytes)
-        .map_err(|_e| CompileManifestErrorJava::from("Invalid utf-8 string (manifest)"))?;
-
-    let network_str = str::from_utf8(&network_bytes)
-        .map_err(|_e| CompileManifestErrorJava::from("Invalid utf-8 string (network)"))?;
-
-    let network: Network = Network::from_str(network_str)
-        .map_err(|_e| CompileManifestErrorJava::from("Unknown network"))?;
-
-    compile(manifest_str, &network)
+    compile(&manifest_str, &network)
         .map_err(|e| e.into())
         .map(|manifest| scrypto_encode(&manifest))
 }

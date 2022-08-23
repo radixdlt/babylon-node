@@ -80,6 +80,9 @@ public class NetworkTest {
       if (network.getId() == 1) {
         assertEquals("account_rdx", network.getAccountHrp());
         assertEquals("validator_rdx", network.getValidatorHrp());
+      } else if (network.getId() == 242) {
+        assertEquals("account_sim", network.getAccountHrp());
+        assertEquals("validator_sim", network.getValidatorHrp());
       } else {
         assertEquals(String.format("account_tdx%d_", network.getId()), network.getAccountHrp());
         assertEquals(String.format("validator_tdx%d_", network.getId()), network.getValidatorHrp());
@@ -97,7 +100,10 @@ public class NetworkTest {
 
   @Test
   public void test_logical_names_agree() {
-    var logicalNameExceptions = Map.of("INTEGRATIONTESTNET", "inttestnet");
+    var logicalNameExceptions =
+        Map.of(
+            "INTEGRATIONTESTNET", "inttestnet",
+            "LOCALSIMULATOR", "simulator");
 
     for (var network : Network.values()) {
       var networkEnumName = network.name();

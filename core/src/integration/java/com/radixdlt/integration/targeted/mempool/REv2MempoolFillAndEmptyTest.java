@@ -95,6 +95,7 @@ import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.sync.SyncConfig;
@@ -121,7 +122,8 @@ public final class REv2MempoolFillAndEmptyTest {
           List.of(BFTNode.create(TEST_KEY.getPublicKey())),
           MessageSelector.firstSelector(),
           MessageMutator.nothing());
-  private final REV2TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
+  private final REV2TransactionGenerator transactionGenerator =
+      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
   @Inject private SystemCounters systemCounters;
   @Inject private DeterministicProcessor processor;

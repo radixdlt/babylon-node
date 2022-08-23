@@ -75,10 +75,8 @@ use radix_engine::transaction::{
     ExecutionConfig, PreviewExecutor, PreviewResult, TransactionExecutor, TransactionReceipt,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
-use scrypto::core::Network;
 use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
-use scrypto::prelude::{scrypto_decode, EcdsaPublicKey};
 use std::collections::HashMap;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
@@ -92,7 +90,7 @@ pub struct StateManager<M: Mempool, S> {
     pub mempool: M,
     pub transaction_store: TransactionStore,
     pub proof_store: ProofStore,
-    network: Network,
+    network: NetworkDefinition,
     substate_store: S,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
@@ -103,12 +101,13 @@ pub struct StateManager<M: Mempool, S> {
 
 impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager<M, S> {
     pub fn new(
+        network: NetworkDefinition,
         mempool: M,
         transaction_store: TransactionStore,
         substate_store: S,
     ) -> StateManager<M, S> {
         StateManager {
-            network: Network::LocalSimulator,
+            network: network.clone(),
             mempool,
             transaction_store,
             proof_store: ProofStore::new(),
@@ -116,7 +115,7 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),
             validation_config: ValidationConfig {
-                network: Network::InternalTestnet,
+                network,
                 current_epoch: 1,
                 max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
                 min_tip_percentage: 0,
@@ -205,7 +204,7 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
             intent: TransactionIntent {
                 header: TransactionHeader {
                     version: 1,
-                    network: self.network.clone(),
+                    network_id: self.network.id,
                     start_epoch_inclusive: 0,
                     end_epoch_exclusive: 100,
                     nonce: preview_request.nonce,
@@ -249,5 +248,6 @@ impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct StateManagerConfig {
+    pub network_definition: NetworkDefinition,
     pub mempool_config: Option<MempoolConfig>,
 }

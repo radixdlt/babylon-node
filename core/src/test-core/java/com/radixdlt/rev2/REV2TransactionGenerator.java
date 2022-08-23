@@ -73,16 +73,23 @@ import com.radixdlt.utils.PrivateKeys;
 
 /** Generates a valid transaction for REV2 */
 public final class REV2TransactionGenerator implements TransactionGenerator {
+  private final NetworkDefinition networkDefinition;
+
+  public REV2TransactionGenerator(NetworkDefinition networkDefinition) {
+    this.networkDefinition = networkDefinition;
+  }
+
   private int currentKey = 1;
 
   @Override
   public RawTransaction nextTransaction() {
     final ECKeyPair key = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
-    var manifest = TransactionBuilder.buildNewAccountManifest(key.getPublicKey());
-    var hashedManifest = HashUtils.sha256Twice(manifest);
+    var intentBytes =
+        TransactionBuilder.buildNewAccountIntent(networkDefinition, key.getPublicKey());
+    var hashedIntent = HashUtils.sha256Twice(intentBytes);
     var signedIntent =
         TransactionBuilder.createSignedIntentBytes(
-            manifest, key.getPublicKey(), key.sign(hashedManifest.asBytes()));
+            intentBytes, key.getPublicKey(), key.sign(hashedIntent.asBytes()));
     var hashedSignedIntent = HashUtils.sha256Twice(signedIntent);
     var notarized =
         TransactionBuilder.createNotarizedBytes(

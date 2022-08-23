@@ -120,6 +120,7 @@ public final class StateManagerSbor {
     UInt32.registerCodec(codecMap);
     UInt64.registerCodec(codecMap);
     RustMempoolConfig.registerCodec(codecMap);
+    NetworkDefinition.registerCodec(codecMap);
     StateManagerConfig.registerCodec(codecMap);
     RawTransaction.registerCodec(codecMap);
     PreviewFlags.registerCodec(codecMap);

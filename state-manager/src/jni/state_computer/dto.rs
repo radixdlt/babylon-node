@@ -93,7 +93,7 @@ impl From<PreviewError> for StateManagerResult<PreviewErrorJava> {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum TransactionStatusJava {
-    Rejected,
+    Rejected(String),
     Succeeded(Vec<Vec<u8>>),
     Failed(String),
 }
@@ -126,7 +126,7 @@ impl From<FeeSummary> for FeeSummaryJava {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PreviewResultJava {
     status: TransactionStatusJava,
-    fee_summary: FeeSummaryJava,
+    fee_summary: Option<FeeSummaryJava>,
     application_logs: Vec<(Level, String)>,
     new_package_addresses: Vec<PackageAddress>,
     new_component_addresses: Vec<ComponentAddress>,
@@ -136,25 +136,38 @@ pub struct PreviewResultJava {
 impl From<PreviewResult> for PreviewResultJava {
     fn from(result: PreviewResult) -> Self {
         let receipt = result.receipt;
+        let commit = receipt.result.get_commit_result();
+        let execution = receipt.execution;
+        let entity_changes = commit.map(|c| &c.entity_changes);
+        let application_logs = execution
+            .as_ref()
+            .map(|e| e.application_logs.clone())
+            .unwrap_or_else(Vec::new);
         PreviewResultJava {
-            status: receipt.status.into(),
-            fee_summary: receipt.fee_summary.into(),
-            application_logs: receipt.application_logs,
-            new_package_addresses: receipt.new_package_addresses,
-            new_component_addresses: receipt.new_component_addresses,
-            new_resource_addresses: receipt.new_resource_addresses,
+            status: receipt.result.get_status().into(),
+            fee_summary: execution.map(|e| e.fee_summary.into()),
+            application_logs,
+            new_package_addresses: entity_changes
+                .map(|e| e.new_package_addresses.clone())
+                .unwrap_or_else(Vec::new),
+            new_component_addresses: entity_changes
+                .map(|e| e.new_component_addresses.clone())
+                .unwrap_or_else(Vec::new),
+            new_resource_addresses: entity_changes
+                .map(|e| e.new_resource_addresses.clone())
+                .unwrap_or_else(Vec::new),
         }
     }
 }
 
-impl From<TransactionStatus> for TransactionStatusJava {
+impl From<TransactionStatus<'_>> for TransactionStatusJava {
     fn from(status: TransactionStatus) -> Self {
         match status {
-            TransactionStatus::Rejected => TransactionStatusJava::Rejected,
-            TransactionStatus::Succeeded(output) => TransactionStatusJava::Succeeded(output),
-            TransactionStatus::Failed(error) => {
-                TransactionStatusJava::Failed(format!("{:?}", error))
+            TransactionStatus::Rejection(error) => {
+                TransactionStatusJava::Rejected(error.to_string())
             }
+            TransactionStatus::Success(output) => TransactionStatusJava::Succeeded(output.clone()),
+            TransactionStatus::Failure(error) => TransactionStatusJava::Failed(error.to_string()),
         }
     }
 }

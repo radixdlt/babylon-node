@@ -69,24 +69,23 @@ import static com.radixdlt.lang.Tuple.tuple;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sbor.NativeCalls;
-import java.nio.charset.StandardCharsets;
 
 public final class ManifestCompiler {
 
   static {
+    // This is idempotent with the other calls
     System.loadLibrary("statemanager");
   }
 
-  // TODO: use Network enum once it's in sync with rev2
-  public static Result<byte[], CompileManifestError> compile(String manifest, String network) {
-    final var manifestBytes = manifest.getBytes(StandardCharsets.UTF_8);
-    final var networkBytes = network.getBytes(StandardCharsets.UTF_8);
-    return compileFunc.call(tuple(manifestBytes, networkBytes));
+  public static Result<byte[], CompileManifestError> compile(
+      NetworkDefinition network, String manifest) {
+    return compileFunc.call(tuple(network, manifest));
   }
 
   private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple2<byte[], byte[]>, Result<byte[], CompileManifestError>>
+          Tuple.Tuple2<NetworkDefinition, String>, Result<byte[], CompileManifestError>>
       compileFunc =
           NativeCalls.StaticFunc1.with(
               new TypeToken<>() {}, new TypeToken<>() {}, ManifestCompiler::compile);

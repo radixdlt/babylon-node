@@ -73,34 +73,37 @@ public enum Network {
   /// Public Facing Permanent Networks (start with 0x0)
   // - mainnet
   // - stokenet
-  MAINNET(1 /* 0x01 */, "mainnet", "_rdx", GenesisSource.providedAsync),
-  STOKENET(2 /* 0x02 */, "stokenet", "_tdx2_", GenesisSource.providedAsync),
+  MAINNET(1 /* 0x01 */, "mainnet", "rdx", GenesisSource.providedAsync),
+  STOKENET(2 /* 0x02 */, "stokenet", "tdx2_", GenesisSource.providedAsync),
 
   /// Babylon Testnets (start with 0x1)
   // - adapanet = Babylon Alphanet, after Adapa
   // - nebunet = Babylon Betanet, after Nebuchadnezzar
-  ADAPANET(16 /* 0x10 */, "adapanet", "_tdx16_", GenesisSource.fromConfiguration),
-  NEBUNET(17 /* 0x11 */, "nebunet", "_tdx17_", GenesisSource.fromConfiguration),
+  ADAPANET(16 /* 0x10 */, "adapanet", "tdx16_", GenesisSource.fromConfiguration),
+  NEBUNET(17 /* 0x11 */, "nebunet", "tdx17_", GenesisSource.fromConfiguration),
 
   /// RDX Development - Semi-permanent Testnets (start with 0x2)
   // - gilganet = Integration, after Gilgamesh
   // - enkinet = Misc Network 1, after Enkidu
   // - hammunet = Misc Network 2, after Hammurabi
-  GILGANET(32 /* 0x20 */, "gilganet", "_tdx32_", GenesisSource.fromConfiguration),
-  ENKINET(33 /* 0x21 */, "enkinet", "_tdx33_", GenesisSource.fromConfiguration),
-  HAMMUNET(34 /* 0x22 */, "hammunet", "_tdx34_", GenesisSource.fromConfiguration),
+  GILGANET(32 /* 0x20 */, "gilganet", "tdx32_", GenesisSource.fromConfiguration),
+  ENKINET(33 /* 0x21 */, "enkinet", "tdx33_", GenesisSource.fromConfiguration),
+  HAMMUNET(34 /* 0x22 */, "hammunet", "tdx34_", GenesisSource.fromConfiguration),
 
   /// Ephemeral Networks (start with 0xF)
   // - localnet = The network used when running locally in development
   // - inttestnet = The network used when running integration tests
-  LOCALNET(240 /* 0xF0 */, "localnet", "_tdx240_", GenesisSource.fromConfiguration),
-  INTEGRATIONTESTNET(241 /* 0xF1 */, "inttestnet", "_tdx241_", GenesisSource.fromConfiguration);
+  LOCALNET(240 /* 0xF0 */, "localnet", "tdx240_", GenesisSource.fromConfiguration),
+  INTEGRATIONTESTNET(241 /* 0xF1 */, "inttestnet", "tdx241_", GenesisSource.fromConfiguration),
+  LOCALSIMULATOR(242 /* 0xF1 */, "simulator", "sim", GenesisSource.fromConfiguration);
 
   // For the Radix Shell to provide a default
   public static final String DefaultHexGenesisTransaction = "01";
 
-  private final int id;
+  private final int intId;
+  private final byte byteId;
   private final String logicalName;
+  private final String hrpSuffix;
   private final String accountHrp;
   private final String validatorHrp;
   private final String resourceHrp;
@@ -113,12 +116,14 @@ public enum Network {
           "Id should be between 1 and 255 so it isn't default(int) = 0 and will fit into a byte if"
               + " we change in future");
     }
-    this.id = id;
+    this.intId = id;
+    this.byteId = (byte) id;
     this.logicalName = logicalName;
-    this.accountHrp = "account" + hrpSuffix;
-    this.validatorHrp = "validator" + hrpSuffix;
-    this.resourceHrp = "resource" + hrpSuffix;
-    this.nodeHrp = "node" + hrpSuffix;
+    this.hrpSuffix = hrpSuffix;
+    this.accountHrp = "account_" + hrpSuffix;
+    this.validatorHrp = "validator_" + hrpSuffix;
+    this.resourceHrp = "resource_" + hrpSuffix;
+    this.nodeHrp = "node_" + hrpSuffix;
     this.genesisSource = genesisSource;
   }
 
@@ -139,11 +144,19 @@ public enum Network {
   }
 
   public int getId() {
-    return id;
+    return intId;
+  }
+
+  public byte getByteId() {
+    return byteId;
   }
 
   public String getLogicalName() {
     return logicalName;
+  }
+
+  public String getHrpSuffix() {
+    return hrpSuffix;
   }
 
   public GenesisSource genesisSource() {
@@ -151,7 +164,7 @@ public enum Network {
   }
 
   public static Optional<Network> ofId(int id) {
-    return find(network -> network.id == id);
+    return find(network -> network.intId == id);
   }
 
   public static Optional<Network> ofName(String logicalName) {
