@@ -133,8 +133,7 @@ public final class REv2ConsensusTransferTest {
             FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
                     new REv2DatabaseConfig.RocksDB(folder.getRoot().getAbsolutePath()),
-                    StateComputerConfig.REV2ProposerConfig.mempool(1, MempoolRelayConfig.of()),
-                    true))),
+                    StateComputerConfig.REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(

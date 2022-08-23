@@ -126,8 +126,7 @@ public abstract class ApiTest {
                 StateComputerConfig.rev2(
                     REv2DatabaseConfig.inMemory(),
                     StateComputerConfig.REV2ProposerConfig.mempool(
-                        mempoolMaxSize, MempoolRelayConfig.of()),
-                    true)),
+                        mempoolMaxSize, MempoolRelayConfig.of()))),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),
             new AbstractModule() {

@@ -84,13 +84,11 @@ import com.radixdlt.transactions.RawTransaction;
 public final class REv2StateManagerModule extends AbstractModule {
   private final REv2DatabaseConfig databaseConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
-  private final boolean ledger;
 
   public REv2StateManagerModule(
-      REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig, boolean ledger) {
+      REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig) {
     this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
-    this.ledger = ledger;
   }
 
   @Override
@@ -100,7 +98,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     var stateComputer = new RustStateComputer(stateManager.getRustState());
     bind(RustStateComputer.class).toInstance(stateComputer);
 
-    if (ledger) {
+    if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {
       bind(REv2TransactionAndProofStore.class)
           .toInstance(stateComputer.getTransactionAndProofStore());
       bind(REv2StateReader.class).toInstance(stateComputer::getComponentXrdAmount);

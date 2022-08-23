@@ -118,8 +118,7 @@ public final class REv2GenesisTest {
             FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
                     REv2DatabaseConfig.inMemory(),
-                    StateComputerConfig.REV2ProposerConfig.mempool(0, MempoolRelayConfig.of()),
-                    true))),
+                    StateComputerConfig.REV2ProposerConfig.mempool(0, MempoolRelayConfig.of())))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(

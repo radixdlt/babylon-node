@@ -80,14 +80,25 @@ public sealed interface REv2DatabaseConfig {
                     REv2DatabaseConfig.RocksDB.class,
                     REv2DatabaseConfig.RocksDB::new,
                     codecs.of(String.class),
-                    (t, encoder) -> encoder.encode(t.databasePath))));
+                    (t, encoder) -> encoder.encode(t.databasePath)),
+                EnumEntry.noFields(REv2DatabaseConfig.None.class, REv2DatabaseConfig.None::new)));
   }
 
   static REv2DatabaseConfig inMemory() {
     return new InMemory();
   }
 
+  static REv2DatabaseConfig none() {
+    return new None();
+  }
+
+  static boolean isNone(REv2DatabaseConfig config) {
+    return (config instanceof None);
+  }
+
   record InMemory() implements REv2DatabaseConfig {}
 
   record RocksDB(String databasePath) implements REv2DatabaseConfig {}
+
+  record None() implements REv2DatabaseConfig {}
 }

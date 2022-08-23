@@ -89,6 +89,7 @@ import com.radixdlt.rev2.modules.MockedSyncServiceModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.REv2StatelessComputerModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 
 /** Manages the functional components of a node */
@@ -298,16 +299,14 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             install(new ReV1DispatcherModule());
           }
           case REv2StateComputerConfig rev2Config -> {
-            if (!rev2Config.ledger()) {
+            if (REv2DatabaseConfig.isNone(rev2Config.databaseConfig())) {
               install(new REv2StatelessComputerModule());
             }
 
             switch (rev2Config.proposerConfig()) {
               case REV2ProposerConfig.Generated generated -> {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
-                install(
-                    new REv2StateManagerModule(
-                        rev2Config.databaseConfig(), Option.none(), rev2Config.ledger()));
+                install(new REv2StateManagerModule(rev2Config.databaseConfig(), Option.none()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule());
@@ -315,9 +314,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(mempool.relayConfig().asModule());
                 install(
                     new REv2StateManagerModule(
-                        rev2Config.databaseConfig(),
-                        Option.some(mempool.mempoolConfig()),
-                        rev2Config.ledger()));
+                        rev2Config.databaseConfig(), Option.some(mempool.mempoolConfig())));
               }
             }
           }
