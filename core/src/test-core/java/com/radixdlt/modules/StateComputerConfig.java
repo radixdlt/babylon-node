@@ -69,6 +69,7 @@ import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -83,8 +84,8 @@ public sealed interface StateComputerConfig {
   }
 
   static StateComputerConfig rev2(
-      String databasePath, REV2ProposerConfig proposerConfig, boolean ledger) {
-    return new REv2StateComputerConfig(databasePath, proposerConfig, ledger);
+      REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig, boolean ledger) {
+    return new REv2StateComputerConfig(databaseConfig, proposerConfig, ledger);
   }
 
   sealed interface MockedMempoolConfig {
@@ -105,7 +106,7 @@ public sealed interface StateComputerConfig {
   record REv1StateComputerConfig(int mempoolSize) implements StateComputerConfig {}
 
   record REv2StateComputerConfig(
-      String databasePath, REV2ProposerConfig proposerConfig, boolean ledger)
+      REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig, boolean ledger)
       implements StateComputerConfig {}
 
   sealed interface REV2ProposerConfig {

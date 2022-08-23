@@ -91,6 +91,7 @@ import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
@@ -183,7 +184,8 @@ public final class RadixNodeModule extends AbstractModule {
     var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databasePath = properties.get("db.location", ".//RADIXDB");
-    install(new REv2StateManagerModule(databasePath, Option.some(mempoolConfig), true));
+    var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
+    install(new REv2StateManagerModule(databaseConfig, Option.some(mempoolConfig), true));
     install(new MockedPersistenceStoreModule());
 
     // Storage

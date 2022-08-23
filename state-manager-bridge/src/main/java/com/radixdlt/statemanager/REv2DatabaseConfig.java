@@ -74,12 +74,20 @@ public sealed interface REv2DatabaseConfig {
         REv2DatabaseConfig.class,
         (codecs) ->
             EnumCodec.fromEntries(
+                EnumEntry.noFields(
+                    REv2DatabaseConfig.InMemory.class, REv2DatabaseConfig.InMemory::new),
                 EnumEntry.with(
-                    REv2DatabaseConfig.InMemory.class,
-                    REv2DatabaseConfig.InMemory::new,
+                    REv2DatabaseConfig.RocksDB.class,
+                    REv2DatabaseConfig.RocksDB::new,
                     codecs.of(String.class),
                     (t, encoder) -> encoder.encode(t.databasePath))));
   }
 
-  record InMemory(String databasePath) implements REv2DatabaseConfig {}
+  static REv2DatabaseConfig inMemory() {
+    return new InMemory();
+  }
+
+  record InMemory() implements REv2DatabaseConfig {}
+
+  record RocksDB(String databasePath) implements REv2DatabaseConfig {}
 }

@@ -77,20 +77,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public final class RustMempoolTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
   @Test
   public void test_rust_mempool_add() throws Exception {
     final var mempoolSize = 2;
     final var config =
         new StateManagerConfig(
-            Option.some(new RustMempoolConfig(mempoolSize)),
-            new REv2DatabaseConfig.InMemory(folder.getRoot().getAbsolutePath()));
+            Option.some(new RustMempoolConfig(mempoolSize)), REv2DatabaseConfig.inMemory());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager.getRustState());
       var transaction1 = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
@@ -146,8 +141,7 @@ public final class RustMempoolTest {
     final var mempoolSize = 3;
     final var config =
         new StateManagerConfig(
-            Option.some(new RustMempoolConfig(mempoolSize)),
-            new REv2DatabaseConfig.InMemory(folder.getRoot().getAbsolutePath()));
+            Option.some(new RustMempoolConfig(mempoolSize)), REv2DatabaseConfig.inMemory());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager.getRustState());
       var transaction1 = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
@@ -241,8 +235,7 @@ public final class RustMempoolTest {
     final var mempoolSize = 3;
     final var config =
         new StateManagerConfig(
-            Option.some(new RustMempoolConfig(mempoolSize)),
-            new REv2DatabaseConfig.InMemory(folder.getRoot().getAbsolutePath()));
+            Option.some(new RustMempoolConfig(mempoolSize)), REv2DatabaseConfig.inMemory());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager.getRustState());
       var transaction1 = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);

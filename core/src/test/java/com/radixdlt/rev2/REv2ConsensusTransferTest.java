@@ -90,6 +90,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
@@ -131,7 +132,7 @@ public final class REv2ConsensusTransferTest {
             FunctionalRadixNodeModule.ConsensusConfig.of(),
             FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
-                    folder.getRoot().getAbsolutePath(),
+                    new REv2DatabaseConfig.RocksDB(folder.getRoot().getAbsolutePath()),
                     StateComputerConfig.REV2ProposerConfig.mempool(1, MempoolRelayConfig.of()),
                     true))),
         new TestP2PModule.Builder().build(),

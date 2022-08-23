@@ -80,19 +80,16 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public class REv2StateComputerTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
   private Injector createInjector() {
     return Guice.createInjector(
         new CryptoModule(),
-        new REv2StateManagerModule(folder.getRoot().getAbsolutePath(), Option.none(), true),
+        new REv2StateManagerModule(REv2DatabaseConfig.inMemory(), Option.none(), true),
         new AbstractModule() {
           @Override
           protected void configure() {

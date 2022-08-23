@@ -87,7 +87,7 @@ import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.p2p.addressbook.AddressBook;
-import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import io.undertow.io.Sender;
@@ -98,13 +98,10 @@ import io.undertow.util.HeaderMap;
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
 
 public abstract class ApiTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
   @Inject private SingleNodeDeterministicRunner runner;
   private final Amount totalTokenAmount = Amount.ofTokens(110);
   private final Amount stakeAmount = Amount.ofTokens(10);
@@ -127,7 +124,7 @@ public abstract class ApiTest {
             new SingleNodeAndPeersDeterministicNetworkModule(
                 TEST_KEY,
                 StateComputerConfig.rev2(
-                    folder.getRoot().getAbsolutePath(),
+                    REv2DatabaseConfig.inMemory(),
                     StateComputerConfig.REV2ProposerConfig.mempool(
                         mempoolMaxSize, MempoolRelayConfig.of()),
                     true)),
@@ -136,9 +133,6 @@ public abstract class ApiTest {
             new AbstractModule() {
               @Override
               protected void configure() {
-                bindConstant()
-                    .annotatedWith(DatabaseLocation.class)
-                    .to(folder.getRoot().getAbsolutePath());
                 bindConstant()
                     .annotatedWith(NetworkId.class)
                     .to(Network.INTEGRATIONTESTNET.getId());

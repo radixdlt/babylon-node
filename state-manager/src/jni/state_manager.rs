@@ -67,7 +67,7 @@ use crate::jni::utils::*;
 use crate::mempool::simple::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{DatabaseConfig, StateManager, StateManagerConfig};
-use crate::store::RocksDBTransactionStore;
+use crate::store::{InMemoryTransactionStore, RocksDBTransactionStore, TransactionStore};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -118,14 +118,18 @@ impl JNIStateManager {
             }
         };
 
-        let DatabaseConfig::InMemory(db_path) = config.db_config;
+        let transaction_store: Box<dyn TransactionStore + Send> = match config.db_config {
+            DatabaseConfig::InMemory => Box::new(InMemoryTransactionStore::new()),
+            DatabaseConfig::RocksDB(path) => {
+                Box::new(RocksDBTransactionStore::new(PathBuf::from(path)))
+            }
+        };
 
         let mempool = SimpleMempool::new(mempool_config);
-        let transaction_store = RocksDBTransactionStore::new(PathBuf::from(db_path));
         let substate_store = SerializedInMemorySubstateStore::with_bootstrap();
 
         // Build the state manager.
-        let state_manager = StateManager::new(mempool, Box::new(transaction_store), substate_store);
+        let state_manager = StateManager::new(mempool, transaction_store, substate_store);
 
         let jni_state_manager = JNIStateManager { state_manager };
 

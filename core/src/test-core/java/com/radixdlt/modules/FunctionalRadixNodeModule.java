@@ -307,7 +307,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
                 install(
                     new REv2StateManagerModule(
-                        rev2Config.databasePath(), Option.none(), rev2Config.ledger()));
+                        rev2Config.databaseConfig(), Option.none(), rev2Config.ledger()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule());
@@ -315,7 +315,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(mempool.relayConfig().asModule());
                 install(
                     new REv2StateManagerModule(
-                        rev2Config.databasePath(),
+                        rev2Config.databaseConfig(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.ledger()));
               }

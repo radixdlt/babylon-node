@@ -85,17 +85,15 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public final class REv2GenesisTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
   private static final Decimal GENESIS_AMOUNT = Decimal.of(24_000_000_000L);
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private final DeterministicNetwork network =
       new DeterministicNetwork(
@@ -119,7 +117,7 @@ public final class REv2GenesisTest {
             FunctionalRadixNodeModule.ConsensusConfig.of(),
             FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
-                    folder.getRoot().getAbsolutePath(),
+                    REv2DatabaseConfig.inMemory(),
                     StateComputerConfig.REV2ProposerConfig.mempool(0, MempoolRelayConfig.of()),
                     true))),
         new TestP2PModule.Builder().build(),
