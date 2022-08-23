@@ -84,19 +84,19 @@ use crate::types::{CommitRequest, PreviewRequest, Transaction};
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
     env: JNIEnv,
     _class: JClass,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_verify(&env, sm_instance, request_payload).to_java();
+    let ret = do_verify(&env, j_state_manager, request_payload).to_java();
     jni_slice_to_jbytearray(&env, &ret)
 }
 
 fn do_verify(
     env: &JNIEnv,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> StateManagerResult<bool> {
-    let state_manager = JNIStateManager::get_state_manager(env, sm_instance);
+    let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
     let transaction = Transaction::from_java(&request_payload)?;
     let result = state_manager
@@ -110,19 +110,19 @@ fn do_verify(
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_preview(
     env: JNIEnv,
     _class: JClass,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_preview(&env, sm_instance, request_payload).to_java();
+    let ret = do_preview(&env, j_state_manager, request_payload).to_java();
     jni_slice_to_jbytearray(&env, &ret)
 }
 
 fn do_preview(
     env: &JNIEnv,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> StateManagerResult<Result<PreviewResultJava, PreviewErrorJava>> {
-    let state_manager = JNIStateManager::get_state_manager(env, sm_instance);
+    let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
     let preview_request = PreviewRequest::from_java(&request_payload)?;
     let preview_result: Result<PreviewResultJava, PreviewErrorJava> = state_manager
@@ -138,19 +138,19 @@ fn do_preview(
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     env: JNIEnv,
     _class: JClass,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_commit(&env, sm_instance, request_payload).to_java();
+    let ret = do_commit(&env, j_state_manager, request_payload).to_java();
     jni_slice_to_jbytearray(&env, &ret)
 }
 
 fn do_commit(
     env: &JNIEnv,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> StateManagerResult<()> {
-    let state_manager = JNIStateManager::get_state_manager(env, sm_instance);
+    let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
     let commit_request = CommitRequest::from_java(&request_payload)?;
 
@@ -165,19 +165,19 @@ fn do_commit(
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXrdAmount(
     env: JNIEnv,
     _class: JClass,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = get_component_xrd(&env, sm_instance, request_payload).to_java();
+    let ret = get_component_xrd(&env, j_state_manager, request_payload).to_java();
     jni_slice_to_jbytearray(&env, &ret)
 }
 
 fn get_component_xrd(
     env: &JNIEnv,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> StateManagerResult<Decimal> {
-    let state_manager = JNIStateManager::get_state_manager(env, sm_instance);
+    let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
     let request_payload = jni_jbytearray_to_vector(env, request_payload)?;
     let component_address = ComponentAddress::from_java(&request_payload)?;
     let resources = state_manager
@@ -189,3 +189,5 @@ fn get_component_xrd(
         .unwrap_or_else(Decimal::zero);
     Ok(amount)
 }
+
+pub fn export_extern_functions() {}

@@ -62,11 +62,63 @@
  * permissions under this License.
  */
 
-pub(crate) mod dtos;
-mod manifest_compiler;
-mod mempool;
-mod state_computer;
-mod state_manager;
-mod transaction_builder;
-mod transaction_store;
-mod utils;
+use jni::objects::JClass;
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use sbor::{Decode, Encode, TypeId};
+use scrypto::core::Network;
+use scrypto::prelude::scrypto_encode;
+use std::str;
+use std::str::FromStr;
+use transaction::manifest::{compile, CompileError};
+
+use super::utils::jni_static_sbor_call;
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_manifest_ManifestCompiler_compile(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, do_compile)
+}
+
+fn do_compile(args: (Vec<u8>, Vec<u8>)) -> Result<Vec<u8>, CompileManifestErrorJava> {
+    let (manifest_bytes, network_bytes) = args;
+
+    let manifest_str = str::from_utf8(&manifest_bytes)
+        .map_err(|_e| CompileManifestErrorJava::from("Invalid utf-8 string (manifest)"))?;
+
+    let network_str = str::from_utf8(&network_bytes)
+        .map_err(|_e| CompileManifestErrorJava::from("Invalid utf-8 string (network)"))?;
+
+    let network: Network = Network::from_str(network_str)
+        .map_err(|_e| CompileManifestErrorJava::from("Unknown network"))?;
+
+    compile(manifest_str, &network)
+        .map_err(|e| e.into())
+        .map(|manifest| scrypto_encode(&manifest))
+}
+
+#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+struct CompileManifestErrorJava {
+    message: String,
+}
+
+impl From<CompileError> for CompileManifestErrorJava {
+    fn from(err: CompileError) -> Self {
+        CompileManifestErrorJava {
+            message: format!("{:?}", err),
+        }
+    }
+}
+
+impl From<&str> for CompileManifestErrorJava {
+    fn from(message: &str) -> Self {
+        CompileManifestErrorJava {
+            message: message.to_string(),
+        }
+    }
+}
+
+pub fn export_extern_functions() {}

@@ -62,12 +62,14 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+package com.radixdlt.api;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.StateManagerSbor;
+import com.radixdlt.statemanager.CoreApiServerConfig;
+import com.radixdlt.statemanager.StateManager;
 
-public final class StateManager implements AutoCloseable {
+public final class CoreApiServer {
 
   static {
     System.loadLibrary("corerust");
@@ -76,32 +78,34 @@ public final class StateManager implements AutoCloseable {
   /**
    * Stores a pointer to the rust state manager across JNI calls. In the JNI model, this is
    * equivalent to the Rust State "owning" the rust state manager memory. On each call into Rust, we
-   * map the rustStateManagerPointer onto a concrete implementation in Rust land, and it uses that
+   * map the rustCoreApiServerPointer onto a concrete implementation in Rust land, and it uses that
    * to access all state and make calls.
    */
   @SuppressWarnings("unused")
-  private final long rustStateManagerPointer = 0;
+  private final long rustCoreApiServerPointer = 0;
 
-  public static StateManager createAndInitialize(StateManagerConfig config) {
-    return new StateManager(config);
+  public static CoreApiServer create(StateManager stateManager, CoreApiServerConfig config) {
+    return new CoreApiServer(stateManager, config);
   }
 
-  private StateManager(StateManagerConfig config) {
+  CoreApiServer(StateManager stateManager, CoreApiServerConfig config) {
     final var encodedConfig =
         StateManagerSbor.encode(config, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    init(this, encodedConfig);
+    init(stateManager, this, encodedConfig);
   }
 
-  @Override
-  public void close() {
-    shutdown();
+  public void start() {
+    start(this);
   }
 
-  public void shutdown() {
-    cleanup(this);
+  public void stop() {
+    stop(this);
   }
 
-  private static native void init(StateManager stateManager, byte[] config);
+  private static native void init(
+      StateManager stateManager, CoreApiServer coreApiServer, byte[] config);
 
-  private static native void cleanup(StateManager stateManager);
+  private static native void start(CoreApiServer coreApiServer);
+
+  private static native void stop(CoreApiServer coreApiServer);
 }

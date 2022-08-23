@@ -62,48 +62,11 @@
  * permissions under this License.
  */
 
-use crate::state_manager::StateManager;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use sbor::*;
-use scrypto::prelude::ComponentAddress;
-
-use super::utils::jni_state_manager_sbor_call;
-
-#[derive(Encode, Decode, TypeId)]
-pub struct ExecutedTransactionReceipt {
-    result: String,
-    transaction_data: Vec<u8>,
-    new_component_addresses: Vec<ComponentAddress>,
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransactionAtStateVersion(
-    env: JNIEnv,
-    _class: JClass,
-    sm_instance: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_call(
-        env,
-        sm_instance,
-        request_payload,
-        do_get_transaction_at_state_version,
-    )
-}
-
-fn do_get_transaction_at_state_version(
-    state_manager: &mut dyn StateManager,
-    state_version: u64,
-) -> ExecutedTransactionReceipt {
-    let (transaction_data, receipt) = state_manager
-        .transaction_store()
-        .get_transaction(state_version);
-
-    ExecutedTransactionReceipt {
-        result: receipt.result.to_string(),
-        transaction_data: transaction_data.clone(),
-        new_component_addresses: receipt.new_component_addresses.clone(),
-    }
-}
+pub mod dtos;
+pub mod manifest_compiler;
+pub mod mempool;
+pub mod state_computer;
+pub mod state_manager;
+pub mod transaction_builder;
+pub mod transaction_store;
+pub mod utils;

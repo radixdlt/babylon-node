@@ -62,68 +62,26 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::JavaStructure;
-use crate::result::StateManagerResult;
-use crate::transaction_builder::{
-    create_new_account_unsigned_manifest, create_notarized_bytes, create_signed_intent_bytes,
-};
-use jni::objects::JClass;
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use scrypto::crypto::{EcdsaPublicKey, EcdsaSignature};
-use transaction::model::{SignedTransactionIntent, TransactionIntent};
+package com.radixdlt.api;
 
-use super::utils::{jni_static_sbor_call, jni_static_sbor_call_flatten_result};
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.statemanager.CoreApiServerConfig;
+import com.radixdlt.statemanager.StateManager;
+import java.util.Objects;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountManifest(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_create_new_account_manifest)
-}
+public final class CoreApiServerModule extends AbstractModule {
 
-fn do_create_new_account_manifest(args: EcdsaPublicKey) -> Vec<u8> {
-    let public_key = args;
+  private final CoreApiServerConfig config;
 
-    create_new_account_unsigned_manifest(public_key)
-}
+  public CoreApiServerModule(CoreApiServerConfig config) {
+    this.config = Objects.requireNonNull(config);
+  }
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createSignedIntentBytes(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_static_sbor_call_flatten_result(env, request_payload, do_create_signed_intent_bytes)
-}
-
-fn do_create_signed_intent_bytes(
-    args: (Vec<u8>, EcdsaPublicKey, EcdsaSignature),
-) -> StateManagerResult<Vec<u8>> {
-    let (intent_bytes, public_key, signature) = args;
-
-    // It's passed through to us as bytes - and need to decode these bytes
-    let intent = TransactionIntent::from_java(&intent_bytes)?;
-
-    Ok(create_signed_intent_bytes(intent, public_key, signature))
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createNotarizedBytes(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_static_sbor_call_flatten_result(env, request_payload, do_create_notarized_bytes)
-}
-
-fn do_create_notarized_bytes(args: (Vec<u8>, EcdsaSignature)) -> StateManagerResult<Vec<u8>> {
-    let (signed_intent_bytes, signature) = args;
-
-    // It's passed through to us as bytes - and need to decode these bytes
-    let signed_intent = SignedTransactionIntent::from_java(&signed_intent_bytes)?;
-
-    Ok(create_notarized_bytes(signed_intent, signature))
+  @Provides
+  @Singleton
+  private CoreApiServer coreApiServer(StateManager stateManager) {
+    return CoreApiServer.create(stateManager, config);
+  }
 }

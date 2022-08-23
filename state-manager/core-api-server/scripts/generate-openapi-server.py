@@ -6,7 +6,7 @@ import urllib.request, logging, subprocess, os, shutil
 logger = logging.getLogger()
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', level=logging.INFO)
 
-CORE_API_SPEC_LOCATION = '../src/core_api/core-api-spec.yaml'
+CORE_API_SPEC_LOCATION = '../core-api-spec.yaml'
 CORE_API_GENERATED_DESTINATION = '../src/core_api/generated/'
 
 OPENAPI_GENERATION_FOLDER='.'

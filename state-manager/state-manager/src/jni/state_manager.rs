@@ -68,47 +68,40 @@ use crate::mempool::simple::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{StateManager, StateManagerConfig, StateManagerImpl};
 use crate::transaction_store::TransactionStore;
-use futures::FutureExt;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use tokio::runtime::Runtime as TokioRuntime;
 
-use crate::core_api::server;
-use futures::channel::oneshot;
-use futures::channel::oneshot::Sender;
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-const POINTER_JNI_FIELD_NAME: &str = "stateManagerPointer";
+const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_statemanager_StateManager_init(
     env: JNIEnv,
     _class: JClass,
-    interop_state: JObject,
+    j_state_manager: JObject,
     j_config: jbyteArray,
 ) {
-    JNIStateManager::init(&env, interop_state, j_config);
+    JNIStateManager::init(&env, j_state_manager, j_config);
 }
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
     env: JNIEnv,
     _class: JClass,
-    interop_state: JObject,
+    j_state_manager: JObject,
 ) {
-    JNIStateManager::cleanup(&env, interop_state);
+    JNIStateManager::cleanup(&env, j_state_manager);
 }
 
 pub struct JNIStateManager {
     pub state_manager: Arc<Mutex<dyn StateManager + 'static + Send + Sync>>,
-    pub tokio_runtime: Arc<TokioRuntime>,
-    pub core_api_server_shutdown_signal_sender: Sender<()>,
 }
 
 impl JNIStateManager {
-    pub fn init(env: &JNIEnv, interop_state: JObject, j_config: jbyteArray) {
+    pub fn init(env: &JNIEnv, j_state_manager: JObject, j_config: jbyteArray) {
         let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
         let config = StateManagerConfig::from_java(&config_bytes).unwrap();
 
@@ -134,57 +127,31 @@ impl JNIStateManager {
             substate_store,
         )));
 
-        // Create the tokio runtime
-        let tokio_runtime = Arc::new(TokioRuntime::new().unwrap());
-
-        // A oneshot channel used to shutdown the core API server
-        //   (or a no-op channel if the server wasn't started)
-        let core_api_server_shutdown_channel = oneshot::channel::<()>();
-
-        // Start the core API server if enabled
-        if let Some(core_api_server_config) = config.core_api_server_config {
-            if core_api_server_config.enabled {
-                let state_manager_clone = state_manager.clone();
-                let bind_addr = format!(
-                    "{}:{}",
-                    core_api_server_config.bind_interface, core_api_server_config.port
-                );
-                tokio_runtime.spawn(async move {
-                    server::create(
-                        &bind_addr,
-                        core_api_server_shutdown_channel.1.map(|_| ()),
-                        state_manager_clone,
-                    )
-                    .await;
-                });
-            }
-        }
-
         let jni_state_manager = JNIStateManager {
             state_manager,
-            tokio_runtime,
-            core_api_server_shutdown_signal_sender: core_api_server_shutdown_channel.0,
+            // tokio_runtime,
+            // core_api_server_shutdown_signal_sender: core_api_server_shutdown_channel.0,
         };
 
-        env.set_rust_field(interop_state, POINTER_JNI_FIELD_NAME, jni_state_manager)
+        env.set_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME, jni_state_manager)
             .unwrap();
     }
 
-    pub fn cleanup(env: &JNIEnv, interop_state: JObject) {
+    pub fn cleanup(env: &JNIEnv, j_state_manager: JObject) {
         let jni_state_manager: JNIStateManager = env
-            .take_rust_field(interop_state, POINTER_JNI_FIELD_NAME)
+            .take_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
             .unwrap();
 
-        // Shutdown the core API server (or send a no-op signal if the server wasn't started)
-        let _ = jni_state_manager
-            .core_api_server_shutdown_signal_sender
-            .send(());
+        drop(jni_state_manager);
     }
 
-    pub fn get_state_manager(env: &JNIEnv, interop_state: JObject) -> Arc<Mutex<dyn StateManager>> {
+    pub fn get_state_manager(
+        env: &JNIEnv,
+        j_state_manager: JObject,
+    ) -> Arc<Mutex<dyn StateManager + Send + Sync>> {
         let state_manager = {
             let jni_state_manager: MutexGuard<JNIStateManager> = env
-                .get_rust_field(interop_state, POINTER_JNI_FIELD_NAME)
+                .get_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
                 .unwrap();
             let state_manager = jni_state_manager.state_manager.clone();
             // Ensure the JNI mutex lock is released
@@ -195,3 +162,5 @@ impl JNIStateManager {
         state_manager
     }
 }
+
+pub fn export_extern_functions() {}

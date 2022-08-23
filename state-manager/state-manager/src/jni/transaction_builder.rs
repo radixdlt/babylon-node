@@ -62,120 +62,70 @@
  * permissions under this License.
  */
 
-use crate::core_api::generated::models;
-use crate::core_api::generated::models::{
-    Bech32Hrps, NetworkConfigurationResponse, NetworkConfigurationResponseVersion,
-    NetworkIdentifier,
+use crate::jni::dtos::JavaStructure;
+use crate::result::StateManagerResult;
+use crate::transaction_builder::{
+    create_new_account_unsigned_manifest, create_notarized_bytes, create_signed_intent_bytes,
 };
-use crate::core_api::generated::server::MakeService;
-use crate::core_api::generated::{
-    Api, StatusNetworkConfigurationPostResponse, TransactionPreviewPostResponse,
-    TransactionSubmitPostResponse, API_VERSION,
-};
+use jni::objects::JClass;
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use scrypto::crypto::{EcdsaPublicKey, EcdsaSignature};
+use transaction::model::{SignedTransactionIntent, TransactionIntent};
 
-use crate::state_manager::StateManager;
-use async_trait::async_trait;
+use super::utils::{jni_static_sbor_call, jni_static_sbor_call_flatten_result};
 
-use scrypto::address::get_network_hrp_set;
-
-use std::future::Future;
-use std::marker::PhantomData;
-
-use std::sync::{Arc, Mutex};
-
-use swagger::ApiError;
-use swagger::EmptyContext;
-use swagger::{Has, XSpanIdString};
-
-pub async fn create<F>(
-    bind_addr: &str,
-    shutdown_signal: F,
-    state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>,
-) where
-    F: Future<Output = ()>,
-{
-    let server = Server::new(state_manager);
-
-    let service = MakeService::new(server);
-    let service =
-        crate::core_api::generated::context::MakeAddContext::<_, EmptyContext>::new(service);
-
-    let bind_addr = bind_addr.parse().expect("Failed to parse bind address");
-    hyper::server::Server::bind(&bind_addr)
-        .serve(service)
-        .with_graceful_shutdown(shutdown_signal)
-        .await
-        .unwrap();
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountManifest(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, do_create_new_account_manifest)
 }
 
-#[derive(Clone)]
-pub struct Server<C> {
-    state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>,
-    marker: PhantomData<C>,
+fn do_create_new_account_manifest(args: EcdsaPublicKey) -> Vec<u8> {
+    let public_key = args;
+
+    create_new_account_unsigned_manifest(public_key)
 }
 
-impl<C> Server<C> {
-    pub fn new(state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>) -> Self {
-        Server {
-            state_manager,
-            marker: PhantomData,
-        }
-    }
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createSignedIntentBytes(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call_flatten_result(env, request_payload, do_create_signed_intent_bytes)
 }
 
-#[async_trait]
-impl<C> Api<C> for Server<C>
-where
-    C: Has<XSpanIdString> + Send + Sync,
-{
-    async fn status_network_configuration_post(
-        &self,
-        _network_configuration_request: models::NetworkConfigurationRequest,
-        _context: &C,
-    ) -> Result<StatusNetworkConfigurationPostResponse, ApiError> {
-        let network = &self
-            .state_manager
-            .lock()
-            .expect("Can't acquire state manager lock")
-            .network()
-            .clone();
+fn do_create_signed_intent_bytes(
+    args: (Vec<u8>, EcdsaPublicKey, EcdsaSignature),
+) -> StateManagerResult<Vec<u8>> {
+    let (intent_bytes, public_key, signature) = args;
 
-        let hrp_set = get_network_hrp_set(network);
+    // It's passed through to us as bytes - and need to decode these bytes
+    let intent = TransactionIntent::from_java(&intent_bytes)?;
 
-        Ok(
-            StatusNetworkConfigurationPostResponse::NetworkConfiguration(
-                NetworkConfigurationResponse {
-                    version: NetworkConfigurationResponseVersion {
-                        core_version: env!("CARGO_PKG_VERSION").to_string(),
-                        api_version: API_VERSION.to_string(),
-                    },
-                    network_identifier: NetworkIdentifier {
-                        network: format!("{:?}", network),
-                    },
-                    bech32_human_readable_parts: Bech32Hrps {
-                        account_hrp: hrp_set.account_component.to_string(),
-                        validator_hrp: "TODO".to_string(),
-                        node_hrp: "TODO".to_string(),
-                        resource_hrp_suffix: hrp_set.resource.to_string(),
-                    },
-                },
-            ),
-        )
-    }
-
-    async fn transaction_preview_post(
-        &self,
-        _transaction_preview_request: models::TransactionPreviewRequest,
-        _context: &C,
-    ) -> Result<TransactionPreviewPostResponse, ApiError> {
-        Err("To be implemented".into())
-    }
-
-    async fn transaction_submit_post(
-        &self,
-        _transaction_submit_request: models::TransactionSubmitRequest,
-        _context: &C,
-    ) -> Result<TransactionSubmitPostResponse, ApiError> {
-        Err("To be implemented".into())
-    }
+    Ok(create_signed_intent_bytes(intent, public_key, signature))
 }
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createNotarizedBytes(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call_flatten_result(env, request_payload, do_create_notarized_bytes)
+}
+
+fn do_create_notarized_bytes(args: (Vec<u8>, EcdsaSignature)) -> StateManagerResult<Vec<u8>> {
+    let (signed_intent_bytes, signature) = args;
+
+    // It's passed through to us as bytes - and need to decode these bytes
+    let signed_intent = SignedTransactionIntent::from_java(&signed_intent_bytes)?;
+
+    Ok(create_notarized_bytes(signed_intent, signature))
+}
+
+pub fn export_extern_functions() {}

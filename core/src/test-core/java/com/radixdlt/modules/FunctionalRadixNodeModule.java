@@ -91,7 +91,6 @@ import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.REv2StatelessComputerModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
-import com.radixdlt.statemanager.CoreApiServerConfig;
 import com.radixdlt.sync.SyncConfig;
 import java.util.Optional;
 
@@ -295,7 +294,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(new REv2StateComputerModule());
               }
             }
-            install(new REv2StateManagerModule(CoreApiServerConfig.DISABLED));
+            install(new REv2StateManagerModule());
           }
         }
       }

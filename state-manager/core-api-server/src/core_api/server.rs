@@ -62,46 +62,127 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statemanager;
+use crate::core_api::generated::models;
+use crate::core_api::generated::models::{
+    Bech32Hrps, NetworkConfigurationResponse, NetworkConfigurationResponseVersion,
+    NetworkIdentifier,
+};
+use crate::core_api::generated::server::MakeService;
+use crate::core_api::generated::{
+    Api, StatusNetworkConfigurationPostResponse, TransactionPreviewPostResponse,
+    TransactionSubmitPostResponse, API_VERSION,
+};
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.sbor.StateManagerSbor;
+use async_trait::async_trait;
+use state_manager::StateManager;
 
-public final class StateManager implements AutoCloseable {
+use scrypto::address::get_network_hrp_set;
 
-  static {
-    System.loadLibrary("corerust");
-  }
+use std::future::Future;
+use std::marker::PhantomData;
 
-  /**
-   * Stores a pointer to the rust state manager across JNI calls. In the JNI model, this is
-   * equivalent to the Rust State "owning" the rust state manager memory. On each call into Rust, we
-   * map the rustStateManagerPointer onto a concrete implementation in Rust land, and it uses that
-   * to access all state and make calls.
-   */
-  @SuppressWarnings("unused")
-  private final long rustStateManagerPointer = 0;
+use std::sync::{Arc, Mutex};
 
-  public static StateManager createAndInitialize(StateManagerConfig config) {
-    return new StateManager(config);
-  }
+use scrypto::prelude::*;
+use swagger::ApiError;
+use swagger::EmptyContext;
+use swagger::{Has, XSpanIdString};
 
-  private StateManager(StateManagerConfig config) {
-    final var encodedConfig =
-        StateManagerSbor.encode(config, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    init(this, encodedConfig);
-  }
+pub async fn create<F>(
+    bind_addr: &str,
+    shutdown_signal: F,
+    state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>,
+) where
+    F: Future<Output = ()>,
+{
+    let server = Server::new(state_manager);
 
-  @Override
-  public void close() {
-    shutdown();
-  }
+    let service = MakeService::new(server);
+    let service =
+        crate::core_api::generated::context::MakeAddContext::<_, EmptyContext>::new(service);
 
-  public void shutdown() {
-    cleanup(this);
-  }
+    let bind_addr = bind_addr.parse().expect("Failed to parse bind address");
+    hyper::server::Server::bind(&bind_addr)
+        .serve(service)
+        .with_graceful_shutdown(shutdown_signal)
+        .await
+        .unwrap();
+}
 
-  private static native void init(StateManager stateManager, byte[] config);
+#[derive(Clone)]
+pub struct Server<C> {
+    state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>,
+    marker: PhantomData<C>,
+}
 
-  private static native void cleanup(StateManager stateManager);
+impl<C> Server<C> {
+    pub fn new(state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>) -> Self {
+        Server {
+            state_manager,
+            marker: PhantomData,
+        }
+    }
+}
+
+#[async_trait]
+impl<C> Api<C> for Server<C>
+where
+    C: Has<XSpanIdString> + Send + Sync,
+{
+    async fn status_network_configuration_post(
+        &self,
+        _network_configuration_request: models::NetworkConfigurationRequest,
+        _context: &C,
+    ) -> Result<StatusNetworkConfigurationPostResponse, ApiError> {
+        let network = &self
+            .state_manager
+            .lock()
+            .expect("Can't acquire state manager lock")
+            .network()
+            .clone();
+
+        let hrp_set = get_network_hrp_set(network);
+
+        Ok(
+            StatusNetworkConfigurationPostResponse::NetworkConfiguration(
+                NetworkConfigurationResponse {
+                    version: NetworkConfigurationResponseVersion {
+                        core_version: env!("CARGO_PKG_VERSION").to_string(),
+                        api_version: API_VERSION.to_string(),
+                    },
+                    network_identifier: NetworkIdentifier {
+                        network: format!("{:?}", network),
+                    },
+                    bech32_human_readable_parts: Bech32Hrps {
+                        account_hrp: hrp_set.account_component.to_string(),
+                        validator_hrp: "TODO".to_string(),
+                        node_hrp: "TODO".to_string(),
+                        resource_hrp_suffix: hrp_set.resource.to_string(),
+                    },
+                },
+            ),
+        )
+    }
+
+    async fn transaction_preview_post(
+        &self,
+        _transaction_preview_request: models::TransactionPreviewRequest,
+        _context: &C,
+    ) -> Result<TransactionPreviewPostResponse, ApiError> {
+        Err("To be implemented".into())
+    }
+
+    async fn transaction_submit_post(
+        &self,
+        _transaction_submit_request: models::TransactionSubmitRequest,
+        _context: &C,
+    ) -> Result<TransactionSubmitPostResponse, ApiError> {
+        Err("To be implemented".into())
+    }
+}
+
+#[derive(Debug, TypeId, Encode, Decode, Clone)]
+pub struct CoreApiServerConfig {
+    pub bind_interface: String,
+    pub port: u32,
 }

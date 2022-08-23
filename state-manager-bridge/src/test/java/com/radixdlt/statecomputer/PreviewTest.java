@@ -86,8 +86,8 @@ public final class PreviewTest {
   public void test_successful_preview() {
     // Arrange
     try (final var stateManager =
-        StateManager.createAndInitialize(new StateManagerConfig(Option.none(), Option.none()))) {
-      final var stateComputer = new RustStateComputer(stateManager.getRustState());
+        StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
+      final var stateComputer = new RustStateComputer(stateManager);
       final var manifest = ManifestCompiler.compile("CLEAR_AUTH_ZONE;", "LocalSimulator").unwrap();
       final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
       final var previewRequest =
@@ -115,8 +115,8 @@ public final class PreviewTest {
   public void test_decode_error_result() {
     // Arrange
     try (final var stateManager =
-        StateManager.createAndInitialize(new StateManagerConfig(Option.none(), Option.none()))) {
-      final var stateComputer = new RustStateComputer(stateManager.getRustState());
+        StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
+      final var stateComputer = new RustStateComputer(stateManager);
       final var manifest = Hex.decode("00"); // invalid manifest
       final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
       final var previewRequest =

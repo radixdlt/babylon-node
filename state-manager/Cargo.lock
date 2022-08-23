@@ -288,6 +288,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "core-api-server"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "futures",
+ "hyper",
+ "jni",
+ "lazy_static",
+ "log",
+ "mime",
+ "radix-engine",
+ "radix-engine-stores",
+ "regex",
+ "sbor",
+ "scrypto",
+ "serde",
+ "serde_ignored",
+ "serde_json",
+ "state-manager",
+ "swagger",
+ "tokio",
+ "transaction",
+ "url",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -302,6 +329,15 @@ name = "core-foundation-sys"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
+
+[[package]]
+name = "core-rust"
+version = "0.1.0"
+dependencies = [
+ "core-api-server",
+ "jni",
+ "state-manager",
+]
 
 [[package]]
 name = "cpufeatures"
@@ -1642,29 +1678,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "statemanager"
+name = "state-manager"
 version = "0.1.0"
 dependencies = [
- "async-trait",
- "chrono",
- "futures",
- "hyper",
  "jni",
- "lazy_static",
- "log",
- "mime",
  "radix-engine",
  "radix-engine-stores",
- "regex",
  "sbor",
  "scrypto",
- "serde",
- "serde_ignored",
- "serde_json",
- "swagger",
- "tokio",
  "transaction",
- "url",
 ]
 
 [[package]]

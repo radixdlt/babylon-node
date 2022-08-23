@@ -64,4 +64,4 @@
 
 mod java_structure;
 
-pub(crate) use java_structure::*;
+pub use java_structure::*;

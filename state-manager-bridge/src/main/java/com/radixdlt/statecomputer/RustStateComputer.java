@@ -80,29 +80,26 @@ import com.radixdlt.transaction.RustTransactionStore;
 import com.radixdlt.transaction.TransactionStoreReader;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
-import java.util.Objects;
 
 public class RustStateComputer {
-  private final StateManager.RustState rustState;
   private final RustMempool mempool;
   private final RustTransactionStore transactionStore;
 
-  public RustStateComputer(StateManager.RustState rustState) {
-    this.rustState = Objects.requireNonNull(rustState);
-    this.mempool = new RustMempool(rustState);
-    this.transactionStore = new RustTransactionStore(rustState);
+  public RustStateComputer(StateManager stateManager) {
+    this.mempool = new RustMempool(stateManager);
+    this.transactionStore = new RustTransactionStore(stateManager);
     verifyFunc =
         NativeCalls.Func1.with(
-            rustState, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::verify);
+            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::verify);
     previewFunc =
         NativeCalls.Func1.with(
-            rustState, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::preview);
+            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::preview);
     commitFunc =
         NativeCalls.Func1.with(
-            rustState, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::commit);
+            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::commit);
     componentXrdAmountFunc =
         NativeCalls.Func1.with(
-            rustState,
+            stateManager,
             new TypeToken<>() {},
             new TypeToken<>() {},
             RustStateComputer::componentXrdAmount);
@@ -141,19 +138,20 @@ public class RustStateComputer {
     return previewFunc.call(previewRequest);
   }
 
-  private final NativeCalls.Func1<RawTransaction, Boolean> verifyFunc;
+  private final NativeCalls.Func1<StateManager, RawTransaction, Boolean> verifyFunc;
 
-  private static native byte[] verify(StateManager.RustState rustState, byte[] payload);
+  private static native byte[] verify(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<PreviewRequest, Result<PreviewResult, PreviewError>> previewFunc;
+  private final NativeCalls.Func1<StateManager, PreviewRequest, Result<PreviewResult, PreviewError>>
+      previewFunc;
 
-  private static native byte[] preview(StateManager.RustState rustState, byte[] payload);
+  private static native byte[] preview(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<CommitRequest, Unit> commitFunc;
+  private final NativeCalls.Func1<StateManager, CommitRequest, Unit> commitFunc;
 
-  private static native byte[] commit(StateManager.RustState rustState, byte[] payload);
+  private static native byte[] commit(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<ComponentAddress, Decimal> componentXrdAmountFunc;
+  private final NativeCalls.Func1<StateManager, ComponentAddress, Decimal> componentXrdAmountFunc;
 
-  private static native byte[] componentXrdAmount(StateManager.RustState rustState, byte[] payload);
+  private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
 }

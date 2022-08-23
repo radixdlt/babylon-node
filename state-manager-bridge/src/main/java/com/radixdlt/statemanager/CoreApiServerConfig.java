@@ -68,19 +68,15 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt32;
 
-public record CoreApiServerConfig(boolean enabled, String bindInterface, UInt32 port) {
+public record CoreApiServerConfig(String bindInterface, UInt32 port) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CoreApiServerConfig.class,
         codecs ->
             StructCodec.with(
                 CoreApiServerConfig::new,
-                codecs.of(boolean.class),
                 codecs.of(String.class),
                 codecs.of(UInt32.class),
-                (t, encoder) -> encoder.encode(t.enabled, t.bindInterface, t.port)));
+                (t, encoder) -> encoder.encode(t.bindInterface, t.port)));
   }
-
-  public static CoreApiServerConfig DISABLED =
-      new CoreApiServerConfig(false, "127.0.0.1", UInt32.fromNonNegativeInt(0));
 }

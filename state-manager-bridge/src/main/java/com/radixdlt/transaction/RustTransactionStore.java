@@ -66,16 +66,16 @@ package com.radixdlt.transaction;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.NativeCalls;
-import com.radixdlt.statemanager.StateManager.RustState;
+import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.utils.UInt64;
 import java.util.Objects;
 
 public final class RustTransactionStore implements TransactionStoreReader {
-  public RustTransactionStore(RustState rustState) {
-    Objects.requireNonNull(rustState);
+  public RustTransactionStore(StateManager stateManager) {
+    Objects.requireNonNull(stateManager);
     getTransactionAtStateVersionFunc =
         NativeCalls.Func1.with(
-            rustState,
+            stateManager,
             new TypeToken<>() {},
             new TypeToken<>() {},
             RustTransactionStore::getTransactionAtStateVersion);
@@ -86,8 +86,9 @@ public final class RustTransactionStore implements TransactionStoreReader {
     return getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
   }
 
-  private final NativeCalls.Func1<UInt64, ExecutedTransactionReceipt>
+  private final NativeCalls.Func1<StateManager, UInt64, ExecutedTransactionReceipt>
       getTransactionAtStateVersionFunc;
 
-  private static native byte[] getTransactionAtStateVersion(RustState rustState, byte[] payload);
+  private static native byte[] getTransactionAtStateVersion(
+      StateManager stateManager, byte[] payload);
 }

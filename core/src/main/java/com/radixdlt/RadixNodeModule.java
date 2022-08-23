@@ -68,6 +68,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.radixdlt.api.ApiModule;
+import com.radixdlt.api.CoreApiServerModule;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
@@ -188,15 +189,18 @@ public final class RadixNodeModule extends AbstractModule {
     install(new EpochsSyncModule());
 
     // State Computer
+    install(new REv2StateManagerModule());
+    install(new MockedPersistenceStoreModule());
+    install(new REv2StateComputerModule());
+    install(new InMemoryCommittedReaderModule());
+
+    // Core API server
     final var coreApiBindAddress =
         properties.get("api.core.bind_address", DEFAULT_CORE_API_BIND_ADDRESS);
     final var coreApiPort = properties.get("api.core.port", DEFAULT_CORE_API_PORT);
     final var coreApiServerConfig =
-        new CoreApiServerConfig(true, coreApiBindAddress, UInt32.fromNonNegativeInt(coreApiPort));
-    install(new REv2StateManagerModule(coreApiServerConfig));
-    install(new MockedPersistenceStoreModule());
-    install(new REv2StateComputerModule());
-    install(new InMemoryCommittedReaderModule());
+        new CoreApiServerConfig(coreApiBindAddress, UInt32.fromNonNegativeInt(coreApiPort));
+    install(new CoreApiServerModule(coreApiServerConfig));
 
     // Storage
     install(new DatabasePropertiesModule());

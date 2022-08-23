@@ -62,61 +62,110 @@
  * permissions under this License.
  */
 
-use jni::objects::JClass;
+use crate::core_api::server;
+use crate::core_api::server::CoreApiServerConfig;
+use futures::channel::oneshot;
+use futures::channel::oneshot::Sender;
+use futures::FutureExt;
+use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use sbor::{Decode, Encode, TypeId};
-use scrypto::core::Network;
-use scrypto::prelude::scrypto_encode;
-use std::str;
-use std::str::FromStr;
-use transaction::manifest::{compile, CompileError};
 
-use super::utils::jni_static_sbor_call;
+use state_manager::jni::dtos::JavaStructure;
+use state_manager::jni::state_manager::JNIStateManager;
+use state_manager::jni::utils::*;
+use state_manager::StateManager;
+use std::str;
+use std::sync::{Arc, Mutex, MutexGuard};
+use tokio::runtime::Runtime as TokioRuntime;
+
+const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";
+
+pub struct RunningServer {
+    pub tokio_runtime: Arc<TokioRuntime>,
+    pub shutdown_signal_sender: Sender<()>,
+}
+
+pub struct JNICoreApiServer {
+    pub config: CoreApiServerConfig,
+    pub state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>,
+    pub running_server: Option<RunningServer>,
+}
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_manifest_ManifestCompiler_compile(
+extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
     env: JNIEnv,
     _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_compile)
+    j_state_manager: JObject,
+    j_core_api_server: JObject,
+    j_config: jbyteArray,
+) {
+    let state_manager = JNIStateManager::get_state_manager(&env, j_state_manager);
+    let config_bytes: Vec<u8> = jni_jbytearray_to_vector(&env, j_config).unwrap();
+    let config = CoreApiServerConfig::from_java(&config_bytes).unwrap();
+    let jni_core_api_server = JNICoreApiServer {
+        config,
+        state_manager,
+        running_server: None,
+    };
+
+    env.set_rust_field(
+        j_core_api_server,
+        POINTER_JNI_FIELD_NAME,
+        jni_core_api_server,
+    )
+    .unwrap();
 }
 
-fn do_compile(args: (Vec<u8>, Vec<u8>)) -> Result<Vec<u8>, CompileManifestErrorJava> {
-    let (manifest_bytes, network_bytes) = args;
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
+    env: JNIEnv,
+    _class: JClass,
+    j_core_api_server: JObject,
+) {
+    let tokio_runtime = Arc::new(TokioRuntime::new().unwrap());
 
-    let manifest_str = str::from_utf8(&manifest_bytes)
-        .map_err(|_e| CompileManifestErrorJava::from("Invalid utf-8 string (manifest)"))?;
+    let (shutdown_signal_sender, shutdown_signal_receiver) = oneshot::channel::<()>();
 
-    let network_str = str::from_utf8(&network_bytes)
-        .map_err(|_e| CompileManifestErrorJava::from("Invalid utf-8 string (network)"))?;
+    let mut jni_core_api_server: MutexGuard<JNICoreApiServer> = env
+        .get_rust_field(j_core_api_server, POINTER_JNI_FIELD_NAME)
+        .unwrap();
 
-    let network: Network = Network::from_str(network_str)
-        .map_err(|_e| CompileManifestErrorJava::from("Unknown network"))?;
+    let config = &jni_core_api_server.config;
+    let state_manager = jni_core_api_server.state_manager.clone();
+    let bind_addr = format!("{}:{}", config.bind_interface, config.port);
+    tokio_runtime.spawn(async move {
+        server::create(
+            &bind_addr,
+            shutdown_signal_receiver.map(|_| ()),
+            state_manager,
+        )
+        .await;
+    });
 
-    compile(manifest_str, &network)
-        .map_err(|e| e.into())
-        .map(|manifest| scrypto_encode(&manifest))
+    let running_server = RunningServer {
+        tokio_runtime,
+        shutdown_signal_sender,
+    };
+
+    jni_core_api_server.running_server = Option::from(running_server);
 }
 
-#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
-pub struct CompileManifestErrorJava {
-    message: String,
-}
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_api_CoreApiServer_stop(
+    env: JNIEnv,
+    _class: JClass,
+    j_core_api_server: JObject,
+) {
+    let jni_core_api_server: JNICoreApiServer = env
+        .take_rust_field(j_core_api_server, POINTER_JNI_FIELD_NAME)
+        .unwrap();
 
-impl From<CompileError> for CompileManifestErrorJava {
-    fn from(err: CompileError) -> Self {
-        CompileManifestErrorJava {
-            message: format!("{:?}", err),
-        }
+    if let Some(running_server) = jni_core_api_server.running_server {
+        running_server.shutdown_signal_sender.send(()).unwrap();
     }
+
+    // No-op, drop the jni_core_api_server
 }
 
-impl From<&str> for CompileManifestErrorJava {
-    fn from(message: &str) -> Self {
-        CompileManifestErrorJava {
-            message: message.to_string(),
-        }
-    }
-}
+pub fn export_extern_functions() {}

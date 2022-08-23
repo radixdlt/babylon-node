@@ -75,7 +75,7 @@ import java.nio.charset.StandardCharsets;
 public final class ManifestCompiler {
 
   static {
-    System.loadLibrary("statemanager");
+    System.loadLibrary("corerust");
   }
 
   // TODO: use Network enum once it's in sync with rev2

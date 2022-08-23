@@ -277,14 +277,6 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
-pub struct CoreApiServerConfig {
-    pub enabled: bool,
-    pub bind_interface: String,
-    pub port: u32,
-}
-
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct StateManagerConfig {
     pub mempool_config: Option<MempoolConfig>,
-    pub core_api_server_config: Option<CoreApiServerConfig>,
 }

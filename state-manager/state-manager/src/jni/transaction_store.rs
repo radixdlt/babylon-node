@@ -62,155 +62,50 @@
  * permissions under this License.
  */
 
+use crate::state_manager::StateManager;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use sbor::{Decode, Encode, TypeId};
+use sbor::*;
+use scrypto::prelude::ComponentAddress;
 
-use crate::jni::utils::*;
-use crate::mempool::*;
-use crate::result::{
-    ResultStateManagerMaps, StateManagerError, StateManagerResult, ERRCODE_INTERFACE_CASTS,
-};
-use crate::state_manager::StateManager;
-use crate::types::Transaction;
+use super::utils::jni_state_manager_sbor_call;
 
-//
-// JNI Interface
-//
+#[derive(Encode, Decode, TypeId)]
+struct ExecutedTransactionReceipt {
+    result: String,
+    transaction_data: Vec<u8>,
+    new_component_addresses: Vec<ComponentAddress>,
+}
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
+extern "system" fn Java_com_radixdlt_transaction_RustTransactionStore_getTransactionAtStateVersion(
     env: JNIEnv,
     _class: JClass,
     sm_instance: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call_flatten_result(env, sm_instance, request_payload, do_add)
-}
-
-fn do_add(
-    state_manager: &mut dyn StateManager,
-    args: Transaction,
-) -> StateManagerResult<Result<Transaction, MempoolErrorJava>> {
-    let transaction = args;
-
-    // TODO: Move decoding of transaction to a separate "zone"
-    // TODO: Use notarized transaction in mempool
-    let decode_result = state_manager.decode_transaction(&transaction);
-
-    if let Err(error) = decode_result {
-        return Err(MempoolError::TransactionValidationError(error)).map_err_sm(|err| err.into());
-    }
-
-    state_manager
-        .mempool()
-        .add_transaction(transaction)
-        .map_err_sm(|err| err.into())
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForProposal(
-    env: JNIEnv,
-    _class: JClass,
-    sm_instance: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_call_flatten_result(
+    jni_state_manager_sbor_call(
         env,
         sm_instance,
         request_payload,
-        do_get_transactions_for_proposal,
+        do_get_transaction_at_state_version,
     )
 }
 
-fn do_get_transactions_for_proposal(
+fn do_get_transaction_at_state_version(
     state_manager: &mut dyn StateManager,
-    args: (u32, Vec<Transaction>),
-) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
-    let (count, prepared_transactions) = args;
-    state_manager
-        .mempool()
-        .get_proposal_transactions(count.into(), &prepared_transactions)
-        .map_err_sm(|err| err.into())
-}
+    state_version: u64,
+) -> ExecutedTransactionReceipt {
+    let (transaction_data, receipt) = state_manager
+        .transaction_store()
+        .get_transaction(state_version);
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
-    env: JNIEnv,
-    _class: JClass,
-    sm_instance: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_call(env, sm_instance, request_payload, do_get_count)
-}
-
-fn do_get_count(state_manager: &mut dyn StateManager, _args: ()) -> i32 {
-    state_manager.mempool().get_count().try_into().unwrap()
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
-    env: JNIEnv,
-    _class: JClass,
-    sm_instance: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_call_flatten_result(
-        env,
-        sm_instance,
-        request_payload,
-        do_get_transactions_to_relay,
-    )
-}
-
-fn do_get_transactions_to_relay(
-    state_manager: &mut dyn StateManager,
-    args: (u64, u64),
-) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
-    let (initial_delay_millis, repeat_delay_millis) = args;
-
-    state_manager
-        .mempool()
-        .get_relay_transactions(initial_delay_millis, repeat_delay_millis)
-        .map_err_sm(|err| err.into())
-}
-
-//
-// DTO Models + Mapping
-//
-
-#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
-enum MempoolErrorJava {
-    Full { current_size: i64, max_size: i64 },
-    Duplicate,
-    TransactionValidationError(String),
-}
-
-impl From<MempoolError> for StateManagerResult<MempoolErrorJava> {
-    fn from(err: MempoolError) -> Self {
-        match err {
-            MempoolError::Full {
-                current_size,
-                max_size,
-            } => Ok(MempoolErrorJava::Full {
-                current_size: current_size.try_into().or_else(|_| {
-                    StateManagerError::create_result(
-                        ERRCODE_INTERFACE_CASTS,
-                        "Failed to cast current_size".to_string(),
-                    )
-                })?,
-                max_size: max_size.try_into().or_else(|_| {
-                    StateManagerError::create_result(
-                        ERRCODE_INTERFACE_CASTS,
-                        "Failed to cast max_size".to_string(),
-                    )
-                })?,
-            }),
-            MempoolError::Duplicate => Ok(MempoolErrorJava::Duplicate),
-            MempoolError::TransactionValidationError(error) => Ok(
-                MempoolErrorJava::TransactionValidationError(format!("{:?}", error)),
-            ),
-        }
+    ExecutedTransactionReceipt {
+        result: receipt.result.to_string(),
+        transaction_data: transaction_data.clone(),
+        new_component_addresses: receipt.new_component_addresses.clone(),
     }
 }
+
+pub fn export_extern_functions() {}

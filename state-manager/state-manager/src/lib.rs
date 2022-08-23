@@ -62,10 +62,7 @@
  * permissions under this License.
  */
 
-extern crate core;
-
-mod core_api;
-mod jni;
+pub mod jni;
 mod mempool;
 mod query;
 mod result;
@@ -73,3 +70,5 @@ mod state_manager;
 mod transaction_builder;
 mod transaction_store;
 mod types;
+
+pub use state_manager::StateManager;

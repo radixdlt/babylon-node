@@ -81,7 +81,6 @@ import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statemanager.CoreApiServerConfig;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import org.junit.Test;
@@ -91,7 +90,7 @@ public class REv2StateComputerTest {
       Guice.createInjector(
           new CryptoModule(),
           new REv2StateComputerModule(),
-          new REv2StateManagerModule(CoreApiServerConfig.DISABLED),
+          new REv2StateManagerModule(),
           MempoolConfig.of(100, 1000).asModule(),
           new AbstractModule() {
             @Override
