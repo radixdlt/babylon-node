@@ -89,7 +89,7 @@ public class REv2StateComputerTest {
   private Injector createInjector() {
     return Guice.createInjector(
         new CryptoModule(),
-        new REv2StateManagerModule(REv2DatabaseConfig.inMemory(), Option.none()),
+        REv2StateManagerModule.create(REv2DatabaseConfig.inMemory(), Option.none()),
         new AbstractModule() {
           @Override
           protected void configure() {

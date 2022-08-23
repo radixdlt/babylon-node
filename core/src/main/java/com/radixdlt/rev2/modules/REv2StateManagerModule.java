@@ -65,6 +65,8 @@
 package com.radixdlt.rev2.modules;
 
 import com.google.inject.*;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -75,23 +77,54 @@ import com.radixdlt.statemanager.StateManagerConfig;
 public final class REv2StateManagerModule extends AbstractModule {
   private final REv2DatabaseConfig databaseConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
+  private final boolean prefixDatabase;
 
-  public REv2StateManagerModule(
-      REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig) {
+  private REv2StateManagerModule(
+      boolean prefixDatabase,
+      REv2DatabaseConfig databaseConfig,
+      Option<RustMempoolConfig> mempoolConfig) {
+    this.prefixDatabase = prefixDatabase;
     this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
   }
 
-  @Provides
-  @Singleton
-  private RustStateComputer stateComputer() {
-    var stateManager =
-        StateManager.createAndInitialize(new StateManagerConfig(mempoolConfig, databaseConfig));
-    return new RustStateComputer(stateManager.getRustState());
+  public static REv2StateManagerModule create(
+      REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig) {
+    return new REv2StateManagerModule(false, databaseConfig, mempoolConfig);
+  }
+
+  public static REv2StateManagerModule createForTesting(
+      REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig) {
+    return new REv2StateManagerModule(true, databaseConfig, mempoolConfig);
   }
 
   @Override
   public void configure() {
+    if (!prefixDatabase) {
+      var stateManager =
+          StateManager.createAndInitialize(new StateManagerConfig(mempoolConfig, databaseConfig));
+      bind(RustStateComputer.class).toInstance(new RustStateComputer(stateManager.getRustState()));
+    } else {
+      install(
+          new AbstractModule() {
+            @Provides
+            @Singleton
+            private RustStateComputer stateComputer(@Self BFTNode node) {
+              final REv2DatabaseConfig databaseConfigToUse;
+              if (databaseConfig instanceof REv2DatabaseConfig.RocksDB rocksDB) {
+                var databasePath = rocksDB.databasePath() + node.toString();
+                databaseConfigToUse = REv2DatabaseConfig.rocksDB(databasePath);
+              } else {
+                databaseConfigToUse = databaseConfig;
+              }
+              var stateManager =
+                  StateManager.createAndInitialize(
+                      new StateManagerConfig(mempoolConfig, databaseConfigToUse));
+              return new RustStateComputer(stateManager.getRustState());
+            }
+          });
+    }
+
     if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {
       install(new REv2DatabaseModule());
     }
