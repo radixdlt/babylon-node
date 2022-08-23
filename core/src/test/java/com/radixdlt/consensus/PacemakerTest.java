@@ -80,7 +80,7 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.p2p.TestP2PModule;
@@ -108,7 +108,7 @@ public class PacemakerTest {
 
   private Injector createRunner() {
     return Guice.createInjector(
-        MempoolConfig.of(10, 10).asModule(),
+        MempoolRelayConfig.of(10).asModule(),
         new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(),
         new ForksModule(),
@@ -116,7 +116,7 @@ public class PacemakerTest {
             Set.of(PrivateKeys.ofNumeric(1).getPublicKey()),
             Amount.ofTokens(1000),
             Amount.ofTokens(100)),
-        new SingleNodeAndPeersDeterministicNetworkModule(PrivateKeys.ofNumeric(1)),
+        SingleNodeAndPeersDeterministicNetworkModule.rev1(PrivateKeys.ofNumeric(1), 10),
         new TestP2PModule.Builder().build(),
         new TestMessagingModule.Builder().build(),
         new AbstractModule() {

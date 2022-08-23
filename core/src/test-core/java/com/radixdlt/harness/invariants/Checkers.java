@@ -62,63 +62,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.routes;
+package com.radixdlt.harness.invariants;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.SystemModelMapper;
-import com.radixdlt.api.system.generated.models.BFTConfiguration;
-import com.radixdlt.api.system.generated.models.MempoolConfiguration;
-import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.p2p.P2PConfig;
-import com.radixdlt.sync.SyncConfig;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfigurationResponse> {
+import com.google.inject.Injector;
+import com.radixdlt.mempool.MempoolReader;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.ExecutedTransactionReceipt;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import java.util.HashMap;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-  private final long pacemakerTimeout;
-  private final int bftSyncPatienceMillis;
-  private final long mempoolThrottleMs;
-  private final SyncConfig syncConfig;
-  private final P2PConfig p2PConfig;
-  private final ECPublicKey self;
-  private final SystemModelMapper systemModelMapper;
+/** Checkers for use with integration and simulation tests */
+public final class Checkers {
+  private static final Logger logger = LogManager.getLogger();
 
-  @Inject
-  ConfigurationHandler(
-      @Self ECPublicKey self,
-      @PacemakerBaseTimeoutMs long pacemakerTimeout,
-      @BFTSyncPatienceMillis int bftSyncPatienceMillis,
-      @MempoolThrottleMs long mempoolThrottleMs,
-      SyncConfig syncConfig,
-      P2PConfig p2PConfig,
-      SystemModelMapper systemModelMapper) {
-    super();
-    this.self = self;
-    this.pacemakerTimeout = pacemakerTimeout;
-    this.bftSyncPatienceMillis = bftSyncPatienceMillis;
-    this.mempoolThrottleMs = mempoolThrottleMs;
-    this.syncConfig = syncConfig;
-    this.p2PConfig = p2PConfig;
-    this.systemModelMapper = systemModelMapper;
+  /** Assert that all nodes have an exact mempool count */
+  public static void assertNodesHaveExactMempoolCount(List<Injector> nodeInjectors, int count) {
+    nodeInjectors.forEach(
+        injector -> {
+          var reader = injector.getInstance(MempoolReader.class);
+          assertThat(reader.getCount()).isEqualTo(count);
+        });
   }
 
-  @Override
-  public SystemConfigurationResponse handleRequest() {
-    // TODO: Mempool MaxSize configuration needs to move to a separate handler or
-    // TODO: different handling mechanism. Set to 0 here for now so that Configuration
-    // TODO: API doesn't break.
-    return new SystemConfigurationResponse()
-        .bft(
-            new BFTConfiguration()
-                .bftSyncPatience(bftSyncPatienceMillis)
-                .pacemakerTimeout(pacemakerTimeout))
-        .mempool(new MempoolConfiguration().maxSize(0).throttle(mempoolThrottleMs))
-        .sync(systemModelMapper.syncConfiguration(syncConfig))
-        .networking(systemModelMapper.networkingConfiguration(self, p2PConfig));
+  /** Verifies that all nodes have synced to atleast some given stateVersion */
+  public static void assertNodesSyncedToVersionAtleast(
+      List<Injector> nodeInjectors, long stateVersion) {
+    var stateVersionStatistics =
+        nodeInjectors.stream()
+            .mapToLong(
+                injector -> {
+                  var reader = injector.getInstance(TransactionsAndProofReader.class);
+                  var nodeStateVersion = reader.getLastProof().orElseThrow().getStateVersion();
+                  assertThat(nodeStateVersion).isGreaterThanOrEqualTo(stateVersion);
+                  return nodeStateVersion;
+                })
+            .summaryStatistics();
+
+    logger.info("StateVersionStats: {}", stateVersionStatistics);
+  }
+
+  /**
+   * Checks that a safety break has not occurred at the ledger transaction level. That is, all nodes
+   * should agree on the order and result of transaction execution.
+   */
+  public static void assertLedgerTransactionsSafety(List<Injector> nodeInjectors) {
+    var receipts = new HashMap<Long, ExecutedTransactionReceipt>();
+
+    for (var injector : nodeInjectors) {
+      var reader = injector.getInstance(TransactionsAndProofReader.class);
+      reader
+          .getLastProof()
+          .ifPresent(
+              proof -> {
+                var store = injector.getInstance(REv2TransactionAndProofStore.class);
+                for (long txnStateVersion = 1;
+                    txnStateVersion <= proof.getStateVersion();
+                    txnStateVersion++) {
+                  var receipt = store.getTransactionAtStateVersion(txnStateVersion);
+                  var curReceipt = receipts.get(txnStateVersion);
+                  if (curReceipt != null) {
+                    assertThat(curReceipt).isEqualTo(receipt);
+                  } else {
+                    receipts.put(txnStateVersion, receipt);
+                  }
+                }
+              });
+    }
+  }
+
+  public static void assertNoInvalidSyncResponses(List<Injector> nodeInjectors) {
+    for (var injector : nodeInjectors) {
+      var systemCounters = injector.getInstance(SystemCounters.class);
+      assertThat(systemCounters.get(SystemCounters.CounterType.SYNC_INVALID_RESPONSES_RECEIVED))
+          .isEqualTo(0);
+    }
   }
 }

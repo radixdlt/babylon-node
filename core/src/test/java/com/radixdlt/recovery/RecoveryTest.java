@@ -95,7 +95,8 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.p2p.TestP2PModule;
@@ -109,7 +110,7 @@ import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Collection;
 import java.util.List;
@@ -200,7 +201,7 @@ public class RecoveryTest {
                 10,
                 MSG.maxLength())),
         new ForksModule(),
-        MempoolConfig.of(10, 10).asModule(),
+        MempoolRelayConfig.of(10).asModule(),
         new LastEventsModule(EpochRoundUpdate.class, Vote.class),
         new AbstractModule() {
           @Override
@@ -211,7 +212,7 @@ public class RecoveryTest {
                 .to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
           }
         },
-        new PersistedNodeForTestingModule(ecKeyPair),
+        PersistedNodeForTestingModule.rev1(ecKeyPair, 10),
         new TestP2PModule.Builder().build(),
         new TestMessagingModule.Builder().build());
   }
@@ -221,8 +222,8 @@ public class RecoveryTest {
         Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {}));
   }
 
-  private CommittedReader getCommittedReader() {
-    return currentInjector.getInstance(CommittedReader.class);
+  private TransactionsAndProofReader getCommittedReader() {
+    return currentInjector.getInstance(TransactionsAndProofReader.class);
   }
 
   private EpochRound getLastEpochRound() {
@@ -322,12 +323,17 @@ public class RecoveryTest {
 
     // Assert
     assertThat(network.allMessages())
-        .hasSize(3)
+        .hasSize(4)
         .haveExactly(
             1,
             new Condition<>(
                 msg -> Epoched.isInstance(msg.message(), ScheduledLocalTimeout.class),
                 "A single epoched scheduled timeout has been emitted"))
+        .haveExactly(
+            1,
+            new Condition<>(
+                msg -> msg.message() instanceof MempoolRelayTrigger,
+                "A single mempool relay trigger has been emitted"))
         .haveExactly(
             1,
             new Condition<>(

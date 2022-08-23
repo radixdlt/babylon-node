@@ -67,7 +67,7 @@ use crate::jni::utils::*;
 use crate::mempool::simple::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{StateManager, StateManagerConfig, StateManagerImpl};
-use crate::transaction_store::TransactionStore;
+use crate::store::TransactionStore;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;

@@ -62,6 +62,59 @@
  * permissions under this License.
  */
 
-mod in_memory_transaction_store;
+package com.radixdlt.integration.targeted.mempool;
 
-pub use in_memory_transaction_store::TransactionStore;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.transactions.RawTransaction;
+import java.util.stream.Collectors;
+import org.junit.Test;
+
+public final class REv2MempoolRelayerTest {
+  private final int MEMPOOL_SIZE = 1000;
+
+  private final DeterministicTest test =
+      DeterministicTest.builder()
+          .numNodes(1, 20)
+          .messageSelector(firstSelector())
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                  FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSync(
+                      StateComputerConfig.rev2(
+                          StateComputerConfig.REV2ProposerConfig.mempool(
+                              MEMPOOL_SIZE, new MempoolRelayConfig(0, 0, 0, 100))),
+                      SyncConfig.of(5000, 10, 3000L))));
+
+  private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
+
+  @Test
+  public void relayer_fills_mempool_of_all_nodes() throws Exception {
+    // Arrange: Fill node1 mempool
+    var mempoolInserter =
+        test.getInstance(1, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+    for (int i = 0; i < MEMPOOL_SIZE; i++) {
+      mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
+    }
+
+    // Run all nodes except validator node0
+    test.runForCount(
+        100, m -> m.channelId().senderIndex() != 0 && m.channelId().receiverIndex() != 0);
+
+    // Post-run assertions
+    Checkers.assertNodesHaveExactMempoolCount(
+        test.getNodeInjectors().stream().skip(1).collect(Collectors.toList()), MEMPOOL_SIZE);
+  }
+}

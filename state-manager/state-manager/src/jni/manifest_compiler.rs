@@ -100,7 +100,7 @@ fn do_compile(args: (Vec<u8>, Vec<u8>)) -> Result<Vec<u8>, CompileManifestErrorJ
         .map(|manifest| scrypto_encode(&manifest))
 }
 
-#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
 struct CompileManifestErrorJava {
     message: String,
 }

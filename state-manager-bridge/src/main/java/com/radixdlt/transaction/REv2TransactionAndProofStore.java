@@ -62,18 +62,68 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.transaction;
 
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
-import com.radixdlt.ledger.DtoLedgerProof;
+import com.google.common.hash.HashCode;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.NativeCalls;
+import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.utils.UInt64;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
-/** Reader of committed transactions */
-public interface CommittedReader {
-  CommittedTransactionsWithProof getNextCommittedTransactionRun(DtoLedgerProof start);
+public final class REv2TransactionAndProofStore {
+  public REv2TransactionAndProofStore(StateManager stateManager) {
+    Objects.requireNonNull(stateManager);
+    this.getTransactionAtStateVersionFunc =
+        NativeCalls.Func1.with(
+            stateManager,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            REv2TransactionAndProofStore::getTransactionAtStateVersion);
+    this.getNextProofFunc =
+        NativeCalls.Func1.with(
+            stateManager,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            REv2TransactionAndProofStore::getNextProof);
+    this.getLastProofFunc =
+        NativeCalls.Func1.with(
+            stateManager,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            REv2TransactionAndProofStore::getLastProof);
+  }
 
-  Optional<LedgerProof> getEpochProof(long epoch);
+  public ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion) {
+    return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
+  }
 
-  Optional<LedgerProof> getLastProof();
+  public Optional<Tuple.Tuple2<List<HashCode>, byte[]>> getNextProof(long stateVersion) {
+    return this.getNextProofFunc.call(UInt64.fromNonNegativeLong(stateVersion)).toOptional();
+  }
+
+  public Optional<byte[]> getLastProof() {
+    return this.getLastProofFunc.call(Unit.unit()).toOptional();
+  }
+
+  private final NativeCalls.Func1<StateManager, UInt64, ExecutedTransactionReceipt>
+      getTransactionAtStateVersionFunc;
+
+  private static native byte[] getTransactionAtStateVersion(
+      StateManager stateManager, byte[] payload);
+
+  private final NativeCalls.Func1<
+          StateManager, UInt64, Option<Tuple.Tuple2<List<HashCode>, byte[]>>>
+      getNextProofFunc;
+
+  private static native byte[] getNextProof(StateManager stateManager, byte[] payload);
+
+  private final NativeCalls.Func1<StateManager, Unit, Option<byte[]>> getLastProofFunc;
+
+  private static native byte[] getLastProof(StateManager stateManager, byte[] payload);
 }

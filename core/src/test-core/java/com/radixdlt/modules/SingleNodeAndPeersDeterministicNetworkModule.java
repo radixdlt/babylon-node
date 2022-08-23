@@ -83,8 +83,10 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
   private final ECKeyPair self;
   private final StateComputerConfig stateComputerConfig;
 
-  public SingleNodeAndPeersDeterministicNetworkModule(ECKeyPair self) {
-    this(self, StateComputerConfig.rev1());
+  public static SingleNodeAndPeersDeterministicNetworkModule rev1(
+      ECKeyPair self, int maxMempoolSize) {
+    return new SingleNodeAndPeersDeterministicNetworkModule(
+        self, StateComputerConfig.rev1(maxMempoolSize));
   }
 
   public SingleNodeAndPeersDeterministicNetworkModule(

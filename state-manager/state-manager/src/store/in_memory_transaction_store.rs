@@ -62,63 +62,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.routes;
+use crate::types::{TId, Transaction};
+use radix_engine::transaction::{TransactionReceipt, TransactionStatus};
+use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
+use std::collections::HashMap;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.SystemModelMapper;
-import com.radixdlt.api.system.generated.models.BFTConfiguration;
-import com.radixdlt.api.system.generated.models.MempoolConfiguration;
-import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.p2p.P2PConfig;
-import com.radixdlt.sync.SyncConfig;
+/// TODO: Remove and use the real TransactionReceipt. This is currently a required struct
+/// TODO: as there is RC<RefCell<>> useage in some of the substates which does not play well
+/// TODO: with the babylon node multithreaded structures.
+#[derive(Debug)]
+pub struct TemporaryTransactionReceipt {
+    pub result: String,
+    pub new_package_addresses: Vec<PackageAddress>,
+    pub new_component_addresses: Vec<ComponentAddress>,
+    pub new_resource_addresses: Vec<ResourceAddress>,
+}
 
-public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfigurationResponse> {
+#[derive(Debug)]
+pub struct TransactionStore {
+    in_memory_store: HashMap<TId, (Vec<u8>, TemporaryTransactionReceipt)>,
+}
 
-  private final long pacemakerTimeout;
-  private final int bftSyncPatienceMillis;
-  private final long mempoolThrottleMs;
-  private final SyncConfig syncConfig;
-  private final P2PConfig p2PConfig;
-  private final ECPublicKey self;
-  private final SystemModelMapper systemModelMapper;
+impl TransactionStore {
+    pub fn new() -> TransactionStore {
+        TransactionStore {
+            in_memory_store: HashMap::new(),
+        }
+    }
 
-  @Inject
-  ConfigurationHandler(
-      @Self ECPublicKey self,
-      @PacemakerBaseTimeoutMs long pacemakerTimeout,
-      @BFTSyncPatienceMillis int bftSyncPatienceMillis,
-      @MempoolThrottleMs long mempoolThrottleMs,
-      SyncConfig syncConfig,
-      P2PConfig p2PConfig,
-      SystemModelMapper systemModelMapper) {
-    super();
-    this.self = self;
-    this.pacemakerTimeout = pacemakerTimeout;
-    this.bftSyncPatienceMillis = bftSyncPatienceMillis;
-    this.mempoolThrottleMs = mempoolThrottleMs;
-    this.syncConfig = syncConfig;
-    this.p2PConfig = p2PConfig;
-    this.systemModelMapper = systemModelMapper;
-  }
+    pub fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
+        for (txn, receipt) in transactions {
+            self.insert_transaction(txn, receipt);
+        }
+    }
 
-  @Override
-  public SystemConfigurationResponse handleRequest() {
-    // TODO: Mempool MaxSize configuration needs to move to a separate handler or
-    // TODO: different handling mechanism. Set to 0 here for now so that Configuration
-    // TODO: API doesn't break.
-    return new SystemConfigurationResponse()
-        .bft(
-            new BFTConfiguration()
-                .bftSyncPatience(bftSyncPatienceMillis)
-                .pacemakerTimeout(pacemakerTimeout))
-        .mempool(new MempoolConfiguration().maxSize(0).throttle(mempoolThrottleMs))
-        .sync(systemModelMapper.syncConfiguration(syncConfig))
-        .networking(systemModelMapper.networkingConfiguration(self, p2PConfig));
-  }
+    fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
+        let receipt = TemporaryTransactionReceipt {
+            result: match receipt.status {
+                TransactionStatus::Succeeded(..) => "Success".to_string(),
+                TransactionStatus::Failed(error) => error.to_string(),
+                TransactionStatus::Rejected => "Rejected".to_string(),
+            },
+            new_package_addresses: receipt.new_package_addresses,
+            new_component_addresses: receipt.new_component_addresses,
+            new_resource_addresses: receipt.new_resource_addresses,
+        };
+        self.in_memory_store.insert(
+            transaction.id.clone(),
+            (transaction.payload.clone(), receipt),
+        );
+    }
+
+    pub fn get_transaction(&self, tid: &TId) -> &(Vec<u8>, TemporaryTransactionReceipt) {
+        self.in_memory_store.get(tid).expect("Transaction missing")
+    }
 }

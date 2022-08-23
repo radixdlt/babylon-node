@@ -65,8 +65,8 @@
 use crate::jni::dtos::*;
 use crate::mempool::{Mempool, MempoolConfig};
 use crate::query::ResourceAccounter;
-use crate::transaction_store::TransactionStore;
-use crate::types::{PreviewError, PreviewRequest, Transaction};
+use crate::store::{ProofStore, TransactionStore};
+use crate::types::{CommitRequest, PreviewError, PreviewRequest, Transaction};
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
@@ -91,7 +91,7 @@ use transaction::validation::{TestIntentHashManager, TransactionValidator, Valid
 pub trait StateManager {
     fn network(&self) -> &Network;
 
-    fn commit(&mut self, transactions: Vec<Transaction>, state_version: u64);
+    fn commit(&mut self, commit_request: CommitRequest);
 
     fn decode_transaction(
         &self,
@@ -108,6 +108,8 @@ pub trait StateManager {
     fn mempool(&mut self) -> &mut dyn Mempool;
 
     fn transaction_store(&mut self) -> &mut TransactionStore;
+
+    fn proof_store(&mut self) -> &mut ProofStore;
 }
 
 impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateStore>
@@ -117,9 +119,10 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSu
         &self.network
     }
 
-    fn commit(&mut self, transactions: Vec<Transaction>, state_version: u64) {
+    fn commit(&mut self, commit_request: CommitRequest) {
         let mut to_store = Vec::new();
-        for transaction in &transactions {
+        let mut ids = Vec::new();
+        for transaction in &commit_request.transactions {
             let validated_txn = self
                 .decode_transaction(transaction)
                 .expect("Error on Byzantine quorum");
@@ -128,17 +131,18 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSu
                 .execute_transaction(validated_txn)
                 .expect("Error on Byzantine quorum");
 
-            to_store.push((transaction.payload.clone(), receipt))
+            to_store.push((transaction, receipt));
+            ids.push(transaction.id.clone());
         }
 
-        for (i, (txn_bytes, receipt)) in to_store.into_iter().enumerate() {
-            let txn_state_version =
-                state_version - u64::try_from(transactions.len() - i - 1).unwrap();
-            self.transaction_store
-                .insert_transaction(txn_state_version, txn_bytes, receipt);
-        }
-
-        self.mempool.handle_committed_transactions(&transactions);
+        self.transaction_store.insert_transactions(to_store);
+        self.proof_store.insert_tids_and_proof(
+            commit_request.state_version,
+            ids,
+            commit_request.proof,
+        );
+        self.mempool
+            .handle_committed_transactions(&commit_request.transactions);
     }
 
     fn decode_transaction(
@@ -217,11 +221,16 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSu
     fn transaction_store(&mut self) -> &mut TransactionStore {
         &mut self.transaction_store
     }
+
+    fn proof_store(&mut self) -> &mut ProofStore {
+        &mut self.proof_store
+    }
 }
 
 pub struct StateManagerImpl<M: Mempool, S> {
-    pub mempool: M,
-    pub transaction_store: TransactionStore,
+    mempool: M,
+    transaction_store: TransactionStore,
+    proof_store: ProofStore,
     network: Network,
     substate_store: S,
     wasm_engine: DefaultWasmEngine,
@@ -241,6 +250,7 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
             network: Network::LocalSimulator,
             mempool,
             transaction_store,
+            proof_store: ProofStore::new(),
             substate_store,
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),

@@ -62,27 +62,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.mempool;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.environment.EventProcessorOnDispatch;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.rev2.InMemoryCommittedReader;
-import com.radixdlt.sync.CommittedReader;
 
-public class InMemoryCommittedReaderModule extends AbstractModule {
-  @Override
-  public void configure() {
-    bind(InMemoryCommittedReader.Store.class).toInstance(new InMemoryCommittedReader.Store());
-    bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
+/** Configuration parameters for mempool. */
+public record MempoolRelayConfig(
+    long throttleMs, long relayInitialDelayMillis, long relayRepeatDelayMillis, int relayMaxPeers) {
+  public static MempoolRelayConfig of() {
+    return new MempoolRelayConfig(10000, 60000, 60000, 100);
   }
 
-  @Singleton
-  @ProvidesIntoSet
-  public EventProcessorOnDispatch<?> eventProcessor(InMemoryCommittedReader reader) {
-    return new EventProcessorOnDispatch<>(LedgerUpdate.class, reader.updateProcessor());
+  public static MempoolRelayConfig of(long throttleMs) {
+    return new MempoolRelayConfig(throttleMs, 60000, 60000, 100);
+  }
+
+  public AbstractModule asModule() {
+    return new AbstractModule() {
+      @Override
+      protected void configure() {
+        bindConstant().annotatedWith(MempoolThrottleMs.class).to(throttleMs);
+        bindConstant().annotatedWith(MempoolRelayInitialDelayMs.class).to(relayInitialDelayMillis);
+        bindConstant().annotatedWith(MempoolRelayRepeatDelayMs.class).to(relayRepeatDelayMillis);
+        bindConstant().annotatedWith(MempoolRelayMaxPeers.class).to(relayMaxPeers);
+      }
+    };
   }
 }

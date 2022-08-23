@@ -78,8 +78,8 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
-import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolReceiverModule;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.messaging.MessagingModule;
 import com.radixdlt.modules.*;
@@ -88,7 +88,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
-import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
@@ -155,10 +154,6 @@ public final class RadixNodeModule extends AbstractModule {
     bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.1);
     bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
 
-    // Mempool configuration
-    var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
-    install(new MempoolConfig(mempoolMaxSize, 5, 60000, 60000, 100).asModule());
-
     // System (e.g. time, random)
     install(new SystemModule());
 
@@ -177,6 +172,7 @@ public final class RadixNodeModule extends AbstractModule {
     install(new MempoolReceiverModule());
 
     // Mempool Relay
+    install(new MempoolRelayConfig(5, 60000, 60000, 100).asModule());
     install(new MempoolRelayerModule());
 
     // Sync
@@ -189,10 +185,10 @@ public final class RadixNodeModule extends AbstractModule {
     install(new EpochsSyncModule());
 
     // State Computer
-    install(new REv2StateManagerModule());
+    var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
+    install(new REv2StateManagerModule(mempoolMaxSize));
     install(new MockedPersistenceStoreModule());
     install(new REv2StateComputerModule());
-    install(new InMemoryCommittedReaderModule());
 
     // Core API server
     final var coreApiBindAddress =

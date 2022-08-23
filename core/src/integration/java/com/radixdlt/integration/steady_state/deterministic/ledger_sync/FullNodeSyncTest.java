@@ -69,6 +69,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.sync.SyncConfig;
 import java.util.stream.IntStream;
@@ -89,14 +90,15 @@ public class FullNodeSyncTest {
 
     final var bftTest =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numNodes, 0)
             .messageSelector(firstSelector())
             .epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
             .buildWithEpochsAndSync(epochMaxRound, syncConfig)
             .runUntil(DeterministicTest.ledgerStateVersionOnNode(targetStateVersion, numNodes - 1));
 
     final var validatorsCounters =
-        IntStream.range(0, numValidators).mapToObj(bftTest::getSystemCounters);
+        IntStream.range(0, numValidators)
+            .mapToObj(i -> bftTest.getInstance(i, SystemCounters.class));
 
     final var validatorsMaxStateVersion =
         validatorsCounters
@@ -106,7 +108,7 @@ public class FullNodeSyncTest {
 
     final var nonValidatorsStateVersions =
         IntStream.range(numValidators, numNodes - numValidators)
-            .mapToObj(bftTest::getSystemCounters)
+            .mapToObj(i -> bftTest.getInstance(i, SystemCounters.class))
             .map(sc -> sc.get(CounterType.LEDGER_STATE_VERSION))
             .toList();
 

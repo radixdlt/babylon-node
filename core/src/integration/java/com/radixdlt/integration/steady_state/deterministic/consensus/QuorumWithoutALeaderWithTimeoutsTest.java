@@ -71,7 +71,10 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.Random;
@@ -86,17 +89,22 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
 
   private final Random random = new Random(123456);
 
-  private void run(int numNodes, long numRounds) {
+  private void run(int numValidatorNodes, long numRounds) {
     final DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numValidatorNodes, 0)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(dropAllNonTimeoutVotes())
-            .buildWithoutEpochs(ConsensusConfig.of())
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    ConsensusConfig.of(),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
             .runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
-    for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
-      final SystemCounters counters = test.getSystemCounters(nodeIndex);
+    for (int nodeIndex = 0; nodeIndex < numValidatorNodes; ++nodeIndex) {
+      final SystemCounters counters = test.getInstance(nodeIndex, SystemCounters.class);
       final long numberOfIndirectParents =
           counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
       final long totalNumberOfTimeouts = counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);

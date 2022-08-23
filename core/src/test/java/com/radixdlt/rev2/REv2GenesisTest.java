@@ -76,7 +76,7 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.*;
 import com.radixdlt.monitoring.SystemCounters;
@@ -116,7 +116,7 @@ public final class REv2GenesisTest {
             FunctionalRadixNodeModule.ConsensusConfig.of(),
             FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
-                    StateComputerConfig.REV2ProposerConfig.mempool(MempoolConfig.of(0))))),
+                    StateComputerConfig.REV2ProposerConfig.mempool(0, MempoolRelayConfig.of())))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(

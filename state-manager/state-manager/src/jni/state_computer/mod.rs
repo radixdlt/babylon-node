@@ -157,7 +157,7 @@ fn do_commit(
     state_manager
         .lock()
         .expect("Can't acquire a state manager mutex lock")
-        .commit(commit_request.transactions, commit_request.state_version);
+        .commit(commit_request);
     Ok(())
 }
 

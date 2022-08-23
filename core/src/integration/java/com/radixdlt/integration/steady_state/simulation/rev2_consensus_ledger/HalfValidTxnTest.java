@@ -62,63 +62,66 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.routes;
+package com.radixdlt.integration.steady_state.simulation.rev2_consensus_ledger;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.SystemModelMapper;
-import com.radixdlt.api.system.generated.models.BFTConfiguration;
-import com.radixdlt.api.system.generated.models.MempoolConfiguration;
-import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.p2p.P2PConfig;
-import com.radixdlt.sync.SyncConfig;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfigurationResponse> {
+import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkOrdering;
+import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.statecomputer.StatelessComputer;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.assertj.core.data.Offset;
+import org.junit.Test;
 
-  private final long pacemakerTimeout;
-  private final int bftSyncPatienceMillis;
-  private final long mempoolThrottleMs;
-  private final SyncConfig syncConfig;
-  private final P2PConfig p2PConfig;
-  private final ECPublicKey self;
-  private final SystemModelMapper systemModelMapper;
+public class HalfValidTxnTest {
+  private final SimulationTest.Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  ConsensusConfig.of(1000),
+                  LedgerConfig.stateComputerNoSync(
+                      StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer()))))
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered());
 
-  @Inject
-  ConfigurationHandler(
-      @Self ECPublicKey self,
-      @PacemakerBaseTimeoutMs long pacemakerTimeout,
-      @BFTSyncPatienceMillis int bftSyncPatienceMillis,
-      @MempoolThrottleMs long mempoolThrottleMs,
-      SyncConfig syncConfig,
-      P2PConfig p2PConfig,
-      SystemModelMapper systemModelMapper) {
-    super();
-    this.self = self;
-    this.pacemakerTimeout = pacemakerTimeout;
-    this.bftSyncPatienceMillis = bftSyncPatienceMillis;
-    this.mempoolThrottleMs = mempoolThrottleMs;
-    this.syncConfig = syncConfig;
-    this.p2PConfig = p2PConfig;
-    this.systemModelMapper = systemModelMapper;
-  }
+  @Test
+  public void test_half_valid_half_invalid_rev2_transactions() {
+    // Arrange
+    var simulationTest = bftTestBuilder.build();
 
-  @Override
-  public SystemConfigurationResponse handleRequest() {
-    // TODO: Mempool MaxSize configuration needs to move to a separate handler or
-    // TODO: different handling mechanism. Set to 0 here for now so that Configuration
-    // TODO: API doesn't break.
-    return new SystemConfigurationResponse()
-        .bft(
-            new BFTConfiguration()
-                .bftSyncPatience(bftSyncPatienceMillis)
-                .pacemakerTimeout(pacemakerTimeout))
-        .mempool(new MempoolConfiguration().maxSize(0).throttle(mempoolThrottleMs))
-        .sync(systemModelMapper.syncConfiguration(syncConfig))
-        .networking(systemModelMapper.networkingConfiguration(self, p2PConfig));
+    // Run
+    var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
+
+    // Post-run assertions
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    for (var node : runningTest.getNetwork().getNodes()) {
+      var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
+
+      // The current proposal generator for REv2 produces half correct transactions and half
+      // invalid.
+      // This part verifies that this actually happened.
+      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
+      assertThat(statelessComputer.getInvalidCount())
+          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(4));
+    }
   }
 }

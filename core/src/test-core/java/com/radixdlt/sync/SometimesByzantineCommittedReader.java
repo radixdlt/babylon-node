@@ -76,7 +76,7 @@ import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.rev2.InMemoryCommittedReader;
+import com.radixdlt.store.InMemoryTransactionsAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
@@ -86,8 +86,8 @@ import java.util.function.UnaryOperator;
 import org.junit.Ignore;
 
 /** A reader which sometimes returns erroneous transactions. */
-public final class SometimesByzantineCommittedReader implements CommittedReader {
-  private final InMemoryCommittedReader correctReader;
+public final class SometimesByzantineCommittedReader implements TransactionsAndProofReader {
+  private final InMemoryTransactionsAndProofReader correctReader;
   private final LedgerAccumulator accumulator;
   private final Hasher hasher;
   private ReadType currentReadType;
@@ -96,7 +96,7 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
   public SometimesByzantineCommittedReader(
       Random random,
       LedgerAccumulator accumulator,
-      InMemoryCommittedReader correctReader,
+      InMemoryTransactionsAndProofReader correctReader,
       Hasher hasher) {
     this.correctReader = Objects.requireNonNull(correctReader);
     this.accumulator = Objects.requireNonNull(accumulator);
@@ -248,9 +248,8 @@ public final class SometimesByzantineCommittedReader implements CommittedReader 
   }
 
   @Override
-  public CommittedTransactionsWithProof getNextCommittedTransactionRun(DtoLedgerProof start) {
-    CommittedTransactionsWithProof correctResult =
-        correctReader.getNextCommittedTransactionRun(start);
+  public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
+    CommittedTransactionsWithProof correctResult = correctReader.getTransactions(start);
     // TODO: Make epoch sync byzantine as well
     if (start.getLedgerHeader().isEndOfEpoch()) {
       return correctResult;

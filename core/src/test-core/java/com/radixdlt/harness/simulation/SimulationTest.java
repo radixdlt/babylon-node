@@ -98,12 +98,11 @@ import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
 import com.radixdlt.ledger.*;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.MempoolType;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
@@ -121,14 +120,15 @@ import com.radixdlt.rev1.forks.NoOpForksEpochStore;
 import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
 import com.radixdlt.rev1.modules.LedgerRecoveryModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
-import com.radixdlt.rev2.modules.InMemoryCommittedReaderModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
-import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -143,7 +143,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /** High level BFT Simulation Test Runner */
 public final class SimulationTest {
@@ -239,9 +238,7 @@ public final class SimulationTest {
      */
     public Builder numNodes(int numNodes, Iterable<UInt256> initialStakes) {
       this.initialNodes =
-          Stream.generate(ECKeyPair::generateNew)
-              .limit(numNodes)
-              .collect(ImmutableList.toImmutableList());
+          PrivateKeys.numeric(1).limit(numNodes).collect(ImmutableList.toImmutableList());
 
       final var stakesIterator = repeatLast(initialStakes);
       final var initialStakesMap =
@@ -285,7 +282,9 @@ public final class SimulationTest {
           new FunctionalRadixNodeModule(
               true,
               consensusConfig,
-              LedgerConfig.stateComputerNoSync(StateComputerConfig.mocked(MempoolType.NONE)));
+              LedgerConfig.stateComputerNoSync(
+                  StateComputerConfig.mocked(
+                      new StateComputerConfig.MockedMempoolConfig.NoMempool())));
       this.epochToNodeIndexMapper = epochToNodeIndexMapper;
       this.modules.add(
           new AbstractModule() {
@@ -309,16 +308,20 @@ public final class SimulationTest {
               false,
               consensusConfig,
               LedgerConfig.stateComputerWithSync(
-                  StateComputerConfig.mocked(MempoolType.NONE), syncConfig));
+                  StateComputerConfig.mocked(
+                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                  syncConfig));
       return this;
     }
 
-    public Builder fullFunctionNodes(ConsensusConfig consensusConfig, SyncConfig syncConfig) {
+    public Builder fullFunctionNodes(
+        ConsensusConfig consensusConfig, SyncConfig syncConfig, int mempoolSize) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               true,
               consensusConfig,
-              LedgerConfig.stateComputerWithSync(StateComputerConfig.rev1(), syncConfig));
+              LedgerConfig.stateComputerWithSync(
+                  StateComputerConfig.rev1(mempoolSize), syncConfig));
 
       return this;
     }
@@ -333,7 +336,9 @@ public final class SimulationTest {
               true,
               consensusConfig,
               LedgerConfig.stateComputerWithSync(
-                  StateComputerConfig.mocked(MempoolType.NONE), syncConfig));
+                  StateComputerConfig.mocked(
+                      new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                  syncConfig));
       this.epochToNodeIndexMapper = epochToNodeIndexMapper;
       modules.add(
           new AbstractModule() {
@@ -350,29 +355,32 @@ public final class SimulationTest {
           new FunctionalRadixNodeModule(
               false,
               consensusConfig,
-              LedgerConfig.stateComputerNoSync(StateComputerConfig.mocked(MempoolType.LOCAL_ONLY)));
-      this.modules.add(MempoolConfig.of(10, 10).asModule());
+              LedgerConfig.stateComputerNoSync(
+                  StateComputerConfig.mocked(
+                      new StateComputerConfig.MockedMempoolConfig.LocalOnly(10))));
+      this.modules.add(MempoolRelayConfig.of(10).asModule());
       return this;
     }
 
     public Builder ledgerAndRadixEngineWithEpochMaxRound(ConsensusConfig consensusConfig) {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
-              true, consensusConfig, LedgerConfig.stateComputerNoSync(StateComputerConfig.rev1()));
+              true,
+              consensusConfig,
+              LedgerConfig.stateComputerNoSync(StateComputerConfig.rev1(100)));
       this.modules.add(
           new AbstractModule() {
             @Override
             protected void configure() {
               bind(new TypeLiteral<List<BFTNode>>() {}).toInstance(List.of());
-              install(MempoolConfig.of(100, 10).asModule());
+              install(MempoolRelayConfig.of(10).asModule());
             }
 
             @Provides
-            CommittedReader committedReader() {
-              return new CommittedReader() {
+            TransactionsAndProofReader committedReader() {
+              return new TransactionsAndProofReader() {
                 @Override
-                public CommittedTransactionsWithProof getNextCommittedTransactionRun(
-                    DtoLedgerProof start) {
+                public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
                   return null;
                 }
 
@@ -505,7 +513,7 @@ public final class SimulationTest {
                         Amount.ofTokens(10000)));
                 bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
                 bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-                bind(CommittedReader.class).toInstance(new NoOpCommittedReader());
+                bind(TransactionsAndProofReader.class).toInstance(new NoOpCommittedReader());
                 bind(ForksEpochStore.class).toInstance(new NoOpForksEpochStore());
               }
 
@@ -551,7 +559,7 @@ public final class SimulationTest {
 
       // Runners
       modules.add(new RxEnvironmentModule());
-      if (this.functionalNodeModule.supportsSync()) {
+      if (this.functionalNodeModule.supportsSync() && !this.functionalNodeModule.supportsREv2()) {
         modules.add(new InMemoryCommittedReaderModule());
         modules.add(new InMemoryForksEpochStoreModule());
       }
@@ -715,6 +723,10 @@ public final class SimulationTest {
 
     public SimulationNodes.RunningNetwork getNetwork() {
       return network;
+    }
+
+    public List<Injector> getNodeInjectors() {
+      return network.getNodes().stream().map(network::getNodeInjector).collect(Collectors.toList());
     }
 
     public Map<Monitor, Optional<TestInvariantError>> awaitCompletion() {

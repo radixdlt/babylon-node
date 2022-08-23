@@ -62,35 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.store;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.sync.TransactionsAndProofReader;
 
-/** Configuration parameters for mempool. */
-public record MempoolConfig(
-    int maxSize,
-    long throttleMs,
-    long relayInitialDelayMillis,
-    long relayRepeatDelayMillis,
-    int relayMaxPeers) {
-  public static MempoolConfig of(int maxSize) {
-    return new MempoolConfig(maxSize, 10000, 60000, 60000, 100);
+public class InMemoryCommittedReaderModule extends AbstractModule {
+  @Override
+  public void configure() {
+    bind(InMemoryTransactionsAndProofReader.Store.class)
+        .toInstance(new InMemoryTransactionsAndProofReader.Store());
+    bind(TransactionsAndProofReader.class)
+        .to(InMemoryTransactionsAndProofReader.class)
+        .in(Scopes.SINGLETON);
   }
 
-  public static MempoolConfig of(int maxSize, long throttleMs) {
-    return new MempoolConfig(maxSize, throttleMs, 60000, 60000, 100);
-  }
-
-  public AbstractModule asModule() {
-    return new AbstractModule() {
-      @Override
-      protected void configure() {
-        bindConstant().annotatedWith(MempoolMaxSize.class).to(maxSize);
-        bindConstant().annotatedWith(MempoolThrottleMs.class).to(throttleMs);
-        bindConstant().annotatedWith(MempoolRelayInitialDelayMs.class).to(relayInitialDelayMillis);
-        bindConstant().annotatedWith(MempoolRelayRepeatDelayMs.class).to(relayRepeatDelayMillis);
-        bindConstant().annotatedWith(MempoolRelayMaxPeers.class).to(relayMaxPeers);
-      }
-    };
+  @Singleton
+  @ProvidesIntoSet
+  public EventProcessorOnDispatch<?> eventProcessor(InMemoryTransactionsAndProofReader reader) {
+    return new EventProcessorOnDispatch<>(LedgerUpdate.class, reader.updateProcessor());
   }
 }

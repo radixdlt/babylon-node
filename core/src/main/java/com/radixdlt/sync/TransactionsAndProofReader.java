@@ -62,33 +62,18 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.sync;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.sbor.NativeCalls;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.utils.UInt64;
-import java.util.Objects;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.DtoLedgerProof;
+import java.util.Optional;
 
-public final class RustTransactionStore implements TransactionStoreReader {
-  public RustTransactionStore(StateManager stateManager) {
-    Objects.requireNonNull(stateManager);
-    getTransactionAtStateVersionFunc =
-        NativeCalls.Func1.with(
-            stateManager,
-            new TypeToken<>() {},
-            new TypeToken<>() {},
-            RustTransactionStore::getTransactionAtStateVersion);
-  }
+/** Reader of committed transactions */
+public interface TransactionsAndProofReader {
+  CommittedTransactionsWithProof getTransactions(DtoLedgerProof start);
 
-  @Override
-  public ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion) {
-    return getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
-  }
+  Optional<LedgerProof> getEpochProof(long epoch);
 
-  private final NativeCalls.Func1<StateManager, UInt64, ExecutedTransactionReceipt>
-      getTransactionAtStateVersionFunc;
-
-  private static native byte[] getTransactionAtStateVersion(
-      StateManager stateManager, byte[] payload);
+  Optional<LedgerProof> getLastProof();
 }

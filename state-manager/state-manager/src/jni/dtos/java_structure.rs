@@ -99,12 +99,12 @@ mod tests {
     use super::*;
     use sbor::{Decode, Encode, TypeId};
 
-    #[derive(Debug, TypeId, Encode, Decode, PartialEq)]
+    #[derive(Debug, TypeId, Encode, Decode, PartialEq, Eq)]
     pub struct TypeA {
         bytes_a: Vec<u8>,
     }
 
-    #[derive(Debug, TypeId, Encode, Decode, PartialEq)]
+    #[derive(Debug, TypeId, Encode, Decode, PartialEq, Eq)]
     pub struct TypeB {
         bytes_b: Vec<u8>,
         a: TypeA,

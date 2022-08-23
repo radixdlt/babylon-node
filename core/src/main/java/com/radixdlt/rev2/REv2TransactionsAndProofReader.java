@@ -64,100 +64,72 @@
 
 package com.radixdlt.rev2;
 
-import com.google.inject.Inject;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.DtoLedgerProof;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
-/** A correct in memory committed reader used for testing */
-public final class InMemoryCommittedReader implements CommittedReader {
-  public static final class Store {
-    final TreeMap<Long, CommittedTransactionsWithProof> committedTransactionRuns = new TreeMap<>();
-    final TreeMap<Long, LedgerProof> epochProofs = new TreeMap<>();
-  }
+public final class REv2TransactionsAndProofReader implements TransactionsAndProofReader {
+  private final REv2TransactionAndProofStore transactionStore;
+  private final Serialization serialization;
 
-  private final Object lock = new Object();
-  private final LedgerAccumulatorVerifier accumulatorVerifier;
-  private final Store store;
-
-  @Inject
-  InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier, Store store) {
-    this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
-    this.store = store;
-  }
-
-  @SuppressWarnings("unchecked")
-  public EventProcessor<LedgerUpdate> updateProcessor() {
-    return update -> {
-      synchronized (lock) {
-        var transactions = update.getNewTransactions();
-        long firstVersion = update.getTail().getStateVersion() - transactions.size() + 1;
-        for (long version = firstVersion;
-            version <= update.getTail().getStateVersion();
-            version++) {
-          int index = (int) (version - firstVersion);
-          store.committedTransactionRuns.put(
-              version,
-              CommittedTransactionsWithProof.create(
-                  transactions.subList(index, transactions.size()), update.getTail()));
-        }
-
-        if (update.getTail().isEndOfEpoch()) {
-          final var nextEpoch = update.getTail().getNextEpoch();
-          this.store.epochProofs.put(nextEpoch, update.getTail());
-        }
-      }
-    };
+  public REv2TransactionsAndProofReader(
+      REv2TransactionAndProofStore transactionStore, Serialization serialization) {
+    this.transactionStore = transactionStore;
+    this.serialization = serialization;
   }
 
   @Override
-  public CommittedTransactionsWithProof getNextCommittedTransactionRun(DtoLedgerProof start) {
-    synchronized (lock) {
-      final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-      Entry<Long, CommittedTransactionsWithProof> entry =
-          store.committedTransactionRuns.higherEntry(stateVersion);
+  public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
+    var stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+    var proofBytes = this.transactionStore.getNextProof(stateVersion);
+    return proofBytes
+        .map(
+            b -> {
+              final LedgerProof proof;
+              try {
+                proof = serialization.fromDson(b.last(), LedgerProof.class);
+              } catch (DeserializeException e) {
+                throw new RuntimeException(e);
+              }
 
-      if (entry != null) {
-        List<RawTransaction> transactions =
-            accumulatorVerifier
-                .verifyAndGetExtension(
-                    start.getLedgerHeader().getAccumulatorState(),
-                    entry.getValue().getTransactions(),
-                    RawTransaction::getPayloadHash,
-                    entry.getValue().getProof().getAccumulatorState())
-                .orElseThrow(() -> new RuntimeException());
+              var transactions =
+                  LongStream.rangeClosed(stateVersion + 1, proof.getStateVersion())
+                      .mapToObj(
+                          i -> {
+                            var receipt = transactionStore.getTransactionAtStateVersion(i);
+                            return RawTransaction.create(receipt.getTransactionBytes());
+                          })
+                      .collect(Collectors.toList());
 
-        return CommittedTransactionsWithProof.create(transactions, entry.getValue().getProof());
-      }
-
-      return null;
-    }
+              return CommittedTransactionsWithProof.create(transactions, proof);
+            })
+        .orElse(null);
   }
 
   @Override
   public Optional<LedgerProof> getEpochProof(long epoch) {
-    synchronized (lock) {
-      return Optional.ofNullable(store.epochProofs.get(epoch));
-    }
+    return Optional.empty();
   }
 
   @Override
   public Optional<LedgerProof> getLastProof() {
-    return Optional.ofNullable(store.committedTransactionRuns.lastEntry())
-        .map(p -> p.getValue().getProof());
-  }
-
-  public Store getStore() {
-    return store;
+    return this.transactionStore
+        .getLastProof()
+        .map(
+            b -> {
+              try {
+                return serialization.fromDson(b, LedgerProof.class);
+              } catch (DeserializeException e) {
+                throw new RuntimeException(e);
+              }
+            });
   }
 }

@@ -76,7 +76,6 @@ import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.substate.SubstateId;
 import com.radixdlt.transactions.RawTransaction;
@@ -107,8 +106,7 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   private final int maxSize;
 
   @Inject
-  public RadixEngineMempool(
-      RadixEngine<LedgerAndBFTProof> radixEngine, @MempoolMaxSize int maxSize) {
+  public RadixEngineMempool(RadixEngine<LedgerAndBFTProof> radixEngine, int maxSize) {
     if (maxSize <= 0) {
       throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
     }

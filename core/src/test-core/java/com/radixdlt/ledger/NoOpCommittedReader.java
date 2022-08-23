@@ -65,12 +65,12 @@
 package com.radixdlt.ledger;
 
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.Optional;
 
-public final class NoOpCommittedReader implements CommittedReader {
+public final class NoOpCommittedReader implements TransactionsAndProofReader {
   @Override
-  public CommittedTransactionsWithProof getNextCommittedTransactionRun(DtoLedgerProof start) {
+  public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
     return null;
   }
 

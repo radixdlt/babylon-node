@@ -62,66 +62,56 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_rev2;
+package com.radixdlt.integration.steady_state.deterministic.rev2_consensus_mempool_ledger_sync;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.google.inject.*;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.statecomputer.StatelessComputer;
-import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.assertj.core.data.Offset;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.transactions.RawTransaction;
 import org.junit.Test;
 
-public class ConsensusREV2TxnVerificationTest {
-  private final SimulationTest.Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numNodes(4)
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+public final class SanityTest {
+  private final DeterministicTest test =
+      DeterministicTest.builder()
+          .numNodes(10, 10)
+          .messageSelector(firstSelector())
           .functionalNodeModule(
               new FunctionalRadixNodeModule(
                   false,
                   ConsensusConfig.of(1000),
-                  LedgerConfig.stateComputerNoSync(
-                      StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer()))))
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered());
+                  LedgerConfig.stateComputerWithSync(
+                      StateComputerConfig.rev2(
+                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())),
+                      SyncConfig.of(5000, 10, 3000L))));
+
+  private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
 
   @Test
-  public void test_half_valid_half_invalid_rev2_transactions() {
-    // Arrange
-    var simulationTest = bftTestBuilder.build();
-
+  public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() throws Exception {
     // Run
-    var runningTest = simulationTest.run();
-    final var checkResults = runningTest.awaitCompletion();
+    for (int i = 0; i < 100; i++) {
+      test.runForCount(1000);
+      var mempoolInserter =
+          test.getInstance(
+              i % test.numNodes(), Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+      mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
+    }
 
     // Post-run assertions
-    assertThat(checkResults)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    for (var node : runningTest.getNetwork().getNodes()) {
-      var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
-
-      // The current proposal generator for REv2 produces half correct transactions and half
-      // invalid.
-      // This part verifies that this actually happened.
-      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
-      assertThat(statelessComputer.getInvalidCount())
-          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(4));
-    }
+    Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
+    Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
+    Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
   }
 }

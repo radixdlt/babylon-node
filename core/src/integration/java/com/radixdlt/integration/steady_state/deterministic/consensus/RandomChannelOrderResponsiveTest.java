@@ -72,7 +72,11 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.List;
 import java.util.Random;
@@ -82,31 +86,37 @@ import org.junit.Test;
 
 public class RandomChannelOrderResponsiveTest {
 
-  private void run(int numNodes, long roundsToRun) {
-    assertEquals(0, roundsToRun % numNodes);
+  private void run(int numValidatorNodes, long roundsToRun) {
+    assertEquals(0, roundsToRun % numValidatorNodes);
 
     final Random random = new Random(12345);
 
     DeterministicTest test =
         DeterministicTest.builder()
-            .numNodes(numNodes)
+            .numNodes(numValidatorNodes, 0)
             .messageSelector(MessageSelector.randomSelector(random))
             .messageMutator(MessageMutator.dropTimeouts())
-            .buildWithoutEpochs(ConsensusConfig.of())
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    ConsensusConfig.of(),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
             .runUntil(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
 
     List<Long> proposalsMade =
-        IntStream.range(0, numNodes)
-            .mapToObj(test::getSystemCounters)
+        IntStream.range(0, numValidatorNodes)
+            .mapToObj(i -> test.getInstance(i, SystemCounters.class))
             .map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
             .collect(ImmutableList.toImmutableList());
 
-    final long numRounds = roundsToRun / numNodes;
+    final long numRounds = roundsToRun / numValidatorNodes;
 
     assertThat(proposalsMade)
-        .hasSize(numNodes)
+        .hasSize(numValidatorNodes)
         .areAtLeast(
-            numNodes - 1, new Condition<>(l -> l == numRounds, "has as many proposals as rounds"))
+            numValidatorNodes - 1,
+            new Condition<>(l -> l == numRounds, "has as many proposals as rounds"))
         // the last round in the epoch doesn't have a proposal
         .areAtMost(1, new Condition<>(l -> l == numRounds - 1, "has one less proposal"));
   }

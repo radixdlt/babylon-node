@@ -78,8 +78,8 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
-import com.radixdlt.mempool.MempoolConfig;
 import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -90,8 +90,8 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transaction.TransactionStoreReader;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
@@ -111,7 +111,7 @@ public final class REv2ConsensusTransferTest {
 
   @Inject private DeterministicProcessor processor;
   @Inject private MempoolInserter<RawTransaction> mempoolInserter;
-  @Inject private TransactionStoreReader transactionStoreReader;
+  @Inject private REv2TransactionAndProofStore transactionStoreReader;
   @Inject private REv2StateReader stateReader;
 
   private Injector createInjector() {
@@ -128,7 +128,7 @@ public final class REv2ConsensusTransferTest {
             FunctionalRadixNodeModule.ConsensusConfig.of(),
             FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
-                    StateComputerConfig.REV2ProposerConfig.mempool(MempoolConfig.of(1))))),
+                    StateComputerConfig.REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(

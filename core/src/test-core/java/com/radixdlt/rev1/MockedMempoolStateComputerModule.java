@@ -79,7 +79,6 @@ import com.radixdlt.ledger.MockExecuted;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolMaxSize;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.targeted.mempool.SimpleMempool;
@@ -96,6 +95,12 @@ import org.apache.logging.log4j.Logger;
 public class MockedMempoolStateComputerModule extends AbstractModule {
   private static final Logger log = LogManager.getLogger();
 
+  private final int mempoolMaxSize;
+
+  public MockedMempoolStateComputerModule(int mempoolMaxSize) {
+    this.mempoolMaxSize = mempoolMaxSize;
+  }
+
   @Override
   protected void configure() {
     bind(new TypeLiteral<Mempool<?>>() {})
@@ -105,8 +110,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private Mempool<RawTransaction> mempool(
-      SystemCounters systemCounters, Random random, @MempoolMaxSize int mempoolMaxSize) {
+  private Mempool<RawTransaction> mempool(SystemCounters systemCounters, Random random) {
     return new SimpleMempool(systemCounters, mempoolMaxSize, random);
   }
 

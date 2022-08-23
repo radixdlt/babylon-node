@@ -117,7 +117,7 @@ import com.radixdlt.store.ResourceStore;
 import com.radixdlt.substate.CloseableCursor;
 import com.radixdlt.substate.SubstateId;
 import com.radixdlt.substate.SubstateTypeId;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.Shorts;
@@ -151,7 +151,7 @@ import org.apache.logging.log4j.Logger;
 public final class BerkeleyLedgerEntryStore
     implements EngineStore<LedgerAndBFTProof>,
         ResourceStore,
-        CommittedReader,
+        TransactionsAndProofReader,
         PersistentVertexStore,
         ForksEpochStore {
   private static final Logger log = LogManager.getLogger();
@@ -1153,7 +1153,7 @@ public final class BerkeleyLedgerEntryStore
   }
 
   @Override
-  public CommittedTransactionsWithProof getNextCommittedTransactionRun(DtoLedgerProof start) {
+  public CommittedTransactionsWithProof getTransactions(DtoLedgerProof start) {
 
     long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
     final var startTime = System.nanoTime();

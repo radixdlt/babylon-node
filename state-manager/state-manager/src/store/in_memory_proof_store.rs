@@ -62,63 +62,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.routes;
+use crate::types::TId;
+use std::collections::BTreeMap;
 
-import com.google.inject.Inject;
-import com.radixdlt.api.system.SystemGetJsonHandler;
-import com.radixdlt.api.system.SystemModelMapper;
-import com.radixdlt.api.system.generated.models.BFTConfiguration;
-import com.radixdlt.api.system.generated.models.MempoolConfiguration;
-import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
-import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.mempool.MempoolThrottleMs;
-import com.radixdlt.p2p.P2PConfig;
-import com.radixdlt.sync.SyncConfig;
+#[derive(Debug)]
+pub struct ProofStore {
+    in_memory_proof_store: BTreeMap<u64, Vec<u8>>,
+    in_memory_txid_store: BTreeMap<u64, TId>,
+}
 
-public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfigurationResponse> {
+impl ProofStore {
+    pub fn new() -> Self {
+        ProofStore {
+            in_memory_proof_store: BTreeMap::new(),
+            in_memory_txid_store: BTreeMap::new(),
+        }
+    }
 
-  private final long pacemakerTimeout;
-  private final int bftSyncPatienceMillis;
-  private final long mempoolThrottleMs;
-  private final SyncConfig syncConfig;
-  private final P2PConfig p2PConfig;
-  private final ECPublicKey self;
-  private final SystemModelMapper systemModelMapper;
+    pub fn insert_tids_and_proof(
+        &mut self,
+        state_version: u64,
+        ids: Vec<TId>,
+        proof_bytes: Vec<u8>,
+    ) {
+        let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
+        for (index, id) in ids.into_iter().enumerate() {
+            let txn_state_version = first_state_version + index as u64;
+            self.in_memory_txid_store.insert(txn_state_version, id);
+        }
 
-  @Inject
-  ConfigurationHandler(
-      @Self ECPublicKey self,
-      @PacemakerBaseTimeoutMs long pacemakerTimeout,
-      @BFTSyncPatienceMillis int bftSyncPatienceMillis,
-      @MempoolThrottleMs long mempoolThrottleMs,
-      SyncConfig syncConfig,
-      P2PConfig p2PConfig,
-      SystemModelMapper systemModelMapper) {
-    super();
-    this.self = self;
-    this.pacemakerTimeout = pacemakerTimeout;
-    this.bftSyncPatienceMillis = bftSyncPatienceMillis;
-    this.mempoolThrottleMs = mempoolThrottleMs;
-    this.syncConfig = syncConfig;
-    this.p2PConfig = p2PConfig;
-    this.systemModelMapper = systemModelMapper;
-  }
+        self.in_memory_proof_store
+            .insert(state_version, proof_bytes);
+    }
 
-  @Override
-  public SystemConfigurationResponse handleRequest() {
-    // TODO: Mempool MaxSize configuration needs to move to a separate handler or
-    // TODO: different handling mechanism. Set to 0 here for now so that Configuration
-    // TODO: API doesn't break.
-    return new SystemConfigurationResponse()
-        .bft(
-            new BFTConfiguration()
-                .bftSyncPatience(bftSyncPatienceMillis)
-                .pacemakerTimeout(pacemakerTimeout))
-        .mempool(new MempoolConfiguration().maxSize(0).throttle(mempoolThrottleMs))
-        .sync(systemModelMapper.syncConfiguration(syncConfig))
-        .networking(systemModelMapper.networkingConfiguration(self, p2PConfig));
-  }
+    pub fn get_tid(&self, state_version: u64) -> TId {
+        self.in_memory_txid_store
+            .get(&state_version)
+            .cloned()
+            .unwrap()
+    }
+
+    /// Returns the next proof from a state version (excluded)
+    pub fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
+        let next_state_version = state_version + 1;
+        self.in_memory_proof_store
+            .range(next_state_version..)
+            .next()
+            .map(|(v, proof)| {
+                let mut ids = Vec::new();
+                for (_, id) in self.in_memory_txid_store.range(next_state_version..=*v) {
+                    ids.push(id.clone());
+                }
+                (ids, proof.clone())
+            })
+    }
+
+    pub fn get_last_proof(&self) -> Option<Vec<u8>> {
+        self.in_memory_proof_store
+            .iter()
+            .next_back()
+            .map(|(_, bytes)| bytes.clone())
+    }
 }

@@ -85,7 +85,7 @@ import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.forks.NewestForkConfig;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.Map;
 import java.util.OptionalInt;
 
@@ -94,7 +94,7 @@ public class RadixEngineModule extends AbstractModule {
   @Provides
   @Singleton
   private CurrentForkView currentForkView(
-      CommittedReader committedReader, ForksEpochStore forksEpochStore, Forks forks) {
+      TransactionsAndProofReader committedReader, ForksEpochStore forksEpochStore, Forks forks) {
     // We'd ideally like to take a @LastEpochProof dependency here instead of a
     // CommittedReader, but the LedgerRecoveryModule has a RadixEngineModule dependency,
     // so this doesn't work. Instead, let's create it ourselves here.
@@ -111,7 +111,7 @@ public class RadixEngineModule extends AbstractModule {
     return new CurrentForkView(forks, initialForkConfig);
   }
 
-  private long getCurrentEpoch(CommittedReader committedReader) {
+  private long getCurrentEpoch(TransactionsAndProofReader committedReader) {
     var lastProofOptional = committedReader.getLastProof();
     if (lastProofOptional.isEmpty()) {
       return 0;

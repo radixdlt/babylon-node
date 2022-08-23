@@ -78,7 +78,7 @@ import com.radixdlt.harness.simulation.application.MempoolFillerStarter;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.mempool.MempoolConfig;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.checkpoint.Genesis;
@@ -101,14 +101,14 @@ public class MempoolFillTest {
       SimulationTest.builder()
           .numNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .fullFunctionNodes(ConsensusConfig.of(), SyncConfig.of(800L, 10, 5000L))
+          .fullFunctionNodes(ConsensusConfig.of(), SyncConfig.of(800L, 10, 5000L), 1000)
           .addRadixEngineConfigModules(
               new MainnetForksModule(), new RadixEngineForksLatestOnlyModule(), new ForksModule())
           .addNodeModule(
               new AbstractModule() {
                 @Override
                 protected void configure() {
-                  install(MempoolConfig.of(1000, 200).asModule());
+                  install(MempoolRelayConfig.of(200).asModule());
                   install(new MempoolFillerModule());
                 }
 
@@ -153,7 +153,7 @@ public class MempoolFillTest {
   public void filler_should_overwhelm_unratelimited_mempool() {
     SimulationTest simulationTest =
         bftTestBuilder
-            .addOverrideModuleToAllInitialNodes(MempoolConfig.of(100, 0).asModule())
+            .addOverrideModuleToAllInitialNodes(MempoolRelayConfig.of(0).asModule())
             .build();
 
     final var results = simulationTest.run().awaitCompletion();

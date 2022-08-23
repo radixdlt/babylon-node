@@ -69,7 +69,10 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -80,13 +83,18 @@ public class OneProposalDropperResponsiveTest {
   private final Random random = new Random(123456);
 
   private void runOneProposalDropperResponsiveTest(
-      int numNodes, Function<Round, Integer> nodeToDropFunction) {
+      int numValidatorNodes, Function<Round, Integer> nodeToDropFunction) {
     DeterministicTest.builder()
-        .numNodes(numNodes)
+        .numNodes(numValidatorNodes, 0)
         .messageSelector(MessageSelector.randomSelector(random))
         .messageMutator(
-            MessageMutator.dropTimeouts().andThen(dropNode(numNodes, nodeToDropFunction)))
-        .buildWithoutEpochs(ConsensusConfig.of())
+            MessageMutator.dropTimeouts().andThen(dropNode(numValidatorNodes, nodeToDropFunction)))
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                ConsensusConfig.of(),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
         .runForCount(30_000);
   }
 

@@ -62,17 +62,61 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.integration.steady_state.simulation.rev2_consensus_mempool_ledger;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkOrdering;
+import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Test;
 
-/** Maximum number of txns a mempool should store */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface MempoolMaxSize {}
+public class SanityTest {
+  private final SimulationTest.Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  ConsensusConfig.of(1000),
+                  LedgerConfig.stateComputerNoSync(
+                      StateComputerConfig.rev2(
+                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())))))
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered())
+          .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class);
+
+  @Test
+  public void sanity_test() {
+    // Arrange
+    var simulationTest = bftTestBuilder.build();
+
+    // Run
+    var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
+
+    // Post-run assertions
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    Checkers.assertNodesSyncedToVersionAtleast(runningTest.getNodeInjectors(), 1);
+    Checkers.assertLedgerTransactionsSafety(runningTest.getNodeInjectors());
+  }
+}

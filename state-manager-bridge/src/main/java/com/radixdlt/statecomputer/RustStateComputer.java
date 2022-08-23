@@ -76,18 +76,17 @@ import com.radixdlt.statecomputer.preview.PreviewError;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
 import com.radixdlt.statecomputer.preview.PreviewResult;
 import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.transaction.RustTransactionStore;
-import com.radixdlt.transaction.TransactionStoreReader;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 
 public class RustStateComputer {
   private final RustMempool mempool;
-  private final RustTransactionStore transactionStore;
+  private final REv2TransactionAndProofStore transactionStore;
 
   public RustStateComputer(StateManager stateManager) {
     this.mempool = new RustMempool(stateManager);
-    this.transactionStore = new RustTransactionStore(stateManager);
+    this.transactionStore = new REv2TransactionAndProofStore(stateManager);
     verifyFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::verify);
@@ -105,7 +104,7 @@ public class RustStateComputer {
             RustStateComputer::componentXrdAmount);
   }
 
-  public TransactionStoreReader getTransactionStoreReader() {
+  public REv2TransactionAndProofStore getTransactionAndProofStore() {
     return this.transactionStore;
   }
 

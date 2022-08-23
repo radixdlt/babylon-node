@@ -62,8 +62,63 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transaction;
+package com.radixdlt.integration.steady_state.simulation.rev2_consensus_mempool_ledger_sync;
 
-public interface TransactionStoreReader {
-  ExecutedTransactionReceipt getTransactionAtStateVersion(long stateVersion);
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
+import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkOrdering;
+import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.sync.SyncConfig;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Test;
+
+public class SanityTest {
+  private final SimulationTest.Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  ConsensusConfig.of(1000),
+                  LedgerConfig.stateComputerWithSync(
+                      StateComputerConfig.rev2(
+                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())),
+                      SyncConfig.of(5000, 10, 3000L))))
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered())
+          .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class);
+
+  @Test
+  public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() {
+    // Arrange
+    var simulationTest = bftTestBuilder.build();
+
+    // Run
+    var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
+
+    // Post-run assertions
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    Checkers.assertNodesSyncedToVersionAtleast(runningTest.getNodeInjectors(), 1);
+    Checkers.assertLedgerTransactionsSafety(runningTest.getNodeInjectors());
+  }
 }
