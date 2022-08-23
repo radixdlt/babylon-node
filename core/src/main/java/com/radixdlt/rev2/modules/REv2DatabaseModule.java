@@ -64,40 +64,33 @@
 
 package com.radixdlt.rev2.modules;
 
-import com.google.inject.*;
-import com.radixdlt.lang.Option;
-import com.radixdlt.mempool.RustMempoolConfig;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.rev2.REv2StateComputer;
+import com.radixdlt.rev2.REv2StateReader;
+import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 
-public final class REv2StateManagerModule extends AbstractModule {
-  private final REv2DatabaseConfig databaseConfig;
-  private final Option<RustMempoolConfig> mempoolConfig;
-
-  public REv2StateManagerModule(
-      REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig) {
-    this.databaseConfig = databaseConfig;
-    this.mempoolConfig = mempoolConfig;
+public class REv2DatabaseModule extends AbstractModule {
+  @Override
+  protected void configure() {
+    bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
+    bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
+    bind(REv2StateComputer.class).in(Scopes.SINGLETON);
+    bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
   }
 
   @Provides
-  @Singleton
-  private RustStateComputer stateComputer() {
-    var stateManager =
-        StateManager.createAndInitialize(new StateManagerConfig(mempoolConfig, databaseConfig));
-    return new RustStateComputer(stateManager.getRustState());
+  private REv2TransactionAndProofStore transactionAndProofStore(RustStateComputer stateComputer) {
+    return stateComputer.getTransactionAndProofStore();
   }
 
-  @Override
-  public void configure() {
-    if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {
-      install(new REv2DatabaseModule());
-    }
-
-    if (mempoolConfig.isPresent()) {
-      install(new REv2MempoolModule());
-    }
+  @Provides
+  private REv2StateReader stateReader(RustStateComputer stateComputer) {
+    return stateComputer::getComponentXrdAmount;
   }
 }

@@ -64,40 +64,21 @@
 
 package com.radixdlt.rev2.modules;
 
-import com.google.inject.*;
-import com.radixdlt.lang.Option;
-import com.radixdlt.mempool.RustMempoolConfig;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.transactions.RawTransaction;
 
-public final class REv2StateManagerModule extends AbstractModule {
-  private final REv2DatabaseConfig databaseConfig;
-  private final Option<RustMempoolConfig> mempoolConfig;
-
-  public REv2StateManagerModule(
-      REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig) {
-    this.databaseConfig = databaseConfig;
-    this.mempoolConfig = mempoolConfig;
+public class REv2MempoolModule extends AbstractModule {
+  @Provides
+  private MempoolReader mempoolReader(RustStateComputer stateComputer) {
+    return stateComputer.getMempoolReader();
   }
 
   @Provides
-  @Singleton
-  private RustStateComputer stateComputer() {
-    var stateManager =
-        StateManager.createAndInitialize(new StateManagerConfig(mempoolConfig, databaseConfig));
-    return new RustStateComputer(stateManager.getRustState());
-  }
-
-  @Override
-  public void configure() {
-    if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {
-      install(new REv2DatabaseModule());
-    }
-
-    if (mempoolConfig.isPresent()) {
-      install(new REv2MempoolModule());
-    }
+  private MempoolInserter<RawTransaction> mempoolInserter(RustStateComputer stateComputer) {
+    return stateComputer.getMempoolInserter();
   }
 }
