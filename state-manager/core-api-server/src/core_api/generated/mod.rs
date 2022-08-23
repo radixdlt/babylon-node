@@ -58,7 +58,6 @@ pub trait Api<C: Send + Sync> {
     /// Get Network Configuration
     async fn status_network_configuration_post(
         &self,
-        network_configuration_request: models::NetworkConfigurationRequest,
         context: &C) -> Result<StatusNetworkConfigurationPostResponse, ApiError>;
 
     /// Preview a transaction against the latest network state
@@ -86,7 +85,6 @@ pub trait ApiNoContext<C: Send + Sync> {
     /// Get Network Configuration
     async fn status_network_configuration_post(
         &self,
-        network_configuration_request: models::NetworkConfigurationRequest,
         ) -> Result<StatusNetworkConfigurationPostResponse, ApiError>;
 
     /// Preview a transaction against the latest network state
@@ -129,11 +127,10 @@ impl<T: Api<C> + Send + Sync, C: Clone + Send + Sync> ApiNoContext<C> for Contex
     /// Get Network Configuration
     async fn status_network_configuration_post(
         &self,
-        network_configuration_request: models::NetworkConfigurationRequest,
         ) -> Result<StatusNetworkConfigurationPostResponse, ApiError>
     {
         let context = self.context().clone();
-        self.api().status_network_configuration_post(network_configuration_request, &context).await
+        self.api().status_network_configuration_post(&context).await
     }
 
     /// Preview a transaction against the latest network state

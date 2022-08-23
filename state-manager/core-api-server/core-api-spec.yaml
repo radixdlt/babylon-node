@@ -33,12 +33,6 @@ paths:
       description: Returns the network configuration of the network the node is connected to.
       tags:
         - Status
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              "$ref": "#/components/schemas/NetworkConfigurationRequest"
       responses:
         '200':
           description: Network Configuration
@@ -283,13 +277,6 @@ components:
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
-    NetworkConfigurationRequest:
-      type: object
-      properties:
-        openapi_gen_fix:
-          description: Ignore.
-          type: string
-      example: {}
     NetworkConfigurationResponse:
       type: object
       required:

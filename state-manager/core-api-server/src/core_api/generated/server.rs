@@ -147,38 +147,7 @@ impl<T, C> hyper::service::Service<(Request<Body>, C)> for Service<T, C> where
 
             // StatusNetworkConfigurationPost - POST /status/network-configuration
             &hyper::Method::POST if path.matched(paths::ID_STATUS_NETWORK_CONFIGURATION) => {
-                // Body parameters (note that non-required body parameters will ignore garbage
-                // values, rather than causing a 400 response). Produce warning header and logs for
-                // any unused fields.
-                let result = body.into_raw().await;
-                match result {
-                            Ok(body) => {
-                                let mut unused_elements = Vec::new();
-                                let param_network_configuration_request: Option<models::NetworkConfigurationRequest> = if !body.is_empty() {
-                                    let deserializer = &mut serde_json::Deserializer::from_slice(&*body);
-                                    match serde_ignored::deserialize(deserializer, |path| {
-                                            warn!("Ignoring unknown field in body: {}", path);
-                                            unused_elements.push(path.to_string());
-                                    }) {
-                                        Ok(param_network_configuration_request) => param_network_configuration_request,
-                                        Err(e) => return Ok(Response::builder()
-                                                        .status(StatusCode::BAD_REQUEST)
-                                                        .body(Body::from(format!("Couldn't parse body parameter NetworkConfigurationRequest - doesn't match schema: {}", e)))
-                                                        .expect("Unable to create Bad Request response for invalid body parameter NetworkConfigurationRequest due to schema")),
-                                    }
-                                } else {
-                                    None
-                                };
-                                let param_network_configuration_request = match param_network_configuration_request {
-                                    Some(param_network_configuration_request) => param_network_configuration_request,
-                                    None => return Ok(Response::builder()
-                                                        .status(StatusCode::BAD_REQUEST)
-                                                        .body(Body::from("Missing required body parameter NetworkConfigurationRequest"))
-                                                        .expect("Unable to create Bad Request response for missing body parameter NetworkConfigurationRequest")),
-                                };
-
                                 let result = api_impl.status_network_configuration_post(
-                                            param_network_configuration_request,
                                         &context
                                     ).await;
                                 let mut response = Response::new(Body::empty());
@@ -186,13 +155,6 @@ impl<T, C> hyper::service::Service<(Request<Body>, C)> for Service<T, C> where
                                             HeaderName::from_static("x-span-id"),
                                             HeaderValue::from_str((&context as &dyn Has<XSpanIdString>).get().0.clone().to_string().as_str())
                                                 .expect("Unable to create X-Span-ID header value"));
-
-                                        if !unused_elements.is_empty() {
-                                            response.headers_mut().insert(
-                                                HeaderName::from_static("warning"),
-                                                HeaderValue::from_str(format!("Ignoring unknown fields in body: {:?}", unused_elements).as_str())
-                                                    .expect("Unable to create Warning header value"));
-                                        }
 
                                         match result {
                                             Ok(rsp) => match rsp {
@@ -228,12 +190,6 @@ impl<T, C> hyper::service::Service<(Request<Body>, C)> for Service<T, C> where
                                         }
 
                                         Ok(response)
-                            },
-                            Err(e) => Ok(Response::builder()
-                                                .status(StatusCode::BAD_REQUEST)
-                                                .body(Body::from(format!("Couldn't read body parameter NetworkConfigurationRequest: {}", e)))
-                                                .expect("Unable to create Bad Request response due to unable to read body parameter NetworkConfigurationRequest")),
-                        }
             },
 
             // TransactionPreviewPost - POST /transaction/preview

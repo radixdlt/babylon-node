@@ -73,11 +73,9 @@ import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.utils.FreePortFinder;
 import com.radixdlt.utils.UInt32;
-import java.io.OutputStreamWriter;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
 /** Just a simple test to check that the server is up & running. */
@@ -107,14 +105,6 @@ public final class CoreApiServerTest {
     final var url = new URL("http://127.0.0.1:" + port + "/core/status/network-configuration");
     final var conn = (HttpURLConnection) url.openConnection();
     conn.setRequestMethod("POST");
-    conn.setRequestProperty("Content-Type", "application/json");
-    conn.setDoOutput(true);
-    final var os = conn.getOutputStream();
-    final var osw = new OutputStreamWriter(os, StandardCharsets.UTF_8);
-    os.write("{}".getBytes(StandardCharsets.UTF_8));
-    osw.flush();
-    osw.close();
-    os.close();
     return conn.getResponseCode();
   }
 }

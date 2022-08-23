@@ -131,7 +131,6 @@ where
 {
     async fn status_network_configuration_post(
         &self,
-        _network_configuration_request: models::NetworkConfigurationRequest,
         _context: &C,
     ) -> Result<StatusNetworkConfigurationPostResponse, ApiError> {
         let network = &self
