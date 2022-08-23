@@ -85,8 +85,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class SanityTest {
-  @Rule
-  public TemporaryFolder folder = new TemporaryFolder();
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private final DeterministicTest test =
       DeterministicTest.builder()
@@ -98,8 +97,9 @@ public final class SanityTest {
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputerWithSyncRelay(
                       StateComputerConfig.rev2(
-                              folder.getRoot().getAbsolutePath(),
-                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of()), true),
+                          folder.getRoot().getAbsolutePath(),
+                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of()),
+                          true),
                       SyncRelayConfig.of(5000, 10, 3000L))));
 
   private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();

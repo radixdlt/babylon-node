@@ -76,23 +76,22 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class TransactionDBSizeStressTest {
-  @Rule
-  public TemporaryFolder folder = new TemporaryFolder();
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private DeterministicTest buildTest() {
     return DeterministicTest.builder()
-            .numNodes(1, 0)
-            .messageSelector(firstSelector())
-            .functionalNodeModule(
-                    new FunctionalRadixNodeModule(
-                            false,
-                            FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                            FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                                    StateComputerConfig.rev2(
-                                            folder.getRoot().getAbsolutePath(),
-                                            REV2ProposerConfig.transactionGenerator(
-                                                    new REv2OneMBTransactionGenerator(), 10),
-                                            true))));
+        .numNodes(1, 0)
+        .messageSelector(firstSelector())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.rev2(
+                        folder.getRoot().getAbsolutePath(),
+                        REV2ProposerConfig.transactionGenerator(
+                            new REv2OneMBTransactionGenerator(), 10),
+                        true))));
   }
 
   @Test

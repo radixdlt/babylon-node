@@ -80,15 +80,21 @@ import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.bouncycastle.util.encoders.Hex;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public final class PreviewTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   @Test
   public void test_successful_preview() {
     // Arrange
     try (final var stateManager =
         StateManager.createAndInitialize(
-            new StateManagerConfig(Option.none(), new REv2DatabaseConfig.InMemory()))) {
+            new StateManagerConfig(
+                Option.none(),
+                new REv2DatabaseConfig.InMemory(folder.getRoot().getAbsolutePath())))) {
       final var stateComputer = new RustStateComputer(stateManager.getRustState());
       final var manifest = ManifestCompiler.compile("CLEAR_AUTH_ZONE;", "LocalSimulator").unwrap();
       final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
@@ -118,7 +124,9 @@ public final class PreviewTest {
     // Arrange
     try (final var stateManager =
         StateManager.createAndInitialize(
-            new StateManagerConfig(Option.none(), new REv2DatabaseConfig.InMemory()))) {
+            new StateManagerConfig(
+                Option.none(),
+                new REv2DatabaseConfig.InMemory(folder.getRoot().getAbsolutePath())))) {
       final var stateComputer = new RustStateComputer(stateManager.getRustState());
       final var manifest = Hex.decode("00"); // invalid manifest
       final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();

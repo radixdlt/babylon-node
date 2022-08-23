@@ -85,8 +85,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class HalfValidTxnTest {
-  @Rule
-  public TemporaryFolder folder = new TemporaryFolder();
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private final SimulationTest.Builder bftTestBuilder =
       SimulationTest.builder()
@@ -97,7 +96,10 @@ public class HalfValidTxnTest {
                   false,
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputerNoSync(
-                      StateComputerConfig.rev2(folder.getRoot().getAbsolutePath(), REV2ProposerConfig.halfCorrectProposer(), false))))
+                      StateComputerConfig.rev2(
+                          folder.getRoot().getAbsolutePath(),
+                          REV2ProposerConfig.halfCorrectProposer(),
+                          false))))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

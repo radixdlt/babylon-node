@@ -81,9 +81,13 @@ import org.apache.commons.cli.ParseException;
 import org.assertj.core.util.Files;
 import org.json.JSONObject;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class RadixNodeModuleTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   private static final String MOCK_GENESIS_TXN =
       ECKeyPair.fromSeed(new byte[] {0x01}).getPublicKey().toHex();
 
@@ -99,6 +103,7 @@ public class RadixNodeModuleTest {
     final var properties = createDefaultProperties();
     when(properties.get("network.id")).thenReturn("" + Network.INTEGRATIONTESTNET.getId());
     when(properties.get("network.genesis_txn")).thenReturn(MOCK_GENESIS_TXN);
+    when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
     Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);
   }
 
@@ -107,6 +112,7 @@ public class RadixNodeModuleTest {
     final var properties = createDefaultProperties();
     when(properties.get("network.id")).thenReturn("" + Network.INTEGRATIONTESTNET.getId());
     when(properties.get("network.genesis_txn")).thenReturn(MOCK_GENESIS_TXN);
+    when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
     when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("yes");
 
     Exception exception =
@@ -126,6 +132,7 @@ public class RadixNodeModuleTest {
     final var properties = createDefaultProperties();
     when(properties.get("network.id")).thenReturn("" + Network.INTEGRATIONTESTNET.getId());
     when(properties.get("network.genesis_txn")).thenReturn(MOCK_GENESIS_TXN);
+    when(properties.get("db.location")).thenReturn(folder.getRoot().getAbsolutePath());
     when(properties.get("capabilities.ledger_sync.enabled")).thenReturn("true");
 
     Guice.createInjector(new RadixNodeModule(properties)).injectMembers(this);

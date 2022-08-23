@@ -97,8 +97,7 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
     JNIStateManager::cleanup(&env, interop_state);
 }
 
-pub type ActualStateManager =
-    StateManager<SimpleMempool, RocksDBTransactionStore, SerializedInMemorySubstateStore>;
+pub type ActualStateManager = StateManager<SimpleMempool, SerializedInMemorySubstateStore>;
 pub struct JNIStateManager {
     pub state_manager: ActualStateManager,
 }
@@ -126,7 +125,7 @@ impl JNIStateManager {
         let substate_store = SerializedInMemorySubstateStore::with_bootstrap();
 
         // Build the state manager.
-        let state_manager = StateManager::new(mempool, transaction_store, substate_store);
+        let state_manager = StateManager::new(mempool, Box::new(transaction_store), substate_store);
 
         let jni_state_manager = JNIStateManager { state_manager };
 

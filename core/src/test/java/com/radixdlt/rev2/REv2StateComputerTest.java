@@ -89,21 +89,23 @@ import org.junit.rules.TemporaryFolder;
 public class REv2StateComputerTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private final Injector injector =
-      Guice.createInjector(
-          new CryptoModule(),
-          new REv2StateManagerModule(folder.getRoot().getAbsolutePath(), Option.none(), true),
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
-              bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-            }
-          });
+  private Injector createInjector() {
+    return Guice.createInjector(
+        new CryptoModule(),
+        new REv2StateManagerModule(folder.getRoot().getAbsolutePath(), Option.none(), true),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
+            bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+          }
+        });
+  }
 
   @Test
   public void test_valid_rev2_transaction_passes() {
     // Arrange
+    var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
     var validTransaction = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
 
@@ -119,6 +121,7 @@ public class REv2StateComputerTest {
   @Test
   public void test_invalid_rev2_transaction_fails() {
     // Arrange
+    var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
     var validTransaction = RawTransaction.create(new byte[1]);
 
