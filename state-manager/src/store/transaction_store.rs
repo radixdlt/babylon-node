@@ -64,12 +64,13 @@
 
 use crate::types::{TId, Transaction};
 use radix_engine::transaction::TransactionReceipt;
+use sbor::*;
 use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
 
 /// TODO: Remove and use the real TransactionReceipt. This is currently a required struct
 /// TODO: as there is RC<RefCell<>> useage in some of the substates which does not play well
 /// TODO: with the babylon node multithreaded structures.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Encode, Decode, TypeId)]
 pub struct TemporaryTransactionReceipt {
     pub result: String,
     pub new_package_addresses: Vec<PackageAddress>,

@@ -127,6 +127,7 @@ public abstract class ApiTest {
             new SingleNodeAndPeersDeterministicNetworkModule(
                 TEST_KEY,
                 StateComputerConfig.rev2(
+                    folder.getRoot().getAbsolutePath(),
                     StateComputerConfig.REV2ProposerConfig.mempool(
                         mempoolMaxSize, MempoolRelayConfig.of()),
                     true)),

@@ -27,6 +27,7 @@ scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f
 transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
 radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
 radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
+rocksdb = { version = "0.18.0" }
 
 [lib]
 crate_type = ["cdylib"]

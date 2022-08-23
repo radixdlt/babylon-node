@@ -249,7 +249,7 @@ impl<M: Mempool, T: TransactionStore, S: ReadableSubstateStore + QueryableSubsta
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
-    InMemory,
+    InMemory(String),
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]

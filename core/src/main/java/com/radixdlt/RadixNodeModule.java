@@ -182,7 +182,8 @@ public final class RadixNodeModule extends AbstractModule {
     // State Computer
     var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
-    install(new REv2StateManagerModule(Option.some(mempoolConfig), true));
+    var databasePath = properties.get("db.location", ".//RADIXDB");
+    install(new REv2StateManagerModule(databasePath, Option.some(mempoolConfig), true));
     install(new MockedPersistenceStoreModule());
 
     // Storage

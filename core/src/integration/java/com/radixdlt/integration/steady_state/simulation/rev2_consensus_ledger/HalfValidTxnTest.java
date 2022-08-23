@@ -80,9 +80,14 @@ import com.radixdlt.statecomputer.StatelessComputer;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.data.Offset;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class HalfValidTxnTest {
+  @Rule
+  public TemporaryFolder folder = new TemporaryFolder();
+
   private final SimulationTest.Builder bftTestBuilder =
       SimulationTest.builder()
           .numNodes(4)
@@ -92,7 +97,7 @@ public class HalfValidTxnTest {
                   false,
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputerNoSync(
-                      StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer(), false))))
+                      StateComputerConfig.rev2(folder.getRoot().getAbsolutePath(), REV2ProposerConfig.halfCorrectProposer(), false))))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

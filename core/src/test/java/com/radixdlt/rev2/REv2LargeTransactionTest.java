@@ -96,7 +96,9 @@ import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public final class REv2LargeTransactionTest {
 
@@ -108,6 +110,7 @@ public final class REv2LargeTransactionTest {
           MessageSelector.firstSelector(),
           MessageMutator.nothing());
 
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
   @Inject private DeterministicProcessor processor;
   @Inject private MempoolInserter<RawTransaction> mempoolInserter;
   @Inject private REv2TransactionAndProofStore transactionStoreReader;
@@ -127,6 +130,7 @@ public final class REv2LargeTransactionTest {
             FunctionalRadixNodeModule.ConsensusConfig.of(),
             FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
+                    folder.getRoot().getAbsolutePath(),
                     StateComputerConfig.REV2ProposerConfig.mempool(1, MempoolRelayConfig.of()),
                     true))),
         new TestP2PModule.Builder().build(),

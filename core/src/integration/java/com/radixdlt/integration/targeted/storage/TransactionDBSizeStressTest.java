@@ -71,25 +71,33 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.rev2.REv2OneMBTransactionGenerator;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public final class TransactionDBSizeStressTest {
-  private final DeterministicTest test =
-      DeterministicTest.builder()
-          .numNodes(1, 0)
-          .messageSelector(firstSelector())
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                  FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                      StateComputerConfig.rev2(
-                          REV2ProposerConfig.transactionGenerator(
-                              new REv2OneMBTransactionGenerator(), 10),
-                          true))));
+  @Rule
+  public TemporaryFolder folder = new TemporaryFolder();
+
+  private DeterministicTest buildTest() {
+    return DeterministicTest.builder()
+            .numNodes(1, 0)
+            .messageSelector(firstSelector())
+            .functionalNodeModule(
+                    new FunctionalRadixNodeModule(
+                            false,
+                            FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                            FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                                    StateComputerConfig.rev2(
+                                            folder.getRoot().getAbsolutePath(),
+                                            REV2ProposerConfig.transactionGenerator(
+                                                    new REv2OneMBTransactionGenerator(), 10),
+                                            true))));
+  }
 
   @Test
   public void test() {
+    var test = buildTest();
     for (int i = 0; i < 50; i++) {
       test.runForCount(100);
     }

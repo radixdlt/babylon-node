@@ -62,73 +62,54 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+use crate::store::transaction_store::{TemporaryTransactionReceipt, TransactionStore};
+use crate::types::{TId, Transaction};
+use radix_engine::transaction::{TransactionReceipt, TransactionStatus};
 
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+use rocksdb::{DBWithThreadMode, SingleThreaded, DB};
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
+use std::path::PathBuf;
 
-/** Configuration options for the state computer */
-public sealed interface StateComputerConfig {
-  static StateComputerConfig mocked(MockedMempoolConfig mempoolType) {
-    return new MockedStateComputerConfig(mempoolType);
-  }
+#[derive(Debug)]
+pub struct RocksDBTransactionStore {
+    db: DBWithThreadMode<SingleThreaded>,
+}
 
-  static StateComputerConfig rev1(int mempoolSize) {
-    return new REv1StateComputerConfig(mempoolSize);
-  }
-
-  static StateComputerConfig rev2(
-      String databasePath, REV2ProposerConfig proposerConfig, boolean ledger) {
-    return new REv2StateComputerConfig(databasePath, proposerConfig, ledger);
-  }
-
-  sealed interface MockedMempoolConfig {
-    static MockedMempoolConfig noMempool() {
-      return new NoMempool();
+impl RocksDBTransactionStore {
+    pub fn new(root: PathBuf) -> RocksDBTransactionStore {
+        let db = DB::open_default(root.as_path()).unwrap();
+        RocksDBTransactionStore { db }
     }
 
-    record NoMempool() implements MockedMempoolConfig {}
+    fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
+        let receipt = TemporaryTransactionReceipt {
+            result: match receipt.status {
+                TransactionStatus::Succeeded(..) => "Success".to_string(),
+                TransactionStatus::Failed(error) => error.to_string(),
+                TransactionStatus::Rejected => "Rejected".to_string(),
+            },
+            new_package_addresses: receipt.new_package_addresses,
+            new_component_addresses: receipt.new_component_addresses,
+            new_resource_addresses: receipt.new_resource_addresses,
+        };
 
-    record LocalOnly(int mempoolSize) implements MockedMempoolConfig {}
+        let value = (transaction.payload.clone(), receipt);
 
-    record Relayed(int mempoolSize) implements MockedMempoolConfig {}
-  }
+        self.db
+            .put(transaction.id.bytes.clone(), scrypto_encode(&value))
+            .unwrap();
+    }
+}
 
-  record MockedStateComputerConfig(MockedMempoolConfig mempoolType)
-      implements StateComputerConfig {}
-
-  record REv1StateComputerConfig(int mempoolSize) implements StateComputerConfig {}
-
-  record REv2StateComputerConfig(
-      String databasePath, REV2ProposerConfig proposerConfig, boolean ledger)
-      implements StateComputerConfig {}
-
-  sealed interface REV2ProposerConfig {
-    static REV2ProposerConfig halfCorrectProposer() {
-      return new Generated(new HalfCorrectREv2TransactionGenerator());
+impl TransactionStore for RocksDBTransactionStore {
+    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
+        for (txn, receipt) in transactions {
+            self.insert_transaction(txn, receipt);
+        }
     }
 
-    static REV2ProposerConfig transactionGenerator(
-        TransactionGenerator transactionGenerator, long count) {
-      return new Generated(
-          (round, prepared) ->
-              Stream.generate(transactionGenerator::nextTransaction)
-                  .limit(count)
-                  .collect(Collectors.toList()));
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
+        let bytes = self.db.get(&tid.bytes).unwrap().unwrap();
+        scrypto_decode(&bytes).unwrap()
     }
-
-    static REV2ProposerConfig mempool(int mempoolMaxSize, MempoolRelayConfig config) {
-      return new Mempool(new RustMempoolConfig(mempoolMaxSize), config);
-    }
-
-    record Generated(ProposalGenerator generator) implements REV2ProposerConfig {}
-
-    record Mempool(RustMempoolConfig mempoolConfig, MempoolRelayConfig relayConfig)
-        implements REV2ProposerConfig {}
-  }
 }

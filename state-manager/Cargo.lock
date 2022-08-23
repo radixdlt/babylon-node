@@ -1010,6 +1010,7 @@ dependencies = [
  "jni",
  "radix-engine",
  "radix-engine-stores",
+ "rocksdb",
  "sbor",
  "scrypto",
  "transaction",

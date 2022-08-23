@@ -82,9 +82,14 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class SanityTest {
+  @Rule
+  public TemporaryFolder folder = new TemporaryFolder();
+
   private final SimulationTest.Builder bftTestBuilder =
       SimulationTest.builder()
           .numNodes(4)
@@ -95,6 +100,7 @@ public class SanityTest {
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputerWithSyncRelay(
                       StateComputerConfig.rev2(
+                              folder.getRoot().getAbsolutePath(),
                           REV2ProposerConfig.mempool(100, MempoolRelayConfig.of()), true),
                       SyncRelayConfig.of(5000, 10, 3000L))))
           .addTestModules(

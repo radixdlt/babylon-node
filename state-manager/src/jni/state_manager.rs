@@ -66,11 +66,12 @@ use crate::jni::dtos::*;
 use crate::jni::utils::*;
 use crate::mempool::simple::SimpleMempool;
 use crate::mempool::MempoolConfig;
-use crate::state_manager::{StateManager, StateManagerConfig};
-use crate::store::InMemoryTransactionStore;
+use crate::state_manager::{DatabaseConfig, StateManager, StateManagerConfig};
+use crate::store::RocksDBTransactionStore;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use std::path::PathBuf;
 
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use std::sync::MutexGuard;
@@ -97,7 +98,7 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
 }
 
 pub type ActualStateManager =
-    StateManager<SimpleMempool, InMemoryTransactionStore, SerializedInMemorySubstateStore>;
+    StateManager<SimpleMempool, RocksDBTransactionStore, SerializedInMemorySubstateStore>;
 pub struct JNIStateManager {
     pub state_manager: ActualStateManager,
 }
@@ -118,8 +119,10 @@ impl JNIStateManager {
             }
         };
 
+        let DatabaseConfig::InMemory(db_path) = config.db_config;
+
         let mempool = SimpleMempool::new(mempool_config);
-        let transaction_store = InMemoryTransactionStore::new();
+        let transaction_store = RocksDBTransactionStore::new(PathBuf::from(db_path));
         let substate_store = SerializedInMemorySubstateStore::with_bootstrap();
 
         // Build the state manager.

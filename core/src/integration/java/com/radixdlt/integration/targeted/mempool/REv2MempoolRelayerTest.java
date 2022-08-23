@@ -79,9 +79,15 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.stream.Collectors;
+
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public final class REv2MempoolRelayerTest {
+  @Rule
+  public TemporaryFolder folder = new TemporaryFolder();
+
   private final int MEMPOOL_SIZE = 1000;
 
   private final DeterministicTest test =
@@ -94,6 +100,7 @@ public final class REv2MempoolRelayerTest {
                   FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                   FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                       StateComputerConfig.rev2(
+                              folder.getRoot().getAbsolutePath(),
                           StateComputerConfig.REV2ProposerConfig.mempool(
                               MEMPOOL_SIZE, new MempoolRelayConfig(0, 0, 0, 100)),
                           true),
