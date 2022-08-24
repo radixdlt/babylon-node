@@ -75,7 +75,8 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 
-public class REv2DatabaseModule extends AbstractModule {
+/** Installs REv2 state/database related objects */
+public final class REv2DatabaseModule extends AbstractModule {
   @Override
   protected void configure() {
     bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);

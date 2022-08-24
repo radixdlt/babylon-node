@@ -78,6 +78,13 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
+/**
+ * Tests that a configuration with a persistent transaction store can handle a number of large
+ * transactions. ie, this test should fail in low memory environments IF an in memory transaction
+ * store was used.
+ *
+ * <p>If possible this test should be run in a low memory environment (e.g. -Xmx1024m)
+ */
 @Category(Slow.class)
 public final class TransactionDBSizeStressTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
@@ -98,7 +105,7 @@ public final class TransactionDBSizeStressTest {
   }
 
   @Test
-  public void test() {
+  public void committing_large_transactions_should_work() {
     var test = buildTest();
     for (int i = 0; i < 50; i++) {
       test.runForCount(100);

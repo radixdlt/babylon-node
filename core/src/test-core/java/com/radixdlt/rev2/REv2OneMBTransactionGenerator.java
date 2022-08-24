@@ -71,7 +71,8 @@ import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 
-public class REv2OneMBTransactionGenerator implements TransactionGenerator {
+/** Generates valid REv2 1 MB transactions */
+public final class REv2OneMBTransactionGenerator implements TransactionGenerator {
   private int currentKey = 1;
 
   @Override

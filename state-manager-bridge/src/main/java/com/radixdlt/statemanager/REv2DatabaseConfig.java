@@ -68,6 +68,7 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
 import com.radixdlt.sbor.codec.EnumEntry;
 
+/** REv2 Database configuration options */
 public sealed interface REv2DatabaseConfig {
   static void registerCodec(CodecMap codecMap) {
     codecMap.register(

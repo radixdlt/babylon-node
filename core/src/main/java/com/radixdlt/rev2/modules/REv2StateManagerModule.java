@@ -98,31 +98,37 @@ public final class REv2StateManagerModule extends AbstractModule {
     return new REv2StateManagerModule(true, databaseConfig, mempoolConfig);
   }
 
+  private static class PrefixedRocksDBModule extends AbstractModule {
+    private final REv2DatabaseConfig.RocksDB rocksConfig;
+    private final Option<RustMempoolConfig> mempoolConfig;
+
+    PrefixedRocksDBModule(
+        Option<RustMempoolConfig> mempoolConfig, REv2DatabaseConfig.RocksDB rocksConfig) {
+      this.mempoolConfig = mempoolConfig;
+      this.rocksConfig = rocksConfig;
+    }
+
+    @Provides
+    @Singleton
+    private RustStateComputer stateComputer(@Self BFTNode node) {
+      final REv2DatabaseConfig databaseConfigToUse;
+      var databasePath = rocksConfig.databasePath() + node.toString();
+      databaseConfigToUse = REv2DatabaseConfig.rocksDB(databasePath);
+      var stateManager =
+          StateManager.createAndInitialize(
+              new StateManagerConfig(mempoolConfig, databaseConfigToUse));
+      return new RustStateComputer(stateManager.getRustState());
+    }
+  }
+
   @Override
   public void configure() {
-    if (!prefixDatabase) {
+    if (prefixDatabase && databaseConfig instanceof REv2DatabaseConfig.RocksDB rocksDB) {
+      install(new PrefixedRocksDBModule(mempoolConfig, rocksDB));
+    } else {
       var stateManager =
           StateManager.createAndInitialize(new StateManagerConfig(mempoolConfig, databaseConfig));
       bind(RustStateComputer.class).toInstance(new RustStateComputer(stateManager.getRustState()));
-    } else {
-      install(
-          new AbstractModule() {
-            @Provides
-            @Singleton
-            private RustStateComputer stateComputer(@Self BFTNode node) {
-              final REv2DatabaseConfig databaseConfigToUse;
-              if (databaseConfig instanceof REv2DatabaseConfig.RocksDB rocksDB) {
-                var databasePath = rocksDB.databasePath() + node.toString();
-                databaseConfigToUse = REv2DatabaseConfig.rocksDB(databasePath);
-              } else {
-                databaseConfigToUse = databaseConfig;
-              }
-              var stateManager =
-                  StateManager.createAndInitialize(
-                      new StateManagerConfig(mempoolConfig, databaseConfigToUse));
-              return new RustStateComputer(stateManager.getRustState());
-            }
-          });
     }
 
     if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {

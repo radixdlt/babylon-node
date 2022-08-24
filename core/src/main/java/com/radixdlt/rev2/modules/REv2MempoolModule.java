@@ -71,7 +71,8 @@ import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transactions.RawTransaction;
 
-public class REv2MempoolModule extends AbstractModule {
+/** Installs REv2 mempool related objects */
+public final class REv2MempoolModule extends AbstractModule {
   @Provides
   private MempoolReader mempoolReader(RustStateComputer stateComputer) {
     return stateComputer.getMempoolReader();
