@@ -127,9 +127,7 @@ impl JNIStateManager {
             substate_store,
         )));
 
-        let jni_state_manager = JNIStateManager {
-            state_manager,
-        };
+        let jni_state_manager = JNIStateManager { state_manager };
 
         env.set_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME, jni_state_manager)
             .unwrap();

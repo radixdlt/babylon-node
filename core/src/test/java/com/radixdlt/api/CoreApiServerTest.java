@@ -90,14 +90,18 @@ public final class CoreApiServerTest {
         StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
       final var server = CoreApiServer.create(stateManager, config);
 
-      // Act & Assert #1: start the server and verify it's up
-      server.start();
-      final var statusCode = mkNetworkConfigurationRequest(port);
-      assertEquals(200, statusCode);
+      try {
+        // Act & Assert #1: start the server and verify it's up
+        server.start();
+        final var statusCode = mkNetworkConfigurationRequest(port);
+        assertEquals(200, statusCode);
 
-      // Act & Assert #2: stop the server and verify it's shut down
-      server.stop();
-      assertThrows(ConnectException.class, () -> mkNetworkConfigurationRequest(port));
+        // Act & Assert #2: stop the server and verify it's shut down
+        server.stop();
+        assertThrows(ConnectException.class, () -> mkNetworkConfigurationRequest(port));
+      } finally {
+        server.stop();
+      }
     }
   }
 

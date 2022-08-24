@@ -157,15 +157,15 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_stop(
     _class: JClass,
     j_core_api_server: JObject,
 ) {
-    let jni_core_api_server: JNICoreApiServer = env
-        .take_rust_field(j_core_api_server, POINTER_JNI_FIELD_NAME)
-        .unwrap();
-
-    if let Some(running_server) = jni_core_api_server.running_server {
-        running_server.shutdown_signal_sender.send(()).unwrap();
+    if let Ok(jni_core_api_server) = env.take_rust_field::<JObject, &str, JNICoreApiServer>(
+        j_core_api_server,
+        POINTER_JNI_FIELD_NAME,
+    ) {
+        if let Some(running_server) = jni_core_api_server.running_server {
+            running_server.shutdown_signal_sender.send(()).unwrap();
+        }
+        // No-op, drop the jni_core_api_server
     }
-
-    // No-op, drop the jni_core_api_server
 }
 
 pub fn export_extern_functions() {}

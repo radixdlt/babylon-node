@@ -75,9 +75,9 @@ public final class StateManager implements AutoCloseable {
 
   /**
    * Stores a pointer to the rust state manager across JNI calls. In the JNI model, this is
-   * equivalent to the Rust State "owning" the rust state manager memory. On each call into Rust, we
-   * map the rustStateManagerPointer onto a concrete implementation in Rust land, and it uses that
-   * to access all state and make calls.
+   * equivalent to the StateManager "owning" the rust state manager memory. On each call into Rust,
+   * we map the rustStateManagerPointer onto a concrete implementation in Rust land, and it uses
+   * that to access all state and make calls.
    */
   @SuppressWarnings("unused")
   private final long rustStateManagerPointer = 0;
