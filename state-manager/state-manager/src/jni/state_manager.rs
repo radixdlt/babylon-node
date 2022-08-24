@@ -66,7 +66,7 @@ use crate::jni::dtos::*;
 use crate::jni::utils::*;
 use crate::mempool::simple::SimpleMempool;
 use crate::mempool::MempoolConfig;
-use crate::state_manager::{StateManager, StateManagerConfig, StateManagerImpl};
+use crate::state_manager::{StateManager, StateManagerConfig};
 use crate::store::TransactionStore;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -96,8 +96,10 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
     JNIStateManager::cleanup(&env, j_state_manager);
 }
 
+pub type ActualStateManager = StateManager<SimpleMempool, SerializedInMemorySubstateStore>;
+
 pub struct JNIStateManager {
-    pub state_manager: Arc<Mutex<dyn StateManager + 'static + Send + Sync>>,
+    pub state_manager: Arc<Mutex<ActualStateManager>>,
 }
 
 impl JNIStateManager {
@@ -121,7 +123,7 @@ impl JNIStateManager {
         let substate_store = SerializedInMemorySubstateStore::with_bootstrap();
 
         // Build the state manager.
-        let state_manager = Arc::new(Mutex::new(StateManagerImpl::new(
+        let state_manager = Arc::new(Mutex::new(StateManager::new(
             mempool,
             transaction_store,
             substate_store,
@@ -144,7 +146,7 @@ impl JNIStateManager {
     pub fn get_state_manager(
         env: &JNIEnv,
         j_state_manager: JObject,
-    ) -> Arc<Mutex<dyn StateManager + Send + Sync>> {
+    ) -> Arc<Mutex<ActualStateManager>> {
         let state_manager = {
             let jni_state_manager: MutexGuard<JNIStateManager> = env
                 .get_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)

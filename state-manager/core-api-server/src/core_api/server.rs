@@ -63,20 +63,14 @@
  */
 
 use crate::core_api::generated::models;
-use crate::core_api::generated::models::{
-    Bech32Hrps, NetworkConfigurationResponse, NetworkConfigurationResponseVersion,
-    NetworkIdentifier,
-};
 use crate::core_api::generated::server::MakeService;
 use crate::core_api::generated::{
     Api, StatusNetworkConfigurationPostResponse, TransactionPreviewPostResponse,
-    TransactionSubmitPostResponse, API_VERSION,
+    TransactionSubmitPostResponse,
 };
 
 use async_trait::async_trait;
 use state_manager::StateManager;
-
-use scrypto::address::get_network_hrp_set;
 
 use std::future::Future;
 use std::marker::PhantomData;
@@ -88,10 +82,12 @@ use swagger::ApiError;
 use swagger::EmptyContext;
 use swagger::{Has, XSpanIdString};
 
-pub async fn create<F>(
+use state_manager::mempool::Mempool;
+
+pub async fn create<M: 'static + Mempool + Send, S: 'static + Send, F>(
     bind_addr: &str,
     shutdown_signal: F,
-    state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>,
+    state_manager: Arc<Mutex<StateManager<M, S>>>,
 ) where
     F: Future<Output = ()>,
 {
@@ -109,14 +105,22 @@ pub async fn create<F>(
         .unwrap();
 }
 
-#[derive(Clone)]
-pub struct Server<C> {
-    state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>,
+pub struct Server<M: 'static + Mempool + Send, S: 'static + Send, C> {
+    state_manager: Arc<Mutex<StateManager<M, S>>>,
     marker: PhantomData<C>,
 }
 
-impl<C> Server<C> {
-    pub fn new(state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>) -> Self {
+impl<M: 'static + Mempool + Send, S: 'static + Send, C> Clone for Server<M, S, C> {
+    fn clone(&self) -> Self {
+        Server {
+            state_manager: self.state_manager.clone(),
+            marker: self.marker,
+        }
+    }
+}
+
+impl<M: Mempool + 'static + Send, S: 'static + Send, C> Server<M, S, C> {
+    pub fn new(state_manager: Arc<Mutex<StateManager<M, S>>>) -> Self {
         Server {
             state_manager,
             marker: PhantomData,
@@ -125,7 +129,7 @@ impl<C> Server<C> {
 }
 
 #[async_trait]
-impl<C> Api<C> for Server<C>
+impl<M: 'static + Mempool + Send, S: 'static + Send, C> Api<C> for Server<M, S, C>
 where
     C: Has<XSpanIdString> + Send + Sync,
 {
@@ -133,34 +137,7 @@ where
         &self,
         _context: &C,
     ) -> Result<StatusNetworkConfigurationPostResponse, ApiError> {
-        let network = &self
-            .state_manager
-            .lock()
-            .expect("Can't acquire state manager lock")
-            .network()
-            .clone();
-
-        let hrp_set = get_network_hrp_set(network);
-
-        Ok(
-            StatusNetworkConfigurationPostResponse::NetworkConfiguration(
-                NetworkConfigurationResponse {
-                    version: NetworkConfigurationResponseVersion {
-                        core_version: env!("CARGO_PKG_VERSION").to_string(),
-                        api_version: API_VERSION.to_string(),
-                    },
-                    network_identifier: NetworkIdentifier {
-                        network: format!("{:?}", network),
-                    },
-                    bech32_human_readable_parts: Bech32Hrps {
-                        account_hrp: hrp_set.account_component.to_string(),
-                        validator_hrp: "TODO".to_string(),
-                        node_hrp: "TODO".to_string(),
-                        resource_hrp_suffix: hrp_set.resource.to_string(),
-                    },
-                },
-            ),
-        )
+        Err(ApiError("To be implemented".into()))
     }
 
     async fn transaction_preview_post(

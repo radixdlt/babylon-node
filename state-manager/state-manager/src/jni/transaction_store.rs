@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
+use crate::jni::state_manager::ActualStateManager;
 use crate::types::TId;
-use crate::StateManager;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -83,24 +83,24 @@ struct ExecutedTransactionReceipt {
 extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getTransactionAtStateVersion(
     env: JNIEnv,
     _class: JClass,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_state_manager_sbor_call(
         env,
-        sm_instance,
+        j_state_manager,
         request_payload,
         do_get_transaction_at_state_version,
     )
 }
 
 fn do_get_transaction_at_state_version(
-    state_manager: &mut dyn StateManager,
+    state_manager: &mut ActualStateManager,
     state_version: u64,
 ) -> ExecutedTransactionReceipt {
-    let tid = state_manager.proof_store().get_tid(state_version);
+    let tid = state_manager.proof_store.get_tid(state_version);
 
-    let (transaction_data, receipt) = state_manager.transaction_store().get_transaction(&tid);
+    let (transaction_data, receipt) = state_manager.transaction_store.get_transaction(&tid);
 
     ExecutedTransactionReceipt {
         result: receipt.result.to_string(),
@@ -120,10 +120,10 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 }
 
 fn do_get_next_proof(
-    state_manager: &mut dyn StateManager,
+    state_manager: &mut ActualStateManager,
     state_version: u64,
 ) -> Option<(Vec<TId>, Vec<u8>)> {
-    state_manager.proof_store().get_next_proof(state_version)
+    state_manager.proof_store.get_next_proof(state_version)
 }
 
 #[no_mangle]
@@ -136,8 +136,8 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_get_last_proof)
 }
 
-fn do_get_last_proof(state_manager: &mut dyn StateManager, _args: ()) -> Option<Vec<u8>> {
-    state_manager.proof_store().get_last_proof()
+fn do_get_last_proof(state_manager: &mut ActualStateManager, _args: ()) -> Option<Vec<u8>> {
+    state_manager.proof_store.get_last_proof()
 }
 
 pub fn export_extern_functions() {}

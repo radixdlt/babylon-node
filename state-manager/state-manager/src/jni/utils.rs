@@ -66,8 +66,8 @@ use jni::JNIEnv;
 use jni::{objects::JObject, sys::jbyteArray};
 use std::ops::DerefMut;
 
+use crate::jni::state_manager::ActualStateManager;
 use crate::result::{StateManagerError, StateManagerResult, ERRCODE_JNI};
-use crate::state_manager::StateManager;
 use sbor::{Decode, Encode, TypeId};
 
 use super::{dtos::JavaStructure, state_manager::JNIStateManager};
@@ -147,25 +147,25 @@ pub fn jni_state_manager_sbor_call<
     Response: JavaStructure + Encode + Decode + TypeId,
 >(
     env: JNIEnv,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
-    method: impl FnOnce(&mut dyn StateManager, Args) -> Response,
+    method: impl FnOnce(&mut ActualStateManager, Args) -> Response,
 ) -> jbyteArray {
     let response_result =
-        jni_state_manager_sbor_call_inner(&env, sm_instance, request_payload, method);
+        jni_state_manager_sbor_call_inner(&env, j_state_manager, request_payload, method);
     jni_slice_to_jbytearray(&env, &response_result.to_java())
 }
 
 fn jni_state_manager_sbor_call_inner<Args: JavaStructure, Response: JavaStructure>(
     env: &JNIEnv,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
-    method: impl FnOnce(&mut dyn StateManager, Args) -> Response,
+    method: impl FnOnce(&mut ActualStateManager, Args) -> Response,
 ) -> StateManagerResult<Response> {
     let vec_payload = jni_jbytearray_to_vector(env, request_payload)?;
     let args = Args::from_java(&vec_payload)?;
 
-    let state_manager_arc = JNIStateManager::get_state_manager(env, sm_instance);
+    let state_manager_arc = JNIStateManager::get_state_manager(env, j_state_manager);
     let mut state_manager = state_manager_arc
         .lock()
         .expect("Can't acquire a state manager mutex lock");
@@ -179,13 +179,13 @@ pub fn jni_state_manager_sbor_call_flatten_result<
     Response: JavaStructure + Encode + Decode + TypeId,
 >(
     env: JNIEnv,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
-    method: impl FnOnce(&mut dyn StateManager, Args) -> StateManagerResult<Response>,
+    method: impl FnOnce(&mut ActualStateManager, Args) -> StateManagerResult<Response>,
 ) -> jbyteArray {
     let response_result = jni_state_manager_sbor_call_flatten_result_inner(
         &env,
-        sm_instance,
+        j_state_manager,
         request_payload,
         method,
     );
@@ -197,14 +197,14 @@ fn jni_state_manager_sbor_call_flatten_result_inner<
     Response: JavaStructure,
 >(
     env: &JNIEnv,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
-    method: impl FnOnce(&mut dyn StateManager, Args) -> StateManagerResult<Response>,
+    method: impl FnOnce(&mut ActualStateManager, Args) -> StateManagerResult<Response>,
 ) -> StateManagerResult<Response> {
     let vec_payload = jni_jbytearray_to_vector(env, request_payload)?;
     let args = Args::from_java(&vec_payload)?;
 
-    let state_manager_arc = JNIStateManager::get_state_manager(env, sm_instance);
+    let state_manager_arc = JNIStateManager::get_state_manager(env, j_state_manager);
     let mut state_manager = state_manager_arc
         .lock()
         .expect("Can't acquire a state manager mutex lock");
