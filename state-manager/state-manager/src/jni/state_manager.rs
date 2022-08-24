@@ -129,8 +129,6 @@ impl JNIStateManager {
 
         let jni_state_manager = JNIStateManager {
             state_manager,
-            // tokio_runtime,
-            // core_api_server_shutdown_signal_sender: core_api_server_shutdown_channel.0,
         };
 
         env.set_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME, jni_state_manager)

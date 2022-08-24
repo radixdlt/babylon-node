@@ -280,8 +280,6 @@ dependencies = [
  "jni",
  "lazy_static",
  "log",
- "mime",
- "percent-encoding 2.1.0",
  "radix-engine",
  "radix-engine-stores",
  "regex",
