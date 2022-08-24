@@ -209,7 +209,7 @@ public final class DeterministicTest {
           new FunctionalRadixNodeModule(
               true,
               ConsensusConfig.of(),
-              LedgerConfig.stateComputerNoSync(
+              LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mocked(
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
       addEpochedConsensusProcessorModule(epochMaxRound);

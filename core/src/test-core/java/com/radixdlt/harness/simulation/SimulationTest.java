@@ -282,7 +282,7 @@ public final class SimulationTest {
           new FunctionalRadixNodeModule(
               true,
               consensusConfig,
-              LedgerConfig.stateComputerNoSync(
+              LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mocked(
                       new StateComputerConfig.MockedMempoolConfig.NoMempool())));
       this.epochToNodeIndexMapper = epochToNodeIndexMapper;
@@ -367,7 +367,7 @@ public final class SimulationTest {
           new FunctionalRadixNodeModule(
               true,
               consensusConfig,
-              LedgerConfig.stateComputerNoSync(StateComputerConfig.rev1(100)));
+              LedgerConfig.stateComputerMockedSync(StateComputerConfig.rev1(100)));
       this.modules.add(
           new AbstractModule() {
             @Override
