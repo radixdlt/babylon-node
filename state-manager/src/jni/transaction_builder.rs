@@ -97,15 +97,15 @@ fn do_compile_manifest(args: (NetworkDefinition, String)) -> Result<Vec<u8>, Str
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountManifest(
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountIntent(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_create_new_account_manifest)
+    jni_static_sbor_call(env, request_payload, do_create_new_account_intent)
 }
 
-fn do_create_new_account_manifest(args: (NetworkDefinition, EcdsaPublicKey)) -> Vec<u8> {
+fn do_create_new_account_intent(args: (NetworkDefinition, EcdsaPublicKey)) -> Vec<u8> {
     let (network_definition, public_key) = args;
 
     create_new_account_intent_bytes(&network_definition, public_key)

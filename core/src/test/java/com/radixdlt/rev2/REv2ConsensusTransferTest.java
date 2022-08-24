@@ -175,7 +175,8 @@ public final class REv2ConsensusTransferTest {
     var componentAddress = receipt.getNewComponentAddresses().get(0);
     var accountAmount = stateReader.getComponentXrdAmount(componentAddress);
     assertThat(accountAmount).isEqualTo(Decimal.of(1_000_000L));
-    var systemAmount = stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_COMPONENT_ADDRESS);
+    var systemAmount =
+        stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
     assertThat(systemAmount).isLessThan(GENESIS_AMOUNT);
   }
 }

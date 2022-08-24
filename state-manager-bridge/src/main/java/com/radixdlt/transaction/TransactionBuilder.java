@@ -95,7 +95,9 @@ public final class TransactionBuilder {
 
   public static byte[] createIntent(
       NetworkDefinition network, TransactionHeader header, String manifest) {
-    return createIntentFunc.call(tuple(network, header, manifest));
+    return createIntentFunc
+        .call(tuple(network, header, manifest))
+        .unwrap(ManifestCompilationException::new);
   }
 
   public static byte[] createSignedIntentBytes(
@@ -123,7 +125,7 @@ public final class TransactionBuilder {
   private static native byte[] newAccountIntent(byte[] requestPayload);
 
   private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple3<NetworkDefinition, TransactionHeader, String>, byte[]>
+          Tuple.Tuple3<NetworkDefinition, TransactionHeader, String>, Result<byte[], String>>
       createIntentFunc =
           NativeCalls.StaticFunc1.with(
               new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::createIntent);

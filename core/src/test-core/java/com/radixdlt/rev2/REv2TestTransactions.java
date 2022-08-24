@@ -73,6 +73,9 @@ import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 
 public final class REv2TestTransactions {
+  // This has to come first for static ordering issues
+  private static int currentKey = 1;
+
   public static final RawTransaction VALID_TXN_0 =
       constructTransaction("CLEAR_AUTH_ZONE;", List.of());
   public static final RawTransaction VALID_TXN_1 =
@@ -80,8 +83,6 @@ public final class REv2TestTransactions {
   public static final RawTransaction VALID_TXN_2 =
       constructTransaction(
           "CLEAR_AUTH_ZONE; CLEAR_AUTH_ZONE;", List.of(getNewKeyPair(), getNewKeyPair()));
-
-  private static int currentKey = 1;
 
   private static ECKeyPair getNewKeyPair() {
     return PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();

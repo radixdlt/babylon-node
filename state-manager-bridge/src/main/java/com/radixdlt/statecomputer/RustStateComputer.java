@@ -132,7 +132,7 @@ public class RustStateComputer {
     commitFunc.call(commitRequest);
   }
 
-  public boolean verify(RawTransaction transaction) {
+  public Result<Unit, String> verify(RawTransaction transaction) {
     return verifyFunc.call(transaction);
   }
 
@@ -140,7 +140,7 @@ public class RustStateComputer {
     return previewFunc.call(previewRequest);
   }
 
-  private final NativeCalls.Func1<RawTransaction, Boolean> verifyFunc;
+  private final NativeCalls.Func1<RawTransaction, Result<Unit, String>> verifyFunc;
 
   private static native byte[] verify(StateManager.RustState rustState, byte[] payload);
 

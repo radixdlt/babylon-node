@@ -67,6 +67,7 @@ package com.radixdlt.rev2;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
 public record TransactionHeader(
@@ -77,8 +78,8 @@ public record TransactionHeader(
     UInt64 nonce,
     ECPublicKey notaryPublicKey,
     boolean notaryAsSignatory,
-    UInt64 costUnitLimit,
-    int tipPercentage) {
+    UInt32 costUnitLimit,
+    UInt32 tipPercentage) {
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -93,8 +94,8 @@ public record TransactionHeader(
                 codecs.of(UInt64.class),
                 codecs.of(ECPublicKey.class),
                 codecs.of(boolean.class),
-                codecs.of(UInt64.class),
-                codecs.of(int.class),
+                codecs.of(UInt32.class),
+                codecs.of(UInt32.class),
                 (t, encoder) ->
                     encoder.encode(
                         t.version,
@@ -114,11 +115,12 @@ public record TransactionHeader(
         (byte) 1, // Version
         networkDefinition.id(),
         UInt64.fromNonNegativeLong(1), // From Epoch (inclusive)
-        UInt64.fromNonNegativeLong(1000), // To Epoch (exclusive)
+        UInt64.fromNonNegativeLong(100), // To Epoch (exclusive)
         UInt64.fromNonNegativeLong(1), // Nonce
         notary,
         notaryIsSignatory,
-        UInt64.fromNonNegativeLong(1000000L), // Max Cost Units
-        0);
+        UInt32.fromNonNegativeInt(1000000), // Max Cost Units
+        UInt32.fromNonNegativeInt(0) // Tip percentage
+        );
   }
 }
