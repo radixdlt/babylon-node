@@ -70,31 +70,31 @@ import java.util.stream.Stream;
 
 public enum Network {
 
-  /// Public Facing Permanent Networks (start with 0x0)
+  /// Public Facing Permanent Networks (0x00 - 0x09)
   // - mainnet
   // - stokenet
   MAINNET(1 /* 0x01 */, "mainnet", "rdx", GenesisSource.providedAsync),
-  STOKENET(2 /* 0x02 */, "stokenet", "tdx2_", GenesisSource.providedAsync),
+  STOKENET(2 /* 0x02 */, "stokenet", "tdx_2_", GenesisSource.providedAsync),
 
-  /// Babylon Testnets (start with 0x1)
+  /// Babylon Temporary Testnets (0x0a - 0x0f)
   // - adapanet = Babylon Alphanet, after Adapa
   // - nebunet = Babylon Betanet, after Nebuchadnezzar
-  ADAPANET(16 /* 0x10 */, "adapanet", "tdx16_", GenesisSource.fromConfiguration),
-  NEBUNET(17 /* 0x11 */, "nebunet", "tdx17_", GenesisSource.fromConfiguration),
+  ADAPANET(10 /* 0x0a */, "adapanet", "tdx_a_", GenesisSource.fromConfiguration),
+  NEBUNET(11 /* 0x0b */, "nebunet", "tdx_b_", GenesisSource.fromConfiguration),
 
   /// RDX Development - Semi-permanent Testnets (start with 0x2)
   // - gilganet = Integration, after Gilgamesh
   // - enkinet = Misc Network 1, after Enkidu
   // - hammunet = Misc Network 2, after Hammurabi
-  GILGANET(32 /* 0x20 */, "gilganet", "tdx32_", GenesisSource.fromConfiguration),
-  ENKINET(33 /* 0x21 */, "enkinet", "tdx33_", GenesisSource.fromConfiguration),
-  HAMMUNET(34 /* 0x22 */, "hammunet", "tdx34_", GenesisSource.fromConfiguration),
+  GILGANET(32 /* 0x20 */, "gilganet", "tdx_20_", GenesisSource.fromConfiguration),
+  ENKINET(33 /* 0x21 */, "enkinet", "tdx_21_", GenesisSource.fromConfiguration),
+  HAMMUNET(34 /* 0x22 */, "hammunet", "tdx_22_", GenesisSource.fromConfiguration),
 
   /// Ephemeral Networks (start with 0xF)
   // - localnet = The network used when running locally in development
   // - inttestnet = The network used when running integration tests
-  LOCALNET(240 /* 0xF0 */, "localnet", "tdx240_", GenesisSource.fromConfiguration),
-  INTEGRATIONTESTNET(241 /* 0xF1 */, "inttestnet", "tdx241_", GenesisSource.fromConfiguration),
+  LOCALNET(240 /* 0xF0 */, "localnet", "loc", GenesisSource.fromConfiguration),
+  INTEGRATIONTESTNET(241 /* 0xF1 */, "inttestnet", "test", GenesisSource.fromConfiguration),
   LOCALSIMULATOR(242 /* 0xF1 */, "simulator", "sim", GenesisSource.fromConfiguration);
 
   // For the Radix Shell to provide a default
