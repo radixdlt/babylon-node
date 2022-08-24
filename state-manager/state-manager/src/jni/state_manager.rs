@@ -96,6 +96,8 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
     JNIStateManager::cleanup(&env, j_state_manager);
 }
 
+pub type ActualStateManager = Arc<Mutex<StateManagerImpl<SimpleMempool, SerializedInMemorySubstateStore>>>;
+
 pub struct JNIStateManager {
     pub state_manager: Arc<Mutex<dyn StateManager + 'static + Send + Sync>>,
 }

@@ -63,7 +63,7 @@
  */
 
 pub mod jni;
-mod mempool;
+pub mod mempool;
 mod query;
 mod result;
 mod state_manager;
@@ -71,4 +71,4 @@ mod store;
 mod transaction_builder;
 mod types;
 
-pub use state_manager::StateManager;
+pub use state_manager::{StateManager, StateManagerImpl};

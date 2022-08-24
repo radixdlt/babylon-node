@@ -72,7 +72,7 @@ use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
 use state_manager::jni::dtos::JavaStructure;
-use state_manager::jni::state_manager::JNIStateManager;
+use state_manager::jni::state_manager::{ActualStateManager, JNIStateManager};
 use state_manager::jni::utils::*;
 use state_manager::StateManager;
 use std::str;
@@ -132,7 +132,12 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
         .unwrap();
 
     let config = &jni_core_api_server.config;
-    let state_manager = jni_core_api_server.state_manager.clone();
+
+
+    // Just for testing
+    let state_manager = get_state_manager().clone();
+
+
     let bind_addr = format!("{}:{}", config.bind_interface, config.port);
     tokio_runtime.spawn(async move {
         server::create(
@@ -149,6 +154,10 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
     };
 
     jni_core_api_server.running_server = Option::from(running_server);
+}
+
+fn get_state_manager() -> ActualStateManager {
+    todo!()
 }
 
 #[no_mangle]
