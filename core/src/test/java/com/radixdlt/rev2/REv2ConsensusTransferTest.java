@@ -87,7 +87,6 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
@@ -136,7 +135,6 @@ public final class REv2ConsensusTransferTest {
         new AbstractModule() {
           @Override
           protected void configure() {
-            bindConstant().annotatedWith(NetworkId.class).to(Network.INTEGRATIONTESTNET.getId());
             bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
             bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
             bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
