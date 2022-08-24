@@ -63,7 +63,7 @@
  */
 
 use crate::types::{TId, Transaction};
-use radix_engine::transaction::{TransactionReceipt, TransactionStatus};
+use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
 use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
 use std::collections::HashMap;
 
@@ -97,25 +97,33 @@ impl TransactionStore {
     }
 
     fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
-        let entity_changes = receipt
-            .result
-            .get_commit_result()
-            .map(|c| &c.entity_changes);
-        let receipt = TemporaryTransactionReceipt {
-            result: match receipt.result.get_status() {
-                TransactionStatus::Success(..) => "Success".to_string(),
-                TransactionStatus::Failure(error) => format!("Error: {}", error),
-                TransactionStatus::Rejection(error) => format!("Rejected: {}", error),
+        let (status, entity_changes) = match receipt.result {
+            TransactionResult::Commit(commit) => match commit.outcome {
+                TransactionOutcome::Success(..) => {
+                    ("Success".to_string(), Some(commit.entity_changes))
+                }
+                TransactionOutcome::Failure(error) => {
+                    (format!("Error: {}", error), Some(commit.entity_changes))
+                }
             },
-            new_package_addresses: entity_changes
-                .map(|c| c.new_package_addresses.clone())
-                .unwrap_or_default(),
-            new_component_addresses: entity_changes
-                .map(|c| c.new_component_addresses.clone())
-                .unwrap_or_default(),
-            new_resource_addresses: entity_changes
-                .map(|c| c.new_resource_addresses.clone())
-                .unwrap_or_default(),
+            TransactionResult::Reject(reject) => (format!("Rejected: {}", reject.error), None),
+        };
+
+        let (new_package_addresses, new_component_addresses, new_resource_addresses) =
+            match entity_changes {
+                Some(ec) => (
+                    ec.new_package_addresses,
+                    ec.new_component_addresses,
+                    ec.new_resource_addresses,
+                ),
+                None => (Vec::new(), Vec::new(), Vec::new()),
+            };
+
+        let receipt = TemporaryTransactionReceipt {
+            result: status,
+            new_package_addresses,
+            new_component_addresses,
+            new_resource_addresses,
         };
         self.in_memory_store.insert(
             transaction.id.clone(),

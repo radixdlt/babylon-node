@@ -65,15 +65,36 @@
 use crate::jni::dtos::JavaStructure;
 use crate::result::StateManagerResult;
 use crate::transaction_builder::{
-    create_new_account_unsigned_manifest, create_notarized_bytes, create_signed_intent_bytes,
+    create_intent_bytes, create_new_account_intent_bytes, create_notarized_bytes,
+    create_signed_intent_bytes,
 };
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use radix_engine::types::scrypto_encode;
+use sbor::{Decode, Encode, TypeId};
 use scrypto::prelude::{EcdsaPublicKey, EcdsaSignature, NetworkDefinition};
-use transaction::model::{SignedTransactionIntent, TransactionIntent};
+use transaction::manifest::compile;
+use transaction::model::{SignedTransactionIntent, TransactionHeader, TransactionIntent};
 
 use super::utils::{jni_static_sbor_call, jni_static_sbor_call_flatten_result};
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_compileManifest(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, do_compile_manifest)
+}
+
+fn do_compile_manifest(args: (NetworkDefinition, String)) -> Result<Vec<u8>, String> {
+    let (network, manifest_str) = args;
+
+    compile(&manifest_str, &network)
+        .map_err(|err| format!("{:?}", err))
+        .map(|manifest| scrypto_encode(&manifest))
+}
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountManifest(
@@ -87,7 +108,56 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountMa
 fn do_create_new_account_manifest(args: (NetworkDefinition, EcdsaPublicKey)) -> Vec<u8> {
     let (network_definition, public_key) = args;
 
-    create_new_account_unsigned_manifest(&network_definition, public_key)
+    create_new_account_intent_bytes(&network_definition, public_key)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createIntent(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, do_create_intent_bytes)
+}
+
+// To ensure that any change to TransactionHeader is picked up as a compile error,
+// not an SBOR error
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+struct TransactionHeaderJava {
+    pub version: u8,
+    pub network_id: u8,
+    pub start_epoch_inclusive: u64,
+    pub end_epoch_exclusive: u64,
+    pub nonce: u64,
+    pub notary_public_key: EcdsaPublicKey,
+    pub notary_as_signatory: bool,
+    pub cost_unit_limit: u32,
+    pub tip_percentage: u32,
+}
+
+impl From<TransactionHeaderJava> for TransactionHeader {
+    fn from(header: TransactionHeaderJava) -> Self {
+        TransactionHeader {
+            version: header.version,
+            network_id: header.network_id,
+            start_epoch_inclusive: header.start_epoch_inclusive,
+            end_epoch_exclusive: header.end_epoch_exclusive,
+            nonce: header.nonce,
+            notary_public_key: header.notary_public_key,
+            notary_as_signatory: header.notary_as_signatory,
+            cost_unit_limit: header.cost_unit_limit,
+            tip_percentage: header.tip_percentage,
+        }
+    }
+}
+
+fn do_create_intent_bytes(
+    args: (NetworkDefinition, TransactionHeaderJava, String),
+) -> Result<Vec<u8>, String> {
+    let (network_definition, header, manifest) = args;
+
+    create_intent_bytes(&network_definition, header.into(), manifest)
+        .map_err(|err| format!("{:?}", err))
 }
 
 #[no_mangle]
@@ -100,14 +170,14 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createSigned
 }
 
 fn do_create_signed_intent_bytes(
-    args: (Vec<u8>, EcdsaPublicKey, EcdsaSignature),
+    args: (Vec<u8>, Vec<(EcdsaPublicKey, EcdsaSignature)>),
 ) -> StateManagerResult<Vec<u8>> {
-    let (intent_bytes, public_key, signature) = args;
+    let (intent_bytes, signatures) = args;
 
     // It's passed through to us as bytes - and need to decode these bytes
     let intent = TransactionIntent::from_java(&intent_bytes)?;
 
-    Ok(create_signed_intent_bytes(intent, public_key, signature))
+    Ok(create_signed_intent_bytes(intent, signatures))
 }
 
 #[no_mangle]

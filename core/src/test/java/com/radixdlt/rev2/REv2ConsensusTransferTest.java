@@ -70,7 +70,6 @@ import com.google.inject.*;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -146,20 +145,11 @@ public final class REv2ConsensusTransferTest {
   }
 
   private static RawTransaction createNewAccountTransaction() {
-    var unsignedManifest =
+    var notary = TEST_KEY;
+    var intentBytes =
         TransactionBuilder.buildNewAccountIntent(
-            NetworkDefinition.INT_TEST_NET, TEST_KEY.getPublicKey());
-    var hashedManifest = HashUtils.sha256Twice(unsignedManifest).asBytes();
-
-    var intentSignature = TEST_KEY.sign(hashedManifest);
-    var signedIntent =
-        TransactionBuilder.createSignedIntentBytes(
-            unsignedManifest, TEST_KEY.getPublicKey(), intentSignature);
-    var hashedSignedIntent = HashUtils.sha256Twice(signedIntent).asBytes();
-
-    var notarySignature = TEST_KEY.sign(hashedSignedIntent);
-    var transactionPayload = TransactionBuilder.createNotarizedBytes(signedIntent, notarySignature);
-    return RawTransaction.create(transactionPayload);
+            NetworkDefinition.INT_TEST_NET, notary.getPublicKey());
+    return REv2TestTransactions.constructTransaction(intentBytes, notary, List.of(TEST_KEY));
   }
 
   @Test

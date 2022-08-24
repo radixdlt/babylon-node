@@ -73,9 +73,9 @@ import com.radixdlt.api.core.generated.models.TransactionPreviewRequest;
 import com.radixdlt.api.core.generated.models.TransactionPreviewRequestFlags;
 import com.radixdlt.api.core.generated.models.TransactionPreviewResponse;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.manifest.ManifestCompiler;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.transaction.TransactionBuilder;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
@@ -93,8 +93,8 @@ public class TransactionPreviewHandlerTest extends ApiTest {
                 new NetworkIdentifier().network(Network.INTEGRATIONTESTNET.getLogicalName()))
             .manifest(
                 Hex.toHexString(
-                    ManifestCompiler.compile(NetworkDefinition.INT_TEST_NET, "CLEAR_AUTH_ZONE;")
-                        .unwrap()))
+                    TransactionBuilder.compileManifest(
+                        NetworkDefinition.INT_TEST_NET, "CLEAR_AUTH_ZONE;")))
             .costUnitLimit(10000)
             .tipPercentage(0)
             .nonce(0L)

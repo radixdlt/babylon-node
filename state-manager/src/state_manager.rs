@@ -94,9 +94,15 @@ pub struct StateManager<M: Mempool, S> {
     substate_store: S,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
-    validation_config: ValidationConfig,
+    validation_config: OwnedValidationConfig,
     execution_config: ExecutionConfig,
     intent_hash_manager: TestIntentHashManager,
+}
+
+pub struct OwnedValidationConfig {
+    pub current_epoch: u64,
+    pub max_cost_unit_limit: u32,
+    pub min_tip_percentage: u32,
 }
 
 impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager<M, S> {
@@ -107,15 +113,14 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
         substate_store: S,
     ) -> StateManager<M, S> {
         StateManager {
-            network: network.clone(),
+            network,
             mempool,
             transaction_store,
             proof_store: ProofStore::new(),
             substate_store,
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),
-            validation_config: ValidationConfig {
-                network,
+            validation_config: OwnedValidationConfig {
                 current_epoch: 1,
                 max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
                 min_tip_percentage: 0,
@@ -175,10 +180,16 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
         &self,
         txn: &Transaction,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
+        let validation_config = ValidationConfig {
+            network: &self.network,
+            current_epoch: self.validation_config.current_epoch,
+            max_cost_unit_limit: self.validation_config.max_cost_unit_limit,
+            min_tip_percentage: self.validation_config.min_tip_percentage,
+        };
         TransactionValidator::validate_from_slice(
             &txn.payload,
             &self.intent_hash_manager,
-            &self.validation_config,
+            &validation_config,
         )
     }
 
@@ -226,6 +237,7 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
             &self.intent_hash_manager,
+            &self.network,
         )
         .execute(preview_intent)
         .map_err(PreviewError::EngineError)?;

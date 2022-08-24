@@ -63,7 +63,7 @@
  */
 
 use radix_engine::fee::FeeSummary;
-use radix_engine::transaction::{PreviewResult, TransactionStatus};
+use radix_engine::transaction::{PreviewResult, TransactionOutcome, TransactionResult};
 use sbor::{Decode, Encode, TypeId};
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::core::Level;
@@ -126,7 +126,7 @@ impl From<FeeSummary> for FeeSummaryJava {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PreviewResultJava {
     status: TransactionStatusJava,
-    fee_summary: Option<FeeSummaryJava>,
+    fee_summary: FeeSummaryJava,
     application_logs: Vec<(Level, String)>,
     new_package_addresses: Vec<PackageAddress>,
     new_component_addresses: Vec<ComponentAddress>,
@@ -136,38 +136,46 @@ pub struct PreviewResultJava {
 impl From<PreviewResult> for PreviewResultJava {
     fn from(result: PreviewResult) -> Self {
         let receipt = result.receipt;
-        let commit = receipt.result.get_commit_result();
-        let execution = receipt.execution;
-        let entity_changes = commit.map(|c| &c.entity_changes);
-        let application_logs = execution
-            .as_ref()
-            .map(|e| e.application_logs.clone())
-            .unwrap_or_else(Vec::new);
-        PreviewResultJava {
-            status: receipt.result.get_status().into(),
-            fee_summary: execution.map(|e| e.fee_summary.into()),
-            application_logs,
-            new_package_addresses: entity_changes
-                .map(|e| e.new_package_addresses.clone())
-                .unwrap_or_else(Vec::new),
-            new_component_addresses: entity_changes
-                .map(|e| e.new_component_addresses.clone())
-                .unwrap_or_else(Vec::new),
-            new_resource_addresses: entity_changes
-                .map(|e| e.new_resource_addresses.clone())
-                .unwrap_or_else(Vec::new),
-        }
-    }
-}
 
-impl From<TransactionStatus<'_>> for TransactionStatusJava {
-    fn from(status: TransactionStatus) -> Self {
-        match status {
-            TransactionStatus::Rejection(error) => {
-                TransactionStatusJava::Rejected(error.to_string())
-            }
-            TransactionStatus::Success(output) => TransactionStatusJava::Succeeded(output.clone()),
-            TransactionStatus::Failure(error) => TransactionStatusJava::Failed(error.to_string()),
+        let (status, entity_changes) = match receipt.result {
+            TransactionResult::Commit(commit) => match commit.outcome {
+                TransactionOutcome::Success(output) => (
+                    TransactionStatusJava::Succeeded(output),
+                    Some(commit.entity_changes),
+                ),
+                TransactionOutcome::Failure(error) => (
+                    TransactionStatusJava::Failed(error.to_string()),
+                    Some(commit.entity_changes),
+                ),
+            },
+            TransactionResult::Reject(reject) => (
+                TransactionStatusJava::Rejected(reject.error.to_string()),
+                None,
+            ),
+        };
+
+        let (new_package_addresses, new_component_addresses, new_resource_addresses) =
+            match entity_changes {
+                Some(ec) => (
+                    ec.new_package_addresses,
+                    ec.new_component_addresses,
+                    ec.new_resource_addresses,
+                ),
+                None => (Vec::new(), Vec::new(), Vec::new()),
+            };
+
+        let (fee_summary, application_logs) = {
+            let execution = receipt.execution;
+            (execution.fee_summary, execution.application_logs)
+        };
+
+        PreviewResultJava {
+            status,
+            fee_summary: fee_summary.into(),
+            application_logs,
+            new_package_addresses,
+            new_component_addresses,
+            new_resource_addresses,
         }
     }
 }

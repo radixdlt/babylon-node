@@ -62,33 +62,85 @@
  * permissions under this License.
  */
 
-package com.radixdlt.manifest;
+package com.radixdlt.rev2;
 
-import static com.radixdlt.lang.Tuple.tuple;
-
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Result;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.lang.Tuple;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.sbor.NativeCalls;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
 
-public final class ManifestCompiler {
+public final class REv2TestTransactions {
+  public static final RawTransaction VALID_TXN_0 =
+      constructTransaction("CLEAR_AUTH_ZONE;", List.of());
+  public static final RawTransaction VALID_TXN_1 =
+      constructTransaction("CLEAR_AUTH_ZONE;", List.of(getNewKeyPair()));
+  public static final RawTransaction VALID_TXN_2 =
+      constructTransaction(
+          "CLEAR_AUTH_ZONE; CLEAR_AUTH_ZONE;", List.of(getNewKeyPair(), getNewKeyPair()));
 
-  static {
-    // This is idempotent with the other calls
-    System.loadLibrary("statemanager");
+  private static int currentKey = 1;
+
+  private static ECKeyPair getNewKeyPair() {
+    return PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
   }
 
-  public static Result<byte[], CompileManifestError> compile(
-      NetworkDefinition network, String manifest) {
-    return compileFunc.call(tuple(network, manifest));
+  public static RawTransaction constructTransaction(String manifest, List<ECKeyPair> signatories) {
+    return constructTransaction(
+        NetworkDefinition.INT_TEST_NET, manifest, getNewKeyPair(), false, signatories);
   }
 
-  private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple2<NetworkDefinition, String>, Result<byte[], CompileManifestError>>
-      compileFunc =
-          NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {}, new TypeToken<>() {}, ManifestCompiler::compile);
+  public static RawTransaction constructTransaction(
+      NetworkDefinition networkDefinition,
+      String manifest,
+      ECKeyPair notary,
+      boolean notaryIsSignatory,
+      List<ECKeyPair> signatories) {
+    // Build intent
+    final var header =
+        TransactionHeader.defaults(networkDefinition, notary.getPublicKey(), notaryIsSignatory);
+    var intentBytes = TransactionBuilder.createIntent(networkDefinition, header, manifest);
 
-  private static native byte[] compile(byte[] payload);
+    // Sign intent
+    return constructTransaction(intentBytes, notary, signatories);
+  }
+
+  public static RawTransaction constructTransaction(
+      NetworkDefinition networkDefinition,
+      TransactionHeader header,
+      String manifest,
+      ECKeyPair notary,
+      List<ECKeyPair> signatories) {
+    // Build intent
+    var intentBytes = TransactionBuilder.createIntent(networkDefinition, header, manifest);
+
+    // Sign intent
+    return constructTransaction(intentBytes, notary, signatories);
+  }
+
+  public static RawTransaction constructTransaction(
+      byte[] intentBytes, ECKeyPair notary, List<ECKeyPair> signatories) {
+    // Sign intent
+    var hashedIntent = HashUtils.sha256Twice(intentBytes).asBytes();
+    var intentSignatures =
+        signatories.stream()
+            .map(ecKeyPair -> Tuple.tuple(ecKeyPair.getPublicKey(), ecKeyPair.sign(hashedIntent)))
+            .toList();
+    var signedIntentBytes =
+        TransactionBuilder.createSignedIntentBytes(intentBytes, intentSignatures);
+
+    // Notarize
+    var hashedSignedIntent = HashUtils.sha256Twice(signedIntentBytes).asBytes();
+    var notarySignature = notary.sign(hashedSignedIntent);
+    var notarizedBytes =
+        TransactionBuilder.createNotarizedBytes(signedIntentBytes, notarySignature);
+
+    return RawTransaction.create(notarizedBytes);
+  }
+
+  private REv2TestTransactions() {
+    throw new IllegalStateException("Cannot instantiate.");
+  }
 }

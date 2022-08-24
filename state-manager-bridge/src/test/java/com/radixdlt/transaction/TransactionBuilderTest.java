@@ -62,51 +62,50 @@
  * permissions under this License.
  */
 
-use jni::objects::JClass;
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use radix_engine::types::NetworkDefinition;
-use sbor::{Decode, Encode, TypeId};
-use scrypto::prelude::scrypto_encode;
-use std::str;
-use transaction::manifest::{compile, CompileError};
+package com.radixdlt.transaction;
 
-use super::utils::jni_static_sbor_call;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_manifest_ManifestCompiler_compile(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_compile)
-}
+import com.radixdlt.exceptions.ManifestCompilationException;
+import com.radixdlt.rev2.NetworkDefinition;
+import org.junit.Test;
 
-fn do_compile(args: (NetworkDefinition, String)) -> Result<Vec<u8>, CompileManifestErrorJava> {
-    let (network, manifest_str) = args;
+public final class TransactionBuilderTest {
 
-    compile(&manifest_str, &network)
-        .map_err(|e| e.into())
-        .map(|manifest| scrypto_encode(&manifest))
-}
+  @Test
+  public void test_compile_manifest() {
+    // Arrange
+    // Just a bunch of random instructions, copied over from scrypto repo tests
+    final var manifest =
+        """
+			CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "withdraw_by_amount" Decimal("5.0") ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag");
+			TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("2.0") ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("xrd");
+			CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "buy_gumball" Bucket("xrd");
+			ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("3.0") ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag");
+			ASSERT_WORKTOP_CONTAINS ResourceAddress("resource_sim1qzhdk7tq68u8msj38r6v6yqa5myc64ejx3ud20zlh9gseqtux6");
+			TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("some_xrd");
+			CREATE_PROOF_FROM_BUCKET Bucket("some_xrd") Proof("proof1");
+			CLONE_PROOF Proof("proof1") Proof("proof2");
+			DROP_PROOF Proof("proof1");
+			DROP_PROOF Proof("proof2");""";
 
-#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
-pub struct CompileManifestErrorJava {
-    message: String,
-}
+    // Act
+    final var result =
+        TransactionBuilder.compileManifest(NetworkDefinition.LOCAL_SIMULATOR, manifest);
 
-impl From<CompileError> for CompileManifestErrorJava {
-    fn from(err: CompileError) -> Self {
-        CompileManifestErrorJava {
-            message: format!("{:?}", err),
-        }
-    }
-}
+    // Assert
+    assertTrue(result.length > 100); // Just to make sure that it's non-empty
+  }
 
-impl From<&str> for CompileManifestErrorJava {
-    fn from(message: &str) -> Self {
-        CompileManifestErrorJava {
-            message: message.to_string(),
-        }
-    }
+  @Test
+  public void test_compile_manifest_error() {
+    var exception =
+        assertThrows(
+            ManifestCompilationException.class,
+            () ->
+                TransactionBuilder.compileManifest(
+                    NetworkDefinition.INT_TEST_NET, "INVALID INSTRUCTION;"));
+    assertTrue(exception.getMessage().contains("UnknownIdentifier"));
+  }
 }

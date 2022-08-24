@@ -69,13 +69,13 @@ import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.lang.Option;
-import com.radixdlt.manifest.ManifestCompiler;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionStatus;
 import com.radixdlt.statecomputer.preview.PreviewFlags;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
@@ -91,7 +91,7 @@ public final class PreviewTest {
             new StateManagerConfig(NetworkDefinition.INT_TEST_NET, Option.none()))) {
       final var stateComputer = new RustStateComputer(stateManager.getRustState());
       final var manifest =
-          ManifestCompiler.compile(NetworkDefinition.INT_TEST_NET, "CLEAR_AUTH_ZONE;").unwrap();
+          TransactionBuilder.compileManifest(NetworkDefinition.INT_TEST_NET, "CLEAR_AUTH_ZONE;");
       final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
       final var previewRequest =
           new PreviewRequest(
