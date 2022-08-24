@@ -19,8 +19,8 @@ pub enum StatusNetworkConfigurationPostResponse {
     NetworkConfiguration
     (models::NetworkConfigurationResponse)
     ,
-    /// An error occurred
-    AnErrorOccurred
+    /// Server error
+    ServerError
     (models::ErrorResponse)
 }
 
@@ -31,8 +31,12 @@ pub enum TransactionPreviewPostResponse {
     TransactionPreviewResponse
     (models::TransactionPreviewResponse)
     ,
-    /// An error occurred
-    AnErrorOccurred
+    /// Client error
+    ClientError
+    (models::ErrorResponse)
+    ,
+    /// Server error
+    ServerError
     (models::ErrorResponse)
 }
 
@@ -43,8 +47,28 @@ pub enum TransactionSubmitPostResponse {
     TransactionSubmitResponse
     (models::TransactionSubmitResponse)
     ,
-    /// An error occurred
-    AnErrorOccurred
+    /// Client error
+    ClientError
+    (models::ErrorResponse)
+    ,
+    /// Server error
+    ServerError
+    (models::ErrorResponse)
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[must_use]
+pub enum TransactionsPostResponse {
+    /// Committed transactions response
+    CommittedTransactionsResponse
+    (models::CommittedTransactionsResponse)
+    ,
+    /// Client error
+    ClientError
+    (models::ErrorResponse)
+    ,
+    /// Server error
+    ServerError
     (models::ErrorResponse)
 }
 
@@ -72,6 +96,12 @@ pub trait Api<C: Send + Sync> {
         transaction_submit_request: models::TransactionSubmitRequest,
         context: &C) -> Result<TransactionSubmitPostResponse, ApiError>;
 
+    /// Get committed transactions
+    async fn transactions_post(
+        &self,
+        committed_transactions_request: models::CommittedTransactionsRequest,
+        context: &C) -> Result<TransactionsPostResponse, ApiError>;
+
 }
 
 /// API where `Context` isn't passed on every API call
@@ -98,6 +128,12 @@ pub trait ApiNoContext<C: Send + Sync> {
         &self,
         transaction_submit_request: models::TransactionSubmitRequest,
         ) -> Result<TransactionSubmitPostResponse, ApiError>;
+
+    /// Get committed transactions
+    async fn transactions_post(
+        &self,
+        committed_transactions_request: models::CommittedTransactionsRequest,
+        ) -> Result<TransactionsPostResponse, ApiError>;
 
 }
 
@@ -151,6 +187,16 @@ impl<T: Api<C> + Send + Sync, C: Clone + Send + Sync> ApiNoContext<C> for Contex
     {
         let context = self.context().clone();
         self.api().transaction_submit_post(transaction_submit_request, &context).await
+    }
+
+    /// Get committed transactions
+    async fn transactions_post(
+        &self,
+        committed_transactions_request: models::CommittedTransactionsRequest,
+        ) -> Result<TransactionsPostResponse, ApiError>
+    {
+        let context = self.context().clone();
+        self.api().transactions_post(committed_transactions_request, &context).await
     }
 
 }

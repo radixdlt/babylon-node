@@ -70,7 +70,7 @@ use std::collections::HashMap;
 /// TODO: Remove and use the real TransactionReceipt. This is currently a required struct
 /// TODO: as there is RC<RefCell<>> useage in some of the substates which does not play well
 /// TODO: with the babylon node multithreaded structures.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TemporaryTransactionReceipt {
     pub result: String,
     pub new_package_addresses: Vec<PackageAddress>,
@@ -115,5 +115,14 @@ impl TransactionStore {
 
     pub fn get_transaction(&self, tid: &TId) -> &(Vec<u8>, TemporaryTransactionReceipt) {
         self.in_memory_store.get(tid).expect("Transaction missing")
+    }
+
+    // TODO: remove me!
+    pub fn get_some_random_txs(&self) -> Vec<&(Vec<u8>, TemporaryTransactionReceipt)> {
+        self.in_memory_store
+            .values()
+            .next()
+            .map(|tx| vec![tx])
+            .unwrap_or_default()
     }
 }

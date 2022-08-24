@@ -66,4 +66,4 @@ mod in_memory_proof_store;
 mod in_memory_transaction_store;
 
 pub use in_memory_proof_store::ProofStore;
-pub use in_memory_transaction_store::TransactionStore;
+pub use in_memory_transaction_store::{TemporaryTransactionReceipt, TransactionStore};

@@ -65,16 +65,12 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.mempool.*;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.statecomputer.preview.PreviewError;
-import com.radixdlt.statecomputer.preview.PreviewRequest;
-import com.radixdlt.statecomputer.preview.PreviewResult;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
@@ -90,9 +86,6 @@ public class RustStateComputer {
     verifyFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::verify);
-    previewFunc =
-        NativeCalls.Func1.with(
-            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::preview);
     commitFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::commit);
@@ -133,18 +126,9 @@ public class RustStateComputer {
     return verifyFunc.call(transaction);
   }
 
-  public Result<PreviewResult, PreviewError> preview(PreviewRequest previewRequest) {
-    return previewFunc.call(previewRequest);
-  }
-
   private final NativeCalls.Func1<StateManager, RawTransaction, Boolean> verifyFunc;
 
   private static native byte[] verify(StateManager stateManager, byte[] payload);
-
-  private final NativeCalls.Func1<StateManager, PreviewRequest, Result<PreviewResult, PreviewError>>
-      previewFunc;
-
-  private static native byte[] preview(StateManager stateManager, byte[] payload);
 
   private final NativeCalls.Func1<StateManager, CommitRequest, Unit> commitFunc;
 

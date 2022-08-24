@@ -62,27 +62,23 @@
  * permissions under this License.
  */
 
-use crate::core_api::generated::models;
-use crate::core_api::generated::models::{
-    Bech32Hrps, NetworkConfigurationResponse, NetworkConfigurationResponseVersion,
-    NetworkIdentifier,
-};
 use crate::core_api::generated::server::MakeService;
+use crate::core_api::generated::{models, TransactionsPostResponse};
 use crate::core_api::generated::{
     Api, StatusNetworkConfigurationPostResponse, TransactionPreviewPostResponse,
-    TransactionSubmitPostResponse, API_VERSION,
+    TransactionSubmitPostResponse,
 };
 
 use async_trait::async_trait;
 use state_manager::StateManager;
-
-use scrypto::address::get_network_hrp_set;
 
 use std::future::Future;
 use std::marker::PhantomData;
 
 use std::sync::{Arc, Mutex};
 
+use crate::core_api::generated::models::CommittedTransactionsRequest;
+use crate::core_api::{network_configuration, preview, transactions};
 use scrypto::prelude::*;
 use swagger::ApiError;
 use swagger::EmptyContext;
@@ -133,50 +129,31 @@ where
         &self,
         _context: &C,
     ) -> Result<StatusNetworkConfigurationPostResponse, ApiError> {
-        let network = &self
-            .state_manager
-            .lock()
-            .expect("Can't acquire state manager lock")
-            .network()
-            .clone();
-
-        let hrp_set = get_network_hrp_set(network);
-
-        Ok(
-            StatusNetworkConfigurationPostResponse::NetworkConfiguration(
-                NetworkConfigurationResponse {
-                    version: NetworkConfigurationResponseVersion {
-                        core_version: env!("CARGO_PKG_VERSION").to_string(),
-                        api_version: API_VERSION.to_string(),
-                    },
-                    network_identifier: NetworkIdentifier {
-                        network: format!("{:?}", network),
-                    },
-                    bech32_human_readable_parts: Bech32Hrps {
-                        account_hrp: hrp_set.account_component.to_string(),
-                        validator_hrp: "TODO".to_string(),
-                        node_hrp: "TODO".to_string(),
-                        resource_hrp_suffix: hrp_set.resource.to_string(),
-                    },
-                },
-            ),
-        )
+        network_configuration::handle_network_configuration(self.state_manager.clone())
     }
 
     async fn transaction_preview_post(
         &self,
-        _transaction_preview_request: models::TransactionPreviewRequest,
+        request: models::TransactionPreviewRequest,
         _context: &C,
     ) -> Result<TransactionPreviewPostResponse, ApiError> {
-        Err(ApiError("To be implemented".into()))
+        preview::handle_preview(self.state_manager.clone(), request)
     }
 
     async fn transaction_submit_post(
         &self,
-        _transaction_submit_request: models::TransactionSubmitRequest,
+        request: models::TransactionSubmitRequest,
         _context: &C,
     ) -> Result<TransactionSubmitPostResponse, ApiError> {
-        Err(ApiError("To be implemented".into()))
+        transactions::handle_submit_transaction(self.state_manager.clone(), request)
+    }
+
+    async fn transactions_post(
+        &self,
+        request: CommittedTransactionsRequest,
+        _context: &C,
+    ) -> Result<TransactionsPostResponse, ApiError> {
+        transactions::handle_transactions(self.state_manager.clone(), request)
     }
 }
 

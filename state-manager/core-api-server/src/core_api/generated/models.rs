@@ -151,6 +151,381 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct CommittedTransaction {
+    #[serde(rename = "notarized_transaction")]
+    pub notarized_transaction: models::NotarizedTransaction,
+
+    #[serde(rename = "receipt")]
+    pub receipt: models::TransactionReceipt,
+
+}
+
+impl CommittedTransaction {
+    pub fn new(notarized_transaction: models::NotarizedTransaction, receipt: models::TransactionReceipt, ) -> CommittedTransaction {
+        CommittedTransaction {
+            notarized_transaction: notarized_transaction,
+            receipt: receipt,
+        }
+    }
+}
+
+/// Converts the CommittedTransaction value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for CommittedTransaction {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+        // Skipping notarized_transaction in query parameter serialization
+
+        // Skipping receipt in query parameter serialization
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a CommittedTransaction value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for CommittedTransaction {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub notarized_transaction: Vec<models::NotarizedTransaction>,
+            pub receipt: Vec<models::TransactionReceipt>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing CommittedTransaction".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "notarized_transaction" => intermediate_rep.notarized_transaction.push(<models::NotarizedTransaction as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "receipt" => intermediate_rep.receipt.push(<models::TransactionReceipt as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing CommittedTransaction".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(CommittedTransaction {
+            notarized_transaction: intermediate_rep.notarized_transaction.into_iter().next().ok_or("notarized_transaction missing in CommittedTransaction".to_string())?,
+            receipt: intermediate_rep.receipt.into_iter().next().ok_or("receipt missing in CommittedTransaction".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<CommittedTransaction> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<CommittedTransaction>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<CommittedTransaction>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for CommittedTransaction - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<CommittedTransaction> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <CommittedTransaction as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into CommittedTransaction - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+/// A request to retrieve a sublist of committed transactions from the ledger.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct CommittedTransactionsRequest {
+    #[serde(rename = "network_identifier")]
+    pub network_identifier: models::NetworkIdentifier,
+
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
+
+    /// The maximum number of transactions that will be returned.
+    #[serde(rename = "limit")]
+    pub limit: isize,
+
+}
+
+impl CommittedTransactionsRequest {
+    pub fn new(network_identifier: models::NetworkIdentifier, state_version: i64, limit: isize, ) -> CommittedTransactionsRequest {
+        CommittedTransactionsRequest {
+            network_identifier: network_identifier,
+            state_version: state_version,
+            limit: limit,
+        }
+    }
+}
+
+/// Converts the CommittedTransactionsRequest value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for CommittedTransactionsRequest {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+        // Skipping network_identifier in query parameter serialization
+
+
+        params.push("state_version".to_string());
+        params.push(self.state_version.to_string());
+
+
+        params.push("limit".to_string());
+        params.push(self.limit.to_string());
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a CommittedTransactionsRequest value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for CommittedTransactionsRequest {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub network_identifier: Vec<models::NetworkIdentifier>,
+            pub state_version: Vec<i64>,
+            pub limit: Vec<isize>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing CommittedTransactionsRequest".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "network_identifier" => intermediate_rep.network_identifier.push(<models::NetworkIdentifier as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "state_version" => intermediate_rep.state_version.push(<i64 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "limit" => intermediate_rep.limit.push(<isize as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing CommittedTransactionsRequest".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(CommittedTransactionsRequest {
+            network_identifier: intermediate_rep.network_identifier.into_iter().next().ok_or("network_identifier missing in CommittedTransactionsRequest".to_string())?,
+            state_version: intermediate_rep.state_version.into_iter().next().ok_or("state_version missing in CommittedTransactionsRequest".to_string())?,
+            limit: intermediate_rep.limit.into_iter().next().ok_or("limit missing in CommittedTransactionsRequest".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<CommittedTransactionsRequest> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<CommittedTransactionsRequest>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<CommittedTransactionsRequest>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for CommittedTransactionsRequest - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<CommittedTransactionsRequest> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <CommittedTransactionsRequest as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into CommittedTransactionsRequest - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct CommittedTransactionsResponse {
+    #[serde(rename = "state_version")]
+    pub state_version: i64,
+
+    /// A committed transactions list starting from the `state_version`.
+    #[serde(rename = "transactions")]
+    pub transactions: Vec<models::CommittedTransaction>,
+
+}
+
+impl CommittedTransactionsResponse {
+    pub fn new(state_version: i64, transactions: Vec<models::CommittedTransaction>, ) -> CommittedTransactionsResponse {
+        CommittedTransactionsResponse {
+            state_version: state_version,
+            transactions: transactions,
+        }
+    }
+}
+
+/// Converts the CommittedTransactionsResponse value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for CommittedTransactionsResponse {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+
+        params.push("state_version".to_string());
+        params.push(self.state_version.to_string());
+
+        // Skipping transactions in query parameter serialization
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a CommittedTransactionsResponse value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for CommittedTransactionsResponse {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub state_version: Vec<i64>,
+            pub transactions: Vec<Vec<models::CommittedTransaction>>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing CommittedTransactionsResponse".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "state_version" => intermediate_rep.state_version.push(<i64 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "transactions" => return std::result::Result::Err("Parsing a container in this style is not supported in CommittedTransactionsResponse".to_string()),
+                    _ => return std::result::Result::Err("Unexpected key while parsing CommittedTransactionsResponse".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(CommittedTransactionsResponse {
+            state_version: intermediate_rep.state_version.into_iter().next().ok_or("state_version missing in CommittedTransactionsResponse".to_string())?,
+            transactions: intermediate_rep.transactions.into_iter().next().ok_or("transactions missing in CommittedTransactionsResponse".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<CommittedTransactionsResponse> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<CommittedTransactionsResponse>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<CommittedTransactionsResponse>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for CommittedTransactionsResponse - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<CommittedTransactionsResponse> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <CommittedTransactionsResponse as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into CommittedTransactionsResponse - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct CoreErrorDetails {
     #[serde(rename = "type")]
     pub type_: String,
@@ -420,8 +795,8 @@ pub struct FeeSummary {
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: String,
 
-    #[serde(rename = "cost_units_consumed")]
-    pub cost_units_consumed: String,
+    #[serde(rename = "cost_unit_consumed")]
+    pub cost_unit_consumed: String,
 
     #[serde(rename = "cost_unit_price")]
     pub cost_unit_price: String,
@@ -438,11 +813,11 @@ pub struct FeeSummary {
 }
 
 impl FeeSummary {
-    pub fn new(loan_fully_repaid: bool, cost_unit_limit: String, cost_units_consumed: String, cost_unit_price: String, tip_percentage: String, xrd_burned: String, xrd_tipped: String, ) -> FeeSummary {
+    pub fn new(loan_fully_repaid: bool, cost_unit_limit: String, cost_unit_consumed: String, cost_unit_price: String, tip_percentage: String, xrd_burned: String, xrd_tipped: String, ) -> FeeSummary {
         FeeSummary {
             loan_fully_repaid: loan_fully_repaid,
             cost_unit_limit: cost_unit_limit,
-            cost_units_consumed: cost_units_consumed,
+            cost_unit_consumed: cost_unit_consumed,
             cost_unit_price: cost_unit_price,
             tip_percentage: tip_percentage,
             xrd_burned: xrd_burned,
@@ -466,8 +841,8 @@ impl std::string::ToString for FeeSummary {
         params.push(self.cost_unit_limit.to_string());
 
 
-        params.push("cost_units_consumed".to_string());
-        params.push(self.cost_units_consumed.to_string());
+        params.push("cost_unit_consumed".to_string());
+        params.push(self.cost_unit_consumed.to_string());
 
 
         params.push("cost_unit_price".to_string());
@@ -501,7 +876,7 @@ impl std::str::FromStr for FeeSummary {
         struct IntermediateRep {
             pub loan_fully_repaid: Vec<bool>,
             pub cost_unit_limit: Vec<String>,
-            pub cost_units_consumed: Vec<String>,
+            pub cost_unit_consumed: Vec<String>,
             pub cost_unit_price: Vec<String>,
             pub tip_percentage: Vec<String>,
             pub xrd_burned: Vec<String>,
@@ -524,7 +899,7 @@ impl std::str::FromStr for FeeSummary {
                 match key {
                     "loan_fully_repaid" => intermediate_rep.loan_fully_repaid.push(<bool as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "cost_unit_limit" => intermediate_rep.cost_unit_limit.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "cost_units_consumed" => intermediate_rep.cost_units_consumed.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "cost_unit_consumed" => intermediate_rep.cost_unit_consumed.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "cost_unit_price" => intermediate_rep.cost_unit_price.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "tip_percentage" => intermediate_rep.tip_percentage.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "xrd_burned" => intermediate_rep.xrd_burned.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
@@ -541,7 +916,7 @@ impl std::str::FromStr for FeeSummary {
         std::result::Result::Ok(FeeSummary {
             loan_fully_repaid: intermediate_rep.loan_fully_repaid.into_iter().next().ok_or("loan_fully_repaid missing in FeeSummary".to_string())?,
             cost_unit_limit: intermediate_rep.cost_unit_limit.into_iter().next().ok_or("cost_unit_limit missing in FeeSummary".to_string())?,
-            cost_units_consumed: intermediate_rep.cost_units_consumed.into_iter().next().ok_or("cost_units_consumed missing in FeeSummary".to_string())?,
+            cost_unit_consumed: intermediate_rep.cost_unit_consumed.into_iter().next().ok_or("cost_unit_consumed missing in FeeSummary".to_string())?,
             cost_unit_price: intermediate_rep.cost_unit_price.into_iter().next().ok_or("cost_unit_price missing in FeeSummary".to_string())?,
             tip_percentage: intermediate_rep.tip_percentage.into_iter().next().ok_or("tip_percentage missing in FeeSummary".to_string())?,
             xrd_burned: intermediate_rep.xrd_burned.into_iter().next().ok_or("xrd_burned missing in FeeSummary".to_string())?,
@@ -578,6 +953,129 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
                         std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
                         std::result::Result::Err(err) => std::result::Result::Err(
                             format!("Unable to convert header value '{}' into FeeSummary - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct IntentSignature {
+    #[serde(rename = "public_key")]
+    pub public_key: String,
+
+    #[serde(rename = "signature")]
+    pub signature: String,
+
+}
+
+impl IntentSignature {
+    pub fn new(public_key: String, signature: String, ) -> IntentSignature {
+        IntentSignature {
+            public_key: public_key,
+            signature: signature,
+        }
+    }
+}
+
+/// Converts the IntentSignature value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for IntentSignature {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+
+        params.push("public_key".to_string());
+        params.push(self.public_key.to_string());
+
+
+        params.push("signature".to_string());
+        params.push(self.signature.to_string());
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a IntentSignature value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for IntentSignature {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub public_key: Vec<String>,
+            pub signature: Vec<String>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing IntentSignature".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "public_key" => intermediate_rep.public_key.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "signature" => intermediate_rep.signature.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing IntentSignature".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(IntentSignature {
+            public_key: intermediate_rep.public_key.into_iter().next().ok_or("public_key missing in IntentSignature".to_string())?,
+            signature: intermediate_rep.signature.into_iter().next().ok_or("signature missing in IntentSignature".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<IntentSignature> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<IntentSignature>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<IntentSignature>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for IntentSignature - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<IntentSignature> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <IntentSignature as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into IntentSignature - {}",
                                 value, err))
                     }
              },
@@ -1806,6 +2304,129 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct Network {
+    #[serde(rename = "id")]
+    pub id: String,
+
+    #[serde(rename = "name")]
+    pub name: String,
+
+}
+
+impl Network {
+    pub fn new(id: String, name: String, ) -> Network {
+        Network {
+            id: id,
+            name: name,
+        }
+    }
+}
+
+/// Converts the Network value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for Network {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+
+        params.push("id".to_string());
+        params.push(self.id.to_string());
+
+
+        params.push("name".to_string());
+        params.push(self.name.to_string());
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a Network value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for Network {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub id: Vec<String>,
+            pub name: Vec<String>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing Network".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "id" => intermediate_rep.id.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "name" => intermediate_rep.name.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing Network".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(Network {
+            id: intermediate_rep.id.into_iter().next().ok_or("id missing in Network".to_string())?,
+            name: intermediate_rep.name.into_iter().next().ok_or("name missing in Network".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<Network> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<Network>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<Network>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for Network - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<Network> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <Network as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into Network - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct NetworkConfigurationResponse {
     #[serde(rename = "version")]
     pub version: models::NetworkConfigurationResponseVersion,
@@ -2401,6 +3022,138 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct NotarizedTransaction {
+    #[serde(rename = "hash")]
+    pub hash: String,
+
+    #[serde(rename = "signed_intent")]
+    pub signed_intent: models::SignedTransactionIntent,
+
+    #[serde(rename = "notary_signature")]
+    pub notary_signature: String,
+
+}
+
+impl NotarizedTransaction {
+    pub fn new(hash: String, signed_intent: models::SignedTransactionIntent, notary_signature: String, ) -> NotarizedTransaction {
+        NotarizedTransaction {
+            hash: hash,
+            signed_intent: signed_intent,
+            notary_signature: notary_signature,
+        }
+    }
+}
+
+/// Converts the NotarizedTransaction value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for NotarizedTransaction {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+
+        params.push("hash".to_string());
+        params.push(self.hash.to_string());
+
+        // Skipping signed_intent in query parameter serialization
+
+
+        params.push("notary_signature".to_string());
+        params.push(self.notary_signature.to_string());
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a NotarizedTransaction value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for NotarizedTransaction {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub hash: Vec<String>,
+            pub signed_intent: Vec<models::SignedTransactionIntent>,
+            pub notary_signature: Vec<String>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing NotarizedTransaction".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "hash" => intermediate_rep.hash.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "signed_intent" => intermediate_rep.signed_intent.push(<models::SignedTransactionIntent as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "notary_signature" => intermediate_rep.notary_signature.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing NotarizedTransaction".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(NotarizedTransaction {
+            hash: intermediate_rep.hash.into_iter().next().ok_or("hash missing in NotarizedTransaction".to_string())?,
+            signed_intent: intermediate_rep.signed_intent.into_iter().next().ok_or("signed_intent missing in NotarizedTransaction".to_string())?,
+            notary_signature: intermediate_rep.notary_signature.into_iter().next().ok_or("notary_signature missing in NotarizedTransaction".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<NotarizedTransaction> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<NotarizedTransaction>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<NotarizedTransaction>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for NotarizedTransaction - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<NotarizedTransaction> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <NotarizedTransaction as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into NotarizedTransaction - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct PreviewError {
     #[serde(rename = "type")]
     pub type_: String,
@@ -2511,6 +3264,466 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
                         std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
                         std::result::Result::Err(err) => std::result::Result::Err(
                             format!("Unable to convert header value '{}' into PreviewError - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct SignedTransactionIntent {
+    #[serde(rename = "hash")]
+    pub hash: String,
+
+    #[serde(rename = "intent")]
+    pub intent: models::TransactionIntent,
+
+    #[serde(rename = "intent_signatures")]
+    pub intent_signatures: Vec<models::IntentSignature>,
+
+}
+
+impl SignedTransactionIntent {
+    pub fn new(hash: String, intent: models::TransactionIntent, intent_signatures: Vec<models::IntentSignature>, ) -> SignedTransactionIntent {
+        SignedTransactionIntent {
+            hash: hash,
+            intent: intent,
+            intent_signatures: intent_signatures,
+        }
+    }
+}
+
+/// Converts the SignedTransactionIntent value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for SignedTransactionIntent {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+
+        params.push("hash".to_string());
+        params.push(self.hash.to_string());
+
+        // Skipping intent in query parameter serialization
+
+        // Skipping intent_signatures in query parameter serialization
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a SignedTransactionIntent value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for SignedTransactionIntent {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub hash: Vec<String>,
+            pub intent: Vec<models::TransactionIntent>,
+            pub intent_signatures: Vec<Vec<models::IntentSignature>>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing SignedTransactionIntent".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "hash" => intermediate_rep.hash.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "intent" => intermediate_rep.intent.push(<models::TransactionIntent as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "intent_signatures" => return std::result::Result::Err("Parsing a container in this style is not supported in SignedTransactionIntent".to_string()),
+                    _ => return std::result::Result::Err("Unexpected key while parsing SignedTransactionIntent".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(SignedTransactionIntent {
+            hash: intermediate_rep.hash.into_iter().next().ok_or("hash missing in SignedTransactionIntent".to_string())?,
+            intent: intermediate_rep.intent.into_iter().next().ok_or("intent missing in SignedTransactionIntent".to_string())?,
+            intent_signatures: intermediate_rep.intent_signatures.into_iter().next().ok_or("intent_signatures missing in SignedTransactionIntent".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<SignedTransactionIntent> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<SignedTransactionIntent>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<SignedTransactionIntent>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for SignedTransactionIntent - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<SignedTransactionIntent> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <SignedTransactionIntent as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into SignedTransactionIntent - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct TransactionHeader {
+    #[serde(rename = "version")]
+    pub version: isize,
+
+    #[serde(rename = "network")]
+    pub network: models::Network,
+
+    #[serde(rename = "start_epoch_inclusive")]
+    pub start_epoch_inclusive: String,
+
+    #[serde(rename = "end_epoch_exclusive")]
+    pub end_epoch_exclusive: String,
+
+    #[serde(rename = "nonce")]
+    pub nonce: String,
+
+    #[serde(rename = "notary_public_key")]
+    pub notary_public_key: String,
+
+    #[serde(rename = "notary_as_signatory")]
+    pub notary_as_signatory: bool,
+
+    #[serde(rename = "cost_unit_limit")]
+    pub cost_unit_limit: String,
+
+    #[serde(rename = "tip_percentage")]
+    pub tip_percentage: String,
+
+}
+
+impl TransactionHeader {
+    pub fn new(version: isize, network: models::Network, start_epoch_inclusive: String, end_epoch_exclusive: String, nonce: String, notary_public_key: String, notary_as_signatory: bool, cost_unit_limit: String, tip_percentage: String, ) -> TransactionHeader {
+        TransactionHeader {
+            version: version,
+            network: network,
+            start_epoch_inclusive: start_epoch_inclusive,
+            end_epoch_exclusive: end_epoch_exclusive,
+            nonce: nonce,
+            notary_public_key: notary_public_key,
+            notary_as_signatory: notary_as_signatory,
+            cost_unit_limit: cost_unit_limit,
+            tip_percentage: tip_percentage,
+        }
+    }
+}
+
+/// Converts the TransactionHeader value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for TransactionHeader {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+
+        params.push("version".to_string());
+        params.push(self.version.to_string());
+
+        // Skipping network in query parameter serialization
+
+
+        params.push("start_epoch_inclusive".to_string());
+        params.push(self.start_epoch_inclusive.to_string());
+
+
+        params.push("end_epoch_exclusive".to_string());
+        params.push(self.end_epoch_exclusive.to_string());
+
+
+        params.push("nonce".to_string());
+        params.push(self.nonce.to_string());
+
+
+        params.push("notary_public_key".to_string());
+        params.push(self.notary_public_key.to_string());
+
+
+        params.push("notary_as_signatory".to_string());
+        params.push(self.notary_as_signatory.to_string());
+
+
+        params.push("cost_unit_limit".to_string());
+        params.push(self.cost_unit_limit.to_string());
+
+
+        params.push("tip_percentage".to_string());
+        params.push(self.tip_percentage.to_string());
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a TransactionHeader value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for TransactionHeader {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub version: Vec<isize>,
+            pub network: Vec<models::Network>,
+            pub start_epoch_inclusive: Vec<String>,
+            pub end_epoch_exclusive: Vec<String>,
+            pub nonce: Vec<String>,
+            pub notary_public_key: Vec<String>,
+            pub notary_as_signatory: Vec<bool>,
+            pub cost_unit_limit: Vec<String>,
+            pub tip_percentage: Vec<String>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing TransactionHeader".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "version" => intermediate_rep.version.push(<isize as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "network" => intermediate_rep.network.push(<models::Network as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "start_epoch_inclusive" => intermediate_rep.start_epoch_inclusive.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "end_epoch_exclusive" => intermediate_rep.end_epoch_exclusive.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "nonce" => intermediate_rep.nonce.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "notary_public_key" => intermediate_rep.notary_public_key.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "notary_as_signatory" => intermediate_rep.notary_as_signatory.push(<bool as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "cost_unit_limit" => intermediate_rep.cost_unit_limit.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "tip_percentage" => intermediate_rep.tip_percentage.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing TransactionHeader".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(TransactionHeader {
+            version: intermediate_rep.version.into_iter().next().ok_or("version missing in TransactionHeader".to_string())?,
+            network: intermediate_rep.network.into_iter().next().ok_or("network missing in TransactionHeader".to_string())?,
+            start_epoch_inclusive: intermediate_rep.start_epoch_inclusive.into_iter().next().ok_or("start_epoch_inclusive missing in TransactionHeader".to_string())?,
+            end_epoch_exclusive: intermediate_rep.end_epoch_exclusive.into_iter().next().ok_or("end_epoch_exclusive missing in TransactionHeader".to_string())?,
+            nonce: intermediate_rep.nonce.into_iter().next().ok_or("nonce missing in TransactionHeader".to_string())?,
+            notary_public_key: intermediate_rep.notary_public_key.into_iter().next().ok_or("notary_public_key missing in TransactionHeader".to_string())?,
+            notary_as_signatory: intermediate_rep.notary_as_signatory.into_iter().next().ok_or("notary_as_signatory missing in TransactionHeader".to_string())?,
+            cost_unit_limit: intermediate_rep.cost_unit_limit.into_iter().next().ok_or("cost_unit_limit missing in TransactionHeader".to_string())?,
+            tip_percentage: intermediate_rep.tip_percentage.into_iter().next().ok_or("tip_percentage missing in TransactionHeader".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<TransactionHeader> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<TransactionHeader>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<TransactionHeader>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for TransactionHeader - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<TransactionHeader> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <TransactionHeader as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into TransactionHeader - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct TransactionIntent {
+    #[serde(rename = "hash")]
+    pub hash: String,
+
+    #[serde(rename = "header")]
+    pub header: models::TransactionHeader,
+
+    #[serde(rename = "manifest")]
+    pub manifest: String,
+
+}
+
+impl TransactionIntent {
+    pub fn new(hash: String, header: models::TransactionHeader, manifest: String, ) -> TransactionIntent {
+        TransactionIntent {
+            hash: hash,
+            header: header,
+            manifest: manifest,
+        }
+    }
+}
+
+/// Converts the TransactionIntent value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for TransactionIntent {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+
+        params.push("hash".to_string());
+        params.push(self.hash.to_string());
+
+        // Skipping header in query parameter serialization
+
+
+        params.push("manifest".to_string());
+        params.push(self.manifest.to_string());
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a TransactionIntent value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for TransactionIntent {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub hash: Vec<String>,
+            pub header: Vec<models::TransactionHeader>,
+            pub manifest: Vec<String>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing TransactionIntent".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "hash" => intermediate_rep.hash.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "header" => intermediate_rep.header.push(<models::TransactionHeader as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "manifest" => intermediate_rep.manifest.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing TransactionIntent".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(TransactionIntent {
+            hash: intermediate_rep.hash.into_iter().next().ok_or("hash missing in TransactionIntent".to_string())?,
+            header: intermediate_rep.header.into_iter().next().ok_or("header missing in TransactionIntent".to_string())?,
+            manifest: intermediate_rep.manifest.into_iter().next().ok_or("manifest missing in TransactionIntent".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<TransactionIntent> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<TransactionIntent>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<TransactionIntent>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for TransactionIntent - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<TransactionIntent> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <TransactionIntent as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into TransactionIntent - {}",
                                 value, err))
                     }
              },
@@ -2837,6 +4050,14 @@ pub struct TransactionPreviewResponse {
     #[serde(rename = "new_resource_addresses")]
     pub new_resource_addresses: Vec<String>,
 
+    #[serde(rename = "output")]
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub output: Option<Vec<String>>,
+
+    #[serde(rename = "error_message")]
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub error_message: Option<String>,
+
 }
 
 impl TransactionPreviewResponse {
@@ -2848,6 +4069,8 @@ impl TransactionPreviewResponse {
             new_package_addresses: new_package_addresses,
             new_component_addresses: new_component_addresses,
             new_resource_addresses: new_resource_addresses,
+            output: None,
+            error_message: None,
         }
     }
 }
@@ -2876,6 +4099,18 @@ impl std::string::ToString for TransactionPreviewResponse {
         params.push("new_resource_addresses".to_string());
         params.push(self.new_resource_addresses.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string());
 
+
+        if let Some(ref output) = self.output {
+            params.push("output".to_string());
+            params.push(output.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string());
+        }
+
+
+        if let Some(ref error_message) = self.error_message {
+            params.push("error_message".to_string());
+            params.push(error_message.to_string());
+        }
+
         params.join(",").to_string()
     }
 }
@@ -2896,6 +4131,8 @@ impl std::str::FromStr for TransactionPreviewResponse {
             pub new_package_addresses: Vec<Vec<String>>,
             pub new_component_addresses: Vec<Vec<String>>,
             pub new_resource_addresses: Vec<Vec<String>>,
+            pub output: Vec<Vec<String>>,
+            pub error_message: Vec<String>,
         }
 
         let mut intermediate_rep = IntermediateRep::default();
@@ -2918,6 +4155,8 @@ impl std::str::FromStr for TransactionPreviewResponse {
                     "new_package_addresses" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionPreviewResponse".to_string()),
                     "new_component_addresses" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionPreviewResponse".to_string()),
                     "new_resource_addresses" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionPreviewResponse".to_string()),
+                    "output" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionPreviewResponse".to_string()),
+                    "error_message" => intermediate_rep.error_message.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     _ => return std::result::Result::Err("Unexpected key while parsing TransactionPreviewResponse".to_string())
                 }
             }
@@ -2934,6 +4173,8 @@ impl std::str::FromStr for TransactionPreviewResponse {
             new_package_addresses: intermediate_rep.new_package_addresses.into_iter().next().ok_or("new_package_addresses missing in TransactionPreviewResponse".to_string())?,
             new_component_addresses: intermediate_rep.new_component_addresses.into_iter().next().ok_or("new_component_addresses missing in TransactionPreviewResponse".to_string())?,
             new_resource_addresses: intermediate_rep.new_resource_addresses.into_iter().next().ok_or("new_resource_addresses missing in TransactionPreviewResponse".to_string())?,
+            output: intermediate_rep.output.into_iter().next(),
+            error_message: intermediate_rep.error_message.into_iter().next(),
         })
     }
 }
@@ -3102,585 +4343,190 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct TransactionStatus {
-    #[serde(rename = "type")]
-    pub type_: String,
+pub struct TransactionReceipt {
+    #[serde(rename = "status")]
+    pub status: models::TransactionStatus,
+
+    #[serde(rename = "fee_summary")]
+    pub fee_summary: models::FeeSummary,
+
+    #[serde(rename = "output")]
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub output: Option<Vec<String>>,
+
+    #[serde(rename = "error_message")]
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub error_message: Option<String>,
 
 }
 
-impl TransactionStatus {
-    pub fn new(type_: String, ) -> TransactionStatus {
-        TransactionStatus {
-            type_: type_,
+impl TransactionReceipt {
+    pub fn new(status: models::TransactionStatus, fee_summary: models::FeeSummary, ) -> TransactionReceipt {
+        TransactionReceipt {
+            status: status,
+            fee_summary: fee_summary,
+            output: None,
+            error_message: None,
         }
     }
 }
 
-/// Converts the TransactionStatus value to the Query Parameters representation (style=form, explode=false)
+/// Converts the TransactionReceipt value to the Query Parameters representation (style=form, explode=false)
 /// specified in https://swagger.io/docs/specification/serialization/
 /// Should be implemented in a serde serializer
-impl std::string::ToString for TransactionStatus {
+impl std::string::ToString for TransactionReceipt {
     fn to_string(&self) -> String {
         let mut params: Vec<String> = vec![];
+        // Skipping status in query parameter serialization
 
-        params.push("type".to_string());
-        params.push(self.type_.to_string());
+        // Skipping fee_summary in query parameter serialization
+
+
+        if let Some(ref output) = self.output {
+            params.push("output".to_string());
+            params.push(output.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string());
+        }
+
+
+        if let Some(ref error_message) = self.error_message {
+            params.push("error_message".to_string());
+            params.push(error_message.to_string());
+        }
 
         params.join(",").to_string()
     }
 }
 
-/// Converts Query Parameters representation (style=form, explode=false) to a TransactionStatus value
+/// Converts Query Parameters representation (style=form, explode=false) to a TransactionReceipt value
 /// as specified in https://swagger.io/docs/specification/serialization/
 /// Should be implemented in a serde deserializer
+impl std::str::FromStr for TransactionReceipt {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub status: Vec<models::TransactionStatus>,
+            pub fee_summary: Vec<models::FeeSummary>,
+            pub output: Vec<Vec<String>>,
+            pub error_message: Vec<String>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing TransactionReceipt".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "status" => intermediate_rep.status.push(<models::TransactionStatus as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "fee_summary" => intermediate_rep.fee_summary.push(<models::FeeSummary as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "output" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionReceipt".to_string()),
+                    "error_message" => intermediate_rep.error_message.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing TransactionReceipt".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(TransactionReceipt {
+            status: intermediate_rep.status.into_iter().next().ok_or("status missing in TransactionReceipt".to_string())?,
+            fee_summary: intermediate_rep.fee_summary.into_iter().next().ok_or("fee_summary missing in TransactionReceipt".to_string())?,
+            output: intermediate_rep.output.into_iter().next(),
+            error_message: intermediate_rep.error_message.into_iter().next(),
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<TransactionReceipt> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<TransactionReceipt>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<TransactionReceipt>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for TransactionReceipt - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<TransactionReceipt> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <TransactionReceipt as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into TransactionReceipt - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+/// The status of the transaction
+/// Enumeration of values.
+/// Since this enum's variants do not hold data, we can easily define them them as `#[repr(C)]`
+/// which helps with FFI.
+#[allow(non_camel_case_types)]
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk_enum_derive::LabelledGenericEnum))]
+pub enum TransactionStatus {
+    #[serde(rename = "succeeded")]
+    SUCCEEDED,
+    #[serde(rename = "failed")]
+    FAILED,
+    #[serde(rename = "rejected")]
+    REJECTED,
+}
+
+impl std::fmt::Display for TransactionStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            TransactionStatus::SUCCEEDED => write!(f, "succeeded"),
+            TransactionStatus::FAILED => write!(f, "failed"),
+            TransactionStatus::REJECTED => write!(f, "rejected"),
+        }
+    }
+}
+
 impl std::str::FromStr for TransactionStatus {
     type Err = String;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub type_: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing TransactionStatus".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "type" => intermediate_rep.type_.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing TransactionStatus".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(TransactionStatus {
-            type_: intermediate_rep.type_.into_iter().next().ok_or("type missing in TransactionStatus".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<TransactionStatus> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<TransactionStatus>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<TransactionStatus>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for TransactionStatus - value: {} is invalid {}",
-                     hdr_value, e))
+        match s {
+            "succeeded" => std::result::Result::Ok(TransactionStatus::SUCCEEDED),
+            "failed" => std::result::Result::Ok(TransactionStatus::FAILED),
+            "rejected" => std::result::Result::Ok(TransactionStatus::REJECTED),
+            _ => std::result::Result::Err(format!("Value not valid: {}", s)),
         }
     }
 }
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<TransactionStatus> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <TransactionStatus as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into TransactionStatus - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct TransactionStatusFailed {
-    #[serde(rename = "type")]
-    pub type_: String,
-
-    #[serde(rename = "message")]
-    pub message: String,
-
-}
-
-impl TransactionStatusFailed {
-    pub fn new(type_: String, message: String, ) -> TransactionStatusFailed {
-        TransactionStatusFailed {
-            type_: type_,
-            message: message,
-        }
-    }
-}
-
-/// Converts the TransactionStatusFailed value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for TransactionStatusFailed {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("type".to_string());
-        params.push(self.type_.to_string());
-
-
-        params.push("message".to_string());
-        params.push(self.message.to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a TransactionStatusFailed value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for TransactionStatusFailed {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub type_: Vec<String>,
-            pub message: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing TransactionStatusFailed".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "type" => intermediate_rep.type_.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "message" => intermediate_rep.message.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing TransactionStatusFailed".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(TransactionStatusFailed {
-            type_: intermediate_rep.type_.into_iter().next().ok_or("type missing in TransactionStatusFailed".to_string())?,
-            message: intermediate_rep.message.into_iter().next().ok_or("message missing in TransactionStatusFailed".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<TransactionStatusFailed> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<TransactionStatusFailed>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<TransactionStatusFailed>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for TransactionStatusFailed - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<TransactionStatusFailed> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <TransactionStatusFailed as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into TransactionStatusFailed - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct TransactionStatusRejected {
-    #[serde(rename = "type")]
-    pub type_: String,
-
-}
-
-impl TransactionStatusRejected {
-    pub fn new(type_: String, ) -> TransactionStatusRejected {
-        TransactionStatusRejected {
-            type_: type_,
-        }
-    }
-}
-
-/// Converts the TransactionStatusRejected value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for TransactionStatusRejected {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("type".to_string());
-        params.push(self.type_.to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a TransactionStatusRejected value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for TransactionStatusRejected {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub type_: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing TransactionStatusRejected".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "type" => intermediate_rep.type_.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing TransactionStatusRejected".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(TransactionStatusRejected {
-            type_: intermediate_rep.type_.into_iter().next().ok_or("type missing in TransactionStatusRejected".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<TransactionStatusRejected> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<TransactionStatusRejected>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<TransactionStatusRejected>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for TransactionStatusRejected - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<TransactionStatusRejected> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <TransactionStatusRejected as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into TransactionStatusRejected - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct TransactionStatusSucceeded {
-    #[serde(rename = "type")]
-    pub type_: String,
-
-    #[serde(rename = "output")]
-    pub output: Vec<String>,
-
-}
-
-impl TransactionStatusSucceeded {
-    pub fn new(type_: String, output: Vec<String>, ) -> TransactionStatusSucceeded {
-        TransactionStatusSucceeded {
-            type_: type_,
-            output: output,
-        }
-    }
-}
-
-/// Converts the TransactionStatusSucceeded value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for TransactionStatusSucceeded {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("type".to_string());
-        params.push(self.type_.to_string());
-
-
-        params.push("output".to_string());
-        params.push(self.output.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a TransactionStatusSucceeded value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for TransactionStatusSucceeded {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub type_: Vec<String>,
-            pub output: Vec<Vec<String>>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing TransactionStatusSucceeded".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "type" => intermediate_rep.type_.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "output" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionStatusSucceeded".to_string()),
-                    _ => return std::result::Result::Err("Unexpected key while parsing TransactionStatusSucceeded".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(TransactionStatusSucceeded {
-            type_: intermediate_rep.type_.into_iter().next().ok_or("type missing in TransactionStatusSucceeded".to_string())?,
-            output: intermediate_rep.output.into_iter().next().ok_or("output missing in TransactionStatusSucceeded".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<TransactionStatusSucceeded> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<TransactionStatusSucceeded>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<TransactionStatusSucceeded>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for TransactionStatusSucceeded - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<TransactionStatusSucceeded> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <TransactionStatusSucceeded as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into TransactionStatusSucceeded - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct TransactionStatusSucceededAllOf {
-    #[serde(rename = "output")]
-    pub output: Vec<String>,
-
-}
-
-impl TransactionStatusSucceededAllOf {
-    pub fn new(output: Vec<String>, ) -> TransactionStatusSucceededAllOf {
-        TransactionStatusSucceededAllOf {
-            output: output,
-        }
-    }
-}
-
-/// Converts the TransactionStatusSucceededAllOf value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for TransactionStatusSucceededAllOf {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("output".to_string());
-        params.push(self.output.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a TransactionStatusSucceededAllOf value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for TransactionStatusSucceededAllOf {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub output: Vec<Vec<String>>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing TransactionStatusSucceededAllOf".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "output" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionStatusSucceededAllOf".to_string()),
-                    _ => return std::result::Result::Err("Unexpected key while parsing TransactionStatusSucceededAllOf".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(TransactionStatusSucceededAllOf {
-            output: intermediate_rep.output.into_iter().next().ok_or("output missing in TransactionStatusSucceededAllOf".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<TransactionStatusSucceededAllOf> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<TransactionStatusSucceededAllOf>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<TransactionStatusSucceededAllOf>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for TransactionStatusSucceededAllOf - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<TransactionStatusSucceededAllOf> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <TransactionStatusSucceededAllOf as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into TransactionStatusSucceededAllOf - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]

@@ -62,10 +62,7 @@
  * permissions under this License.
  */
 
-mod dto;
-
 use crate::jni::dtos::JavaStructure;
-use dto::*;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -73,8 +70,8 @@ use scrypto::prelude::*;
 
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
-use crate::result::{ResultStateManagerMaps, StateManagerResult};
-use crate::types::{CommitRequest, PreviewRequest, Transaction};
+use crate::result::StateManagerResult;
+use crate::types::{CommitRequest, Transaction};
 
 //
 // JNI Interface
@@ -104,34 +101,6 @@ fn do_verify(
         .expect("Can't acquire a state manager mutex lock")
         .decode_transaction(&transaction);
     Ok(result.is_ok())
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_preview(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    let ret = do_preview(&env, j_state_manager, request_payload).to_java();
-    jni_slice_to_jbytearray(&env, &ret)
-}
-
-fn do_preview(
-    env: &JNIEnv,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> StateManagerResult<Result<PreviewResultJava, PreviewErrorJava>> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
-    let preview_request = PreviewRequest::from_java(&request_payload)?;
-    let preview_result: Result<PreviewResultJava, PreviewErrorJava> = state_manager
-        .lock()
-        .expect("Can't acquire a state manager mutex lock")
-        .preview(&preview_request)
-        .map(|result| result.into())
-        .map_err_sm(|err| err.into())?;
-    Ok(preview_result)
 }
 
 #[no_mangle]

@@ -24,7 +24,8 @@ type ServiceFuture = BoxFuture<'static, Result<Response<Body>, crate::core_api::
 use crate::core_api::generated::{Api,
      StatusNetworkConfigurationPostResponse,
      TransactionPreviewPostResponse,
-     TransactionSubmitPostResponse
+     TransactionSubmitPostResponse,
+     TransactionsPostResponse
 };
 
 mod paths {
@@ -34,13 +35,15 @@ mod paths {
         pub static ref GLOBAL_REGEX_SET: regex::RegexSet = regex::RegexSet::new(vec![
             r"^/core/status/network-configuration$",
             r"^/core/transaction/preview$",
-            r"^/core/transaction/submit$"
+            r"^/core/transaction/submit$",
+            r"^/core/transactions$"
         ])
         .expect("Unable to create global regex set");
     }
     pub(crate) static ID_STATUS_NETWORK_CONFIGURATION: usize = 0;
     pub(crate) static ID_TRANSACTION_PREVIEW: usize = 1;
     pub(crate) static ID_TRANSACTION_SUBMIT: usize = 2;
+    pub(crate) static ID_TRANSACTIONS: usize = 3;
 }
 
 pub struct MakeService<T, C> where
@@ -169,14 +172,14 @@ impl<T, C> hyper::service::Service<(Request<Body>, C)> for Service<T, C> where
                                                     let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
                                                     *response.body_mut() = Body::from(body);
                                                 },
-                                                StatusNetworkConfigurationPostResponse::AnErrorOccurred
+                                                StatusNetworkConfigurationPostResponse::ServerError
                                                     (body)
                                                 => {
                                                     *response.status_mut() = StatusCode::from_u16(500).expect("Unable to turn 500 into a StatusCode");
                                                     response.headers_mut().insert(
                                                         CONTENT_TYPE,
                                                         HeaderValue::from_str("application/json")
-                                                            .expect("Unable to create Content-Type header for STATUS_NETWORK_CONFIGURATION_POST_AN_ERROR_OCCURRED"));
+                                                            .expect("Unable to create Content-Type header for STATUS_NETWORK_CONFIGURATION_POST_SERVER_ERROR"));
                                                     let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
                                                     *response.body_mut() = Body::from(body);
                                                 },
@@ -254,14 +257,25 @@ impl<T, C> hyper::service::Service<(Request<Body>, C)> for Service<T, C> where
                                                     let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
                                                     *response.body_mut() = Body::from(body);
                                                 },
-                                                TransactionPreviewPostResponse::AnErrorOccurred
+                                                TransactionPreviewPostResponse::ClientError
+                                                    (body)
+                                                => {
+                                                    *response.status_mut() = StatusCode::from_u16(400).expect("Unable to turn 400 into a StatusCode");
+                                                    response.headers_mut().insert(
+                                                        CONTENT_TYPE,
+                                                        HeaderValue::from_str("application/json")
+                                                            .expect("Unable to create Content-Type header for TRANSACTION_PREVIEW_POST_CLIENT_ERROR"));
+                                                    let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
+                                                    *response.body_mut() = Body::from(body);
+                                                },
+                                                TransactionPreviewPostResponse::ServerError
                                                     (body)
                                                 => {
                                                     *response.status_mut() = StatusCode::from_u16(500).expect("Unable to turn 500 into a StatusCode");
                                                     response.headers_mut().insert(
                                                         CONTENT_TYPE,
                                                         HeaderValue::from_str("application/json")
-                                                            .expect("Unable to create Content-Type header for TRANSACTION_PREVIEW_POST_AN_ERROR_OCCURRED"));
+                                                            .expect("Unable to create Content-Type header for TRANSACTION_PREVIEW_POST_SERVER_ERROR"));
                                                     let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
                                                     *response.body_mut() = Body::from(body);
                                                 },
@@ -345,14 +359,25 @@ impl<T, C> hyper::service::Service<(Request<Body>, C)> for Service<T, C> where
                                                     let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
                                                     *response.body_mut() = Body::from(body);
                                                 },
-                                                TransactionSubmitPostResponse::AnErrorOccurred
+                                                TransactionSubmitPostResponse::ClientError
+                                                    (body)
+                                                => {
+                                                    *response.status_mut() = StatusCode::from_u16(400).expect("Unable to turn 400 into a StatusCode");
+                                                    response.headers_mut().insert(
+                                                        CONTENT_TYPE,
+                                                        HeaderValue::from_str("application/json")
+                                                            .expect("Unable to create Content-Type header for TRANSACTION_SUBMIT_POST_CLIENT_ERROR"));
+                                                    let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
+                                                    *response.body_mut() = Body::from(body);
+                                                },
+                                                TransactionSubmitPostResponse::ServerError
                                                     (body)
                                                 => {
                                                     *response.status_mut() = StatusCode::from_u16(500).expect("Unable to turn 500 into a StatusCode");
                                                     response.headers_mut().insert(
                                                         CONTENT_TYPE,
                                                         HeaderValue::from_str("application/json")
-                                                            .expect("Unable to create Content-Type header for TRANSACTION_SUBMIT_POST_AN_ERROR_OCCURRED"));
+                                                            .expect("Unable to create Content-Type header for TRANSACTION_SUBMIT_POST_SERVER_ERROR"));
                                                     let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
                                                     *response.body_mut() = Body::from(body);
                                                 },
@@ -374,9 +399,112 @@ impl<T, C> hyper::service::Service<(Request<Body>, C)> for Service<T, C> where
                         }
             },
 
+            // TransactionsPost - POST /transactions
+            &hyper::Method::POST if path.matched(paths::ID_TRANSACTIONS) => {
+                // Body parameters (note that non-required body parameters will ignore garbage
+                // values, rather than causing a 400 response). Produce warning header and logs for
+                // any unused fields.
+                let result = body.into_raw().await;
+                match result {
+                            Ok(body) => {
+                                let mut unused_elements = Vec::new();
+                                let param_committed_transactions_request: Option<models::CommittedTransactionsRequest> = if !body.is_empty() {
+                                    let deserializer = &mut serde_json::Deserializer::from_slice(&*body);
+                                    match serde_ignored::deserialize(deserializer, |path| {
+                                            warn!("Ignoring unknown field in body: {}", path);
+                                            unused_elements.push(path.to_string());
+                                    }) {
+                                        Ok(param_committed_transactions_request) => param_committed_transactions_request,
+                                        Err(e) => return Ok(Response::builder()
+                                                        .status(StatusCode::BAD_REQUEST)
+                                                        .body(Body::from(format!("Couldn't parse body parameter CommittedTransactionsRequest - doesn't match schema: {}", e)))
+                                                        .expect("Unable to create Bad Request response for invalid body parameter CommittedTransactionsRequest due to schema")),
+                                    }
+                                } else {
+                                    None
+                                };
+                                let param_committed_transactions_request = match param_committed_transactions_request {
+                                    Some(param_committed_transactions_request) => param_committed_transactions_request,
+                                    None => return Ok(Response::builder()
+                                                        .status(StatusCode::BAD_REQUEST)
+                                                        .body(Body::from("Missing required body parameter CommittedTransactionsRequest"))
+                                                        .expect("Unable to create Bad Request response for missing body parameter CommittedTransactionsRequest")),
+                                };
+
+                                let result = api_impl.transactions_post(
+                                            param_committed_transactions_request,
+                                        &context
+                                    ).await;
+                                let mut response = Response::new(Body::empty());
+                                response.headers_mut().insert(
+                                            HeaderName::from_static("x-span-id"),
+                                            HeaderValue::from_str((&context as &dyn Has<XSpanIdString>).get().0.clone().to_string().as_str())
+                                                .expect("Unable to create X-Span-ID header value"));
+
+                                        if !unused_elements.is_empty() {
+                                            response.headers_mut().insert(
+                                                HeaderName::from_static("warning"),
+                                                HeaderValue::from_str(format!("Ignoring unknown fields in body: {:?}", unused_elements).as_str())
+                                                    .expect("Unable to create Warning header value"));
+                                        }
+
+                                        match result {
+                                            Ok(rsp) => match rsp {
+                                                TransactionsPostResponse::CommittedTransactionsResponse
+                                                    (body)
+                                                => {
+                                                    *response.status_mut() = StatusCode::from_u16(200).expect("Unable to turn 200 into a StatusCode");
+                                                    response.headers_mut().insert(
+                                                        CONTENT_TYPE,
+                                                        HeaderValue::from_str("application/json")
+                                                            .expect("Unable to create Content-Type header for TRANSACTIONS_POST_COMMITTED_TRANSACTIONS_RESPONSE"));
+                                                    let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
+                                                    *response.body_mut() = Body::from(body);
+                                                },
+                                                TransactionsPostResponse::ClientError
+                                                    (body)
+                                                => {
+                                                    *response.status_mut() = StatusCode::from_u16(400).expect("Unable to turn 400 into a StatusCode");
+                                                    response.headers_mut().insert(
+                                                        CONTENT_TYPE,
+                                                        HeaderValue::from_str("application/json")
+                                                            .expect("Unable to create Content-Type header for TRANSACTIONS_POST_CLIENT_ERROR"));
+                                                    let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
+                                                    *response.body_mut() = Body::from(body);
+                                                },
+                                                TransactionsPostResponse::ServerError
+                                                    (body)
+                                                => {
+                                                    *response.status_mut() = StatusCode::from_u16(500).expect("Unable to turn 500 into a StatusCode");
+                                                    response.headers_mut().insert(
+                                                        CONTENT_TYPE,
+                                                        HeaderValue::from_str("application/json")
+                                                            .expect("Unable to create Content-Type header for TRANSACTIONS_POST_SERVER_ERROR"));
+                                                    let body = serde_json::to_string(&body).expect("impossible to fail to serialize");
+                                                    *response.body_mut() = Body::from(body);
+                                                },
+                                            },
+                                            Err(_) => {
+                                                // Application code returned an error. This should not happen, as the implementation should
+                                                // return a valid response.
+                                                *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+                                                *response.body_mut() = Body::from("An internal error occurred");
+                                            },
+                                        }
+
+                                        Ok(response)
+                            },
+                            Err(e) => Ok(Response::builder()
+                                                .status(StatusCode::BAD_REQUEST)
+                                                .body(Body::from(format!("Couldn't read body parameter CommittedTransactionsRequest: {}", e)))
+                                                .expect("Unable to create Bad Request response due to unable to read body parameter CommittedTransactionsRequest")),
+                        }
+            },
+
             _ if path.matched(paths::ID_STATUS_NETWORK_CONFIGURATION) => method_not_allowed(),
             _ if path.matched(paths::ID_TRANSACTION_PREVIEW) => method_not_allowed(),
             _ if path.matched(paths::ID_TRANSACTION_SUBMIT) => method_not_allowed(),
+            _ if path.matched(paths::ID_TRANSACTIONS) => method_not_allowed(),
             _ => Ok(Response::builder().status(StatusCode::NOT_FOUND)
                     .body(Body::empty())
                     .expect("Unable to create Not Found response"))
@@ -396,6 +524,8 @@ impl<T> RequestParser<T> for ApiRequestParser {
             &hyper::Method::POST if path.matched(paths::ID_TRANSACTION_PREVIEW) => Some("TransactionPreviewPost"),
             // TransactionSubmitPost - POST /transaction/submit
             &hyper::Method::POST if path.matched(paths::ID_TRANSACTION_SUBMIT) => Some("TransactionSubmitPost"),
+            // TransactionsPost - POST /transactions
+            &hyper::Method::POST if path.matched(paths::ID_TRANSACTIONS) => Some("TransactionsPost"),
             _ => None,
         }
     }

@@ -71,4 +71,7 @@ mod store;
 mod transaction_builder;
 mod types;
 
+pub use mempool::MempoolError;
 pub use state_manager::StateManager;
+pub use store::TemporaryTransactionReceipt;
+pub use types::{PreviewRequest, TId, Transaction, CommitRequest};

@@ -62,9 +62,9 @@
  * permissions under this License.
  */
 
-use radix_engine::transaction::PreviewError as EnginePreviewError;
 use sbor::{Decode, Encode, TypeId};
-use transaction::model::PreviewFlags;
+use scrypto::crypto::EcdsaPublicKey;
+use transaction::model::{PreviewFlags, TransactionManifest};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]
 pub struct TId {
@@ -79,19 +79,12 @@ pub struct Transaction {
 
 #[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
 pub struct PreviewRequest {
-    pub manifest: Vec<u8>,
+    pub manifest: TransactionManifest,
     pub cost_unit_limit: u32,
     pub tip_percentage: u32,
     pub nonce: u64,
-    pub signer_public_keys: Vec<Vec<u8>>,
+    pub signer_public_keys: Vec<EcdsaPublicKey>,
     pub flags: PreviewFlags,
-}
-
-#[derive(Debug)]
-pub enum PreviewError {
-    InvalidManifest,
-    InvalidSignerPublicKey,
-    EngineError(EnginePreviewError),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]

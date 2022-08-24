@@ -276,6 +276,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "futures",
+ "hex",
  "hyper",
  "jni",
  "lazy_static",
