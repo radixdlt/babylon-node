@@ -140,11 +140,11 @@ public final class REv2GenesisTest {
 
     // Assert
     var systemAmount =
-        this.stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_COMPONENT_ADDRESS);
+        this.stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
     assertThat(systemAmount).isEqualTo(GENESIS_AMOUNT);
 
     var emptyAccountAmount =
-        this.stateReader.getComponentXrdAmount(ComponentAddress.create(new byte[27]));
+        this.stateReader.getComponentXrdAmount(ComponentAddress.NON_EXISTENT_COMPONENT_ADDRESS);
     assertThat(emptyAccountAmount).isEqualTo(Decimal.of(0));
   }
 }

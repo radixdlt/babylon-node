@@ -77,12 +77,22 @@ public class NetworkTest {
   @Test
   public void test_hrp_suffices_align_with_network_id() {
     for (var network : Network.values()) {
-      if (network.getId() == 1) {
+      if (network.getLogicalName().equals("mainnet")) {
         assertEquals("account_rdx", network.getAccountHrp());
         assertEquals("validator_rdx", network.getValidatorHrp());
+      } else if (network.getLogicalName().equals("simulator")) {
+        assertEquals("account_sim", network.getAccountHrp());
+        assertEquals("validator_sim", network.getValidatorHrp());
+      } else if (network.getLogicalName().equals("localnet")) {
+        assertEquals("account_loc", network.getAccountHrp());
+        assertEquals("validator_loc", network.getValidatorHrp());
+      } else if (network.getLogicalName().equals("inttestnet")) {
+        assertEquals("account_test", network.getAccountHrp());
+        assertEquals("validator_test", network.getValidatorHrp());
       } else {
-        assertEquals(String.format("account_tdx%d_", network.getId()), network.getAccountHrp());
-        assertEquals(String.format("validator_tdx%d_", network.getId()), network.getValidatorHrp());
+        var hexId = Integer.toString(network.getId(), 16).toLowerCase();
+        assertEquals(String.format("account_tdx_%s_", hexId), network.getAccountHrp());
+        assertEquals(String.format("validator_tdx_%s_", hexId), network.getValidatorHrp());
       }
     }
   }
@@ -97,7 +107,10 @@ public class NetworkTest {
 
   @Test
   public void test_logical_names_agree() {
-    var logicalNameExceptions = Map.of("INTEGRATIONTESTNET", "inttestnet");
+    var logicalNameExceptions =
+        Map.of(
+            "INTEGRATIONTESTNET", "inttestnet",
+            "LOCALSIMULATOR", "simulator");
 
     for (var network : Network.values()) {
       var networkEnumName = network.name();

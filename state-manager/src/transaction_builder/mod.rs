@@ -65,6 +65,6 @@
 mod builder;
 
 pub use builder::{
-    create_1mb_txn_manifest, create_new_account_unsigned_manifest, create_notarized_bytes,
-    create_signed_intent_bytes,
+    create_1mb_txn_manifest, create_intent_bytes, create_new_account_intent_bytes,
+    create_notarized_bytes, create_signed_intent_bytes,
 };

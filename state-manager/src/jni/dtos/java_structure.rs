@@ -63,7 +63,7 @@
  */
 
 use crate::result::{StateManagerError, StateManagerResult, ERRCODE_SBOR};
-use sbor::{decode_with_type, encode_with_type};
+use sbor::{decode_with_static_info, encode_with_static_info};
 
 pub use sbor::{Decode, Encode, TypeId};
 
@@ -84,13 +84,13 @@ pub trait JavaStructure {
 
 impl<T: Encode + Decode + TypeId> JavaStructure for T {
     fn from_java(data: &[u8]) -> StateManagerResult<Self> {
-        decode_with_type(data).map_err(|e| {
+        decode_with_static_info(data).map_err(|e| {
             StateManagerError::create(ERRCODE_SBOR, format!("SBOR Decode Failed: {:?}", e))
         })
     }
 
     fn to_java(&self) -> Vec<u8> {
-        encode_with_type(self)
+        encode_with_static_info(self)
     }
 }
 

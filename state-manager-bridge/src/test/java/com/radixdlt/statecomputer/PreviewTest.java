@@ -69,13 +69,14 @@ import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.lang.Option;
-import com.radixdlt.manifest.ManifestCompiler;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionStatus;
 import com.radixdlt.statecomputer.preview.PreviewFlags;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
@@ -88,9 +89,11 @@ public final class PreviewTest {
     // Arrange
     try (final var stateManager =
         StateManager.createAndInitialize(
-            new StateManagerConfig(Option.none(), REv2DatabaseConfig.inMemory()))) {
+            new StateManagerConfig(
+                NetworkDefinition.INT_TEST_NET, Option.none(), REv2DatabaseConfig.inMemory()))) {
       final var stateComputer = new RustStateComputer(stateManager.getRustState());
-      final var manifest = ManifestCompiler.compile("CLEAR_AUTH_ZONE;", "LocalSimulator").unwrap();
+      final var manifest =
+          TransactionBuilder.compileManifest(NetworkDefinition.INT_TEST_NET, "CLEAR_AUTH_ZONE;");
       final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
       final var previewRequest =
           new PreviewRequest(
@@ -118,7 +121,8 @@ public final class PreviewTest {
     // Arrange
     try (final var stateManager =
         StateManager.createAndInitialize(
-            new StateManagerConfig(Option.none(), REv2DatabaseConfig.inMemory()))) {
+            new StateManagerConfig(
+                NetworkDefinition.INT_TEST_NET, Option.none(), REv2DatabaseConfig.inMemory()))) {
       final var stateComputer = new RustStateComputer(stateManager.getRustState());
       final var manifest = Hex.decode("00"); // invalid manifest
       final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();

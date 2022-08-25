@@ -73,6 +73,8 @@ import java.util.List;
 /** Proposes half valid, half invalid REv2 transactions for the purpose of testing. */
 public class HalfCorrectREv2TransactionGenerator implements ProposalGenerator {
   private int proposalCount = 0;
+  private final REV2TransactionGenerator validGenerator =
+      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
   @Override
   public List<RawTransaction> getTransactionsForProposal(
@@ -80,7 +82,7 @@ public class HalfCorrectREv2TransactionGenerator implements ProposalGenerator {
     proposalCount++;
 
     if (proposalCount % 2 == 0) {
-      return List.of(RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0));
+      return List.of(validGenerator.nextTransaction());
     } else {
       // Invalid transaction
       return List.of(RawTransaction.create(new byte[] {0}));

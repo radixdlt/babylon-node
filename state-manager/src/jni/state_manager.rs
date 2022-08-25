@@ -132,7 +132,12 @@ impl JNIStateManager {
         let substate_store = SerializedInMemorySubstateStore::with_bootstrap();
 
         // Build the state manager.
-        let state_manager = StateManager::new(mempool, transaction_store, substate_store);
+        let state_manager = StateManager::new(
+            config.network_definition,
+            mempool,
+            transaction_store,
+            substate_store,
+        );
 
         let jni_state_manager = JNIStateManager { state_manager };
 

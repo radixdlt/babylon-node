@@ -62,24 +62,25 @@
  * permissions under this License.
  */
 
-use scrypto::core::Network;
-use scrypto::crypto::EcdsaPublicKey;
 use scrypto::prelude::{
-    AccessRule, EcdsaSignature, MintParams, Mutability, ResourceMethodAuthKey, RADIX_TOKEN,
-    SYSTEM_COMPONENT,
+    args, AccessRule, EcdsaPublicKey, EcdsaSignature, MintParams, Mutability, NetworkDefinition,
+    ResourceMethodAuthKey, RADIX_TOKEN, SYS_FAUCET_COMPONENT, SYS_UTILS_PACKAGE,
 };
 use scrypto::resource::ResourceType;
-use scrypto::to_struct;
 use std::collections::HashMap;
 use transaction::builder::ManifestBuilder;
+use transaction::manifest::{compile, CompileError};
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
 };
 
-pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
-    let manifest = ManifestBuilder::new(Network::InternalTestnet)
-        .lock_fee(1000.into(), SYSTEM_COMPONENT)
-        .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
+pub fn create_new_account_intent_bytes(
+    network_definition: &NetworkDefinition,
+    public_key: EcdsaPublicKey,
+) -> Vec<u8> {
+    let manifest = ManifestBuilder::new(network_definition)
+        .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
+        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
         })
@@ -88,7 +89,7 @@ pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u
     let intent = TransactionIntent {
         header: TransactionHeader {
             version: 1,
-            network: Network::InternalTestnet,
+            network_id: network_definition.id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 5,
@@ -110,12 +111,15 @@ pub fn create_1mb_txn_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
     let access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> = HashMap::new();
     let initial_supply: Option<MintParams> = None;
 
-    let manifest = ManifestBuilder::new(Network::InternalTestnet)
-        .lock_fee(1000.into(), SYSTEM_COMPONENT)
-        .call_method(
-            SYSTEM_COMPONENT,
+    let network_definition = NetworkDefinition::local_simulator();
+
+    let manifest = ManifestBuilder::new(&network_definition)
+        .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
+        .call_function(
+            SYS_UTILS_PACKAGE,
+            "SysUtils",
             "new_resource",
-            to_struct!(
+            args!(
                 ResourceType::NonFungible,
                 metadata,
                 access_rules,
@@ -127,7 +131,7 @@ pub fn create_1mb_txn_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
     let intent = TransactionIntent {
         header: TransactionHeader {
             version: 1,
-            network: Network::InternalTestnet,
+            network_id: network_definition.id, // TODO: Fix
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 5,
@@ -142,14 +146,25 @@ pub fn create_1mb_txn_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
     intent.to_bytes()
 }
 
+pub fn create_intent_bytes(
+    network_definition: &NetworkDefinition,
+    header: TransactionHeader,
+    manifest_str: String,
+) -> Result<Vec<u8>, CompileError> {
+    let manifest = compile(&manifest_str, network_definition)?;
+
+    let intent = TransactionIntent { header, manifest };
+
+    Ok(intent.to_bytes())
+}
+
 pub fn create_signed_intent_bytes(
     intent: TransactionIntent,
-    public_key: EcdsaPublicKey,
-    signature: EcdsaSignature,
+    signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
 ) -> Vec<u8> {
     let signed_intent = SignedTransactionIntent {
         intent,
-        intent_signatures: vec![(public_key, signature)],
+        intent_signatures: signatures,
     };
     signed_intent.to_bytes()
 }

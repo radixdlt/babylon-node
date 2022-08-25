@@ -19,14 +19,14 @@ jni = "0.19.0"
 #   $ git pull
 #   $ git rev-parse --short HEAD
 #   $ git tag "develop-<6 char hash id from previous command>"
-#   $ git push "develop-BLAH"
+#   $ git push origin "develop-BLAH"
 # * Then use tag="develop-BLAH" in the below dependencies.
 #
-sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
-scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
-transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
-radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
-radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-94f9c39e" }
+sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-9023d96" }
+scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-9023d96" }
+transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-9023d96" }
+radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-9023d96" }
+radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-9023d96" }
 rocksdb = { version = "0.18.0" }
 
 [lib]

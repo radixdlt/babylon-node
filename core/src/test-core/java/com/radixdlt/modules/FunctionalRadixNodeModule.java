@@ -79,6 +79,8 @@ import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.rev1.MockedMempoolStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
@@ -302,6 +304,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             if (REv2DatabaseConfig.isNone(rev2Config.databaseConfig())) {
               install(new REv2StatelessComputerModule());
             }
+
+            bindConstant().annotatedWith(NetworkId.class).to(Network.INTEGRATIONTESTNET.getId());
 
             switch (rev2Config.proposerConfig()) {
               case REV2ProposerConfig.Generated generated -> {

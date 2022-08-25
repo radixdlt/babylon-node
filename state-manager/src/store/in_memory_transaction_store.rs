@@ -64,7 +64,7 @@
 
 use crate::store::transaction_store::{TemporaryTransactionReceipt, TransactionStore};
 use crate::types::{TId, Transaction};
-use radix_engine::transaction::{TransactionReceipt, TransactionStatus};
+use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -80,15 +80,33 @@ impl InMemoryTransactionStore {
     }
 
     fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
-        let receipt = TemporaryTransactionReceipt {
-            result: match receipt.status {
-                TransactionStatus::Succeeded(..) => "Success".to_string(),
-                TransactionStatus::Failed(error) => error.to_string(),
-                TransactionStatus::Rejected => "Rejected".to_string(),
+        let (status, entity_changes) = match receipt.result {
+            TransactionResult::Commit(commit) => match commit.outcome {
+                TransactionOutcome::Success(..) => {
+                    ("Success".to_string(), Some(commit.entity_changes))
+                }
+                TransactionOutcome::Failure(error) => {
+                    (format!("Error: {}", error), Some(commit.entity_changes))
+                }
             },
-            new_package_addresses: receipt.new_package_addresses,
-            new_component_addresses: receipt.new_component_addresses,
-            new_resource_addresses: receipt.new_resource_addresses,
+            TransactionResult::Reject(reject) => (format!("Rejected: {}", reject.error), None),
+        };
+
+        let (new_package_addresses, new_component_addresses, new_resource_addresses) =
+            match entity_changes {
+                Some(ec) => (
+                    ec.new_package_addresses,
+                    ec.new_component_addresses,
+                    ec.new_resource_addresses,
+                ),
+                None => (Vec::new(), Vec::new(), Vec::new()),
+            };
+
+        let receipt = TemporaryTransactionReceipt {
+            result: status,
+            new_package_addresses,
+            new_component_addresses,
+            new_resource_addresses,
         };
         self.in_memory_store.insert(
             transaction.id.clone(),

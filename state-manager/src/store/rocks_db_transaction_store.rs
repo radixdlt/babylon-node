@@ -64,7 +64,7 @@
 
 use crate::store::transaction_store::{TemporaryTransactionReceipt, TransactionStore};
 use crate::types::{TId, Transaction};
-use radix_engine::transaction::{TransactionReceipt, TransactionStatus};
+use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
 
 use rocksdb::{DBWithThreadMode, SingleThreaded, DB};
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
@@ -82,15 +82,21 @@ impl RocksDBTransactionStore {
     }
 
     fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
-        let receipt = TemporaryTransactionReceipt {
-            result: match receipt.status {
-                TransactionStatus::Succeeded(..) => "Success".to_string(),
-                TransactionStatus::Failed(error) => error.to_string(),
-                TransactionStatus::Rejected => "Rejected".to_string(),
-            },
-            new_package_addresses: receipt.new_package_addresses,
-            new_component_addresses: receipt.new_component_addresses,
-            new_resource_addresses: receipt.new_resource_addresses,
+        let receipt = match receipt.result {
+            TransactionResult::Commit(commit_result) => {
+                let result = match commit_result.outcome {
+                    TransactionOutcome::Success(..) => "Success".to_string(),
+                    TransactionOutcome::Failure(error) => error.to_string(),
+                };
+
+                TemporaryTransactionReceipt {
+                    result,
+                    new_package_addresses: commit_result.entity_changes.new_package_addresses,
+                    new_component_addresses: commit_result.entity_changes.new_component_addresses,
+                    new_resource_addresses: commit_result.entity_changes.new_resource_addresses,
+                }
+            }
+            TransactionResult::Reject(..) => panic!("Should not get here"), // TODO: Move this check somewhere else
         };
 
         let value = (transaction.payload.clone(), receipt);

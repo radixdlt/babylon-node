@@ -140,11 +140,12 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var invalidTransactions = new HashMap<RawTransaction, Exception>();
 
     for (var transaction : proposedTransactions) {
-      var success = stateComputer.verify(transaction);
-      if (success) {
+      var verifyResult = stateComputer.verify(transaction);
+      if (verifyResult.isSuccess()) {
         successfulTransactions.add(new REv2ExecutedTransaction(transaction));
       } else {
-        invalidTransactions.put(transaction, new InvalidREv2Transaction());
+        invalidTransactions.put(
+            transaction, new InvalidREv2Transaction(verifyResult.unwrapError()));
       }
     }
 

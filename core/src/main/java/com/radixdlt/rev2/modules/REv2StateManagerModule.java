@@ -69,6 +69,9 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
@@ -110,13 +113,15 @@ public final class REv2StateManagerModule extends AbstractModule {
 
     @Provides
     @Singleton
-    private RustStateComputer stateComputer(@Self BFTNode node) {
+    private RustStateComputer stateComputer(@Self BFTNode node, @NetworkId int networkId) {
+      var network = Network.ofId(networkId).orElseThrow();
       final REv2DatabaseConfig databaseConfigToUse;
       var databasePath = rocksConfig.databasePath() + node.toString();
       databaseConfigToUse = REv2DatabaseConfig.rocksDB(databasePath);
       var stateManager =
           StateManager.createAndInitialize(
-              new StateManagerConfig(mempoolConfig, databaseConfigToUse));
+              new StateManagerConfig(
+                  NetworkDefinition.from(network), mempoolConfig, databaseConfigToUse));
       return new RustStateComputer(stateManager.getRustState());
     }
   }
@@ -126,10 +131,19 @@ public final class REv2StateManagerModule extends AbstractModule {
     if (prefixDatabase && databaseConfig instanceof REv2DatabaseConfig.RocksDB rocksDB) {
       install(new PrefixedRocksDBModule(mempoolConfig, rocksDB));
     } else {
-      var stateManager =
-          StateManager.createAndInitialize(new StateManagerConfig(mempoolConfig, databaseConfig));
-      bind(RustStateComputer.class).toInstance(new RustStateComputer(stateManager.getRustState()));
+      install(
+          new AbstractModule() {
+            @Provides
+            @Singleton
+            StateManager stateManager(@NetworkId int networkId) {
+              var network = Network.ofId(networkId).orElseThrow();
+              return StateManager.createAndInitialize(
+                  new StateManagerConfig(
+                      NetworkDefinition.from(network), mempoolConfig, databaseConfig));
+            }
+          });
     }
+    ;
 
     if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {
       install(new REv2DatabaseModule());

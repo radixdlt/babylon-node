@@ -64,4 +64,8 @@
 
 package com.radixdlt.rev2;
 
-public class InvalidREv2Transaction extends Exception {}
+public class InvalidREv2Transaction extends Exception {
+  public InvalidREv2Transaction(String message) {
+    super(message);
+  }
+}

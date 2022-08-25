@@ -77,6 +77,7 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayConfig;
@@ -154,7 +155,7 @@ public final class REv2LargeTransactionTest {
     var intentSignature = TEST_KEY.sign(hashedManifest);
     var signedIntent =
         TransactionBuilder.createSignedIntentBytes(
-            unsignedManifest, TEST_KEY.getPublicKey(), intentSignature);
+            unsignedManifest, List.of(Tuple.Tuple2.of(TEST_KEY.getPublicKey(), intentSignature)));
     var hashedSignedIntent = HashUtils.sha256Twice(signedIntent).asBytes();
 
     var notarySignature = TEST_KEY.sign(hashedSignedIntent);

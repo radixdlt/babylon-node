@@ -75,6 +75,7 @@ import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
@@ -100,7 +101,8 @@ public final class REv2MempoolRelayerTest {
                               MEMPOOL_SIZE, new MempoolRelayConfig(0, 0, 0, 100))),
                       SyncRelayConfig.of(5000, 10, 3000L))));
 
-  private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
+  private final TransactionGenerator transactionGenerator =
+      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
   @Test
   public void relayer_fills_mempool_of_all_nodes() throws Exception {

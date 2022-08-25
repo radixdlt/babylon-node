@@ -77,6 +77,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
@@ -87,7 +88,8 @@ import org.junit.rules.TemporaryFolder;
 
 public final class SanityTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
-  private final TransactionGenerator transactionGenerator = new REV2TransactionGenerator();
+  private final TransactionGenerator transactionGenerator =
+      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()

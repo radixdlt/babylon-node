@@ -64,13 +64,25 @@
 
 package com.radixdlt.transaction;
 
+import static com.radixdlt.lang.Tuple.tuple;
+
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.exceptions.ManifestCompilationException;
+import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.NativeCalls;
+import java.util.List;
 
 public final class TransactionBuilder {
+  static {
+    // This is idempotent with the other calls
+    System.loadLibrary("statemanager");
+  }
+
   public static byte[] build1MBManifest(ECPublicKey publicKey) {
     return buildLargeManifestFunc.call(publicKey);
   }
@@ -81,39 +93,69 @@ public final class TransactionBuilder {
 
   private static native byte[] build1MBManifest(byte[] requestPayload);
 
-  public static byte[] buildNewAccountManifest(ECPublicKey publicKey) {
-    return newAccountManifestFunc.call(publicKey);
+  public static byte[] compileManifest(NetworkDefinition network, String manifest) {
+    return compileManifestFunc
+        .call(tuple(network, manifest))
+        .unwrap(ManifestCompilationException::new);
+  }
+
+  public static byte[] buildNewAccountIntent(NetworkDefinition network, ECPublicKey publicKey) {
+    return newAccountIntentFunc.call(tuple(network, publicKey));
+  }
+
+  public static byte[] createIntent(
+      NetworkDefinition network, TransactionHeader header, String manifest) {
+    return createIntentFunc
+        .call(tuple(network, header, manifest))
+        .unwrap(ManifestCompilationException::new);
   }
 
   public static byte[] createSignedIntentBytes(
-      byte[] intent, ECPublicKey publicKey, ECDSASignature signature) {
-    return createSignedIntentBytesFunc.call(Tuple.tuple(intent, publicKey, signature));
+      byte[] intent, List<Tuple.Tuple2<ECPublicKey, ECDSASignature>> signatures) {
+    return createSignedIntentBytesFunc.call(tuple(intent, signatures));
   }
 
   public static byte[] createNotarizedBytes(byte[] signedIntent, ECDSASignature signature) {
-    return createNotarizedBytesFunc.call(Tuple.tuple(signedIntent, signature));
+    return createNotarizedBytesFunc.call(tuple(signedIntent, signature));
   }
 
-  private static native byte[] newAccountManifest(byte[] requestPayload);
+  private static final NativeCalls.StaticFunc1<
+          Tuple.Tuple2<NetworkDefinition, String>, Result<byte[], String>>
+      compileManifestFunc =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::compileManifest);
 
-  private static final NativeCalls.StaticFunc1<ECPublicKey, byte[]> newAccountManifestFunc =
-      NativeCalls.StaticFunc1.with(
-          new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::newAccountManifest);
+  private static native byte[] compileManifest(byte[] payload);
 
-  private static native byte[] createSignedIntentBytes(byte[] requestPayload);
+  private static final NativeCalls.StaticFunc1<Tuple.Tuple2<NetworkDefinition, ECPublicKey>, byte[]>
+      newAccountIntentFunc =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::newAccountIntent);
+
+  private static native byte[] newAccountIntent(byte[] requestPayload);
 
   private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple3<byte[], ECPublicKey, ECDSASignature>, byte[]>
+          Tuple.Tuple3<NetworkDefinition, TransactionHeader, String>, Result<byte[], String>>
+      createIntentFunc =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::createIntent);
+
+  private static native byte[] createIntent(byte[] requestPayload);
+
+  private static final NativeCalls.StaticFunc1<
+          Tuple.Tuple2<byte[], List<Tuple.Tuple2<ECPublicKey, ECDSASignature>>>, byte[]>
       createSignedIntentBytesFunc =
           NativeCalls.StaticFunc1.with(
               new TypeToken<>() {},
               new TypeToken<>() {},
               TransactionBuilder::createSignedIntentBytes);
 
-  private static native byte[] createNotarizedBytes(byte[] requestPayload);
+  private static native byte[] createSignedIntentBytes(byte[] requestPayload);
 
   private static final NativeCalls.StaticFunc1<Tuple.Tuple2<byte[], ECDSASignature>, byte[]>
       createNotarizedBytesFunc =
           NativeCalls.StaticFunc1.with(
               new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::createNotarizedBytes);
+
+  private static native byte[] createNotarizedBytes(byte[] requestPayload);
 }
