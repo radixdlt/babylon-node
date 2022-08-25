@@ -72,9 +72,8 @@ use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
 use state_manager::jni::dtos::JavaStructure;
-use state_manager::jni::state_manager::JNIStateManager;
+use state_manager::jni::state_manager::{ActualStateManager, JNIStateManager};
 use state_manager::jni::utils::*;
-use state_manager::StateManager;
 use std::str;
 use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::runtime::Runtime as TokioRuntime;
@@ -88,7 +87,7 @@ pub struct RunningServer {
 
 pub struct JNICoreApiServer {
     pub config: CoreApiServerConfig,
-    pub state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>,
+    pub state_manager: Arc<Mutex<ActualStateManager>>,
     pub running_server: Option<RunningServer>,
 }
 
@@ -132,7 +131,9 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
         .unwrap();
 
     let config = &jni_core_api_server.config;
+
     let state_manager = jni_core_api_server.state_manager.clone();
+
     let bind_addr = format!("{}:{}", config.bind_interface, config.port);
     tokio_runtime.spawn(async move {
         server::create(

@@ -72,53 +72,67 @@ use radix_engine::constants::{
 };
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore};
 use radix_engine::transaction::{
-    ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
-    TransactionReceipt,
+    ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor, TransactionReceipt,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::core::Network;
 use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
+use scrypto::prelude::{scrypto_decode, EcdsaPublicKey};
 use std::collections::HashMap;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
-    PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent, ValidatedTransaction,
+    PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent, TransactionManifest,
+    ValidatedTransaction,
 };
 use transaction::signing::EcdsaPrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
-pub trait StateManager {
-    fn network(&self) -> &Network;
-
-    fn commit(&mut self, commit_request: CommitRequest);
-
-    fn decode_transaction(
-        &self,
-        txn: &Transaction,
-    ) -> Result<ValidatedTransaction, TransactionValidationError>;
-
-    fn preview(&mut self, preview_request: PreviewRequest) -> Result<PreviewResult, PreviewError>;
-
-    fn get_component_resources(
-        &self,
-        component_address: ComponentAddress,
-    ) -> Option<HashMap<ResourceAddress, Decimal>>;
-
-    fn mempool(&mut self) -> &mut dyn Mempool;
-
-    fn transaction_store(&mut self) -> &mut TransactionStore;
-
-    fn proof_store(&mut self) -> &mut ProofStore;
+pub struct StateManager<M: Mempool, S> {
+    pub mempool: M,
+    pub transaction_store: TransactionStore,
+    pub proof_store: ProofStore,
+    network: Network,
+    substate_store: S,
+    wasm_engine: DefaultWasmEngine,
+    wasm_instrumenter: WasmInstrumenter,
+    validation_config: ValidationConfig,
+    execution_config: ExecutionConfig,
+    intent_hash_manager: TestIntentHashManager,
 }
 
-impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateStore>
-    StateManager for StateManagerImpl<M, S>
-{
-    fn network(&self) -> &Network {
-        &self.network
+impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager<M, S> {
+    pub fn new(
+        mempool: M,
+        transaction_store: TransactionStore,
+        substate_store: S,
+    ) -> StateManager<M, S> {
+        StateManager {
+            network: Network::LocalSimulator,
+            mempool,
+            transaction_store,
+            proof_store: ProofStore::new(),
+            substate_store,
+            wasm_engine: DefaultWasmEngine::new(),
+            wasm_instrumenter: WasmInstrumenter::new(),
+            validation_config: ValidationConfig {
+                network: Network::InternalTestnet,
+                current_epoch: 1,
+                max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+                min_tip_percentage: 0,
+            },
+            execution_config: ExecutionConfig {
+                cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+                system_loan: DEFAULT_SYSTEM_LOAN,
+                is_system: false,
+                trace: false,
+            },
+            intent_hash_manager: TestIntentHashManager::new(),
+        }
     }
 
-    fn commit(&mut self, commit_request: CommitRequest) {
+    pub fn commit(&mut self, commit_request: CommitRequest) {
         let mut to_store = Vec::new();
         let mut ids = Vec::new();
         for transaction in &commit_request.transactions {
@@ -144,7 +158,21 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSu
             .handle_committed_transactions(&commit_request.transactions);
     }
 
-    fn decode_transaction(
+    fn execute_transaction(
+        &mut self,
+        transaction: ValidatedTransaction,
+    ) -> Result<TransactionReceipt, TransactionValidationError> {
+        let mut transaction_executor = TransactionExecutor::new(
+            &mut self.substate_store,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
+        );
+        let receipt = transaction_executor.execute_and_commit(&transaction, &self.execution_config);
+
+        Ok(receipt)
+    }
+
+    pub fn decode_transaction(
         &self,
         txn: &Transaction,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
@@ -155,7 +183,10 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSu
         )
     }
 
-    fn preview(&mut self, preview_request: PreviewRequest) -> Result<PreviewResult, PreviewError> {
+    pub fn preview(
+        &mut self,
+        preview_request: PreviewRequest,
+    ) -> Result<PreviewResult, PreviewError> {
         // not really used for preview
         let notary_private_key = EcdsaPrivateKey::from_u64(2).unwrap();
 
@@ -188,8 +219,10 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSu
         )
         .execute(preview_intent)
     }
+}
 
-    fn get_component_resources(
+impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager<M, S> {
+    pub fn get_component_resources(
         &self,
         component_address: ComponentAddress,
     ) -> Option<HashMap<ResourceAddress, Decimal>> {
@@ -197,77 +230,6 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSu
         resource_accounter
             .add_resources(RENodeId::Component(component_address))
             .map_or(Option::None, |()| Some(resource_accounter.into_map()))
-    }
-
-    fn mempool(&mut self) -> &mut dyn Mempool {
-        &mut self.mempool
-    }
-
-    fn transaction_store(&mut self) -> &mut TransactionStore {
-        &mut self.transaction_store
-    }
-
-    fn proof_store(&mut self) -> &mut ProofStore {
-        &mut self.proof_store
-    }
-}
-
-pub struct StateManagerImpl<M: Mempool, S> {
-    mempool: M,
-    transaction_store: TransactionStore,
-    proof_store: ProofStore,
-    network: Network,
-    substate_store: S,
-    wasm_engine: DefaultWasmEngine,
-    wasm_instrumenter: WasmInstrumenter,
-    validation_config: ValidationConfig,
-    execution_config: ExecutionConfig,
-    intent_hash_manager: TestIntentHashManager,
-}
-
-impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManagerImpl<M, S> {
-    pub fn new(
-        mempool: M,
-        transaction_store: TransactionStore,
-        substate_store: S,
-    ) -> StateManagerImpl<M, S> {
-        StateManagerImpl {
-            network: Network::LocalSimulator,
-            mempool,
-            transaction_store,
-            proof_store: ProofStore::new(),
-            substate_store,
-            wasm_engine: DefaultWasmEngine::new(),
-            wasm_instrumenter: WasmInstrumenter::new(),
-            validation_config: ValidationConfig {
-                network: Network::InternalTestnet,
-                current_epoch: 1,
-                max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-                min_tip_percentage: 0,
-            },
-            execution_config: ExecutionConfig {
-                cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-                max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                system_loan: DEFAULT_SYSTEM_LOAN,
-                is_system: false,
-                trace: false,
-            },
-            intent_hash_manager: TestIntentHashManager::new(),
-        }
-    }
-
-    fn execute_transaction(
-        &mut self,
-        transaction: ValidatedTransaction,
-    ) -> Result<TransactionReceipt, TransactionValidationError> {
-        let mut transaction_executor = TransactionExecutor::new(
-            &mut self.substate_store,
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
-        );
-        let receipt = transaction_executor.execute_and_commit(&transaction, &self.execution_config);
-
-        Ok(receipt)
     }
 }
 

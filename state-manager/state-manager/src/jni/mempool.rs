@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::jni::state_manager::ActualStateManager;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -72,7 +73,6 @@ use crate::mempool::*;
 use crate::result::{
     ResultStateManagerMaps, StateManagerError, StateManagerResult, ERRCODE_INTERFACE_CASTS,
 };
-use crate::state_manager::StateManager;
 use crate::types::Transaction;
 
 //
@@ -83,14 +83,14 @@ use crate::types::Transaction;
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
     env: JNIEnv,
     _class: JClass,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call_flatten_result(env, sm_instance, request_payload, do_add)
+    jni_state_manager_sbor_call_flatten_result(env, j_state_manager, request_payload, do_add)
 }
 
 fn do_add(
-    state_manager: &mut dyn StateManager,
+    state_manager: &mut ActualStateManager,
     args: Transaction,
 ) -> StateManagerResult<Result<Transaction, MempoolErrorJava>> {
     let transaction = args;
@@ -104,7 +104,7 @@ fn do_add(
     }
 
     state_manager
-        .mempool()
+        .mempool
         .add_transaction(transaction)
         .map_err_sm(|err| err.into())
 }
@@ -113,24 +113,24 @@ fn do_add(
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForProposal(
     env: JNIEnv,
     _class: JClass,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_state_manager_sbor_call_flatten_result(
         env,
-        sm_instance,
+        j_state_manager,
         request_payload,
         do_get_transactions_for_proposal,
     )
 }
 
 fn do_get_transactions_for_proposal(
-    state_manager: &mut dyn StateManager,
+    state_manager: &mut ActualStateManager,
     args: (u32, Vec<Transaction>),
 ) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
     let (count, prepared_transactions) = args;
     state_manager
-        .mempool()
+        .mempool
         .get_proposal_transactions(count.into(), &prepared_transactions)
         .map_err_sm(|err| err.into())
 }
@@ -139,39 +139,39 @@ fn do_get_transactions_for_proposal(
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
     env: JNIEnv,
     _class: JClass,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, sm_instance, request_payload, do_get_count)
+    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_get_count)
 }
 
-fn do_get_count(state_manager: &mut dyn StateManager, _args: ()) -> i32 {
-    state_manager.mempool().get_count().try_into().unwrap()
+fn do_get_count(state_manager: &mut ActualStateManager, _args: ()) -> i32 {
+    state_manager.mempool.get_count().try_into().unwrap()
 }
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
     env: JNIEnv,
     _class: JClass,
-    sm_instance: JObject,
+    j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_state_manager_sbor_call_flatten_result(
         env,
-        sm_instance,
+        j_state_manager,
         request_payload,
         do_get_transactions_to_relay,
     )
 }
 
 fn do_get_transactions_to_relay(
-    state_manager: &mut dyn StateManager,
+    state_manager: &mut ActualStateManager,
     args: (u64, u64),
 ) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
     let (initial_delay_millis, repeat_delay_millis) = args;
 
     state_manager
-        .mempool()
+        .mempool
         .get_relay_transactions(initial_delay_millis, repeat_delay_millis)
         .map_err_sm(|err| err.into())
 }

@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::core_api::generated::models;
 use crate::core_api::generated::server::MakeService;
 use crate::core_api::generated::{models, TransactionsPostResponse};
 use crate::core_api::generated::{
@@ -84,10 +85,12 @@ use swagger::ApiError;
 use swagger::EmptyContext;
 use swagger::{Has, XSpanIdString};
 
-pub async fn create<F>(
+use state_manager::mempool::Mempool;
+
+pub async fn create<M: 'static + Mempool + Send, S: 'static + Send, F>(
     bind_addr: &str,
     shutdown_signal: F,
-    state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>,
+    state_manager: Arc<Mutex<StateManager<M, S>>>,
 ) where
     F: Future<Output = ()>,
 {
@@ -105,14 +108,22 @@ pub async fn create<F>(
         .unwrap();
 }
 
-#[derive(Clone)]
-pub struct Server<C> {
-    state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>,
+pub struct Server<M: 'static + Mempool + Send, S: 'static + Send, C> {
+    state_manager: Arc<Mutex<StateManager<M, S>>>,
     marker: PhantomData<C>,
 }
 
-impl<C> Server<C> {
-    pub fn new(state_manager: Arc<Mutex<dyn StateManager + Send + Sync>>) -> Self {
+impl<M: 'static + Mempool + Send, S: 'static + Send, C> Clone for Server<M, S, C> {
+    fn clone(&self) -> Self {
+        Server {
+            state_manager: self.state_manager.clone(),
+            marker: self.marker,
+        }
+    }
+}
+
+impl<M: Mempool + 'static + Send, S: 'static + Send, C> Server<M, S, C> {
+    pub fn new(state_manager: Arc<Mutex<StateManager<M, S>>>) -> Self {
         Server {
             state_manager,
             marker: PhantomData,
@@ -121,7 +132,7 @@ impl<C> Server<C> {
 }
 
 #[async_trait]
-impl<C> Api<C> for Server<C>
+impl<M: 'static + Mempool + Send, S: 'static + Send, C> Api<C> for Server<M, S, C>
 where
     C: Has<XSpanIdString> + Send + Sync,
 {

@@ -63,7 +63,7 @@
  */
 
 pub mod jni;
-mod mempool;
+pub mod mempool;
 mod query;
 mod result;
 mod state_manager;
