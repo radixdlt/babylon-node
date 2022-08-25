@@ -169,8 +169,8 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_build1MBMani
     jni_static_sbor_call(env, request_payload, do_build_1mb_manifest)
 }
 
-fn do_build_1mb_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
-    create_1mb_txn_manifest(public_key)
+fn do_build_1mb_manifest(args: (NetworkDefinition, EcdsaPublicKey)) -> Vec<u8> {
+    create_1mb_txn_manifest(args.0, args.1)
 }
 
 #[no_mangle]

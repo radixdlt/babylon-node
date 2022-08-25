@@ -135,11 +135,13 @@ public final class REv2StateManagerModule extends AbstractModule {
           new AbstractModule() {
             @Provides
             @Singleton
-            StateManager stateManager(@NetworkId int networkId) {
+            RustStateComputer stateComputer(@NetworkId int networkId) {
               var network = Network.ofId(networkId).orElseThrow();
-              return StateManager.createAndInitialize(
-                  new StateManagerConfig(
-                      NetworkDefinition.from(network), mempoolConfig, databaseConfig));
+              var stateManager =
+                  StateManager.createAndInitialize(
+                      new StateManagerConfig(
+                          NetworkDefinition.from(network), mempoolConfig, databaseConfig));
+              return new RustStateComputer(stateManager.getRustState());
             }
           });
     }

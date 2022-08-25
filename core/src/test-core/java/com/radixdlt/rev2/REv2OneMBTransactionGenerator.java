@@ -75,12 +75,18 @@ import java.util.List;
 
 /** Generates valid REv2 1 MB transactions */
 public final class REv2OneMBTransactionGenerator implements TransactionGenerator {
+  private final NetworkDefinition networkDefinition;
+
   private int currentKey = 1;
+
+  public REv2OneMBTransactionGenerator(NetworkDefinition networkDefinition) {
+    this.networkDefinition = networkDefinition;
+  }
 
   @Override
   public RawTransaction nextTransaction() {
     final ECKeyPair key = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
-    var manifest = TransactionBuilder.build1MBManifest(key.getPublicKey());
+    var manifest = TransactionBuilder.build1MBManifest(networkDefinition, key.getPublicKey());
     var hashedManifest = HashUtils.sha256Twice(manifest);
     var signedIntent =
         TransactionBuilder.createSignedIntentBytes(

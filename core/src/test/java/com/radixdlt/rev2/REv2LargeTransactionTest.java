@@ -105,6 +105,7 @@ import org.junit.rules.TemporaryFolder;
 public final class REv2LargeTransactionTest {
 
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+  private static final NetworkDefinition NETWORK_DEFINITION = NetworkDefinition.INT_TEST_NET;
 
   private final DeterministicNetwork network =
       new DeterministicNetwork(
@@ -149,7 +150,8 @@ public final class REv2LargeTransactionTest {
   }
 
   private static RawTransaction create1MBTransaction() {
-    var unsignedManifest = TransactionBuilder.build1MBManifest(TEST_KEY.getPublicKey());
+    var unsignedManifest =
+        TransactionBuilder.build1MBManifest(NETWORK_DEFINITION, TEST_KEY.getPublicKey());
     var hashedManifest = HashUtils.sha256Twice(unsignedManifest).asBytes();
 
     var intentSignature = TEST_KEY.sign(hashedManifest);

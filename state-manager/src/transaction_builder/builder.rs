@@ -104,14 +104,15 @@ pub fn create_new_account_intent_bytes(
     intent.to_bytes()
 }
 
-pub fn create_1mb_txn_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
+pub fn create_1mb_txn_manifest(
+    network_definition: NetworkDefinition,
+    public_key: EcdsaPublicKey,
+) -> Vec<u8> {
     let mut metadata = HashMap::new();
     let large_string = "s".repeat(1024 * 1024);
     metadata.insert("key".to_string(), large_string);
     let access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> = HashMap::new();
     let initial_supply: Option<MintParams> = None;
-
-    let network_definition = NetworkDefinition::local_simulator();
 
     let manifest = ManifestBuilder::new(&network_definition)
         .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
