@@ -98,7 +98,7 @@ fn do_get_transaction_at_state_version(
     state_manager: &mut ActualStateManager,
     state_version: u64,
 ) -> ExecutedTransactionReceipt {
-    let tid = state_manager.proof_store.get_tid(state_version);
+    let tid = state_manager.proof_store.get_tid(state_version).unwrap();
 
     let (transaction_data, receipt) = state_manager.transaction_store.get_transaction(&tid);
 

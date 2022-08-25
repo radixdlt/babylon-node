@@ -62,34 +62,50 @@
  * permissions under this License.
  */
 
-package com.radixdlt.manifest;
+package com.radixdlt.transaction;
 
-import static com.radixdlt.lang.Tuple.tuple;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Tuple;
-import com.radixdlt.sbor.NativeCalls;
-import java.nio.charset.StandardCharsets;
+import com.radixdlt.exceptions.ManifestCompilationException;
+import com.radixdlt.rev2.NetworkDefinition;
+import org.junit.Test;
 
-public final class ManifestCompiler {
+public final class TransactionBuilderTest {
 
-  static {
-    System.loadLibrary("corerust");
+  @Test
+  public void test_compile_manifest() {
+    // Arrange
+    // Just a bunch of random instructions, copied over from scrypto repo tests
+    final var manifest =
+        """
+			CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "withdraw_by_amount" Decimal("5.0") ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag");
+			TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("2.0") ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("xrd");
+			CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "buy_gumball" Bucket("xrd");
+			ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("3.0") ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag");
+			ASSERT_WORKTOP_CONTAINS ResourceAddress("resource_sim1qzhdk7tq68u8msj38r6v6yqa5myc64ejx3ud20zlh9gseqtux6");
+			TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("some_xrd");
+			CREATE_PROOF_FROM_BUCKET Bucket("some_xrd") Proof("proof1");
+			CLONE_PROOF Proof("proof1") Proof("proof2");
+			DROP_PROOF Proof("proof1");
+			DROP_PROOF Proof("proof2");""";
+
+    // Act
+    final var result =
+        TransactionBuilder.compileManifest(NetworkDefinition.LOCAL_SIMULATOR, manifest);
+
+    // Assert
+    assertTrue(result.length > 100); // Just to make sure that it's non-empty
   }
 
-  // TODO: use Network enum once it's in sync with rev2
-  public static Result<byte[], CompileManifestError> compile(String manifest, String network) {
-    final var manifestBytes = manifest.getBytes(StandardCharsets.UTF_8);
-    final var networkBytes = network.getBytes(StandardCharsets.UTF_8);
-    return compileFunc.call(tuple(manifestBytes, networkBytes));
+  @Test
+  public void test_compile_manifest_error() {
+    var exception =
+        assertThrows(
+            ManifestCompilationException.class,
+            () ->
+                TransactionBuilder.compileManifest(
+                    NetworkDefinition.INT_TEST_NET, "INVALID INSTRUCTION;"));
+    assertTrue(exception.getMessage().contains("UnknownIdentifier"));
   }
-
-  private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple2<byte[], byte[]>, Result<byte[], CompileManifestError>>
-      compileFunc =
-          NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {}, new TypeToken<>() {}, ManifestCompiler::compile);
-
-  private static native byte[] compile(byte[] payload);
 }

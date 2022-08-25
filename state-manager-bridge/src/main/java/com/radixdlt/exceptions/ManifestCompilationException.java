@@ -62,19 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.manifest;
+package com.radixdlt.exceptions;
 
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-
-public record CompileManifestError(String message) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        CompileManifestError.class,
-        codecs ->
-            StructCodec.with(
-                CompileManifestError::new,
-                codecs.of(String.class),
-                (t, encoder) -> encoder.encode(t.message)));
+public class ManifestCompilationException extends RuntimeException {
+  public ManifestCompilationException(String message) {
+    super(message);
   }
 }

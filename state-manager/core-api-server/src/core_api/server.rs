@@ -62,7 +62,6 @@
  * permissions under this License.
  */
 
-use crate::core_api::generated::models;
 use crate::core_api::generated::server::MakeService;
 use crate::core_api::generated::{models, TransactionsPostResponse};
 use crate::core_api::generated::{
@@ -71,7 +70,6 @@ use crate::core_api::generated::{
 };
 
 use async_trait::async_trait;
-use state_manager::StateManager;
 
 use std::future::Future;
 use std::marker::PhantomData;
@@ -81,16 +79,15 @@ use std::sync::{Arc, Mutex};
 use crate::core_api::generated::models::CommittedTransactionsRequest;
 use crate::core_api::{network_configuration, preview, transactions};
 use scrypto::prelude::*;
+use state_manager::jni::state_manager::ActualStateManager;
 use swagger::ApiError;
 use swagger::EmptyContext;
 use swagger::{Has, XSpanIdString};
 
-use state_manager::mempool::Mempool;
-
-pub async fn create<M: 'static + Mempool + Send, S: 'static + Send, F>(
+pub async fn create<F>(
     bind_addr: &str,
     shutdown_signal: F,
-    state_manager: Arc<Mutex<StateManager<M, S>>>,
+    state_manager: Arc<Mutex<ActualStateManager>>,
 ) where
     F: Future<Output = ()>,
 {
@@ -108,12 +105,15 @@ pub async fn create<M: 'static + Mempool + Send, S: 'static + Send, F>(
         .unwrap();
 }
 
-pub struct Server<M: 'static + Mempool + Send, S: 'static + Send, C> {
-    state_manager: Arc<Mutex<StateManager<M, S>>>,
+pub struct Server<C> {
+    state_manager: Arc<Mutex<ActualStateManager>>,
     marker: PhantomData<C>,
 }
 
-impl<M: 'static + Mempool + Send, S: 'static + Send, C> Clone for Server<M, S, C> {
+/// Keeping this for the future when, at some point we'll potentially replace ActualStateManager with a generic type.
+/// The `derive` macro doesn't always work reliably in such cases.
+/// See: https://users.rust-lang.org/t/why-does-deriving-clone-not-work-in-this-case-but-implementing-manually-does/29075
+impl<C> Clone for Server<C> {
     fn clone(&self) -> Self {
         Server {
             state_manager: self.state_manager.clone(),
@@ -122,8 +122,8 @@ impl<M: 'static + Mempool + Send, S: 'static + Send, C> Clone for Server<M, S, C
     }
 }
 
-impl<M: Mempool + 'static + Send, S: 'static + Send, C> Server<M, S, C> {
-    pub fn new(state_manager: Arc<Mutex<StateManager<M, S>>>) -> Self {
+impl<C> Server<C> {
+    pub fn new(state_manager: Arc<Mutex<ActualStateManager>>) -> Self {
         Server {
             state_manager,
             marker: PhantomData,
@@ -132,7 +132,7 @@ impl<M: Mempool + 'static + Send, S: 'static + Send, C> Server<M, S, C> {
 }
 
 #[async_trait]
-impl<M: 'static + Mempool + Send, S: 'static + Send, C> Api<C> for Server<M, S, C>
+impl<C> Api<C> for Server<C>
 where
     C: Has<XSpanIdString> + Send + Sync,
 {

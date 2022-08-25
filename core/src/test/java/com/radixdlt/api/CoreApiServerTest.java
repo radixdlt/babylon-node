@@ -68,6 +68,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import com.radixdlt.lang.Option;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.statemanager.CoreApiServerConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
@@ -87,25 +88,26 @@ public final class CoreApiServerTest {
     final var port = FreePortFinder.findFreeLocalPort();
     final var config = new CoreApiServerConfig("127.0.0.1", UInt32.fromNonNegativeInt(port));
     try (final var stateManager =
-        StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
+        StateManager.createAndInitialize(
+            new StateManagerConfig(NetworkDefinition.INT_TEST_NET, Option.none()))) {
       final var server = CoreApiServer.create(stateManager, config);
 
       try {
         // Act & Assert #1: start the server and verify it's up
         server.start();
-        final var statusCode = mkNetworkConfigurationRequest(port);
+        final var statusCode = makeNetworkConfigurationRequest(port);
         assertEquals(200, statusCode);
 
         // Act & Assert #2: stop the server and verify it's shut down
         server.stop();
-        assertThrows(ConnectException.class, () -> mkNetworkConfigurationRequest(port));
+        assertThrows(ConnectException.class, () -> makeNetworkConfigurationRequest(port));
       } finally {
         server.stop();
       }
     }
   }
 
-  private static int mkNetworkConfigurationRequest(int port) throws Exception {
+  private static int makeNetworkConfigurationRequest(int port) throws Exception {
     final var url = new URL("http://127.0.0.1:" + port + "/core/status/network-configuration");
     final var conn = (HttpURLConnection) url.openConnection();
     conn.setRequestMethod("POST");

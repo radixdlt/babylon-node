@@ -62,63 +62,86 @@
  * permissions under this License.
  */
 
-use jni::objects::JClass;
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use sbor::{Decode, Encode, TypeId};
-use scrypto::core::Network;
-use scrypto::prelude::scrypto_encode;
-use std::str;
-use std::str::FromStr;
-use transaction::manifest::{compile, CompileError};
+package com.radixdlt.rev2;
 
-use super::utils::jni_static_sbor_call;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_manifest_ManifestCompiler_compile(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_compile)
+public final class REv2TestTransactions {
+  // This has to come first for static ordering issues
+  private static int currentKey = 1;
+
+  public static final RawTransaction VALID_TXN_0 =
+      constructTransaction("CLEAR_AUTH_ZONE;", List.of());
+  public static final RawTransaction VALID_TXN_1 =
+      constructTransaction("CLEAR_AUTH_ZONE;", List.of(getNewKeyPair()));
+  public static final RawTransaction VALID_TXN_2 =
+      constructTransaction(
+          "CLEAR_AUTH_ZONE; CLEAR_AUTH_ZONE;", List.of(getNewKeyPair(), getNewKeyPair()));
+
+  private static ECKeyPair getNewKeyPair() {
+    return PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
+  }
+
+  public static RawTransaction constructTransaction(String manifest, List<ECKeyPair> signatories) {
+    return constructTransaction(
+        NetworkDefinition.INT_TEST_NET, manifest, getNewKeyPair(), false, signatories);
+  }
+
+  public static RawTransaction constructTransaction(
+      NetworkDefinition networkDefinition,
+      String manifest,
+      ECKeyPair notary,
+      boolean notaryIsSignatory,
+      List<ECKeyPair> signatories) {
+    // Build intent
+    final var header =
+        TransactionHeader.defaults(networkDefinition, notary.getPublicKey(), notaryIsSignatory);
+    var intentBytes = TransactionBuilder.createIntent(networkDefinition, header, manifest);
+
+    // Sign intent
+    return constructTransaction(intentBytes, notary, signatories);
+  }
+
+  public static RawTransaction constructTransaction(
+      NetworkDefinition networkDefinition,
+      TransactionHeader header,
+      String manifest,
+      ECKeyPair notary,
+      List<ECKeyPair> signatories) {
+    // Build intent
+    var intentBytes = TransactionBuilder.createIntent(networkDefinition, header, manifest);
+
+    // Sign intent
+    return constructTransaction(intentBytes, notary, signatories);
+  }
+
+  public static RawTransaction constructTransaction(
+      byte[] intentBytes, ECKeyPair notary, List<ECKeyPair> signatories) {
+    // Sign intent
+    var hashedIntent = HashUtils.sha256Twice(intentBytes).asBytes();
+    var intentSignatures =
+        signatories.stream()
+            .map(ecKeyPair -> Tuple.tuple(ecKeyPair.getPublicKey(), ecKeyPair.sign(hashedIntent)))
+            .toList();
+    var signedIntentBytes =
+        TransactionBuilder.createSignedIntentBytes(intentBytes, intentSignatures);
+
+    // Notarize
+    var hashedSignedIntent = HashUtils.sha256Twice(signedIntentBytes).asBytes();
+    var notarySignature = notary.sign(hashedSignedIntent);
+    var notarizedBytes =
+        TransactionBuilder.createNotarizedBytes(signedIntentBytes, notarySignature);
+
+    return RawTransaction.create(notarizedBytes);
+  }
+
+  private REv2TestTransactions() {
+    throw new IllegalStateException("Cannot instantiate.");
+  }
 }
-
-fn do_compile(args: (Vec<u8>, Vec<u8>)) -> Result<Vec<u8>, CompileManifestErrorJava> {
-    let (manifest_bytes, network_bytes) = args;
-
-    let manifest_str = str::from_utf8(&manifest_bytes)
-        .map_err(|_e| CompileManifestErrorJava::from("Invalid utf-8 string (manifest)"))?;
-
-    let network_str = str::from_utf8(&network_bytes)
-        .map_err(|_e| CompileManifestErrorJava::from("Invalid utf-8 string (network)"))?;
-
-    let network: Network = Network::from_str(network_str)
-        .map_err(|_e| CompileManifestErrorJava::from("Unknown network"))?;
-
-    compile(manifest_str, &network)
-        .map_err(|e| e.into())
-        .map(|manifest| scrypto_encode(&manifest))
-}
-
-#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
-struct CompileManifestErrorJava {
-    message: String,
-}
-
-impl From<CompileError> for CompileManifestErrorJava {
-    fn from(err: CompileError) -> Self {
-        CompileManifestErrorJava {
-            message: format!("{:?}", err),
-        }
-    }
-}
-
-impl From<&str> for CompileManifestErrorJava {
-    fn from(message: &str) -> Self {
-        CompileManifestErrorJava {
-            message: message.to_string(),
-        }
-    }
-}
-
-pub fn export_extern_functions() {}

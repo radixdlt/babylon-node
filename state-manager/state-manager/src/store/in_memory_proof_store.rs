@@ -95,11 +95,16 @@ impl ProofStore {
             .insert(state_version, proof_bytes);
     }
 
-    pub fn get_tid(&self, state_version: u64) -> TId {
+    pub fn max_state_version(&self) -> u64 {
         self.in_memory_txid_store
-            .get(&state_version)
-            .cloned()
-            .unwrap()
+            .iter()
+            .next_back()
+            .map(|(k, _v)| *k)
+            .unwrap_or_default()
+    }
+
+    pub fn get_tid(&self, state_version: u64) -> Option<TId> {
+        self.in_memory_txid_store.get(&state_version).cloned()
     }
 
     /// Returns the next proof from a state version (excluded)

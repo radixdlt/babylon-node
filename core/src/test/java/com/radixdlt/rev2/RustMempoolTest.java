@@ -83,12 +83,14 @@ public final class RustMempoolTest {
   @Test
   public void test_rust_mempool_add() throws Exception {
     final var mempoolSize = 2;
-    final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
+    final var config =
+        new StateManagerConfig(
+            NetworkDefinition.INT_TEST_NET, Option.some(new RustMempoolConfig(mempoolSize)));
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
-      var transaction1 = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
-      var transaction2 = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_1);
-      var transaction3 = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_2);
+      var transaction1 = REv2TestTransactions.VALID_TXN_0;
+      var transaction2 = REv2TestTransactions.VALID_TXN_1;
+      var transaction3 = REv2TestTransactions.VALID_TXN_2;
 
       Assert.assertEquals(0, rustMempool.getCount());
 
@@ -137,12 +139,14 @@ public final class RustMempoolTest {
   @Test
   public void test_rust_mempool_getTxns() throws Exception {
     final var mempoolSize = 3;
-    final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
+    final var config =
+        new StateManagerConfig(
+            NetworkDefinition.INT_TEST_NET, Option.some(new RustMempoolConfig(mempoolSize)));
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
-      var transaction1 = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
-      var transaction2 = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_1);
-      var transaction3 = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_2);
+      var transaction1 = REv2TestTransactions.VALID_TXN_0;
+      var transaction2 = REv2TestTransactions.VALID_TXN_1;
+      var transaction3 = REv2TestTransactions.VALID_TXN_2;
 
       // Add Transactions
       rustMempool.addTransaction(transaction1);
@@ -229,12 +233,14 @@ public final class RustMempoolTest {
   @Test
   public void test_rust_mempool_getRelayTxns() throws Exception {
     final var mempoolSize = 3;
-    final var config = new StateManagerConfig(Option.some(new RustMempoolConfig(mempoolSize)));
+    final var config =
+        new StateManagerConfig(
+            NetworkDefinition.INT_TEST_NET, Option.some(new RustMempoolConfig(mempoolSize)));
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
-      var transaction1 = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
-      var transaction2 = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_1);
-      var transaction3 = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_2);
+      var transaction1 = REv2TestTransactions.VALID_TXN_0;
+      var transaction2 = REv2TestTransactions.VALID_TXN_1;
+      var transaction3 = REv2TestTransactions.VALID_TXN_2;
 
       rustMempool.addTransaction(transaction1);
       rustMempool.addTransaction(transaction2);

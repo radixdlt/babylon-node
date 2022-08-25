@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.mempool.*;
 import com.radixdlt.rev2.ComponentAddress;
@@ -75,12 +76,15 @@ import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
+import java.util.Objects;
 
 public class RustStateComputer {
   private final RustMempool mempool;
   private final REv2TransactionAndProofStore transactionStore;
 
   public RustStateComputer(StateManager stateManager) {
+    Objects.requireNonNull(stateManager);
+
     this.mempool = new RustMempool(stateManager);
     this.transactionStore = new REv2TransactionAndProofStore(stateManager);
     verifyFunc =
@@ -122,11 +126,11 @@ public class RustStateComputer {
     commitFunc.call(commitRequest);
   }
 
-  public boolean verify(RawTransaction transaction) {
+  public Result<Unit, String> verify(RawTransaction transaction) {
     return verifyFunc.call(transaction);
   }
 
-  private final NativeCalls.Func1<StateManager, RawTransaction, Boolean> verifyFunc;
+  private final NativeCalls.Func1<StateManager, RawTransaction, Result<Unit, String>> verifyFunc;
 
   private static native byte[] verify(StateManager stateManager, byte[] payload);
 

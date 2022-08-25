@@ -92,7 +92,7 @@ fn do_verify(
     env: &JNIEnv,
     j_state_manager: JObject,
     request_payload: jbyteArray,
-) -> StateManagerResult<bool> {
+) -> StateManagerResult<Result<(), String>> {
     let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
     let transaction = Transaction::from_java(&request_payload)?;
@@ -100,7 +100,11 @@ fn do_verify(
         .lock()
         .expect("Can't acquire a state manager mutex lock")
         .decode_transaction(&transaction);
-    Ok(result.is_ok())
+    let ret = match result {
+        Ok(..) => Ok(()),
+        Err(err) => Err(format!("{:?}", err)),
+    };
+    Ok(ret)
 }
 
 #[no_mangle]

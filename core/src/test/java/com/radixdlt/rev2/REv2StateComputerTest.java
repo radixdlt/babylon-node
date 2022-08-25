@@ -78,6 +78,8 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
@@ -95,6 +97,7 @@ public class REv2StateComputerTest {
           new AbstractModule() {
             @Override
             protected void configure() {
+              bindConstant().annotatedWith(NetworkId.class).to(Network.INTEGRATIONTESTNET.getId());
               bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
               bind(SystemCounters.class).toInstance(new SystemCountersImpl());
             }
@@ -104,7 +107,7 @@ public class REv2StateComputerTest {
   public void test_valid_rev2_transaction_passes() {
     // Arrange
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var validTransaction = RawTransaction.create(REv2ExampleTransactions.VALID_TXN_BYTES_0);
+    var validTransaction = REv2TestTransactions.VALID_TXN_0;
 
     // Act
     var result =

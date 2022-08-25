@@ -152,6 +152,9 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct CommittedTransaction {
+    #[serde(rename = "state_version")]
+    pub state_version: String,
+
     #[serde(rename = "notarized_transaction")]
     pub notarized_transaction: models::NotarizedTransaction,
 
@@ -161,8 +164,9 @@ pub struct CommittedTransaction {
 }
 
 impl CommittedTransaction {
-    pub fn new(notarized_transaction: models::NotarizedTransaction, receipt: models::TransactionReceipt, ) -> CommittedTransaction {
+    pub fn new(state_version: String, notarized_transaction: models::NotarizedTransaction, receipt: models::TransactionReceipt, ) -> CommittedTransaction {
         CommittedTransaction {
+            state_version: state_version,
             notarized_transaction: notarized_transaction,
             receipt: receipt,
         }
@@ -175,6 +179,10 @@ impl CommittedTransaction {
 impl std::string::ToString for CommittedTransaction {
     fn to_string(&self) -> String {
         let mut params: Vec<String> = vec![];
+
+        params.push("state_version".to_string());
+        params.push(self.state_version.to_string());
+
         // Skipping notarized_transaction in query parameter serialization
 
         // Skipping receipt in query parameter serialization
@@ -193,6 +201,7 @@ impl std::str::FromStr for CommittedTransaction {
         #[derive(Default)]
         // An intermediate representation of the struct to use for parsing.
         struct IntermediateRep {
+            pub state_version: Vec<String>,
             pub notarized_transaction: Vec<models::NotarizedTransaction>,
             pub receipt: Vec<models::TransactionReceipt>,
         }
@@ -211,6 +220,7 @@ impl std::str::FromStr for CommittedTransaction {
 
             if let Some(key) = key_result {
                 match key {
+                    "state_version" => intermediate_rep.state_version.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "notarized_transaction" => intermediate_rep.notarized_transaction.push(<models::NotarizedTransaction as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "receipt" => intermediate_rep.receipt.push(<models::TransactionReceipt as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     _ => return std::result::Result::Err("Unexpected key while parsing CommittedTransaction".to_string())
@@ -223,6 +233,7 @@ impl std::str::FromStr for CommittedTransaction {
 
         // Use the intermediate representation to return the struct
         std::result::Result::Ok(CommittedTransaction {
+            state_version: intermediate_rep.state_version.into_iter().next().ok_or("state_version missing in CommittedTransaction".to_string())?,
             notarized_transaction: intermediate_rep.notarized_transaction.into_iter().next().ok_or("notarized_transaction missing in CommittedTransaction".to_string())?,
             receipt: intermediate_rep.receipt.into_iter().next().ok_or("receipt missing in CommittedTransaction".to_string())?,
         })
@@ -276,7 +287,7 @@ pub struct CommittedTransactionsRequest {
     pub network_identifier: models::NetworkIdentifier,
 
     #[serde(rename = "state_version")]
-    pub state_version: i64,
+    pub state_version: String,
 
     /// The maximum number of transactions that will be returned.
     #[serde(rename = "limit")]
@@ -285,7 +296,7 @@ pub struct CommittedTransactionsRequest {
 }
 
 impl CommittedTransactionsRequest {
-    pub fn new(network_identifier: models::NetworkIdentifier, state_version: i64, limit: isize, ) -> CommittedTransactionsRequest {
+    pub fn new(network_identifier: models::NetworkIdentifier, state_version: String, limit: isize, ) -> CommittedTransactionsRequest {
         CommittedTransactionsRequest {
             network_identifier: network_identifier,
             state_version: state_version,
@@ -325,7 +336,7 @@ impl std::str::FromStr for CommittedTransactionsRequest {
         // An intermediate representation of the struct to use for parsing.
         struct IntermediateRep {
             pub network_identifier: Vec<models::NetworkIdentifier>,
-            pub state_version: Vec<i64>,
+            pub state_version: Vec<String>,
             pub limit: Vec<isize>,
         }
 
@@ -344,7 +355,7 @@ impl std::str::FromStr for CommittedTransactionsRequest {
             if let Some(key) = key_result {
                 match key {
                     "network_identifier" => intermediate_rep.network_identifier.push(<models::NetworkIdentifier as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "state_version" => intermediate_rep.state_version.push(<i64 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "state_version" => intermediate_rep.state_version.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "limit" => intermediate_rep.limit.push(<isize as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     _ => return std::result::Result::Err("Unexpected key while parsing CommittedTransactionsRequest".to_string())
                 }
@@ -406,7 +417,7 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct CommittedTransactionsResponse {
     #[serde(rename = "state_version")]
-    pub state_version: i64,
+    pub state_version: String,
 
     /// A committed transactions list starting from the `state_version`.
     #[serde(rename = "transactions")]
@@ -415,7 +426,7 @@ pub struct CommittedTransactionsResponse {
 }
 
 impl CommittedTransactionsResponse {
-    pub fn new(state_version: i64, transactions: Vec<models::CommittedTransaction>, ) -> CommittedTransactionsResponse {
+    pub fn new(state_version: String, transactions: Vec<models::CommittedTransaction>, ) -> CommittedTransactionsResponse {
         CommittedTransactionsResponse {
             state_version: state_version,
             transactions: transactions,
@@ -449,7 +460,7 @@ impl std::str::FromStr for CommittedTransactionsResponse {
         #[derive(Default)]
         // An intermediate representation of the struct to use for parsing.
         struct IntermediateRep {
-            pub state_version: Vec<i64>,
+            pub state_version: Vec<String>,
             pub transactions: Vec<Vec<models::CommittedTransaction>>,
         }
 
@@ -467,7 +478,7 @@ impl std::str::FromStr for CommittedTransactionsResponse {
 
             if let Some(key) = key_result {
                 match key {
-                    "state_version" => intermediate_rep.state_version.push(<i64 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "state_version" => intermediate_rep.state_version.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "transactions" => return std::result::Result::Err("Parsing a container in this style is not supported in CommittedTransactionsResponse".to_string()),
                     _ => return std::result::Result::Err("Unexpected key while parsing CommittedTransactionsResponse".to_string())
                 }
@@ -2304,129 +2315,6 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct Network {
-    #[serde(rename = "id")]
-    pub id: String,
-
-    #[serde(rename = "name")]
-    pub name: String,
-
-}
-
-impl Network {
-    pub fn new(id: String, name: String, ) -> Network {
-        Network {
-            id: id,
-            name: name,
-        }
-    }
-}
-
-/// Converts the Network value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for Network {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("id".to_string());
-        params.push(self.id.to_string());
-
-
-        params.push("name".to_string());
-        params.push(self.name.to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a Network value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for Network {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub id: Vec<String>,
-            pub name: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing Network".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "id" => intermediate_rep.id.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "name" => intermediate_rep.name.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing Network".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(Network {
-            id: intermediate_rep.id.into_iter().next().ok_or("id missing in Network".to_string())?,
-            name: intermediate_rep.name.into_iter().next().ok_or("name missing in Network".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<Network> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<Network>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<Network>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for Network - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<Network> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <Network as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into Network - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct NetworkConfigurationResponse {
     #[serde(rename = "version")]
     pub version: models::NetworkConfigurationResponseVersion,
@@ -3411,8 +3299,8 @@ pub struct TransactionHeader {
     #[serde(rename = "version")]
     pub version: isize,
 
-    #[serde(rename = "network")]
-    pub network: models::Network,
+    #[serde(rename = "network_id")]
+    pub network_id: isize,
 
     #[serde(rename = "start_epoch_inclusive")]
     pub start_epoch_inclusive: String,
@@ -3438,10 +3326,10 @@ pub struct TransactionHeader {
 }
 
 impl TransactionHeader {
-    pub fn new(version: isize, network: models::Network, start_epoch_inclusive: String, end_epoch_exclusive: String, nonce: String, notary_public_key: String, notary_as_signatory: bool, cost_unit_limit: String, tip_percentage: String, ) -> TransactionHeader {
+    pub fn new(version: isize, network_id: isize, start_epoch_inclusive: String, end_epoch_exclusive: String, nonce: String, notary_public_key: String, notary_as_signatory: bool, cost_unit_limit: String, tip_percentage: String, ) -> TransactionHeader {
         TransactionHeader {
             version: version,
-            network: network,
+            network_id: network_id,
             start_epoch_inclusive: start_epoch_inclusive,
             end_epoch_exclusive: end_epoch_exclusive,
             nonce: nonce,
@@ -3463,7 +3351,9 @@ impl std::string::ToString for TransactionHeader {
         params.push("version".to_string());
         params.push(self.version.to_string());
 
-        // Skipping network in query parameter serialization
+
+        params.push("network_id".to_string());
+        params.push(self.network_id.to_string());
 
 
         params.push("start_epoch_inclusive".to_string());
@@ -3508,7 +3398,7 @@ impl std::str::FromStr for TransactionHeader {
         // An intermediate representation of the struct to use for parsing.
         struct IntermediateRep {
             pub version: Vec<isize>,
-            pub network: Vec<models::Network>,
+            pub network_id: Vec<isize>,
             pub start_epoch_inclusive: Vec<String>,
             pub end_epoch_exclusive: Vec<String>,
             pub nonce: Vec<String>,
@@ -3533,7 +3423,7 @@ impl std::str::FromStr for TransactionHeader {
             if let Some(key) = key_result {
                 match key {
                     "version" => intermediate_rep.version.push(<isize as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "network" => intermediate_rep.network.push(<models::Network as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "network_id" => intermediate_rep.network_id.push(<isize as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "start_epoch_inclusive" => intermediate_rep.start_epoch_inclusive.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "end_epoch_exclusive" => intermediate_rep.end_epoch_exclusive.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "nonce" => intermediate_rep.nonce.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
@@ -3552,7 +3442,7 @@ impl std::str::FromStr for TransactionHeader {
         // Use the intermediate representation to return the struct
         std::result::Result::Ok(TransactionHeader {
             version: intermediate_rep.version.into_iter().next().ok_or("version missing in TransactionHeader".to_string())?,
-            network: intermediate_rep.network.into_iter().next().ok_or("network missing in TransactionHeader".to_string())?,
+            network_id: intermediate_rep.network_id.into_iter().next().ok_or("network_id missing in TransactionHeader".to_string())?,
             start_epoch_inclusive: intermediate_rep.start_epoch_inclusive.into_iter().next().ok_or("start_epoch_inclusive missing in TransactionHeader".to_string())?,
             end_epoch_exclusive: intermediate_rep.end_epoch_exclusive.into_iter().next().ok_or("end_epoch_exclusive missing in TransactionHeader".to_string())?,
             nonce: intermediate_rep.nonce.into_iter().next().ok_or("nonce missing in TransactionHeader".to_string())?,
@@ -3747,15 +3637,15 @@ pub struct TransactionPreviewRequest {
 
     /// A limit of cost units available for execution
     #[serde(rename = "cost_unit_limit")]
-    pub cost_unit_limit: i32,
+    pub cost_unit_limit: String,
 
     /// A tip for the validator
     #[serde(rename = "tip_percentage")]
-    pub tip_percentage: i32,
+    pub tip_percentage: String,
 
     /// A nonce value to use for execution
     #[serde(rename = "nonce")]
-    pub nonce: i64,
+    pub nonce: String,
 
     /// A list of public keys to be used as transaction signers, in a compressed format, hex encoded.
     #[serde(rename = "signer_public_keys")]
@@ -3767,7 +3657,7 @@ pub struct TransactionPreviewRequest {
 }
 
 impl TransactionPreviewRequest {
-    pub fn new(network_identifier: models::NetworkIdentifier, manifest: String, cost_unit_limit: i32, tip_percentage: i32, nonce: i64, signer_public_keys: Vec<String>, flags: models::TransactionPreviewRequestFlags, ) -> TransactionPreviewRequest {
+    pub fn new(network_identifier: models::NetworkIdentifier, manifest: String, cost_unit_limit: String, tip_percentage: String, nonce: String, signer_public_keys: Vec<String>, flags: models::TransactionPreviewRequestFlags, ) -> TransactionPreviewRequest {
         TransactionPreviewRequest {
             network_identifier: network_identifier,
             manifest: manifest,
@@ -3826,9 +3716,9 @@ impl std::str::FromStr for TransactionPreviewRequest {
         struct IntermediateRep {
             pub network_identifier: Vec<models::NetworkIdentifier>,
             pub manifest: Vec<String>,
-            pub cost_unit_limit: Vec<i32>,
-            pub tip_percentage: Vec<i32>,
-            pub nonce: Vec<i64>,
+            pub cost_unit_limit: Vec<String>,
+            pub tip_percentage: Vec<String>,
+            pub nonce: Vec<String>,
             pub signer_public_keys: Vec<Vec<String>>,
             pub flags: Vec<models::TransactionPreviewRequestFlags>,
         }
@@ -3849,9 +3739,9 @@ impl std::str::FromStr for TransactionPreviewRequest {
                 match key {
                     "network_identifier" => intermediate_rep.network_identifier.push(<models::NetworkIdentifier as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "manifest" => intermediate_rep.manifest.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "cost_unit_limit" => intermediate_rep.cost_unit_limit.push(<i32 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "tip_percentage" => intermediate_rep.tip_percentage.push(<i32 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "nonce" => intermediate_rep.nonce.push(<i64 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "cost_unit_limit" => intermediate_rep.cost_unit_limit.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "tip_percentage" => intermediate_rep.tip_percentage.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "nonce" => intermediate_rep.nonce.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "signer_public_keys" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionPreviewRequest".to_string()),
                     "flags" => intermediate_rep.flags.push(<models::TransactionPreviewRequestFlags as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     _ => return std::result::Result::Err("Unexpected key while parsing TransactionPreviewRequest".to_string())

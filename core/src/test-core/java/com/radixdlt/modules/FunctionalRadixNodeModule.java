@@ -78,6 +78,8 @@ import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
 import com.radixdlt.rev1.MockedMempoolStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
@@ -283,6 +285,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             install(new ReV1DispatcherModule());
           }
           case REv2StateComputerConfig rev2Config -> {
+            bindConstant().annotatedWith(NetworkId.class).to(Network.INTEGRATIONTESTNET.getId());
             int mempoolSize = 0;
             switch (rev2Config.proposerConfig()) {
               case REV2ProposerConfig.HalfCorrectProposer ignored -> {

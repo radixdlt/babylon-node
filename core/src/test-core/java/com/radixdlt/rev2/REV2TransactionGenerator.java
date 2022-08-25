@@ -64,29 +64,31 @@
 
 package com.radixdlt.rev2;
 
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
 
 /** Generates a valid transaction for REV2 */
 public final class REV2TransactionGenerator implements TransactionGenerator {
+  private final NetworkDefinition networkDefinition;
+
+  public REV2TransactionGenerator() {
+    this.networkDefinition = NetworkDefinition.INT_TEST_NET;
+  }
+
+  public REV2TransactionGenerator(NetworkDefinition networkDefinition) {
+    this.networkDefinition = networkDefinition;
+  }
+
   private int currentKey = 1;
 
   @Override
   public RawTransaction nextTransaction() {
-    final ECKeyPair key = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
-    var manifest = TransactionBuilder.buildNewAccountManifest(key.getPublicKey());
-    var hashedManifest = HashUtils.sha256Twice(manifest);
-    var signedIntent =
-        TransactionBuilder.createSignedIntentBytes(
-            manifest, key.getPublicKey(), key.sign(hashedManifest.asBytes()));
-    var hashedSignedIntent = HashUtils.sha256Twice(signedIntent);
-    var notarized =
-        TransactionBuilder.createNotarizedBytes(
-            signedIntent, key.sign(hashedSignedIntent.asBytes()));
-    return RawTransaction.create(notarized);
+    final var notary = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
+    var intentBytes =
+        TransactionBuilder.buildNewAccountIntent(networkDefinition, notary.getPublicKey());
+    return REv2TestTransactions.constructTransaction(intentBytes, notary, List.of(notary));
   }
 }

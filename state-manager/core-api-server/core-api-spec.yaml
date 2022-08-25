@@ -221,7 +221,7 @@ components:
       type: object
       required:
         - version
-        - network
+        - network_id
         - start_epoch_inclusive
         - end_epoch_exclusive
         - nonce
@@ -232,8 +232,8 @@ components:
       properties:
         version:
           type: integer
-        network:
-          "$ref": "#/components/schemas/Network"
+        network_id:
+          type: integer
         start_epoch_inclusive:
           type: string
         end_epoch_exclusive:
@@ -247,16 +247,6 @@ components:
         cost_unit_limit:
           type: string
         tip_percentage:
-          type: string
-    Network:
-      type: object
-      required:
-        - id
-        - name
-      properties:
-        id:
-          type: string
-        name:
           type: string
     NetworkIdentifier:
       type: object
@@ -483,16 +473,13 @@ components:
           type: string
         cost_unit_limit:
           description: A limit of cost units available for execution
-          type: integer
-          format: int32
+          type: string
         tip_percentage:
           description: A tip for the validator
-          type: integer
-          format: int32
+          type: string
         nonce:
           description: A nonce value to use for execution
-          type: integer
-          format: int64
+          type: string
         signer_public_keys:
           description: A list of public keys to be used as transaction signers, in a compressed format, hex encoded.
           type: array
@@ -569,8 +556,7 @@ components:
           "$ref": "#/components/schemas/NetworkIdentifier"
           description: The name of the network
         state_version:
-          type: integer
-          format: int64
+          type: string
         limit:
           description: The maximum number of transactions that will be returned.
           type: integer
@@ -581,8 +567,7 @@ components:
         - transactions
       properties:
         state_version:
-          type: integer
-          format: int64
+          type: string
         transactions:
           description: A committed transactions list starting from the `state_version`.
           type: array
@@ -591,9 +576,12 @@ components:
     CommittedTransaction:
       type: object
       required:
+        - state_version
         - notarized_transaction
         - receipt
       properties:
+        state_version:
+          type: string
         notarized_transaction:
           "$ref": "#/components/schemas/NotarizedTransaction"
         receipt:
