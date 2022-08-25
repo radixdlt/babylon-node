@@ -64,6 +64,7 @@
 
 package com.radixdlt.networks;
 
+import com.radixdlt.crypto.ECKeyPair;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -97,7 +98,8 @@ public enum Network {
   INTEGRATIONTESTNET(241 /* 0xF1 */, "inttestnet", "_tdx241_", GenesisSource.fromConfiguration);
 
   // For the Radix Shell to provide a default
-  public static final String DefaultHexGenesisTransaction = "01";
+  public static final String DefaultHexGenesisTransaction =
+      ECKeyPair.generateNew().getPublicKey().toHex();
 
   private final int id;
   private final String logicalName;
