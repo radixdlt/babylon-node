@@ -62,29 +62,27 @@
  * permissions under this License.
  */
 
+use crate::store::ProofStore;
 use crate::types::TId;
 use std::collections::BTreeMap;
 
 #[derive(Debug)]
-pub struct ProofStore {
+pub struct InMemoryProofStore {
     in_memory_proof_store: BTreeMap<u64, Vec<u8>>,
     in_memory_txid_store: BTreeMap<u64, TId>,
 }
 
-impl ProofStore {
+impl InMemoryProofStore {
     pub fn new() -> Self {
-        ProofStore {
+        InMemoryProofStore {
             in_memory_proof_store: BTreeMap::new(),
             in_memory_txid_store: BTreeMap::new(),
         }
     }
+}
 
-    pub fn insert_tids_and_proof(
-        &mut self,
-        state_version: u64,
-        ids: Vec<TId>,
-        proof_bytes: Vec<u8>,
-    ) {
+impl ProofStore for InMemoryProofStore {
+    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
         let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
         for (index, id) in ids.into_iter().enumerate() {
             let txn_state_version = first_state_version + index as u64;
@@ -95,7 +93,7 @@ impl ProofStore {
             .insert(state_version, proof_bytes);
     }
 
-    pub fn get_tid(&self, state_version: u64) -> TId {
+    fn get_tid(&self, state_version: u64) -> TId {
         self.in_memory_txid_store
             .get(&state_version)
             .cloned()
@@ -103,7 +101,7 @@ impl ProofStore {
     }
 
     /// Returns the next proof from a state version (excluded)
-    pub fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
         let next_state_version = state_version + 1;
         self.in_memory_proof_store
             .range(next_state_version..)
@@ -117,7 +115,7 @@ impl ProofStore {
             })
     }
 
-    pub fn get_last_proof(&self) -> Option<Vec<u8>> {
+    fn get_last_proof(&self) -> Option<Vec<u8>> {
         self.in_memory_proof_store
             .iter()
             .next_back()

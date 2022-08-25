@@ -89,7 +89,7 @@ use transaction::validation::{TestIntentHashManager, TransactionValidator, Valid
 pub struct StateManager<M: Mempool, S> {
     pub mempool: M,
     pub transaction_store: Box<dyn TransactionStore + Send>, // TODO: remove dyn
-    pub proof_store: ProofStore,
+    pub proof_store: Box<dyn ProofStore + Send>,
     network: NetworkDefinition,
     substate_store: S,
     wasm_engine: DefaultWasmEngine,
@@ -110,13 +110,14 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
         network: NetworkDefinition,
         mempool: M,
         transaction_store: Box<dyn TransactionStore + Send>,
+        proof_store: Box<dyn ProofStore + Send>,
         substate_store: S,
     ) -> StateManager<M, S> {
         StateManager {
             network,
             mempool,
             transaction_store,
-            proof_store: ProofStore::new(),
+            proof_store,
             substate_store,
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),

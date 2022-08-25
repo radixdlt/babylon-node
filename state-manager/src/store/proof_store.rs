@@ -62,107 +62,11 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::*;
-use crate::jni::utils::*;
-use crate::mempool::simple::SimpleMempool;
-use crate::mempool::MempoolConfig;
-use crate::state_manager::{DatabaseConfig, StateManager, StateManagerConfig};
-use crate::store::{
-    InMemoryProofStore, InMemoryTransactionStore, NullTransactionStore, RocksDBTransactionStore,
-    TransactionStore,
-};
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use std::path::PathBuf;
+use crate::types::TId;
 
-use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
-use std::sync::MutexGuard;
-
-const POINTER_JNI_FIELD_NAME: &str = "stateManagerPointer";
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statemanager_StateManager_init(
-    env: JNIEnv,
-    _class: JClass,
-    interop_state: JObject,
-    j_config: jbyteArray,
-) {
-    JNIStateManager::init(&env, interop_state, j_config);
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
-    env: JNIEnv,
-    _class: JClass,
-    interop_state: JObject,
-) {
-    JNIStateManager::cleanup(&env, interop_state);
-}
-
-pub type ActualStateManager = StateManager<SimpleMempool, SerializedInMemorySubstateStore>;
-pub struct JNIStateManager {
-    pub state_manager: ActualStateManager,
-}
-
-impl JNIStateManager {
-    pub fn init(env: &JNIEnv, interop_state: JObject, j_config: jbyteArray) {
-        let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
-        let config = StateManagerConfig::from_java(&config_bytes).unwrap();
-
-        // Build the basic subcomponents.
-        let mempool_config = match config.mempool_config {
-            Some(mempool_config) => mempool_config,
-            None =>
-            // in general, missing mempool config should mean that mempool isn't needed
-            // but for now just using a default
-            {
-                MempoolConfig { max_size: 10 }
-            }
-        };
-
-        let transaction_store: Box<dyn TransactionStore + Send> = match config.db_config {
-            DatabaseConfig::InMemory => Box::new(InMemoryTransactionStore::new()),
-            DatabaseConfig::RocksDB(path) => {
-                Box::new(RocksDBTransactionStore::new(PathBuf::from(path)))
-            }
-            DatabaseConfig::None => Box::new(NullTransactionStore),
-        };
-
-        let proof_store = Box::new(InMemoryProofStore::new());
-
-        let mempool = SimpleMempool::new(mempool_config);
-        let substate_store = SerializedInMemorySubstateStore::with_bootstrap();
-
-        // Build the state manager.
-        let state_manager = StateManager::new(
-            config.network_definition,
-            mempool,
-            transaction_store,
-            proof_store,
-            substate_store,
-        );
-
-        let jni_state_manager = JNIStateManager { state_manager };
-
-        env.set_rust_field(interop_state, POINTER_JNI_FIELD_NAME, jni_state_manager)
-            .unwrap();
-    }
-
-    pub fn cleanup(env: &JNIEnv, interop_state: JObject) {
-        let jni_state_manager: JNIStateManager = env
-            .take_rust_field(interop_state, POINTER_JNI_FIELD_NAME)
-            .unwrap();
-        drop(jni_state_manager);
-    }
-
-    /// Get a lock on the state manager
-    /// TODO: Optimize this lock out at some point
-    pub fn get_state_manager<'a>(
-        env: &'a JNIEnv,
-        interop_state: JObject<'a>,
-    ) -> MutexGuard<'a, JNIStateManager> {
-        env.get_rust_field(interop_state, POINTER_JNI_FIELD_NAME)
-            .unwrap()
-    }
+pub trait ProofStore {
+    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>);
+    fn get_tid(&self, state_version: u64) -> TId;
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)>;
+    fn get_last_proof(&self) -> Option<Vec<u8>>;
 }
