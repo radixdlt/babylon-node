@@ -63,7 +63,7 @@
  */
 
 use radix_engine::fee::FeeSummary;
-use radix_engine::transaction::{PreviewResult, TransactionStatus};
+use radix_engine::transaction::{PreviewResult, TransactionOutcome, TransactionResult};
 use sbor::{Decode, Encode, TypeId};
 use scrypto::component::{ComponentAddress, PackageAddress};
 use scrypto::core::Level;
@@ -93,7 +93,7 @@ impl From<PreviewError> for StateManagerResult<PreviewErrorJava> {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum TransactionStatusJava {
-    Rejected,
+    Rejected(String),
     Succeeded(Vec<Vec<u8>>),
     Failed(String),
 }
@@ -136,25 +136,46 @@ pub struct PreviewResultJava {
 impl From<PreviewResult> for PreviewResultJava {
     fn from(result: PreviewResult) -> Self {
         let receipt = result.receipt;
-        PreviewResultJava {
-            status: receipt.status.into(),
-            fee_summary: receipt.fee_summary.into(),
-            application_logs: receipt.application_logs,
-            new_package_addresses: receipt.new_package_addresses,
-            new_component_addresses: receipt.new_component_addresses,
-            new_resource_addresses: receipt.new_resource_addresses,
-        }
-    }
-}
 
-impl From<TransactionStatus> for TransactionStatusJava {
-    fn from(status: TransactionStatus) -> Self {
-        match status {
-            TransactionStatus::Rejected => TransactionStatusJava::Rejected,
-            TransactionStatus::Succeeded(output) => TransactionStatusJava::Succeeded(output),
-            TransactionStatus::Failed(error) => {
-                TransactionStatusJava::Failed(format!("{:?}", error))
-            }
+        let (status, entity_changes) = match receipt.result {
+            TransactionResult::Commit(commit) => match commit.outcome {
+                TransactionOutcome::Success(output) => (
+                    TransactionStatusJava::Succeeded(output),
+                    Some(commit.entity_changes),
+                ),
+                TransactionOutcome::Failure(error) => (
+                    TransactionStatusJava::Failed(error.to_string()),
+                    Some(commit.entity_changes),
+                ),
+            },
+            TransactionResult::Reject(reject) => (
+                TransactionStatusJava::Rejected(reject.error.to_string()),
+                None,
+            ),
+        };
+
+        let (new_package_addresses, new_component_addresses, new_resource_addresses) =
+            match entity_changes {
+                Some(ec) => (
+                    ec.new_package_addresses,
+                    ec.new_component_addresses,
+                    ec.new_resource_addresses,
+                ),
+                None => (Vec::new(), Vec::new(), Vec::new()),
+            };
+
+        let (fee_summary, application_logs) = {
+            let execution = receipt.execution;
+            (execution.fee_summary, execution.application_logs)
+        };
+
+        PreviewResultJava {
+            status,
+            fee_summary: fee_summary.into(),
+            application_logs,
+            new_package_addresses,
+            new_component_addresses,
+            new_resource_addresses,
         }
     }
 }

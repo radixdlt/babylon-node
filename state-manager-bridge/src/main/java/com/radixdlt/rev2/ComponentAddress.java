@@ -70,6 +70,7 @@ import com.radixdlt.sbor.codec.constants.TypeId;
 import java.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
+@SuppressWarnings("unused")
 public record ComponentAddress(byte[] value) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -82,10 +83,78 @@ public record ComponentAddress(byte[] value) {
   }
 
   private static final int COMPONENT_ADDRESS_BYTES_LENGTH = 27;
-  public static final ComponentAddress SYSTEM_COMPONENT_ADDRESS =
+
+  // See entity.rs
+  public static byte RESOURCE_ADDRESS_ENTITY_ID = 0;
+  public static byte PACKAGE_ADDRESS_ENTITY_ID = 1;
+  public static byte NORMAL_COMPONENT_ADDRESS_ENTITY_ID = 2;
+  public static byte ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID = 3;
+  public static byte SYSTEM_COMPONENT_ADDRESS_ENTITY_ID = 4;
+
+  public static final ComponentAddress SYSTEM_FAUCET_COMPONENT_ADDRESS =
+      // See constants.rs (component.rs defines the encoding)
       ComponentAddress.create(
           new byte[] {
-            2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2
+            SYSTEM_COMPONENT_ADDRESS_ENTITY_ID,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          });
+
+  public static final ComponentAddress NON_EXISTENT_COMPONENT_ADDRESS =
+      // See constants.rs (component.rs defines the encoding)
+      ComponentAddress.create(
+          new byte[] {
+            NORMAL_COMPONENT_ADDRESS_ENTITY_ID,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
           });
 
   public static ComponentAddress create(byte[] addressBytes) {

@@ -68,6 +68,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import com.radixdlt.lang.Option;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.statemanager.CoreApiServerConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
@@ -87,7 +88,8 @@ public final class CoreApiServerTest {
     final var port = FreePortFinder.findFreeLocalPort();
     final var config = new CoreApiServerConfig("127.0.0.1", UInt32.fromNonNegativeInt(port));
     try (final var stateManager =
-        StateManager.createAndInitialize(new StateManagerConfig(Option.none()))) {
+        StateManager.createAndInitialize(
+            new StateManagerConfig(NetworkDefinition.INT_TEST_NET, Option.none()))) {
       final var server = CoreApiServer.create(stateManager, config);
 
       try {

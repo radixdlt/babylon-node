@@ -70,7 +70,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.identifiers.TID;
-import com.radixdlt.manifest.CompileManifestError;
 import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.*;
@@ -121,6 +120,7 @@ public final class StateManagerSbor {
     UInt32.registerCodec(codecMap);
     UInt64.registerCodec(codecMap);
     RustMempoolConfig.registerCodec(codecMap);
+    NetworkDefinition.registerCodec(codecMap);
     StateManagerConfig.registerCodec(codecMap);
     RawTransaction.registerCodec(codecMap);
     PreviewFlags.registerCodec(codecMap);
@@ -141,7 +141,7 @@ public final class StateManagerSbor {
     ECPublicKey.registerCodec(codecMap);
     ECDSASignature.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
-    CompileManifestError.registerCodec(codecMap);
+    TransactionHeader.registerCodec(codecMap);
     CoreApiServerConfig.registerCodec(codecMap);
   }
 

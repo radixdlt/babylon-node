@@ -4,7 +4,6 @@
 #[no_mangle]
 fn export_extern_functions() {
     // state-manager
-    state_manager::jni::manifest_compiler::export_extern_functions();
     state_manager::jni::mempool::export_extern_functions();
     state_manager::jni::state_computer::export_extern_functions();
     state_manager::jni::state_manager::export_extern_functions();

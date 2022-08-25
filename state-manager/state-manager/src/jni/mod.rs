@@ -63,7 +63,6 @@
  */
 
 pub mod dtos;
-pub mod manifest_compiler;
 pub mod mempool;
 pub mod state_computer;
 pub mod state_manager;

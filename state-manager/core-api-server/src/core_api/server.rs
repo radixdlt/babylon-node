@@ -74,7 +74,7 @@ use async_trait::async_trait;
 use std::future::Future;
 use std::marker::PhantomData;
 
-use scrypto::address::get_network_hrp_set;
+use scrypto::address::{EntityType, HrpSet};
 use std::sync::{Arc, Mutex};
 
 use crate::core_api::generated::models::{
@@ -150,7 +150,7 @@ where
             .network
             .clone();
 
-        let hrp_set = get_network_hrp_set(network);
+        let hrp_set: HrpSet = network.into();
 
         Ok(
             StatusNetworkConfigurationPostResponse::NetworkConfiguration(
@@ -163,10 +163,14 @@ where
                         network: format!("{:?}", network),
                     },
                     bech32_human_readable_parts: Bech32Hrps {
-                        account_hrp: hrp_set.account_component.to_string(),
+                        account_hrp: hrp_set
+                            .get_entity_hrp(&EntityType::AccountComponent)
+                            .to_string(),
                         validator_hrp: "TODO".to_string(),
                         node_hrp: "TODO".to_string(),
-                        resource_hrp_suffix: hrp_set.resource.to_string(),
+                        resource_hrp_suffix: hrp_set
+                            .get_entity_hrp(&EntityType::Resource)
+                            .to_string(),
                     },
                 },
             ),

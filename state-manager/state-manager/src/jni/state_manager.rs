@@ -124,6 +124,7 @@ impl JNIStateManager {
 
         // Build the state manager.
         let state_manager = Arc::new(Mutex::new(StateManager::new(
+            config.network_definition,
             mempool,
             transaction_store,
             substate_store,

@@ -62,34 +62,30 @@
  * permissions under this License.
  */
 
-package com.radixdlt.manifest;
+package com.radixdlt.rev2;
 
-import static com.radixdlt.lang.Tuple.tuple;
+import com.radixdlt.networks.Network;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Tuple;
-import com.radixdlt.sbor.NativeCalls;
-import java.nio.charset.StandardCharsets;
-
-public final class ManifestCompiler {
-
-  static {
-    System.loadLibrary("corerust");
+public record NetworkDefinition(byte id, String logical_name, String hrp_suffix) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        NetworkDefinition.class,
+        codecs ->
+            StructCodec.with(
+                NetworkDefinition::new,
+                codecs.of(byte.class),
+                codecs.of(String.class),
+                codecs.of(String.class),
+                (t, encoder) -> encoder.encode(t.id, t.logical_name, t.hrp_suffix)));
   }
 
-  // TODO: use Network enum once it's in sync with rev2
-  public static Result<byte[], CompileManifestError> compile(String manifest, String network) {
-    final var manifestBytes = manifest.getBytes(StandardCharsets.UTF_8);
-    final var networkBytes = network.getBytes(StandardCharsets.UTF_8);
-    return compileFunc.call(tuple(manifestBytes, networkBytes));
+  public static NetworkDefinition from(Network network) {
+    return new NetworkDefinition(
+        network.getByteId(), network.getLogicalName(), network.getHrpSuffix());
   }
 
-  private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple2<byte[], byte[]>, Result<byte[], CompileManifestError>>
-      compileFunc =
-          NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {}, new TypeToken<>() {}, ManifestCompiler::compile);
-
-  private static native byte[] compile(byte[] payload);
+  public static NetworkDefinition LOCAL_SIMULATOR = NetworkDefinition.from(Network.LOCALSIMULATOR);
+  public static NetworkDefinition INT_TEST_NET = NetworkDefinition.from(Network.INTEGRATIONTESTNET);
 }
