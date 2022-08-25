@@ -79,6 +79,6 @@ public final class REv2StatelessComputerModule extends AbstractModule {
   @Provides
   private StatelessTransactionVerifier statelessTransactionVerifier(
       RustStateComputer stateComputer) {
-    return stateComputer::verify;
+    return transaction -> stateComputer.verify(transaction).isSuccess();
   }
 }

@@ -62,19 +62,65 @@
  * permissions under this License.
  */
 
-package com.radixdlt.manifest;
+package com.radixdlt.rev2;
 
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
-public record CompileManifestError(String message) {
+public record TransactionHeader(
+    byte version,
+    byte networkId,
+    UInt64 startEpochInclusive,
+    UInt64 endEpochExclusive,
+    UInt64 nonce,
+    ECPublicKey notaryPublicKey,
+    boolean notaryAsSignatory,
+    UInt32 costUnitLimit,
+    UInt32 tipPercentage) {
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        CompileManifestError.class,
+        TransactionHeader.class,
         codecs ->
             StructCodec.with(
-                CompileManifestError::new,
-                codecs.of(String.class),
-                (t, encoder) -> encoder.encode(t.message)));
+                TransactionHeader::new,
+                codecs.of(byte.class),
+                codecs.of(byte.class),
+                codecs.of(UInt64.class),
+                codecs.of(UInt64.class),
+                codecs.of(UInt64.class),
+                codecs.of(ECPublicKey.class),
+                codecs.of(boolean.class),
+                codecs.of(UInt32.class),
+                codecs.of(UInt32.class),
+                (t, encoder) ->
+                    encoder.encode(
+                        t.version,
+                        t.networkId,
+                        t.startEpochInclusive,
+                        t.endEpochExclusive,
+                        t.nonce,
+                        t.notaryPublicKey,
+                        t.notaryAsSignatory,
+                        t.costUnitLimit,
+                        t.tipPercentage)));
+  }
+
+  public static TransactionHeader defaults(
+      NetworkDefinition networkDefinition, ECPublicKey notary, Boolean notaryIsSignatory) {
+    return new TransactionHeader(
+        (byte) 1, // Version
+        networkDefinition.id(),
+        UInt64.fromNonNegativeLong(1), // From Epoch (inclusive)
+        UInt64.fromNonNegativeLong(100), // To Epoch (exclusive)
+        UInt64.fromNonNegativeLong(1), // Nonce
+        notary,
+        notaryIsSignatory,
+        UInt32.fromNonNegativeInt(1000000), // Max Cost Units
+        UInt32.fromNonNegativeInt(0) // Tip percentage
+        );
   }
 }

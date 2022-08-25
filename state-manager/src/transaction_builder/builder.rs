@@ -62,19 +62,23 @@
  * permissions under this License.
  */
 
-use scrypto::core::Network;
-use scrypto::crypto::EcdsaPublicKey;
-use scrypto::prelude::{AccessRule, EcdsaSignature, RADIX_TOKEN, SYSTEM_COMPONENT};
-use scrypto::to_struct;
+use scrypto::prelude::{
+    args, AccessRule, EcdsaPublicKey, EcdsaSignature, NetworkDefinition, RADIX_TOKEN,
+    SYS_FAUCET_COMPONENT,
+};
 use transaction::builder::ManifestBuilder;
+use transaction::manifest::{compile, CompileError};
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
 };
 
-pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u8> {
-    let manifest = ManifestBuilder::new(Network::InternalTestnet)
-        .lock_fee(1000.into(), SYSTEM_COMPONENT)
-        .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
+pub fn create_new_account_intent_bytes(
+    network_definition: &NetworkDefinition,
+    public_key: EcdsaPublicKey,
+) -> Vec<u8> {
+    let manifest = ManifestBuilder::new(network_definition)
+        .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
+        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
         })
@@ -83,7 +87,7 @@ pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u
     let intent = TransactionIntent {
         header: TransactionHeader {
             version: 1,
-            network: Network::InternalTestnet,
+            network_id: network_definition.id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 5,
@@ -98,14 +102,25 @@ pub fn create_new_account_unsigned_manifest(public_key: EcdsaPublicKey) -> Vec<u
     intent.to_bytes()
 }
 
+pub fn create_intent_bytes(
+    network_definition: &NetworkDefinition,
+    header: TransactionHeader,
+    manifest_str: String,
+) -> Result<Vec<u8>, CompileError> {
+    let manifest = compile(&manifest_str, network_definition)?;
+
+    let intent = TransactionIntent { header, manifest };
+
+    Ok(intent.to_bytes())
+}
+
 pub fn create_signed_intent_bytes(
     intent: TransactionIntent,
-    public_key: EcdsaPublicKey,
-    signature: EcdsaSignature,
+    signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
 ) -> Vec<u8> {
     let signed_intent = SignedTransactionIntent {
         intent,
-        intent_signatures: vec![(public_key, signature)],
+        intent_signatures: signatures,
     };
     signed_intent.to_bytes()
 }

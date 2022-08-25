@@ -95,12 +95,16 @@ fn do_verify(
     env: &JNIEnv,
     sm_instance: JObject,
     request_payload: jbyteArray,
-) -> StateManagerResult<bool> {
+) -> StateManagerResult<Result<(), String>> {
     let state_manager = JNIStateManager::get_state_manager(env, sm_instance);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
     let transaction = Transaction::from_java(&request_payload)?;
     let result = state_manager.state_manager.decode_transaction(&transaction);
-    Ok(result.is_ok())
+    let ret = match result {
+        Ok(..) => Ok(()),
+        Err(err) => Err(format!("{:?}", err)),
+    };
+    Ok(ret)
 }
 
 #[no_mangle]

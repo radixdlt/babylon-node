@@ -3,15 +3,6 @@
 version = 3
 
 [[package]]
-name = "aho-corasick"
-version = "0.7.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e37cfd5e7657ada45f742d6e99ca5788580b5c529dc78faf11ece6dc702656f"
-dependencies = [
- "memchr",
-]
-
-[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -98,17 +89,6 @@ dependencies = [
  "cc",
  "libc",
  "pkg-config",
-]
-
-[[package]]
-name = "cargo_toml"
-version = "0.11.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5809dd3e6444651fd1cdd3dbec71eca438c439a0fcc8081674a14da0afe50185"
-dependencies = [
- "serde",
- "serde_derive",
- "toml",
 ]
 
 [[package]]
@@ -239,7 +219,7 @@ checksum = "90f9d052967f590a76e62eb387bd0bbb1b000182c3cefe5364db6b7211651bc0"
 dependencies = [
  "byteorder",
  "digest 0.9.0",
- "rand_core 0.5.1",
+ "rand_core",
  "subtle",
  "zeroize",
 ]
@@ -261,26 +241,6 @@ checksum = "f2fb860ca6fafa5552fb6d0e816a69c8e49f0908bf524e30a90d97c85892d506"
 dependencies = [
  "block-buffer 0.10.2",
  "crypto-common",
-]
-
-[[package]]
-name = "dirs"
-version = "4.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca3aa72a6f96ea37bbc5aa912f6788242832f75369bdfdadcb0e38423f100059"
-dependencies = [
- "dirs-sys",
-]
-
-[[package]]
-name = "dirs-sys"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b1d1d91c932ef41c0f2663aa8b0ca0342d444d842c06914aa0a7e352d0bada6"
-dependencies = [
- "libc",
- "redox_users",
- "winapi",
 ]
 
 [[package]]
@@ -306,7 +266,7 @@ checksum = "c762bae6dcaf24c4c84667b8579785430908723d5c889f469d76a41d59cc7a9d"
 dependencies = [
  "curve25519-dalek",
  "ed25519",
- "rand 0.7.3",
+ "rand",
  "serde",
  "sha2 0.9.9",
  "zeroize",
@@ -669,7 +629,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f9c39e#94f9c39ef2355d6731113da5845cd898d130c90e"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9023d96#9023d96c10a54b564b225eb642d90cd0528cf68d"
 dependencies = [
  "colored",
  "hex",
@@ -686,23 +646,12 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f9c39e#94f9c39ef2355d6731113da5845cd898d130c90e"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9023d96#9023d96c10a54b564b225eb642d90cd0528cf68d"
 dependencies = [
- "cargo_toml",
- "clap",
- "colored",
- "dirs",
- "hex",
  "radix-engine",
- "rand 0.8.5",
- "regex",
  "rocksdb",
  "sbor",
  "scrypto",
- "serde",
- "serde_json",
- "temp-env",
- "uuid",
 ]
 
 [[package]]
@@ -713,20 +662,9 @@ checksum = "6a6b1679d49b24bbfe0c803429aa1874472f50d9b363131f0e89fc356b544d03"
 dependencies = [
  "getrandom 0.1.16",
  "libc",
- "rand_chacha 0.2.2",
- "rand_core 0.5.1",
+ "rand_chacha",
+ "rand_core",
  "rand_hc",
-]
-
-[[package]]
-name = "rand"
-version = "0.8.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
-dependencies = [
- "libc",
- "rand_chacha 0.3.1",
- "rand_core 0.6.3",
 ]
 
 [[package]]
@@ -736,17 +674,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f4c8ed856279c9737206bf725bf36935d8666ead7aa69b52be55af369d193402"
 dependencies = [
  "ppv-lite86",
- "rand_core 0.5.1",
-]
-
-[[package]]
-name = "rand_chacha"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
-dependencies = [
- "ppv-lite86",
- "rand_core 0.6.3",
+ "rand_core",
 ]
 
 [[package]]
@@ -759,41 +687,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "rand_core"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
-dependencies = [
- "getrandom 0.2.7",
-]
-
-[[package]]
 name = "rand_hc"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca3129af7b92a17112d59ad498c6f81eaf463253766b90396d39ea7a39d6613c"
 dependencies = [
- "rand_core 0.5.1",
-]
-
-[[package]]
-name = "redox_syscall"
-version = "0.2.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb5a58c1855b4b6819d59012155603f0b22ad30cad752600aadfcb695265519a"
-dependencies = [
- "bitflags",
-]
-
-[[package]]
-name = "redox_users"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b033d837a7cf162d7993aded9304e30a83213c648b6e389db233191f891e5c2b"
-dependencies = [
- "getrandom 0.2.7",
- "redox_syscall",
- "thiserror",
+ "rand_core",
 ]
 
 [[package]]
@@ -802,8 +701,6 @@ version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c4eb3267174b8c6c2f654116623910a0fef09c4753f8dd83db29c48a0df988b"
 dependencies = [
- "aho-corasick",
- "memchr",
  "regex-syntax",
 ]
 
@@ -847,7 +744,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f9c39e#94f9c39ef2355d6731113da5845cd898d130c90e"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9023d96#9023d96c10a54b564b225eb642d90cd0528cf68d"
 dependencies = [
  "hex",
  "sbor-derive",
@@ -857,7 +754,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f9c39e#94f9c39ef2355d6731113da5845cd898d130c90e"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9023d96#9023d96c10a54b564b225eb642d90cd0528cf68d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -868,7 +765,7 @@ dependencies = [
 [[package]]
 name = "scrypto"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f9c39e#94f9c39ef2355d6731113da5845cd898d130c90e"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9023d96#9023d96c10a54b564b225eb642d90cd0528cf68d"
 dependencies = [
  "bech32",
  "forward_ref",
@@ -887,7 +784,7 @@ dependencies = [
 [[package]]
 name = "scrypto-abi"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f9c39e#94f9c39ef2355d6731113da5845cd898d130c90e"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9023d96#9023d96c10a54b564b225eb642d90cd0528cf68d"
 dependencies = [
  "sbor",
  "serde",
@@ -896,7 +793,7 @@ dependencies = [
 [[package]]
 name = "scrypto-derive"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f9c39e#94f9c39ef2355d6731113da5845cd898d130c90e"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9023d96#9023d96c10a54b564b225eb642d90cd0528cf68d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1051,15 +948,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "temp-env"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45107136c2ddf8c4b87453c02294fd0adf41751796e81e8ba3f7fd951977ab57"
-dependencies = [
- "once_cell",
-]
-
-[[package]]
 name = "termcolor"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1095,18 +983,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "toml"
-version = "0.5.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d82e1a7758622a465f8cee077614c73484dac5b836c02ff6a40d5d1010324d7"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "transaction"
 version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-94f9c39e#94f9c39ef2355d6731113da5845cd898d130c90e"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-9023d96#9023d96c10a54b564b225eb642d90cd0528cf68d"
 dependencies = [
  "clap",
  "ed25519-dalek",

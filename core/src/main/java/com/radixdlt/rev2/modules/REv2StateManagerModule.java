@@ -71,6 +71,9 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.networks.NetworkId;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.serialization.Serialization;
@@ -90,9 +93,11 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  StateManager stateManager() {
+  StateManager stateManager(@NetworkId int networkId) {
+    var network = Network.ofId(networkId).orElseThrow();
     var mempoolConfig = new RustMempoolConfig(this.mempoolMaxSize);
-    return StateManager.createAndInitialize(new StateManagerConfig(Option.some(mempoolConfig)));
+    return StateManager.createAndInitialize(
+        new StateManagerConfig(NetworkDefinition.from(network), Option.some(mempoolConfig)));
   }
 
   @Provides
