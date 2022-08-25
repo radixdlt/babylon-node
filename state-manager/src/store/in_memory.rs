@@ -62,52 +62,64 @@
  * permissions under this License.
  */
 
-use crate::store::transaction_store::{TemporaryTransactionReceipt, TransactionStore};
+use crate::store::transaction_store::{TemporaryTransactionReceipt, TransactionAndProofStore};
 use crate::types::{TId, Transaction};
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
-
-use rocksdb::{DBWithThreadMode, SingleThreaded, DB};
-use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use std::path::PathBuf;
+use std::collections::{BTreeMap, HashMap};
 
 #[derive(Debug)]
-pub struct RocksDBTransactionStore {
-    db: DBWithThreadMode<SingleThreaded>,
+pub struct InMemoryStore {
+    transactions: HashMap<TId, (Vec<u8>, TemporaryTransactionReceipt)>,
+    proofs: BTreeMap<u64, Vec<u8>>,
+    txids: BTreeMap<u64, TId>,
 }
 
-impl RocksDBTransactionStore {
-    pub fn new(root: PathBuf) -> RocksDBTransactionStore {
-        let db = DB::open_default(root.as_path()).unwrap();
-        RocksDBTransactionStore { db }
+impl InMemoryStore {
+    pub fn new() -> InMemoryStore {
+        InMemoryStore {
+            transactions: HashMap::new(),
+            proofs: BTreeMap::new(),
+            txids: BTreeMap::new(),
+        }
     }
 
     fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
-        let receipt = match receipt.result {
-            TransactionResult::Commit(commit_result) => {
-                let result = match commit_result.outcome {
-                    TransactionOutcome::Success(..) => "Success".to_string(),
-                    TransactionOutcome::Failure(error) => error.to_string(),
-                };
-
-                TemporaryTransactionReceipt {
-                    result,
-                    new_package_addresses: commit_result.entity_changes.new_package_addresses,
-                    new_component_addresses: commit_result.entity_changes.new_component_addresses,
-                    new_resource_addresses: commit_result.entity_changes.new_resource_addresses,
+        let (status, entity_changes) = match receipt.result {
+            TransactionResult::Commit(commit) => match commit.outcome {
+                TransactionOutcome::Success(..) => {
+                    ("Success".to_string(), Some(commit.entity_changes))
                 }
-            }
-            TransactionResult::Reject(..) => panic!("Should not get here"), // TODO: Move this check somewhere else
+                TransactionOutcome::Failure(error) => {
+                    (format!("Error: {}", error), Some(commit.entity_changes))
+                }
+            },
+            TransactionResult::Reject(reject) => (format!("Rejected: {}", reject.error), None),
         };
 
-        let value = (transaction.payload.clone(), receipt);
+        let (new_package_addresses, new_component_addresses, new_resource_addresses) =
+            match entity_changes {
+                Some(ec) => (
+                    ec.new_package_addresses,
+                    ec.new_component_addresses,
+                    ec.new_resource_addresses,
+                ),
+                None => (Vec::new(), Vec::new(), Vec::new()),
+            };
 
-        self.db
-            .put(transaction.id.bytes.clone(), scrypto_encode(&value))
-            .unwrap();
+        let receipt = TemporaryTransactionReceipt {
+            result: status,
+            new_package_addresses,
+            new_component_addresses,
+            new_resource_addresses,
+        };
+        self.transactions.insert(
+            transaction.id.clone(),
+            (transaction.payload.clone(), receipt),
+        );
     }
 }
 
-impl TransactionStore for RocksDBTransactionStore {
+impl TransactionAndProofStore for InMemoryStore {
     fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
         for (txn, receipt) in transactions {
             self.insert_transaction(txn, receipt);
@@ -115,7 +127,45 @@ impl TransactionStore for RocksDBTransactionStore {
     }
 
     fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
-        let bytes = self.db.get(&tid.bytes).unwrap().unwrap();
-        scrypto_decode(&bytes).unwrap()
+        self.transactions
+            .get(tid)
+            .cloned()
+            .expect("Transaction missing")
+    }
+
+    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
+        let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
+        for (index, id) in ids.into_iter().enumerate() {
+            let txn_state_version = first_state_version + index as u64;
+            self.txids.insert(txn_state_version, id);
+        }
+
+        self.proofs.insert(state_version, proof_bytes);
+    }
+
+    fn get_tid(&self, state_version: u64) -> TId {
+        self.txids.get(&state_version).cloned().unwrap()
+    }
+
+    /// Returns the next proof from a state version (excluded)
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
+        let next_state_version = state_version + 1;
+        self.proofs
+            .range(next_state_version..)
+            .next()
+            .map(|(v, proof)| {
+                let mut ids = Vec::new();
+                for (_, id) in self.txids.range(next_state_version..=*v) {
+                    ids.push(id.clone());
+                }
+                (ids, proof.clone())
+            })
+    }
+
+    fn get_last_proof(&self) -> Option<Vec<u8>> {
+        self.proofs
+            .iter()
+            .next_back()
+            .map(|(_, bytes)| bytes.clone())
     }
 }

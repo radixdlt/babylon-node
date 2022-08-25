@@ -62,60 +62,62 @@
  * permissions under this License.
  */
 
-use crate::store::transaction_store::{TemporaryTransactionReceipt, TransactionStore};
+use crate::store::transaction_store::{TemporaryTransactionReceipt, TransactionAndProofStore};
 use crate::types::{TId, Transaction};
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
-use std::collections::HashMap;
 
-#[derive(Debug)]
-pub struct InMemoryTransactionStore {
-    in_memory_store: HashMap<TId, (Vec<u8>, TemporaryTransactionReceipt)>,
+use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
+use std::path::PathBuf;
+
+#[macro_export]
+macro_rules! byte_prefix {
+    ($prefix:expr, $slice:expr) => {{
+        let mut vec = vec![$prefix];
+        vec.extend_from_slice($slice);
+        vec
+    }};
 }
 
-impl InMemoryTransactionStore {
-    pub fn new() -> InMemoryTransactionStore {
-        InMemoryTransactionStore {
-            in_memory_store: HashMap::new(),
-        }
+#[derive(Debug)]
+pub struct RocksDBStore {
+    db: DBWithThreadMode<SingleThreaded>,
+}
+
+impl RocksDBStore {
+    pub fn new(root: PathBuf) -> RocksDBStore {
+        let db = DB::open_default(root.as_path()).unwrap();
+        RocksDBStore { db }
     }
 
     fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
-        let (status, entity_changes) = match receipt.result {
-            TransactionResult::Commit(commit) => match commit.outcome {
-                TransactionOutcome::Success(..) => {
-                    ("Success".to_string(), Some(commit.entity_changes))
+        let receipt = match receipt.result {
+            TransactionResult::Commit(commit_result) => {
+                let result = match commit_result.outcome {
+                    TransactionOutcome::Success(..) => "Success".to_string(),
+                    TransactionOutcome::Failure(error) => error.to_string(),
+                };
+
+                TemporaryTransactionReceipt {
+                    result,
+                    new_package_addresses: commit_result.entity_changes.new_package_addresses,
+                    new_component_addresses: commit_result.entity_changes.new_component_addresses,
+                    new_resource_addresses: commit_result.entity_changes.new_resource_addresses,
                 }
-                TransactionOutcome::Failure(error) => {
-                    (format!("Error: {}", error), Some(commit.entity_changes))
-                }
-            },
-            TransactionResult::Reject(reject) => (format!("Rejected: {}", reject.error), None),
+            }
+            TransactionResult::Reject(..) => panic!("Should not get here"), // TODO: Move this check somewhere else
         };
 
-        let (new_package_addresses, new_component_addresses, new_resource_addresses) =
-            match entity_changes {
-                Some(ec) => (
-                    ec.new_package_addresses,
-                    ec.new_component_addresses,
-                    ec.new_resource_addresses,
-                ),
-                None => (Vec::new(), Vec::new(), Vec::new()),
-            };
+        let value = (transaction.payload.clone(), receipt);
 
-        let receipt = TemporaryTransactionReceipt {
-            result: status,
-            new_package_addresses,
-            new_component_addresses,
-            new_resource_addresses,
-        };
-        self.in_memory_store.insert(
-            transaction.id.clone(),
-            (transaction.payload.clone(), receipt),
-        );
+        let transaction_key = byte_prefix!(0u8, &transaction.id.bytes);
+        self.db
+            .put(transaction_key, scrypto_encode(&value))
+            .unwrap();
     }
 }
 
-impl TransactionStore for InMemoryTransactionStore {
+impl TransactionAndProofStore for RocksDBStore {
     fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
         for (txn, receipt) in transactions {
             self.insert_transaction(txn, receipt);
@@ -123,9 +125,58 @@ impl TransactionStore for InMemoryTransactionStore {
     }
 
     fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
-        self.in_memory_store
-            .get(tid)
-            .cloned()
-            .expect("Transaction missing")
+        let transaction_key = byte_prefix!(0u8, &tid.bytes);
+        let bytes = self.db.get(&transaction_key).unwrap().unwrap();
+        scrypto_decode(&bytes).unwrap()
+    }
+
+    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
+        let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
+        for (index, id) in ids.into_iter().enumerate() {
+            let txn_state_version = first_state_version + index as u64;
+            let version_key = byte_prefix!(1u8, &txn_state_version.to_be_bytes());
+            self.db.put(version_key, id.bytes).unwrap();
+        }
+
+        let proof_version_key = byte_prefix!(2u8, &state_version.to_be_bytes());
+        self.db.put(proof_version_key, proof_bytes).unwrap();
+    }
+
+    fn get_tid(&self, state_version: u64) -> TId {
+        let txn_version_key = byte_prefix!(1u8, &state_version.to_be_bytes());
+        let bytes = self.db.get(&txn_version_key).unwrap().unwrap();
+        TId { bytes }
+    }
+
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
+        let first_state_version = state_version + 1;
+        let proof_version_key = byte_prefix!(2u8, &first_state_version.to_be_bytes());
+        let (next_state_version, proof) = self
+            .db
+            .iterator(IteratorMode::From(&proof_version_key, Direction::Forward))
+            .next()
+            .filter(|(key, _)| key[0] == 2u8)
+            .map(|(key, proof)| {
+                let (_, state_version_bytes) = key.split_first().unwrap();
+                let next_state_version =
+                    u64::from_be_bytes(state_version_bytes.try_into().unwrap());
+                (next_state_version, proof.to_vec())
+            })?;
+
+        let mut tids = Vec::new();
+        for v in first_state_version..=next_state_version {
+            let txn_version_key = byte_prefix!(1u8, &v.to_be_bytes());
+            let bytes = self.db.get(txn_version_key).unwrap().unwrap();
+            tids.push(TId { bytes });
+        }
+        Some((tids, proof))
+    }
+
+    fn get_last_proof(&self) -> Option<Vec<u8>> {
+        self.db
+            .iterator(IteratorMode::From(&[3u8], Direction::Reverse))
+            .next()
+            .filter(|(key, _)| key[0] == 2u8)
+            .map(|(_, proof)| proof.to_vec())
     }
 }

@@ -62,14 +62,10 @@
  * permissions under this License.
  */
 
-mod in_memory_proof_store;
-mod in_memory_transaction_store;
-mod proof_store;
-mod rocks_db_transaction_store;
+mod in_memory;
+mod rocks_db;
 mod transaction_store;
 
-pub use in_memory_proof_store::InMemoryProofStore;
-pub use in_memory_transaction_store::InMemoryTransactionStore;
-pub use proof_store::ProofStore;
-pub use rocks_db_transaction_store::RocksDBTransactionStore;
-pub use transaction_store::{NullTransactionStore, TemporaryTransactionReceipt, TransactionStore};
+pub use in_memory::InMemoryStore;
+pub use rocks_db::RocksDBStore;
+pub use transaction_store::{NullStore, TemporaryTransactionReceipt, TransactionAndProofStore};
