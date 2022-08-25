@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
-use crate::core_api::generated::models;
 use crate::core_api::generated::server::MakeService;
+use crate::core_api::generated::{models, API_VERSION};
 use crate::core_api::generated::{
     Api, StatusNetworkConfigurationPostResponse, TransactionPreviewPostResponse,
     TransactionSubmitPostResponse,
@@ -74,8 +74,13 @@ use async_trait::async_trait;
 use std::future::Future;
 use std::marker::PhantomData;
 
+use scrypto::address::get_network_hrp_set;
 use std::sync::{Arc, Mutex};
 
+use crate::core_api::generated::models::{
+    Bech32Hrps, NetworkConfigurationResponse, NetworkConfigurationResponseVersion,
+    NetworkIdentifier,
+};
 use scrypto::prelude::*;
 use state_manager::jni::state_manager::ActualStateManager;
 use swagger::ApiError;
@@ -138,7 +143,34 @@ where
         &self,
         _context: &C,
     ) -> Result<StatusNetworkConfigurationPostResponse, ApiError> {
-        Err(ApiError("To be implemented".into()))
+        let network = &self
+            .state_manager
+            .lock()
+            .expect("Can't acquire state manager lock")
+            .network
+            .clone();
+
+        let hrp_set = get_network_hrp_set(network);
+
+        Ok(
+            StatusNetworkConfigurationPostResponse::NetworkConfiguration(
+                NetworkConfigurationResponse {
+                    version: NetworkConfigurationResponseVersion {
+                        core_version: env!("CARGO_PKG_VERSION").to_string(),
+                        api_version: API_VERSION.to_string(),
+                    },
+                    network_identifier: NetworkIdentifier {
+                        network: format!("{:?}", network),
+                    },
+                    bech32_human_readable_parts: Bech32Hrps {
+                        account_hrp: hrp_set.account_component.to_string(),
+                        validator_hrp: "TODO".to_string(),
+                        node_hrp: "TODO".to_string(),
+                        resource_hrp_suffix: hrp_set.resource.to_string(),
+                    },
+                },
+            ),
+        )
     }
 
     async fn transaction_preview_post(

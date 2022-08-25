@@ -92,7 +92,7 @@ pub struct StateManager<M: Mempool, S> {
     pub mempool: M,
     pub transaction_store: TransactionStore,
     pub proof_store: ProofStore,
-    network: Network,
+    pub network: Network,
     substate_store: S,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
