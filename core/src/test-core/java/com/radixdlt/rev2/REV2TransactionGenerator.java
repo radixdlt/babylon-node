@@ -74,6 +74,10 @@ import java.util.List;
 public final class REV2TransactionGenerator implements TransactionGenerator {
   private final NetworkDefinition networkDefinition;
 
+  public REV2TransactionGenerator() {
+    this.networkDefinition = NetworkDefinition.INT_TEST_NET;
+  }
+
   public REV2TransactionGenerator(NetworkDefinition networkDefinition) {
     this.networkDefinition = networkDefinition;
   }
