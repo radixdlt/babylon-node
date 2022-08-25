@@ -94,7 +94,6 @@ sourceSets {
 }
 
 configurations {
-    p2pTestImplementation.extendsFrom implementation
     p2pTestImplementation.extendsFrom testImplementation
 }
 
@@ -107,7 +106,6 @@ dependencies {
     implementation "com.github.akarnokd:rxjava3-extensions"
     implementation 'io.reactivex.rxjava3:rxjava'
     implementation 'io.netty:netty-all'
-    integrationImplementation 'com.lmax:disruptor:3.4.4'
 
     testImplementation 'junit:junit'
     testImplementation 'org.assertj:assertj-core'

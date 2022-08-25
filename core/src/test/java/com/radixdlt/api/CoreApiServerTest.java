@@ -95,19 +95,19 @@ public final class CoreApiServerTest {
       try {
         // Act & Assert #1: start the server and verify it's up
         server.start();
-        final var statusCode = mkNetworkConfigurationRequest(port);
+        final var statusCode = makeNetworkConfigurationRequest(port);
         assertEquals(200, statusCode);
 
         // Act & Assert #2: stop the server and verify it's shut down
         server.stop();
-        assertThrows(ConnectException.class, () -> mkNetworkConfigurationRequest(port));
+        assertThrows(ConnectException.class, () -> makeNetworkConfigurationRequest(port));
       } finally {
         server.stop();
       }
     }
   }
 
-  private static int mkNetworkConfigurationRequest(int port) throws Exception {
+  private static int makeNetworkConfigurationRequest(int port) throws Exception {
     final var url = new URL("http://127.0.0.1:" + port + "/core/status/network-configuration");
     final var conn = (HttpURLConnection) url.openConnection();
     conn.setRequestMethod("POST");
