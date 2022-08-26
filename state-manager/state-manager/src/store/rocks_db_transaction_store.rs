@@ -62,16 +62,60 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sync;
+use crate::store::transaction_store::{TemporaryTransactionReceipt, TransactionStore};
+use crate::types::{TId, Transaction};
+use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
 
-/** Configuration parameters for ledger sync. */
-public record SyncConfig(
-    long requestTimeout,
-    int syncCheckMaxPeers,
-    long syncCheckInterval,
-    int ledgerStatusUpdateMaxPeersToNotify,
-    double maxLedgerUpdatesRate) {
-  public static SyncConfig of(long requestTimeout, int syncCheckMaxPeers, long syncCheckInterval) {
-    return new SyncConfig(requestTimeout, syncCheckMaxPeers, syncCheckInterval, 10, 50);
-  }
+use rocksdb::{DBWithThreadMode, SingleThreaded, DB};
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
+use std::path::PathBuf;
+
+#[derive(Debug)]
+pub struct RocksDBTransactionStore {
+    db: DBWithThreadMode<SingleThreaded>,
+}
+
+impl RocksDBTransactionStore {
+    pub fn new(root: PathBuf) -> RocksDBTransactionStore {
+        let db = DB::open_default(root.as_path()).unwrap();
+        RocksDBTransactionStore { db }
+    }
+
+    fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
+        let receipt = match receipt.result {
+            TransactionResult::Commit(commit_result) => {
+                let result = match commit_result.outcome {
+                    TransactionOutcome::Success(..) => "Success".to_string(),
+                    TransactionOutcome::Failure(error) => error.to_string(),
+                };
+
+                TemporaryTransactionReceipt {
+                    result,
+                    new_package_addresses: commit_result.entity_changes.new_package_addresses,
+                    new_component_addresses: commit_result.entity_changes.new_component_addresses,
+                    new_resource_addresses: commit_result.entity_changes.new_resource_addresses,
+                }
+            }
+            TransactionResult::Reject(..) => panic!("Should not get here"), // TODO: Move this check somewhere else
+        };
+
+        let value = (transaction.payload.clone(), receipt);
+
+        self.db
+            .put(transaction.id.bytes.clone(), scrypto_encode(&value))
+            .unwrap();
+    }
+}
+
+impl TransactionStore for RocksDBTransactionStore {
+    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
+        for (txn, receipt) in transactions {
+            self.insert_transaction(txn, receipt);
+        }
+    }
+
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
+        let bytes = self.db.get(&tid.bytes).unwrap().unwrap();
+        scrypto_decode(&bytes).unwrap()
+    }
 }

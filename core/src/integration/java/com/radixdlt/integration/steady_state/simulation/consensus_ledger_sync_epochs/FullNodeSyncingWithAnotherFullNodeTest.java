@@ -82,7 +82,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.SyncMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -132,7 +132,7 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
                 ConsensusConfig.of(3000),
                 Round.of(100),
                 (unused) -> VALIDATORS_INDICES.stream().mapToInt(i -> i),
-                new SyncConfig(1000L, 10, 500L, 10, Long.MAX_VALUE))
+                new SyncRelayConfig(1000L, 10, 500L, 10, Long.MAX_VALUE))
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),

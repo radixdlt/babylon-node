@@ -80,7 +80,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -106,7 +106,7 @@ public class SanityTest {
         SimulationTest.builder()
             .numNodes(4)
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .fullFunctionNodes(ConsensusConfig.of(3000), SyncConfig.of(400L, 10, 2000L), 1000)
+            .fullFunctionNodes(ConsensusConfig.of(3000), SyncRelayConfig.of(400L, 10, 2000L), 1000)
             .addRadixEngineConfigModules(
                 new MainnetForksModule(), new RadixEngineForksLatestOnlyModule(), new ForksModule())
             .addNodeModule(MempoolRelayConfig.of(10).asModule())

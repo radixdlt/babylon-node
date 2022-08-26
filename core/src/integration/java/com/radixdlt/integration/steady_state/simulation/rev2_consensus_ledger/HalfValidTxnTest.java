@@ -77,6 +77,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.statecomputer.StatelessComputer;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.data.Offset;
@@ -92,7 +93,8 @@ public class HalfValidTxnTest {
                   false,
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputerNoSync(
-                      StateComputerConfig.rev2(REV2ProposerConfig.halfCorrectProposer()))))
+                      StateComputerConfig.rev2(
+                          REv2DatabaseConfig.none(), REV2ProposerConfig.halfCorrectProposer()))))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

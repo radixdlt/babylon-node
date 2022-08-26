@@ -62,37 +62,20 @@
  * permissions under this License.
  */
 
+use crate::store::transaction_store::{TemporaryTransactionReceipt, TransactionStore};
 use crate::types::{TId, Transaction};
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
-use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
 use std::collections::HashMap;
 
-/// TODO: Remove and use the real TransactionReceipt. This is currently a required struct
-/// TODO: as there is RC<RefCell<>> useage in some of the substates which does not play well
-/// TODO: with the babylon node multithreaded structures.
 #[derive(Debug)]
-pub struct TemporaryTransactionReceipt {
-    pub result: String,
-    pub new_package_addresses: Vec<PackageAddress>,
-    pub new_component_addresses: Vec<ComponentAddress>,
-    pub new_resource_addresses: Vec<ResourceAddress>,
-}
-
-#[derive(Debug)]
-pub struct TransactionStore {
+pub struct InMemoryTransactionStore {
     in_memory_store: HashMap<TId, (Vec<u8>, TemporaryTransactionReceipt)>,
 }
 
-impl TransactionStore {
-    pub fn new() -> TransactionStore {
-        TransactionStore {
+impl InMemoryTransactionStore {
+    pub fn new() -> InMemoryTransactionStore {
+        InMemoryTransactionStore {
             in_memory_store: HashMap::new(),
-        }
-    }
-
-    pub fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
-        for (txn, receipt) in transactions {
-            self.insert_transaction(txn, receipt);
         }
     }
 
@@ -130,8 +113,19 @@ impl TransactionStore {
             (transaction.payload.clone(), receipt),
         );
     }
+}
 
-    pub fn get_transaction(&self, tid: &TId) -> &(Vec<u8>, TemporaryTransactionReceipt) {
-        self.in_memory_store.get(tid).expect("Transaction missing")
+impl TransactionStore for InMemoryTransactionStore {
+    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
+        for (txn, receipt) in transactions {
+            self.insert_transaction(txn, receipt);
+        }
+    }
+
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
+        self.in_memory_store
+            .get(tid)
+            .cloned()
+            .expect("Transaction missing")
     }
 }

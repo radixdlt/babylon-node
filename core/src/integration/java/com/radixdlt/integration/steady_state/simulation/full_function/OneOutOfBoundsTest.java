@@ -82,7 +82,7 @@ import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.UInt256;
 import java.time.Duration;
 import java.util.Collection;
@@ -114,7 +114,7 @@ public class OneOutOfBoundsTest {
         SimulationTest.builder()
             .numNodes(4)
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.oneOutOfBounds(50, 10000))
-            .fullFunctionNodes(ConsensusConfig.of(3000), SyncConfig.of(400L, 10, 2000L), 1000)
+            .fullFunctionNodes(ConsensusConfig.of(3000), SyncRelayConfig.of(400L, 10, 2000L), 1000)
             .addRadixEngineConfigModules(
                 new MainnetForksModule(),
                 new RadixEngineForksLatestOnlyModule(

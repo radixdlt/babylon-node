@@ -76,7 +76,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import java.time.Duration;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
@@ -90,7 +90,7 @@ import org.junit.Test;
  */
 public class OneNodeFallingBehindTest {
 
-  private final SyncConfig syncConfig = SyncConfig.of(200L, 10, 200L);
+  private final SyncRelayConfig syncRelayConfig = SyncRelayConfig.of(200L, 10, 200L);
 
   private final Builder bftTestBuilder =
       SimulationTest.builder()
@@ -100,7 +100,10 @@ public class OneNodeFallingBehindTest {
               NetworkLatencies.fixed(),
               NetworkDroppers.dropAllMessagesForOneNode(10000, 10000))
           .ledgerAndEpochsAndSync(
-              ConsensusConfig.of(3000), Round.of(100), epoch -> IntStream.range(0, 10), syncConfig)
+              ConsensusConfig.of(3000),
+              Round.of(100),
+              epoch -> IntStream.range(0, 10),
+              syncRelayConfig)
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(30, TimeUnit.SECONDS),

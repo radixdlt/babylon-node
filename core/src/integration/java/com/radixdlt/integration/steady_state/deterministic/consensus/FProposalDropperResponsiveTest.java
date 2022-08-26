@@ -72,6 +72,7 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import java.util.Collections;
@@ -101,7 +102,7 @@ public class FProposalDropperResponsiveTest {
             new FunctionalRadixNodeModule(
                 false,
                 ConsensusConfig.of(),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                LedgerConfig.stateComputerMockedSync(
                     StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
         .runForCount(30_000);
   }
@@ -112,8 +113,7 @@ public class FProposalDropperResponsiveTest {
     final Map<Round, Integer> proposalCount = new HashMap<>();
     return (message, queue) -> {
       Object msg = message.message();
-      if (msg instanceof Proposal) {
-        final Proposal proposal = (Proposal) msg;
+      if (msg instanceof final Proposal proposal) {
         final Round round = proposal.getVertex().getRound();
         final Set<Integer> nodesToDrop =
             proposalsToDrop.computeIfAbsent(round, nodesToDropFunction);

@@ -86,7 +86,7 @@ import com.radixdlt.rev1.checkpoint.TokenIssuance;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.targeted.mempool.MempoolFillerModule;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -101,7 +101,7 @@ public class MempoolFillTest {
       SimulationTest.builder()
           .numNodes(4)
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .fullFunctionNodes(ConsensusConfig.of(), SyncConfig.of(800L, 10, 5000L), 1000)
+          .fullFunctionNodes(ConsensusConfig.of(), SyncRelayConfig.of(800L, 10, 5000L), 1000)
           .addRadixEngineConfigModules(
               new MainnetForksModule(), new RadixEngineForksLatestOnlyModule(), new ForksModule())
           .addNodeModule(

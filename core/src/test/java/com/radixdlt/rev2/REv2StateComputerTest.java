@@ -72,40 +72,40 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import org.junit.Test;
 
 public class REv2StateComputerTest {
-  private final Injector injector =
-      Guice.createInjector(
-          new CryptoModule(),
-          new REv2StateComputerModule(),
-          new REv2StateManagerModule(100),
-          MempoolRelayConfig.of(1000).asModule(),
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bindConstant().annotatedWith(NetworkId.class).to(Network.INTEGRATIONTESTNET.getId());
-              bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
-              bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-            }
-          });
+  private Injector createInjector() {
+    return Guice.createInjector(
+        new CryptoModule(),
+        REv2StateManagerModule.create(REv2DatabaseConfig.inMemory(), Option.none()),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            bindConstant().annotatedWith(NetworkId.class).to(Network.INTEGRATIONTESTNET.getId());
+            bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
+            bind(SystemCounters.class).toInstance(new SystemCountersImpl());
+          }
+        });
+  }
 
   @Test
   public void test_valid_rev2_transaction_passes() {
     // Arrange
+    var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
     var validTransaction = REv2TestTransactions.VALID_TXN_0;
 
@@ -121,6 +121,7 @@ public class REv2StateComputerTest {
   @Test
   public void test_invalid_rev2_transaction_fails() {
     // Arrange
+    var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
     var validTransaction = RawTransaction.create(new byte[1]);
 

@@ -74,6 +74,7 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
@@ -86,14 +87,12 @@ import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
 import com.radixdlt.rev1.ReV1DispatcherModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
-import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedSyncServiceModule;
-import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.REv2StatelessComputerModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
-import com.radixdlt.sync.SyncConfig;
-import java.util.Optional;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
@@ -142,17 +141,22 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     }
 
     static LedgerConfig stateComputerNoSync(StateComputerConfig stateComputerConfig) {
-      return new StateComputerLedgerConfig(stateComputerConfig, Optional.empty());
+      return new StateComputerLedgerConfig(stateComputerConfig, new SyncConfig.None());
     }
 
-    static LedgerConfig stateComputerWithSync(
-        StateComputerConfig stateComputerConfig, SyncConfig syncConfig) {
-      return new StateComputerLedgerConfig(stateComputerConfig, Optional.of(syncConfig));
+    static LedgerConfig stateComputerMockedSync(StateComputerConfig stateComputerConfig) {
+      return new StateComputerLedgerConfig(stateComputerConfig, new SyncConfig.Mocked());
     }
 
-    default boolean hasSync() {
+    static LedgerConfig stateComputerWithSyncRelay(
+        StateComputerConfig stateComputerConfig, SyncRelayConfig syncRelayConfig) {
+      return new StateComputerLedgerConfig(
+          stateComputerConfig, new SyncConfig.Relayed(syncRelayConfig));
+    }
+
+    default boolean hasSyncRelay() {
       if (this instanceof StateComputerLedgerConfig c) {
-        return c.syncConfig.isPresent();
+        return c.syncConfig instanceof SyncConfig.Relayed;
       }
       return false;
     }
@@ -174,8 +178,16 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
   public static final class MockedLedgerConfig implements LedgerConfig {}
 
-  public record StateComputerLedgerConfig(
-      StateComputerConfig config, Optional<SyncConfig> syncConfig) implements LedgerConfig {}
+  public record StateComputerLedgerConfig(StateComputerConfig config, SyncConfig syncConfig)
+      implements LedgerConfig {}
+
+  public sealed interface SyncConfig {
+    record Relayed(SyncRelayConfig config) implements SyncConfig {}
+
+    record Mocked() implements SyncConfig {}
+
+    record None() implements SyncConfig {}
+  }
 
   private final boolean epochs;
   private final ConsensusConfig consensusConfig;
@@ -187,9 +199,11 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   public FunctionalRadixNodeModule(
       ConsensusConfig consensusConfig,
       StateComputerConfig stateComputerConfig,
-      SyncConfig syncConfig) {
+      SyncRelayConfig syncRelayConfig) {
     this(
-        true, consensusConfig, LedgerConfig.stateComputerWithSync(stateComputerConfig, syncConfig));
+        true,
+        consensusConfig,
+        LedgerConfig.stateComputerWithSyncRelay(stateComputerConfig, syncRelayConfig));
   }
 
   public FunctionalRadixNodeModule(
@@ -220,7 +234,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   }
 
   public boolean supportsSync() {
-    return this.ledgerConfig.hasSync();
+    return this.ledgerConfig.hasSyncRelay();
   }
 
   @Override
@@ -244,16 +258,18 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         install(new LedgerModule());
 
         // Sync
-        stateComputerLedgerConfig.syncConfig.ifPresentOrElse(
-            syncConfig -> {
-              install(new SyncServiceModule(syncConfig));
-              if (this.epochs) {
-                install(new EpochsSyncModule());
-              } else {
-                install(new NoEpochsSyncModule());
-              }
-            },
-            () -> install(mockedSyncServiceModule));
+        switch (stateComputerLedgerConfig.syncConfig) {
+          case SyncConfig.Relayed relayed -> {
+            install(new SyncServiceModule(relayed.config()));
+            if (this.epochs) {
+              install(new EpochsSyncModule());
+            } else {
+              install(new NoEpochsSyncModule());
+            }
+          }
+          case SyncConfig.Mocked ignored -> install(mockedSyncServiceModule);
+          case SyncConfig.None ignored -> {}
+        }
 
         switch (stateComputerLedgerConfig.config) {
           case MockedStateComputerConfig c -> {
@@ -285,22 +301,28 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             install(new ReV1DispatcherModule());
           }
           case REv2StateComputerConfig rev2Config -> {
+            if (REv2DatabaseConfig.isNone(rev2Config.databaseConfig())) {
+              install(new REv2StatelessComputerModule());
+            }
+
             bindConstant().annotatedWith(NetworkId.class).to(Network.INTEGRATIONTESTNET.getId());
-            int mempoolSize = 0;
+
             switch (rev2Config.proposerConfig()) {
-              case REV2ProposerConfig.HalfCorrectProposer ignored -> {
-                bind(ProposalGenerator.class).to(HalfCorrectREv2TransactionGenerator.class);
-                install(new REv2StatelessComputerModule());
+              case REV2ProposerConfig.Generated generated -> {
+                bind(ProposalGenerator.class).toInstance(generated.generator());
+                install(
+                    REv2StateManagerModule.createForTesting(
+                        rev2Config.databaseConfig(), Option.none()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule());
                 install(new MempoolReceiverModule());
-                install(mempool.config().asModule());
-                install(new REv2StateComputerModule());
-                mempoolSize = mempool.mempoolMaxSize();
+                install(mempool.relayConfig().asModule());
+                install(
+                    REv2StateManagerModule.createForTesting(
+                        rev2Config.databaseConfig(), Option.some(mempool.mempoolConfig())));
               }
             }
-            install(new REv2StateManagerModule(mempoolSize));
           }
         }
       }

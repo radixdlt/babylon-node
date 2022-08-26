@@ -96,7 +96,7 @@ import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochMaxRound;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
@@ -209,23 +209,24 @@ public final class DeterministicTest {
           new FunctionalRadixNodeModule(
               true,
               ConsensusConfig.of(),
-              LedgerConfig.stateComputerNoSync(
+              LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mocked(
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
       addEpochedConsensusProcessorModule(epochMaxRound);
       return build(true);
     }
 
-    public DeterministicTest buildWithEpochsAndSync(Round epochMaxRound, SyncConfig syncConfig) {
+    public DeterministicTest buildWithEpochsAndSync(
+        Round epochMaxRound, SyncRelayConfig syncRelayConfig) {
       Objects.requireNonNull(epochMaxRound);
       modules.add(
           new FunctionalRadixNodeModule(
               true,
               ConsensusConfig.of(),
-              LedgerConfig.stateComputerWithSync(
+              LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mocked(
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()),
-                  syncConfig)));
+                  syncRelayConfig)));
       modules.add(new InMemoryCommittedReaderModule());
       addEpochedConsensusProcessorModule(epochMaxRound);
       return build(true);

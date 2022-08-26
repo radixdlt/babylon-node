@@ -83,11 +83,12 @@ public final class Checkers {
 
   /** Assert that all nodes have an exact mempool count */
   public static void assertNodesHaveExactMempoolCount(List<Injector> nodeInjectors, int count) {
-    nodeInjectors.forEach(
-        injector -> {
-          var reader = injector.getInstance(MempoolReader.class);
-          assertThat(reader.getCount()).isEqualTo(count);
-        });
+    for (int i = 0; i < nodeInjectors.size(); i++) {
+      var injector = nodeInjectors.get(i);
+
+      var reader = injector.getInstance(MempoolReader.class);
+      assertThat(reader.getCount()).as("node %s has %s txns in mempool", i, count).isEqualTo(count);
+    }
   }
 
   /** Verifies that all nodes have synced to atleast some given stateVersion */

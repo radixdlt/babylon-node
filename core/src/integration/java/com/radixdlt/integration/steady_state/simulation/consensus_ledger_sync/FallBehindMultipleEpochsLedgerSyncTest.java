@@ -81,7 +81,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -107,7 +107,7 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
                 ConsensusConfig.of(3000),
                 Round.of(10),
                 (unused) -> IntStream.of(0, 1),
-                SyncConfig.of(200L, 10, 2000L))
+                SyncRelayConfig.of(200L, 10, 2000L))
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5, TimeUnit.SECONDS),

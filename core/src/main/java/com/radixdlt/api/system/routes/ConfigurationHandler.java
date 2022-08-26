@@ -76,14 +76,14 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.MempoolThrottleMs;
 import com.radixdlt.p2p.P2PConfig;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 
 public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfigurationResponse> {
 
   private final long pacemakerTimeout;
   private final int bftSyncPatienceMillis;
   private final long mempoolThrottleMs;
-  private final SyncConfig syncConfig;
+  private final SyncRelayConfig syncRelayConfig;
   private final P2PConfig p2PConfig;
   private final ECPublicKey self;
   private final SystemModelMapper systemModelMapper;
@@ -94,7 +94,7 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
       @PacemakerBaseTimeoutMs long pacemakerTimeout,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       @MempoolThrottleMs long mempoolThrottleMs,
-      SyncConfig syncConfig,
+      SyncRelayConfig syncRelayConfig,
       P2PConfig p2PConfig,
       SystemModelMapper systemModelMapper) {
     super();
@@ -102,7 +102,7 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
     this.pacemakerTimeout = pacemakerTimeout;
     this.bftSyncPatienceMillis = bftSyncPatienceMillis;
     this.mempoolThrottleMs = mempoolThrottleMs;
-    this.syncConfig = syncConfig;
+    this.syncRelayConfig = syncRelayConfig;
     this.p2PConfig = p2PConfig;
     this.systemModelMapper = systemModelMapper;
   }
@@ -118,7 +118,7 @@ public final class ConfigurationHandler extends SystemGetJsonHandler<SystemConfi
                 .bftSyncPatience(bftSyncPatienceMillis)
                 .pacemakerTimeout(pacemakerTimeout))
         .mempool(new MempoolConfiguration().maxSize(0).throttle(mempoolThrottleMs))
-        .sync(systemModelMapper.syncConfiguration(syncConfig))
+        .sync(systemModelMapper.syncConfiguration(syncRelayConfig))
         .networking(systemModelMapper.networkingConfiguration(self, p2PConfig));
   }
 }

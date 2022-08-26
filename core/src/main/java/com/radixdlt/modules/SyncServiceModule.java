@@ -88,7 +88,7 @@ import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
 import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseHandler;
 import com.radixdlt.sync.RemoteSyncService;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.sync.SyncState;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.sync.messages.remote.StatusRequest;
@@ -99,15 +99,15 @@ import java.time.Duration;
 
 /** Module which manages synchronization of committed transactions across nodes */
 public class SyncServiceModule extends AbstractModule {
-  private final SyncConfig syncConfig;
+  private final SyncRelayConfig syncRelayConfig;
 
-  public SyncServiceModule(SyncConfig syncConfig) {
-    this.syncConfig = syncConfig;
+  public SyncServiceModule(SyncRelayConfig syncRelayConfig) {
+    this.syncRelayConfig = syncRelayConfig;
   }
 
   @Override
   public void configure() {
-    bind(SyncConfig.class).toInstance(this.syncConfig);
+    bind(SyncRelayConfig.class).toInstance(this.syncRelayConfig);
     bind(LocalSyncService.class).in(Scopes.SINGLETON);
     bind(RemoteSyncService.class).in(Scopes.SINGLETON);
   }
@@ -185,12 +185,13 @@ public class SyncServiceModule extends AbstractModule {
 
   @ProvidesIntoSet
   public ScheduledEventProducerOnRunner<?> syncCheckTriggerEventProducer(
-      EventDispatcher<SyncCheckTrigger> syncCheckTriggerEventDispatcher, SyncConfig syncConfig) {
+      EventDispatcher<SyncCheckTrigger> syncCheckTriggerEventDispatcher,
+      SyncRelayConfig syncRelayConfig) {
     return new ScheduledEventProducerOnRunner<>(
         Runners.SYNC,
         syncCheckTriggerEventDispatcher,
         SyncCheckTrigger::create,
-        Duration.ofMillis(syncConfig.syncCheckInterval()),
-        Duration.ofMillis(syncConfig.syncCheckInterval()));
+        Duration.ofMillis(syncRelayConfig.syncCheckInterval()),
+        Duration.ofMillis(syncRelayConfig.syncCheckInterval()));
   }
 }

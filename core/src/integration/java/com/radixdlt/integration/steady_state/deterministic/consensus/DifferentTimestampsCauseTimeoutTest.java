@@ -86,6 +86,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.DeterministicTest.DeterministicManualExecutor;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.utils.Pair;
@@ -106,7 +107,7 @@ public class DifferentTimestampsCauseTimeoutTest {
                 new FunctionalRadixNodeModule(
                     false,
                     ConsensusConfig.of(),
-                    FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                    LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
             .createExecutor();
 
@@ -149,7 +150,7 @@ public class DifferentTimestampsCauseTimeoutTest {
                 new FunctionalRadixNodeModule(
                     false,
                     ConsensusConfig.of(),
-                    FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                    LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
             .createExecutor();
 

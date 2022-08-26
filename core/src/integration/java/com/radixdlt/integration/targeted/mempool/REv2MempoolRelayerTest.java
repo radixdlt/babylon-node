@@ -77,7 +77,8 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.stream.Collectors;
 import org.junit.Test;
@@ -93,11 +94,12 @@ public final class REv2MempoolRelayerTest {
               new FunctionalRadixNodeModule(
                   false,
                   FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                  FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSync(
+                  FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                       StateComputerConfig.rev2(
+                          REv2DatabaseConfig.inMemory(),
                           StateComputerConfig.REV2ProposerConfig.mempool(
                               MEMPOOL_SIZE, new MempoolRelayConfig(0, 0, 0, 100))),
-                      SyncConfig.of(5000, 10, 3000L))));
+                      SyncRelayConfig.of(5000, 10, 3000L))));
 
   private final TransactionGenerator transactionGenerator =
       new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
@@ -113,7 +115,7 @@ public final class REv2MempoolRelayerTest {
 
     // Run all nodes except validator node0
     test.runForCount(
-        100, m -> m.channelId().senderIndex() != 0 && m.channelId().receiverIndex() != 0);
+        200, m -> m.channelId().senderIndex() != 0 && m.channelId().receiverIndex() != 0);
 
     // Post-run assertions
     Checkers.assertNodesHaveExactMempoolCount(

@@ -73,6 +73,7 @@ import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionStatus;
 import com.radixdlt.statecomputer.preview.PreviewFlags;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transaction.TransactionBuilder;
@@ -88,7 +89,8 @@ public final class PreviewTest {
     // Arrange
     try (final var stateManager =
         StateManager.createAndInitialize(
-            new StateManagerConfig(NetworkDefinition.INT_TEST_NET, Option.none()))) {
+            new StateManagerConfig(
+                NetworkDefinition.INT_TEST_NET, Option.none(), REv2DatabaseConfig.inMemory()))) {
       final var stateComputer = new RustStateComputer(stateManager);
       final var manifest =
           TransactionBuilder.compileManifest(NetworkDefinition.INT_TEST_NET, "CLEAR_AUTH_ZONE;");
@@ -119,7 +121,8 @@ public final class PreviewTest {
     // Arrange
     try (final var stateManager =
         StateManager.createAndInitialize(
-            new StateManagerConfig(NetworkDefinition.INT_TEST_NET, Option.none()))) {
+            new StateManagerConfig(
+                NetworkDefinition.INT_TEST_NET, Option.none(), REv2DatabaseConfig.inMemory()))) {
       final var stateComputer = new RustStateComputer(stateManager);
       final var manifest = Hex.decode("00"); // invalid manifest
       final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
