@@ -6,151 +6,6 @@ use crate::core_api::generated::header;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct Bech32Hrps {
-    #[serde(rename = "account_hrp")]
-    pub account_hrp: String,
-
-    #[serde(rename = "validator_hrp")]
-    pub validator_hrp: String,
-
-    #[serde(rename = "node_hrp")]
-    pub node_hrp: String,
-
-    #[serde(rename = "resource_hrp_suffix")]
-    pub resource_hrp_suffix: String,
-
-}
-
-impl Bech32Hrps {
-    pub fn new(account_hrp: String, validator_hrp: String, node_hrp: String, resource_hrp_suffix: String, ) -> Bech32Hrps {
-        Bech32Hrps {
-            account_hrp: account_hrp,
-            validator_hrp: validator_hrp,
-            node_hrp: node_hrp,
-            resource_hrp_suffix: resource_hrp_suffix,
-        }
-    }
-}
-
-/// Converts the Bech32Hrps value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for Bech32Hrps {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("account_hrp".to_string());
-        params.push(self.account_hrp.to_string());
-
-
-        params.push("validator_hrp".to_string());
-        params.push(self.validator_hrp.to_string());
-
-
-        params.push("node_hrp".to_string());
-        params.push(self.node_hrp.to_string());
-
-
-        params.push("resource_hrp_suffix".to_string());
-        params.push(self.resource_hrp_suffix.to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a Bech32Hrps value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for Bech32Hrps {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub account_hrp: Vec<String>,
-            pub validator_hrp: Vec<String>,
-            pub node_hrp: Vec<String>,
-            pub resource_hrp_suffix: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing Bech32Hrps".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "account_hrp" => intermediate_rep.account_hrp.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "validator_hrp" => intermediate_rep.validator_hrp.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "node_hrp" => intermediate_rep.node_hrp.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "resource_hrp_suffix" => intermediate_rep.resource_hrp_suffix.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing Bech32Hrps".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(Bech32Hrps {
-            account_hrp: intermediate_rep.account_hrp.into_iter().next().ok_or("account_hrp missing in Bech32Hrps".to_string())?,
-            validator_hrp: intermediate_rep.validator_hrp.into_iter().next().ok_or("validator_hrp missing in Bech32Hrps".to_string())?,
-            node_hrp: intermediate_rep.node_hrp.into_iter().next().ok_or("node_hrp missing in Bech32Hrps".to_string())?,
-            resource_hrp_suffix: intermediate_rep.resource_hrp_suffix.into_iter().next().ok_or("resource_hrp_suffix missing in Bech32Hrps".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<Bech32Hrps> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<Bech32Hrps>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<Bech32Hrps>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for Bech32Hrps - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<Bech32Hrps> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <Bech32Hrps as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into Bech32Hrps - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct CommittedTransaction {
     #[serde(rename = "state_version")]
     pub state_version: String,
@@ -2322,17 +2177,18 @@ pub struct NetworkConfigurationResponse {
     #[serde(rename = "network_identifier")]
     pub network_identifier: models::NetworkIdentifier,
 
-    #[serde(rename = "bech32_human_readable_parts")]
-    pub bech32_human_readable_parts: models::Bech32Hrps,
+    /// The network suffix used for bech32 hrps used for addressing.
+    #[serde(rename = "network_hrp_suffix")]
+    pub network_hrp_suffix: String,
 
 }
 
 impl NetworkConfigurationResponse {
-    pub fn new(version: models::NetworkConfigurationResponseVersion, network_identifier: models::NetworkIdentifier, bech32_human_readable_parts: models::Bech32Hrps, ) -> NetworkConfigurationResponse {
+    pub fn new(version: models::NetworkConfigurationResponseVersion, network_identifier: models::NetworkIdentifier, network_hrp_suffix: String, ) -> NetworkConfigurationResponse {
         NetworkConfigurationResponse {
             version: version,
             network_identifier: network_identifier,
-            bech32_human_readable_parts: bech32_human_readable_parts,
+            network_hrp_suffix: network_hrp_suffix,
         }
     }
 }
@@ -2347,7 +2203,9 @@ impl std::string::ToString for NetworkConfigurationResponse {
 
         // Skipping network_identifier in query parameter serialization
 
-        // Skipping bech32_human_readable_parts in query parameter serialization
+
+        params.push("network_hrp_suffix".to_string());
+        params.push(self.network_hrp_suffix.to_string());
 
         params.join(",").to_string()
     }
@@ -2365,7 +2223,7 @@ impl std::str::FromStr for NetworkConfigurationResponse {
         struct IntermediateRep {
             pub version: Vec<models::NetworkConfigurationResponseVersion>,
             pub network_identifier: Vec<models::NetworkIdentifier>,
-            pub bech32_human_readable_parts: Vec<models::Bech32Hrps>,
+            pub network_hrp_suffix: Vec<String>,
         }
 
         let mut intermediate_rep = IntermediateRep::default();
@@ -2384,7 +2242,7 @@ impl std::str::FromStr for NetworkConfigurationResponse {
                 match key {
                     "version" => intermediate_rep.version.push(<models::NetworkConfigurationResponseVersion as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "network_identifier" => intermediate_rep.network_identifier.push(<models::NetworkIdentifier as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "bech32_human_readable_parts" => intermediate_rep.bech32_human_readable_parts.push(<models::Bech32Hrps as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "network_hrp_suffix" => intermediate_rep.network_hrp_suffix.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     _ => return std::result::Result::Err("Unexpected key while parsing NetworkConfigurationResponse".to_string())
                 }
             }
@@ -2397,7 +2255,7 @@ impl std::str::FromStr for NetworkConfigurationResponse {
         std::result::Result::Ok(NetworkConfigurationResponse {
             version: intermediate_rep.version.into_iter().next().ok_or("version missing in NetworkConfigurationResponse".to_string())?,
             network_identifier: intermediate_rep.network_identifier.into_iter().next().ok_or("network_identifier missing in NetworkConfigurationResponse".to_string())?,
-            bech32_human_readable_parts: intermediate_rep.bech32_human_readable_parts.into_iter().next().ok_or("bech32_human_readable_parts missing in NetworkConfigurationResponse".to_string())?,
+            network_hrp_suffix: intermediate_rep.network_hrp_suffix.into_iter().next().ok_or("network_hrp_suffix missing in NetworkConfigurationResponse".to_string())?,
         })
     }
 }

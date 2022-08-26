@@ -392,7 +392,7 @@ components:
       required:
         - version
         - network_identifier
-        - bech32_human_readable_parts
+        - network_hrp_suffix
       properties:
         version:
           description: Different versions regarding the node, network and api.
@@ -408,25 +408,9 @@ components:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
           description: The name of the network.
-        bech32_human_readable_parts:
-          "$ref": "#/components/schemas/Bech32HRPs"
-          description: The unique bech32 hrps used for addressing.
-    Bech32HRPs:
-      type: object
-      required:
-        - account_hrp
-        - validator_hrp
-        - node_hrp
-        - resource_hrp_suffix
-      properties:
-        account_hrp:
+        network_hrp_suffix:
           type: string
-        validator_hrp:
-          type: string
-        node_hrp:
-          type: string
-        resource_hrp_suffix:
-          type: string
+          description: The network suffix used for bech32 hrps used for addressing.
 ################################
 # REQUEST: /transaction/submit #
 ################################

@@ -1,6 +1,5 @@
 use crate::core_api::generated::models::*;
 use crate::core_api::generated::{StatusNetworkConfigurationPostResponse, API_VERSION};
-use scrypto::address::{EntityType, HrpSet};
 use state_manager::jni::state_manager::ActualStateManager;
 use std::sync::{Arc, Mutex};
 use swagger::ApiError;
@@ -20,7 +19,6 @@ fn handle_network_configuration_internal(
         .lock()
         .map_err(|_| server_error("Internal server error (state manager lock)"))?;
     let network = locked_state_manager.network.clone();
-    let hrp_set: HrpSet = (&network).into();
 
     Ok(NetworkConfigurationResponse {
         version: NetworkConfigurationResponseVersion {
@@ -28,16 +26,9 @@ fn handle_network_configuration_internal(
             api_version: API_VERSION.to_string(),
         },
         network_identifier: NetworkIdentifier {
-            network: format!("{:?}", network),
+            network: network.logical_name,
         },
-        bech32_human_readable_parts: Bech32Hrps {
-            account_hrp: hrp_set
-                .get_entity_hrp(&EntityType::AccountComponent)
-                .to_string(),
-            validator_hrp: "TODO".to_string(),
-            node_hrp: "TODO".to_string(),
-            resource_hrp_suffix: hrp_set.get_entity_hrp(&EntityType::Resource).to_string(),
-        },
+        network_hrp_suffix: network.hrp_suffix,
     })
 }
 
