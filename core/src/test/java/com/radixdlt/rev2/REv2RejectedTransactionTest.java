@@ -16,8 +16,6 @@ import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
-import com.radixdlt.mempool.MempoolInserter;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -45,10 +43,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class REv2RejectedTransactionTest {
-
+public final class REv2RejectedTransactionTest {
     private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-    private static final NetworkDefinition NETWORK_DEFINITION = NetworkDefinition.INT_TEST_NET;
+    private static final NetworkDefinition NETWORK_DEFINITION = NetworkDefinition.LOCAL_SIMULATOR;
 
     private final DeterministicNetwork network =
             new DeterministicNetwork(
@@ -61,7 +58,6 @@ public class REv2RejectedTransactionTest {
     @Inject
     private DeterministicProcessor processor;
     @Inject private REv2TransactionAndProofStore transactionStoreReader;
-    @Inject private REv2StateReader stateReader;
 
     private Injector createInjector(ProposalGenerator proposalGenerator) {
         return Guice.createInjector(
@@ -77,6 +73,7 @@ public class REv2RejectedTransactionTest {
                         ConsensusConfig.of(),
                         LedgerConfig.stateComputerNoSync(
                                 StateComputerConfig.rev2(
+                                        Network.LOCALSIMULATOR.getId(),
                                         new REv2DatabaseConfig.RocksDB(folder.getRoot().getAbsolutePath()),
                                         REV2ProposerConfig.transactionGenerator(proposalGenerator)))),
                 new TestP2PModule.Builder().build(),
@@ -87,21 +84,22 @@ public class REv2RejectedTransactionTest {
                     @Override
                     protected void configure() {
                         bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-                        bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
+                        bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALSIMULATOR));
                         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
                     }
                 });
     }
 
-    private static RawTransaction create1MBTransaction() {
-        var unsignedManifest =
-                TransactionBuilder.build1MBManifest(NETWORK_DEFINITION, TEST_KEY.getPublicKey());
-        var hashedManifest = HashUtils.sha256Twice(unsignedManifest).asBytes();
-
-        var intentSignature = TEST_KEY.sign(hashedManifest);
+    private static RawTransaction createRejectableTransaction() {
+        var rejectableManifest = "CALL_METHOD ComponentAddress(\"account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064\") \"withdraw_by_amount\" Decimal(\"5.0\") ResourceAddress(\"resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag\");";
+        var header =
+                TransactionHeader.defaults(NETWORK_DEFINITION, TEST_KEY.getPublicKey(), false);
+        var intentBytes = TransactionBuilder.createIntent(NETWORK_DEFINITION, header, rejectableManifest);
+        var hashedIntent = HashUtils.sha256Twice(intentBytes).asBytes();
+        var intentSignature = TEST_KEY.sign(hashedIntent);
         var signedIntent =
                 TransactionBuilder.createSignedIntentBytes(
-                        unsignedManifest, List.of(Tuple.Tuple2.of(TEST_KEY.getPublicKey(), intentSignature)));
+                        intentBytes, List.of(Tuple.Tuple2.of(TEST_KEY.getPublicKey(), intentSignature)));
         var hashedSignedIntent = HashUtils.sha256Twice(signedIntent).asBytes();
 
         var notarySignature = TEST_KEY.sign(hashedSignedIntent);
@@ -125,12 +123,12 @@ public class REv2RejectedTransactionTest {
     }
 
     @Test
-    public void large_transaction_should_be_committable() {
+    public void rejected_transaction_in_proposal_should_not_be_committed() {
         var proposalGenerator = new ControlledProposerGenerator();
 
         // Arrange: Start single node network
         createInjector(proposalGenerator).injectMembers(this);
-        var newAccountTransaction = create1MBTransaction();
+        var newAccountTransaction = createRejectableTransaction();
 
         // Act: Submit transaction to mempool and run consensus
         processor.start();
@@ -146,8 +144,6 @@ public class REv2RejectedTransactionTest {
 
         // Assert: Check transaction and post submission state
         assertThat(proposalGenerator.nextTransaction).isNull();
-        var receipt = transactionStoreReader.getTransactionAtStateVersion(1);
-        var receiptTransaction = RawTransaction.create(receipt.getTransactionBytes());
-        assertThat(newAccountTransaction).isEqualTo(receiptTransaction);
+        assertThat(transactionStoreReader.getLastProof()).isEmpty();
     }
 }
