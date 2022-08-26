@@ -63,7 +63,7 @@
  */
 
 use crate::jni::state_manager::ActualStateManager;
-use crate::store::{ProofStore, TransactionStore};
+use crate::store::{QueryableProofStore, QueryableTransactionStore};
 use crate::types::TId;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;

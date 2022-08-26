@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
-use crate::types::{TId, Transaction};
-use radix_engine::transaction::TransactionReceipt;
+use crate::types::TId;
+
 use sbor::*;
 use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
 
@@ -78,13 +78,11 @@ pub struct TemporaryTransactionReceipt {
     pub new_resource_addresses: Vec<ResourceAddress>,
 }
 
-pub trait TransactionStore {
-    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>);
+pub trait QueryableTransactionStore {
     fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt);
 }
 
-pub trait ProofStore {
-    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>);
+pub trait QueryableProofStore {
     fn get_tid(&self, state_version: u64) -> TId;
     fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)>;
     fn get_last_proof(&self) -> Option<Vec<u8>>;

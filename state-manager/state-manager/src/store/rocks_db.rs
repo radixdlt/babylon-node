@@ -62,12 +62,16 @@
  * permissions under this License.
  */
 
-use crate::store::stores::{TemporaryTransactionReceipt, TransactionStore};
+use crate::store::query::{QueryableTransactionStore, TemporaryTransactionReceipt};
 use crate::types::{TId, Transaction};
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
 use std::collections::HashMap;
 
-use crate::store::ProofStore;
+use crate::state_manager::{WriteableProofStore, WriteableTransactionStore};
+use crate::store::rocks_db::RocksDBTable::{
+    Proofs, RootSubstates, StateVersions, Substates, Transactions,
+};
+use crate::store::QueryableProofStore;
 use radix_engine::engine::Substate;
 use radix_engine::ledger::{
     OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
@@ -78,12 +82,32 @@ use scrypto::engine::types::{KeyValueStoreId, SubstateId};
 use std::path::PathBuf;
 
 #[macro_export]
-macro_rules! byte_prefix {
-    ($prefix:expr, $slice:expr) => {{
-        let mut vec = vec![$prefix];
+macro_rules! db_key {
+    ($table:expr, $slice:expr) => {{
+        let mut vec = vec![$table.prefix()];
         vec.extend_from_slice($slice);
         vec
     }};
+}
+
+enum RocksDBTable {
+    Transactions,
+    StateVersions,
+    Proofs,
+    Substates,
+    RootSubstates,
+}
+
+impl RocksDBTable {
+    fn prefix(&self) -> u8 {
+        match self {
+            Transactions => 0u8,
+            StateVersions => 1u8,
+            Proofs => 2u8,
+            Substates => 3u8,
+            RootSubstates => 4u8,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -120,54 +144,58 @@ impl RocksDBStore {
 
         let value = (transaction.payload.clone(), receipt);
 
-        let transaction_key = byte_prefix!(0u8, &transaction.id.bytes);
+        let transaction_key = db_key!(Transactions, &transaction.id.bytes);
         self.db
             .put(transaction_key, scrypto_encode(&value))
             .unwrap();
     }
 }
 
-impl TransactionStore for RocksDBStore {
+impl WriteableTransactionStore for RocksDBStore {
     fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
         for (txn, receipt) in transactions {
             self.insert_transaction(txn, receipt);
         }
     }
+}
 
+impl QueryableTransactionStore for RocksDBStore {
     fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
-        let transaction_key = byte_prefix!(0u8, &tid.bytes);
+        let transaction_key = db_key!(Transactions, &tid.bytes);
         let bytes = self.db.get(&transaction_key).unwrap().unwrap();
         scrypto_decode(&bytes).unwrap()
     }
 }
 
-impl ProofStore for RocksDBStore {
+impl WriteableProofStore for RocksDBStore {
     fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
         let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
         for (index, id) in ids.into_iter().enumerate() {
             let txn_state_version = first_state_version + index as u64;
-            let version_key = byte_prefix!(1u8, &txn_state_version.to_be_bytes());
+            let version_key = db_key!(StateVersions, &txn_state_version.to_be_bytes());
             self.db.put(version_key, id.bytes).unwrap();
         }
 
-        let proof_version_key = byte_prefix!(2u8, &state_version.to_be_bytes());
+        let proof_version_key = db_key!(Proofs, &state_version.to_be_bytes());
         self.db.put(proof_version_key, proof_bytes).unwrap();
     }
+}
 
+impl QueryableProofStore for RocksDBStore {
     fn get_tid(&self, state_version: u64) -> TId {
-        let txn_version_key = byte_prefix!(1u8, &state_version.to_be_bytes());
+        let txn_version_key = db_key!(StateVersions, &state_version.to_be_bytes());
         let bytes = self.db.get(&txn_version_key).unwrap().unwrap();
         TId { bytes }
     }
 
     fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
         let first_state_version = state_version + 1;
-        let proof_version_key = byte_prefix!(2u8, &first_state_version.to_be_bytes());
+        let proof_version_key = db_key!(Proofs, &first_state_version.to_be_bytes());
         let (next_state_version, proof) = self
             .db
             .iterator(IteratorMode::From(&proof_version_key, Direction::Forward))
             .next()
-            .filter(|(key, _)| key[0] == 2u8)
+            .filter(|(key, _)| key[0] == Proofs.prefix())
             .map(|(key, proof)| {
                 let (_, state_version_bytes) = key.split_first().unwrap();
                 let next_state_version =
@@ -177,7 +205,7 @@ impl ProofStore for RocksDBStore {
 
         let mut tids = Vec::new();
         for v in first_state_version..=next_state_version {
-            let txn_version_key = byte_prefix!(1u8, &v.to_be_bytes());
+            let txn_version_key = db_key!(StateVersions, &v.to_be_bytes());
             let bytes = self.db.get(txn_version_key).unwrap().unwrap();
             tids.push(TId { bytes });
         }
@@ -186,7 +214,10 @@ impl ProofStore for RocksDBStore {
 
     fn get_last_proof(&self) -> Option<Vec<u8>> {
         self.db
-            .iterator(IteratorMode::From(&[3u8], Direction::Reverse))
+            .iterator(IteratorMode::From(
+                &[Proofs.prefix() + 1],
+                Direction::Reverse,
+            ))
             .next()
             .filter(|(key, _)| key[0] == 2u8)
             .map(|(_, proof)| proof.to_vec())
@@ -197,14 +228,14 @@ impl ReadableSubstateStore for RocksDBStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         // TODO: Use get_pinned
         self.db
-            .get(byte_prefix!(3u8, &scrypto_encode(substate_id)))
+            .get(db_key!(Substates, &scrypto_encode(substate_id)))
             .unwrap()
             .map(|b| scrypto_decode(&b).unwrap())
     }
 
     fn is_root(&self, substate_id: &SubstateId) -> bool {
         self.db
-            .get(byte_prefix!(4u8, &scrypto_encode(substate_id)))
+            .get(db_key!(RootSubstates, &scrypto_encode(substate_id)))
             .unwrap()
             .is_some()
     }
@@ -214,7 +245,7 @@ impl WriteableSubstateStore for RocksDBStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
         self.db
             .put(
-                byte_prefix!(3u8, &scrypto_encode(&substate_id)),
+                db_key!(Substates, &scrypto_encode(&substate_id)),
                 scrypto_encode(&substate),
             )
             .expect("RockDB: put_substate unexpected error");
@@ -222,7 +253,10 @@ impl WriteableSubstateStore for RocksDBStore {
 
     fn set_root(&mut self, substate_id: SubstateId) {
         self.db
-            .put(byte_prefix!(4u8, &scrypto_encode(&substate_id)), vec![])
+            .put(
+                db_key!(RootSubstates, &scrypto_encode(&substate_id)),
+                vec![],
+            )
             .expect("RockDB: set_root unexpected error");
     }
 }
@@ -236,13 +270,13 @@ impl QueryableSubstateStore for RocksDBStore {
         ));
 
         let iter = self.db.iterator(IteratorMode::From(
-            &byte_prefix!(3u8, &id),
+            &db_key!(Substates, &id),
             Direction::Forward,
         ));
         let mut items = HashMap::new();
         for (key, value) in iter {
             let (prefix, key) = key.split_first().unwrap();
-            if *prefix != 3u8 {
+            if *prefix != Substates.prefix() {
                 break;
             }
 

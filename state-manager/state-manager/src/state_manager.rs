@@ -62,17 +62,15 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::*;
-use crate::mempool::{Mempool, MempoolConfig};
+use crate::mempool::Mempool;
 use crate::query::ResourceAccounter;
-use crate::store::{ProofStore, TransactionStore};
-use crate::types::{CommitRequest, PreviewError, PreviewRequest, Transaction};
+use crate::types::{CommitRequest, PreviewError, PreviewRequest, TId, Transaction};
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore};
 use radix_engine::transaction::{
-    ExecutionConfig, PreviewExecutor, PreviewResult, TransactionExecutor,
+    ExecutionConfig, PreviewExecutor, PreviewResult, TransactionExecutor, TransactionReceipt,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::engine::types::RENodeId;
@@ -86,6 +84,12 @@ use transaction::model::{
 use transaction::signing::EcdsaPrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
+struct OwnedValidationConfig {
+    pub current_epoch: u64,
+    pub max_cost_unit_limit: u32,
+    pub min_tip_percentage: u32,
+}
+
 pub struct StateManager<M: Mempool, S> {
     pub mempool: M,
     pub network: NetworkDefinition,
@@ -95,12 +99,6 @@ pub struct StateManager<M: Mempool, S> {
     validation_config: OwnedValidationConfig,
     execution_config: ExecutionConfig,
     intent_hash_manager: TestIntentHashManager,
-}
-
-pub struct OwnedValidationConfig {
-    pub current_epoch: u64,
-    pub max_cost_unit_limit: u32,
-    pub min_tip_percentage: u32,
 }
 
 impl<M: Mempool, S> StateManager<M, S> {
@@ -142,39 +140,6 @@ impl<M: Mempool, S> StateManager<M, S> {
             &self.intent_hash_manager,
             &validation_config,
         )
-    }
-}
-
-impl<M, S> StateManager<M, S>
-where
-    M: Mempool,
-    S: ReadableSubstateStore + WriteableSubstateStore + TransactionStore + ProofStore,
-{
-    pub fn commit(&mut self, commit_request: CommitRequest) {
-        let mut to_store = Vec::new();
-        let mut ids = Vec::new();
-        for transaction in &commit_request.transactions {
-            let validated_txn = self
-                .decode_transaction(transaction)
-                .expect("Error on Byzantine quorum");
-
-            let mut transaction_executor = TransactionExecutor::new(
-                &mut self.store,
-                &mut self.wasm_engine,
-                &mut self.wasm_instrumenter,
-            );
-            let receipt =
-                transaction_executor.execute_and_commit(&validated_txn, &self.execution_config);
-
-            to_store.push((transaction, receipt));
-            ids.push(transaction.id.clone());
-        }
-
-        self.store.insert_transactions(to_store);
-        self.store
-            .insert_tids_and_proof(commit_request.state_version, ids, commit_request.proof);
-        self.mempool
-            .handle_committed_transactions(&commit_request.transactions);
     }
 }
 
@@ -236,6 +201,50 @@ where
     }
 }
 
+pub trait WriteableTransactionStore {
+    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>);
+}
+
+pub trait WriteableProofStore {
+    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>);
+}
+
+impl<M, S> StateManager<M, S>
+where
+    M: Mempool,
+    S: ReadableSubstateStore
+        + WriteableSubstateStore
+        + WriteableTransactionStore
+        + WriteableProofStore,
+{
+    pub fn commit(&mut self, commit_request: CommitRequest) {
+        let mut to_store = Vec::new();
+        let mut ids = Vec::new();
+        for transaction in &commit_request.transactions {
+            let validated_txn = self
+                .decode_transaction(transaction)
+                .expect("Error on Byzantine quorum");
+
+            let mut transaction_executor = TransactionExecutor::new(
+                &mut self.store,
+                &mut self.wasm_engine,
+                &mut self.wasm_instrumenter,
+            );
+            let receipt =
+                transaction_executor.execute_and_commit(&validated_txn, &self.execution_config);
+
+            to_store.push((transaction, receipt));
+            ids.push(transaction.id.clone());
+        }
+
+        self.store.insert_transactions(to_store);
+        self.store
+            .insert_tids_and_proof(commit_request.state_version, ids, commit_request.proof);
+        self.mempool
+            .handle_committed_transactions(&commit_request.transactions);
+    }
+}
+
 impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager<M, S> {
     pub fn get_component_resources(
         &self,
@@ -246,18 +255,4 @@ impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager
             .add_resources(RENodeId::Component(component_address))
             .map_or(Option::None, |()| Some(resource_accounter.into_map()))
     }
-}
-
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
-pub enum DatabaseConfig {
-    InMemory,
-    RocksDB(String),
-    None,
-}
-
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
-pub struct StateManagerConfig {
-    pub network_definition: NetworkDefinition,
-    pub mempool_config: Option<MempoolConfig>,
-    pub db_config: DatabaseConfig,
 }

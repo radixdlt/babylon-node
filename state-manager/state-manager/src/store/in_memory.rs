@@ -62,8 +62,9 @@
  * permissions under this License.
  */
 
-use crate::store::stores::{TemporaryTransactionReceipt, TransactionStore};
-use crate::store::ProofStore;
+use crate::state_manager::{WriteableProofStore, WriteableTransactionStore};
+use crate::store::query::{QueryableTransactionStore, TemporaryTransactionReceipt};
+use crate::store::QueryableProofStore;
 use crate::types::{TId, Transaction};
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
 use std::collections::{BTreeMap, HashMap};
@@ -120,13 +121,15 @@ impl InMemoryStore {
     }
 }
 
-impl TransactionStore for InMemoryStore {
+impl WriteableTransactionStore for InMemoryStore {
     fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
         for (txn, receipt) in transactions {
             self.insert_transaction(txn, receipt);
         }
     }
+}
 
+impl QueryableTransactionStore for InMemoryStore {
     fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
         self.transactions
             .get(tid)
@@ -135,7 +138,7 @@ impl TransactionStore for InMemoryStore {
     }
 }
 
-impl ProofStore for InMemoryStore {
+impl WriteableProofStore for InMemoryStore {
     fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
         let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
         for (index, id) in ids.into_iter().enumerate() {
@@ -145,7 +148,9 @@ impl ProofStore for InMemoryStore {
 
         self.proofs.insert(state_version, proof_bytes);
     }
+}
 
+impl QueryableProofStore for InMemoryStore {
     fn get_tid(&self, state_version: u64) -> TId {
         self.txids.get(&state_version).cloned().unwrap()
     }
