@@ -86,36 +86,3 @@ pub trait TransactionAndProofStore {
     fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)>;
     fn get_last_proof(&self) -> Option<Vec<u8>>;
 }
-
-pub struct NullStore;
-
-impl TransactionAndProofStore for NullStore {
-    fn insert_transactions(&mut self, _transactions: Vec<(&Transaction, TransactionReceipt)>) {
-        panic!("Unexpected call to NullTransactionStore");
-    }
-
-    fn get_transaction(&self, _tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
-        panic!("Unexpected call to NullTransactionStore");
-    }
-
-    fn insert_tids_and_proof(
-        &mut self,
-        _state_version: u64,
-        _ids: Vec<TId>,
-        _proof_bytes: Vec<u8>,
-    ) {
-        panic!("Unexpected call to NullTransactionStore");
-    }
-
-    fn get_tid(&self, _state_version: u64) -> TId {
-        panic!("Unexpected call to NullTransactionStore");
-    }
-
-    fn get_next_proof(&self, _state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
-        panic!("Unexpected call to NullTransactionStore");
-    }
-
-    fn get_last_proof(&self) -> Option<Vec<u8>> {
-        panic!("Unexpected call to NullTransactionStore");
-    }
-}
