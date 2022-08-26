@@ -280,7 +280,7 @@ impl QueryableSubstateStore for RocksDBStore {
                 break;
             }
 
-            let substate: OutputValue = scrypto_decode(&value.to_vec()).unwrap();
+            let substate: OutputValue = scrypto_decode(&value).unwrap();
             let substate_id: SubstateId = scrypto_decode(key).unwrap();
             if let SubstateId::KeyValueStoreEntry(id, key) = substate_id {
                 if id == *kv_store_id {

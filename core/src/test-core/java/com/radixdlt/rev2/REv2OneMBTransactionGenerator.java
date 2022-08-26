@@ -86,7 +86,7 @@ public final class REv2OneMBTransactionGenerator implements TransactionGenerator
   @Override
   public RawTransaction nextTransaction() {
     final ECKeyPair key = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
-    var manifest = TransactionBuilder.build1MBManifest(networkDefinition, key.getPublicKey());
+    var manifest = TransactionBuilder.build1MBIntent(networkDefinition, key.getPublicKey());
     var hashedManifest = HashUtils.sha256Twice(manifest);
     var signedIntent =
         TransactionBuilder.createSignedIntentBytes(

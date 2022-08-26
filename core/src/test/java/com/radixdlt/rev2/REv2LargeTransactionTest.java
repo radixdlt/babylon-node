@@ -151,7 +151,7 @@ public final class REv2LargeTransactionTest {
 
   private static RawTransaction create1MBTransaction() {
     var unsignedManifest =
-        TransactionBuilder.build1MBManifest(NETWORK_DEFINITION, TEST_KEY.getPublicKey());
+        TransactionBuilder.build1MBIntent(NETWORK_DEFINITION, TEST_KEY.getPublicKey());
     var hashedManifest = HashUtils.sha256Twice(unsignedManifest).asBytes();
 
     var intentSignature = TEST_KEY.sign(hashedManifest);
