@@ -13,10 +13,11 @@ network.p2p.use_proxy_protocol=$RADIXDLT_NETWORK_USE_PROXY_PROTOCOL
 
 db.location=$RADIXDLT_DB_LOCATION
 
-api.port=$RADIXDLT_API_PORT
-api.bind.address=$RADIXDLT_HTTP_BIND_ADDRESS
-api.transactions.enable=$RADIXDLT_TRANSACTIONS_API_ENABLE
-api.sign.enable=$RADIXDLT_SIGN_ENABLE
+api.core.port=$RADIXDLT_CORE_API_PORT
+api.core.bind_address=$RADIXDLT_CORE_API_BIND_ADDRESS
+
+api.system.port=$RADIXDLT_SYSTEM_API_PORT
+api.system.bind_address=$RADIXDLT_SYSTEM_API_BIND_ADDRESS
 
 testing_forks.enable=$RADIXDLT_TESTING_FORKS_ENABLE
 testing_forks.fork_config_name=$RADIXDLT_TESTING_FORK_CONFIG_NAME

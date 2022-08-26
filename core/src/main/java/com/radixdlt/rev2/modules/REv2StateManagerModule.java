@@ -118,7 +118,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   @Provides
   @Singleton
   private RustStateComputer rEv2StateComputer(StateManager stateManager) {
-    return new RustStateComputer(stateManager.getRustState());
+    return new RustStateComputer(stateManager);
   }
 
   @Provides

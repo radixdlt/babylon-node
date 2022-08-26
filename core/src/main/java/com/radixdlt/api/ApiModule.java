@@ -68,7 +68,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.api.common.HandlerRoute;
-import com.radixdlt.api.core.CoreApiModule;
 import com.radixdlt.api.system.SystemApiModule;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
@@ -83,22 +82,17 @@ public final class ApiModule extends AbstractModule {
       Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
   private static final int QUEUE_SIZE = 2000;
 
-  private final int port;
-  private final String bindAddress;
-  private final boolean enableTransactions;
-  private final boolean enableSign;
+  private final String systemApiBindAddress;
+  private final int systemApiPort;
 
-  public ApiModule(String bindAddress, int port, boolean enableTransactions, boolean enableSign) {
-    this.bindAddress = bindAddress;
-    this.port = port;
-    this.enableTransactions = enableTransactions;
-    this.enableSign = enableSign;
+  public ApiModule(String systemApiBindAddress, int systemApiPort) {
+    this.systemApiBindAddress = systemApiBindAddress;
+    this.systemApiPort = systemApiPort;
   }
 
   @Override
   public void configure() {
     install(new SystemApiModule());
-    install(new CoreApiModule(enableTransactions, enableSign));
   }
 
   private static void fallbackHandler(HttpServerExchange exchange) {
@@ -136,6 +130,9 @@ public final class ApiModule extends AbstractModule {
         new RequestLimitingHandler(
             MAXIMUM_CONCURRENT_REQUESTS, QUEUE_SIZE, configureRoutes(handlers));
 
-    return Undertow.builder().addHttpListener(port, bindAddress).setHandler(handler).build();
+    return Undertow.builder()
+        .addHttpListener(systemApiPort, systemApiBindAddress)
+        .setHandler(handler)
+        .build();
   }
 }

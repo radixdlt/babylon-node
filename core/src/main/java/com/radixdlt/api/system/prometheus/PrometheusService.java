@@ -129,7 +129,6 @@ public class PrometheusService {
   private final Addressing addressing;
   private final InMemorySystemInfo inMemorySystemInfo;
   private final BFTNode self;
-  private final Map<String, Boolean> endpointStatuses;
   private final PeersView peersView;
 
   @Inject
@@ -141,8 +140,6 @@ public class PrometheusService {
       InMemorySystemInfo inMemorySystemInfo,
       @Self BFTNode self,
       Addressing addressing) {
-    boolean enableTransactions = properties.get("api.transactions.enable", false);
-    this.endpointStatuses = Map.of("transactions", enableTransactions);
     this.systemCounters = systemCounters;
     this.peersView = peersView;
     this.healthInfoService = healthInfoService;
@@ -191,7 +188,6 @@ public class PrometheusService {
 
   private String prepareNodeInfo() {
     var builder = new StringBuilder("nodeinfo{");
-    addEndpontStatuses(builder);
     appendField(
         builder,
         "owner_address",
@@ -221,10 +217,6 @@ public class PrometheusService {
     var branchAndCommit =
         RadixNodeApplication.systemVersionInfo().get(SYSTEM_VERSION_KEY).get(VERSION_STRING_KEY);
     appendField(builder, "branch_and_commit", branchAndCommit);
-  }
-
-  private void addEndpontStatuses(StringBuilder builder) {
-    endpointStatuses.forEach((name, enabled) -> appendField(builder, name + "_enabled", enabled));
   }
 
   private void appendField(StringBuilder builder, String name, Object value) {

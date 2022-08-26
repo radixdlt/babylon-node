@@ -80,7 +80,7 @@ import java.util.List;
 public final class TransactionBuilder {
   static {
     // This is idempotent with the other calls
-    System.loadLibrary("statemanager");
+    System.loadLibrary("corerust");
   }
 
   public static byte[] compileManifest(NetworkDefinition network, String manifest) {

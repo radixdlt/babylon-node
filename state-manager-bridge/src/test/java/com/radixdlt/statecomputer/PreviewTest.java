@@ -89,7 +89,7 @@ public final class PreviewTest {
     try (final var stateManager =
         StateManager.createAndInitialize(
             new StateManagerConfig(NetworkDefinition.INT_TEST_NET, Option.none()))) {
-      final var stateComputer = new RustStateComputer(stateManager.getRustState());
+      final var stateComputer = new RustStateComputer(stateManager);
       final var manifest =
           TransactionBuilder.compileManifest(NetworkDefinition.INT_TEST_NET, "CLEAR_AUTH_ZONE;");
       final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
@@ -120,7 +120,7 @@ public final class PreviewTest {
     try (final var stateManager =
         StateManager.createAndInitialize(
             new StateManagerConfig(NetworkDefinition.INT_TEST_NET, Option.none()))) {
-      final var stateComputer = new RustStateComputer(stateManager.getRustState());
+      final var stateComputer = new RustStateComputer(stateManager);
       final var manifest = Hex.decode("00"); // invalid manifest
       final var somePublicKey = ECKeyPair.generateNew().getPublicKey().getCompressedBytes();
       final var previewRequest =

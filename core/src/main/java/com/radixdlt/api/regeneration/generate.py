@@ -6,13 +6,10 @@ import urllib.request, logging, subprocess, os, shutil
 logger = logging.getLogger()
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', level=logging.INFO)
 
-CORE_API_SPEC_LOCATION = '../core/core-api-spec.yaml'
-CORE_API_GENERATED_DESTINATION = '../core/generated/'
 SYSTEM_API_SPEC_LOCATION = '../system/system-api-spec.yaml'
 SYSTEM_API_GENERATED_DESTINATION = '../system/generated/'
 
 COMMON_API_PACKAGE = 'com.radixdlt.api.common'
-CORE_API_PACKAGE = 'com.radixdlt.api.core'
 SYSTEM_API_PACKAGE = 'com.radixdlt.api.system'
 
 OPENAPI_GENERATION_FOLDER='.'
@@ -85,11 +82,6 @@ if __name__ == "__main__":
     os.makedirs(OPENAPI_TEMP_GENERATION_FOLDER)
 
     # download & fix the spec files
-    core_api_spec_temp_filename = os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, 'core_api_spec.yaml')
-    copy_file(CORE_API_SPEC_LOCATION, core_api_spec_temp_filename)
-    replace_in_file(core_api_spec_temp_filename, 'openapi: 3.1.0', 'openapi: 3.0.0')
-    logging.info('Loaded Core API Spec from {}'.format(os.path.abspath(CORE_API_SPEC_LOCATION)))
-
     system_api_spec_temp_filename = os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, 'system_api_spec.yaml')
     copy_file(SYSTEM_API_SPEC_LOCATION, system_api_spec_temp_filename)
     replace_in_file(system_api_spec_temp_filename, 'openapi: 3.1.0', 'openapi: 3.0.0')
@@ -98,7 +90,6 @@ if __name__ == "__main__":
     # generate the clients
     logging.info('Generating code from specs...')
 
-    generate_models("core-api", core_api_spec_temp_filename, CORE_API_PACKAGE, os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, "core-api"), CORE_API_GENERATED_DESTINATION)
     generate_models("system-api", system_api_spec_temp_filename, SYSTEM_API_PACKAGE, os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, "system-api"), SYSTEM_API_GENERATED_DESTINATION)
 
     logging.info("Code has been created.")

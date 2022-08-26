@@ -72,6 +72,7 @@ import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.crypto.exception.KeyStoreException;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.RadixNodeUri;
+import com.radixdlt.utils.FreePortFinder;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
