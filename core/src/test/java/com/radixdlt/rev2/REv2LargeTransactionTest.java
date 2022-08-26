@@ -84,7 +84,10 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
@@ -130,11 +133,12 @@ public final class REv2LargeTransactionTest {
         new MockedPersistenceStoreModule(),
         new FunctionalRadixNodeModule(
             false,
-            FunctionalRadixNodeModule.ConsensusConfig.of(),
-            FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+            ConsensusConfig.of(),
+            LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
+                    Network.INTEGRATIONTESTNET.getId(),
                     new REv2DatabaseConfig.RocksDB(folder.getRoot().getAbsolutePath()),
-                    StateComputerConfig.REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))),
+                    REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(

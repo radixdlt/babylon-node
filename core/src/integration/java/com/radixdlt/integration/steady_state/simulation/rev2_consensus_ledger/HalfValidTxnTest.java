@@ -76,6 +76,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.StatelessComputer;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import java.util.concurrent.TimeUnit;
@@ -94,7 +95,9 @@ public class HalfValidTxnTest {
                   ConsensusConfig.of(1000),
                   LedgerConfig.stateComputerNoSync(
                       StateComputerConfig.rev2(
-                          REv2DatabaseConfig.none(), REV2ProposerConfig.halfCorrectProposer()))))
+                          Network.INTEGRATIONTESTNET.getId(),
+                          REv2DatabaseConfig.none(),
+                          REV2ProposerConfig.halfCorrectProposer()))))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(1, TimeUnit.SECONDS),

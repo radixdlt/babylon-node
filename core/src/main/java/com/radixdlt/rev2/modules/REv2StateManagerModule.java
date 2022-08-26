@@ -71,7 +71,6 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2StateComputer;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -80,42 +79,49 @@ import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 
 public final class REv2StateManagerModule extends AbstractModule {
+  private final int networkId;
   private final REv2DatabaseConfig databaseConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean prefixDatabase;
 
   private REv2StateManagerModule(
+      int networkId,
       boolean prefixDatabase,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig) {
+    this.networkId = networkId;
     this.prefixDatabase = prefixDatabase;
     this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
   }
 
   public static REv2StateManagerModule create(
-      REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig) {
-    return new REv2StateManagerModule(false, databaseConfig, mempoolConfig);
+      int networkId, REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig) {
+    return new REv2StateManagerModule(networkId, false, databaseConfig, mempoolConfig);
   }
 
   public static REv2StateManagerModule createForTesting(
-      REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig) {
-    return new REv2StateManagerModule(true, databaseConfig, mempoolConfig);
+      int networkId, REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig) {
+    return new REv2StateManagerModule(networkId, true, databaseConfig, mempoolConfig);
   }
 
   private static class PrefixedRocksDBModule extends AbstractModule {
+    private final int networkId;
     private final REv2DatabaseConfig.RocksDB rocksConfig;
     private final Option<RustMempoolConfig> mempoolConfig;
 
     PrefixedRocksDBModule(
-        Option<RustMempoolConfig> mempoolConfig, REv2DatabaseConfig.RocksDB rocksConfig) {
+        int networkId,
+        Option<RustMempoolConfig> mempoolConfig,
+        REv2DatabaseConfig.RocksDB rocksConfig) {
+      this.networkId = networkId;
       this.mempoolConfig = mempoolConfig;
       this.rocksConfig = rocksConfig;
     }
 
     @Provides
     @Singleton
-    private StateManager stateManager(@Self BFTNode node, @NetworkId int networkId) {
+    private StateManager stateManager(@Self BFTNode node) {
       var network = Network.ofId(networkId).orElseThrow();
       final REv2DatabaseConfig databaseConfigToUse;
       var databasePath = rocksConfig.databasePath() + node.toString();
@@ -127,17 +133,20 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   private static class RocksDBModule extends AbstractModule {
+    private final int networkId;
     private final REv2DatabaseConfig databaseConfig;
     private final Option<RustMempoolConfig> mempoolConfig;
 
-    RocksDBModule(Option<RustMempoolConfig> mempoolConfig, REv2DatabaseConfig databaseConfig) {
+    RocksDBModule(
+        int networkId, Option<RustMempoolConfig> mempoolConfig, REv2DatabaseConfig databaseConfig) {
+      this.networkId = networkId;
       this.mempoolConfig = mempoolConfig;
       this.databaseConfig = databaseConfig;
     }
 
     @Provides
     @Singleton
-    private StateManager stateManager(@NetworkId int networkId) {
+    private StateManager stateManager() {
       var network = Network.ofId(networkId).orElseThrow();
       return StateManager.createAndInitialize(
           new StateManagerConfig(NetworkDefinition.from(network), mempoolConfig, databaseConfig));
@@ -147,9 +156,9 @@ public final class REv2StateManagerModule extends AbstractModule {
   @Override
   public void configure() {
     if (prefixDatabase && databaseConfig instanceof REv2DatabaseConfig.RocksDB rocksDB) {
-      install(new PrefixedRocksDBModule(mempoolConfig, rocksDB));
+      install(new PrefixedRocksDBModule(networkId, mempoolConfig, rocksDB));
     } else {
-      install(new RocksDBModule(mempoolConfig, databaseConfig));
+      install(new RocksDBModule(networkId, mempoolConfig, databaseConfig));
     }
 
     if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {

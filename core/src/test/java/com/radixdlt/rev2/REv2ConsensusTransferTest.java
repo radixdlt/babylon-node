@@ -131,6 +131,7 @@ public final class REv2ConsensusTransferTest {
             FunctionalRadixNodeModule.ConsensusConfig.of(),
             FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
+                    Network.INTEGRATIONTESTNET.getId(),
                     new REv2DatabaseConfig.RocksDB(folder.getRoot().getAbsolutePath()),
                     StateComputerConfig.REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))),
         new TestP2PModule.Builder().build(),
