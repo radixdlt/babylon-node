@@ -75,6 +75,7 @@ import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
@@ -96,6 +97,7 @@ public final class REv2MempoolRelayerTest {
                   FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                   FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                       StateComputerConfig.rev2(
+                          Network.INTEGRATIONTESTNET.getId(),
                           REv2DatabaseConfig.inMemory(),
                           StateComputerConfig.REV2ProposerConfig.mempool(
                               MEMPOOL_SIZE, new MempoolRelayConfig(0, 0, 0, 100))),

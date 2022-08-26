@@ -84,8 +84,8 @@ public sealed interface StateComputerConfig {
   }
 
   static StateComputerConfig rev2(
-      REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig) {
-    return new REv2StateComputerConfig(databaseConfig, proposerConfig);
+      int networkId, REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig) {
+    return new REv2StateComputerConfig(networkId, databaseConfig, proposerConfig);
   }
 
   sealed interface MockedMempoolConfig {
@@ -106,7 +106,7 @@ public sealed interface StateComputerConfig {
   record REv1StateComputerConfig(int mempoolSize) implements StateComputerConfig {}
 
   record REv2StateComputerConfig(
-      REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig)
+      int networkId, REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig)
       implements StateComputerConfig {}
 
   sealed interface REV2ProposerConfig {
