@@ -123,6 +123,10 @@ public sealed interface StateComputerConfig {
                   .collect(Collectors.toList()));
     }
 
+    static REV2ProposerConfig transactionGenerator(ProposalGenerator proposalGenerator) {
+      return new Generated(proposalGenerator);
+    }
+
     static REV2ProposerConfig mempool(int mempoolMaxSize, MempoolRelayConfig config) {
       return new Mempool(new RustMempoolConfig(mempoolMaxSize), config);
     }
