@@ -76,8 +76,8 @@ public final class CoreApiServer {
   }
 
   /**
-   * Stores a pointer to the rust state manager across JNI calls. In the JNI model, this is
-   * equivalent to the CoreApiServer "owning" the rust state manager memory. On each call into Rust,
+   * Stores a pointer to the rust core api server across JNI calls. In the JNI model, this is
+   * equivalent to the CoreApiServer "owning" the rust core api server memory. On each call into Rust,
    * we map the rustCoreApiServerPointer onto a concrete implementation in Rust land, and it uses
    * that to access all state and make calls.
    */
