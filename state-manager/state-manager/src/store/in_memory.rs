@@ -121,6 +121,12 @@ impl InMemoryStore {
     }
 }
 
+impl Default for InMemoryStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WriteableTransactionStore for InMemoryStore {
     fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
         for (txn, receipt) in transactions {

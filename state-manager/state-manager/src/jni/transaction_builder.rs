@@ -65,7 +65,7 @@
 use crate::jni::dtos::JavaStructure;
 use crate::result::StateManagerResult;
 use crate::transaction_builder::{
-    create_1mb_txn_manifest, create_intent_bytes, create_new_account_intent_bytes,
+    create_1mb_txn_intent, create_intent_bytes, create_new_account_intent_bytes,
     create_notarized_bytes, create_signed_intent_bytes,
 };
 use jni::objects::JClass;
@@ -161,16 +161,16 @@ fn do_create_intent_bytes(
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_build1MBManifest(
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_build1MBIntent(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, do_build_1mb_manifest)
+    jni_static_sbor_call(env, request_payload, do_build_1mb_intent)
 }
 
-fn do_build_1mb_manifest(args: (NetworkDefinition, EcdsaPublicKey)) -> Vec<u8> {
-    create_1mb_txn_manifest(args.0, args.1)
+fn do_build_1mb_intent(args: (NetworkDefinition, EcdsaPublicKey)) -> Vec<u8> {
+    create_1mb_txn_intent(args.0, args.1)
 }
 
 #[no_mangle]

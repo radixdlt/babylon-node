@@ -104,7 +104,7 @@ pub fn create_new_account_intent_bytes(
     intent.to_bytes()
 }
 
-pub fn create_1mb_txn_manifest(
+pub fn create_1mb_txn_intent(
     network_definition: NetworkDefinition,
     public_key: EcdsaPublicKey,
 ) -> Vec<u8> {
