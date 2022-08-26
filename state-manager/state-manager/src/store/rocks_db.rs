@@ -65,10 +65,16 @@
 use crate::store::stores::{TemporaryTransactionReceipt, TransactionStore};
 use crate::types::{TId, Transaction};
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
+use std::collections::HashMap;
 
 use crate::store::ProofStore;
+use radix_engine::engine::Substate;
+use radix_engine::ledger::{
+    OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
+};
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
+use scrypto::engine::types::{KeyValueStoreId, SubstateId};
 use std::path::PathBuf;
 
 #[macro_export]
@@ -106,7 +112,10 @@ impl RocksDBStore {
                     new_resource_addresses: commit_result.entity_changes.new_resource_addresses,
                 }
             }
-            TransactionResult::Reject(..) => panic!("Should not get here"), // TODO: Move this check somewhere else
+            TransactionResult::Reject(reject_result) => panic!(
+                "Committed transaction should not get rejected: {:?}",
+                reject_result
+            ), // TODO: Move this check somewhere else
         };
 
         let value = (transaction.payload.clone(), receipt);
@@ -181,5 +190,74 @@ impl ProofStore for RocksDBStore {
             .next()
             .filter(|(key, _)| key[0] == 2u8)
             .map(|(_, proof)| proof.to_vec())
+    }
+}
+
+impl ReadableSubstateStore for RocksDBStore {
+    fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
+        // TODO: Use get_pinned
+        self.db
+            .get(byte_prefix!(3u8, &scrypto_encode(substate_id)))
+            .unwrap()
+            .map(|b| scrypto_decode(&b).unwrap())
+    }
+
+    fn is_root(&self, substate_id: &SubstateId) -> bool {
+        self.db
+            .get(byte_prefix!(4u8, &scrypto_encode(substate_id)))
+            .unwrap()
+            .is_some()
+    }
+}
+
+impl WriteableSubstateStore for RocksDBStore {
+    fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
+        self.db
+            .put(
+                byte_prefix!(3u8, &scrypto_encode(&substate_id)),
+                scrypto_encode(&substate),
+            )
+            .expect("RockDB: put_substate unexpected error");
+    }
+
+    fn set_root(&mut self, substate_id: SubstateId) {
+        self.db
+            .put(byte_prefix!(4u8, &scrypto_encode(&substate_id)), vec![])
+            .expect("RockDB: set_root unexpected error");
+    }
+}
+
+impl QueryableSubstateStore for RocksDBStore {
+    fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<Vec<u8>, Substate> {
+        let unit = scrypto_encode(&());
+        let id = scrypto_encode(&SubstateId::KeyValueStoreEntry(
+            *kv_store_id,
+            scrypto_encode(&unit),
+        ));
+
+        let iter = self.db.iterator(IteratorMode::From(
+            &byte_prefix!(3u8, &id),
+            Direction::Forward,
+        ));
+        let mut items = HashMap::new();
+        for (key, value) in iter {
+            let (prefix, key) = key.split_first().unwrap();
+            if *prefix != 3u8 {
+                break;
+            }
+
+            let substate: OutputValue = scrypto_decode(&value.to_vec()).unwrap();
+            let substate_id: SubstateId = scrypto_decode(key).unwrap();
+            if let SubstateId::KeyValueStoreEntry(id, key) = substate_id {
+                if id == *kv_store_id {
+                    items.insert(key, substate.substate)
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            };
+        }
+        items
     }
 }
