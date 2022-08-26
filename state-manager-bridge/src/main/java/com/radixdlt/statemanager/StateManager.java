@@ -66,41 +66,30 @@ package com.radixdlt.statemanager;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.StateManagerSbor;
-import java.util.Objects;
 
 public final class StateManager implements AutoCloseable {
 
   static {
-    System.loadLibrary("statemanager");
+    System.loadLibrary("corerust");
   }
 
   /**
    * Stores a pointer to the rust state manager across JNI calls. In the JNI model, this is
-   * equivalent to the Rust State "owning" the rust state manager memory. On each call into Rust, we
-   * map the stateManagerPointer onto a concrete implementation in Rust land, and it uses that to
-   * access all state and make calls.
+   * equivalent to the StateManager "owning" the rust state manager memory. On each call into Rust,
+   * we map the rustStateManagerPointer onto a concrete implementation in Rust land, and it uses
+   * that to access all state and make calls.
    */
-  public static final class RustState {
-    @SuppressWarnings("unused")
-    private final long stateManagerPointer = 0;
-  }
-
-  private final RustState rustState;
+  @SuppressWarnings("unused")
+  private final long rustStateManagerPointer = 0;
 
   public static StateManager createAndInitialize(StateManagerConfig config) {
-    final var rustState = new RustState();
+    return new StateManager(config);
+  }
+
+  private StateManager(StateManagerConfig config) {
     final var encodedConfig =
         StateManagerSbor.encode(config, StateManagerSbor.resolveCodec(new TypeToken<>() {}));
-    init(rustState, encodedConfig);
-    return new StateManager(rustState);
-  }
-
-  private StateManager(RustState rustState) {
-    this.rustState = Objects.requireNonNull(rustState);
-  }
-
-  public RustState getRustState() {
-    return this.rustState;
+    init(this, encodedConfig);
   }
 
   @Override
@@ -109,10 +98,10 @@ public final class StateManager implements AutoCloseable {
   }
 
   public void shutdown() {
-    cleanup(this.rustState);
+    cleanup(this);
   }
 
-  private static native void init(RustState rustState, byte[] config);
+  private static native void init(StateManager stateManager, byte[] config);
 
-  private static native void cleanup(RustState rustState);
+  private static native void cleanup(StateManager stateManager);
 }

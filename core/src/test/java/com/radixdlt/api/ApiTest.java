@@ -145,8 +145,6 @@ public abstract class ApiTest {
                         23456);
                 bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
                 var runtimeProperties = mock(RuntimeProperties.class);
-                when(runtimeProperties.get(eq("api.transactions.enable"), anyBoolean()))
-                    .thenReturn(true);
                 bind(RuntimeProperties.class).toInstance(runtimeProperties);
               }
             });

@@ -80,7 +80,7 @@ import java.util.List;
 public final class TransactionBuilder {
   static {
     // This is idempotent with the other calls
-    System.loadLibrary("statemanager");
+    System.loadLibrary("corerust");
   }
 
   public static byte[] build1MBManifest(NetworkDefinition network, ECPublicKey publicKey) {

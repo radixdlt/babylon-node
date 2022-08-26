@@ -71,7 +71,7 @@ import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.NativeCalls;
-import com.radixdlt.statemanager.StateManager.RustState;
+import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
@@ -80,26 +80,26 @@ import java.util.Objects;
 
 public class RustMempool implements MempoolReader {
 
-  public RustMempool(RustState rustState) {
-    Objects.requireNonNull(rustState);
+  public RustMempool(StateManager stateManager) {
+    Objects.requireNonNull(stateManager);
     addFunc =
         NativeCalls.Func1.with(
-            rustState, new TypeToken<>() {}, new TypeToken<>() {}, RustMempool::add);
+            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustMempool::add);
     getTransactionsForProposalFunc =
         NativeCalls.Func1.with(
-            rustState,
+            stateManager,
             new TypeToken<>() {},
             new TypeToken<>() {},
             RustMempool::getTransactionsForProposal);
     getTransactionsToRelayFunc =
         NativeCalls.Func1.with(
-            rustState,
+            stateManager,
             new TypeToken<>() {},
             new TypeToken<>() {},
             RustMempool::getTransactionsToRelay);
     getCountFunc =
         NativeCalls.Func1.with(
-            rustState, new TypeToken<>() {}, new TypeToken<>() {}, RustMempool::getCount);
+            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustMempool::getCount);
   }
 
   public RawTransaction addTransaction(RawTransaction transaction) throws MempoolRejectedException {
@@ -153,23 +153,28 @@ public class RustMempool implements MempoolReader {
     return getCountFunc.call(Unit.unit());
   }
 
-  private static native byte[] add(RustState rustState, byte[] payload);
-
-  private final NativeCalls.Func1<RawTransaction, Result<RawTransaction, MempoolError>> addFunc;
-
-  private static native byte[] getTransactionsForProposal(RustState rustState, byte[] payload);
+  private static native byte[] add(StateManager stateManager, byte[] payload);
 
   private final NativeCalls.Func1<
-          Tuple.Tuple2<UInt32, List<RawTransaction>>, Result<List<RawTransaction>, MempoolError>>
+          StateManager, RawTransaction, Result<RawTransaction, MempoolError>>
+      addFunc;
+
+  private static native byte[] getTransactionsForProposal(
+      StateManager stateManager, byte[] payload);
+
+  private final NativeCalls.Func1<
+          StateManager,
+          Tuple.Tuple2<UInt32, List<RawTransaction>>,
+          Result<List<RawTransaction>, MempoolError>>
       getTransactionsForProposalFunc;
 
-  private static native byte[] getTransactionsToRelay(RustState rustState, byte[] payload);
+  private static native byte[] getTransactionsToRelay(StateManager stateManager, byte[] payload);
 
   private final NativeCalls.Func1<
-          Tuple.Tuple2<UInt64, UInt64>, Result<List<RawTransaction>, MempoolError>>
+          StateManager, Tuple.Tuple2<UInt64, UInt64>, Result<List<RawTransaction>, MempoolError>>
       getTransactionsToRelayFunc;
 
-  private static native byte[] getCount(RustState rustState, byte[] payload);
+  private static native byte[] getCount(Object stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<Unit, Integer> getCountFunc;
+  private final NativeCalls.Func1<StateManager, Unit, Integer> getCountFunc;
 }

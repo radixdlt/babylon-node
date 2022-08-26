@@ -89,7 +89,7 @@ public final class RustMempoolTest {
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory());
     try (var stateManager = StateManager.createAndInitialize(config)) {
-      var rustMempool = new RustMempool(stateManager.getRustState());
+      var rustMempool = new RustMempool(stateManager);
       var transaction1 = REv2TestTransactions.VALID_TXN_0;
       var transaction2 = REv2TestTransactions.VALID_TXN_1;
       var transaction3 = REv2TestTransactions.VALID_TXN_2;
@@ -147,7 +147,7 @@ public final class RustMempoolTest {
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory());
     try (var stateManager = StateManager.createAndInitialize(config)) {
-      var rustMempool = new RustMempool(stateManager.getRustState());
+      var rustMempool = new RustMempool(stateManager);
       var transaction1 = REv2TestTransactions.VALID_TXN_0;
       var transaction2 = REv2TestTransactions.VALID_TXN_1;
       var transaction3 = REv2TestTransactions.VALID_TXN_2;
@@ -243,7 +243,7 @@ public final class RustMempoolTest {
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory());
     try (var stateManager = StateManager.createAndInitialize(config)) {
-      var rustMempool = new RustMempool(stateManager.getRustState());
+      var rustMempool = new RustMempool(stateManager);
       var transaction1 = REv2TestTransactions.VALID_TXN_0;
       var transaction2 = REv2TestTransactions.VALID_TXN_1;
       var transaction3 = REv2TestTransactions.VALID_TXN_2;

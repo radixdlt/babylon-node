@@ -64,6 +64,7 @@
 
 package com.radixdlt.networks;
 
+import com.radixdlt.crypto.ECKeyPair;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -98,7 +99,8 @@ public enum Network {
   LOCALSIMULATOR(242 /* 0xF1 */, "simulator", "sim", GenesisSource.fromConfiguration);
 
   // For the Radix Shell to provide a default
-  public static final String DefaultHexGenesisTransaction = "01";
+  public static final String DefaultHexGenesisTransaction =
+      ECKeyPair.generateNew().getPublicKey().toHex();
 
   private final int intId;
   private final byte byteId;
