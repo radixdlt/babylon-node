@@ -62,10 +62,11 @@
  * permissions under this License.
  */
 
-use crate::store::transaction_store::{TemporaryTransactionReceipt, TransactionAndProofStore};
+use crate::store::stores::{TemporaryTransactionReceipt, TransactionStore};
 use crate::types::{TId, Transaction};
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
 
+use crate::store::ProofStore;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use std::path::PathBuf;
@@ -117,7 +118,7 @@ impl RocksDBStore {
     }
 }
 
-impl TransactionAndProofStore for RocksDBStore {
+impl TransactionStore for RocksDBStore {
     fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
         for (txn, receipt) in transactions {
             self.insert_transaction(txn, receipt);
@@ -129,7 +130,9 @@ impl TransactionAndProofStore for RocksDBStore {
         let bytes = self.db.get(&transaction_key).unwrap().unwrap();
         scrypto_decode(&bytes).unwrap()
     }
+}
 
+impl ProofStore for RocksDBStore {
     fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
         let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
         for (index, id) in ids.into_iter().enumerate() {

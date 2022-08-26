@@ -65,7 +65,7 @@
 use crate::jni::dtos::*;
 use crate::mempool::{Mempool, MempoolConfig};
 use crate::query::ResourceAccounter;
-use crate::store::TransactionAndProofStore;
+use crate::store::{ProofStore, TransactionStore};
 use crate::types::{CommitRequest, PreviewError, PreviewRequest, Transaction};
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
@@ -86,7 +86,7 @@ use transaction::model::{
 use transaction::signing::EcdsaPrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
-pub struct StateManager<M: Mempool, S, T: TransactionAndProofStore> {
+pub struct StateManager<M: Mempool, S, T> {
     pub mempool: M,
     pub transaction_and_proof_store: T,
     pub network: NetworkDefinition,
@@ -104,8 +104,11 @@ pub struct OwnedValidationConfig {
     pub min_tip_percentage: u32,
 }
 
-impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore, T: TransactionAndProofStore>
-    StateManager<M, S, T>
+impl<
+        M: Mempool,
+        S: ReadableSubstateStore + WriteableSubstateStore,
+        T: TransactionStore + ProofStore,
+    > StateManager<M, S, T>
 {
     pub fn new(
         network: NetworkDefinition,
@@ -247,9 +250,7 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore, T: Transacti
     }
 }
 
-impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore, T: TransactionStore>
-    StateManager<M, S, T>
-{
+impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore, T> StateManager<M, S, T> {
     pub fn get_component_resources(
         &self,
         component_address: ComponentAddress,

@@ -78,9 +78,12 @@ pub struct TemporaryTransactionReceipt {
     pub new_resource_addresses: Vec<ResourceAddress>,
 }
 
-pub trait TransactionAndProofStore {
+pub trait TransactionStore {
     fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>);
     fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt);
+}
+
+pub trait ProofStore {
     fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>);
     fn get_tid(&self, state_version: u64) -> TId;
     fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)>;

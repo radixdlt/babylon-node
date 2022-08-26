@@ -64,8 +64,8 @@
 
 mod in_memory;
 mod rocks_db;
-mod transaction_store;
+mod stores;
 
 pub use in_memory::InMemoryStore;
 pub use rocks_db::RocksDBStore;
-pub use transaction_store::{TemporaryTransactionReceipt, TransactionAndProofStore};
+pub use stores::{ProofStore, TemporaryTransactionReceipt, TransactionStore};
