@@ -67,8 +67,6 @@ package com.radixdlt.rev2.modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.rev2.REv2StateComputer;
 import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -81,8 +79,6 @@ public final class REv2DatabaseModule extends AbstractModule {
   protected void configure() {
     bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
     bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
-    bind(REv2StateComputer.class).in(Scopes.SINGLETON);
-    bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
   }
 
   @Provides
