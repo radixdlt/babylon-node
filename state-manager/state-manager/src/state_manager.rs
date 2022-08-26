@@ -64,7 +64,7 @@
 
 use crate::mempool::Mempool;
 use crate::query::ResourceAccounter;
-use crate::types::{CommitRequest, PreviewError, PreviewRequest, TId, Transaction};
+use crate::types::{CommitRequest, PrepareRequest, PreviewError, PreviewRequest, TId, Transaction};
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
@@ -217,6 +217,23 @@ where
         + WriteableTransactionStore
         + WriteableProofStore,
 {
+    pub fn prepare(
+        &mut self,
+        prepare_request: PrepareRequest,
+    ) -> (Vec<Transaction>, Vec<Transaction>) {
+        let mut success = Vec::new();
+        let mut rejected = Vec::new();
+        for proposed in prepare_request.proposed {
+            if let Ok(..) = self.decode_transaction(&proposed) {
+                success.push(proposed);
+            } else {
+                rejected.push(proposed);
+            }
+        }
+
+        (success, rejected)
+    }
+
     pub fn commit(&mut self, commit_request: CommitRequest) {
         let mut to_store = Vec::new();
         let mut ids = Vec::new();

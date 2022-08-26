@@ -62,47 +62,23 @@
  * permissions under this License.
  */
 
-use radix_engine::transaction::PreviewError as EnginePreviewError;
-use sbor::{Decode, Encode, TypeId};
-use transaction::model::PreviewFlags;
+package com.radixdlt.statecomputer.commit;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]
-pub struct TId {
-    pub bytes: Vec<u8>,
-}
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.transactions.RawTransaction;
+import java.util.List;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]
-pub struct Transaction {
-    pub payload: Vec<u8>,
-    pub id: TId,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
-pub struct PreviewRequest {
-    pub manifest: Vec<u8>,
-    pub cost_unit_limit: u32,
-    pub tip_percentage: u32,
-    pub nonce: u64,
-    pub signer_public_keys: Vec<Vec<u8>>,
-    pub flags: PreviewFlags,
-}
-
-#[derive(Debug)]
-pub enum PreviewError {
-    InvalidManifest,
-    InvalidSignerPublicKey,
-    EngineError(EnginePreviewError),
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
-pub struct CommitRequest {
-    pub transactions: Vec<Transaction>,
-    pub state_version: u64,
-    pub proof: Vec<u8>,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
-pub struct PrepareRequest {
-    pub prepared: Vec<Transaction>,
-    pub proposed: Vec<Transaction>,
+public record PrepareRequest(List<RawTransaction> previous, List<RawTransaction> proposed) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PrepareRequest.class,
+        codecs ->
+            StructCodec.with(
+                PrepareRequest::new,
+                codecs.of(new TypeToken<List<RawTransaction>>() {}),
+                codecs.of(new TypeToken<List<RawTransaction>>() {}),
+                (t, encoder) -> encoder.encode(t.previous, t.proposed)));
+  }
 }

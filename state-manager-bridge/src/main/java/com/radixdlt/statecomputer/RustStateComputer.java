@@ -66,12 +66,14 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.mempool.*;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statecomputer.commit.CommitRequest;
+import com.radixdlt.statecomputer.commit.PrepareRequest;
 import com.radixdlt.statecomputer.preview.PreviewError;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
 import com.radixdlt.statecomputer.preview.PreviewResult;
@@ -96,6 +98,9 @@ public class RustStateComputer {
     previewFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::preview);
+    prepareFunc =
+        NativeCalls.Func1.with(
+            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::prepare);
     commitFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::commit);
@@ -124,20 +129,25 @@ public class RustStateComputer {
     return this.mempool.getTransactionsForProposal(count, transactionToExclude);
   }
 
-  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
-    return componentXrdAmountFunc.call(componentAddress);
-  }
-
-  public void commit(CommitRequest commitRequest) {
-    commitFunc.call(commitRequest);
-  }
-
   public Result<Unit, String> verify(RawTransaction transaction) {
     return verifyFunc.call(transaction);
   }
 
   public Result<PreviewResult, PreviewError> preview(PreviewRequest previewRequest) {
     return previewFunc.call(previewRequest);
+  }
+
+  public Tuple.Tuple2<List<RawTransaction>, List<RawTransaction>> prepare(
+      PrepareRequest prepareRequest) {
+    return prepareFunc.call(prepareRequest);
+  }
+
+  public void commit(CommitRequest commitRequest) {
+    commitFunc.call(commitRequest);
+  }
+
+  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
+    return componentXrdAmountFunc.call(componentAddress);
   }
 
   private final NativeCalls.Func1<StateManager, RawTransaction, Result<Unit, String>> verifyFunc;
@@ -148,6 +158,12 @@ public class RustStateComputer {
       previewFunc;
 
   private static native byte[] preview(StateManager stateManager, byte[] payload);
+
+  private final NativeCalls.Func1<
+          StateManager, PrepareRequest, Tuple.Tuple2<List<RawTransaction>, List<RawTransaction>>>
+      prepareFunc;
+
+  private static native byte[] prepare(StateManager stateManager, byte[] payload);
 
   private final NativeCalls.Func1<StateManager, CommitRequest, Unit> commitFunc;
 

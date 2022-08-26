@@ -74,7 +74,7 @@ use scrypto::prelude::*;
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
 use crate::result::{ResultStateManagerMaps, StateManagerResult};
-use crate::types::{CommitRequest, PreviewRequest, Transaction};
+use crate::types::{CommitRequest, PrepareRequest, PreviewRequest, Transaction};
 
 //
 // JNI Interface
@@ -136,6 +136,33 @@ fn do_preview(
         .map(|result| result.into())
         .map_err_sm(|err| err.into())?;
     Ok(preview_result)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_prepare(&env, j_state_manager, request_payload).to_java();
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+fn do_prepare(
+    env: &JNIEnv,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> StateManagerResult<(Vec<Transaction>, Vec<Transaction>)> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
+    let prepare_request = PrepareRequest::from_java(&request_payload)?;
+
+    let rtn = state_manager
+        .lock()
+        .expect("Can't acquire a state manager mutex lock")
+        .prepare(prepare_request);
+    Ok(rtn)
 }
 
 #[no_mangle]
