@@ -68,10 +68,12 @@ import com.google.inject.*;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.lang.Option;
+import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.REv2StateComputer;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
@@ -124,25 +126,35 @@ public final class REv2StateManagerModule extends AbstractModule {
     }
   }
 
+  private static class RocksDBModule extends AbstractModule {
+    private final REv2DatabaseConfig databaseConfig;
+    private final Option<RustMempoolConfig> mempoolConfig;
+
+    RocksDBModule(Option<RustMempoolConfig> mempoolConfig, REv2DatabaseConfig databaseConfig) {
+      this.mempoolConfig = mempoolConfig;
+      this.databaseConfig = databaseConfig;
+    }
+
+    @Provides
+    @Singleton
+    private StateManager stateManager(@NetworkId int networkId) {
+      var network = Network.ofId(networkId).orElseThrow();
+      return StateManager.createAndInitialize(
+          new StateManagerConfig(NetworkDefinition.from(network), mempoolConfig, databaseConfig));
+    }
+  }
+
   @Override
   public void configure() {
     if (prefixDatabase && databaseConfig instanceof REv2DatabaseConfig.RocksDB rocksDB) {
       install(new PrefixedRocksDBModule(mempoolConfig, rocksDB));
     } else {
-      install(
-          new AbstractModule() {
-            @Provides
-            @Singleton
-            StateManager stateManager(@NetworkId int networkId) {
-              var network = Network.ofId(networkId).orElseThrow();
-              return StateManager.createAndInitialize(
-                  new StateManagerConfig(
-                      NetworkDefinition.from(network), mempoolConfig, databaseConfig));
-            }
-          });
+      install(new RocksDBModule(mempoolConfig, databaseConfig));
     }
 
     if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {
+      bind(REv2StateComputer.class).in(Scopes.SINGLETON);
+      bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
       install(new REv2DatabaseModule());
     }
 
