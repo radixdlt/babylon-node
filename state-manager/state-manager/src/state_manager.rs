@@ -86,9 +86,9 @@ use transaction::model::{
 use transaction::signing::EcdsaPrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
-pub struct StateManager<M: Mempool, S> {
+pub struct StateManager<M: Mempool, S, T: TransactionStore> {
     pub mempool: M,
-    pub transaction_store: Box<dyn TransactionStore + Send>, // TODO: remove dyn
+    pub transaction_store: T, // TODO: remove dyn
     pub proof_store: ProofStore,
     pub network: NetworkDefinition,
     substate_store: S,
@@ -105,13 +105,15 @@ pub struct OwnedValidationConfig {
     pub min_tip_percentage: u32,
 }
 
-impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager<M, S> {
+impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore, T: TransactionStore>
+    StateManager<M, S, T>
+{
     pub fn new(
         network: NetworkDefinition,
         mempool: M,
-        transaction_store: Box<dyn TransactionStore + Send>,
+        transaction_store: T,
         substate_store: S,
-    ) -> StateManager<M, S> {
+    ) -> StateManager<M, S, T> {
         StateManager {
             network,
             mempool,
@@ -246,7 +248,9 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
     }
 }
 
-impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager<M, S> {
+impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore, T: TransactionStore>
+    StateManager<M, S, T>
+{
     pub fn get_component_resources(
         &self,
         component_address: ComponentAddress,
