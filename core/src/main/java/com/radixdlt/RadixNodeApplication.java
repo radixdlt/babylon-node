@@ -69,6 +69,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.api.CoreApiServer;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
@@ -221,8 +222,13 @@ public final class RadixNodeApplication {
       log.error("Cannot start p2p server", e);
     }
 
+    // Start the system API server
     final var undertow = injector.getInstance(Undertow.class);
     undertow.start();
+
+    // Start the core API server
+    final var coreApiServer = injector.getInstance(CoreApiServer.class);
+    coreApiServer.start();
 
     final var consensusRunner = moduleRunners.get(Runners.CONSENSUS);
     consensusRunner.start();

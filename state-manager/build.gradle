@@ -69,6 +69,8 @@ spotless {
         // Files to apply the 'rust' format scheme to
         target 'src/**/*.rs'
 
+        targetExclude('src/core_api/generated/**/*.rs')
+
         // Steps to apply to the files
         var firstNoneHeaderLineRegex = '^.[^*].*$'  // Is at least 2 characters, the second of which is not a *
         licenseHeaderFile("${project.rootDir}/licence-header.txt", firstNoneHeaderLineRegex)
@@ -136,7 +138,7 @@ task buildRustForDocker(type: Exec) {
                --output type=local,dest=state-manager/target/$target/${project.property("rustBinaryBuildType")}/ .
              docker push $rustBuilderRepo:$cacheTag || true
              docker push $rustCacheRepo:$cacheTag || true
-             [ -f $outputDir/${project.property("rustBinaryBuildType")}/libstatemanager.so ]
+             [ -f $outputDir/${project.property("rustBinaryBuildType")}/libcorerust.so ]
                 """
 
         commandLine 'sh', '-c', dockerMultiStageCmd

@@ -113,16 +113,14 @@ public final class REv2StateManagerModule extends AbstractModule {
 
     @Provides
     @Singleton
-    private RustStateComputer stateComputer(@Self BFTNode node, @NetworkId int networkId) {
+    private StateManager stateManager(@Self BFTNode node, @NetworkId int networkId) {
       var network = Network.ofId(networkId).orElseThrow();
       final REv2DatabaseConfig databaseConfigToUse;
       var databasePath = rocksConfig.databasePath() + node.toString();
       databaseConfigToUse = REv2DatabaseConfig.rocksDB(databasePath);
-      var stateManager =
-          StateManager.createAndInitialize(
-              new StateManagerConfig(
-                  NetworkDefinition.from(network), mempoolConfig, databaseConfigToUse));
-      return new RustStateComputer(stateManager.getRustState());
+      return StateManager.createAndInitialize(
+          new StateManagerConfig(
+              NetworkDefinition.from(network), mempoolConfig, databaseConfigToUse));
     }
   }
 
@@ -135,17 +133,14 @@ public final class REv2StateManagerModule extends AbstractModule {
           new AbstractModule() {
             @Provides
             @Singleton
-            RustStateComputer stateComputer(@NetworkId int networkId) {
+            StateManager stateManager(@NetworkId int networkId) {
               var network = Network.ofId(networkId).orElseThrow();
-              var stateManager =
-                  StateManager.createAndInitialize(
-                      new StateManagerConfig(
-                          NetworkDefinition.from(network), mempoolConfig, databaseConfig));
-              return new RustStateComputer(stateManager.getRustState());
+              return StateManager.createAndInitialize(
+                  new StateManagerConfig(
+                      NetworkDefinition.from(network), mempoolConfig, databaseConfig));
             }
           });
     }
-    ;
 
     if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {
       install(new REv2DatabaseModule());
@@ -154,5 +149,11 @@ public final class REv2StateManagerModule extends AbstractModule {
     if (mempoolConfig.isPresent()) {
       install(new REv2MempoolModule());
     }
+  }
+
+  @Provides
+  @Singleton
+  private RustStateComputer rustStateComputer(StateManager stateManager) {
+    return new RustStateComputer(stateManager);
   }
 }

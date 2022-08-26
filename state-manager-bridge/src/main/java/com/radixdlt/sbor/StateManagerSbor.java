@@ -82,6 +82,7 @@ import com.radixdlt.statecomputer.preview.PreviewError;
 import com.radixdlt.statecomputer.preview.PreviewFlags;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
 import com.radixdlt.statecomputer.preview.PreviewResult;
+import com.radixdlt.statemanager.CoreApiServerConfig;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transaction.ExecutedTransactionReceipt;
@@ -143,6 +144,7 @@ public final class StateManagerSbor {
     CommitRequest.registerCodec(codecMap);
     REv2DatabaseConfig.registerCodec(codecMap);
     TransactionHeader.registerCodec(codecMap);
+    CoreApiServerConfig.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

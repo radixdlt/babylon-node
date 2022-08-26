@@ -70,30 +70,30 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.NativeCalls;
-import com.radixdlt.statemanager.StateManager.RustState;
+import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 public final class REv2TransactionAndProofStore {
-  public REv2TransactionAndProofStore(RustState rustState) {
-    Objects.requireNonNull(rustState);
+  public REv2TransactionAndProofStore(StateManager stateManager) {
+    Objects.requireNonNull(stateManager);
     this.getTransactionAtStateVersionFunc =
         NativeCalls.Func1.with(
-            rustState,
+            stateManager,
             new TypeToken<>() {},
             new TypeToken<>() {},
             REv2TransactionAndProofStore::getTransactionAtStateVersion);
     this.getNextProofFunc =
         NativeCalls.Func1.with(
-            rustState,
+            stateManager,
             new TypeToken<>() {},
             new TypeToken<>() {},
             REv2TransactionAndProofStore::getNextProof);
     this.getLastProofFunc =
         NativeCalls.Func1.with(
-            rustState,
+            stateManager,
             new TypeToken<>() {},
             new TypeToken<>() {},
             REv2TransactionAndProofStore::getLastProof);
@@ -111,17 +111,19 @@ public final class REv2TransactionAndProofStore {
     return this.getLastProofFunc.call(Unit.unit()).toOptional();
   }
 
-  private final NativeCalls.Func1<UInt64, ExecutedTransactionReceipt>
+  private final NativeCalls.Func1<StateManager, UInt64, ExecutedTransactionReceipt>
       getTransactionAtStateVersionFunc;
 
-  private static native byte[] getTransactionAtStateVersion(RustState rustState, byte[] payload);
+  private static native byte[] getTransactionAtStateVersion(
+      StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<UInt64, Option<Tuple.Tuple2<List<HashCode>, byte[]>>>
+  private final NativeCalls.Func1<
+          StateManager, UInt64, Option<Tuple.Tuple2<List<HashCode>, byte[]>>>
       getNextProofFunc;
 
-  private static native byte[] getNextProof(RustState rustState, byte[] payload);
+  private static native byte[] getNextProof(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<Unit, Option<byte[]>> getLastProofFunc;
+  private final NativeCalls.Func1<StateManager, Unit, Option<byte[]>> getLastProofFunc;
 
-  private static native byte[] getLastProof(RustState rustState, byte[] payload);
+  private static native byte[] getLastProof(StateManager stateManager, byte[] payload);
 }

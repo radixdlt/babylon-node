@@ -117,6 +117,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  "/network-sync-status":
+    get:
+      summary: Get Network Sync Status
+      description: Returns the current sync status of the node.
+      responses:
+        '200':
+          description: Network Status
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NetworkSyncStatusResponse"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     VersionResponse:
@@ -584,3 +601,26 @@ components:
           format: int64
         name:
           type: string
+#################################
+# REQUEST: /network-sync-status #
+#################################
+    NetworkSyncStatusResponse:
+      type: object
+      required:
+        - sync_status
+      properties:
+        sync_status:
+          $ref: "#/components/schemas/SyncStatus"
+          description: Information on how synced the node is to the rest of the network.
+    SyncStatus:
+      type: object
+      required:
+        - current_state_version
+        - target_state_version
+      properties:
+        current_state_version:
+          type: integer
+          format: int64
+        target_state_version:
+          type: integer
+          format: int64

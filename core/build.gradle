@@ -296,7 +296,7 @@ ospackage() {
     }
     def stateManagerBuildType = project.property("rustBinaryBuildType")
 
-    from("${project(':state-manager').projectDir}/target/${target}/${stateManagerBuildType}/libstatemanager.so") {
+    from("${project(':state-manager').projectDir}/target/${target}/${stateManagerBuildType}/libcorerust.so") {
         into "/usr/lib/jni/"
     }
 
