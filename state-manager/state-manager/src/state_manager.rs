@@ -69,8 +69,10 @@ use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore};
+use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     ExecutionConfig, PreviewExecutor, PreviewResult, TransactionExecutor, TransactionReceipt,
+    TransactionResult,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::engine::types::RENodeId;
@@ -221,11 +223,55 @@ where
         &mut self,
         prepare_request: PrepareRequest,
     ) -> (Vec<Transaction>, Vec<Transaction>) {
+        let mut validated_prepared = Vec::new();
+        for prepared in prepare_request.prepared {
+            let validated_transaction = self
+                .decode_transaction(&prepared)
+                .expect("Prepared should be decodeable");
+            validated_prepared.push(validated_transaction);
+        }
+
         let mut success = Vec::new();
         let mut rejected = Vec::new();
+        let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
+        let staged_node = staged_store_manager.new_child_node(0);
+
+        let mut staged_store = staged_store_manager.get_output_store(staged_node);
+        for prepared in validated_prepared {
+            let mut transaction_executor = TransactionExecutor::new(
+                &mut staged_store,
+                &mut self.wasm_engine,
+                &mut self.wasm_instrumenter,
+            );
+            transaction_executor.execute_and_commit(&prepared, &self.execution_config);
+        }
+
         for proposed in prepare_request.proposed {
-            if let Ok(..) = self.decode_transaction(&proposed) {
-                success.push(proposed);
+            let maybe_validated_transaction = TransactionValidator::validate_from_slice(
+                &proposed.payload,
+                &self.intent_hash_manager,
+                &ValidationConfig {
+                    network: &self.network,
+                    current_epoch: self.validation_config.current_epoch,
+                    max_cost_unit_limit: self.validation_config.max_cost_unit_limit,
+                    min_tip_percentage: self.validation_config.min_tip_percentage,
+                },
+            );
+
+            if let Ok(validated_transaction) = maybe_validated_transaction {
+                let mut transaction_executor = TransactionExecutor::new(
+                    &mut staged_store,
+                    &mut self.wasm_engine,
+                    &mut self.wasm_instrumenter,
+                );
+                let receipt = transaction_executor
+                    .execute_and_commit(&validated_transaction, &self.execution_config);
+                match receipt.result {
+                    TransactionResult::Commit(..) => success.push(proposed),
+                    TransactionResult::Reject(..) => {
+                        rejected.push(proposed);
+                    }
+                }
             } else {
                 rejected.push(proposed);
             }
