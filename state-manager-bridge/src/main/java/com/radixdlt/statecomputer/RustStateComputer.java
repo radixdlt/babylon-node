@@ -66,7 +66,6 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Tuple;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.mempool.*;
 import com.radixdlt.rev2.ComponentAddress;
@@ -74,6 +73,7 @@ import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
+import com.radixdlt.statecomputer.commit.PrepareResult;
 import com.radixdlt.statecomputer.preview.PreviewError;
 import com.radixdlt.statecomputer.preview.PreviewRequest;
 import com.radixdlt.statecomputer.preview.PreviewResult;
@@ -137,8 +137,7 @@ public class RustStateComputer {
     return previewFunc.call(previewRequest);
   }
 
-  public Tuple.Tuple2<List<RawTransaction>, List<RawTransaction>> prepare(
-      PrepareRequest prepareRequest) {
+  public PrepareResult prepare(PrepareRequest prepareRequest) {
     return prepareFunc.call(prepareRequest);
   }
 
@@ -159,9 +158,7 @@ public class RustStateComputer {
 
   private static native byte[] preview(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<
-          StateManager, PrepareRequest, Tuple.Tuple2<List<RawTransaction>, List<RawTransaction>>>
-      prepareFunc;
+  private final NativeCalls.Func1<StateManager, PrepareRequest, PrepareResult> prepareFunc;
 
   private static native byte[] prepare(StateManager stateManager, byte[] payload);
 

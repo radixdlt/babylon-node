@@ -74,7 +74,7 @@ use scrypto::prelude::*;
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
 use crate::result::{ResultStateManagerMaps, StateManagerResult};
-use crate::types::{CommitRequest, PrepareRequest, PreviewRequest, Transaction};
+use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest, Transaction};
 
 //
 // JNI Interface
@@ -153,7 +153,7 @@ fn do_prepare(
     env: &JNIEnv,
     j_state_manager: JObject,
     request_payload: jbyteArray,
-) -> StateManagerResult<(Vec<Transaction>, Vec<Transaction>)> {
+) -> StateManagerResult<PrepareResult> {
     let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
     let prepare_request = PrepareRequest::from_java(&request_payload)?;

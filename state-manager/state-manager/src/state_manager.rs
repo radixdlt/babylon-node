@@ -64,7 +64,9 @@
 
 use crate::mempool::Mempool;
 use crate::query::ResourceAccounter;
-use crate::types::{CommitRequest, PrepareRequest, PreviewError, PreviewRequest, TId, Transaction};
+use crate::types::{
+    CommitRequest, PrepareRequest, PrepareResult, PreviewError, PreviewRequest, TId, Transaction,
+};
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
@@ -219,10 +221,7 @@ where
         + WriteableTransactionStore
         + WriteableProofStore,
 {
-    pub fn prepare(
-        &mut self,
-        prepare_request: PrepareRequest,
-    ) -> (Vec<Transaction>, Vec<Transaction>) {
+    pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
         let mut validated_prepared = Vec::new();
         for prepared in prepare_request.prepared {
             let validated_transaction = self
@@ -231,8 +230,8 @@ where
             validated_prepared.push(validated_transaction);
         }
 
-        let mut success = Vec::new();
-        let mut rejected = Vec::new();
+        let mut successful_txns = Vec::new();
+        let mut invalid_txns = HashMap::new();
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
 
@@ -258,26 +257,32 @@ where
                 },
             );
 
-            if let Ok(validated_transaction) = maybe_validated_transaction {
-                let mut transaction_executor = TransactionExecutor::new(
-                    &mut staged_store,
-                    &mut self.wasm_engine,
-                    &mut self.wasm_instrumenter,
-                );
-                let receipt = transaction_executor
-                    .execute_and_commit(&validated_transaction, &self.execution_config);
-                match receipt.result {
-                    TransactionResult::Commit(..) => success.push(proposed),
-                    TransactionResult::Reject(..) => {
-                        rejected.push(proposed);
+            match maybe_validated_transaction {
+                Ok(validated_transaction) => {
+                    let mut transaction_executor = TransactionExecutor::new(
+                        &mut staged_store,
+                        &mut self.wasm_engine,
+                        &mut self.wasm_instrumenter,
+                    );
+                    let receipt = transaction_executor
+                        .execute_and_commit(&validated_transaction, &self.execution_config);
+                    match receipt.result {
+                        TransactionResult::Commit(..) => successful_txns.push(proposed),
+                        TransactionResult::Reject(reject_result) => {
+                            invalid_txns.insert(proposed, format!("{:?}", reject_result));
+                        }
                     }
                 }
-            } else {
-                rejected.push(proposed);
+                Err(validation_error) => {
+                    invalid_txns.insert(proposed, format!("{:?}", validation_error));
+                }
             }
         }
 
-        (success, rejected)
+        PrepareResult {
+            successful_txns,
+            invalid_txns,
+        }
     }
 
     pub fn commit(&mut self, commit_request: CommitRequest) {

@@ -84,6 +84,7 @@ import com.radixdlt.statecomputer.commit.PrepareRequest;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -145,14 +146,13 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var result = stateComputer.prepare(prepareRequest);
 
     var successfulTransactions =
-        result.first().stream()
+        result.successfulTransactions().stream()
             .map(REv2ExecutedTransaction::new)
             .collect(Collectors.<StateComputerLedger.ExecutedTransaction>toList());
-    var invalidTransactions =
-        result.last().stream()
+    Map<RawTransaction, Exception> invalidTransactions =
+        result.invalidTransactions().entrySet().stream()
             .collect(
-                Collectors.<RawTransaction, RawTransaction, Exception>toMap(
-                    txn -> txn, txn -> new InvalidREv2Transaction("error")));
+                Collectors.toMap(Map.Entry::getKey, e -> new InvalidREv2Transaction(e.getValue())));
 
     return new StateComputerLedger.StateComputerResult(successfulTransactions, invalidTransactions);
   }

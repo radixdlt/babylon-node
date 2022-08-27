@@ -78,6 +78,7 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
+import com.radixdlt.statecomputer.commit.PrepareResult;
 import com.radixdlt.statecomputer.preview.FeeSummary;
 import com.radixdlt.statecomputer.preview.PreviewError;
 import com.radixdlt.statecomputer.preview.PreviewFlags;
@@ -143,6 +144,7 @@ public final class StateManagerSbor {
     ECPublicKey.registerCodec(codecMap);
     ECDSASignature.registerCodec(codecMap);
     PrepareRequest.registerCodec(codecMap);
+    PrepareResult.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
     REv2DatabaseConfig.registerCodec(codecMap);
     TransactionHeader.registerCodec(codecMap);
