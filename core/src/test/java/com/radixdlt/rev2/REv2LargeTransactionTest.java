@@ -70,14 +70,12 @@ import com.google.inject.*;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
-import com.radixdlt.lang.Tuple;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayConfig;
@@ -120,7 +118,6 @@ public final class REv2LargeTransactionTest {
   @Inject private DeterministicProcessor processor;
   @Inject private MempoolInserter<RawTransaction> mempoolInserter;
   @Inject private REv2TransactionAndProofStore transactionStoreReader;
-  @Inject private REv2StateReader stateReader;
 
   private Injector createInjector() {
     return Guice.createInjector(
@@ -154,19 +151,9 @@ public final class REv2LargeTransactionTest {
   }
 
   private static RawTransaction create1MBTransaction() {
-    var unsignedManifest =
+    var intentBytes =
         TransactionBuilder.build1MBIntent(NETWORK_DEFINITION, TEST_KEY.getPublicKey());
-    var hashedManifest = HashUtils.sha256Twice(unsignedManifest).asBytes();
-
-    var intentSignature = TEST_KEY.sign(hashedManifest);
-    var signedIntent =
-        TransactionBuilder.createSignedIntentBytes(
-            unsignedManifest, List.of(Tuple.Tuple2.of(TEST_KEY.getPublicKey(), intentSignature)));
-    var hashedSignedIntent = HashUtils.sha256Twice(signedIntent).asBytes();
-
-    var notarySignature = TEST_KEY.sign(hashedSignedIntent);
-    var transactionPayload = TransactionBuilder.createNotarizedBytes(signedIntent, notarySignature);
-    return RawTransaction.create(transactionPayload);
+    return REv2TestTransactions.constructTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
   }
 
   @Test
