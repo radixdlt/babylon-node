@@ -65,9 +65,7 @@
 package com.radixdlt.rev2;
 
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.lang.Tuple;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -86,16 +84,7 @@ public final class REv2OneMBTransactionGenerator implements TransactionGenerator
   @Override
   public RawTransaction nextTransaction() {
     final ECKeyPair key = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
-    var manifest = TransactionBuilder.build1MBIntent(networkDefinition, key.getPublicKey());
-    var hashedManifest = HashUtils.sha256Twice(manifest);
-    var signedIntent =
-        TransactionBuilder.createSignedIntentBytes(
-            manifest,
-            List.of(Tuple.Tuple2.of(key.getPublicKey(), key.sign(hashedManifest.asBytes()))));
-    var hashedSignedIntent = HashUtils.sha256Twice(signedIntent);
-    var notarized =
-        TransactionBuilder.createNotarizedBytes(
-            signedIntent, key.sign(hashedSignedIntent.asBytes()));
-    return RawTransaction.create(notarized);
+    var intentBytes = TransactionBuilder.build1MBIntent(networkDefinition, key.getPublicKey());
+    return REv2TestTransactions.constructTransaction(intentBytes, key, List.of(key));
   }
 }
