@@ -83,6 +83,8 @@ import com.radixdlt.rev1.MockedMempoolStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
 import com.radixdlt.rev1.ReV1DispatcherModule;
+import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
+import com.radixdlt.rev1.modules.LedgerRecoveryModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
 import com.radixdlt.rev2.modules.MockedSyncServiceModule;
@@ -269,6 +271,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           case SyncConfig.None ignored -> {}
         }
 
+        // State Computer
         switch (stateComputerLedgerConfig.config) {
           case MockedStateComputerConfig c -> {
             switch (c.mempoolType()) {
@@ -297,6 +300,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             install(new RadixEngineStateComputerModule(config.mempoolSize()));
             install(new RadixEngineModule());
             install(new ReV1DispatcherModule());
+            install(new LedgerRecoveryModule());
+            install(new ConsensusRecoveryModule());
           }
           case REv2StateComputerConfig rev2Config -> {
             if (REv2DatabaseConfig.isNone(rev2Config.databaseConfig())) {

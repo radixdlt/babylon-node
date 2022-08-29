@@ -117,8 +117,6 @@ import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.forks.InMemoryForksEpochStoreModule;
 import com.radixdlt.rev1.forks.NoOpForksEpochStore;
-import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
-import com.radixdlt.rev1.modules.LedgerRecoveryModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
@@ -494,8 +492,6 @@ public final class SimulationTest {
                 initialNodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
                 Amount.ofTokens(1000000),
                 Amount.ofTokens(10000)));
-        modules.add(new LedgerRecoveryModule());
-        modules.add(new ConsensusRecoveryModule());
 
         // FIXME: A bit of a hack
         testModules.add(
@@ -523,6 +519,12 @@ public final class SimulationTest {
                 return txnsAndProof.getTransactions().get(0);
               }
             });
+      } else if (this.functionalNodeModule.supportsREv2()) {
+        modules.add(new MockedLedgerRecoveryModule());
+        var initialVset = initialNodes.stream().map(e -> BFTNode.create(e.getPublicKey())).toList();
+        var mockedConsensusRecoveryModuleBuilder = new MockedConsensusRecoveryModule.Builder();
+        mockedConsensusRecoveryModuleBuilder.withNodes(initialVset);
+        modules.add(mockedConsensusRecoveryModuleBuilder.build());
       } else {
         modules.add(new MockedLedgerRecoveryModule());
         var initialVset = initialNodes.stream().map(e -> BFTNode.create(e.getPublicKey())).toList();
