@@ -136,7 +136,11 @@ fn handle_get_committed_transactions_internal(
         })
         .collect::<Result<Vec<CommittedTransaction>, RequestHandlingError>>()?;
 
-    let start_state_version = if api_txns.is_empty() { 0 } else { start_state_version };
+    let start_state_version = if api_txns.is_empty() {
+        0
+    } else {
+        start_state_version
+    };
 
     Ok(CommittedTransactionsResponse {
         start_state_version: start_state_version.to_string(),

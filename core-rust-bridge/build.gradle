@@ -79,11 +79,11 @@ compileJava {
     // This prevents it being output by the jobs EG generateDevUniverse run in quiet mode. Hence, lifecycle.
     // Side note: The method of using stdout for generateDevUniverse and friends should really be changed.
     if (System.getenv("SKIP_NATIVE_RUST_BUILD") == "TRUE") {
-        logger.lifecycle("As SKIP_NATIVE_RUST_BUILD=TRUE, the native state-manager rust build is being skipped at this point.")
+        logger.lifecycle("As SKIP_NATIVE_RUST_BUILD=TRUE, the native core-rust build is being skipped at this point.")
     } else {
         logger.lifecycle("A native debug rust build required for the node to run natively will be run.")
         logger.lifecycle("This can be skipped with SKIP_NATIVE_RUST_BUILD=TRUE, if the rust is being built separately.")
-        dependsOn(":state-manager:buildRustDebug")
+        dependsOn(":core-rust:buildRustDebug")
     }
 }
 
