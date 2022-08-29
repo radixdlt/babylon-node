@@ -8,7 +8,6 @@ use scrypto::prelude::scrypto_decode;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::PreviewRequest;
 use std::sync::{Arc, Mutex};
-use swagger::Nullable;
 use transaction::model::{PreviewFlags, TransactionManifest};
 
 pub(crate) fn handle_preview(
@@ -147,14 +146,14 @@ fn to_api_response(
                     let output_hex = output.into_iter().map(hex::encode).collect();
                     (
                         TransactionStatus::SUCCEEDED,
-                        Some(Nullable::Present(output_hex)),
+                        Some(output_hex),
                         None,
                     )
                 }
                 TransactionOutcome::Failure(error) => (
                     TransactionStatus::FAILED,
                     None,
-                    Some(Nullable::Present(format!("{:?}", error))),
+                    Some(format!("{:?}", error)),
                 ),
             };
 
@@ -177,7 +176,7 @@ fn to_api_response(
             new_component_addresses: vec![],
             new_resource_addresses: vec![],
             output: None,
-            error_message: Some(Nullable::Present(format!("{:?}", reject_result))),
+            error_message: Some(format!("{:?}", reject_result)),
         },
     };
 

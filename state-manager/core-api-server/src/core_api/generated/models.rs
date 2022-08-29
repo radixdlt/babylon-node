@@ -7,6 +7,7 @@ use crate::core_api::generated::header;
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct CommittedTransaction {
+    /// The resultant state version after the txn has been committed. A decimal 64-bit unsigned integer.
     #[serde(rename = "state_version")]
     pub state_version: String,
 
@@ -141,8 +142,9 @@ pub struct CommittedTransactionsRequest {
     #[serde(rename = "network_identifier")]
     pub network_identifier: models::NetworkIdentifier,
 
-    #[serde(rename = "state_version")]
-    pub state_version: String,
+    /// A decimal 64-bit unsigned integer.
+    #[serde(rename = "start_state_version")]
+    pub start_state_version: String,
 
     /// The maximum number of transactions that will be returned.
     #[serde(rename = "limit")]
@@ -151,10 +153,10 @@ pub struct CommittedTransactionsRequest {
 }
 
 impl CommittedTransactionsRequest {
-    pub fn new(network_identifier: models::NetworkIdentifier, state_version: String, limit: isize, ) -> CommittedTransactionsRequest {
+    pub fn new(network_identifier: models::NetworkIdentifier, start_state_version: String, limit: isize, ) -> CommittedTransactionsRequest {
         CommittedTransactionsRequest {
             network_identifier: network_identifier,
-            state_version: state_version,
+            start_state_version: start_state_version,
             limit: limit,
         }
     }
@@ -169,8 +171,8 @@ impl std::string::ToString for CommittedTransactionsRequest {
         // Skipping network_identifier in query parameter serialization
 
 
-        params.push("state_version".to_string());
-        params.push(self.state_version.to_string());
+        params.push("start_state_version".to_string());
+        params.push(self.start_state_version.to_string());
 
 
         params.push("limit".to_string());
@@ -191,7 +193,7 @@ impl std::str::FromStr for CommittedTransactionsRequest {
         // An intermediate representation of the struct to use for parsing.
         struct IntermediateRep {
             pub network_identifier: Vec<models::NetworkIdentifier>,
-            pub state_version: Vec<String>,
+            pub start_state_version: Vec<String>,
             pub limit: Vec<isize>,
         }
 
@@ -210,7 +212,7 @@ impl std::str::FromStr for CommittedTransactionsRequest {
             if let Some(key) = key_result {
                 match key {
                     "network_identifier" => intermediate_rep.network_identifier.push(<models::NetworkIdentifier as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "state_version" => intermediate_rep.state_version.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "start_state_version" => intermediate_rep.start_state_version.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "limit" => intermediate_rep.limit.push(<isize as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     _ => return std::result::Result::Err("Unexpected key while parsing CommittedTransactionsRequest".to_string())
                 }
@@ -223,7 +225,7 @@ impl std::str::FromStr for CommittedTransactionsRequest {
         // Use the intermediate representation to return the struct
         std::result::Result::Ok(CommittedTransactionsRequest {
             network_identifier: intermediate_rep.network_identifier.into_iter().next().ok_or("network_identifier missing in CommittedTransactionsRequest".to_string())?,
-            state_version: intermediate_rep.state_version.into_iter().next().ok_or("state_version missing in CommittedTransactionsRequest".to_string())?,
+            start_state_version: intermediate_rep.start_state_version.into_iter().next().ok_or("start_state_version missing in CommittedTransactionsRequest".to_string())?,
             limit: intermediate_rep.limit.into_iter().next().ok_or("limit missing in CommittedTransactionsRequest".to_string())?,
         })
     }
@@ -271,19 +273,25 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct CommittedTransactionsResponse {
-    #[serde(rename = "state_version")]
-    pub state_version: String,
+    /// The first state version returned. A decimal 64-bit unsigned integer.
+    #[serde(rename = "start_state_version")]
+    pub start_state_version: String,
 
-    /// A committed transactions list starting from the `state_version`.
+    /// The maximum state version returned. A decimal 64-bit unsigned integer.
+    #[serde(rename = "max_state_version")]
+    pub max_state_version: String,
+
+    /// A committed transactions list starting from the `start_state_version_inclusive`.
     #[serde(rename = "transactions")]
     pub transactions: Vec<models::CommittedTransaction>,
 
 }
 
 impl CommittedTransactionsResponse {
-    pub fn new(state_version: String, transactions: Vec<models::CommittedTransaction>, ) -> CommittedTransactionsResponse {
+    pub fn new(start_state_version: String, max_state_version: String, transactions: Vec<models::CommittedTransaction>, ) -> CommittedTransactionsResponse {
         CommittedTransactionsResponse {
-            state_version: state_version,
+            start_state_version: start_state_version,
+            max_state_version: max_state_version,
             transactions: transactions,
         }
     }
@@ -296,8 +304,12 @@ impl std::string::ToString for CommittedTransactionsResponse {
     fn to_string(&self) -> String {
         let mut params: Vec<String> = vec![];
 
-        params.push("state_version".to_string());
-        params.push(self.state_version.to_string());
+        params.push("start_state_version".to_string());
+        params.push(self.start_state_version.to_string());
+
+
+        params.push("max_state_version".to_string());
+        params.push(self.max_state_version.to_string());
 
         // Skipping transactions in query parameter serialization
 
@@ -315,7 +327,8 @@ impl std::str::FromStr for CommittedTransactionsResponse {
         #[derive(Default)]
         // An intermediate representation of the struct to use for parsing.
         struct IntermediateRep {
-            pub state_version: Vec<String>,
+            pub start_state_version: Vec<String>,
+            pub max_state_version: Vec<String>,
             pub transactions: Vec<Vec<models::CommittedTransaction>>,
         }
 
@@ -333,7 +346,8 @@ impl std::str::FromStr for CommittedTransactionsResponse {
 
             if let Some(key) = key_result {
                 match key {
-                    "state_version" => intermediate_rep.state_version.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "start_state_version" => intermediate_rep.start_state_version.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "max_state_version" => intermediate_rep.max_state_version.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "transactions" => return std::result::Result::Err("Parsing a container in this style is not supported in CommittedTransactionsResponse".to_string()),
                     _ => return std::result::Result::Err("Unexpected key while parsing CommittedTransactionsResponse".to_string())
                 }
@@ -345,7 +359,8 @@ impl std::str::FromStr for CommittedTransactionsResponse {
 
         // Use the intermediate representation to return the struct
         std::result::Result::Ok(CommittedTransactionsResponse {
-            state_version: intermediate_rep.state_version.into_iter().next().ok_or("state_version missing in CommittedTransactionsResponse".to_string())?,
+            start_state_version: intermediate_rep.start_state_version.into_iter().next().ok_or("start_state_version missing in CommittedTransactionsResponse".to_string())?,
+            max_state_version: intermediate_rep.max_state_version.into_iter().next().ok_or("max_state_version missing in CommittedTransactionsResponse".to_string())?,
             transactions: intermediate_rep.transactions.into_iter().next().ok_or("transactions missing in CommittedTransactionsResponse".to_string())?,
         })
     }
@@ -403,10 +418,8 @@ pub struct ErrorResponse {
 
     /// A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
     #[serde(rename = "trace_id")]
-    #[serde(deserialize_with = "swagger::nullable_format::deserialize_optional_nullable")]
-    #[serde(default = "swagger::nullable_format::default_optional_nullable")]
     #[serde(skip_serializing_if="Option::is_none")]
-    pub trace_id: Option<swagger::Nullable<String>>,
+    pub trace_id: Option<String>,
 
 }
 
@@ -437,7 +450,7 @@ impl std::string::ToString for ErrorResponse {
 
         if let Some(ref trace_id) = self.trace_id {
             params.push("trace_id".to_string());
-            params.push(trace_id.as_ref().map_or("null".to_string(), |x| x.to_string()));
+            params.push(trace_id.to_string());
         }
 
         params.join(",").to_string()
@@ -475,7 +488,7 @@ impl std::str::FromStr for ErrorResponse {
                 match key {
                     "code" => intermediate_rep.code.push(<isize as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "message" => intermediate_rep.message.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "trace_id" => return std::result::Result::Err("Parsing a nullable type in this style is not supported in ErrorResponse".to_string()),
+                    "trace_id" => intermediate_rep.trace_id.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     _ => return std::result::Result::Err("Unexpected key while parsing ErrorResponse".to_string())
                 }
             }
@@ -488,7 +501,7 @@ impl std::str::FromStr for ErrorResponse {
         std::result::Result::Ok(ErrorResponse {
             code: intermediate_rep.code.into_iter().next().ok_or("code missing in ErrorResponse".to_string())?,
             message: intermediate_rep.message.into_iter().next().ok_or("message missing in ErrorResponse".to_string())?,
-            trace_id: std::result::Result::Err("Nullable types not supported in ErrorResponse".to_string())?,
+            trace_id: intermediate_rep.trace_id.into_iter().next(),
         })
     }
 }
@@ -536,24 +549,31 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct FeeSummary {
+    /// Specifies whether the transaction execution loan has been fully repaid.
     #[serde(rename = "loan_fully_repaid")]
     pub loan_fully_repaid: bool,
 
+    /// Maximum amount of cost units available for the transaction execution. A decimal 32-bit unsigned integer.
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: String,
 
+    /// The amount of cost units consumed by the transaction execution. A decimal 32-bit unsigned integer.
     #[serde(rename = "cost_unit_consumed")]
     pub cost_unit_consumed: String,
 
+    /// The XRD price of a single cost unit. A fixed-scale 256-bit decimal number.
     #[serde(rename = "cost_unit_price")]
     pub cost_unit_price: String,
 
+    /// The validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of \"1\" corresponds to 1%).
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: String,
 
+    /// The total amount of XRD burned. A fixed-scale 256-bit decimal number.
     #[serde(rename = "xrd_burned")]
     pub xrd_burned: String,
 
+    /// The total amount of XRD tipped to validators. A fixed-scale 256-bit decimal number.
     #[serde(rename = "xrd_tipped")]
     pub xrd_tipped: String,
 
@@ -714,9 +734,11 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct IntentSignature {
+    /// Signer public key, hex-encoded.
     #[serde(rename = "public_key")]
     pub public_key: String,
 
+    /// The signature, hex-encoded.
     #[serde(rename = "signature")]
     pub signature: String,
 
@@ -1205,12 +1227,14 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct NotarizedTransaction {
+    /// The transaction hash, hex-encoded.
     #[serde(rename = "hash")]
     pub hash: String,
 
     #[serde(rename = "signed_intent")]
     pub signed_intent: models::SignedTransactionIntent,
 
+    /// The notary signature, hex-encoded.
     #[serde(rename = "notary_signature")]
     pub notary_signature: String,
 
@@ -1337,6 +1361,7 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct SignedTransactionIntent {
+    /// Signed transaction intent hash, hex-encoded.
     #[serde(rename = "hash")]
     pub hash: String,
 
@@ -1473,24 +1498,31 @@ pub struct TransactionHeader {
     #[serde(rename = "network_id")]
     pub network_id: isize,
 
+    /// A decimal 64-bit unsigned integer.
     #[serde(rename = "start_epoch_inclusive")]
     pub start_epoch_inclusive: String,
 
+    /// A decimal 64-bit unsigned integer.
     #[serde(rename = "end_epoch_exclusive")]
     pub end_epoch_exclusive: String,
 
+    /// A decimal 64-bit unsigned integer.
     #[serde(rename = "nonce")]
     pub nonce: String,
 
+    /// A hex-encoded public key of a notary.
     #[serde(rename = "notary_public_key")]
     pub notary_public_key: String,
 
+    /// Specifies whether the notary's signature should be included in transaction signers list
     #[serde(rename = "notary_as_signatory")]
     pub notary_as_signatory: bool,
 
+    /// Maximum number of cost units available for transaction execution. A decimal 32-bit unsigned integer.
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: String,
 
+    /// Specifies the validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of \"1\" corresponds to 1%).
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: String,
 
@@ -1667,12 +1699,14 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct TransactionIntent {
+    /// Transaction intent hash, hex-encoded.
     #[serde(rename = "hash")]
     pub hash: String,
 
     #[serde(rename = "header")]
     pub header: models::TransactionHeader,
 
+    /// Transaction manifest, SBOR-encoded and then hex-encoded.
     #[serde(rename = "manifest")]
     pub manifest: String,
 
@@ -1806,15 +1840,15 @@ pub struct TransactionPreviewRequest {
     #[serde(rename = "manifest")]
     pub manifest: String,
 
-    /// A limit of cost units available for execution
+    /// Maximum number of cost units available for transaction execution. A decimal 32-bit unsigned integer.
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: String,
 
-    /// A tip for the validator
+    /// The validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of \"1\" corresponds to 1%).
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: String,
 
-    /// A nonce value to use for execution
+    /// The nonce value to use for execution. A decimal 64-bit unsigned integer.
     #[serde(rename = "nonce")]
     pub nonce: String,
 
@@ -2099,29 +2133,25 @@ pub struct TransactionPreviewResponse {
     #[serde(rename = "logs")]
     pub logs: Vec<models::TransactionPreviewResponseLogsInner>,
 
-    /// A list of new package addresses
+    /// A list of new package addresses, hex-encoded.
     #[serde(rename = "new_package_addresses")]
     pub new_package_addresses: Vec<String>,
 
-    /// A list of new component addresses
+    /// A list of new component addresses, hex-encoded.
     #[serde(rename = "new_component_addresses")]
     pub new_component_addresses: Vec<String>,
 
-    /// A list of new resource addresses
+    /// A list of new resource addresses, hex-encoded.
     #[serde(rename = "new_resource_addresses")]
     pub new_resource_addresses: Vec<String>,
 
     #[serde(rename = "output")]
-    #[serde(deserialize_with = "swagger::nullable_format::deserialize_optional_nullable")]
-    #[serde(default = "swagger::nullable_format::default_optional_nullable")]
     #[serde(skip_serializing_if="Option::is_none")]
-    pub output: Option<swagger::Nullable<Vec<String>>>,
+    pub output: Option<Vec<String>>,
 
     #[serde(rename = "error_message")]
-    #[serde(deserialize_with = "swagger::nullable_format::deserialize_optional_nullable")]
-    #[serde(default = "swagger::nullable_format::default_optional_nullable")]
     #[serde(skip_serializing_if="Option::is_none")]
-    pub error_message: Option<swagger::Nullable<String>>,
+    pub error_message: Option<String>,
 
 }
 
@@ -2167,13 +2197,13 @@ impl std::string::ToString for TransactionPreviewResponse {
 
         if let Some(ref output) = self.output {
             params.push("output".to_string());
-            params.push(output.as_ref().map_or("null".to_string(), |x| x.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string()));
+            params.push(output.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string());
         }
 
 
         if let Some(ref error_message) = self.error_message {
             params.push("error_message".to_string());
-            params.push(error_message.as_ref().map_or("null".to_string(), |x| x.to_string()));
+            params.push(error_message.to_string());
         }
 
         params.join(",").to_string()
@@ -2221,7 +2251,7 @@ impl std::str::FromStr for TransactionPreviewResponse {
                     "new_component_addresses" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionPreviewResponse".to_string()),
                     "new_resource_addresses" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionPreviewResponse".to_string()),
                     "output" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionPreviewResponse".to_string()),
-                    "error_message" => return std::result::Result::Err("Parsing a nullable type in this style is not supported in TransactionPreviewResponse".to_string()),
+                    "error_message" => intermediate_rep.error_message.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     _ => return std::result::Result::Err("Unexpected key while parsing TransactionPreviewResponse".to_string())
                 }
             }
@@ -2238,8 +2268,8 @@ impl std::str::FromStr for TransactionPreviewResponse {
             new_package_addresses: intermediate_rep.new_package_addresses.into_iter().next().ok_or("new_package_addresses missing in TransactionPreviewResponse".to_string())?,
             new_component_addresses: intermediate_rep.new_component_addresses.into_iter().next().ok_or("new_component_addresses missing in TransactionPreviewResponse".to_string())?,
             new_resource_addresses: intermediate_rep.new_resource_addresses.into_iter().next().ok_or("new_resource_addresses missing in TransactionPreviewResponse".to_string())?,
-            output: std::result::Result::Err("Nullable types not supported in TransactionPreviewResponse".to_string())?,
-            error_message: std::result::Result::Err("Nullable types not supported in TransactionPreviewResponse".to_string())?,
+            output: intermediate_rep.output.into_iter().next(),
+            error_message: intermediate_rep.error_message.into_iter().next(),
         })
     }
 }
@@ -2406,6 +2436,7 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 }
 
 
+/// The transaction execution receipt
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct TransactionReceipt {
@@ -2415,17 +2446,15 @@ pub struct TransactionReceipt {
     #[serde(rename = "fee_summary")]
     pub fee_summary: models::FeeSummary,
 
+    /// The engine return data (only present if status is succeeded)
     #[serde(rename = "output")]
-    #[serde(deserialize_with = "swagger::nullable_format::deserialize_optional_nullable")]
-    #[serde(default = "swagger::nullable_format::default_optional_nullable")]
     #[serde(skip_serializing_if="Option::is_none")]
-    pub output: Option<swagger::Nullable<Vec<String>>>,
+    pub output: Option<Vec<String>>,
 
+    /// Error message (only present if status is failed or rejected)
     #[serde(rename = "error_message")]
-    #[serde(deserialize_with = "swagger::nullable_format::deserialize_optional_nullable")]
-    #[serde(default = "swagger::nullable_format::default_optional_nullable")]
     #[serde(skip_serializing_if="Option::is_none")]
-    pub error_message: Option<swagger::Nullable<String>>,
+    pub error_message: Option<String>,
 
 }
 
@@ -2453,13 +2482,13 @@ impl std::string::ToString for TransactionReceipt {
 
         if let Some(ref output) = self.output {
             params.push("output".to_string());
-            params.push(output.as_ref().map_or("null".to_string(), |x| x.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string()));
+            params.push(output.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string());
         }
 
 
         if let Some(ref error_message) = self.error_message {
             params.push("error_message".to_string());
-            params.push(error_message.as_ref().map_or("null".to_string(), |x| x.to_string()));
+            params.push(error_message.to_string());
         }
 
         params.join(",").to_string()
@@ -2499,7 +2528,7 @@ impl std::str::FromStr for TransactionReceipt {
                     "status" => intermediate_rep.status.push(<models::TransactionStatus as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "fee_summary" => intermediate_rep.fee_summary.push(<models::FeeSummary as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "output" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionReceipt".to_string()),
-                    "error_message" => return std::result::Result::Err("Parsing a nullable type in this style is not supported in TransactionReceipt".to_string()),
+                    "error_message" => intermediate_rep.error_message.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     _ => return std::result::Result::Err("Unexpected key while parsing TransactionReceipt".to_string())
                 }
             }
@@ -2512,8 +2541,8 @@ impl std::str::FromStr for TransactionReceipt {
         std::result::Result::Ok(TransactionReceipt {
             status: intermediate_rep.status.into_iter().next().ok_or("status missing in TransactionReceipt".to_string())?,
             fee_summary: intermediate_rep.fee_summary.into_iter().next().ok_or("fee_summary missing in TransactionReceipt".to_string())?,
-            output: std::result::Result::Err("Nullable types not supported in TransactionReceipt".to_string())?,
-            error_message: std::result::Result::Err("Nullable types not supported in TransactionReceipt".to_string())?,
+            output: intermediate_rep.output.into_iter().next(),
+            error_message: intermediate_rep.error_message.into_iter().next(),
         })
     }
 }
@@ -2577,9 +2606,9 @@ pub enum TransactionStatus {
 impl std::fmt::Display for TransactionStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            TransactionStatus::SUCCEEDED => write!(f, "succeeded"),
-            TransactionStatus::FAILED => write!(f, "failed"),
-            TransactionStatus::REJECTED => write!(f, "rejected"),
+            TransactionStatus::SUCCEEDED => write!(f, "{}", "succeeded"),
+            TransactionStatus::FAILED => write!(f, "{}", "failed"),
+            TransactionStatus::REJECTED => write!(f, "{}", "rejected"),
         }
     }
 }

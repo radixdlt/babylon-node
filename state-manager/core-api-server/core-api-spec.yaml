@@ -152,6 +152,7 @@ components:
       description: The status of the transaction
     TransactionReceipt:
       type: object
+      description: The transaction execution receipt
       required:
         - status
         - fee_summary
@@ -164,8 +165,10 @@ components:
           type: array
           items:
             type: string
+          description: The engine return data (only present if status is succeeded)
         error_message:
           type: string
+          description: Error message (only present if status is failed or rejected)
     NotarizedTransaction:
       type: object
       required:
@@ -175,10 +178,12 @@ components:
       properties:
         hash:
           type: string
+          description: The transaction hash, hex-encoded.
         signed_intent:
           "$ref": "#/components/schemas/SignedTransactionIntent"
         notary_signature:
           type: string
+          description: The notary signature, hex-encoded.
     SignedTransactionIntent:
       type: object
       required:
@@ -188,6 +193,7 @@ components:
       properties:
         hash:
           type: string
+          description: Signed transaction intent hash, hex-encoded.
         intent:
           "$ref": "#/components/schemas/TransactionIntent"
         intent_signatures:
@@ -202,8 +208,10 @@ components:
       properties:
         public_key:
           type: string
+          description: Signer public key, hex-encoded.
         signature:
           type: string
+          description: The signature, hex-encoded.
     TransactionIntent:
       type: object
       required:
@@ -213,10 +221,12 @@ components:
       properties:
         hash:
           type: string
+          description: Transaction intent hash, hex-encoded.
         header:
           "$ref": "#/components/schemas/TransactionHeader"
         manifest:
           type: string
+          description: Transaction manifest, SBOR-encoded and then hex-encoded.
     TransactionHeader:
       type: object
       required:
@@ -236,18 +246,25 @@ components:
           type: integer
         start_epoch_inclusive:
           type: string
+          description: A decimal 64-bit unsigned integer.
         end_epoch_exclusive:
           type: string
+          description: A decimal 64-bit unsigned integer.
         nonce:
           type: string
+          description: A decimal 64-bit unsigned integer.
         notary_public_key:
           type: string
+          description: A hex-encoded public key of a notary.
         notary_as_signatory:
           type: boolean
+          description: Specifies whether the notary's signature should be included in transaction signers list
         cost_unit_limit:
           type: string
+          description: Maximum number of cost units available for transaction execution. A decimal 32-bit unsigned integer.
         tip_percentage:
           type: string
+          description: Specifies the validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of "1" corresponds to 1%).
     NetworkIdentifier:
       description: The name of the network.
       type: object
@@ -290,19 +307,26 @@ components:
       properties:
         loan_fully_repaid:
           type: boolean
+          description: Specifies whether the transaction execution loan has been fully repaid.
         cost_unit_limit:
           type: string
+          description: Maximum amount of cost units available for the transaction execution. A decimal 32-bit unsigned integer.
         cost_unit_consumed:
           type: string
+          description: The amount of cost units consumed by the transaction execution. A decimal 32-bit unsigned integer.
         cost_unit_price:
           type: string
+          description: The XRD price of a single cost unit. A fixed-scale 256-bit decimal number.
         tip_percentage:
           type: string
+          description: The validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of "1" corresponds to 1%).
         xrd_burned:
           type: string
+          description: The total amount of XRD burned. A fixed-scale 256-bit decimal number.
         xrd_tipped:
           type: string
-##########################################
+          description: The total amount of XRD tipped to validators. A fixed-scale 256-bit decimal number.
+    ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
     NetworkConfigurationResponse:
@@ -371,19 +395,19 @@ components:
           description: A transaction manifest. Sbor encoded, and then hex encoded.
           type: string
         cost_unit_limit:
-          description: A limit of cost units available for execution
           type: string
+          description: Maximum number of cost units available for transaction execution. A decimal 32-bit unsigned integer.
         tip_percentage:
-          description: A tip for the validator
           type: string
+          description: The validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of "1" corresponds to 1%).
         nonce:
-          description: A nonce value to use for execution
           type: string
+          description: The nonce value to use for execution. A decimal 64-bit unsigned integer.
         signer_public_keys:
-          description: A list of public keys to be used as transaction signers, in a compressed format, hex encoded.
           type: array
           items:
             type: string
+          description: A list of public keys to be used as transaction signers, in a compressed format, hex encoded.
         flags:
           type: object
           required:
@@ -418,17 +442,17 @@ components:
               message:
                 type: string
         new_package_addresses:
-          description: A list of new package addresses
+          description: A list of new package addresses, hex-encoded.
           type: array
           items:
             type: string
         new_component_addresses:
-          description: A list of new component addresses
+          description: A list of new component addresses, hex-encoded.
           type: array
           items:
             type: string
         new_resource_addresses:
-          description: A list of new resource addresses
+          description: A list of new resource addresses, hex-encoded.
           type: array
           items:
             type: string
@@ -447,26 +471,32 @@ components:
       type: object
       required:
         - network_identifier
-        - state_version
+        - start_state_version
         - limit
       properties:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
-        state_version:
+        start_state_version:
           type: string
+          description: A decimal 64-bit unsigned integer.
         limit:
           description: The maximum number of transactions that will be returned.
           type: integer
     CommittedTransactionsResponse:
       type: object
       required:
-        - state_version
+        - start_state_version
+        - max_state_version
         - transactions
       properties:
-        state_version:
+        start_state_version:
           type: string
+          description: The first state version returned. A decimal 64-bit unsigned integer.
+        max_state_version:
+          type: string
+          description: The maximum state version returned. A decimal 64-bit unsigned integer.
         transactions:
-          description: A committed transactions list starting from the `state_version`.
+          description: A committed transactions list starting from the `start_state_version_inclusive`.
           type: array
           items:
             "$ref": "#/components/schemas/CommittedTransaction"
@@ -479,6 +509,7 @@ components:
       properties:
         state_version:
           type: string
+          description: The resultant state version after the txn has been committed. A decimal 64-bit unsigned integer.
         notarized_transaction:
           "$ref": "#/components/schemas/NotarizedTransaction"
         receipt:

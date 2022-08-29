@@ -10,7 +10,6 @@ use state_manager::store::TransactionStore;
 use state_manager::{MempoolError, TId, TemporaryTransactionReceipt, Transaction};
 use std::cmp;
 use std::sync::{Arc, Mutex};
-use swagger::Nullable;
 use transaction::model::NotarizedTransaction as EngineNotarizedTransaction;
 
 pub(crate) fn handle_submit_transaction(
@@ -191,7 +190,7 @@ fn to_api_committed_transaction(
                 xrd_burned: "0".to_string(),
                 xrd_tipped: "0".to_string(),
             },
-            output: Some(Nullable::Present(vec!["00".to_string()])), // TODO: fixme (needs receipt)
+            output: Some(vec!["00".to_string()]), // TODO: fixme (needs receipt)
             error_message: None,                                     // TODO: fixme (needs receipt)
         },
     }
