@@ -81,17 +81,21 @@ fn handle_get_committed_transactions_internal(
     state_manager: Arc<Mutex<ActualStateManager>>,
     request: CommittedTransactionsRequest,
 ) -> Result<CommittedTransactionsResponse, RequestHandlingError> {
-    let initial_state_version: u64 = request
-        .state_version
+    let start_state_version: u64 = request
+        .start_state_version
         .parse()
         .map_err(|_| transaction_errors::invalid_int_field("state_version"))?;
+
+    if start_state_version < 1 {
+        return Err(transaction_errors::invalid_start_state_version());
+    }
 
     let limit: u64 = request
         .limit
         .try_into()
         .map_err(|_| transaction_errors::invalid_int_field("limit"))?;
 
-    let state_version_at_limit: u64 = initial_state_version
+    let state_version_at_limit: u64 = start_state_version
         .checked_add(limit)
         .and_then(|v| v.checked_sub(1))
         .ok_or_else(|| transaction_errors::invalid_int_field("limit"))?;
@@ -106,14 +110,18 @@ fn handle_get_committed_transactions_internal(
     );
 
     let mut txns = vec![];
-    let mut state_version = initial_state_version;
+    let mut state_version = start_state_version;
     while state_version <= up_to_state_version_inclusive {
-        if let Some(next_tid) = locked_state_manager.proof_store.get_tid(state_version) {
-            let next_tx = locked_state_manager
-                .transaction_store
-                .get_transaction(&next_tid);
-            txns.push((next_tx, state_version));
-        }
+        let next_tid = locked_state_manager
+            .proof_store
+            .get_tid(state_version)
+            .ok_or_else(|| {
+                transaction_errors::missing_transaction_at_state_version(state_version)
+            })?;
+        let next_tx = locked_state_manager
+            .transaction_store
+            .get_transaction(&next_tid);
+        txns.push((next_tx, state_version));
         state_version += 1;
     }
 
@@ -128,8 +136,11 @@ fn handle_get_committed_transactions_internal(
         })
         .collect::<Result<Vec<CommittedTransaction>, RequestHandlingError>>()?;
 
+    let start_state_version = if api_txns.is_empty() { 0 } else { start_state_version };
+
     Ok(CommittedTransactionsResponse {
-        state_version: request.state_version,
+        start_state_version: start_state_version.to_string(),
+        max_state_version: up_to_state_version_inclusive.to_string(),
         transactions: api_txns,
     })
 }
@@ -191,7 +202,7 @@ fn to_api_committed_transaction(
                 xrd_tipped: "0".to_string(),
             },
             output: Some(vec!["00".to_string()]), // TODO: fixme (needs receipt)
-            error_message: None,                                     // TODO: fixme (needs receipt)
+            error_message: None,                  // TODO: fixme (needs receipt)
         },
     }
 }
@@ -218,7 +229,24 @@ mod transaction_errors {
         client_error(4, &format!("Invalid integer: {}", field))
     }
 
+    pub(crate) fn invalid_start_state_version() -> RequestHandlingError {
+        client_error(
+            5,
+            "start_state_version is invalid (minimum state version is 1)",
+        )
+    }
+
     pub(crate) fn invalid_committed_txn() -> RequestHandlingError {
-        server_error(5, "Internal server error: invalid committed txn payload")
+        server_error(6, "Internal server error: invalid committed txn payload")
+    }
+
+    pub(crate) fn missing_transaction_at_state_version(state_version: u64) -> RequestHandlingError {
+        server_error(
+            7,
+            &format!(
+                "A transaction is missing at state version {}",
+                state_version
+            ),
+        )
     }
 }

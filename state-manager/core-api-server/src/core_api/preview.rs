@@ -144,11 +144,7 @@ fn to_api_response(
             let (status, output, error_message) = match commit_result.outcome {
                 TransactionOutcome::Success(output) => {
                     let output_hex = output.into_iter().map(hex::encode).collect();
-                    (
-                        TransactionStatus::SUCCEEDED,
-                        Some(output_hex),
-                        None,
-                    )
+                    (TransactionStatus::SUCCEEDED, Some(output_hex), None)
                 }
                 TransactionOutcome::Failure(error) => (
                     TransactionStatus::FAILED,
