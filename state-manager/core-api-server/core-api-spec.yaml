@@ -162,10 +162,12 @@ components:
           "$ref": "#/components/schemas/FeeSummary"
         output:
           type: array
+          nullable: true
           items:
             type: string
         error_message:
           type: string
+          nullable: true
     NotarizedTransaction:
       type: object
       required:
@@ -249,6 +251,7 @@ components:
         tip_percentage:
           type: string
     NetworkIdentifier:
+      description: The name of the network.
       type: object
       required:
         - network
@@ -264,102 +267,20 @@ components:
         - message
       properties:
         code:
-          description: A numeric code corresponding to the given error type, roughly aligned with HTTP Status Code semantics (eg 400/404/500).
+          description: A numeric code corresponding to the given error type.
           type: integer
         message:
           description: A human-readable error message.
           type: string
-        details:
-          description: A structured/typed details object.
-          $ref: "#/components/schemas/CoreErrorDetails"
         trace_id:
           description: A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
           type: string
-    CoreErrorDetails:
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          type: string
-      discriminator:
-        propertyName: type
-        mapping:
-          NetworkNotSupportedError: "#/components/schemas/NetworkNotSupportedError"
-          InternalServerError: "#/components/schemas/InternalServerError"
-          InvalidJsonError: "#/components/schemas/InvalidJsonError"
-          InvalidHexError: "#/components/schemas/InvalidHexError"
-          MempoolFullError: "#/components/schemas/MempoolFullError"
-          InvalidTransactionError: "#/components/schemas/InvalidTransactionError"
-          PreviewError: "#/components/schemas/PreviewError"
-    NetworkNotSupportedError:
-      allOf:
-        - $ref: "#/components/schemas/CoreErrorDetails"
-        - type: object
-          required:
-            - supported_networks
-          properties:
-            supported_networks:
-              type: array
-              items:
-                $ref: "#/components/schemas/NetworkIdentifier"
-    InternalServerError:
-      allOf:
-        - $ref: "#/components/schemas/CoreErrorDetails"
-        - type: object
-          properties:
-            exception:
-              type: string
-            cause:
-              type: string
-    InvalidJsonError:
-      allOf:
-        - $ref: "#/components/schemas/CoreErrorDetails"
-        - type: object
-          properties:
-            cause:
-              type: string
-    InvalidHexError:
-      allOf:
-        - $ref: "#/components/schemas/CoreErrorDetails"
-        - type: object
-          required:
-            - invalid_hex
-          properties:
-            invalid_hex:
-              type: string
-    MempoolFullError:
-      allOf:
-        - $ref: "#/components/schemas/CoreErrorDetails"
-        - type: object
-          required:
-            - mempool_transaction_count
-          properties:
-            mempool_transaction_count:
-              type: integer
-              format: int64
-    InvalidTransactionError:
-      allOf:
-        - $ref: "#/components/schemas/CoreErrorDetails"
-        - type: object
-          required:
-            - message
-          properties:
-            message:
-              type: string
-    PreviewError:
-      allOf:
-        - $ref: "#/components/schemas/CoreErrorDetails"
-        - type: object
-          required:
-            - message
-          properties:
-            message:
-              type: string
+          nullable: true
 #########################################
 # GENERAL / SHARED MODELS - Transaction #
 #########################################
     FeeSummary:
+      description: Fees paid
       type: object
       required:
         - loan_fully_repaid
@@ -407,7 +328,6 @@ components:
               type: string
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
-          description: The name of the network.
         network_hrp_suffix:
           type: string
           description: The network suffix used for bech32 hrps used for addressing.
@@ -422,7 +342,6 @@ components:
       properties:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
-          description: The name of the network.
         notarized_transaction:
           description: A notarized transaction encoded in the Radix transaction format, and then hex encoded.
           type: string
@@ -451,7 +370,6 @@ components:
       properties:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
-          description: The name of the network.
         manifest:
           description: A transaction manifest. Sbor encoded, and then hex encoded.
           type: string
@@ -490,7 +408,6 @@ components:
           "$ref": "#/components/schemas/TransactionStatus"
         transaction_fee:
           "$ref": "#/components/schemas/FeeSummary"
-          description: Fees to be paid
         logs:
           type: array
           items:
@@ -520,10 +437,12 @@ components:
             type: string
         output:
           type: array
+          nullable: true
           items:
             type: string
         error_message:
           type: string
+          nullable: true
 ##########################
 # REQUEST: /transactions #
 ##########################
@@ -538,7 +457,6 @@ components:
       properties:
         network_identifier:
           "$ref": "#/components/schemas/NetworkIdentifier"
-          description: The name of the network
         state_version:
           type: string
         limit:

@@ -392,120 +392,8 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct CoreErrorDetails {
-    #[serde(rename = "type")]
-    pub type_: String,
-
-}
-
-impl CoreErrorDetails {
-    pub fn new(type_: String, ) -> CoreErrorDetails {
-        CoreErrorDetails {
-            type_: type_,
-        }
-    }
-}
-
-/// Converts the CoreErrorDetails value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for CoreErrorDetails {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("type".to_string());
-        params.push(self.type_.to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a CoreErrorDetails value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for CoreErrorDetails {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub type_: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing CoreErrorDetails".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "type" => intermediate_rep.type_.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing CoreErrorDetails".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(CoreErrorDetails {
-            type_: intermediate_rep.type_.into_iter().next().ok_or("type missing in CoreErrorDetails".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<CoreErrorDetails> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<CoreErrorDetails>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<CoreErrorDetails>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for CoreErrorDetails - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<CoreErrorDetails> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <CoreErrorDetails as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into CoreErrorDetails - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct ErrorResponse {
-    /// A numeric code corresponding to the given error type, roughly aligned with HTTP Status Code semantics (eg 400/404/500).
+    /// A numeric code corresponding to the given error type.
     #[serde(rename = "code")]
     pub code: isize,
 
@@ -513,14 +401,12 @@ pub struct ErrorResponse {
     #[serde(rename = "message")]
     pub message: String,
 
-    #[serde(rename = "details")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub details: Option<models::CoreErrorDetails>,
-
     /// A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
     #[serde(rename = "trace_id")]
+    #[serde(deserialize_with = "swagger::nullable_format::deserialize_optional_nullable")]
+    #[serde(default = "swagger::nullable_format::default_optional_nullable")]
     #[serde(skip_serializing_if="Option::is_none")]
-    pub trace_id: Option<String>,
+    pub trace_id: Option<swagger::Nullable<String>>,
 
 }
 
@@ -529,7 +415,6 @@ impl ErrorResponse {
         ErrorResponse {
             code: code,
             message: message,
-            details: None,
             trace_id: None,
         }
     }
@@ -549,12 +434,10 @@ impl std::string::ToString for ErrorResponse {
         params.push("message".to_string());
         params.push(self.message.to_string());
 
-        // Skipping details in query parameter serialization
-
 
         if let Some(ref trace_id) = self.trace_id {
             params.push("trace_id".to_string());
-            params.push(trace_id.to_string());
+            params.push(trace_id.as_ref().map_or("null".to_string(), |x| x.to_string()));
         }
 
         params.join(",").to_string()
@@ -573,7 +456,6 @@ impl std::str::FromStr for ErrorResponse {
         struct IntermediateRep {
             pub code: Vec<isize>,
             pub message: Vec<String>,
-            pub details: Vec<models::CoreErrorDetails>,
             pub trace_id: Vec<String>,
         }
 
@@ -593,8 +475,7 @@ impl std::str::FromStr for ErrorResponse {
                 match key {
                     "code" => intermediate_rep.code.push(<isize as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "message" => intermediate_rep.message.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "details" => intermediate_rep.details.push(<models::CoreErrorDetails as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "trace_id" => intermediate_rep.trace_id.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "trace_id" => return std::result::Result::Err("Parsing a nullable type in this style is not supported in ErrorResponse".to_string()),
                     _ => return std::result::Result::Err("Unexpected key while parsing ErrorResponse".to_string())
                 }
             }
@@ -607,8 +488,7 @@ impl std::str::FromStr for ErrorResponse {
         std::result::Result::Ok(ErrorResponse {
             code: intermediate_rep.code.into_iter().next().ok_or("code missing in ErrorResponse".to_string())?,
             message: intermediate_rep.message.into_iter().next().ok_or("message missing in ErrorResponse".to_string())?,
-            details: intermediate_rep.details.into_iter().next(),
-            trace_id: intermediate_rep.trace_id.into_iter().next(),
+            trace_id: std::result::Result::Err("Nullable types not supported in ErrorResponse".to_string())?,
         })
     }
 }
@@ -652,6 +532,7 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 }
 
 
+/// Fees paid
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct FeeSummary {
@@ -955,1221 +836,6 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct InternalServerError {
-    #[serde(rename = "type")]
-    pub type_: String,
-
-    #[serde(rename = "exception")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub exception: Option<String>,
-
-    #[serde(rename = "cause")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub cause: Option<String>,
-
-}
-
-impl InternalServerError {
-    pub fn new(type_: String, ) -> InternalServerError {
-        InternalServerError {
-            type_: type_,
-            exception: None,
-            cause: None,
-        }
-    }
-}
-
-/// Converts the InternalServerError value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for InternalServerError {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("type".to_string());
-        params.push(self.type_.to_string());
-
-
-        if let Some(ref exception) = self.exception {
-            params.push("exception".to_string());
-            params.push(exception.to_string());
-        }
-
-
-        if let Some(ref cause) = self.cause {
-            params.push("cause".to_string());
-            params.push(cause.to_string());
-        }
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a InternalServerError value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for InternalServerError {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub type_: Vec<String>,
-            pub exception: Vec<String>,
-            pub cause: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing InternalServerError".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "type" => intermediate_rep.type_.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "exception" => intermediate_rep.exception.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "cause" => intermediate_rep.cause.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing InternalServerError".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(InternalServerError {
-            type_: intermediate_rep.type_.into_iter().next().ok_or("type missing in InternalServerError".to_string())?,
-            exception: intermediate_rep.exception.into_iter().next(),
-            cause: intermediate_rep.cause.into_iter().next(),
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<InternalServerError> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<InternalServerError>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<InternalServerError>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for InternalServerError - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<InternalServerError> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <InternalServerError as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into InternalServerError - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct InternalServerErrorAllOf {
-    #[serde(rename = "exception")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub exception: Option<String>,
-
-    #[serde(rename = "cause")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub cause: Option<String>,
-
-}
-
-impl InternalServerErrorAllOf {
-    pub fn new() -> InternalServerErrorAllOf {
-        InternalServerErrorAllOf {
-            exception: None,
-            cause: None,
-        }
-    }
-}
-
-/// Converts the InternalServerErrorAllOf value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for InternalServerErrorAllOf {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        if let Some(ref exception) = self.exception {
-            params.push("exception".to_string());
-            params.push(exception.to_string());
-        }
-
-
-        if let Some(ref cause) = self.cause {
-            params.push("cause".to_string());
-            params.push(cause.to_string());
-        }
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a InternalServerErrorAllOf value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for InternalServerErrorAllOf {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub exception: Vec<String>,
-            pub cause: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing InternalServerErrorAllOf".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "exception" => intermediate_rep.exception.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "cause" => intermediate_rep.cause.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing InternalServerErrorAllOf".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(InternalServerErrorAllOf {
-            exception: intermediate_rep.exception.into_iter().next(),
-            cause: intermediate_rep.cause.into_iter().next(),
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<InternalServerErrorAllOf> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<InternalServerErrorAllOf>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<InternalServerErrorAllOf>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for InternalServerErrorAllOf - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<InternalServerErrorAllOf> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <InternalServerErrorAllOf as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into InternalServerErrorAllOf - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct InvalidHexError {
-    #[serde(rename = "type")]
-    pub type_: String,
-
-    #[serde(rename = "invalid_hex")]
-    pub invalid_hex: String,
-
-}
-
-impl InvalidHexError {
-    pub fn new(type_: String, invalid_hex: String, ) -> InvalidHexError {
-        InvalidHexError {
-            type_: type_,
-            invalid_hex: invalid_hex,
-        }
-    }
-}
-
-/// Converts the InvalidHexError value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for InvalidHexError {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("type".to_string());
-        params.push(self.type_.to_string());
-
-
-        params.push("invalid_hex".to_string());
-        params.push(self.invalid_hex.to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a InvalidHexError value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for InvalidHexError {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub type_: Vec<String>,
-            pub invalid_hex: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing InvalidHexError".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "type" => intermediate_rep.type_.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "invalid_hex" => intermediate_rep.invalid_hex.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing InvalidHexError".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(InvalidHexError {
-            type_: intermediate_rep.type_.into_iter().next().ok_or("type missing in InvalidHexError".to_string())?,
-            invalid_hex: intermediate_rep.invalid_hex.into_iter().next().ok_or("invalid_hex missing in InvalidHexError".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<InvalidHexError> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<InvalidHexError>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<InvalidHexError>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for InvalidHexError - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<InvalidHexError> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <InvalidHexError as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into InvalidHexError - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct InvalidHexErrorAllOf {
-    #[serde(rename = "invalid_hex")]
-    pub invalid_hex: String,
-
-}
-
-impl InvalidHexErrorAllOf {
-    pub fn new(invalid_hex: String, ) -> InvalidHexErrorAllOf {
-        InvalidHexErrorAllOf {
-            invalid_hex: invalid_hex,
-        }
-    }
-}
-
-/// Converts the InvalidHexErrorAllOf value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for InvalidHexErrorAllOf {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("invalid_hex".to_string());
-        params.push(self.invalid_hex.to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a InvalidHexErrorAllOf value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for InvalidHexErrorAllOf {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub invalid_hex: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing InvalidHexErrorAllOf".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "invalid_hex" => intermediate_rep.invalid_hex.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing InvalidHexErrorAllOf".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(InvalidHexErrorAllOf {
-            invalid_hex: intermediate_rep.invalid_hex.into_iter().next().ok_or("invalid_hex missing in InvalidHexErrorAllOf".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<InvalidHexErrorAllOf> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<InvalidHexErrorAllOf>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<InvalidHexErrorAllOf>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for InvalidHexErrorAllOf - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<InvalidHexErrorAllOf> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <InvalidHexErrorAllOf as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into InvalidHexErrorAllOf - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct InvalidJsonError {
-    #[serde(rename = "type")]
-    pub type_: String,
-
-    #[serde(rename = "cause")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub cause: Option<String>,
-
-}
-
-impl InvalidJsonError {
-    pub fn new(type_: String, ) -> InvalidJsonError {
-        InvalidJsonError {
-            type_: type_,
-            cause: None,
-        }
-    }
-}
-
-/// Converts the InvalidJsonError value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for InvalidJsonError {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("type".to_string());
-        params.push(self.type_.to_string());
-
-
-        if let Some(ref cause) = self.cause {
-            params.push("cause".to_string());
-            params.push(cause.to_string());
-        }
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a InvalidJsonError value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for InvalidJsonError {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub type_: Vec<String>,
-            pub cause: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing InvalidJsonError".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "type" => intermediate_rep.type_.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "cause" => intermediate_rep.cause.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing InvalidJsonError".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(InvalidJsonError {
-            type_: intermediate_rep.type_.into_iter().next().ok_or("type missing in InvalidJsonError".to_string())?,
-            cause: intermediate_rep.cause.into_iter().next(),
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<InvalidJsonError> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<InvalidJsonError>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<InvalidJsonError>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for InvalidJsonError - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<InvalidJsonError> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <InvalidJsonError as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into InvalidJsonError - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct InvalidJsonErrorAllOf {
-    #[serde(rename = "cause")]
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub cause: Option<String>,
-
-}
-
-impl InvalidJsonErrorAllOf {
-    pub fn new() -> InvalidJsonErrorAllOf {
-        InvalidJsonErrorAllOf {
-            cause: None,
-        }
-    }
-}
-
-/// Converts the InvalidJsonErrorAllOf value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for InvalidJsonErrorAllOf {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        if let Some(ref cause) = self.cause {
-            params.push("cause".to_string());
-            params.push(cause.to_string());
-        }
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a InvalidJsonErrorAllOf value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for InvalidJsonErrorAllOf {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub cause: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing InvalidJsonErrorAllOf".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "cause" => intermediate_rep.cause.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing InvalidJsonErrorAllOf".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(InvalidJsonErrorAllOf {
-            cause: intermediate_rep.cause.into_iter().next(),
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<InvalidJsonErrorAllOf> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<InvalidJsonErrorAllOf>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<InvalidJsonErrorAllOf>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for InvalidJsonErrorAllOf - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<InvalidJsonErrorAllOf> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <InvalidJsonErrorAllOf as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into InvalidJsonErrorAllOf - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct InvalidTransactionError {
-    #[serde(rename = "type")]
-    pub type_: String,
-
-    #[serde(rename = "message")]
-    pub message: String,
-
-}
-
-impl InvalidTransactionError {
-    pub fn new(type_: String, message: String, ) -> InvalidTransactionError {
-        InvalidTransactionError {
-            type_: type_,
-            message: message,
-        }
-    }
-}
-
-/// Converts the InvalidTransactionError value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for InvalidTransactionError {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("type".to_string());
-        params.push(self.type_.to_string());
-
-
-        params.push("message".to_string());
-        params.push(self.message.to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a InvalidTransactionError value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for InvalidTransactionError {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub type_: Vec<String>,
-            pub message: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing InvalidTransactionError".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "type" => intermediate_rep.type_.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "message" => intermediate_rep.message.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing InvalidTransactionError".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(InvalidTransactionError {
-            type_: intermediate_rep.type_.into_iter().next().ok_or("type missing in InvalidTransactionError".to_string())?,
-            message: intermediate_rep.message.into_iter().next().ok_or("message missing in InvalidTransactionError".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<InvalidTransactionError> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<InvalidTransactionError>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<InvalidTransactionError>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for InvalidTransactionError - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<InvalidTransactionError> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <InvalidTransactionError as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into InvalidTransactionError - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct InvalidTransactionErrorAllOf {
-    #[serde(rename = "message")]
-    pub message: String,
-
-}
-
-impl InvalidTransactionErrorAllOf {
-    pub fn new(message: String, ) -> InvalidTransactionErrorAllOf {
-        InvalidTransactionErrorAllOf {
-            message: message,
-        }
-    }
-}
-
-/// Converts the InvalidTransactionErrorAllOf value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for InvalidTransactionErrorAllOf {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("message".to_string());
-        params.push(self.message.to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a InvalidTransactionErrorAllOf value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for InvalidTransactionErrorAllOf {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub message: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing InvalidTransactionErrorAllOf".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "message" => intermediate_rep.message.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing InvalidTransactionErrorAllOf".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(InvalidTransactionErrorAllOf {
-            message: intermediate_rep.message.into_iter().next().ok_or("message missing in InvalidTransactionErrorAllOf".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<InvalidTransactionErrorAllOf> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<InvalidTransactionErrorAllOf>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<InvalidTransactionErrorAllOf>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for InvalidTransactionErrorAllOf - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<InvalidTransactionErrorAllOf> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <InvalidTransactionErrorAllOf as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into InvalidTransactionErrorAllOf - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct MempoolFullError {
-    #[serde(rename = "type")]
-    pub type_: String,
-
-    #[serde(rename = "mempool_transaction_count")]
-    pub mempool_transaction_count: i64,
-
-}
-
-impl MempoolFullError {
-    pub fn new(type_: String, mempool_transaction_count: i64, ) -> MempoolFullError {
-        MempoolFullError {
-            type_: type_,
-            mempool_transaction_count: mempool_transaction_count,
-        }
-    }
-}
-
-/// Converts the MempoolFullError value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for MempoolFullError {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("type".to_string());
-        params.push(self.type_.to_string());
-
-
-        params.push("mempool_transaction_count".to_string());
-        params.push(self.mempool_transaction_count.to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a MempoolFullError value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for MempoolFullError {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub type_: Vec<String>,
-            pub mempool_transaction_count: Vec<i64>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing MempoolFullError".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "type" => intermediate_rep.type_.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "mempool_transaction_count" => intermediate_rep.mempool_transaction_count.push(<i64 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing MempoolFullError".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(MempoolFullError {
-            type_: intermediate_rep.type_.into_iter().next().ok_or("type missing in MempoolFullError".to_string())?,
-            mempool_transaction_count: intermediate_rep.mempool_transaction_count.into_iter().next().ok_or("mempool_transaction_count missing in MempoolFullError".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<MempoolFullError> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<MempoolFullError>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<MempoolFullError>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for MempoolFullError - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<MempoolFullError> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <MempoolFullError as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into MempoolFullError - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct MempoolFullErrorAllOf {
-    #[serde(rename = "mempool_transaction_count")]
-    pub mempool_transaction_count: i64,
-
-}
-
-impl MempoolFullErrorAllOf {
-    pub fn new(mempool_transaction_count: i64, ) -> MempoolFullErrorAllOf {
-        MempoolFullErrorAllOf {
-            mempool_transaction_count: mempool_transaction_count,
-        }
-    }
-}
-
-/// Converts the MempoolFullErrorAllOf value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for MempoolFullErrorAllOf {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("mempool_transaction_count".to_string());
-        params.push(self.mempool_transaction_count.to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a MempoolFullErrorAllOf value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for MempoolFullErrorAllOf {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub mempool_transaction_count: Vec<i64>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing MempoolFullErrorAllOf".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "mempool_transaction_count" => intermediate_rep.mempool_transaction_count.push(<i64 as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing MempoolFullErrorAllOf".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(MempoolFullErrorAllOf {
-            mempool_transaction_count: intermediate_rep.mempool_transaction_count.into_iter().next().ok_or("mempool_transaction_count missing in MempoolFullErrorAllOf".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<MempoolFullErrorAllOf> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<MempoolFullErrorAllOf>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<MempoolFullErrorAllOf>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for MempoolFullErrorAllOf - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<MempoolFullErrorAllOf> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <MempoolFullErrorAllOf as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into MempoolFullErrorAllOf - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct NetworkConfigurationResponse {
     #[serde(rename = "version")]
     pub version: models::NetworkConfigurationResponseVersion,
@@ -2423,6 +1089,7 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 }
 
 
+/// The name of the network.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct NetworkIdentifier {
@@ -2524,237 +1191,6 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
                         std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
                         std::result::Result::Err(err) => std::result::Result::Err(
                             format!("Unable to convert header value '{}' into NetworkIdentifier - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct NetworkNotSupportedError {
-    #[serde(rename = "type")]
-    pub type_: String,
-
-    #[serde(rename = "supported_networks")]
-    pub supported_networks: Vec<models::NetworkIdentifier>,
-
-}
-
-impl NetworkNotSupportedError {
-    pub fn new(type_: String, supported_networks: Vec<models::NetworkIdentifier>, ) -> NetworkNotSupportedError {
-        NetworkNotSupportedError {
-            type_: type_,
-            supported_networks: supported_networks,
-        }
-    }
-}
-
-/// Converts the NetworkNotSupportedError value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for NetworkNotSupportedError {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("type".to_string());
-        params.push(self.type_.to_string());
-
-        // Skipping supported_networks in query parameter serialization
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a NetworkNotSupportedError value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for NetworkNotSupportedError {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub type_: Vec<String>,
-            pub supported_networks: Vec<Vec<models::NetworkIdentifier>>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing NetworkNotSupportedError".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "type" => intermediate_rep.type_.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "supported_networks" => return std::result::Result::Err("Parsing a container in this style is not supported in NetworkNotSupportedError".to_string()),
-                    _ => return std::result::Result::Err("Unexpected key while parsing NetworkNotSupportedError".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(NetworkNotSupportedError {
-            type_: intermediate_rep.type_.into_iter().next().ok_or("type missing in NetworkNotSupportedError".to_string())?,
-            supported_networks: intermediate_rep.supported_networks.into_iter().next().ok_or("supported_networks missing in NetworkNotSupportedError".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<NetworkNotSupportedError> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<NetworkNotSupportedError>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<NetworkNotSupportedError>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for NetworkNotSupportedError - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<NetworkNotSupportedError> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <NetworkNotSupportedError as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into NetworkNotSupportedError - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct NetworkNotSupportedErrorAllOf {
-    #[serde(rename = "supported_networks")]
-    pub supported_networks: Vec<models::NetworkIdentifier>,
-
-}
-
-impl NetworkNotSupportedErrorAllOf {
-    pub fn new(supported_networks: Vec<models::NetworkIdentifier>, ) -> NetworkNotSupportedErrorAllOf {
-        NetworkNotSupportedErrorAllOf {
-            supported_networks: supported_networks,
-        }
-    }
-}
-
-/// Converts the NetworkNotSupportedErrorAllOf value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for NetworkNotSupportedErrorAllOf {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-        // Skipping supported_networks in query parameter serialization
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a NetworkNotSupportedErrorAllOf value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for NetworkNotSupportedErrorAllOf {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub supported_networks: Vec<Vec<models::NetworkIdentifier>>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing NetworkNotSupportedErrorAllOf".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "supported_networks" => return std::result::Result::Err("Parsing a container in this style is not supported in NetworkNotSupportedErrorAllOf".to_string()),
-                    _ => return std::result::Result::Err("Unexpected key while parsing NetworkNotSupportedErrorAllOf".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(NetworkNotSupportedErrorAllOf {
-            supported_networks: intermediate_rep.supported_networks.into_iter().next().ok_or("supported_networks missing in NetworkNotSupportedErrorAllOf".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<NetworkNotSupportedErrorAllOf> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<NetworkNotSupportedErrorAllOf>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<NetworkNotSupportedErrorAllOf>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for NetworkNotSupportedErrorAllOf - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<NetworkNotSupportedErrorAllOf> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <NetworkNotSupportedErrorAllOf as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into NetworkNotSupportedErrorAllOf - {}",
                                 value, err))
                     }
              },
@@ -2887,129 +1323,6 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
                         std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
                         std::result::Result::Err(err) => std::result::Result::Err(
                             format!("Unable to convert header value '{}' into NotarizedTransaction - {}",
-                                value, err))
-                    }
-             },
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Unable to convert header: {:?} to string: {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
-pub struct PreviewError {
-    #[serde(rename = "type")]
-    pub type_: String,
-
-    #[serde(rename = "message")]
-    pub message: String,
-
-}
-
-impl PreviewError {
-    pub fn new(type_: String, message: String, ) -> PreviewError {
-        PreviewError {
-            type_: type_,
-            message: message,
-        }
-    }
-}
-
-/// Converts the PreviewError value to the Query Parameters representation (style=form, explode=false)
-/// specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde serializer
-impl std::string::ToString for PreviewError {
-    fn to_string(&self) -> String {
-        let mut params: Vec<String> = vec![];
-
-        params.push("type".to_string());
-        params.push(self.type_.to_string());
-
-
-        params.push("message".to_string());
-        params.push(self.message.to_string());
-
-        params.join(",").to_string()
-    }
-}
-
-/// Converts Query Parameters representation (style=form, explode=false) to a PreviewError value
-/// as specified in https://swagger.io/docs/specification/serialization/
-/// Should be implemented in a serde deserializer
-impl std::str::FromStr for PreviewError {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        #[derive(Default)]
-        // An intermediate representation of the struct to use for parsing.
-        struct IntermediateRep {
-            pub type_: Vec<String>,
-            pub message: Vec<String>,
-        }
-
-        let mut intermediate_rep = IntermediateRep::default();
-
-        // Parse into intermediate representation
-        let mut string_iter = s.split(',').into_iter();
-        let mut key_result = string_iter.next();
-
-        while key_result.is_some() {
-            let val = match string_iter.next() {
-                Some(x) => x,
-                None => return std::result::Result::Err("Missing value while parsing PreviewError".to_string())
-            };
-
-            if let Some(key) = key_result {
-                match key {
-                    "type" => intermediate_rep.type_.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "message" => intermediate_rep.message.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    _ => return std::result::Result::Err("Unexpected key while parsing PreviewError".to_string())
-                }
-            }
-
-            // Get the next key
-            key_result = string_iter.next();
-        }
-
-        // Use the intermediate representation to return the struct
-        std::result::Result::Ok(PreviewError {
-            type_: intermediate_rep.type_.into_iter().next().ok_or("type missing in PreviewError".to_string())?,
-            message: intermediate_rep.message.into_iter().next().ok_or("message missing in PreviewError".to_string())?,
-        })
-    }
-}
-
-// Methods for converting between header::IntoHeaderValue<PreviewError> and hyper::header::HeaderValue
-
-
-impl std::convert::TryFrom<header::IntoHeaderValue<PreviewError>> for hyper::header::HeaderValue {
-    type Error = String;
-
-    fn try_from(hdr_value: header::IntoHeaderValue<PreviewError>) -> std::result::Result<Self, Self::Error> {
-        let hdr_value = hdr_value.to_string();
-        match hyper::header::HeaderValue::from_str(&hdr_value) {
-             std::result::Result::Ok(value) => std::result::Result::Ok(value),
-             std::result::Result::Err(e) => std::result::Result::Err(
-                 format!("Invalid header value for PreviewError - value: {} is invalid {}",
-                     hdr_value, e))
-        }
-    }
-}
-
-
-impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<PreviewError> {
-    type Error = String;
-
-    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
-        match hdr_value.to_str() {
-             std::result::Result::Ok(value) => {
-                    match <PreviewError as std::str::FromStr>::from_str(value) {
-                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
-                        std::result::Result::Err(err) => std::result::Result::Err(
-                            format!("Unable to convert header value '{}' into PreviewError - {}",
                                 value, err))
                     }
              },
@@ -3799,12 +2112,16 @@ pub struct TransactionPreviewResponse {
     pub new_resource_addresses: Vec<String>,
 
     #[serde(rename = "output")]
+    #[serde(deserialize_with = "swagger::nullable_format::deserialize_optional_nullable")]
+    #[serde(default = "swagger::nullable_format::default_optional_nullable")]
     #[serde(skip_serializing_if="Option::is_none")]
-    pub output: Option<Vec<String>>,
+    pub output: Option<swagger::Nullable<Vec<String>>>,
 
     #[serde(rename = "error_message")]
+    #[serde(deserialize_with = "swagger::nullable_format::deserialize_optional_nullable")]
+    #[serde(default = "swagger::nullable_format::default_optional_nullable")]
     #[serde(skip_serializing_if="Option::is_none")]
-    pub error_message: Option<String>,
+    pub error_message: Option<swagger::Nullable<String>>,
 
 }
 
@@ -3850,13 +2167,13 @@ impl std::string::ToString for TransactionPreviewResponse {
 
         if let Some(ref output) = self.output {
             params.push("output".to_string());
-            params.push(output.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string());
+            params.push(output.as_ref().map_or("null".to_string(), |x| x.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string()));
         }
 
 
         if let Some(ref error_message) = self.error_message {
             params.push("error_message".to_string());
-            params.push(error_message.to_string());
+            params.push(error_message.as_ref().map_or("null".to_string(), |x| x.to_string()));
         }
 
         params.join(",").to_string()
@@ -3904,7 +2221,7 @@ impl std::str::FromStr for TransactionPreviewResponse {
                     "new_component_addresses" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionPreviewResponse".to_string()),
                     "new_resource_addresses" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionPreviewResponse".to_string()),
                     "output" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionPreviewResponse".to_string()),
-                    "error_message" => intermediate_rep.error_message.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "error_message" => return std::result::Result::Err("Parsing a nullable type in this style is not supported in TransactionPreviewResponse".to_string()),
                     _ => return std::result::Result::Err("Unexpected key while parsing TransactionPreviewResponse".to_string())
                 }
             }
@@ -3921,8 +2238,8 @@ impl std::str::FromStr for TransactionPreviewResponse {
             new_package_addresses: intermediate_rep.new_package_addresses.into_iter().next().ok_or("new_package_addresses missing in TransactionPreviewResponse".to_string())?,
             new_component_addresses: intermediate_rep.new_component_addresses.into_iter().next().ok_or("new_component_addresses missing in TransactionPreviewResponse".to_string())?,
             new_resource_addresses: intermediate_rep.new_resource_addresses.into_iter().next().ok_or("new_resource_addresses missing in TransactionPreviewResponse".to_string())?,
-            output: intermediate_rep.output.into_iter().next(),
-            error_message: intermediate_rep.error_message.into_iter().next(),
+            output: std::result::Result::Err("Nullable types not supported in TransactionPreviewResponse".to_string())?,
+            error_message: std::result::Result::Err("Nullable types not supported in TransactionPreviewResponse".to_string())?,
         })
     }
 }
@@ -4099,12 +2416,16 @@ pub struct TransactionReceipt {
     pub fee_summary: models::FeeSummary,
 
     #[serde(rename = "output")]
+    #[serde(deserialize_with = "swagger::nullable_format::deserialize_optional_nullable")]
+    #[serde(default = "swagger::nullable_format::default_optional_nullable")]
     #[serde(skip_serializing_if="Option::is_none")]
-    pub output: Option<Vec<String>>,
+    pub output: Option<swagger::Nullable<Vec<String>>>,
 
     #[serde(rename = "error_message")]
+    #[serde(deserialize_with = "swagger::nullable_format::deserialize_optional_nullable")]
+    #[serde(default = "swagger::nullable_format::default_optional_nullable")]
     #[serde(skip_serializing_if="Option::is_none")]
-    pub error_message: Option<String>,
+    pub error_message: Option<swagger::Nullable<String>>,
 
 }
 
@@ -4132,13 +2453,13 @@ impl std::string::ToString for TransactionReceipt {
 
         if let Some(ref output) = self.output {
             params.push("output".to_string());
-            params.push(output.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string());
+            params.push(output.as_ref().map_or("null".to_string(), |x| x.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",").to_string()));
         }
 
 
         if let Some(ref error_message) = self.error_message {
             params.push("error_message".to_string());
-            params.push(error_message.to_string());
+            params.push(error_message.as_ref().map_or("null".to_string(), |x| x.to_string()));
         }
 
         params.join(",").to_string()
@@ -4178,7 +2499,7 @@ impl std::str::FromStr for TransactionReceipt {
                     "status" => intermediate_rep.status.push(<models::TransactionStatus as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "fee_summary" => intermediate_rep.fee_summary.push(<models::FeeSummary as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "output" => return std::result::Result::Err("Parsing a container in this style is not supported in TransactionReceipt".to_string()),
-                    "error_message" => intermediate_rep.error_message.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "error_message" => return std::result::Result::Err("Parsing a nullable type in this style is not supported in TransactionReceipt".to_string()),
                     _ => return std::result::Result::Err("Unexpected key while parsing TransactionReceipt".to_string())
                 }
             }
@@ -4191,8 +2512,8 @@ impl std::str::FromStr for TransactionReceipt {
         std::result::Result::Ok(TransactionReceipt {
             status: intermediate_rep.status.into_iter().next().ok_or("status missing in TransactionReceipt".to_string())?,
             fee_summary: intermediate_rep.fee_summary.into_iter().next().ok_or("fee_summary missing in TransactionReceipt".to_string())?,
-            output: intermediate_rep.output.into_iter().next(),
-            error_message: intermediate_rep.error_message.into_iter().next(),
+            output: std::result::Result::Err("Nullable types not supported in TransactionReceipt".to_string())?,
+            error_message: std::result::Result::Err("Nullable types not supported in TransactionReceipt".to_string())?,
         })
     }
 }

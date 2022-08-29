@@ -140,7 +140,9 @@ where
         &self,
         _context: &C,
     ) -> Result<StatusNetworkConfigurationPostResponse, ApiError> {
-        network_configuration::handle_network_configuration(self.state_manager.clone())
+        Ok(network_configuration::handle_network_configuration(
+            self.state_manager.clone(),
+        ))
     }
 
     async fn transaction_preview_post(
@@ -148,7 +150,7 @@ where
         request: models::TransactionPreviewRequest,
         _context: &C,
     ) -> Result<TransactionPreviewPostResponse, ApiError> {
-        preview::handle_preview(self.state_manager.clone(), request)
+        Ok(preview::handle_preview(self.state_manager.clone(), request))
     }
 
     async fn transaction_submit_post(
@@ -156,7 +158,10 @@ where
         request: models::TransactionSubmitRequest,
         _context: &C,
     ) -> Result<TransactionSubmitPostResponse, ApiError> {
-        transactions::handle_submit_transaction(self.state_manager.clone(), request)
+        Ok(transactions::handle_submit_transaction(
+            self.state_manager.clone(),
+            request,
+        ))
     }
 
     async fn transactions_post(
@@ -164,7 +169,10 @@ where
         request: CommittedTransactionsRequest,
         _context: &C,
     ) -> Result<TransactionsPostResponse, ApiError> {
-        transactions::handle_transactions(self.state_manager.clone(), request)
+        Ok(transactions::handle_get_committed_transactions(
+            self.state_manager.clone(),
+            request,
+        ))
     }
 }
 

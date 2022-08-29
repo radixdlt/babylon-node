@@ -1,3 +1,4 @@
+use crate::core_api::errors::{common_server_errors, RequestHandlingError};
 use crate::core_api::generated::models::*;
 use crate::core_api::generated::{TransactionSubmitPostResponse, TransactionsPostResponse};
 use scrypto::buffer::scrypto_decode;
@@ -8,24 +9,30 @@ use state_manager::mempool::Mempool;
 use state_manager::{MempoolError, TId, TemporaryTransactionReceipt, Transaction};
 use std::cmp;
 use std::sync::{Arc, Mutex};
-use swagger::ApiError;
+use swagger::Nullable;
 use transaction::model::NotarizedTransaction as EngineNotarizedTransaction;
 
 pub(crate) fn handle_submit_transaction(
     state_manager: Arc<Mutex<ActualStateManager>>,
     request: TransactionSubmitRequest,
-) -> Result<TransactionSubmitPostResponse, ApiError> {
-    handle_submit_transaction_internal(state_manager, request)
-        .map(TransactionSubmitPostResponse::TransactionSubmitResponse)
-        .or_else(Ok)
+) -> TransactionSubmitPostResponse {
+    match handle_submit_transaction_internal(state_manager, request) {
+        Ok(response) => TransactionSubmitPostResponse::TransactionSubmitResponse(response),
+        Err(RequestHandlingError::ClientError(error_response)) => {
+            TransactionSubmitPostResponse::ClientError(error_response)
+        }
+        Err(RequestHandlingError::ServerError(error_response)) => {
+            TransactionSubmitPostResponse::ServerError(error_response)
+        }
+    }
 }
 
 fn handle_submit_transaction_internal(
     state_manager: Arc<Mutex<ActualStateManager>>,
     request: TransactionSubmitRequest,
-) -> Result<TransactionSubmitResponse, TransactionSubmitPostResponse> {
+) -> Result<TransactionSubmitResponse, RequestHandlingError> {
     let transaction_bytes = hex::decode(request.notarized_transaction)
-        .map_err(|_| submit_client_error("Invalid transaction (malformed hex)"))?;
+        .map_err(|_| transaction_errors::invalid_transaction())?;
 
     let tid = sha256_twice(transaction_bytes.clone());
 
@@ -38,7 +45,7 @@ fn handle_submit_transaction_internal(
 
     let mut locked_state_manager = state_manager
         .lock()
-        .map_err(|_| submit_server_error("Internal server error (state manager lock)"))?;
+        .map_err(|_| common_server_errors::state_manager_lock_error())?;
 
     let result = locked_state_manager.mempool.add_transaction(transaction);
 
@@ -48,53 +55,50 @@ fn handle_submit_transaction_internal(
         Err(MempoolError::Full {
             current_size: _,
             max_size: _,
-        }) => Err(submit_server_error("Mempool is full")),
-        Err(MempoolError::TransactionValidationError(err)) => Err(submit_client_error(&format!(
-            "Transaction validation error: {:?}",
-            err
-        ))),
+        }) => Err(transaction_errors::mempool_is_full()),
+        Err(MempoolError::TransactionValidationError(err)) => {
+            Err(transaction_errors::transaction_validation_error(err))
+        }
     }
 }
 
-fn submit_client_error(message: &str) -> TransactionSubmitPostResponse {
-    TransactionSubmitPostResponse::ClientError(ErrorResponse::new(400, message.to_string()))
-}
-
-fn submit_server_error(message: &str) -> TransactionSubmitPostResponse {
-    TransactionSubmitPostResponse::ServerError(ErrorResponse::new(500, message.to_string()))
-}
-
-pub(crate) fn handle_transactions(
+pub(crate) fn handle_get_committed_transactions(
     state_manager: Arc<Mutex<ActualStateManager>>,
     request: CommittedTransactionsRequest,
-) -> Result<TransactionsPostResponse, ApiError> {
-    handle_transactions_internal(state_manager, request)
-        .map(TransactionsPostResponse::CommittedTransactionsResponse)
-        .or_else(Ok)
+) -> TransactionsPostResponse {
+    match handle_get_committed_transactions_internal(state_manager, request) {
+        Ok(response) => TransactionsPostResponse::CommittedTransactionsResponse(response),
+        Err(RequestHandlingError::ClientError(error_response)) => {
+            TransactionsPostResponse::ClientError(error_response)
+        }
+        Err(RequestHandlingError::ServerError(error_response)) => {
+            TransactionsPostResponse::ServerError(error_response)
+        }
+    }
 }
 
-fn handle_transactions_internal(
+fn handle_get_committed_transactions_internal(
     state_manager: Arc<Mutex<ActualStateManager>>,
     request: CommittedTransactionsRequest,
-) -> Result<CommittedTransactionsResponse, TransactionsPostResponse> {
-    let locked_state_manager = state_manager
-        .lock()
-        .map_err(|_| transactions_server_error("Internal server error (state manager lock)"))?;
-
+) -> Result<CommittedTransactionsResponse, RequestHandlingError> {
     let initial_state_version: u64 = request
         .state_version
         .parse()
-        .map_err(|_| transactions_client_error("Invalid state_version"))?;
+        .map_err(|_| transaction_errors::invalid_int_field("state_version"))?;
 
     let limit: u64 = request
         .limit
         .try_into()
-        .map_err(|_| transactions_client_error("Invalid limit"))?;
+        .map_err(|_| transaction_errors::invalid_int_field("limit"))?;
 
     let state_version_at_limit: u64 = initial_state_version
         .checked_add(limit)
         .and_then(|v| v.checked_sub(1))
-        .ok_or_else(|| transactions_client_error("Invalid limit"))?;
+        .ok_or_else(|| transaction_errors::invalid_int_field("limit"))?;
+
+    let locked_state_manager = state_manager
+        .lock()
+        .map_err(|_| common_server_errors::state_manager_lock_error())?;
 
     let up_to_state_version_inclusive = cmp::min(
         state_version_at_limit,
@@ -120,9 +124,9 @@ fn handle_transactions_internal(
                 .map(|notarized_tx| {
                     to_api_committed_transaction(notarized_tx, receipt.clone(), state_version)
                 })
-                .map_err(|_| transactions_server_error("Invalid committed txn payload"))
+                .map_err(|_| transaction_errors::invalid_committed_txn())
         })
-        .collect::<Result<Vec<CommittedTransaction>, TransactionsPostResponse>>()?;
+        .collect::<Result<Vec<CommittedTransaction>, RequestHandlingError>>()?;
 
     Ok(CommittedTransactionsResponse {
         state_version: request.state_version,
@@ -186,16 +190,35 @@ fn to_api_committed_transaction(
                 xrd_burned: "0".to_string(),
                 xrd_tipped: "0".to_string(),
             },
-            output: Some(vec!["00".to_string()]), // TODO: fixme (needs receipt)
-            error_message: None,                  // TODO: fixme (needs receipt)
+            output: Some(Nullable::Present(vec!["00".to_string()])), // TODO: fixme (needs receipt)
+            error_message: None,                                     // TODO: fixme (needs receipt)
         },
     }
 }
 
-fn transactions_server_error(message: &str) -> TransactionsPostResponse {
-    TransactionsPostResponse::ServerError(ErrorResponse::new(500, message.to_string()))
-}
+mod transaction_errors {
+    use crate::core_api::errors::{client_error, server_error, RequestHandlingError};
+    use transaction::errors::TransactionValidationError;
 
-fn transactions_client_error(message: &str) -> TransactionsPostResponse {
-    TransactionsPostResponse::ClientError(ErrorResponse::new(400, message.to_string()))
+    pub(crate) fn invalid_transaction() -> RequestHandlingError {
+        client_error(1, "Invalid transaction payload")
+    }
+
+    pub(crate) fn mempool_is_full() -> RequestHandlingError {
+        client_error(2, "Mempool is full")
+    }
+
+    pub(crate) fn transaction_validation_error(
+        err: TransactionValidationError,
+    ) -> RequestHandlingError {
+        client_error(3, &format!("Transaction validation error: {:?}", err))
+    }
+
+    pub(crate) fn invalid_int_field(field: &str) -> RequestHandlingError {
+        client_error(4, &format!("Invalid integer: {}", field))
+    }
+
+    pub(crate) fn invalid_committed_txn() -> RequestHandlingError {
+        server_error(5, "Internal server error: invalid committed txn payload")
+    }
 }
