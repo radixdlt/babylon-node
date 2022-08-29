@@ -162,12 +162,10 @@ components:
           "$ref": "#/components/schemas/FeeSummary"
         output:
           type: array
-          nullable: true
           items:
             type: string
         error_message:
           type: string
-          nullable: true
     NotarizedTransaction:
       type: object
       required:
@@ -275,7 +273,6 @@ components:
         trace_id:
           description: A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
           type: string
-          nullable: true
 #########################################
 # GENERAL / SHARED MODELS - Transaction #
 #########################################
@@ -437,12 +434,10 @@ components:
             type: string
         output:
           type: array
-          nullable: true
           items:
             type: string
         error_message:
           type: string
-          nullable: true
 ##########################
 # REQUEST: /transactions #
 ##########################
