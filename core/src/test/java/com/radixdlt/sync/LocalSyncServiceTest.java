@@ -126,7 +126,7 @@ public class LocalSyncServiceTest {
   private RemoteEventDispatcher<SyncRequest> syncRequestDispatcher;
   private ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher;
   private ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher;
-  private SyncConfig syncConfig;
+  private SyncRelayConfig syncRelayConfig;
   private SystemCounters systemCounters;
   private PeersView peersView;
   private Comparator<AccumulatorState> accComparator;
@@ -143,7 +143,7 @@ public class LocalSyncServiceTest {
     this.syncRequestDispatcher = rmock(RemoteEventDispatcher.class);
     this.syncRequestTimeoutDispatcher = rmock(ScheduledEventDispatcher.class);
     this.syncLedgerUpdateTimeoutDispatcher = rmock(ScheduledEventDispatcher.class);
-    this.syncConfig = SyncConfig.of(1000L, 10, 10000L);
+    this.syncRelayConfig = SyncRelayConfig.of(1000L, 10, 10000L);
     this.systemCounters = mock(SystemCounters.class);
     this.peersView = mock(PeersView.class);
     this.accComparator = Comparator.comparingLong(AccumulatorState::getStateVersion);
@@ -162,7 +162,7 @@ public class LocalSyncServiceTest {
             syncRequestDispatcher,
             syncRequestTimeoutDispatcher,
             syncLedgerUpdateTimeoutDispatcher,
-            syncConfig,
+            syncRelayConfig,
             systemCounters,
             peersView,
             accComparator,

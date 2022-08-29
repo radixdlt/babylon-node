@@ -85,7 +85,7 @@ import com.radixdlt.sync.LocalSyncService;
 import com.radixdlt.sync.LocalSyncService.InvalidSyncResponseHandler;
 import com.radixdlt.sync.LocalSyncService.VerifiedSyncResponseHandler;
 import com.radixdlt.sync.RemoteSyncService;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.sync.epochs.EpochsLocalSyncService;
 import com.radixdlt.sync.epochs.LocalSyncServiceFactory;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
@@ -212,7 +212,7 @@ public class EpochsSyncModule extends AbstractModule {
       RemoteEventDispatcher<SyncRequest> syncRequestDispatcher,
       ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
       ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
-      SyncConfig syncConfig,
+      SyncRelayConfig syncRelayConfig,
       SystemCounters systemCounters,
       PeersView peersView,
       Comparator<AccumulatorState> accComparator,
@@ -227,7 +227,7 @@ public class EpochsSyncModule extends AbstractModule {
             syncRequestDispatcher,
             syncRequestTimeoutDispatcher,
             syncLedgerUpdateTimeoutDispatcher,
-            syncConfig,
+            syncRelayConfig,
             systemCounters,
             peersView,
             accComparator,

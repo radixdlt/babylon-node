@@ -64,27 +64,22 @@
 
 package com.radixdlt.rev2.modules;
 
-import com.google.inject.*;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.rev2.REv2StateComputer;
-import com.radixdlt.serialization.Serialization;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.transactions.RawTransaction;
 
-public class REv2StateComputerModule extends AbstractModule {
-
-  @Override
-  public void configure() {
-    bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
+/** Installs REv2 mempool related objects */
+public final class REv2MempoolModule extends AbstractModule {
+  @Provides
+  private MempoolReader mempoolReader(RustStateComputer stateComputer) {
+    return stateComputer.getMempoolReader();
   }
 
   @Provides
-  @Singleton
-  public REv2StateComputer stateComputer(
-      RustStateComputer rustStateComputer,
-      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
-      Serialization serialization) {
-    return new REv2StateComputer(rustStateComputer, ledgerUpdateDispatcher, serialization);
+  private MempoolInserter<RawTransaction> mempoolInserter(RustStateComputer stateComputer) {
+    return stateComputer.getMempoolInserter();
   }
 }

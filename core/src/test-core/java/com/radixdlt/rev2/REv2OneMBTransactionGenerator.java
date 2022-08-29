@@ -62,86 +62,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.consensus;
+package com.radixdlt.rev2;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
 
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
-import java.util.Random;
-import org.junit.Test;
+/** Generates valid REv2 1 MB transactions */
+public final class REv2OneMBTransactionGenerator implements TransactionGenerator {
+  private final NetworkDefinition networkDefinition;
 
-/**
- * When original votes (to next round leader, non timed out) are dropped, nodes should be able to
- * resend those votes to each other (with timeout) and form the quorum themselves. As a result,
- * there should be no timeout (non-QC) quorums and no indirect parents.
- */
-public class QuorumWithoutALeaderWithTimeoutsTest {
+  private int currentKey = 1;
 
-  private final Random random = new Random(123456);
-
-  private void run(int numValidatorNodes, long numRounds) {
-    final DeterministicTest test =
-        DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
-            .messageSelector(MessageSelector.randomSelector(random))
-            .messageMutator(dropAllNonTimeoutVotes())
-            .functionalNodeModule(
-                new FunctionalRadixNodeModule(
-                    false,
-                    ConsensusConfig.of(),
-                    LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
-            .runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
-
-    for (int nodeIndex = 0; nodeIndex < numValidatorNodes; ++nodeIndex) {
-      final SystemCounters counters = test.getInstance(nodeIndex, SystemCounters.class);
-      final long numberOfIndirectParents =
-          counters.get(CounterType.BFT_VERTEX_STORE_INDIRECT_PARENTS);
-      final long totalNumberOfTimeouts = counters.get(CounterType.BFT_PACEMAKER_TIMEOUTS_SENT);
-      final long totalNumberOfTimeoutQuorums = counters.get(CounterType.BFT_TIMEOUT_QUORUMS);
-      final long totalNumberOfVoteQuorums = counters.get(CounterType.BFT_VOTE_QUORUMS);
-      assertThat(totalNumberOfTimeoutQuorums).isEqualTo(0); // no TCs
-      assertThat(numberOfIndirectParents).isEqualTo(0); // no indirect parents
-      assertThat(totalNumberOfTimeouts).isEqualTo(numRounds - 1); // a timeout for each round
-      assertThat(totalNumberOfVoteQuorums)
-          .isBetween(numRounds - 2, numRounds); // quorum count matches rounds
-    }
+  public REv2OneMBTransactionGenerator(NetworkDefinition networkDefinition) {
+    this.networkDefinition = networkDefinition;
   }
 
-  private static MessageMutator dropAllNonTimeoutVotes() {
-    return (message, queue) -> {
-      final Object msg = message.message();
-      if (msg instanceof Vote) {
-        final Vote vote = (Vote) msg;
-        return vote.getTimeoutSignature().isEmpty();
-      }
-      return false;
-    };
-  }
-
-  @Test
-  public void when_run_3_correct_nodes_for_50k_rounds__then_bft_should_be_responsive() {
-    this.run(3, 50_000);
-  }
-
-  @Test
-  public void when_run_10_correct_nodes_with_for_2k_rounds__then_bft_should_be_responsive() {
-    this.run(10, 2000);
-  }
-
-  @Test
-  public void when_run_100_correct_nodes_with_for_50_rounds__then_bft_should_be_responsive() {
-    this.run(100, 50);
+  @Override
+  public RawTransaction nextTransaction() {
+    final ECKeyPair key = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
+    var manifest = TransactionBuilder.build1MBManifest(networkDefinition, key.getPublicKey());
+    var hashedManifest = HashUtils.sha256Twice(manifest);
+    var signedIntent =
+        TransactionBuilder.createSignedIntentBytes(
+            manifest,
+            List.of(Tuple.Tuple2.of(key.getPublicKey(), key.sign(hashedManifest.asBytes()))));
+    var hashedSignedIntent = HashUtils.sha256Twice(signedIntent);
+    var notarized =
+        TransactionBuilder.createNotarizedBytes(
+            signedIntent, key.sign(hashedSignedIntent.asBytes()));
+    return RawTransaction.create(notarized);
   }
 }

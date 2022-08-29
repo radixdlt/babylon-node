@@ -77,10 +77,12 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.MempoolRelayerModule;
+import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.messaging.MessagingModule;
 import com.radixdlt.modules.*;
 import com.radixdlt.networks.Addressing;
@@ -89,11 +91,11 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
-import com.radixdlt.rev2.modules.REv2StateComputerModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.CoreApiServerConfig;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.store.DatabasePropertiesModule;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.UInt32;
@@ -177,7 +179,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Sync
     final long syncPatience = properties.get("sync.patience", 5000L);
-    install(new SyncServiceModule(SyncConfig.of(syncPatience, 10, 3000L)));
+    install(new SyncServiceModule(SyncRelayConfig.of(syncPatience, 10, 3000L)));
 
     // Epochs - Consensus
     install(new EpochsConsensusModule());
@@ -186,9 +188,11 @@ public final class RadixNodeModule extends AbstractModule {
 
     // State Computer
     var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
-    install(new REv2StateManagerModule(mempoolMaxSize));
+    var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
+    var databasePath = properties.get("db.location", ".//RADIXDB");
+    var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
+    install(REv2StateManagerModule.create(databaseConfig, Option.some(mempoolConfig)));
     install(new MockedPersistenceStoreModule());
-    install(new REv2StateComputerModule());
 
     // Core API server
     final var coreApiBindAddress =

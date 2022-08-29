@@ -79,29 +79,36 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public final class SanityTest {
-  private final DeterministicTest test =
-      DeterministicTest.builder()
-          .numNodes(10, 10)
-          .messageSelector(firstSelector())
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  ConsensusConfig.of(1000),
-                  LedgerConfig.stateComputerWithSync(
-                      StateComputerConfig.rev2(
-                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())),
-                      SyncConfig.of(5000, 10, 3000L))));
-
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
   private final TransactionGenerator transactionGenerator =
       new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(10, 10)
+        .messageSelector(firstSelector())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.rev2(
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())),
+                    SyncRelayConfig.of(5000, 10, 3000L))));
+  }
+
   @Test
   public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() throws Exception {
+    var test = createTest();
     // Run
     for (int i = 0; i < 100; i++) {
       test.runForCount(1000);

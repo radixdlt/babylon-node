@@ -66,12 +66,18 @@ use crate::jni::dtos::*;
 use crate::jni::utils::*;
 use crate::mempool::simple::SimpleMempool;
 use crate::mempool::MempoolConfig;
-use crate::state_manager::{StateManager, StateManagerConfig};
-use crate::store::TransactionStore;
+use crate::state_manager::{DatabaseConfig, StateManager, StateManagerConfig};
+use crate::store::{
+    InMemoryTransactionStore, RocksDBTransactionStore, TemporaryTransactionReceipt,
+    TransactionStore,
+};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use std::path::PathBuf;
 
+use crate::types::{TId, Transaction};
+use radix_engine::transaction::TransactionReceipt;
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use std::sync::{Arc, Mutex, MutexGuard};
 
@@ -96,7 +102,46 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
     JNIStateManager::cleanup(&env, j_state_manager);
 }
 
-pub type ActualStateManager = StateManager<SimpleMempool, SerializedInMemorySubstateStore>;
+pub enum SupportedStateManagerStore {
+    InMemory(InMemoryTransactionStore),
+    RocksDB(RocksDBTransactionStore),
+    None,
+}
+
+impl SupportedStateManagerStore {
+    pub fn from_config(config: DatabaseConfig) -> Self {
+        match config {
+            DatabaseConfig::InMemory => {
+                SupportedStateManagerStore::InMemory(InMemoryTransactionStore::new())
+            }
+            DatabaseConfig::RocksDB(path) => SupportedStateManagerStore::RocksDB(
+                RocksDBTransactionStore::new(PathBuf::from(path)),
+            ),
+            DatabaseConfig::None => SupportedStateManagerStore::None,
+        }
+    }
+}
+
+impl TransactionStore for SupportedStateManagerStore {
+    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
+        match self {
+            SupportedStateManagerStore::InMemory(store) => store.insert_transactions(transactions),
+            SupportedStateManagerStore::RocksDB(store) => store.insert_transactions(transactions),
+            SupportedStateManagerStore::None => panic!("Unexpected call to no state manager store"),
+        }
+    }
+
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
+        match self {
+            SupportedStateManagerStore::InMemory(store) => store.get_transaction(tid),
+            SupportedStateManagerStore::RocksDB(store) => store.get_transaction(tid),
+            SupportedStateManagerStore::None => panic!("Unexpected call to no state manager store"),
+        }
+    }
+}
+
+pub type ActualStateManager =
+    StateManager<SimpleMempool, SerializedInMemorySubstateStore, SupportedStateManagerStore>;
 
 pub struct JNIStateManager {
     pub state_manager: Arc<Mutex<ActualStateManager>>,
@@ -118,8 +163,8 @@ impl JNIStateManager {
             }
         };
 
+        let transaction_store = SupportedStateManagerStore::from_config(config.db_config);
         let mempool = SimpleMempool::new(mempool_config);
-        let transaction_store = TransactionStore::new();
         let substate_store = SerializedInMemorySubstateStore::with_bootstrap();
 
         // Build the state manager.

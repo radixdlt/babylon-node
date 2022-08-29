@@ -6,6 +6,7 @@ use scrypto::crypto::sha256_twice;
 use scrypto::prelude::scrypto_encode;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::mempool::Mempool;
+use state_manager::store::TransactionStore;
 use state_manager::{MempoolError, TId, TemporaryTransactionReceipt, Transaction};
 use std::cmp;
 use std::sync::{Arc, Mutex};
@@ -120,7 +121,7 @@ fn handle_get_committed_transactions_internal(
     let api_txns = txns
         .into_iter()
         .map(|((tx, receipt), state_version)| {
-            scrypto_decode(tx)
+            scrypto_decode(&tx)
                 .map(|notarized_tx| {
                     to_api_committed_transaction(notarized_tx, receipt.clone(), state_version)
                 })

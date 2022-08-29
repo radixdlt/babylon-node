@@ -78,6 +78,7 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statemanager.CoreApiServerConfig;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transaction.ExecutedTransactionReceipt;
 import com.radixdlt.transactions.RawTransaction;
@@ -131,6 +132,7 @@ public final class StateManagerSbor {
     ECPublicKey.registerCodec(codecMap);
     ECDSASignature.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
+    REv2DatabaseConfig.registerCodec(codecMap);
     TransactionHeader.registerCodec(codecMap);
     CoreApiServerConfig.registerCodec(codecMap);
   }

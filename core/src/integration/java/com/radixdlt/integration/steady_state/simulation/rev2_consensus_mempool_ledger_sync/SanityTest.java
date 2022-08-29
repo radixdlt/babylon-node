@@ -79,37 +79,45 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class SanityTest {
-  private final SimulationTest.Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numNodes(4)
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  ConsensusConfig.of(1000),
-                  LedgerConfig.stateComputerWithSync(
-                      StateComputerConfig.rev2(
-                          REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())),
-                      SyncConfig.of(5000, 10, 3000L))))
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered())
-          .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class);
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  private SimulationTest createTest() {
+    return SimulationTest.builder()
+        .numNodes(4)
+        .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.rev2(
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())),
+                    SyncRelayConfig.of(5000, 10, 3000L))))
+        .addTestModules(
+            ConsensusMonitors.safety(),
+            ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
+            ConsensusMonitors.noTimeouts(),
+            ConsensusMonitors.directParents(),
+            LedgerMonitors.consensusToLedger(),
+            LedgerMonitors.ordered())
+        .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class)
+        .build();
+  }
 
   @Test
   public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() {
     // Arrange
-    var simulationTest = bftTestBuilder.build();
+    var simulationTest = createTest();
 
     // Run
     var runningTest = simulationTest.run();

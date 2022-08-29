@@ -63,9 +63,11 @@
  */
 
 use scrypto::prelude::{
-    args, AccessRule, EcdsaPublicKey, EcdsaSignature, NetworkDefinition, RADIX_TOKEN,
-    SYS_FAUCET_COMPONENT,
+    args, AccessRule, EcdsaPublicKey, EcdsaSignature, MintParams, Mutability, NetworkDefinition,
+    ResourceMethodAuthKey, RADIX_TOKEN, SYS_FAUCET_COMPONENT, SYS_UTILS_PACKAGE,
 };
+use scrypto::resource::ResourceType;
+use std::collections::HashMap;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::{compile, CompileError};
 use transaction::model::{
@@ -88,6 +90,49 @@ pub fn create_new_account_intent_bytes(
         header: TransactionHeader {
             version: 1,
             network_id: network_definition.id,
+            start_epoch_inclusive: 0,
+            end_epoch_exclusive: 100,
+            nonce: 5,
+            notary_public_key: public_key,
+            notary_as_signatory: false,
+            cost_unit_limit: 10_000_000,
+            tip_percentage: 5,
+        },
+        manifest,
+    };
+
+    intent.to_bytes()
+}
+
+pub fn create_1mb_txn_manifest(
+    network_definition: NetworkDefinition,
+    public_key: EcdsaPublicKey,
+) -> Vec<u8> {
+    let mut metadata = HashMap::new();
+    let large_string = "s".repeat(1024 * 1024);
+    metadata.insert("key".to_string(), large_string);
+    let access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> = HashMap::new();
+    let initial_supply: Option<MintParams> = None;
+
+    let manifest = ManifestBuilder::new(&network_definition)
+        .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
+        .call_function(
+            SYS_UTILS_PACKAGE,
+            "SysUtils",
+            "new_resource",
+            args!(
+                ResourceType::NonFungible,
+                metadata,
+                access_rules,
+                initial_supply
+            ),
+        )
+        .build();
+
+    let intent = TransactionIntent {
+        header: TransactionHeader {
+            version: 1,
+            network_id: network_definition.id, // TODO: Fix
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 5,

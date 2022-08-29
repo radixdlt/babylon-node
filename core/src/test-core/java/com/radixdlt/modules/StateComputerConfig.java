@@ -64,7 +64,14 @@
 
 package com.radixdlt.modules;
 
+import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /** Configuration options for the state computer */
 public sealed interface StateComputerConfig {
@@ -76,8 +83,9 @@ public sealed interface StateComputerConfig {
     return new REv1StateComputerConfig(mempoolSize);
   }
 
-  static StateComputerConfig rev2(REV2ProposerConfig proposerConfig) {
-    return new REv2StateComputerConfig(proposerConfig);
+  static StateComputerConfig rev2(
+      REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig) {
+    return new REv2StateComputerConfig(databaseConfig, proposerConfig);
   }
 
   sealed interface MockedMempoolConfig {
@@ -97,20 +105,31 @@ public sealed interface StateComputerConfig {
 
   record REv1StateComputerConfig(int mempoolSize) implements StateComputerConfig {}
 
-  record REv2StateComputerConfig(REV2ProposerConfig proposerConfig)
+  record REv2StateComputerConfig(
+      REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig)
       implements StateComputerConfig {}
 
   sealed interface REV2ProposerConfig {
     static REV2ProposerConfig halfCorrectProposer() {
-      return new HalfCorrectProposer();
+      return new Generated(new HalfCorrectREv2TransactionGenerator());
+    }
+
+    static REV2ProposerConfig transactionGenerator(
+        TransactionGenerator transactionGenerator, long count) {
+      return new Generated(
+          (round, prepared) ->
+              Stream.generate(transactionGenerator::nextTransaction)
+                  .limit(count)
+                  .collect(Collectors.toList()));
     }
 
     static REV2ProposerConfig mempool(int mempoolMaxSize, MempoolRelayConfig config) {
-      return new Mempool(mempoolMaxSize, config);
+      return new Mempool(new RustMempoolConfig(mempoolMaxSize), config);
     }
 
-    record HalfCorrectProposer() implements REV2ProposerConfig {}
+    record Generated(ProposalGenerator generator) implements REV2ProposerConfig {}
 
-    record Mempool(int mempoolMaxSize, MempoolRelayConfig config) implements REV2ProposerConfig {}
+    record Mempool(RustMempoolConfig mempoolConfig, MempoolRelayConfig relayConfig)
+        implements REV2ProposerConfig {}
   }
 }

@@ -63,6 +63,7 @@
  */
 
 use crate::jni::state_manager::ActualStateManager;
+use crate::store::TransactionStore;
 use crate::types::TId;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -103,9 +104,9 @@ fn do_get_transaction_at_state_version(
     let (transaction_data, receipt) = state_manager.transaction_store.get_transaction(&tid);
 
     ExecutedTransactionReceipt {
-        result: receipt.result.to_string(),
-        transaction_data: transaction_data.clone(),
-        new_component_addresses: receipt.new_component_addresses.clone(),
+        result: receipt.result,
+        transaction_data,
+        new_component_addresses: receipt.new_component_addresses,
     }
 }
 

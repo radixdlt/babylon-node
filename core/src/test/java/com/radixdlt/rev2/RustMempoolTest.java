@@ -69,6 +69,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transactions.RawTransaction;
@@ -79,13 +80,14 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public final class RustMempoolTest {
-
   @Test
   public void test_rust_mempool_add() throws Exception {
     final var mempoolSize = 2;
     final var config =
         new StateManagerConfig(
-            NetworkDefinition.INT_TEST_NET, Option.some(new RustMempoolConfig(mempoolSize)));
+            NetworkDefinition.INT_TEST_NET,
+            Option.some(new RustMempoolConfig(mempoolSize)),
+            REv2DatabaseConfig.inMemory());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
       var transaction1 = REv2TestTransactions.VALID_TXN_0;
@@ -141,7 +143,9 @@ public final class RustMempoolTest {
     final var mempoolSize = 3;
     final var config =
         new StateManagerConfig(
-            NetworkDefinition.INT_TEST_NET, Option.some(new RustMempoolConfig(mempoolSize)));
+            NetworkDefinition.INT_TEST_NET,
+            Option.some(new RustMempoolConfig(mempoolSize)),
+            REv2DatabaseConfig.inMemory());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
       var transaction1 = REv2TestTransactions.VALID_TXN_0;
@@ -235,7 +239,9 @@ public final class RustMempoolTest {
     final var mempoolSize = 3;
     final var config =
         new StateManagerConfig(
-            NetworkDefinition.INT_TEST_NET, Option.some(new RustMempoolConfig(mempoolSize)));
+            NetworkDefinition.INT_TEST_NET,
+            Option.some(new RustMempoolConfig(mempoolSize)),
+            REv2DatabaseConfig.inMemory());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
       var transaction1 = REv2TestTransactions.VALID_TXN_0;

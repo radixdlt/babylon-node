@@ -81,7 +81,7 @@ import com.radixdlt.rev1.modules.PersistenceModule;
 import com.radixdlt.rev1.modules.RadixEngineStoreModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.store.DatabaseCacheSize;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
 
@@ -116,9 +116,9 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
         new FunctionalRadixNodeModule(
             FunctionalRadixNodeModule.ConsensusConfig.of(200, 1000L, 2.0),
             stateComputerConfig,
-            new SyncConfig(500, 10, 3000, 10, Long.MAX_VALUE)));
+            new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)));
     switch (stateComputerConfig) {
-      case StateComputerConfig.REv2StateComputerConfig unused -> {
+      case StateComputerConfig.REv2StateComputerConfig ignored -> {
         // FIXME: a hack for tests that use rev2 (api); fix once ledger/consensus recovery are
         // hooked up
         install(new MockedLedgerRecoveryModule());

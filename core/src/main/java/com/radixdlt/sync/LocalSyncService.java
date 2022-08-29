@@ -135,7 +135,7 @@ public final class LocalSyncService {
   private final RemoteEventDispatcher<SyncRequest> syncRequestDispatcher;
   private final ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher;
   private final ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher;
-  private final SyncConfig syncConfig;
+  private final SyncRelayConfig syncRelayConfig;
   private final SystemCounters systemCounters;
   private final PeersView peersView;
   private final Comparator<AccumulatorState> accComparator;
@@ -157,7 +157,7 @@ public final class LocalSyncService {
       RemoteEventDispatcher<SyncRequest> syncRequestDispatcher,
       ScheduledEventDispatcher<SyncRequestTimeout> syncRequestTimeoutDispatcher,
       ScheduledEventDispatcher<SyncLedgerUpdateTimeout> syncLedgerUpdateTimeoutDispatcher,
-      SyncConfig syncConfig,
+      SyncRelayConfig syncRelayConfig,
       SystemCounters systemCounters,
       PeersView peersView,
       Comparator<AccumulatorState> accComparator,
@@ -174,7 +174,7 @@ public final class LocalSyncService {
     this.syncRequestTimeoutDispatcher = Objects.requireNonNull(syncRequestTimeoutDispatcher);
     this.syncLedgerUpdateTimeoutDispatcher =
         Objects.requireNonNull(syncLedgerUpdateTimeoutDispatcher);
-    this.syncConfig = Objects.requireNonNull(syncConfig);
+    this.syncRelayConfig = Objects.requireNonNull(syncRelayConfig);
     this.systemCounters = Objects.requireNonNull(systemCounters);
     this.peersView = Objects.requireNonNull(peersView);
     this.accComparator = Objects.requireNonNull(accComparator);
@@ -289,7 +289,7 @@ public final class LocalSyncService {
 
     peersToAsk.forEach(peer -> statusRequestDispatcher.dispatch(peer, StatusRequest.create()));
     this.syncCheckReceiveStatusTimeoutDispatcher.dispatch(
-        SyncCheckReceiveStatusTimeout.create(), this.syncConfig.requestTimeout());
+        SyncCheckReceiveStatusTimeout.create(), this.syncRelayConfig.requestTimeout());
 
     return SyncCheckState.init(currentState.getCurrentHeader(), peersToAsk);
   }
@@ -302,7 +302,7 @@ public final class LocalSyncService {
             .collect(Collectors.toList());
     Collections.shuffle(allPeers);
     return allPeers.stream()
-        .limit(this.syncConfig.syncCheckMaxPeers())
+        .limit(this.syncRelayConfig.syncCheckMaxPeers())
         .map(PeersView.PeerInfo::bftNode)
         .collect(ImmutableSet.toImmutableSet());
   }
@@ -432,7 +432,7 @@ public final class LocalSyncService {
     final var requestId = requestIdCounter.incrementAndGet();
     this.syncRequestDispatcher.dispatch(peer, SyncRequest.create(currentHeader.toDto()));
     this.syncRequestTimeoutDispatcher.dispatch(
-        SyncRequestTimeout.create(peer, requestId), this.syncConfig.requestTimeout());
+        SyncRequestTimeout.create(peer, requestId), this.syncRelayConfig.requestTimeout());
 
     return currentState.withPendingRequest(peer, requestId);
   }

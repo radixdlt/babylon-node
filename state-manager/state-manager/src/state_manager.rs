@@ -86,9 +86,9 @@ use transaction::model::{
 use transaction::signing::EcdsaPrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
-pub struct StateManager<M: Mempool, S> {
+pub struct StateManager<M: Mempool, S, T: TransactionStore> {
     pub mempool: M,
-    pub transaction_store: TransactionStore,
+    pub transaction_store: T,
     pub proof_store: ProofStore,
     pub network: NetworkDefinition,
     substate_store: S,
@@ -105,13 +105,15 @@ pub struct OwnedValidationConfig {
     pub min_tip_percentage: u32,
 }
 
-impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager<M, S> {
+impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore, T: TransactionStore>
+    StateManager<M, S, T>
+{
     pub fn new(
         network: NetworkDefinition,
         mempool: M,
-        transaction_store: TransactionStore,
+        transaction_store: T,
         substate_store: S,
-    ) -> StateManager<M, S> {
+    ) -> StateManager<M, S, T> {
         StateManager {
             network,
             mempool,
@@ -232,7 +234,9 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore> StateManager
     }
 }
 
-impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager<M, S> {
+impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore, T: TransactionStore>
+    StateManager<M, S, T>
+{
     pub fn get_component_resources(
         &self,
         component_address: ComponentAddress,
@@ -245,7 +249,15 @@ impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
+pub enum DatabaseConfig {
+    InMemory,
+    RocksDB(String),
+    None,
+}
+
+#[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,
     pub mempool_config: Option<MempoolConfig>,
+    pub db_config: DatabaseConfig,
 }

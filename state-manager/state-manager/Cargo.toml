@@ -25,3 +25,4 @@ scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-950
 transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-950f95fc" }
 radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-950f95fc" }
 radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-950f95fc" }
+rocksdb = { version = "0.18.0" }

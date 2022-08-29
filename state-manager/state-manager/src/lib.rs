@@ -67,7 +67,7 @@ pub mod mempool;
 mod query;
 mod result;
 mod state_manager;
-mod store;
+pub mod store;
 mod transaction_builder;
 mod types;
 

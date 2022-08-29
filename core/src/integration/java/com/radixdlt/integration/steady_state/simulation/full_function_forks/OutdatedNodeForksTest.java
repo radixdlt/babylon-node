@@ -88,7 +88,7 @@ import com.radixdlt.rev1.forks.ForkBuilder;
 import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.RadixEngineForksGenesisOnlyModule;
-import com.radixdlt.sync.SyncConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.UInt256;
 import java.time.Duration;
 import java.util.Collections;
@@ -113,7 +113,7 @@ public final class OutdatedNodeForksTest {
         SimulationTest.builder()
             .numNodes(numValidators, Collections.nCopies(numValidators, UInt256.ONE))
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .fullFunctionNodes(ConsensusConfig.of(), SyncConfig.of(400L, 10, 2000L), 1000)
+            .fullFunctionNodes(ConsensusConfig.of(), SyncRelayConfig.of(400L, 10, 2000L), 1000)
             .addRadixEngineConfigModules(new MockedForksModule(2L), new ForksModule())
             .addOverrideModuleToInitialNodes(
                 nodes -> {

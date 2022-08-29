@@ -89,13 +89,16 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.List;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public final class REv2ConsensusTransferTest {
 
@@ -108,6 +111,7 @@ public final class REv2ConsensusTransferTest {
           MessageSelector.firstSelector(),
           MessageMutator.nothing());
 
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
   @Inject private DeterministicProcessor processor;
   @Inject private MempoolInserter<RawTransaction> mempoolInserter;
   @Inject private REv2TransactionAndProofStore transactionStoreReader;
@@ -127,6 +131,7 @@ public final class REv2ConsensusTransferTest {
             FunctionalRadixNodeModule.ConsensusConfig.of(),
             FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
+                    new REv2DatabaseConfig.RocksDB(folder.getRoot().getAbsolutePath()),
                     StateComputerConfig.REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
