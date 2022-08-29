@@ -67,10 +67,7 @@ use crate::jni::utils::*;
 use crate::mempool::simple::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{DatabaseConfig, StateManager, StateManagerConfig};
-use crate::store::{
-    InMemoryTransactionStore, RocksDBTransactionStore, TemporaryTransactionReceipt,
-    TransactionStore,
-};
+use crate::store::{InMemoryTransactionStore, RocksDBTransactionStore, TransactionStore};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -131,7 +128,7 @@ impl TransactionStore for SupportedStateManagerStore {
         }
     }
 
-    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TransactionReceipt) {
         match self {
             SupportedStateManagerStore::InMemory(store) => store.get_transaction(tid),
             SupportedStateManagerStore::RocksDB(store) => store.get_transaction(tid),

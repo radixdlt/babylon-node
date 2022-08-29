@@ -62,14 +62,15 @@
  * permissions under this License.
  */
 
-use crate::store::transaction_store::{TemporaryTransactionReceipt, TransactionStore};
+use crate::store::transaction_store::TransactionStore;
 use crate::types::{TId, Transaction};
-use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
+use radix_engine::transaction::TransactionReceipt;
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct InMemoryTransactionStore {
-    in_memory_store: HashMap<TId, (Vec<u8>, TemporaryTransactionReceipt)>,
+    in_memory_store: HashMap<TId, (Vec<u8>, Vec<u8>)>,
 }
 
 impl InMemoryTransactionStore {
@@ -80,37 +81,9 @@ impl InMemoryTransactionStore {
     }
 
     fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
-        let (status, entity_changes) = match receipt.result {
-            TransactionResult::Commit(commit) => match commit.outcome {
-                TransactionOutcome::Success(..) => {
-                    ("Success".to_string(), Some(commit.entity_changes))
-                }
-                TransactionOutcome::Failure(error) => {
-                    (format!("Error: {}", error), Some(commit.entity_changes))
-                }
-            },
-            TransactionResult::Reject(reject) => (format!("Rejected: {}", reject.error), None),
-        };
-
-        let (new_package_addresses, new_component_addresses, new_resource_addresses) =
-            match entity_changes {
-                Some(ec) => (
-                    ec.new_package_addresses,
-                    ec.new_component_addresses,
-                    ec.new_resource_addresses,
-                ),
-                None => (Vec::new(), Vec::new(), Vec::new()),
-            };
-
-        let receipt = TemporaryTransactionReceipt {
-            result: status,
-            new_package_addresses,
-            new_component_addresses,
-            new_resource_addresses,
-        };
         self.in_memory_store.insert(
             transaction.id.clone(),
-            (transaction.payload.clone(), receipt),
+            (transaction.payload.clone(), scrypto_encode(&receipt)),
         );
     }
 }
@@ -122,10 +95,10 @@ impl TransactionStore for InMemoryTransactionStore {
         }
     }
 
-    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TransactionReceipt) {
         self.in_memory_store
             .get(tid)
-            .cloned()
+            .map(|(txn, receipt)| (txn.clone(), scrypto_decode(receipt).unwrap()))
             .expect("Transaction missing")
     }
 }

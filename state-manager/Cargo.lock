@@ -72,9 +72,9 @@ checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
 
 [[package]]
 name = "bindgen"
-version = "0.59.2"
+version = "0.60.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bd2a9a458e8f4304c52c43ebb0cfbd520289f8379a52e329a38afda99bf8eb8"
+checksum = "062dddbc1ba4aca46de6338e2bf87771414c335f7b2f2036e8f3e9befebf88e6"
 dependencies = [
  "bitflags",
  "cexpr",
@@ -778,9 +778,9 @@ checksum = "292a948cd991e376cf75541fe5b97a1081d713c618b4f1b9500f8844e49eb565"
 
 [[package]]
 name = "librocksdb-sys"
-version = "0.6.1+6.28.2"
+version = "0.8.0+7.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81bc587013734dadb7cf23468e531aa120788b87243648be42e2d3a072186291"
+checksum = "611804e4666a25136fcc5f8cf425ab4d26c7f74ea245ffe92ea23b85b6420b5d"
 dependencies = [
  "bindgen",
  "bzip2-sys",
@@ -1031,8 +1031,8 @@ dependencies = [
 
 [[package]]
 name = "radix-engine"
-version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-950f95fc#950f95fc8ee120aa99f41d7e26de7c9e367a055d"
+version = "0.6.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=encodeable-receipt-11a5be#11a5bee201862d47fcbc4399749a445d50d4c7ba"
 dependencies = [
  "colored",
  "hex",
@@ -1048,8 +1048,8 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-stores"
-version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-950f95fc#950f95fc8ee120aa99f41d7e26de7c9e367a055d"
+version = "0.6.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=encodeable-receipt-11a5be#11a5bee201862d47fcbc4399749a445d50d4c7ba"
 dependencies = [
  "radix-engine",
  "rocksdb",
@@ -1117,9 +1117,9 @@ checksum = "a3f87b73ce11b1619a3c6332f45341e0047173771e8b8b73f87bfeefb7b56244"
 
 [[package]]
 name = "rocksdb"
-version = "0.18.0"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "620f4129485ff1a7128d184bc687470c21c7951b64779ebc9cfdad3dcd920290"
+checksum = "7e9562ea1d70c0cc63a34a22d977753b50cca91cc6b6527750463bd5dd8697bc"
 dependencies = [
  "libc",
  "librocksdb-sys",
@@ -1154,8 +1154,8 @@ dependencies = [
 
 [[package]]
 name = "sbor"
-version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-950f95fc#950f95fc8ee120aa99f41d7e26de7c9e367a055d"
+version = "0.6.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=encodeable-receipt-11a5be#11a5bee201862d47fcbc4399749a445d50d4c7ba"
 dependencies = [
  "hex",
  "sbor-derive",
@@ -1164,8 +1164,8 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
-version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-950f95fc#950f95fc8ee120aa99f41d7e26de7c9e367a055d"
+version = "0.6.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=encodeable-receipt-11a5be#11a5bee201862d47fcbc4399749a445d50d4c7ba"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1175,8 +1175,8 @@ dependencies = [
 
 [[package]]
 name = "scrypto"
-version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-950f95fc#950f95fc8ee120aa99f41d7e26de7c9e367a055d"
+version = "0.6.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=encodeable-receipt-11a5be#11a5bee201862d47fcbc4399749a445d50d4c7ba"
 dependencies = [
  "bech32",
  "forward_ref",
@@ -1194,8 +1194,8 @@ dependencies = [
 
 [[package]]
 name = "scrypto-abi"
-version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-950f95fc#950f95fc8ee120aa99f41d7e26de7c9e367a055d"
+version = "0.6.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=encodeable-receipt-11a5be#11a5bee201862d47fcbc4399749a445d50d4c7ba"
 dependencies = [
  "sbor",
  "serde",
@@ -1203,8 +1203,8 @@ dependencies = [
 
 [[package]]
 name = "scrypto-derive"
-version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-950f95fc#950f95fc8ee120aa99f41d7e26de7c9e367a055d"
+version = "0.6.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=encodeable-receipt-11a5be#11a5bee201862d47fcbc4399749a445d50d4c7ba"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1514,8 +1514,8 @@ dependencies = [
 
 [[package]]
 name = "transaction"
-version = "0.5.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-950f95fc#950f95fc8ee120aa99f41d7e26de7c9e367a055d"
+version = "0.6.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=encodeable-receipt-11a5be#11a5bee201862d47fcbc4399749a445d50d4c7ba"
 dependencies = [
  "clap",
  "ed25519-dalek",
@@ -1839,9 +1839,9 @@ dependencies = [
 
 [[package]]
 name = "zstd-sys"
-version = "1.6.3+zstd.1.5.2"
+version = "2.0.1+zstd.1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc49afa5c8d634e75761feda8c592051e7eeb4683ba827211eb0d731d3402ea8"
+checksum = "9fd07cbbc53846d9145dbffdf6dd09a7a0aa52be46741825f5c97bdd4f73f12b"
 dependencies = [
  "cc",
  "libc",

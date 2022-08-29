@@ -68,6 +68,7 @@ use crate::types::TId;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use radix_engine::transaction::TransactionResult;
 use sbor::*;
 use scrypto::prelude::ComponentAddress;
 
@@ -103,10 +104,15 @@ fn do_get_transaction_at_state_version(
 
     let (transaction_data, receipt) = state_manager.transaction_store.get_transaction(&tid);
 
+    let result = match &receipt.result {
+        TransactionResult::Commit(commit_result) => format!("{:?}", commit_result.outcome),
+        TransactionResult::Reject(reject_result) => format!("{:?}", reject_result.error),
+    };
+
     ExecutedTransactionReceipt {
-        result: receipt.result,
+        result,
         transaction_data,
-        new_component_addresses: receipt.new_component_addresses,
+        new_component_addresses: receipt.new_component_addresses().clone(),
     }
 }
 
