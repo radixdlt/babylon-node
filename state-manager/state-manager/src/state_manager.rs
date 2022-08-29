@@ -213,13 +213,18 @@ pub trait WriteableProofStore {
     fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>);
 }
 
+pub trait WriteableVertexStore {
+    fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>);
+}
+
 impl<M, S> StateManager<M, S>
 where
     M: Mempool,
     S: ReadableSubstateStore
         + WriteableSubstateStore
         + WriteableTransactionStore
-        + WriteableProofStore,
+        + WriteableProofStore
+        + WriteableVertexStore,
 {
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
         let mut validated_prepared = Vec::new();
@@ -308,6 +313,7 @@ where
         self.store.insert_transactions(to_store);
         self.store
             .insert_tids_and_proof(commit_request.state_version, ids, commit_request.proof);
+        self.store.save_vertex_store(commit_request.vertex_store);
         self.mempool
             .handle_committed_transactions(&commit_request.transactions);
     }

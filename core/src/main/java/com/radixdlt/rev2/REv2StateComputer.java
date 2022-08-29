@@ -161,8 +161,13 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   public void commit(
       CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
     var proofBytes = serialization.toDson(txnsAndProof.getProof(), DsonOutput.Output.ALL);
+    var vertexStoreBytes =
+        serialization.toDson(vertexStoreState.toSerialized(), DsonOutput.Output.ALL);
+
     var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
-    var commitRequest = new CommitRequest(txnsAndProof.getTransactions(), stateVersion, proofBytes);
+    var commitRequest =
+        new CommitRequest(
+            txnsAndProof.getTransactions(), stateVersion, proofBytes, vertexStoreBytes);
 
     stateComputer.commit(commitRequest);
 

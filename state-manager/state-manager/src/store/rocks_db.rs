@@ -67,9 +67,9 @@ use crate::types::{TId, Transaction};
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
 use std::collections::HashMap;
 
-use crate::state_manager::{WriteableProofStore, WriteableTransactionStore};
+use crate::state_manager::{WriteableProofStore, WriteableTransactionStore, WriteableVertexStore};
 use crate::store::rocks_db::RocksDBTable::{
-    Proofs, RootSubstates, StateVersions, Substates, Transactions,
+    Proofs, RootSubstates, StateVersions, Substates, Transactions, VertexStore,
 };
 use crate::store::QueryableProofStore;
 use radix_engine::engine::Substate;
@@ -96,6 +96,7 @@ enum RocksDBTable {
     Proofs,
     Substates,
     RootSubstates,
+    VertexStore,
 }
 
 impl RocksDBTable {
@@ -106,6 +107,7 @@ impl RocksDBTable {
             Proofs => 2u8,
             Substates => 3u8,
             RootSubstates => 4u8,
+            VertexStore => 5u8,
         }
     }
 }
@@ -293,5 +295,13 @@ impl QueryableSubstateStore for RocksDBStore {
             };
         }
         items
+    }
+}
+
+impl WriteableVertexStore for RocksDBStore {
+    fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
+        self.db
+            .put(db_key!(VertexStore, &[]), &vertex_store_bytes)
+            .unwrap();
     }
 }

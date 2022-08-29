@@ -64,7 +64,7 @@
 
 use crate::jni::dtos::*;
 
-use crate::state_manager::{WriteableProofStore, WriteableTransactionStore};
+use crate::state_manager::{WriteableProofStore, WriteableTransactionStore, WriteableVertexStore};
 use crate::store::{
     InMemoryStore, QueryableProofStore, QueryableTransactionStore, RocksDBStore,
     TemporaryTransactionReceipt,
@@ -81,6 +81,7 @@ use radix_engine::ledger::{
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 
+use crate::store::in_memory::InMemoryVertexStore;
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
@@ -91,7 +92,11 @@ pub enum DatabaseConfig {
 }
 
 pub enum StateManagerDatabase {
-    InMemory(InMemoryStore, SerializedInMemorySubstateStore),
+    InMemory {
+        transactions_and_proofs: InMemoryStore,
+        substates: SerializedInMemorySubstateStore,
+        vertices: InMemoryVertexStore,
+    },
     RocksDB(RocksDBStore),
     None,
 }
@@ -99,10 +104,11 @@ pub enum StateManagerDatabase {
 impl StateManagerDatabase {
     pub fn from_config(config: DatabaseConfig) -> Self {
         match config {
-            DatabaseConfig::InMemory => StateManagerDatabase::InMemory(
-                InMemoryStore::new(),
-                SerializedInMemorySubstateStore::with_bootstrap(),
-            ),
+            DatabaseConfig::InMemory => StateManagerDatabase::InMemory {
+                transactions_and_proofs: InMemoryStore::new(),
+                substates: SerializedInMemorySubstateStore::with_bootstrap(),
+                vertices: InMemoryVertexStore::new(),
+            },
             DatabaseConfig::RocksDB(path) => {
                 let db = StateManagerDatabase::RocksDB(RocksDBStore::new(PathBuf::from(path)));
                 bootstrap(db)
@@ -115,7 +121,10 @@ impl StateManagerDatabase {
 impl WriteableTransactionStore for StateManagerDatabase {
     fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
         match self {
-            StateManagerDatabase::InMemory(store, ..) => store.insert_transactions(transactions),
+            StateManagerDatabase::InMemory {
+                transactions_and_proofs,
+                ..
+            } => transactions_and_proofs.insert_transactions(transactions),
             StateManagerDatabase::RocksDB(store) => store.insert_transactions(transactions),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
@@ -125,7 +134,10 @@ impl WriteableTransactionStore for StateManagerDatabase {
 impl QueryableTransactionStore for StateManagerDatabase {
     fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
         match self {
-            StateManagerDatabase::InMemory(store, ..) => store.get_transaction(tid),
+            StateManagerDatabase::InMemory {
+                transactions_and_proofs,
+                ..
+            } => transactions_and_proofs.get_transaction(tid),
             StateManagerDatabase::RocksDB(store) => store.get_transaction(tid),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
@@ -135,9 +147,10 @@ impl QueryableTransactionStore for StateManagerDatabase {
 impl WriteableProofStore for StateManagerDatabase {
     fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
         match self {
-            StateManagerDatabase::InMemory(store, ..) => {
-                store.insert_tids_and_proof(state_version, ids, proof_bytes)
-            }
+            StateManagerDatabase::InMemory {
+                transactions_and_proofs,
+                ..
+            } => transactions_and_proofs.insert_tids_and_proof(state_version, ids, proof_bytes),
             StateManagerDatabase::RocksDB(store) => {
                 store.insert_tids_and_proof(state_version, ids, proof_bytes)
             }
@@ -149,7 +162,10 @@ impl WriteableProofStore for StateManagerDatabase {
 impl QueryableProofStore for StateManagerDatabase {
     fn get_tid(&self, state_version: u64) -> TId {
         match self {
-            StateManagerDatabase::InMemory(store, ..) => store.get_tid(state_version),
+            StateManagerDatabase::InMemory {
+                transactions_and_proofs,
+                ..
+            } => transactions_and_proofs.get_tid(state_version),
             StateManagerDatabase::RocksDB(store) => store.get_tid(state_version),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
@@ -157,7 +173,10 @@ impl QueryableProofStore for StateManagerDatabase {
 
     fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
         match self {
-            StateManagerDatabase::InMemory(store, ..) => store.get_next_proof(state_version),
+            StateManagerDatabase::InMemory {
+                transactions_and_proofs,
+                ..
+            } => transactions_and_proofs.get_next_proof(state_version),
             StateManagerDatabase::RocksDB(store) => store.get_next_proof(state_version),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
@@ -165,7 +184,10 @@ impl QueryableProofStore for StateManagerDatabase {
 
     fn get_last_proof(&self) -> Option<Vec<u8>> {
         match self {
-            StateManagerDatabase::InMemory(store, ..) => store.get_last_proof(),
+            StateManagerDatabase::InMemory {
+                transactions_and_proofs,
+                ..
+            } => transactions_and_proofs.get_last_proof(),
             StateManagerDatabase::RocksDB(store) => store.get_last_proof(),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
@@ -175,9 +197,7 @@ impl QueryableProofStore for StateManagerDatabase {
 impl ReadableSubstateStore for StateManagerDatabase {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue> {
         match self {
-            StateManagerDatabase::InMemory(_store, substate_store) => {
-                substate_store.get_substate(substate_id)
-            }
+            StateManagerDatabase::InMemory { substates, .. } => substates.get_substate(substate_id),
             StateManagerDatabase::RocksDB(store) => store.get_substate(substate_id),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
@@ -185,9 +205,7 @@ impl ReadableSubstateStore for StateManagerDatabase {
 
     fn is_root(&self, substate_id: &SubstateId) -> bool {
         match self {
-            StateManagerDatabase::InMemory(_store, substate_store) => {
-                substate_store.is_root(substate_id)
-            }
+            StateManagerDatabase::InMemory { substates, .. } => substates.is_root(substate_id),
             StateManagerDatabase::RocksDB(store) => store.is_root(substate_id),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
@@ -197,8 +215,8 @@ impl ReadableSubstateStore for StateManagerDatabase {
 impl WriteableSubstateStore for StateManagerDatabase {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue) {
         match self {
-            StateManagerDatabase::InMemory(_store, substate_store) => {
-                substate_store.put_substate(substate_id, substate)
+            StateManagerDatabase::InMemory { substates, .. } => {
+                substates.put_substate(substate_id, substate)
             }
             StateManagerDatabase::RocksDB(store) => store.put_substate(substate_id, substate),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
@@ -207,9 +225,7 @@ impl WriteableSubstateStore for StateManagerDatabase {
 
     fn set_root(&mut self, substate_id: SubstateId) {
         match self {
-            StateManagerDatabase::InMemory(_store, substate_store) => {
-                substate_store.set_root(substate_id)
-            }
+            StateManagerDatabase::InMemory { substates, .. } => substates.set_root(substate_id),
             StateManagerDatabase::RocksDB(store) => store.set_root(substate_id),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
@@ -219,10 +235,22 @@ impl WriteableSubstateStore for StateManagerDatabase {
 impl QueryableSubstateStore for StateManagerDatabase {
     fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<Vec<u8>, Substate> {
         match self {
-            StateManagerDatabase::InMemory(_store, substate_store) => {
-                substate_store.get_kv_store_entries(kv_store_id)
+            StateManagerDatabase::InMemory { substates, .. } => {
+                substates.get_kv_store_entries(kv_store_id)
             }
             StateManagerDatabase::RocksDB(store) => store.get_kv_store_entries(kv_store_id),
+            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
+        }
+    }
+}
+
+impl WriteableVertexStore for StateManagerDatabase {
+    fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
+        match self {
+            StateManagerDatabase::InMemory { vertices, .. } => {
+                vertices.save_vertex_store(vertex_store_bytes)
+            }
+            StateManagerDatabase::RocksDB(store) => store.save_vertex_store(vertex_store_bytes),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }

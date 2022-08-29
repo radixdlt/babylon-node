@@ -62,12 +62,35 @@
  * permissions under this License.
  */
 
-use crate::state_manager::{WriteableProofStore, WriteableTransactionStore};
+use crate::state_manager::{WriteableProofStore, WriteableTransactionStore, WriteableVertexStore};
 use crate::store::query::{QueryableTransactionStore, TemporaryTransactionReceipt};
 use crate::store::QueryableProofStore;
 use crate::types::{TId, Transaction};
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
 use std::collections::{BTreeMap, HashMap};
+
+#[derive(Debug)]
+pub struct InMemoryVertexStore {
+    vertex_store: Option<Vec<u8>>,
+}
+
+impl InMemoryVertexStore {
+    pub fn new() -> Self {
+        Self { vertex_store: None }
+    }
+}
+
+impl WriteableVertexStore for InMemoryVertexStore {
+    fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
+        self.vertex_store = Some(vertex_store_bytes);
+    }
+}
+
+impl Default for InMemoryVertexStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[derive(Debug)]
 pub struct InMemoryStore {
