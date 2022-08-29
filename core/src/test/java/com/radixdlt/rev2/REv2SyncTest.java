@@ -62,67 +62,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+package com.radixdlt.rev2;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Option;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.RawTransaction;
-import com.radixdlt.utils.UInt64;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 
-public record CommitRequest(
-    List<RawTransaction> transactions,
-    UInt64 stateVersion,
-    byte[] proofBytes,
-    Option<byte[]> vertexStoreBytes) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        CommitRequest.class,
-        codecs ->
-            StructCodec.with(
-                CommitRequest::new,
-                codecs.of(new TypeToken<List<RawTransaction>>() {}),
-                codecs.of(UInt64.class),
-                codecs.of(new TypeToken<byte[]>() {}),
-                codecs.of(new TypeToken<Option<byte[]>>() {}),
-                (t, encoder) ->
-                    encoder.encode(
-                        t.transactions, t.stateVersion, t.proofBytes, t.vertexStoreBytes)));
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+public class REv2SyncTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  private DeterministicTest buildTest() {
+    return DeterministicTest.builder()
+        .numNodes(1, 1)
+        .messageSelector(firstSelector())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REV2ProposerConfig.transactionGenerator(new REV2TransactionGenerator(), 1)),
+                    SyncRelayConfig.of(200, 10, 200))));
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    CommitRequest that = (CommitRequest) o;
-    return Objects.equals(transactions, that.transactions)
-        && Objects.equals(stateVersion, that.stateVersion)
-        && Arrays.equals(proofBytes, that.proofBytes)
-        && Objects.equals(vertexStoreBytes, that.vertexStoreBytes);
-  }
+  @Test
+  public void single_transaction_sync_should_work() {
+    // Arrange: Single transaction committed
+    var test = buildTest();
+    test.runUntil(
+        n -> {
+          var store = n.get(0).getInstance(REv2TransactionAndProofStore.class);
+          return store.getLastProof().isPresent();
+        },
+        100,
+        m -> m.channelId().senderIndex() == 0 && !(m.message() instanceof ScheduledLocalTimeout));
 
-  @Override
-  public int hashCode() {
-    int result = Objects.hash(transactions, stateVersion, vertexStoreBytes);
-    result = 31 * result + Arrays.hashCode(proofBytes);
-    return result;
-  }
+    // Act: Sync
+    test.runUntil(
+        n -> {
+          var store = n.get(1).getInstance(REv2TransactionAndProofStore.class);
+          return store.getLastProof().isPresent();
+        },
+        100);
 
-  @Override
-  public String toString() {
-    return "CommitRequest{"
-        + "transactions="
-        + transactions
-        + ", stateVersion="
-        + stateVersion
-        + ", proofBytes="
-        + Arrays.toString(proofBytes)
-        + ", vertexStoreBytes="
-        + vertexStoreBytes
-        + '}';
+    // Assert
+    Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
+    Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 1);
   }
 }

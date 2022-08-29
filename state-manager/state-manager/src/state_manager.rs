@@ -313,7 +313,9 @@ where
         self.store.insert_transactions(to_store);
         self.store
             .insert_tids_and_proof(commit_request.state_version, ids, commit_request.proof);
-        self.store.save_vertex_store(commit_request.vertex_store);
+        if let Some(vertex_store) = commit_request.vertex_store {
+            self.store.save_vertex_store(vertex_store);
+        }
         self.mempool
             .handle_committed_transactions(&commit_request.transactions);
     }

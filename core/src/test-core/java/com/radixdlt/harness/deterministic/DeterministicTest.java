@@ -329,6 +329,30 @@ public final class DeterministicTest {
     };
   }
 
+  public DeterministicTest runUntil(
+      Predicate<List<Injector>> nodeStatePredicate,
+      int max,
+      Predicate<ControlledMessage> predicate) {
+    this.nodes.start();
+
+    int count = 0;
+
+    while (!nodeStatePredicate.test(getNodeInjectors())) {
+      if (count == max) {
+        throw new RuntimeException("Max messages reached: " + max);
+      }
+      Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
+      this.nodes.handleMessage(nextMsg);
+      count++;
+    }
+
+    return this;
+  }
+
+  public DeterministicTest runUntil(Predicate<List<Injector>> nodeStatePredicate, int max) {
+    return this.runUntil(nodeStatePredicate, max, m -> true);
+  }
+
   public DeterministicTest runForCount(int count, Predicate<ControlledMessage> predicate) {
     this.nodes.start();
 
