@@ -105,7 +105,7 @@ impl TransactionStore for InMemoryTransactionStore {
         (
             transaction_bytes,
             scrypto_decode(&ledger_receipt_bytes)
-                .expect(&format!("Failed to decode a stored transaction {}", tid)),
+                .unwrap_or_else(|_| panic!("Failed to decode a stored transaction {}", tid)),
         )
     }
 }

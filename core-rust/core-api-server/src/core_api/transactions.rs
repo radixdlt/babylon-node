@@ -1,4 +1,4 @@
-use crate::core_api::conversions::{to_api_receipt, to_sbor_hex};
+use crate::core_api::conversions::to_api_receipt;
 use crate::core_api::errors::{common_server_errors, RequestHandlingError};
 use crate::core_api::generated::models;
 use crate::core_api::generated::models::{
@@ -16,6 +16,7 @@ use state_manager::store::TransactionStore;
 use state_manager::{LedgerTransactionReceipt, MempoolError, TId, Transaction};
 use std::cmp;
 use std::sync::{Arc, Mutex};
+use transaction::manifest;
 use transaction::model::NotarizedTransaction as EngineNotarizedTransaction;
 
 pub(crate) fn handle_submit_transaction(
@@ -163,6 +164,20 @@ fn to_api_committed_transaction(
     receipt: LedgerTransactionReceipt,
     state_version: u64,
 ) -> models::CommittedTransaction {
+    let bech32_encoder = Bech32Encoder::new(network);
+    let receipt = to_api_receipt(&bech32_encoder, receipt);
+
+    models::CommittedTransaction {
+        state_version: state_version.to_string(),
+        notarized_transaction: to_api_notarized_transaction(tx, &bech32_encoder),
+        receipt,
+    }
+}
+
+fn to_api_notarized_transaction(
+    tx: EngineNotarizedTransaction,
+    bech32_encoder: &Bech32Encoder,
+) -> models::NotarizedTransaction {
     let tx_hash = tx.hash();
     let signed_intent = tx.signed_intent;
     let signed_intent_hash = signed_intent.hash();
@@ -170,42 +185,36 @@ fn to_api_committed_transaction(
     let intent_hash = intent.hash();
     let header = intent.header;
 
-    let bech32_encoder = Bech32Encoder::new(network);
-    let receipt = to_api_receipt(&bech32_encoder, receipt);
-
-    models::CommittedTransaction {
-        state_version: state_version.to_string(),
-        notarized_transaction: models::NotarizedTransaction {
-            hash: tx_hash.to_string(),
-            signed_intent: models::SignedTransactionIntent {
-                hash: signed_intent_hash.to_string(),
-                intent: models::TransactionIntent {
-                    hash: intent_hash.to_string(),
-                    header: models::TransactionHeader {
-                        version: header.version as isize,
-                        network_id: header.network_id as isize,
-                        start_epoch_inclusive: header.start_epoch_inclusive.to_string(),
-                        end_epoch_exclusive: header.end_epoch_exclusive.to_string(),
-                        nonce: header.nonce.to_string(),
-                        notary_public_key: header.notary_public_key.to_string(),
-                        notary_as_signatory: header.notary_as_signatory,
-                        cost_unit_limit: header.cost_unit_limit.to_string(),
-                        tip_percentage: header.tip_percentage.to_string(),
-                    },
-                    manifest: to_sbor_hex(&intent.manifest),
+    models::NotarizedTransaction {
+        hash: tx_hash.to_string(),
+        signed_intent: models::SignedTransactionIntent {
+            hash: signed_intent_hash.to_string(),
+            intent: models::TransactionIntent {
+                hash: intent_hash.to_string(),
+                header: models::TransactionHeader {
+                    version: header.version as isize,
+                    network_id: header.network_id as isize,
+                    start_epoch_inclusive: header.start_epoch_inclusive.to_string(),
+                    end_epoch_exclusive: header.end_epoch_exclusive.to_string(),
+                    nonce: header.nonce.to_string(),
+                    notary_public_key: header.notary_public_key.to_string(),
+                    notary_as_signatory: header.notary_as_signatory,
+                    cost_unit_limit: header.cost_unit_limit.to_string(),
+                    tip_percentage: header.tip_percentage.to_string(),
                 },
-                intent_signatures: signed_intent
-                    .intent_signatures
-                    .into_iter()
-                    .map(|(public_key, signature)| models::IntentSignature {
-                        public_key: public_key.to_string(),
-                        signature: signature.to_string(),
-                    })
-                    .collect(),
+                manifest: manifest::decompile(&intent.manifest, bech32_encoder)
+                    .expect("Failed to decompile a transaction manifest"),
             },
-            notary_signature: tx.notary_signature.to_string(),
+            intent_signatures: signed_intent
+                .intent_signatures
+                .into_iter()
+                .map(|(public_key, signature)| models::IntentSignature {
+                    public_key: public_key.to_string(),
+                    signature: signature.to_string(),
+                })
+                .collect(),
         },
-        receipt,
+        notary_signature: tx.notary_signature.to_string(),
     }
 }
 
