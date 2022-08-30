@@ -70,7 +70,6 @@ import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
-import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
@@ -119,7 +118,6 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
       case StateComputerConfig.REv2StateComputerConfig ignored -> {
         // FIXME: a hack for tests that use rev2 (api); fix once ledger/consensus recovery are
         // hooked up
-        install(new MockedLedgerRecoveryModule());
         install(
             new MockedConsensusRecoveryModule.Builder()
                 .withNodes(List.of(BFTNode.random()))

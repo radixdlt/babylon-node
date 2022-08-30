@@ -82,7 +82,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -172,8 +171,12 @@ public final class DeterministicTest {
       return this;
     }
 
-    public DeterministicTest functionalNodeModule(FunctionalRadixNodeModule module) {
+    private void addFunctionalNodeModule(FunctionalRadixNodeModule module) {
       modules.add(module);
+    }
+
+    public DeterministicTest functionalNodeModule(FunctionalRadixNodeModule module) {
+      addFunctionalNodeModule(module);
       return build(false);
     }
 
@@ -205,7 +208,7 @@ public final class DeterministicTest {
 
     public DeterministicTest buildWithEpochs(Round epochMaxRound) {
       Objects.requireNonNull(epochMaxRound);
-      modules.add(
+      this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
               ConsensusConfig.of(),
@@ -219,7 +222,7 @@ public final class DeterministicTest {
     public DeterministicTest buildWithEpochsAndSync(
         Round epochMaxRound, SyncRelayConfig syncRelayConfig) {
       Objects.requireNonNull(epochMaxRound);
-      modules.add(
+      this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
               ConsensusConfig.of(),
@@ -258,8 +261,6 @@ public final class DeterministicTest {
             this.epochToNodeIndexesMapping);
       }
       modules.add(mockedConsensusRecoveryModuleBuilder.build());
-
-      modules.add(new MockedLedgerRecoveryModule());
 
       modules.add(new TestP2PModule.Builder().withAllNodes(nodes).build());
       modules.add(new TestMessagingModule.Builder().build());

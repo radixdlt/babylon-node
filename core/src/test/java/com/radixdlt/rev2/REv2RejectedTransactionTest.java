@@ -67,6 +67,7 @@ package com.radixdlt.rev2;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.*;
+import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.ExecutedVertex;
@@ -79,7 +80,6 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
-import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -93,6 +93,7 @@ import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
@@ -122,7 +123,6 @@ public final class REv2RejectedTransactionTest {
     return Guice.createInjector(
         new CryptoModule(),
         new TestMessagingModule.Builder().withDefaultRateLimit().build(),
-        new MockedLedgerRecoveryModule(),
         new MockedConsensusRecoveryModule.Builder()
             .withNodes(List.of(BFTNode.create(TEST_KEY.getPublicKey())))
             .build(),
@@ -178,7 +178,7 @@ public final class REv2RejectedTransactionTest {
   }
 
   @Test
-  public void rejected_transaction_in_proposal_should_not_be_committed() {
+  public void rejected_transaction_in_proposal_should_not_be_committed() throws Exception {
     var proposalGenerator = new ControlledProposerGenerator();
 
     // Arrange: Start single node network
@@ -199,6 +199,10 @@ public final class REv2RejectedTransactionTest {
 
     // Assert: Check transaction and post submission state
     assertThat(proposalGenerator.nextTransaction).isNull();
-    assertThat(transactionStoreReader.getLastProof()).isEmpty();
+    assertThat(transactionStoreReader.getLastProof()).isPresent();
+    var proof =
+        DefaultSerialization.getInstance()
+            .fromDson(transactionStoreReader.getLastProof().orElseThrow(), LedgerProof.class);
+    assertThat(proof.getStateVersion()).isEqualTo(0);
   }
 }

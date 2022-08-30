@@ -81,7 +81,6 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
-import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
@@ -135,7 +134,6 @@ public final class REv2MempoolFillAndEmptyTest {
     return Guice.createInjector(
         new CryptoModule(),
         new TestMessagingModule.Builder().withDefaultRateLimit().build(),
-        new MockedLedgerRecoveryModule(),
         new MockedConsensusRecoveryModule.Builder()
             .withNodes(List.of(BFTNode.create(TEST_KEY.getPublicKey())))
             .build(),

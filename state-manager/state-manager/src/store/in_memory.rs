@@ -169,10 +169,12 @@ impl QueryableTransactionStore for InMemoryStore {
 
 impl WriteableProofStore for InMemoryStore {
     fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
-        let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
-        for (index, id) in ids.into_iter().enumerate() {
-            let txn_state_version = first_state_version + index as u64;
-            self.txids.insert(txn_state_version, id);
+        if !ids.is_empty() {
+            let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
+            for (index, id) in ids.into_iter().enumerate() {
+                let txn_state_version = first_state_version + index as u64;
+                self.txids.insert(txn_state_version, id);
+            }
         }
 
         self.proofs.insert(state_version, proof_bytes);

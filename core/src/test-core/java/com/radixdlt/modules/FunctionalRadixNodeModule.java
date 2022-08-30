@@ -76,6 +76,7 @@ import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
+import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
@@ -87,6 +88,7 @@ import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
 import com.radixdlt.rev1.modules.REv1LedgerRecoveryModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
+import com.radixdlt.rev2.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.MockedSyncServiceModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.REv2StatelessComputerModule;
@@ -274,6 +276,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         // State Computer
         switch (stateComputerLedgerConfig.config) {
           case MockedStateComputerConfig c -> {
+            install(new MockedLedgerRecoveryModule());
             switch (c.mempoolType()) {
               case MockedMempoolConfig.NoMempool ignored -> {
                 bind(ProposalGenerator.class).to(RandomTransactionGenerator.class);
@@ -306,6 +309,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           case REv2StateComputerConfig rev2Config -> {
             if (REv2DatabaseConfig.isNone(rev2Config.databaseConfig())) {
               install(new REv2StatelessComputerModule());
+              install(new MockedLedgerRecoveryModule());
+            } else {
+              install(new REv2LedgerRecoveryModule());
             }
 
             switch (rev2Config.proposerConfig()) {

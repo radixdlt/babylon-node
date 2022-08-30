@@ -67,26 +67,31 @@ package com.radixdlt.rev2;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 
 public final class REv2LedgerRecoveryModule extends AbstractModule {
-  private final LedgerProof genesis;
-
-  public REv2LedgerRecoveryModule(LedgerProof genesis) {
-    this.genesis = genesis;
-  }
-
   @Provides
   @LastProof
-  private LedgerProof lastProof(TransactionsAndProofReader transactionsAndProofReader) {
-    return transactionsAndProofReader.getLastProof().orElse(genesis);
+  private LedgerProof lastProof(
+      TransactionsAndProofReader transactionsAndProofReader, BFTValidatorSet validatorSet) {
+    return transactionsAndProofReader
+        .getLastProof()
+        .orElseGet(
+            () -> {
+              var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+              return LedgerProof.genesis(accumulatorState, validatorSet, 0L);
+            });
   }
 
   @Provides
   @LastEpochProof
-  public LedgerProof lastEpochProof() {
-    return genesis;
+  public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
+    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    return LedgerProof.genesis(accumulatorState, validatorSet, 0L);
   }
 }
