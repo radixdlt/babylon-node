@@ -144,7 +144,7 @@ task getClassPathForRadixShell {
 
 task getNativeLibPathForRadixShell {
     doLast {
-        print "${project(':state-manager').projectDir}/target/debug/"
+        print "${project(':core-rust').projectDir}/target/debug/"
     }
 }
 
@@ -249,7 +249,7 @@ task runAllIntegrationTests(type: Test) {
 
 task runP2pTests(type: JavaExec) {
     classpath = sourceSets.p2pTest.runtimeClasspath
-    systemProperty "java.library.path", "${project(':state-manager').projectDir}/target/debug/"
+    systemProperty "java.library.path", "${project(':core-rust').projectDir}/target/debug/"
     main = "com.radixdlt.p2ptest.LargeMessageTest"
 
 }

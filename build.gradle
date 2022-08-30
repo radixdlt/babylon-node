@@ -182,12 +182,12 @@ allprojects {
     tasks.withType(Test) {
         systemProperty "file.encoding", "UTF-8"
         jvmArgs("--enable-preview")
-        systemProperty "java.library.path", "${project(':state-manager').projectDir}/target/debug"
+        systemProperty "java.library.path", "${project(':core-rust').projectDir}/target/debug"
     }
 }
 
 subprojects {
-    if (project.name == "state-manager") {
+    if (project.name == "core-rust") {
         // The below is suitable for a java project, not for a rust project
         return
     }

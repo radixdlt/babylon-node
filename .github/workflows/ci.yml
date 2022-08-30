@@ -55,7 +55,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./gradlew sonarqube
   local-dev-sm-docker-build:
-    name: Test state-manager docker build for local development
+    name: Test core-rust docker build for local development
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -76,8 +76,8 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-      - name: Run local state-manager docker build
-        run: ./gradlew :state-manager:buildRustForDocker
+      - name: Run local core-rust docker build
+        run: ./gradlew :core-rust:buildRustForDocker
   steadystate-integration:
     name: Steady state integration tests
     runs-on: babylon-runner

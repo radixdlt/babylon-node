@@ -27,7 +27,7 @@ gcloud-token: gcloud-authenticate
 
 .PHONY: build-sm
 build-sm: gcloud-token
-	cd .. && SKIP_NATIVE_RUST_BUILD=TRUE  ./gradlew :state-manager:buildRustForDocker -Pci=true -PcacheBranch=$(GIT_BRANCH) -PrustBinaryBuildType=release
+	cd .. && SKIP_NATIVE_RUST_BUILD=TRUE  ./gradlew :core-rust:buildRustForDocker -Pci=true -PcacheBranch=$(GIT_BRANCH) -PrustBinaryBuildType=release
 
 .PHONY: build
 build-core:
