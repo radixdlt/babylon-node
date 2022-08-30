@@ -28,17 +28,17 @@ ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
 
 # First - we build a dummy rust file, to cache the compilation of all our dependencies in a Docker layer
 RUN USER=root cargo new dummy
-RUN USER=root mkdir -p ./dummy/core-rust/src
 RUN USER=root mkdir -p ./dummy/state-manager/src
+RUN USER=root mkdir -p ./dummy/core-rust/src
 RUN USER=root mkdir -p ./dummy/core-api-server/src
-RUN USER=root touch ./dummy/core-rust/src/lib.rs
 RUN USER=root touch ./dummy/state-manager/src/lib.rs
+RUN USER=root touch ./dummy/core-rust/src/lib.rs
 RUN USER=root touch ./dummy/core-api-server/src/lib.rs
-COPY state-manager/Cargo.toml ./dummy
-COPY state-manager/Cargo.lock ./dummy
-COPY state-manager/core-rust/Cargo.toml ./dummy/core-rust
-COPY state-manager/state-manager/Cargo.toml ./dummy/state-manager
-COPY state-manager/core-api-server/Cargo.toml ./dummy/core-api-server
+COPY core-rust/Cargo.toml ./dummy
+COPY core-rust/Cargo.lock ./dummy
+COPY core-rust/core-rust/Cargo.toml ./dummy/core-rust
+COPY core-rust/state-manager/Cargo.toml ./dummy/state-manager
+COPY core-rust/core-api-server/Cargo.toml ./dummy/core-api-server
 
 RUN mv ./dummy/src/main.rs ./dummy/src/lib.rs
 WORKDIR /app/dummy
@@ -48,7 +48,7 @@ RUN rm -rf /app/dummy/*
 FROM cache-packages as prod-build
 WORKDIR /app
 # Now - we copy in everything, and do the actual built
-COPY state-manager ./
+COPY core-rust ./
 
 RUN cargo build --target=$TARGET --release
 RUN cp -R target/$TARGET/release/libcorerust.so /
