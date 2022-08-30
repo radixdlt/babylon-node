@@ -62,27 +62,80 @@
  * permissions under this License.
  */
 
-package com.radixdlt.recovery;
+package com.radixdlt.rev2.modules;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Tuple;
-import com.radixdlt.sbor.NativeCalls;
-import com.radixdlt.statemanager.StateManager;
-import java.util.Objects;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.recovery.REv2VertexStoreRecovery;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import java.util.Optional;
 
-public final class VertexStoreRecovery {
-  public VertexStoreRecovery(StateManager stateManager) {
-    Objects.requireNonNull(stateManager);
-    this.getVertexStore =
-        NativeCalls.Func1.with(
-            stateManager,
-            new TypeToken<>() {},
-            new TypeToken<>() {},
-            VertexStoreRecovery::getVertexStore);
+public final class REv2LedgerRecoveryModule extends AbstractModule {
+  @Provides
+  @LastProof
+  private LedgerProof lastProof(
+      TransactionsAndProofReader transactionsAndProofReader, BFTValidatorSet validatorSet) {
+    return transactionsAndProofReader
+        .getLastProof()
+        .orElseGet(
+            () -> {
+              var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+              return LedgerProof.genesis(accumulatorState, validatorSet, 0L);
+            });
   }
 
-  private static native byte[] getVertexStore(StateManager stateManager, byte[] payload);
+  @Provides
+  @LastEpochProof
+  public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
+    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+    return LedgerProof.genesis(accumulatorState, validatorSet, 0L);
+  }
 
-  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, Option<byte[]>> getVertexStore;
+  private static VertexStoreState genesisEpochProofToGenesisVertexStore(
+      LedgerProof lastEpochProof, Hasher hasher) {
+    var genesisVertex = Vertex.createGenesis(lastEpochProof.getHeader()).withId(hasher);
+    var nextLedgerHeader =
+        LedgerHeader.create(
+            lastEpochProof.getNextEpoch(),
+            Round.genesis(),
+            lastEpochProof.getAccumulatorState(),
+            lastEpochProof.timestamp());
+    var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+    return VertexStoreState.create(HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+  }
+
+  @Provides
+  @Singleton
+  private VertexStoreState vertexStoreState(
+      @LastEpochProof LedgerProof lastEpochProof,
+      REv2VertexStoreRecovery vertexStoreRecovery,
+      Serialization serialization,
+      Hasher hasher) {
+
+    return vertexStoreRecovery
+        .recoverVertexStore()
+        .map(
+            bytes -> {
+              try {
+                return serialization
+                    .fromDson(bytes, VertexStoreState.SerializedVertexStoreState.class)
+                    .toVertexStoreState(hasher);
+              } catch (DeserializeException e) {
+                throw new RuntimeException("Unable to recover VertexStore", e);
+              }
+            })
+        .orElseGet(() -> genesisEpochProofToGenesisVertexStore(lastEpochProof, hasher));
+  }
 }

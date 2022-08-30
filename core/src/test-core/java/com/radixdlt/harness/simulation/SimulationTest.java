@@ -119,6 +119,7 @@ import com.radixdlt.rev1.forks.InMemoryForksEpochStoreModule;
 import com.radixdlt.rev1.forks.NoOpForksEpochStore;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
 import com.radixdlt.sync.SyncRelayConfig;
@@ -521,9 +522,7 @@ public final class SimulationTest {
             });
       } else if (this.functionalNodeModule.supportsREv2()) {
         var initialVset = initialNodes.stream().map(e -> BFTNode.create(e.getPublicKey())).toList();
-        var mockedConsensusRecoveryModuleBuilder = new MockedConsensusRecoveryModule.Builder();
-        mockedConsensusRecoveryModuleBuilder.withNodes(initialVset);
-        modules.add(mockedConsensusRecoveryModuleBuilder.build());
+        modules.add(new REv2ConsensusRecoveryModule(initialVset));
       } else {
         var initialVset = initialNodes.stream().map(e -> BFTNode.create(e.getPublicKey())).toList();
         MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder;

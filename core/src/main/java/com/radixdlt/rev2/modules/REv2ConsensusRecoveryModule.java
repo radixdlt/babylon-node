@@ -62,104 +62,47 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.rev2.modules;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
-import com.radixdlt.mempool.*;
-import com.radixdlt.recovery.REv2VertexStoreRecovery;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.sbor.NativeCalls;
-import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.statecomputer.commit.PrepareRequest;
-import com.radixdlt.statecomputer.commit.PrepareResult;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transactions.RawTransaction;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.utils.UInt256;
 import java.util.List;
-import java.util.Objects;
 
-public class RustStateComputer {
-  private final RustMempool mempool;
-  private final REv2TransactionAndProofStore transactionStore;
-  private final REv2VertexStoreRecovery vertexStoreRecovery;
+public final class REv2ConsensusRecoveryModule extends AbstractModule {
+  private final List<BFTNode> validatorSet;
 
-  public RustStateComputer(StateManager stateManager) {
-    Objects.requireNonNull(stateManager);
-
-    this.mempool = new RustMempool(stateManager);
-    this.transactionStore = new REv2TransactionAndProofStore(stateManager);
-    this.vertexStoreRecovery = new REv2VertexStoreRecovery(stateManager);
-
-    verifyFunc =
-        NativeCalls.Func1.with(
-            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::verify);
-    prepareFunc =
-        NativeCalls.Func1.with(
-            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::prepare);
-    commitFunc =
-        NativeCalls.Func1.with(
-            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::commit);
-    componentXrdAmountFunc =
-        NativeCalls.Func1.with(
-            stateManager,
-            new TypeToken<>() {},
-            new TypeToken<>() {},
-            RustStateComputer::componentXrdAmount);
+  public REv2ConsensusRecoveryModule(List<BFTNode> validatorSet) {
+    this.validatorSet = validatorSet;
   }
 
-  public REv2VertexStoreRecovery getVertexStoreRecovery() {
-    return vertexStoreRecovery;
+  @Provides
+  private RoundUpdate initialRoundUpdate(
+      VertexStoreState vertexStoreState, BFTConfiguration configuration) {
+    var highQC = vertexStoreState.getHighQC();
+    var round = highQC.highestQC().getRound().next();
+    var proposerElection = configuration.getProposerElection();
+    var leader = proposerElection.getProposer(round);
+    var nextLeader = proposerElection.getProposer(round.next());
+
+    return RoundUpdate.create(round, highQC, leader, nextLeader);
   }
 
-  public REv2TransactionAndProofStore getTransactionAndProofStore() {
-    return this.transactionStore;
+  @Provides
+  @Singleton
+  private BFTConfiguration initialConfig(
+      BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
+    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
   }
 
-  public MempoolReader getMempoolReader() {
-    return this.mempool;
+  @Provides
+  private BFTValidatorSet initialValidatorSet() {
+    return BFTValidatorSet.from(
+        this.validatorSet.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
   }
-
-  public MempoolInserter<RawTransaction> getMempoolInserter() {
-    return this.mempool::addTransaction;
-  }
-
-  public List<RawTransaction> getTransactionsForProposal(
-      int count, List<RawTransaction> transactionToExclude) {
-    return this.mempool.getTransactionsForProposal(count, transactionToExclude);
-  }
-
-  public Result<Unit, String> verify(RawTransaction transaction) {
-    return verifyFunc.call(transaction);
-  }
-
-  private final NativeCalls.Func1<StateManager, RawTransaction, Result<Unit, String>> verifyFunc;
-
-  private static native byte[] verify(StateManager stateManager, byte[] payload);
-
-  public PrepareResult prepare(PrepareRequest prepareRequest) {
-    return prepareFunc.call(prepareRequest);
-  }
-
-  public void commit(CommitRequest commitRequest) {
-    commitFunc.call(commitRequest);
-  }
-
-  private final NativeCalls.Func1<StateManager, PrepareRequest, PrepareResult> prepareFunc;
-
-  private static native byte[] prepare(StateManager stateManager, byte[] payload);
-
-  private final NativeCalls.Func1<StateManager, CommitRequest, Unit> commitFunc;
-
-  private static native byte[] commit(StateManager stateManager, byte[] payload);
-
-  private final NativeCalls.Func1<StateManager, ComponentAddress, Decimal> componentXrdAmountFunc;
-
-  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
-    return componentXrdAmountFunc.call(componentAddress);
-  }
-
-  private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
 }

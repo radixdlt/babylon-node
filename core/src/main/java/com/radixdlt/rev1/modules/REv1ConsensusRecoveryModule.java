@@ -62,36 +62,75 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.rev1.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LastProof;
-import com.radixdlt.sync.TransactionsAndProofReader;
+import java.util.Optional;
 
-public final class REv2LedgerRecoveryModule extends AbstractModule {
+/** Manages consensus recovery on startup */
+public class REv1ConsensusRecoveryModule extends AbstractModule {
   @Provides
-  @LastProof
-  private LedgerProof lastProof(
-      TransactionsAndProofReader transactionsAndProofReader, BFTValidatorSet validatorSet) {
-    return transactionsAndProofReader
-        .getLastProof()
-        .orElseGet(
-            () -> {
-              var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-              return LedgerProof.genesis(accumulatorState, validatorSet, 0L);
-            });
+  private RoundUpdate initialRoundUpdate(
+      VertexStoreState vertexStoreState, BFTConfiguration configuration) {
+    var highQC = vertexStoreState.getHighQC();
+    var round = highQC.highestQC().getRound().next();
+    var proposerElection = configuration.getProposerElection();
+    var leader = proposerElection.getProposer(round);
+    var nextLeader = proposerElection.getProposer(round.next());
+
+    return RoundUpdate.create(round, highQC, leader, nextLeader);
   }
 
   @Provides
-  @LastEpochProof
-  public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    return LedgerProof.genesis(accumulatorState, validatorSet, 0L);
+  @Singleton
+  private BFTConfiguration initialConfig(
+      BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
+    var proposerElection = new WeightedRotatingLeaders(validatorSet);
+    return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
+  }
+
+  @Provides
+  private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
+    return lastEpochProof
+        .getNextValidatorSet()
+        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+  }
+
+  @Provides
+  @Singleton
+  private SafetyState initialSafetyState(
+      EpochChange initialEpoch, PersistentSafetyStateStore safetyStore) {
+    return safetyStore
+        .get()
+        .flatMap(
+            safetyState -> {
+              final long safetyStateEpoch =
+                  safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
+
+              if (safetyStateEpoch > initialEpoch.getNextEpoch()) {
+                throw new IllegalStateException(
+                    String.format(
+                        "Last vote is in a future epoch. Vote epoch: %s, Epoch: %s",
+                        safetyStateEpoch, initialEpoch.getNextEpoch()));
+              } else if (safetyStateEpoch == initialEpoch.getNextEpoch()) {
+                return Optional.of(safetyState);
+              } else {
+                return Optional.empty();
+              }
+            })
+        .orElse(new SafetyState());
   }
 }

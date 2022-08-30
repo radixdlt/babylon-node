@@ -84,12 +84,12 @@ import com.radixdlt.rev1.MockedMempoolStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
 import com.radixdlt.rev1.ReV1DispatcherModule;
-import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
+import com.radixdlt.rev1.modules.REv1ConsensusRecoveryModule;
 import com.radixdlt.rev1.modules.REv1LedgerRecoveryModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
-import com.radixdlt.rev2.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.MockedSyncServiceModule;
+import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.REv2StatelessComputerModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
@@ -304,7 +304,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             install(new RadixEngineModule());
             install(new ReV1DispatcherModule());
             install(new REv1LedgerRecoveryModule());
-            install(new ConsensusRecoveryModule());
+            install(new REv1ConsensusRecoveryModule());
           }
           case REv2StateComputerConfig rev2Config -> {
             if (REv2DatabaseConfig.isNone(rev2Config.databaseConfig())) {
