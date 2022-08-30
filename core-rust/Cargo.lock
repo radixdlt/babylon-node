@@ -1351,6 +1351,7 @@ dependencies = [
 name = "state-manager"
 version = "0.1.0"
 dependencies = [
+ "hex",
  "jni",
  "radix-engine",
  "radix-engine-stores",

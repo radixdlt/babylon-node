@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use std::fmt;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::crypto::EcdsaPublicKey;
 use transaction::model::{PreviewFlags, TransactionManifest};
@@ -69,6 +70,12 @@ use transaction::model::{PreviewFlags, TransactionManifest};
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]
 pub struct TId {
     pub bytes: Vec<u8>,
+}
+
+impl fmt::Display for TId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, hex::encode(&self.bytes))
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]

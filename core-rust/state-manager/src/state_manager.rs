@@ -151,7 +151,8 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore, T: Transacti
                 .execute_transaction(validated_txn)
                 .expect("Error on Byzantine quorum");
 
-            let ledger_receipt: LedgerTransactionReceipt = engine_receipt.try_into().unwrap();
+            let ledger_receipt: LedgerTransactionReceipt = engine_receipt.try_into()
+                .expect(&format!("Failed to commit a txn at state version {}", commit_request.state_version));
 
             to_store.push((transaction, ledger_receipt));
             ids.push(transaction.id.clone());
