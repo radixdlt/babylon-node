@@ -124,6 +124,7 @@ public abstract class ApiTest {
             new SingleNodeAndPeersDeterministicNetworkModule(
                 TEST_KEY,
                 StateComputerConfig.rev2(
+                    Network.INTEGRATIONTESTNET.getId(),
                     REv2DatabaseConfig.inMemory(),
                     StateComputerConfig.REV2ProposerConfig.mempool(
                         mempoolMaxSize, MempoolRelayConfig.of()))),

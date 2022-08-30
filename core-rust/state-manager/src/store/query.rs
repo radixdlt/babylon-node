@@ -62,60 +62,29 @@
  * permissions under this License.
  */
 
-use crate::store::transaction_store::{TemporaryTransactionReceipt, TransactionStore};
-use crate::types::{TId, Transaction};
-use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
+use crate::types::TId;
 
-use rocksdb::{DBWithThreadMode, SingleThreaded, DB};
-use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use std::path::PathBuf;
+use sbor::*;
+use scrypto::prelude::{ComponentAddress, PackageAddress, ResourceAddress};
 
-#[derive(Debug)]
-pub struct RocksDBTransactionStore {
-    db: DBWithThreadMode<SingleThreaded>,
+/// TODO: Remove and use the real TransactionReceipt. This is currently a required struct
+/// TODO: as there is RC<RefCell<>> useage in some of the substates which does not play well
+/// TODO: with the babylon node multithreaded structures.
+#[derive(Clone, Debug, Encode, Decode, TypeId)]
+pub struct TemporaryTransactionReceipt {
+    pub result: String,
+    pub new_package_addresses: Vec<PackageAddress>,
+    pub new_component_addresses: Vec<ComponentAddress>,
+    pub new_resource_addresses: Vec<ResourceAddress>,
 }
 
-impl RocksDBTransactionStore {
-    pub fn new(root: PathBuf) -> RocksDBTransactionStore {
-        let db = DB::open_default(root.as_path()).unwrap();
-        RocksDBTransactionStore { db }
-    }
-
-    fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
-        let receipt = match receipt.result {
-            TransactionResult::Commit(commit_result) => {
-                let result = match commit_result.outcome {
-                    TransactionOutcome::Success(..) => "Success".to_string(),
-                    TransactionOutcome::Failure(error) => error.to_string(),
-                };
-
-                TemporaryTransactionReceipt {
-                    result,
-                    new_package_addresses: commit_result.entity_changes.new_package_addresses,
-                    new_component_addresses: commit_result.entity_changes.new_component_addresses,
-                    new_resource_addresses: commit_result.entity_changes.new_resource_addresses,
-                }
-            }
-            TransactionResult::Reject(..) => panic!("Should not get here"), // TODO: Move this check somewhere else
-        };
-
-        let value = (transaction.payload.clone(), receipt);
-
-        self.db
-            .put(transaction.id.bytes.clone(), scrypto_encode(&value))
-            .unwrap();
-    }
+pub trait QueryableTransactionStore {
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt);
 }
 
-impl TransactionStore for RocksDBTransactionStore {
-    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
-        for (txn, receipt) in transactions {
-            self.insert_transaction(txn, receipt);
-        }
-    }
-
-    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
-        let bytes = self.db.get(&tid.bytes).unwrap().unwrap();
-        scrypto_decode(&bytes).unwrap()
-    }
+pub trait QueryableProofStore {
+    fn max_state_version(&self) -> u64;
+    fn get_tid(&self, state_version: u64) -> Option<TId>;
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)>;
+    fn get_last_proof(&self) -> Option<Vec<u8>>;
 }

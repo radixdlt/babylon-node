@@ -6,7 +6,7 @@ use scrypto::crypto::sha256_twice;
 use scrypto::prelude::scrypto_encode;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::mempool::Mempool;
-use state_manager::store::TransactionStore;
+use state_manager::store::{QueryableProofStore, QueryableTransactionStore};
 use state_manager::{MempoolError, TId, TemporaryTransactionReceipt, Transaction};
 use std::cmp;
 use std::sync::{Arc, Mutex};
@@ -106,21 +106,19 @@ fn handle_get_committed_transactions_internal(
 
     let up_to_state_version_inclusive = cmp::min(
         state_version_at_limit,
-        locked_state_manager.proof_store.max_state_version(),
+        locked_state_manager.store.max_state_version(),
     );
 
     let mut txns = vec![];
     let mut state_version = start_state_version;
     while state_version <= up_to_state_version_inclusive {
         let next_tid = locked_state_manager
-            .proof_store
+            .store
             .get_tid(state_version)
             .ok_or_else(|| {
                 transaction_errors::missing_transaction_at_state_version(state_version)
             })?;
-        let next_tx = locked_state_manager
-            .transaction_store
-            .get_transaction(&next_tid);
+        let next_tx = locked_state_manager.store.get_transaction(&next_tid);
         txns.push((next_tx, state_version));
         state_version += 1;
     }

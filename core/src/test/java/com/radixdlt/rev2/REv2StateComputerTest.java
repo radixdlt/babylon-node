@@ -79,7 +79,6 @@ import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Network;
-import com.radixdlt.networks.NetworkId;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
@@ -91,11 +90,11 @@ public class REv2StateComputerTest {
   private Injector createInjector() {
     return Guice.createInjector(
         new CryptoModule(),
-        REv2StateManagerModule.create(REv2DatabaseConfig.inMemory(), Option.none()),
+        REv2StateManagerModule.create(
+            Network.INTEGRATIONTESTNET.getId(), REv2DatabaseConfig.inMemory(), Option.none()),
         new AbstractModule() {
           @Override
           protected void configure() {
-            bindConstant().annotatedWith(NetworkId.class).to(Network.INTEGRATIONTESTNET.getId());
             bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
             bind(SystemCounters.class).toInstance(new SystemCountersImpl());
           }

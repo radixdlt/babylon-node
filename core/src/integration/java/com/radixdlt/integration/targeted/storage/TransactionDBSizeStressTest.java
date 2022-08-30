@@ -71,6 +71,7 @@ import com.radixdlt.integration.Slow;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2OneMBTransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
@@ -100,6 +101,7 @@ public final class TransactionDBSizeStressTest {
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(
                             new REv2OneMBTransactionGenerator(NetworkDefinition.INT_TEST_NET),

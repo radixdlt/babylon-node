@@ -63,7 +63,7 @@
  */
 
 use crate::jni::state_manager::ActualStateManager;
-use crate::store::TransactionStore;
+use crate::store::{QueryableProofStore, QueryableTransactionStore};
 use crate::types::TId;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -99,9 +99,9 @@ fn do_get_transaction_at_state_version(
     state_manager: &mut ActualStateManager,
     state_version: u64,
 ) -> ExecutedTransactionReceipt {
-    let tid = state_manager.proof_store.get_tid(state_version).unwrap();
+    let tid = state_manager.store.get_tid(state_version).unwrap();
 
-    let (transaction_data, receipt) = state_manager.transaction_store.get_transaction(&tid);
+    let (transaction_data, receipt) = state_manager.store.get_transaction(&tid);
 
     ExecutedTransactionReceipt {
         result: receipt.result,
@@ -124,7 +124,7 @@ fn do_get_next_proof(
     state_manager: &mut ActualStateManager,
     state_version: u64,
 ) -> Option<(Vec<TId>, Vec<u8>)> {
-    state_manager.proof_store.get_next_proof(state_version)
+    state_manager.store.get_next_proof(state_version)
 }
 
 #[no_mangle]
@@ -138,7 +138,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 }
 
 fn do_get_last_proof(state_manager: &mut ActualStateManager, _args: ()) -> Option<Vec<u8>> {
-    state_manager.proof_store.get_last_proof()
+    state_manager.store.get_last_proof()
 }
 
 pub fn export_extern_functions() {}

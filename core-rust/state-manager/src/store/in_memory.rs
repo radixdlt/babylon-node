@@ -62,20 +62,26 @@
  * permissions under this License.
  */
 
-use crate::store::transaction_store::{TemporaryTransactionReceipt, TransactionStore};
+use crate::state_manager::{WriteableProofStore, WriteableTransactionStore};
+use crate::store::query::{QueryableTransactionStore, TemporaryTransactionReceipt};
+use crate::store::QueryableProofStore;
 use crate::types::{TId, Transaction};
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 #[derive(Debug)]
-pub struct InMemoryTransactionStore {
-    in_memory_store: HashMap<TId, (Vec<u8>, TemporaryTransactionReceipt)>,
+pub struct InMemoryStore {
+    transactions: HashMap<TId, (Vec<u8>, TemporaryTransactionReceipt)>,
+    proofs: BTreeMap<u64, Vec<u8>>,
+    txids: BTreeMap<u64, TId>,
 }
 
-impl InMemoryTransactionStore {
-    pub fn new() -> InMemoryTransactionStore {
-        InMemoryTransactionStore {
-            in_memory_store: HashMap::new(),
+impl InMemoryStore {
+    pub fn new() -> InMemoryStore {
+        InMemoryStore {
+            transactions: HashMap::new(),
+            proofs: BTreeMap::new(),
+            txids: BTreeMap::new(),
         }
     }
 
@@ -108,24 +114,80 @@ impl InMemoryTransactionStore {
             new_component_addresses,
             new_resource_addresses,
         };
-        self.in_memory_store.insert(
+        self.transactions.insert(
             transaction.id.clone(),
             (transaction.payload.clone(), receipt),
         );
     }
 }
 
-impl TransactionStore for InMemoryTransactionStore {
+impl Default for InMemoryStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl WriteableTransactionStore for InMemoryStore {
     fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
         for (txn, receipt) in transactions {
             self.insert_transaction(txn, receipt);
         }
     }
+}
 
+impl QueryableTransactionStore for InMemoryStore {
     fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
-        self.in_memory_store
+        self.transactions
             .get(tid)
             .cloned()
             .expect("Transaction missing")
+    }
+}
+
+impl WriteableProofStore for InMemoryStore {
+    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
+        let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
+        for (index, id) in ids.into_iter().enumerate() {
+            let txn_state_version = first_state_version + index as u64;
+            self.txids.insert(txn_state_version, id);
+        }
+
+        self.proofs.insert(state_version, proof_bytes);
+    }
+}
+
+impl QueryableProofStore for InMemoryStore {
+    fn max_state_version(&self) -> u64 {
+        self.txids
+            .iter()
+            .next_back()
+            .map(|(k, _v)| *k)
+            .unwrap_or_default()
+    }
+
+    fn get_tid(&self, state_version: u64) -> Option<TId> {
+        self.txids.get(&state_version).cloned()
+    }
+
+    /// Returns the next proof from a state version (excluded)
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
+        let next_state_version = state_version + 1;
+        self.proofs
+            .range(next_state_version..)
+            .next()
+            .map(|(v, proof)| {
+                let mut ids = Vec::new();
+                for (_, id) in self.txids.range(next_state_version..=*v) {
+                    ids.push(id.clone());
+                }
+                (ids, proof.clone())
+            })
+    }
+
+    fn get_last_proof(&self) -> Option<Vec<u8>> {
+        self.proofs
+            .iter()
+            .next_back()
+            .map(|(_, bytes)| bytes.clone())
     }
 }
