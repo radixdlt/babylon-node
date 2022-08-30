@@ -90,7 +90,7 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.Optional;
 
 /** Recovery for ledger */
-public final class LedgerRecoveryModule extends AbstractModule {
+public final class REv1LedgerRecoveryModule extends AbstractModule {
   @Provides
   @Singleton
   @LastStoredProof

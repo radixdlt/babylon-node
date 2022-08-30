@@ -171,11 +171,13 @@ impl QueryableTransactionStore for RocksDBStore {
 
 impl WriteableProofStore for RocksDBStore {
     fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
-        let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
-        for (index, id) in ids.into_iter().enumerate() {
-            let txn_state_version = first_state_version + index as u64;
-            let version_key = db_key!(StateVersions, &txn_state_version.to_be_bytes());
-            self.db.put(version_key, id.bytes).unwrap();
+        if !ids.is_empty() {
+            let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
+            for (index, id) in ids.into_iter().enumerate() {
+                let txn_state_version = first_state_version + index as u64;
+                let version_key = db_key!(StateVersions, &txn_state_version.to_be_bytes());
+                self.db.put(version_key, id.bytes).unwrap();
+            }
         }
 
         let proof_version_key = db_key!(Proofs, &state_version.to_be_bytes());

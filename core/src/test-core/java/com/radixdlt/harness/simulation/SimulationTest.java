@@ -86,6 +86,7 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.harness.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.harness.simulation.application.BFTValidatorSetNodeSelector;
@@ -118,6 +119,7 @@ import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.forks.InMemoryForksEpochStoreModule;
 import com.radixdlt.rev1.forks.NoOpForksEpochStore;
 import com.radixdlt.rev1.modules.RadixEngineModule;
+import com.radixdlt.rev2.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
@@ -520,7 +522,15 @@ public final class SimulationTest {
               }
             });
       } else if (this.functionalNodeModule.supportsREv2()) {
-        modules.add(new MockedLedgerRecoveryModule());
+        var validatorSet =
+            BFTValidatorSet.from(
+                initialNodes.stream()
+                    .map(k -> BFTValidator.from(BFTNode.create(k.getPublicKey()), UInt256.ONE)));
+
+        var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+        var genesisProof = LedgerProof.genesis(accumulatorState, validatorSet, 0L);
+        modules.add(new REv2LedgerRecoveryModule(genesisProof));
+
         var initialVset = initialNodes.stream().map(e -> BFTNode.create(e.getPublicKey())).toList();
         var mockedConsensusRecoveryModuleBuilder = new MockedConsensusRecoveryModule.Builder();
         mockedConsensusRecoveryModuleBuilder.withNodes(initialVset);
