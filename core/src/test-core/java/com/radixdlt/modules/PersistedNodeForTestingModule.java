@@ -66,8 +66,9 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.monitoring.SystemCounters;
@@ -80,6 +81,7 @@ import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.store.DatabaseCacheSize;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.UInt256;
 import java.util.List;
 
 /** Helper class for modules to be used for recovery tests. */
@@ -118,10 +120,11 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
       case StateComputerConfig.REv2StateComputerConfig ignored -> {
         // FIXME: a hack for tests that use rev2 (api); fix once ledger/consensus recovery are
         // hooked up
-        install(
-            new MockedConsensusRecoveryModule.Builder()
-                .withNodes(List.of(BFTNode.random()))
-                .build());
+        bind(BFTValidatorSet.class)
+            .toInstance(
+                BFTValidatorSet.from(
+                    List.of(
+                        BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE))));
         install(new MockedPersistenceStoreModule());
       }
       default -> {

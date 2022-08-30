@@ -68,10 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.*;
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -100,6 +97,7 @@ import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.UInt256;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
@@ -123,9 +121,16 @@ public final class REv2RejectedTransactionTest {
     return Guice.createInjector(
         new CryptoModule(),
         new TestMessagingModule.Builder().withDefaultRateLimit().build(),
-        new MockedConsensusRecoveryModule.Builder()
-            .withNodes(List.of(BFTNode.create(TEST_KEY.getPublicKey())))
-            .build(),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            var validatorSet =
+                BFTValidatorSet.from(
+                    List.of(
+                        BFTValidator.from(BFTNode.create(TEST_KEY.getPublicKey()), UInt256.ONE)));
+            bind(BFTValidatorSet.class).toInstance(validatorSet);
+          }
+        },
         new MockedPersistenceStoreModule(),
         new FunctionalRadixNodeModule(
             false,

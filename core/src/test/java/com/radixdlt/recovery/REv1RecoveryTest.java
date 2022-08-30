@@ -87,7 +87,6 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.LastEventsModule;
@@ -100,7 +99,6 @@ import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
 import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
@@ -133,7 +131,7 @@ import org.junit.runners.Parameterized.Parameters;
  * the same as last seen.
  */
 @RunWith(Parameterized.class)
-public class RecoveryTest {
+public class REv1RecoveryTest {
 
   @Parameters
   public static Collection<Object[]> parameters() {
@@ -153,7 +151,7 @@ public class RecoveryTest {
   private final long epochMaxRound;
   private final int processForCount;
 
-  public RecoveryTest(long epochMaxRound, int processForCount) {
+  public REv1RecoveryTest(long epochMaxRound, int processForCount) {
     this.epochMaxRound = epochMaxRound;
     this.processForCount = processForCount;
     this.network =
@@ -215,11 +213,6 @@ public class RecoveryTest {
         PersistedNodeForTestingModule.rev1(ecKeyPair, 10),
         new TestP2PModule.Builder().build(),
         new TestMessagingModule.Builder().build());
-  }
-
-  private RadixEngine<LedgerAndBFTProof> getRadixEngine() {
-    return currentInjector.getInstance(
-        Key.get(new TypeLiteral<RadixEngine<LedgerAndBFTProof>>() {}));
   }
 
   private TransactionsAndProofReader getCommittedReader() {
