@@ -138,12 +138,7 @@ fn handle_get_committed_transactions_internal(
         .map(|((tx, receipt), state_version)| {
             scrypto_decode(&tx)
                 .map(|notarized_tx| {
-                    to_api_committed_transaction(
-                        &network,
-                        notarized_tx,
-                        receipt.clone(),
-                        state_version,
-                    )
+                    to_api_committed_transaction(&network, notarized_tx, receipt, state_version)
                 })
                 .map_err(|_| transaction_errors::invalid_committed_txn())
         })

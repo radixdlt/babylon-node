@@ -8,13 +8,13 @@ use radix_engine::transaction::{
 use sbor::{Decode, Encode, TypeId};
 use scrypto::prelude::Level;
 
-#[derive(Debug, Clone, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, TypeId)]
 pub enum CommittedTransactionStatus {
     Success(Vec<Vec<u8>>),
     Failure(String),
 }
 
-#[derive(Debug, Clone, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, TypeId)]
 pub struct LedgerTransactionReceipt {
     pub status: CommittedTransactionStatus,
     pub fee_summary: FeeSummary,
