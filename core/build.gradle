@@ -206,7 +206,7 @@ jacocoTestReport {
 dependencies {
     implementation project(':olympia-engine')
     implementation project(':common')
-    implementation project(':state-manager-bridge')
+    implementation project(':core-rust-bridge')
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     implementation 'io.swagger:swagger-annotations:1.5.0'
@@ -294,15 +294,15 @@ ospackage() {
     if (System.getProperty("os.arch") == "aarch64") {
         target= "aarch64-unknown-linux-gnu"
     }
-    def stateManagerBuildType = project.property("rustBinaryBuildType")
+    def coreRustBuildType = project.property("rustBinaryBuildType")
 
-    from("${project(':state-manager').projectDir}/target/${target}/${stateManagerBuildType}/libcorerust.so") {
+    from("${project(':core-rust').projectDir}/target/${target}/${coreRustBuildType}/libcorerust.so") {
         into "/usr/lib/jni/"
     }
 
     // See https://github.com/nebula-plugins/gradle-ospackage-plugin/wiki/Deb-Plugin#basic-usage
     buildDeb {
-        dependsOn += [installDist, ":state-manager:buildRustForDocker"]
+        dependsOn += [installDist, ":core-rust:buildRustForDocker"]
 
         version = debSafeVersionName()
         packageName = debPackageName()
@@ -312,7 +312,7 @@ ospackage() {
         }
     }
     buildRpm {
-        dependsOn += [installDist, ":state-manager:buildRustForDocker"]
+        dependsOn += [installDist, ":core-rust:buildRustForDocker"]
     }
 }
 

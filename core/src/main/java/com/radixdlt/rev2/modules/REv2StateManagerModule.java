@@ -164,17 +164,19 @@ public final class REv2StateManagerModule extends AbstractModule {
     }
 
     if (mempoolConfig.isPresent()) {
-      install(new AbstractModule() {
-        @Provides
-        private MempoolReader mempoolReader(RustStateComputer stateComputer) {
-          return stateComputer.getMempoolReader();
-        }
+      install(
+          new AbstractModule() {
+            @Provides
+            private MempoolReader mempoolReader(RustStateComputer stateComputer) {
+              return stateComputer.getMempoolReader();
+            }
 
-        @Provides
-        private MempoolInserter<RawTransaction> mempoolInserter(RustStateComputer stateComputer) {
-          return stateComputer.getMempoolInserter();
-        }
-      });
+            @Provides
+            private MempoolInserter<RawTransaction> mempoolInserter(
+                RustStateComputer stateComputer) {
+              return stateComputer.getMempoolInserter();
+            }
+          });
     }
   }
 
