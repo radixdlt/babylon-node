@@ -28,10 +28,10 @@ ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
 
 # First - we build a dummy rust file, to cache the compilation of all our dependencies in a Docker layer
 RUN USER=root cargo new dummy
-RUN USER=root mkdir -p ./dummy/core-rust/src
+RUN USER=root mkdir -p ./dummy/state-manager/src
 RUN USER=root mkdir -p ./dummy/core-rust/src
 RUN USER=root mkdir -p ./dummy/core-api-server/src
-RUN USER=root touch ./dummy/core-rust/src/lib.rs
+RUN USER=root touch ./dummy/state-manager/src/lib.rs
 RUN USER=root touch ./dummy/core-rust/src/lib.rs
 RUN USER=root touch ./dummy/core-api-server/src/lib.rs
 COPY core-rust/Cargo.toml ./dummy

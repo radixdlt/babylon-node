@@ -191,7 +191,7 @@ public final class RadixNodeModule extends AbstractModule {
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databasePath = properties.get("db.location", ".//RADIXDB");
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
-    install(REv2StateManagerModule.create(databaseConfig, Option.some(mempoolConfig)));
+    install(REv2StateManagerModule.create(networkId, databaseConfig, Option.some(mempoolConfig)));
     install(new MockedPersistenceStoreModule());
 
     // Core API server

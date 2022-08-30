@@ -90,7 +90,8 @@ public final class UnitCodec implements Codec<Unit> {
     if (unitByte == 0x00) {
       return Unit.unit();
     } else {
-      throw new SborDecodeException(String.format("Invalid unit, expected 0x00 but got %s", unitByte));
+      throw new SborDecodeException(
+          String.format("Invalid unit, expected 0x00 but got %s", unitByte));
     }
   }
 }

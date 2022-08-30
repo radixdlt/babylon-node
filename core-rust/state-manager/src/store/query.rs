@@ -62,43 +62,16 @@
  * permissions under this License.
  */
 
-use crate::store::transaction_store::TransactionStore;
-use crate::types::{TId, Transaction};
+use crate::types::TId;
+use crate::LedgerTransactionReceipt;
 
-use crate::receipt::LedgerTransactionReceipt;
-use rocksdb::{DBWithThreadMode, SingleThreaded, DB};
-use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use std::path::PathBuf;
-
-#[derive(Debug)]
-pub struct RocksDBTransactionStore {
-    db: DBWithThreadMode<SingleThreaded>,
+pub trait QueryableTransactionStore {
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt);
 }
 
-impl RocksDBTransactionStore {
-    pub fn new(root: PathBuf) -> RocksDBTransactionStore {
-        let db = DB::open_default(root.as_path()).unwrap();
-        RocksDBTransactionStore { db }
-    }
-
-    fn insert_transaction(&mut self, transaction: &Transaction, receipt: LedgerTransactionReceipt) {
-        let value = (transaction.payload.clone(), receipt);
-
-        self.db
-            .put(transaction.id.bytes.clone(), scrypto_encode(&value))
-            .unwrap();
-    }
-}
-
-impl TransactionStore for RocksDBTransactionStore {
-    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, LedgerTransactionReceipt)>) {
-        for (txn, receipt) in transactions {
-            self.insert_transaction(txn, receipt);
-        }
-    }
-
-    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt) {
-        let bytes = self.db.get(&tid.bytes).unwrap().unwrap();
-        scrypto_decode(&bytes).unwrap()
-    }
+pub trait QueryableProofStore {
+    fn max_state_version(&self) -> u64;
+    fn get_tid(&self, state_version: u64) -> Option<TId>;
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)>;
+    fn get_last_proof(&self) -> Option<Vec<u8>>;
 }

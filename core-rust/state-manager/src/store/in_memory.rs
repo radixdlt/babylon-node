@@ -62,24 +62,112 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+use crate::state_manager::{WriteableProofStore, WriteableTransactionStore};
+use crate::store::query::QueryableTransactionStore;
+use crate::store::QueryableProofStore;
+use crate::types::{TId, Transaction};
+use crate::LedgerTransactionReceipt;
+use scrypto::prelude::{scrypto_decode, scrypto_encode};
+use std::collections::{BTreeMap, HashMap};
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.radixdlt.mempool.MempoolInserter;
-import com.radixdlt.mempool.MempoolReader;
-import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.transactions.RawTransaction;
+#[derive(Debug)]
+pub struct InMemoryStore {
+    transactions: HashMap<TId, (Vec<u8>, Vec<u8>)>,
+    proofs: BTreeMap<u64, Vec<u8>>,
+    txids: BTreeMap<u64, TId>,
+}
 
-/** Installs REv2 mempool related objects */
-public final class REv2MempoolModule extends AbstractModule {
-  @Provides
-  private MempoolReader mempoolReader(RustStateComputer stateComputer) {
-    return stateComputer.getMempoolReader();
-  }
+impl InMemoryStore {
+    pub fn new() -> InMemoryStore {
+        InMemoryStore {
+            transactions: HashMap::new(),
+            proofs: BTreeMap::new(),
+            txids: BTreeMap::new(),
+        }
+    }
 
-  @Provides
-  private MempoolInserter<RawTransaction> mempoolInserter(RustStateComputer stateComputer) {
-    return stateComputer.getMempoolInserter();
-  }
+    fn insert_transaction(&mut self, transaction: &Transaction, receipt: LedgerTransactionReceipt) {
+        self.transactions.insert(
+            transaction.id.clone(),
+            (transaction.payload.clone(), scrypto_encode(&receipt)),
+        );
+    }
+}
+
+impl Default for InMemoryStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl WriteableTransactionStore for InMemoryStore {
+    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, LedgerTransactionReceipt)>) {
+        for (txn, receipt) in transactions {
+            self.insert_transaction(txn, receipt);
+        }
+    }
+}
+
+impl QueryableTransactionStore for InMemoryStore {
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt) {
+        let (transaction_bytes, ledger_receipt_bytes) = self
+            .transactions
+            .get(tid)
+            .cloned()
+            .expect("Transaction missing");
+
+        (
+            transaction_bytes,
+            scrypto_decode(&ledger_receipt_bytes)
+                .unwrap_or_else(|_| panic!("Failed to decode a stored transaction {}", tid)),
+        )
+    }
+}
+
+impl WriteableProofStore for InMemoryStore {
+    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
+        let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
+        for (index, id) in ids.into_iter().enumerate() {
+            let txn_state_version = first_state_version + index as u64;
+            self.txids.insert(txn_state_version, id);
+        }
+
+        self.proofs.insert(state_version, proof_bytes);
+    }
+}
+
+impl QueryableProofStore for InMemoryStore {
+    fn max_state_version(&self) -> u64 {
+        self.txids
+            .iter()
+            .next_back()
+            .map(|(k, _v)| *k)
+            .unwrap_or_default()
+    }
+
+    fn get_tid(&self, state_version: u64) -> Option<TId> {
+        self.txids.get(&state_version).cloned()
+    }
+
+    /// Returns the next proof from a state version (excluded)
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
+        let next_state_version = state_version + 1;
+        self.proofs
+            .range(next_state_version..)
+            .next()
+            .map(|(v, proof)| {
+                let mut ids = Vec::new();
+                for (_, id) in self.txids.range(next_state_version..=*v) {
+                    ids.push(id.clone());
+                }
+                (ids, proof.clone())
+            })
+    }
+
+    fn get_last_proof(&self) -> Option<Vec<u8>> {
+        self.proofs
+            .iter()
+            .next_back()
+            .map(|(_, bytes)| bytes.clone())
+    }
 }

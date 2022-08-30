@@ -70,21 +70,22 @@ import com.google.inject.*;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
-import com.radixdlt.lang.Tuple;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Addressing;
@@ -117,7 +118,6 @@ public final class REv2LargeTransactionTest {
   @Inject private DeterministicProcessor processor;
   @Inject private MempoolInserter<RawTransaction> mempoolInserter;
   @Inject private REv2TransactionAndProofStore transactionStoreReader;
-  @Inject private REv2StateReader stateReader;
 
   private Injector createInjector() {
     return Guice.createInjector(
@@ -130,11 +130,12 @@ public final class REv2LargeTransactionTest {
         new MockedPersistenceStoreModule(),
         new FunctionalRadixNodeModule(
             false,
-            FunctionalRadixNodeModule.ConsensusConfig.of(),
-            FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+            ConsensusConfig.of(),
+            LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
+                    Network.INTEGRATIONTESTNET.getId(),
                     new REv2DatabaseConfig.RocksDB(folder.getRoot().getAbsolutePath()),
-                    StateComputerConfig.REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))),
+                    REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(
@@ -150,19 +151,9 @@ public final class REv2LargeTransactionTest {
   }
 
   private static RawTransaction create1MBTransaction() {
-    var unsignedManifest =
-        TransactionBuilder.build1MBManifest(NETWORK_DEFINITION, TEST_KEY.getPublicKey());
-    var hashedManifest = HashUtils.sha256Twice(unsignedManifest).asBytes();
-
-    var intentSignature = TEST_KEY.sign(hashedManifest);
-    var signedIntent =
-        TransactionBuilder.createSignedIntentBytes(
-            unsignedManifest, List.of(Tuple.Tuple2.of(TEST_KEY.getPublicKey(), intentSignature)));
-    var hashedSignedIntent = HashUtils.sha256Twice(signedIntent).asBytes();
-
-    var notarySignature = TEST_KEY.sign(hashedSignedIntent);
-    var transactionPayload = TransactionBuilder.createNotarizedBytes(signedIntent, notarySignature);
-    return RawTransaction.create(transactionPayload);
+    var intentBytes =
+        TransactionBuilder.build1MBIntent(NETWORK_DEFINITION, TEST_KEY.getPublicKey());
+    return REv2TestTransactions.constructTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
   }
 
   @Test

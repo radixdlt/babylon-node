@@ -117,6 +117,7 @@ public final class REv2GenesisTest {
             FunctionalRadixNodeModule.ConsensusConfig.of(),
             FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                 StateComputerConfig.rev2(
+                    Network.INTEGRATIONTESTNET.getId(),
                     REv2DatabaseConfig.inMemory(),
                     StateComputerConfig.REV2ProposerConfig.mempool(0, MempoolRelayConfig.of())))),
         new TestP2PModule.Builder().build(),

@@ -89,8 +89,9 @@ public class SborTest {
 
     var r0 = DefaultTypedSbor.encode(Unit.unit(), Unit.class);
 
-    assertEquals(1, r0.length);
+    assertEquals(2, r0.length);
     assertEquals(0, r0[0]); // Type == 0x00 - Unit
+    assertEquals(0, r0[1]); // Followed by a single 0x00 byte
 
     var r1 = DefaultTypedSbor.decode(r0, Unit.class);
 
