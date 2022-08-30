@@ -66,28 +66,28 @@ package com.radixdlt.recovery;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
-import com.radixdlt.lang.Tuple;
+import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statemanager.StateManager;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class REv2VertexStoreRecovery {
-  public REv2VertexStoreRecovery(StateManager stateManager) {
+public final class VertexStoreRecovery {
+  public VertexStoreRecovery(StateManager stateManager) {
     Objects.requireNonNull(stateManager);
     this.getVertexStore =
         NativeCalls.Func1.with(
             stateManager,
             new TypeToken<>() {},
             new TypeToken<>() {},
-            REv2VertexStoreRecovery::getVertexStore);
+            VertexStoreRecovery::getVertexStore);
   }
 
   public Optional<byte[]> recoverVertexStore() {
-    return this.getVertexStore.call(Tuple.Tuple0.of()).toOptional();
+    return this.getVertexStore.call(Unit.unit()).toOptional();
   }
 
   private static native byte[] getVertexStore(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, Option<byte[]>> getVertexStore;
+  private final NativeCalls.Func1<StateManager, Unit, Option<byte[]>> getVertexStore;
 }

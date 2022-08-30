@@ -92,3 +92,5 @@ extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_getVertexStore
 fn do_get_vertex_store(state_manager: &mut ActualStateManager, _args: ()) -> Option<Vec<u8>> {
     state_manager.store.get_vertex_store()
 }
+
+pub fn export_extern_functions() {}

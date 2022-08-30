@@ -70,16 +70,8 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.utils.UInt256;
-import java.util.List;
 
 public final class REv2ConsensusRecoveryModule extends AbstractModule {
-  private final List<BFTNode> validatorSet;
-
-  public REv2ConsensusRecoveryModule(List<BFTNode> validatorSet) {
-    this.validatorSet = validatorSet;
-  }
-
   @Provides
   private RoundUpdate initialRoundUpdate(
       VertexStoreState vertexStoreState, BFTConfiguration configuration) {
@@ -98,11 +90,5 @@ public final class REv2ConsensusRecoveryModule extends AbstractModule {
       BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
     var proposerElection = new WeightedRotatingLeaders(validatorSet);
     return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
-  }
-
-  @Provides
-  private BFTValidatorSet initialValidatorSet() {
-    return BFTValidatorSet.from(
-        this.validatorSet.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
   }
 }

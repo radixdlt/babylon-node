@@ -74,7 +74,7 @@ import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.recovery.REv2VertexStoreRecovery;
+import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LastEpochProof;
@@ -120,10 +120,9 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
   @Singleton
   private VertexStoreState vertexStoreState(
       @LastEpochProof LedgerProof lastEpochProof,
-      REv2VertexStoreRecovery vertexStoreRecovery,
+      VertexStoreRecovery vertexStoreRecovery,
       Serialization serialization,
       Hasher hasher) {
-
     return vertexStoreRecovery
         .recoverVertexStore()
         .map(

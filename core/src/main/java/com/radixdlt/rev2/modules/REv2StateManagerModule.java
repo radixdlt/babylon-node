@@ -73,7 +73,7 @@ import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.recovery.REv2VertexStoreRecovery;
+import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2StateComputer;
 import com.radixdlt.rev2.REv2StateReader;
@@ -158,8 +158,7 @@ public final class REv2StateManagerModule extends AbstractModule {
             }
 
             @Provides
-            private REv2VertexStoreRecovery rEv2VertexStoreRecovery(
-                RustStateComputer stateComputer) {
+            private VertexStoreRecovery rEv2VertexStoreRecovery(RustStateComputer stateComputer) {
               return stateComputer.getVertexStoreRecovery();
             }
 

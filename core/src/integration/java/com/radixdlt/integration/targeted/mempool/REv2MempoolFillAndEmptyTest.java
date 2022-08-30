@@ -68,8 +68,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.crypto.ECKeyPair;
@@ -102,6 +103,7 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.UInt256;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -134,9 +136,16 @@ public final class REv2MempoolFillAndEmptyTest {
     return Guice.createInjector(
         new CryptoModule(),
         new TestMessagingModule.Builder().withDefaultRateLimit().build(),
-        new MockedConsensusRecoveryModule.Builder()
-            .withNodes(List.of(BFTNode.create(TEST_KEY.getPublicKey())))
-            .build(),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            var validatorSet =
+                BFTValidatorSet.from(
+                    List.of(
+                        BFTValidator.from(BFTNode.create(TEST_KEY.getPublicKey()), UInt256.ONE)));
+            bind(BFTValidatorSet.class).toInstance(validatorSet);
+          }
+        },
         new MockedPersistenceStoreModule(),
         new FunctionalRadixNodeModule(
             false,

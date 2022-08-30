@@ -68,7 +68,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.mempool.*;
-import com.radixdlt.recovery.REv2VertexStoreRecovery;
+import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.NativeCalls;
@@ -84,14 +84,14 @@ import java.util.Objects;
 public class RustStateComputer {
   private final RustMempool mempool;
   private final REv2TransactionAndProofStore transactionStore;
-  private final REv2VertexStoreRecovery vertexStoreRecovery;
+  private final VertexStoreRecovery vertexStoreRecovery;
 
   public RustStateComputer(StateManager stateManager) {
     Objects.requireNonNull(stateManager);
 
     this.mempool = new RustMempool(stateManager);
     this.transactionStore = new REv2TransactionAndProofStore(stateManager);
-    this.vertexStoreRecovery = new REv2VertexStoreRecovery(stateManager);
+    this.vertexStoreRecovery = new VertexStoreRecovery(stateManager);
 
     verifyFunc =
         NativeCalls.Func1.with(
@@ -110,7 +110,7 @@ public class RustStateComputer {
             RustStateComputer::componentXrdAmount);
   }
 
-  public REv2VertexStoreRecovery getVertexStoreRecovery() {
+  public VertexStoreRecovery getVertexStoreRecovery() {
     return vertexStoreRecovery;
   }
 

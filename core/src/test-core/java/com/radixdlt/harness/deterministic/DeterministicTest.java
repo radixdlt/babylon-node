@@ -99,6 +99,7 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
 import java.util.List;
@@ -173,11 +174,37 @@ public final class DeterministicTest {
 
     private void addFunctionalNodeModule(FunctionalRadixNodeModule module) {
       modules.add(module);
+
+      if (module.supportsREv2()) {
+        modules.add(
+            new AbstractModule() {
+              @Override
+              protected void configure() {
+                var validatorSet =
+                    BFTValidatorSet.from(
+                        initialValidatorNodes.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
+                bind(BFTValidatorSet.class).toInstance(validatorSet);
+              }
+            });
+      } else {
+        MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder =
+            new MockedConsensusRecoveryModule.Builder(module.supportsEpochs());
+        mockedConsensusRecoveryModuleBuilder.withNodes(initialValidatorNodes);
+
+        if (this.epochNodeWeightMapping != null) {
+          mockedConsensusRecoveryModuleBuilder.withEpochNodeWeightMapping(
+              this.epochNodeWeightMapping);
+        } else if (this.epochToNodeIndexesMapping != null) {
+          mockedConsensusRecoveryModuleBuilder.withEpochNodeIndexesMapping(
+              this.epochToNodeIndexesMapping);
+        }
+        modules.add(mockedConsensusRecoveryModuleBuilder.build());
+      }
     }
 
     public DeterministicTest functionalNodeModule(FunctionalRadixNodeModule module) {
       addFunctionalNodeModule(module);
-      return build(false);
+      return build();
     }
 
     public Builder epochNodeIndexesMapping(Function<Long, IntStream> epochToNodeIndexesMapping) {
@@ -216,7 +243,7 @@ public final class DeterministicTest {
                   StateComputerConfig.mocked(
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
       addEpochedConsensusProcessorModule(epochMaxRound);
-      return build(true);
+      return build();
     }
 
     public DeterministicTest buildWithEpochsAndSync(
@@ -232,10 +259,10 @@ public final class DeterministicTest {
                   syncRelayConfig)));
       modules.add(new InMemoryCommittedReaderModule());
       addEpochedConsensusProcessorModule(epochMaxRound);
-      return build(true);
+      return build();
     }
 
-    private DeterministicTest build(boolean withEpoch) {
+    private DeterministicTest build() {
       modules.add(
           new AbstractModule() {
             @Override
@@ -248,20 +275,6 @@ public final class DeterministicTest {
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
       modules.add(new MockedPersistenceStoreModule());
-
-      MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder =
-          new MockedConsensusRecoveryModule.Builder(withEpoch);
-      mockedConsensusRecoveryModuleBuilder.withNodes(initialValidatorNodes);
-
-      if (this.epochNodeWeightMapping != null) {
-        mockedConsensusRecoveryModuleBuilder.withEpochNodeWeightMapping(
-            this.epochNodeWeightMapping);
-      } else if (this.epochToNodeIndexesMapping != null) {
-        mockedConsensusRecoveryModuleBuilder.withEpochNodeIndexesMapping(
-            this.epochToNodeIndexesMapping);
-      }
-      modules.add(mockedConsensusRecoveryModuleBuilder.build());
-
       modules.add(new TestP2PModule.Builder().withAllNodes(nodes).build());
       modules.add(new TestMessagingModule.Builder().build());
 
