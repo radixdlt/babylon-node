@@ -67,17 +67,14 @@ use crate::jni::utils::*;
 use crate::mempool::simple::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{DatabaseConfig, StateManager, StateManagerConfig};
-use crate::store::{
-    InMemoryTransactionStore, RocksDBTransactionStore, TemporaryTransactionReceipt,
-    TransactionStore,
-};
+use crate::store::{InMemoryTransactionStore, RocksDBTransactionStore, TransactionStore};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use std::path::PathBuf;
 
+use crate::receipt::LedgerTransactionReceipt;
 use crate::types::{TId, Transaction};
-use radix_engine::transaction::TransactionReceipt;
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use std::sync::{Arc, Mutex, MutexGuard};
 
@@ -123,7 +120,7 @@ impl SupportedStateManagerStore {
 }
 
 impl TransactionStore for SupportedStateManagerStore {
-    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
+    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, LedgerTransactionReceipt)>) {
         match self {
             SupportedStateManagerStore::InMemory(store) => store.insert_transactions(transactions),
             SupportedStateManagerStore::RocksDB(store) => store.insert_transactions(transactions),
@@ -131,7 +128,7 @@ impl TransactionStore for SupportedStateManagerStore {
         }
     }
 
-    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt) {
         match self {
             SupportedStateManagerStore::InMemory(store) => store.get_transaction(tid),
             SupportedStateManagerStore::RocksDB(store) => store.get_transaction(tid),

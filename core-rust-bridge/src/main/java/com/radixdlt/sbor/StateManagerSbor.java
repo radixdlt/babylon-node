@@ -80,7 +80,7 @@ import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statemanager.CoreApiServerConfig;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManagerConfig;
-import com.radixdlt.transaction.ExecutedTransactionReceipt;
+import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
@@ -128,7 +128,7 @@ public final class StateManagerSbor {
     TID.registerCodec(codecMap);
     StateManagerRuntimeError.registerCodec(codecMap);
     MempoolError.registerCodec(codecMap);
-    ExecutedTransactionReceipt.registerCodec(codecMap);
+    ExecutedTransaction.registerCodec(codecMap);
     ECPublicKey.registerCodec(codecMap);
     ECDSASignature.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);

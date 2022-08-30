@@ -65,6 +65,7 @@
 use crate::jni::dtos::*;
 use crate::mempool::{Mempool, MempoolConfig};
 use crate::query::ResourceAccounter;
+use crate::receipt::LedgerTransactionReceipt;
 use crate::store::{ProofStore, TransactionStore};
 use crate::types::{CommitRequest, PreviewRequest, Transaction};
 use radix_engine::constants::{
@@ -146,11 +147,13 @@ impl<M: Mempool, S: ReadableSubstateStore + WriteableSubstateStore, T: Transacti
                 .decode_transaction(transaction)
                 .expect("Error on Byzantine quorum");
 
-            let receipt = self
+            let engine_receipt = self
                 .execute_transaction(validated_txn)
                 .expect("Error on Byzantine quorum");
 
-            to_store.push((transaction, receipt));
+            let ledger_receipt: LedgerTransactionReceipt = engine_receipt.try_into().unwrap();
+
+            to_store.push((transaction, ledger_receipt));
             ids.push(transaction.id.clone());
         }
 

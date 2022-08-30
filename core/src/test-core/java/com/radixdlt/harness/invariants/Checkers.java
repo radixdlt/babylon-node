@@ -70,7 +70,7 @@ import com.google.inject.Injector;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.transaction.ExecutedTransactionReceipt;
+import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import java.util.HashMap;
 import java.util.List;
@@ -113,7 +113,7 @@ public final class Checkers {
    * should agree on the order and result of transaction execution.
    */
   public static void assertLedgerTransactionsSafety(List<Injector> nodeInjectors) {
-    var receipts = new HashMap<Long, ExecutedTransactionReceipt>();
+    var receipts = new HashMap<Long, ExecutedTransaction>();
 
     for (var injector : nodeInjectors) {
       var reader = injector.getInstance(TransactionsAndProofReader.class);

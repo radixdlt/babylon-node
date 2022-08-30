@@ -68,15 +68,17 @@ use crate::types::TId;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use sbor::*;
+use sbor::{Decode, Encode, TypeId};
+use scrypto::buffer::scrypto_encode;
 use scrypto::prelude::ComponentAddress;
 
 use super::utils::jni_state_manager_sbor_call;
 
 #[derive(Encode, Decode, TypeId)]
-struct ExecutedTransactionReceipt {
-    result: String,
-    transaction_data: Vec<u8>,
+struct ExecutedTransaction {
+    ledger_receipt_bytes: Vec<u8>,
+    transaction_bytes: Vec<u8>,
+    /// Used by some Java tests, consider removing at some point as it doesn't really fit here
     new_component_addresses: Vec<ComponentAddress>,
 }
 
@@ -98,15 +100,16 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 fn do_get_transaction_at_state_version(
     state_manager: &mut ActualStateManager,
     state_version: u64,
-) -> ExecutedTransactionReceipt {
+) -> ExecutedTransaction {
     let tid = state_manager.proof_store.get_tid(state_version).unwrap();
 
-    let (transaction_data, receipt) = state_manager.transaction_store.get_transaction(&tid);
+    let (transaction_bytes, ledger_receipt) = state_manager.transaction_store.get_transaction(&tid);
+    let ledger_receipt_bytes = scrypto_encode(&ledger_receipt);
 
-    ExecutedTransactionReceipt {
-        result: receipt.result,
-        transaction_data,
-        new_component_addresses: receipt.new_component_addresses,
+    ExecutedTransaction {
+        ledger_receipt_bytes,
+        transaction_bytes,
+        new_component_addresses: ledger_receipt.entity_changes.new_component_addresses,
     }
 }
 

@@ -65,6 +65,7 @@
 pub mod jni;
 pub mod mempool;
 mod query;
+mod receipt;
 mod result;
 mod state_manager;
 pub mod store;
@@ -72,6 +73,6 @@ mod transaction_builder;
 mod types;
 
 pub use mempool::MempoolError;
+pub use receipt::{CommittedTransactionStatus, LedgerTransactionReceipt};
 pub use state_manager::StateManager;
-pub use store::TemporaryTransactionReceipt;
 pub use types::{CommitRequest, PreviewRequest, TId, Transaction};

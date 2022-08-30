@@ -1,13 +1,19 @@
+use crate::core_api::conversions::{to_api_receipt, to_sbor_hex};
 use crate::core_api::errors::{common_server_errors, RequestHandlingError};
-use crate::core_api::generated::models::*;
+use crate::core_api::generated::models;
+use crate::core_api::generated::models::{
+    CommittedTransactionsRequest, CommittedTransactionsResponse, TransactionSubmitRequest,
+    TransactionSubmitResponse,
+};
 use crate::core_api::generated::{TransactionSubmitPostResponse, TransactionsPostResponse};
+use scrypto::address::Bech32Encoder;
 use scrypto::buffer::scrypto_decode;
+use scrypto::core::NetworkDefinition;
 use scrypto::crypto::sha256_twice;
-use scrypto::prelude::scrypto_encode;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::mempool::Mempool;
 use state_manager::store::TransactionStore;
-use state_manager::{MempoolError, TId, TemporaryTransactionReceipt, Transaction};
+use state_manager::{LedgerTransactionReceipt, MempoolError, TId, Transaction};
 use std::cmp;
 use std::sync::{Arc, Mutex};
 use transaction::model::NotarizedTransaction as EngineNotarizedTransaction;
@@ -125,16 +131,23 @@ fn handle_get_committed_transactions_internal(
         state_version += 1;
     }
 
+    let network = locked_state_manager.network.clone();
+
     let api_txns = txns
         .into_iter()
         .map(|((tx, receipt), state_version)| {
             scrypto_decode(&tx)
                 .map(|notarized_tx| {
-                    to_api_committed_transaction(notarized_tx, receipt.clone(), state_version)
+                    to_api_committed_transaction(
+                        &network,
+                        notarized_tx,
+                        receipt.clone(),
+                        state_version,
+                    )
                 })
                 .map_err(|_| transaction_errors::invalid_committed_txn())
         })
-        .collect::<Result<Vec<CommittedTransaction>, RequestHandlingError>>()?;
+        .collect::<Result<Vec<models::CommittedTransaction>, RequestHandlingError>>()?;
 
     let start_state_version = if api_txns.is_empty() {
         0
@@ -150,10 +163,11 @@ fn handle_get_committed_transactions_internal(
 }
 
 fn to_api_committed_transaction(
+    network: &NetworkDefinition,
     tx: EngineNotarizedTransaction,
-    _receipt: TemporaryTransactionReceipt,
+    receipt: LedgerTransactionReceipt,
     state_version: u64,
-) -> CommittedTransaction {
+) -> models::CommittedTransaction {
     let tx_hash = tx.hash();
     let signed_intent = tx.signed_intent;
     let signed_intent_hash = signed_intent.hash();
@@ -161,15 +175,18 @@ fn to_api_committed_transaction(
     let intent_hash = intent.hash();
     let header = intent.header;
 
-    CommittedTransaction {
+    let bech32_encoder = Bech32Encoder::new(network);
+    let receipt = to_api_receipt(&bech32_encoder, receipt);
+
+    models::CommittedTransaction {
         state_version: state_version.to_string(),
-        notarized_transaction: NotarizedTransaction {
+        notarized_transaction: models::NotarizedTransaction {
             hash: tx_hash.to_string(),
-            signed_intent: SignedTransactionIntent {
+            signed_intent: models::SignedTransactionIntent {
                 hash: signed_intent_hash.to_string(),
-                intent: TransactionIntent {
+                intent: models::TransactionIntent {
                     hash: intent_hash.to_string(),
-                    header: TransactionHeader {
+                    header: models::TransactionHeader {
                         version: header.version as isize,
                         network_id: header.network_id as isize,
                         start_epoch_inclusive: header.start_epoch_inclusive.to_string(),
@@ -180,12 +197,12 @@ fn to_api_committed_transaction(
                         cost_unit_limit: header.cost_unit_limit.to_string(),
                         tip_percentage: header.tip_percentage.to_string(),
                     },
-                    manifest: hex::encode(scrypto_encode(&intent.manifest)),
+                    manifest: to_sbor_hex(&intent.manifest),
                 },
                 intent_signatures: signed_intent
                     .intent_signatures
                     .into_iter()
-                    .map(|(public_key, signature)| IntentSignature {
+                    .map(|(public_key, signature)| models::IntentSignature {
                         public_key: public_key.to_string(),
                         signature: signature.to_string(),
                     })
@@ -193,21 +210,7 @@ fn to_api_committed_transaction(
             },
             notary_signature: tx.notary_signature.to_string(),
         },
-        receipt: TransactionReceipt {
-            status: TransactionStatus::SUCCEEDED, // TODO: fixme (needs receipt)
-            fee_summary: FeeSummary {
-                // TODO: fixme
-                loan_fully_repaid: true,
-                cost_unit_limit: "0".to_string(),
-                cost_unit_consumed: "0".to_string(),
-                cost_unit_price: "0".to_string(),
-                tip_percentage: "0".to_string(),
-                xrd_burned: "0".to_string(),
-                xrd_tipped: "0".to_string(),
-            },
-            output: Some(vec!["00".to_string()]), // TODO: fixme (needs receipt)
-            error_message: None,                  // TODO: fixme (needs receipt)
-        },
+        receipt,
     }
 }
 
@@ -216,37 +219,37 @@ mod transaction_errors {
     use transaction::errors::TransactionValidationError;
 
     pub(crate) fn invalid_transaction() -> RequestHandlingError {
-        client_error(1, "Invalid transaction payload")
+        client_error(11, "Invalid transaction payload")
     }
 
     pub(crate) fn mempool_is_full() -> RequestHandlingError {
-        client_error(2, "Mempool is full")
+        client_error(12, "Mempool is full")
     }
 
     pub(crate) fn transaction_validation_error(
         err: TransactionValidationError,
     ) -> RequestHandlingError {
-        client_error(3, &format!("Transaction validation error: {:?}", err))
+        client_error(13, &format!("Transaction validation error: {:?}", err))
     }
 
     pub(crate) fn invalid_int_field(field: &str) -> RequestHandlingError {
-        client_error(4, &format!("Invalid integer: {}", field))
+        client_error(14, &format!("Invalid integer: {}", field))
     }
 
     pub(crate) fn invalid_start_state_version() -> RequestHandlingError {
         client_error(
-            5,
+            15,
             "start_state_version is invalid (minimum state version is 1)",
         )
     }
 
     pub(crate) fn invalid_committed_txn() -> RequestHandlingError {
-        server_error(6, "Internal server error: invalid committed txn payload")
+        server_error(16, "Internal server error: invalid committed txn payload")
     }
 
     pub(crate) fn missing_transaction_at_state_version(state_version: u64) -> RequestHandlingError {
         server_error(
-            7,
+            17,
             &format!(
                 "A transaction is missing at state version {}",
                 state_version
