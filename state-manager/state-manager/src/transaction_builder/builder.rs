@@ -132,7 +132,7 @@ pub fn create_1mb_txn_intent(
     let intent = TransactionIntent {
         header: TransactionHeader {
             version: 1,
-            network_id: network_definition.id, // TODO: Fix
+            network_id: network_definition.id,
             start_epoch_inclusive: 0,
             end_epoch_exclusive: 100,
             nonce: 5,
