@@ -62,104 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.recovery;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
-import com.radixdlt.mempool.*;
-import com.radixdlt.recovery.VertexStoreRecovery;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
+import com.radixdlt.lang.Option;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.NativeCalls;
-import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.statecomputer.commit.PrepareRequest;
-import com.radixdlt.statecomputer.commit.PrepareResult;
 import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transactions.RawTransaction;
-import java.util.List;
 import java.util.Objects;
 
-public class RustStateComputer {
-  private final RustMempool mempool;
-  private final REv2TransactionAndProofStore transactionStore;
-  private final VertexStoreRecovery vertexStoreRecovery;
-
-  public RustStateComputer(StateManager stateManager) {
+public final class VertexStoreRecovery {
+  public VertexStoreRecovery(StateManager stateManager) {
     Objects.requireNonNull(stateManager);
-
-    this.mempool = new RustMempool(stateManager);
-    this.transactionStore = new REv2TransactionAndProofStore(stateManager);
-    this.vertexStoreRecovery = new VertexStoreRecovery(stateManager);
-
-    verifyFunc =
-        NativeCalls.Func1.with(
-            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::verify);
-    prepareFunc =
-        NativeCalls.Func1.with(
-            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::prepare);
-    commitFunc =
-        NativeCalls.Func1.with(
-            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::commit);
-    componentXrdAmountFunc =
+    this.getVertexStore =
         NativeCalls.Func1.with(
             stateManager,
             new TypeToken<>() {},
             new TypeToken<>() {},
-            RustStateComputer::componentXrdAmount);
+            VertexStoreRecovery::getVertexStore);
   }
 
-  public VertexStoreRecovery getVertexStoreRecovery() {
-    return vertexStoreRecovery;
-  }
+  private static native byte[] getVertexStore(StateManager stateManager, byte[] payload);
 
-  public REv2TransactionAndProofStore getTransactionAndProofStore() {
-    return this.transactionStore;
-  }
-
-  public MempoolReader getMempoolReader() {
-    return this.mempool;
-  }
-
-  public MempoolInserter<RawTransaction> getMempoolInserter() {
-    return this.mempool::addTransaction;
-  }
-
-  public List<RawTransaction> getTransactionsForProposal(
-      int count, List<RawTransaction> transactionToExclude) {
-    return this.mempool.getTransactionsForProposal(count, transactionToExclude);
-  }
-
-  public Result<Unit, String> verify(RawTransaction transaction) {
-    return verifyFunc.call(transaction);
-  }
-
-  private final NativeCalls.Func1<StateManager, RawTransaction, Result<Unit, String>> verifyFunc;
-
-  private static native byte[] verify(StateManager stateManager, byte[] payload);
-
-  public PrepareResult prepare(PrepareRequest prepareRequest) {
-    return prepareFunc.call(prepareRequest);
-  }
-
-  public void commit(CommitRequest commitRequest) {
-    commitFunc.call(commitRequest);
-  }
-
-  private final NativeCalls.Func1<StateManager, PrepareRequest, PrepareResult> prepareFunc;
-
-  private static native byte[] prepare(StateManager stateManager, byte[] payload);
-
-  private final NativeCalls.Func1<StateManager, CommitRequest, Unit> commitFunc;
-
-  private static native byte[] commit(StateManager stateManager, byte[] payload);
-
-  private final NativeCalls.Func1<StateManager, ComponentAddress, Decimal> componentXrdAmountFunc;
-
-  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
-    return componentXrdAmountFunc.call(componentAddress);
-  }
-
-  private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
+  private final NativeCalls.Func1<StateManager, Tuple.Tuple0, Option<byte[]>> getVertexStore;
 }

@@ -82,6 +82,7 @@ use radix_engine::transaction::TransactionReceipt;
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 
 use crate::store::in_memory::InMemoryVertexStore;
+use crate::store::query::RecoverableVertexStore;
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
@@ -262,6 +263,16 @@ impl WriteableVertexStore for StateManagerDatabase {
                 vertices.save_vertex_store(vertex_store_bytes)
             }
             StateManagerDatabase::RocksDB(store) => store.save_vertex_store(vertex_store_bytes),
+            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
+        }
+    }
+}
+
+impl RecoverableVertexStore for StateManagerDatabase {
+    fn get_vertex_store(&self) -> Option<Vec<u8>> {
+        match self {
+            StateManagerDatabase::InMemory { vertices, .. } => vertices.get_vertex_store(),
+            StateManagerDatabase::RocksDB(store) => store.get_vertex_store(),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }

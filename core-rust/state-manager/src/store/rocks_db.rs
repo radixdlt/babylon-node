@@ -62,7 +62,9 @@
  * permissions under this License.
  */
 
-use crate::store::query::{QueryableTransactionStore, TemporaryTransactionReceipt};
+use crate::store::query::{
+    QueryableTransactionStore, RecoverableVertexStore, TemporaryTransactionReceipt,
+};
 use crate::types::{TId, Transaction};
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
 use std::collections::HashMap;
@@ -322,5 +324,11 @@ impl WriteableVertexStore for RocksDBStore {
         self.db
             .put(db_key!(VertexStore, &[]), &vertex_store_bytes)
             .unwrap();
+    }
+}
+
+impl RecoverableVertexStore for RocksDBStore {
+    fn get_vertex_store(&self) -> Option<Vec<u8>> {
+        self.db.get(db_key!(VertexStore, &[])).unwrap()
     }
 }

@@ -63,7 +63,9 @@
  */
 
 use crate::state_manager::{WriteableProofStore, WriteableTransactionStore, WriteableVertexStore};
-use crate::store::query::{QueryableTransactionStore, TemporaryTransactionReceipt};
+use crate::store::query::{
+    QueryableTransactionStore, RecoverableVertexStore, TemporaryTransactionReceipt,
+};
 use crate::store::QueryableProofStore;
 use crate::types::{TId, Transaction};
 use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
@@ -83,6 +85,12 @@ impl InMemoryVertexStore {
 impl WriteableVertexStore for InMemoryVertexStore {
     fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
         self.vertex_store = Some(vertex_store_bytes);
+    }
+}
+
+impl RecoverableVertexStore for InMemoryVertexStore {
+    fn get_vertex_store(&self) -> Option<Vec<u8>> {
+        self.vertex_store.clone()
     }
 }
 

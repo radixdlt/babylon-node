@@ -88,3 +88,7 @@ pub trait QueryableProofStore {
     fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)>;
     fn get_last_proof(&self) -> Option<Vec<u8>>;
 }
+
+pub trait RecoverableVertexStore {
+    fn get_vertex_store(&self) -> Option<Vec<u8>>;
+}

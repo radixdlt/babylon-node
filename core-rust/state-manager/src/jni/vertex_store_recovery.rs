@@ -62,104 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer;
+use crate::jni::state_manager::ActualStateManager;
+use crate::store::query::RecoverableVertexStore;
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use sbor::*;
+use scrypto::prelude::ComponentAddress;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.lang.Result;
-import com.radixdlt.lang.Unit;
-import com.radixdlt.mempool.*;
-import com.radixdlt.recovery.VertexStoreRecovery;
-import com.radixdlt.rev2.ComponentAddress;
-import com.radixdlt.rev2.Decimal;
-import com.radixdlt.sbor.NativeCalls;
-import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.statecomputer.commit.PrepareRequest;
-import com.radixdlt.statecomputer.commit.PrepareResult;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transactions.RawTransaction;
-import java.util.List;
-import java.util.Objects;
+use super::utils::jni_state_manager_sbor_call;
 
-public class RustStateComputer {
-  private final RustMempool mempool;
-  private final REv2TransactionAndProofStore transactionStore;
-  private final VertexStoreRecovery vertexStoreRecovery;
+#[derive(Encode, Decode, TypeId)]
+struct ExecutedTransactionReceipt {
+    result: String,
+    transaction_data: Vec<u8>,
+    new_component_addresses: Vec<ComponentAddress>,
+}
 
-  public RustStateComputer(StateManager stateManager) {
-    Objects.requireNonNull(stateManager);
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_getVertexStore(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_get_vertex_store)
+}
 
-    this.mempool = new RustMempool(stateManager);
-    this.transactionStore = new REv2TransactionAndProofStore(stateManager);
-    this.vertexStoreRecovery = new VertexStoreRecovery(stateManager);
-
-    verifyFunc =
-        NativeCalls.Func1.with(
-            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::verify);
-    prepareFunc =
-        NativeCalls.Func1.with(
-            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::prepare);
-    commitFunc =
-        NativeCalls.Func1.with(
-            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::commit);
-    componentXrdAmountFunc =
-        NativeCalls.Func1.with(
-            stateManager,
-            new TypeToken<>() {},
-            new TypeToken<>() {},
-            RustStateComputer::componentXrdAmount);
-  }
-
-  public VertexStoreRecovery getVertexStoreRecovery() {
-    return vertexStoreRecovery;
-  }
-
-  public REv2TransactionAndProofStore getTransactionAndProofStore() {
-    return this.transactionStore;
-  }
-
-  public MempoolReader getMempoolReader() {
-    return this.mempool;
-  }
-
-  public MempoolInserter<RawTransaction> getMempoolInserter() {
-    return this.mempool::addTransaction;
-  }
-
-  public List<RawTransaction> getTransactionsForProposal(
-      int count, List<RawTransaction> transactionToExclude) {
-    return this.mempool.getTransactionsForProposal(count, transactionToExclude);
-  }
-
-  public Result<Unit, String> verify(RawTransaction transaction) {
-    return verifyFunc.call(transaction);
-  }
-
-  private final NativeCalls.Func1<StateManager, RawTransaction, Result<Unit, String>> verifyFunc;
-
-  private static native byte[] verify(StateManager stateManager, byte[] payload);
-
-  public PrepareResult prepare(PrepareRequest prepareRequest) {
-    return prepareFunc.call(prepareRequest);
-  }
-
-  public void commit(CommitRequest commitRequest) {
-    commitFunc.call(commitRequest);
-  }
-
-  private final NativeCalls.Func1<StateManager, PrepareRequest, PrepareResult> prepareFunc;
-
-  private static native byte[] prepare(StateManager stateManager, byte[] payload);
-
-  private final NativeCalls.Func1<StateManager, CommitRequest, Unit> commitFunc;
-
-  private static native byte[] commit(StateManager stateManager, byte[] payload);
-
-  private final NativeCalls.Func1<StateManager, ComponentAddress, Decimal> componentXrdAmountFunc;
-
-  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
-    return componentXrdAmountFunc.call(componentAddress);
-  }
-
-  private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
+fn do_get_vertex_store(state_manager: &mut ActualStateManager, _args: ()) -> Option<Vec<u8>> {
+    state_manager.store.get_vertex_store()
 }
