@@ -80,7 +80,7 @@ public record ExecutedTransaction(
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         ExecutedTransaction.class,
-        (codecs) ->
+        codecs ->
             StructCodec.with(
                 ExecutedTransaction::new,
                 codecs.of(new TypeToken<byte[]>() {}),
@@ -107,5 +107,10 @@ public record ExecutedTransaction(
     result = 31 * result + Arrays.hashCode(ledgerReceiptBytes);
     result = 31 * result + Arrays.hashCode(transactionBytes);
     return result;
+  }
+
+  @Override
+  public String toString() {
+    return "ExecutedTransaction{" + "newComponentAddresses=" + newComponentAddresses + '}';
   }
 }
