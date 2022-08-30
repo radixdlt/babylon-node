@@ -3,13 +3,12 @@ include ':core'
 include ':cli-tools'
 include ':olympia-engine'
 include ':common'
-include ':state-manager-bridge'
-include ':state-manager'
+include ':core-rust-bridge'
+include ':core-rust'
 
 project(':core').projectDir = new File('core')
 project(':cli-tools').projectDir = new File('cli-tools')
 project(':olympia-engine').projectDir = new File('olympia-engine')
 project(':common').projectDir = new File('common')
-project(':state-manager-bridge').projectDir = new File('state-manager-bridge')
-project(':state-manager').projectDir = new File('state-manager')
-
+project(':core-rust-bridge').projectDir = new File('core-rust-bridge')
+project(':core-rust').projectDir = new File('core-rust')

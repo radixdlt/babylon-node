@@ -1,0 +1,516 @@
+openapi: 3.1.0
+info:
+  version: '0.1.0'
+  title: 'Babylon Core API'
+  license:
+    name: The Radix License, Version 1.0
+    url: https://www.radixfoundation.org/licenses/LICENSE-v1
+servers:
+  - url: 'localhost:3333/core'
+tags:
+  - name: Status
+    x-displayName: Status Endpoints
+    description: To query information about the Node / Ledger status.
+  - name: Transaction
+    x-displayName: Transaction Submission Endpoints
+    description: To submit transactions to the network.
+  - name: Mempool
+    x-displayName: Mempool Endpoints
+    description: To query mempool status.
+  - name: Ledger State
+    x-displayName: Ledger State Endpoints
+    description: To query the current ledger state.
+  - name: History Stream
+    x-displayName: History Stream Endpoints
+    description: To query the history of the ledger.
+  - name: Key
+    x-displayName: Key Endpoints
+    description: To sign certain transactions with the node's own key.
+paths:
+  "/status/network-configuration":
+    post:
+      summary: Get Network Configuration
+      description: Returns the network configuration of the network the node is connected to.
+      tags:
+        - Status
+      responses:
+        '200':
+          description: Network Configuration
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NetworkConfigurationResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/transaction/submit":
+    post:
+      summary: Submit transaction to the network
+      description: Returns whether the transaction submission was accepted.
+      tags:
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/TransactionSubmitRequest"
+      responses:
+        '200':
+          description: Transaction Submit Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/TransactionSubmitResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/transaction/preview":
+    post:
+      summary: Preview a transaction against the latest network state
+      description: Returns the preview response
+      tags:
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/TransactionPreviewRequest"
+      responses:
+        '200':
+          description: Transaction preview response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/TransactionPreviewResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+  "/transactions":
+    post:
+      summary: Get committed transactions
+      tags:
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/CommittedTransactionsRequest"
+      responses:
+        '200':
+          description: Committed transactions response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/CommittedTransactionsResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+###########################
+# GENERAL / SHARED MODELS #
+###########################
+    TransactionStatus:
+      type: string
+      enum:
+        - succeeded
+        - failed
+        - rejected
+      description: The status of the transaction
+    TransactionReceipt:
+      type: object
+      description: The transaction execution receipt
+      required:
+        - status
+        - fee_summary
+      properties:
+        status:
+          "$ref": "#/components/schemas/TransactionStatus"
+        fee_summary:
+          "$ref": "#/components/schemas/FeeSummary"
+        output:
+          type: array
+          items:
+            type: string
+          description: The engine return data (only present if status is succeeded)
+        error_message:
+          type: string
+          description: Error message (only present if status is failed or rejected)
+    NotarizedTransaction:
+      type: object
+      required:
+        - hash
+        - signed_intent
+        - notary_signature
+      properties:
+        hash:
+          type: string
+          description: The transaction hash, hex-encoded.
+        signed_intent:
+          "$ref": "#/components/schemas/SignedTransactionIntent"
+        notary_signature:
+          type: string
+          description: The notary signature, hex-encoded.
+    SignedTransactionIntent:
+      type: object
+      required:
+        - hash
+        - intent
+        - intent_signatures
+      properties:
+        hash:
+          type: string
+          description: Signed transaction intent hash, hex-encoded.
+        intent:
+          "$ref": "#/components/schemas/TransactionIntent"
+        intent_signatures:
+          type: array
+          items:
+            "$ref": "#/components/schemas/IntentSignature"
+    IntentSignature:
+      type: object
+      required:
+        - public_key
+        - signature
+      properties:
+        public_key:
+          type: string
+          description: Signer public key, hex-encoded.
+        signature:
+          type: string
+          description: The signature, hex-encoded.
+    TransactionIntent:
+      type: object
+      required:
+        - hash
+        - header
+        - manifest
+      properties:
+        hash:
+          type: string
+          description: Transaction intent hash, hex-encoded.
+        header:
+          "$ref": "#/components/schemas/TransactionHeader"
+        manifest:
+          type: string
+          description: Transaction manifest, SBOR-encoded and then hex-encoded.
+    TransactionHeader:
+      type: object
+      required:
+        - version
+        - network_id
+        - start_epoch_inclusive
+        - end_epoch_exclusive
+        - nonce
+        - notary_public_key
+        - notary_as_signatory
+        - cost_unit_limit
+        - tip_percentage
+      properties:
+        version:
+          type: integer
+        network_id:
+          type: integer
+        start_epoch_inclusive:
+          type: string
+          description: A decimal 64-bit unsigned integer.
+        end_epoch_exclusive:
+          type: string
+          description: A decimal 64-bit unsigned integer.
+        nonce:
+          type: string
+          description: A decimal 64-bit unsigned integer.
+        notary_public_key:
+          type: string
+          description: A hex-encoded public key of a notary.
+        notary_as_signatory:
+          type: boolean
+          description: Specifies whether the notary's signature should be included in transaction signers list
+        cost_unit_limit:
+          type: string
+          description: Maximum number of cost units available for transaction execution. A decimal 32-bit unsigned integer.
+        tip_percentage:
+          type: string
+          description: Specifies the validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of "1" corresponds to 1%).
+    NetworkIdentifier:
+      description: The name of the network.
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          type: string
+      example:
+        network: mainnet
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          description: A numeric code corresponding to the given error type.
+          type: integer
+        message:
+          description: A human-readable error message.
+          type: string
+        trace_id:
+          description: A GUID to be used when reporting errors, to allow correlation with the Core API's error logs, in the case where the Core API details are hidden.
+          type: string
+#########################################
+# GENERAL / SHARED MODELS - Transaction #
+#########################################
+    FeeSummary:
+      description: Fees paid
+      type: object
+      required:
+        - loan_fully_repaid
+        - cost_unit_limit
+        - cost_unit_consumed
+        - cost_unit_price
+        - tip_percentage
+        - xrd_burned
+        - xrd_tipped
+      properties:
+        loan_fully_repaid:
+          type: boolean
+          description: Specifies whether the transaction execution loan has been fully repaid.
+        cost_unit_limit:
+          type: string
+          description: Maximum amount of cost units available for the transaction execution. A decimal 32-bit unsigned integer.
+        cost_unit_consumed:
+          type: string
+          description: The amount of cost units consumed by the transaction execution. A decimal 32-bit unsigned integer.
+        cost_unit_price:
+          type: string
+          description: The XRD price of a single cost unit. A fixed-scale 256-bit decimal number.
+        tip_percentage:
+          type: string
+          description: The validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of "1" corresponds to 1%).
+        xrd_burned:
+          type: string
+          description: The total amount of XRD burned. A fixed-scale 256-bit decimal number.
+        xrd_tipped:
+          type: string
+          description: The total amount of XRD tipped to validators. A fixed-scale 256-bit decimal number.
+    ##########################################
+# REQUEST: /status/network-configuration #
+##########################################
+    NetworkConfigurationResponse:
+      type: object
+      required:
+        - version
+        - network_identifier
+        - network_hrp_suffix
+      properties:
+        version:
+          description: Different versions regarding the node, network and api.
+          type: object
+          required:
+            - core_version
+            - api_version
+          properties:
+            core_version:
+              type: string
+            api_version:
+              type: string
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+        network_hrp_suffix:
+          type: string
+          description: The network suffix used for bech32 hrps used for addressing.
+################################
+# REQUEST: /transaction/submit #
+################################
+    TransactionSubmitRequest:
+      type: object
+      required:
+        - network_identifier
+        - notarized_transaction
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+        notarized_transaction:
+          description: A notarized transaction encoded in the Radix transaction format, and then hex encoded.
+          type: string
+    TransactionSubmitResponse:
+      type: object
+      required:
+        - duplicate
+      properties:
+        duplicate:
+          description: Is true if the transaction is a duplicate of an existing transaction
+            in the mempool.
+          type: boolean
+#################################
+# REQUEST: /transaction/preview #
+#################################
+    TransactionPreviewRequest:
+      type: object
+      required:
+        - network_identifier
+        - manifest
+        - cost_unit_limit
+        - tip_percentage
+        - nonce
+        - signer_public_keys
+        - flags
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+        manifest:
+          description: A transaction manifest. Sbor encoded, and then hex encoded.
+          type: string
+        cost_unit_limit:
+          type: string
+          description: Maximum number of cost units available for transaction execution. A decimal 32-bit unsigned integer.
+        tip_percentage:
+          type: string
+          description: The validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of "1" corresponds to 1%).
+        nonce:
+          type: string
+          description: The nonce value to use for execution. A decimal 64-bit unsigned integer.
+        signer_public_keys:
+          type: array
+          items:
+            type: string
+          description: A list of public keys to be used as transaction signers, in a compressed format, hex encoded.
+        flags:
+          type: object
+          required:
+            - unlimited_loan
+          properties:
+            unlimited_loan:
+              type: boolean
+    TransactionPreviewResponse:
+      type: object
+      required:
+        - transaction_status
+        - transaction_fee
+        - logs
+        - new_package_addresses
+        - new_component_addresses
+        - new_resource_addresses
+      properties:
+        transaction_status:
+          "$ref": "#/components/schemas/TransactionStatus"
+        transaction_fee:
+          "$ref": "#/components/schemas/FeeSummary"
+        logs:
+          type: array
+          items:
+            type: object
+            required:
+              - level
+              - message
+            properties:
+              level:
+                type: string
+              message:
+                type: string
+        new_package_addresses:
+          description: A list of new package addresses, hex-encoded.
+          type: array
+          items:
+            type: string
+        new_component_addresses:
+          description: A list of new component addresses, hex-encoded.
+          type: array
+          items:
+            type: string
+        new_resource_addresses:
+          description: A list of new resource addresses, hex-encoded.
+          type: array
+          items:
+            type: string
+        output:
+          type: array
+          items:
+            type: string
+        error_message:
+          type: string
+##########################
+# REQUEST: /transactions #
+##########################
+    CommittedTransactionsRequest:
+      description: A request to retrieve a sublist of committed transactions from the
+        ledger.
+      type: object
+      required:
+        - network_identifier
+        - start_state_version
+        - limit
+      properties:
+        network_identifier:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+        start_state_version:
+          type: string
+          description: A decimal 64-bit unsigned integer.
+        limit:
+          description: The maximum number of transactions that will be returned.
+          type: integer
+    CommittedTransactionsResponse:
+      type: object
+      required:
+        - start_state_version
+        - max_state_version
+        - transactions
+      properties:
+        start_state_version:
+          type: string
+          description: The first state version returned. A decimal 64-bit unsigned integer.
+        max_state_version:
+          type: string
+          description: The maximum state version returned. A decimal 64-bit unsigned integer.
+        transactions:
+          description: A committed transactions list starting from the `start_state_version_inclusive`.
+          type: array
+          items:
+            "$ref": "#/components/schemas/CommittedTransaction"
+    CommittedTransaction:
+      type: object
+      required:
+        - state_version
+        - notarized_transaction
+        - receipt
+      properties:
+        state_version:
+          type: string
+          description: The resultant state version after the txn has been committed. A decimal 64-bit unsigned integer.
+        notarized_transaction:
+          "$ref": "#/components/schemas/NotarizedTransaction"
+        receipt:
+          "$ref": "#/components/schemas/TransactionReceipt"
