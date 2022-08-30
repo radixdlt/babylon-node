@@ -69,20 +69,27 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2StateComputer;
+import com.radixdlt.rev2.REv2StateReader;
+import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.transactions.RawTransaction;
 
 public final class REv2StateManagerModule extends AbstractModule {
   private final int networkId;
   private final REv2DatabaseConfig databaseConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
-  private final boolean prefixDatabase;
+  private final boolean testing;
 
   private REv2StateManagerModule(
       int networkId,
@@ -90,7 +97,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig) {
     this.networkId = networkId;
-    this.prefixDatabase = prefixDatabase;
+    this.testing = prefixDatabase;
     this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
   }
@@ -105,70 +112,69 @@ public final class REv2StateManagerModule extends AbstractModule {
     return new REv2StateManagerModule(networkId, true, databaseConfig, mempoolConfig);
   }
 
-  private static class PrefixedRocksDBModule extends AbstractModule {
-    private final int networkId;
-    private final REv2DatabaseConfig.RocksDB rocksConfig;
-    private final Option<RustMempoolConfig> mempoolConfig;
-
-    PrefixedRocksDBModule(
-        int networkId,
-        Option<RustMempoolConfig> mempoolConfig,
-        REv2DatabaseConfig.RocksDB rocksConfig) {
-      this.networkId = networkId;
-      this.mempoolConfig = mempoolConfig;
-      this.rocksConfig = rocksConfig;
-    }
-
-    @Provides
-    @Singleton
-    private StateManager stateManager(@Self BFTNode node) {
-      var network = Network.ofId(networkId).orElseThrow();
-      final REv2DatabaseConfig databaseConfigToUse;
-      var databasePath = rocksConfig.databasePath() + node.toString();
-      databaseConfigToUse = REv2DatabaseConfig.rocksDB(databasePath);
-      return StateManager.createAndInitialize(
-          new StateManagerConfig(
-              NetworkDefinition.from(network), mempoolConfig, databaseConfigToUse));
-    }
-  }
-
-  private static class RocksDBModule extends AbstractModule {
-    private final int networkId;
-    private final REv2DatabaseConfig databaseConfig;
-    private final Option<RustMempoolConfig> mempoolConfig;
-
-    RocksDBModule(
-        int networkId, Option<RustMempoolConfig> mempoolConfig, REv2DatabaseConfig databaseConfig) {
-      this.networkId = networkId;
-      this.mempoolConfig = mempoolConfig;
-      this.databaseConfig = databaseConfig;
-    }
-
-    @Provides
-    @Singleton
-    private StateManager stateManager() {
-      var network = Network.ofId(networkId).orElseThrow();
-      return StateManager.createAndInitialize(
-          new StateManagerConfig(NetworkDefinition.from(network), mempoolConfig, databaseConfig));
-    }
-  }
-
   @Override
   public void configure() {
-    if (prefixDatabase && databaseConfig instanceof REv2DatabaseConfig.RocksDB rocksDB) {
-      install(new PrefixedRocksDBModule(networkId, mempoolConfig, rocksDB));
+    if (testing && databaseConfig instanceof REv2DatabaseConfig.RocksDB rocksDB) {
+      install(
+          new AbstractModule() {
+            @Provides
+            @Singleton
+            private StateManager stateManager(@Self BFTNode node) {
+              var network = Network.ofId(networkId).orElseThrow();
+              final REv2DatabaseConfig databaseConfigToUse;
+              var databasePath = rocksDB.databasePath() + node.toString();
+              databaseConfigToUse = REv2DatabaseConfig.rocksDB(databasePath);
+              return StateManager.createAndInitialize(
+                  new StateManagerConfig(
+                      NetworkDefinition.from(network), mempoolConfig, databaseConfigToUse));
+            }
+          });
     } else {
-      install(new RocksDBModule(networkId, mempoolConfig, databaseConfig));
+      install(
+          new AbstractModule() {
+            @Provides
+            @Singleton
+            private StateManager stateManager() {
+              var network = Network.ofId(networkId).orElseThrow();
+              return StateManager.createAndInitialize(
+                  new StateManagerConfig(
+                      NetworkDefinition.from(network), mempoolConfig, databaseConfig));
+            }
+          });
     }
 
     if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {
       bind(REv2StateComputer.class).in(Scopes.SINGLETON);
       bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
-      install(new REv2DatabaseModule());
+      bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
+      bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
+      install(
+          new AbstractModule() {
+            @Provides
+            private REv2TransactionAndProofStore transactionAndProofStore(
+                RustStateComputer stateComputer) {
+              return stateComputer.getTransactionAndProofStore();
+            }
+
+            @Provides
+            private REv2StateReader stateReader(RustStateComputer stateComputer) {
+              return stateComputer::getComponentXrdAmount;
+            }
+          });
     }
 
     if (mempoolConfig.isPresent()) {
-      install(new REv2MempoolModule());
+      install(new AbstractModule() {
+        @Provides
+        private MempoolReader mempoolReader(RustStateComputer stateComputer) {
+          return stateComputer.getMempoolReader();
+        }
+
+        @Provides
+        private MempoolInserter<RawTransaction> mempoolInserter(RustStateComputer stateComputer) {
+          return stateComputer.getMempoolInserter();
+        }
+      });
     }
   }
 
