@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.rev2_consensus_mempool_ledger_sync;
+package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_mempool_ledger_sync;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 
@@ -110,19 +110,21 @@ public final class SanityTest {
 
   @Test
   public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() throws Exception {
-    var test = createTest();
-    // Run
-    for (int i = 0; i < 100; i++) {
-      test.runForCount(1000);
-      var mempoolInserter =
-          test.getInstance(
-              i % test.numNodes(), Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
-      mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
-    }
+    try (var test = createTest()) {
+      // Run
+      for (int i = 0; i < 100; i++) {
+        test.runForCount(1000);
+        var mempoolInserter =
+            test.getInstance(
+                i % test.numNodes(),
+                Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+        mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
+      }
 
-    // Post-run assertions
-    Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
-    Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
-    Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
+      // Post-run assertions
+      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
+      Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
+      Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
+    }
   }
 }

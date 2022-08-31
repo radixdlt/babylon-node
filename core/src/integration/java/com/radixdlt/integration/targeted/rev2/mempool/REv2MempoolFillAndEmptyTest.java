@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.mempool;
+package com.radixdlt.integration.targeted.rev2.mempool;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 

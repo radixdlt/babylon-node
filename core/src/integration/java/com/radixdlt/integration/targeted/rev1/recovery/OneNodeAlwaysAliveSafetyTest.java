@@ -62,36 +62,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.recovery;
+package com.radixdlt.integration.targeted.rev1.recovery;
 
 import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
-import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.ClassToInstanceMap;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.RoundVotingResult.FormedQC;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.epoch.EpochRound;
-import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventProcessorOnDispatch;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.LastEventsModule;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.harness.deterministic.NodeEvents;
+import com.radixdlt.harness.deterministic.NodeEvents.NodeEventProcessor;
+import com.radixdlt.harness.deterministic.NodeEventsModule;
+import com.radixdlt.harness.deterministic.SafetyCheckerModule;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.PersistedNodeForTestingModule;
@@ -104,14 +108,12 @@ import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.KeyComparator;
-import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -130,120 +132,79 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-/** Various liveness+recovery tests */
 @RunWith(Parameterized.class)
-public class RecoveryLivenessTest {
+public class OneNodeAlwaysAliveSafetyTest {
   private static final Logger logger = LogManager.getLogger();
 
   @Parameters
   public static Collection<Object[]> numNodes() {
-    return List.of(new Object[][] {{1, 88L}});
-  }
-
-  // The following classes are created as a workaround as gradle cannot run the tests inside a test
-  // class in parallel. We can achieve some level of parallelism splitting the tests across
-  // different test classes.
-
-  @RunWith(Parameterized.class)
-  public static class RecoveryLivenessTest2 extends RecoveryLivenessTest {
-
-    @Parameters
-    public static Collection<Object[]> numNodes() {
-      return List.of(new Object[][] {{2, 88L}});
-    }
-
-    public RecoveryLivenessTest2(int numNodes, long epochMaxRound) {
-      super(numNodes, epochMaxRound);
-    }
-  }
-
-  public static class RecoveryLivenessTest3 extends RecoveryLivenessTest {
-
-    @Parameters
-    public static Collection<Object[]> numNodes() {
-      return List.of(new Object[][] {{2, 88L}});
-    }
-
-    public RecoveryLivenessTest3(int numNodes, long epochMaxRound) {
-      super(numNodes, epochMaxRound);
-    }
-  }
-
-  public static class RecoveryLivenessTest4 extends RecoveryLivenessTest {
-
-    @Parameters
-    public static Collection<Object[]> numNodes() {
-      return List.of(new Object[][] {{4, 88L}});
-    }
-
-    public RecoveryLivenessTest4(int numNodes, long epochMaxRound) {
-      super(numNodes, epochMaxRound);
-    }
-  }
-
-  public static class RecoveryLivenessTest5 extends RecoveryLivenessTest {
-
-    @Parameters
-    public static Collection<Object[]> numNodes() {
-      return List.of(new Object[][] {{2, 1L}});
-    }
-
-    public RecoveryLivenessTest5(int numNodes, long epochMaxRound) {
-      super(numNodes, epochMaxRound);
-    }
-  }
-
-  public static class RecoveryLivenessTest6 extends RecoveryLivenessTest {
-
-    @Parameters
-    public static Collection<Object[]> numNodes() {
-      return List.of(new Object[][] {{10, 100L}});
-    }
-
-    public RecoveryLivenessTest6(int numNodes, long epochMaxRound) {
-      super(numNodes, epochMaxRound);
-    }
+    return List.of(new Object[][] {{5}});
   }
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   private DeterministicNetwork network;
   private List<Supplier<Injector>> nodeCreators;
   private List<Injector> nodes = new ArrayList<>();
-  private final ImmutableList<ECKeyPair> nodeKeys;
-  private final long epochMaxRound;
-  private MessageMutator messageMutator;
+  private final List<ECKeyPair> nodeKeys;
 
-  public RecoveryLivenessTest(int numNodes, long epochMaxRound) {
+  @Inject private NodeEvents nodeEvents;
+
+  private int lastNodeToCommit;
+
+  public OneNodeAlwaysAliveSafetyTest(int numNodes) {
     this.nodeKeys =
         Stream.generate(ECKeyPair::generateNew)
             .limit(numNodes)
             .sorted(Comparator.comparing(ECKeyPair::getPublicKey, KeyComparator.instance()))
-            .collect(ImmutableList.toImmutableList());
-    this.epochMaxRound = epochMaxRound;
+            .toList();
   }
 
   @Before
   public void setup() {
-    this.messageMutator = MessageMutator.nothing();
+    var allNodes = nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).toList();
+
     this.network =
         new DeterministicNetwork(
-            nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).toList(),
+            allNodes,
             MessageSelector.firstSelector(),
-            this::mutate);
+            (message, queue) ->
+                message.message() instanceof GetVerticesRequest
+                    || message.message() instanceof LocalSyncRequest);
 
-    var allNodes = nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).toList();
+    Guice.createInjector(
+            new AbstractModule() {
+              @Override
+              protected void configure() {
+                bind(new TypeLiteral<ImmutableSet<BFTNode>>() {})
+                    .toInstance(ImmutableSet.copyOf(allNodes));
+              }
+
+              @ProvidesIntoSet
+              public NodeEventProcessor<?> updateChecker() {
+                return new NodeEventProcessor<>(
+                    RoundQuorumReached.class,
+                    (node, roundQuorumReached) -> {
+                      if (roundQuorumReached.votingResult() instanceof FormedQC
+                          && ((FormedQC) roundQuorumReached.votingResult())
+                              .getQC()
+                              .getCommittedHeader()
+                              .isPresent()) {
+                        lastNodeToCommit = network.lookup(node);
+                      }
+                    });
+              }
+            },
+            new SafetyCheckerModule(),
+            new NodeEventsModule())
+        .injectMembers(this);
 
     this.nodeCreators =
         nodeKeys.stream().<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes)).toList();
 
-    for (Supplier<Injector> nodeCreator : nodeCreators) {
+    for (var nodeCreator : nodeCreators) {
       this.nodes.add(nodeCreator.get());
     }
-    this.nodes.forEach(i -> i.getInstance(DeterministicProcessor.class).start());
-  }
-
-  boolean mutate(ControlledMessage message, MessageQueue queue) {
-    return messageMutator.mutate(message, queue);
   }
 
   private void stopDatabase(Injector injector) {
@@ -261,8 +222,8 @@ public class RecoveryLivenessTest {
     return Guice.createInjector(
         new MockedGenesisModule(
             nodeKeys.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
-            Amount.ofTokens(100000),
-            Amount.ofTokens(1000)),
+            Amount.ofTokens(1000000),
+            Amount.ofTokens(10000)),
         MempoolRelayConfig.of(10).asModule(),
         new MainnetForksModule(),
         new RadixEngineForksLatestOnlyModule(
@@ -272,7 +233,7 @@ public class RecoveryLivenessTest {
                 FeeTable.noFees(),
                 1024 * 1024,
                 OptionalInt.of(50),
-                epochMaxRound,
+                88,
                 2,
                 Amount.ofTokens(10),
                 1,
@@ -282,7 +243,8 @@ public class RecoveryLivenessTest {
                 MSG.maxLength())),
         new ForksModule(),
         PersistedNodeForTestingModule.rev1(ecKeyPair, 10),
-        new LastEventsModule(EpochRoundUpdate.class),
+        new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build(),
         new AbstractModule() {
           @Override
           protected void configure() {
@@ -292,42 +254,38 @@ public class RecoveryLivenessTest {
                 .annotatedWith(DatabaseLocation.class)
                 .to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
           }
-        },
-        new TestP2PModule.Builder().withAllNodes(allNodes).build(),
-        new TestMessagingModule.Builder().build());
+
+          @ProvidesIntoSet
+          @ProcessOnDispatch
+          private EventProcessor<BFTCommittedUpdate> committedUpdateEventProcessor(
+              @Self BFTNode node) {
+            return nodeEvents.processor(node, BFTCommittedUpdate.class);
+          }
+
+          @ProvidesIntoSet
+          private EventProcessorOnDispatch<?> roundQuorumReachedEventProcessor(@Self BFTNode node) {
+            return nodeEvents.processorOnDispatch(node, RoundQuorumReached.class);
+          }
+        });
   }
 
   private void restartNode(int index) {
     this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
     var injector = nodeCreators.get(index).get();
-    stopDatabase(this.nodes.set(index, injector));
-    withThreadCtx(injector, () -> injector.getInstance(DeterministicProcessor.class).start());
+    this.nodes.set(index, injector);
   }
 
-  private void initSync() {
-    for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-      final var injector = nodeCreators.get(nodeIndex).get();
-      withThreadCtx(
-          injector,
-          () -> {
-            // need to manually init sync check, normally sync runner schedules it periodically
-            injector
-                .getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() {})
-                .dispatch(SyncCheckTrigger.create());
-          });
-    }
-  }
-
-  private void withThreadCtx(Injector injector, Runnable r) {
+  private void startNode(int index) {
+    var injector = nodes.get(index);
     ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
-      r.run();
+      injector.getInstance(DeterministicProcessor.class).start();
     } finally {
       ThreadContext.remove("self");
     }
   }
 
-  private Timed<ControlledMessage> processNext() {
+  private void processNext() {
     var msg = this.network.nextMessage();
     logger.debug("Processing message {}", msg);
 
@@ -341,49 +299,14 @@ public class RecoveryLivenessTest {
     } finally {
       ThreadContext.remove("self");
     }
-
-    return msg;
   }
 
-  private Optional<EpochRound> lastEpochRoundUpdateEmitted() {
-    return network.allMessages().stream()
-        .filter(msg -> msg.message() instanceof EpochRoundUpdate)
-        .map(msg -> (EpochRoundUpdate) msg.message())
-        .map(
-            e ->
-                new EpochRound(
-                    e.getEpoch(), e.getRoundUpdate().getHighQC().highestCommittedQC().getRound()))
-        .max(Comparator.naturalOrder());
-  }
+  private void processUntilNextCommittedUpdate() {
+    lastNodeToCommit = -1;
 
-  private EpochRound latestEpochRound() {
-    return this.nodes.stream()
-        .map(
-            i ->
-                i.getInstance(Key.get(new TypeLiteral<ClassToInstanceMap<Object>>() {}))
-                    .getInstance(EpochRoundUpdate.class))
-        .map(e -> e == null ? new EpochRound(0, Round.genesis()) : e.getEpochRound())
-        .max(Comparator.naturalOrder())
-        .orElse(new EpochRound(0, Round.genesis()));
-  }
-
-  private int processUntilNextCommittedEmitted(int maxSteps) {
-    var lastCommitted =
-        this.lastEpochRoundUpdateEmitted().orElse(new EpochRound(0, Round.genesis()));
-    int count = 0;
-    int senderIndex;
-    do {
-      if (count > maxSteps) {
-        throw new IllegalStateException("Already lost liveness");
-      }
-
-      var msg = processNext();
-      senderIndex = msg.value().channelId().senderIndex();
-      count++;
-    } while (this.lastEpochRoundUpdateEmitted().stream()
-        .noneMatch(v -> v.compareTo(lastCommitted) > 0));
-
-    return senderIndex;
+    while (lastNodeToCommit == -1) {
+      processNext();
+    }
   }
 
   private void processForCount(int messageCount) {
@@ -392,109 +315,34 @@ public class RecoveryLivenessTest {
     }
   }
 
-  /**
-   * Given that one validator is always alive means that that validator will always have the latest
-   * committed vertex which the validator can sync others with.
-   */
   @Test
-  public void liveness_check_when_restart_all_but_one_node() {
-    var epochRound = this.latestEpochRound();
+  public void dropper_and_crasher_adversares_should_not_cause_safety_failures() {
+    // Start
+    for (int i = 0; i < nodes.size(); i++) {
+      this.startNode(i);
+    }
 
-    for (int restart = 0; restart < 5; restart++) {
-      processForCount(5000);
+    // Drop first proposal so round 2 will be committed
+    this.network.dropMessages(m -> m.message() instanceof Proposal);
 
-      var nextEpochRound = latestEpochRound();
-      assertThat(nextEpochRound).isGreaterThan(epochRound);
-      epochRound = nextEpochRound;
+    // process until round 2 committed
+    this.processUntilNextCommittedUpdate();
 
-      logger.info("Restarting " + restart);
-      for (int nodeIndex = 1; nodeIndex < nodes.size(); nodeIndex++) {
-        restartNode(nodeIndex);
+    // Restart all except last committed
+    logger.info("Restarting...");
+    for (int i = 0; i < nodes.size(); i++) {
+      if (i != this.lastNodeToCommit) {
+        this.restartNode(i);
       }
-      initSync();
     }
-
-    assertThat(epochRound.getEpoch()).isGreaterThan(1);
-  }
-
-  @Test
-  public void liveness_check_when_restart_node_on_round_update_with_commit() {
-    var epochRound = this.latestEpochRound();
-
-    for (int restart = 0; restart < 5; restart++) {
-      processForCount(5000);
-
-      var nextEpochRound = latestEpochRound();
-      assertThat(nextEpochRound).isGreaterThan(epochRound);
-      epochRound = nextEpochRound;
-
-      int nodeToRestart = processUntilNextCommittedEmitted(5000);
-
-      logger.info("Restarting " + restart);
-      for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-        if (nodeIndex != (nodeToRestart + 1) % nodes.size()) {
-          restartNode(nodeIndex);
-        }
+    for (int i = 0; i < nodes.size(); i++) {
+      if (i != this.lastNodeToCommit) {
+        this.startNode(i);
       }
-      initSync();
     }
 
-    assertThat(epochRound.getEpoch()).isGreaterThan(1);
-  }
-
-  @Test
-  public void liveness_check_when_restart_all_nodes() {
-    var epochRound = this.latestEpochRound();
-
-    for (int restart = 0; restart < 5; restart++) {
-      processForCount(5000);
-
-      var nextEpochRound = latestEpochRound();
-      assertThat(nextEpochRound).isGreaterThan(epochRound);
-      epochRound = nextEpochRound;
-
-      logger.info("Restarting " + restart);
-      for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-        restartNode(nodeIndex);
-      }
-      initSync();
-    }
-
-    assertThat(epochRound.getEpoch()).isGreaterThan(1);
-  }
-
-  /**
-   * This test tests for recovery when there is a vertex chain > 3 due to timeouts. Probably won't
-   * be an issue once timeout certificates implemented.
-   */
-  @Test
-  public void liveness_check_when_restart_all_nodes_and_f_nodes_down() {
-    int f = (nodes.size() - 1) / 3;
-    if (f <= 0) {
-      // if f <= 0, this is equivalent to liveness_check_when_restart_all_nodes();
-      return;
-    }
-
-    this.messageMutator =
-        (message, queue) ->
-            message.channelId().receiverIndex() < f || message.channelId().senderIndex() < f;
-
-    var epochRound = this.latestEpochRound();
-
-    for (int restart = 0; restart < 5; restart++) {
-      processForCount(5000);
-
-      var nextEpochRound = latestEpochRound();
-      assertThat(nextEpochRound).isGreaterThan(epochRound);
-      epochRound = nextEpochRound;
-
-      logger.info("Restarting " + restart);
-      for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-        restartNode(nodeIndex);
-      }
-      initSync();
-    }
-
-    assertThat(epochRound.getEpoch()).isGreaterThan(1);
+    // If nodes restart with correct safety precautions then round 1 should be skipped
+    // otherwise, this will cause failure
+    this.processForCount(5000);
   }
 }

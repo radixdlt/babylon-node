@@ -62,68 +62,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.integration.targeted.rev2.storage;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.invariants.Checkers;
+import com.radixdlt.integration.Slow;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.REv2OneMBTransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
-public class REv2SyncTest {
+/**
+ * Tests that a configuration with a persistent transaction store can handle a number of large
+ * transactions. ie, this test should fail in low memory environments IF an in memory transaction
+ * store was used.
+ *
+ * <p>If possible this test should be run in a low memory environment (e.g. -Xmx1024m)
+ */
+@Category(Slow.class)
+public final class TransactionDBSizeStressTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private DeterministicTest buildTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 1)
+        .numNodes(1, 0)
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerWithSyncRelay(
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.transactionGenerator(new REV2TransactionGenerator(), 1)),
-                    SyncRelayConfig.of(200, 10, 200))));
+                        REV2ProposerConfig.transactionGenerator(
+                            new REv2OneMBTransactionGenerator(NetworkDefinition.INT_TEST_NET),
+                            1)))));
   }
 
   @Test
-  public void single_transaction_sync_should_work() throws Exception {
-    // Arrange: Single transaction committed
+  public void committing_large_transactions_should_work() throws Exception {
     try (var test = buildTest()) {
-      test.runUntil(
-          n -> {
-            var store = n.get(0).getInstance(REv2TransactionAndProofStore.class);
-            return store.getLastProof().isPresent();
-          },
-          500,
-          m -> m.channelId().senderIndex() == 0 && !(m.message() instanceof ScheduledLocalTimeout));
-
-      // Act: Sync
-      test.runUntil(
-          n -> {
-            var store = n.get(1).getInstance(REv2TransactionAndProofStore.class);
-            return store.getLastProof().isPresent();
-          },
-          500);
-
-      // Assert
-      Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 1);
+      for (int i = 0; i < 10; i++) {
+        test.runForCount(1000);
+      }
     }
   }
 }

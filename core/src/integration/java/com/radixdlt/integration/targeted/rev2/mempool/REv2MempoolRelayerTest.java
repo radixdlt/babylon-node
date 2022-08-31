@@ -62,33 +62,36 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.rev2_consensus_ledger_sync;
+package com.radixdlt.integration.targeted.rev2.mempool;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.REv2SimpleFuzzerTransactionGenerator;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
-import java.util.Random;
-import org.junit.Rule;
+import com.radixdlt.transactions.RawTransaction;
+import java.util.stream.Collectors;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-public final class SimpleFuzzerTransactionsTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
+public final class REv2MempoolRelayerTest {
+  private final int MEMPOOL_SIZE = 1000;
   private final TransactionGenerator transactionGenerator =
-      new REv2SimpleFuzzerTransactionGenerator(new Random(12345));
+      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(10, 10)
+        .numNodes(1, 20)
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
@@ -96,23 +99,30 @@ public final class SimpleFuzzerTransactionsTest {
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
-                        Network.LOCALSIMULATOR.getId(),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.transactionGenerator(transactionGenerator, 10)),
+                        Network.INTEGRATIONTESTNET.getId(),
+                        REv2DatabaseConfig.inMemory(),
+                        StateComputerConfig.REV2ProposerConfig.mempool(
+                            MEMPOOL_SIZE, new MempoolRelayConfig(0, 0, 0, 100))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
   @Test
-  public void simple_fuzzer_transaction_generator_should_not_cause_unexpected_errors() {
-    // Arrange
-    var test = createTest();
+  public void relayer_fills_mempool_of_all_nodes() throws Exception {
+    try (var test = createTest()) {
+      // Arrange: Fill node1 mempool
+      var mempoolInserter =
+          test.getInstance(1, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+      for (int i = 0; i < MEMPOOL_SIZE; i++) {
+        mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
+      }
 
-    // Run
-    test.runForCount(10000);
+      // Run all nodes except validator node0
+      test.runForCount(
+          200, m -> m.channelId().senderIndex() != 0 && m.channelId().receiverIndex() != 0);
 
-    // Post-run assertions
-    Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 100);
-    Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
-    Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
+      // Post-run assertions
+      Checkers.assertNodesHaveExactMempoolCount(
+          test.getNodeInjectors().stream().skip(1).collect(Collectors.toList()), MEMPOOL_SIZE);
+    }
   }
 }

@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.statemachine;
+package com.radixdlt.integration.targeted.rev1.statemachine;
 
 import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 import static com.radixdlt.substate.TxAction.*;

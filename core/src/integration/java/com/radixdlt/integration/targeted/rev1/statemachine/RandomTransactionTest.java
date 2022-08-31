@@ -62,57 +62,95 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.storage;
+package com.radixdlt.integration.targeted.rev1.statemachine;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.integration.Slow;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.REv2OneMBTransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.messaging.TestMessagingModule;
+import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
+import com.radixdlt.p2p.TestP2PModule;
+import com.radixdlt.rev1.LedgerAndBFTProof;
+import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
+import com.radixdlt.rev1.forks.ForksModule;
+import com.radixdlt.rev1.forks.MainnetForksModule;
+import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.store.LastStoredProof;
+import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
-/**
- * Tests that a configuration with a persistent transaction store can handle a number of large
- * transactions. ie, this test should fail in low memory environments IF an in memory transaction
- * store was used.
- *
- * <p>If possible this test should be run in a low memory environment (e.g. -Xmx1024m)
- */
-@Category(Slow.class)
-public final class TransactionDBSizeStressTest {
+public class RandomTransactionTest {
+  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+  private static final Logger logger = LogManager.getLogger();
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private DeterministicTest buildTest() {
-    return DeterministicTest.builder()
-        .numNodes(1, 0)
-        .messageSelector(firstSelector())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.transactionGenerator(
-                            new REv2OneMBTransactionGenerator(NetworkDefinition.INT_TEST_NET),
-                            1)))));
+  @Inject private RadixEngine<LedgerAndBFTProof> engine;
+
+  // FIXME: Hack, need this in order to cause provider for genesis to be stored
+  @Inject @LastStoredProof private LedgerProof ledgerProof;
+
+  private Injector createInjector() {
+    return Guice.createInjector(
+        MempoolRelayConfig.of(10).asModule(),
+        new MainnetForksModule(),
+        new RadixEngineForksLatestOnlyModule(),
+        new ForksModule(),
+        SingleNodeAndPeersDeterministicNetworkModule.rev1(TEST_KEY, 1000),
+        new MockedGenesisModule(
+            Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(100000), Amount.ofTokens(1000)),
+        new TestP2PModule.Builder().build(),
+        new TestMessagingModule.Builder().build(),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            bindConstant()
+                .annotatedWith(DatabaseLocation.class)
+                .to(folder.getRoot().getAbsolutePath());
+          }
+        });
   }
 
   @Test
-  public void committing_large_transactions_should_work() {
-    var test = buildTest();
-    for (int i = 0; i < 10; i++) {
-      test.runForCount(1000);
+  public void poor_mans_fuzz_test() {
+    var random = new Random(12345678);
+
+    // Arrange
+    createInjector().injectMembers(this);
+    final var count = 1000000;
+
+    for (int i = 0; i < count; i++) {
+      int len = random.nextInt(512);
+      var payload = new byte[len];
+      random.nextBytes(payload);
+      for (int j = 0; j < len; j++) {
+        payload[j] = random.nextBoolean() ? (byte) random.nextInt(10) : payload[j];
+      }
+      var txns = List.of(RawTransaction.create(payload));
+      if (i % 1000 == 0) {
+        logger.info(i + "/" + count);
+      }
+      try {
+        engine.execute(txns, null, PermissionLevel.SYSTEM);
+      } catch (RadixEngineException e) {
+        // ignore
+      }
     }
   }
 }
