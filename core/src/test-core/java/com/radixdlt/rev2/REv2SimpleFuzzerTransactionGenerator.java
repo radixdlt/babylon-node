@@ -62,78 +62,71 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.rev2;
 
-import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
+import java.util.Random;
 
-/** Configuration options for the state computer */
-public sealed interface StateComputerConfig {
-  static StateComputerConfig mocked(MockedMempoolConfig mempoolType) {
-    return new MockedStateComputerConfig(mempoolType);
+/**
+ * A simple fuzzer for transactions which randomly arranges 4 manifest instructions: 1. sys-faucet
+ * lock_fee 2. sys-faucet free_xrd 3. Account new 4. Account new_with_resource
+ */
+public final class REv2SimpleFuzzerTransactionGenerator implements TransactionGenerator {
+  private static final String SIM_XRD_ADDRESS =
+      "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag";
+  private static final String SIM_FAUCET_ADDRESS =
+      "system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs9fh54n";
+  private static final String SIM_ACCOUNT_PACKAGE_ADDRESS =
+      "package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpsuluv44";
+
+  private final Random random;
+  private int count = 0;
+
+  public REv2SimpleFuzzerTransactionGenerator(Random random) {
+    this.random = random;
   }
 
-  static StateComputerConfig rev1(int mempoolSize) {
-    return new REv1StateComputerConfig(mempoolSize);
+  private String nextInstruction() {
+    count++;
+
+    return switch (random.nextInt(4)) {
+      case 0 -> String.format(
+          "CALL_METHOD ComponentAddress(\"%s\") \"lock_fee\" Decimal(\"100\");",
+          SIM_FAUCET_ADDRESS);
+      case 1 -> String.format(
+          "CALL_METHOD ComponentAddress(\"%s\") \"free_xrd\";", SIM_FAUCET_ADDRESS);
+      case 2 -> String.format(
+          "CALL_FUNCTION PackageAddress(\"%s\") \"Account\" \"new\" Enum(\"AllowAll\");",
+          SIM_ACCOUNT_PACKAGE_ADDRESS);
+      default -> String.format(
+          """
+                              TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("%s");
+                              CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("%s");
+                          """,
+          SIM_XRD_ADDRESS, "bucket" + count, SIM_ACCOUNT_PACKAGE_ADDRESS, "bucket" + count);
+    };
   }
 
-  static StateComputerConfig rev2(
-      int networkId, REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig) {
-    return new REv2StateComputerConfig(networkId, databaseConfig, proposerConfig);
-  }
+  @Override
+  public RawTransaction nextTransaction() {
+    final var keyPair = PrivateKeys.numeric(1 + random.nextInt(10)).findFirst().orElseThrow();
+    var manifestBuilder = new StringBuilder();
 
-  sealed interface MockedMempoolConfig {
-    static MockedMempoolConfig noMempool() {
-      return new NoMempool();
+    var numInstructions = 1 + random.nextInt(20);
+    for (int i = 0; i < numInstructions; i++) {
+      manifestBuilder.append(this.nextInstruction());
     }
 
-    record NoMempool() implements MockedMempoolConfig {}
-
-    record LocalOnly(int mempoolSize) implements MockedMempoolConfig {}
-
-    record Relayed(int mempoolSize) implements MockedMempoolConfig {}
-  }
-
-  record MockedStateComputerConfig(MockedMempoolConfig mempoolType)
-      implements StateComputerConfig {}
-
-  record REv1StateComputerConfig(int mempoolSize) implements StateComputerConfig {}
-
-  record REv2StateComputerConfig(
-      int networkId, REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig)
-      implements StateComputerConfig {}
-
-  sealed interface REV2ProposerConfig {
-    static REV2ProposerConfig halfCorrectProposer() {
-      return new Generated(new HalfCorrectREv2TransactionGenerator());
-    }
-
-    static REV2ProposerConfig transactionGenerator(
-        TransactionGenerator transactionGenerator, long count) {
-      return new Generated(
-          (round, prepared) ->
-              Stream.generate(transactionGenerator::nextTransaction)
-                  .limit(count)
-                  .collect(Collectors.toList()));
-    }
-
-    static REV2ProposerConfig transactionGenerator(ProposalGenerator proposalGenerator) {
-      return new Generated(proposalGenerator);
-    }
-
-    static REV2ProposerConfig mempool(int mempoolMaxSize, MempoolRelayConfig config) {
-      return new Mempool(new RustMempoolConfig(mempoolMaxSize), config);
-    }
-
-    record Generated(ProposalGenerator generator) implements REV2ProposerConfig {}
-
-    record Mempool(RustMempoolConfig mempoolConfig, MempoolRelayConfig relayConfig)
-        implements REV2ProposerConfig {}
+    var header =
+        TransactionHeader.defaults(
+            NetworkDefinition.LOCAL_SIMULATOR, keyPair.getPublicKey(), false);
+    var intentBytes =
+        TransactionBuilder.createIntent(
+            NetworkDefinition.LOCAL_SIMULATOR, header, manifestBuilder.toString());
+    return REv2TestTransactions.constructTransaction(intentBytes, keyPair, List.of(keyPair));
   }
 }

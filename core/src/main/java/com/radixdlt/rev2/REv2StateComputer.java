@@ -80,11 +80,12 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
+import com.radixdlt.statecomputer.commit.PrepareRequest;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt64;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -136,20 +137,25 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
       List<StateComputerLedger.ExecutedTransaction> previous,
       List<RawTransaction> proposedTransactions,
       RoundDetails roundDetails) {
-    var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-    var invalidTransactions = new HashMap<RawTransaction, Exception>();
+    var previousTransactions =
+        previous.stream()
+            .map(StateComputerLedger.ExecutedTransaction::transaction)
+            .collect(Collectors.toList());
+    var prepareRequest = new PrepareRequest(previousTransactions, proposedTransactions);
 
-    for (var transaction : proposedTransactions) {
-      var verifyResult = stateComputer.verify(transaction);
-      if (verifyResult.isSuccess()) {
-        successfulTransactions.add(new REv2ExecutedTransaction(transaction));
-      } else {
-        invalidTransactions.put(
-            transaction, new InvalidREv2Transaction(verifyResult.unwrapError()));
-      }
-    }
+    var result = stateComputer.prepare(prepareRequest);
 
-    return new StateComputerLedger.StateComputerResult(successfulTransactions, invalidTransactions);
+    var nonRejectedTransactions =
+        result.nonRejectedTransactions().stream()
+            .map(REv2ExecutedTransaction::new)
+            .collect(Collectors.<StateComputerLedger.ExecutedTransaction>toList());
+    Map<RawTransaction, Exception> invalidTransactions =
+        result.rejectedTransactions().entrySet().stream()
+            .collect(
+                Collectors.toMap(Map.Entry::getKey, e -> new InvalidREv2Transaction(e.getValue())));
+
+    return new StateComputerLedger.StateComputerResult(
+        nonRejectedTransactions, invalidTransactions);
   }
 
   @Override

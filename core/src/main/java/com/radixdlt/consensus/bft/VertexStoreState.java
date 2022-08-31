@@ -282,10 +282,11 @@ public final class VertexStoreState {
     public SerializedVertexStoreState(
         @JsonProperty(value = "high_qc", required = true) HighQC highQC,
         @JsonProperty(value = "root", required = true) Vertex root,
-        @JsonProperty(value = "vertices", required = true) ImmutableList<Vertex> vertices,
+        @JsonProperty(value = "vertices")
+            ImmutableList<Vertex> vertices, // Cannot be required due to DSON deserialization
         @JsonProperty("highest_tc") TimeoutCertificate highestTC) {
       this.root = Objects.requireNonNull(root);
-      this.vertices = Objects.requireNonNull(vertices);
+      this.vertices = vertices == null ? ImmutableList.of() : vertices;
       this.highQC = Objects.requireNonNull(highQC);
       this.highestTC = highestTC;
     }

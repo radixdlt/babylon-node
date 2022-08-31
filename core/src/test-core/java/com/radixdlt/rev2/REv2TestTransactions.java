@@ -77,7 +77,14 @@ public final class REv2TestTransactions {
   private static int currentKey = 1;
 
   public static final RawTransaction VALID_TXN_0 =
-      constructTransaction("CLEAR_AUTH_ZONE;", List.of());
+      constructTransaction(
+          String.format(
+              """
+        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("10");
+        CLEAR_AUTH_ZONE;
+        """,
+              "system_test1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsfkwqvf"),
+          List.of());
   public static final RawTransaction VALID_TXN_1 =
       constructTransaction("CLEAR_AUTH_ZONE;", List.of(getNewKeyPair()));
   public static final RawTransaction VALID_TXN_2 =

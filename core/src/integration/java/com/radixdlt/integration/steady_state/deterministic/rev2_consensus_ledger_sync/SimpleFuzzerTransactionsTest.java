@@ -62,78 +62,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.integration.steady_state.deterministic.rev2_consensus_ledger_sync;
 
-import com.radixdlt.consensus.liveness.ProposalGenerator;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.REv2SimpleFuzzerTransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.radixdlt.sync.SyncRelayConfig;
+import java.util.Random;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-/** Configuration options for the state computer */
-public sealed interface StateComputerConfig {
-  static StateComputerConfig mocked(MockedMempoolConfig mempoolType) {
-    return new MockedStateComputerConfig(mempoolType);
+public final class SimpleFuzzerTransactionsTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+  private final TransactionGenerator transactionGenerator =
+      new REv2SimpleFuzzerTransactionGenerator(new Random(12345));
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(10, 10)
+        .messageSelector(firstSelector())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.rev2(
+                        Network.LOCALSIMULATOR.getId(),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REV2ProposerConfig.transactionGenerator(transactionGenerator, 10)),
+                    SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
-  static StateComputerConfig rev1(int mempoolSize) {
-    return new REv1StateComputerConfig(mempoolSize);
-  }
+  @Test
+  public void simple_fuzzer_transaction_generator_should_not_cause_unexpected_errors() {
+    // Arrange
+    var test = createTest();
 
-  static StateComputerConfig rev2(
-      int networkId, REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig) {
-    return new REv2StateComputerConfig(networkId, databaseConfig, proposerConfig);
-  }
+    // Run
+    test.runForCount(10000);
 
-  sealed interface MockedMempoolConfig {
-    static MockedMempoolConfig noMempool() {
-      return new NoMempool();
-    }
-
-    record NoMempool() implements MockedMempoolConfig {}
-
-    record LocalOnly(int mempoolSize) implements MockedMempoolConfig {}
-
-    record Relayed(int mempoolSize) implements MockedMempoolConfig {}
-  }
-
-  record MockedStateComputerConfig(MockedMempoolConfig mempoolType)
-      implements StateComputerConfig {}
-
-  record REv1StateComputerConfig(int mempoolSize) implements StateComputerConfig {}
-
-  record REv2StateComputerConfig(
-      int networkId, REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig)
-      implements StateComputerConfig {}
-
-  sealed interface REV2ProposerConfig {
-    static REV2ProposerConfig halfCorrectProposer() {
-      return new Generated(new HalfCorrectREv2TransactionGenerator());
-    }
-
-    static REV2ProposerConfig transactionGenerator(
-        TransactionGenerator transactionGenerator, long count) {
-      return new Generated(
-          (round, prepared) ->
-              Stream.generate(transactionGenerator::nextTransaction)
-                  .limit(count)
-                  .collect(Collectors.toList()));
-    }
-
-    static REV2ProposerConfig transactionGenerator(ProposalGenerator proposalGenerator) {
-      return new Generated(proposalGenerator);
-    }
-
-    static REV2ProposerConfig mempool(int mempoolMaxSize, MempoolRelayConfig config) {
-      return new Mempool(new RustMempoolConfig(mempoolMaxSize), config);
-    }
-
-    record Generated(ProposalGenerator generator) implements REV2ProposerConfig {}
-
-    record Mempool(RustMempoolConfig mempoolConfig, MempoolRelayConfig relayConfig)
-        implements REV2ProposerConfig {}
+    // Post-run assertions
+    Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 100);
+    Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
+    Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
   }
 }

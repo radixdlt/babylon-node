@@ -64,10 +64,11 @@
 
 use sbor::{Decode, Encode, TypeId};
 use scrypto::crypto::EcdsaPublicKey;
+use std::collections::HashMap;
 use std::fmt;
 use transaction::model::{PreviewFlags, TransactionManifest};
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord, Decode, Encode, TypeId)]
 pub struct TId {
     pub bytes: Vec<u8>,
 }
@@ -78,7 +79,7 @@ impl fmt::Display for TId {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Decode, Encode, TypeId)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord, Decode, Encode, TypeId)]
 pub struct Transaction {
     pub payload: Vec<u8>,
     pub id: TId,
@@ -99,4 +100,16 @@ pub struct CommitRequest {
     pub transactions: Vec<Transaction>,
     pub state_version: u64,
     pub proof: Vec<u8>,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
+pub struct PrepareRequest {
+    pub prepared: Vec<Transaction>,
+    pub proposed: Vec<Transaction>,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
+pub struct PrepareResult {
+    pub non_rejected_txns: Vec<Transaction>,
+    pub rejected_txns: HashMap<Transaction, String>,
 }

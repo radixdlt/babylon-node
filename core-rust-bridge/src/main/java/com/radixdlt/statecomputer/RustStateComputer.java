@@ -72,6 +72,8 @@ import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statecomputer.commit.CommitRequest;
+import com.radixdlt.statecomputer.commit.PrepareRequest;
+import com.radixdlt.statecomputer.commit.PrepareResult;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
@@ -90,6 +92,9 @@ public class RustStateComputer {
     verifyFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::verify);
+    prepareFunc =
+        NativeCalls.Func1.with(
+            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::prepare);
     commitFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::commit);
@@ -118,14 +123,6 @@ public class RustStateComputer {
     return this.mempool.getTransactionsForProposal(count, transactionToExclude);
   }
 
-  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
-    return componentXrdAmountFunc.call(componentAddress);
-  }
-
-  public void commit(CommitRequest commitRequest) {
-    commitFunc.call(commitRequest);
-  }
-
   public Result<Unit, String> verify(RawTransaction transaction) {
     return verifyFunc.call(transaction);
   }
@@ -134,11 +131,27 @@ public class RustStateComputer {
 
   private static native byte[] verify(StateManager stateManager, byte[] payload);
 
+  public PrepareResult prepare(PrepareRequest prepareRequest) {
+    return prepareFunc.call(prepareRequest);
+  }
+
+  public void commit(CommitRequest commitRequest) {
+    commitFunc.call(commitRequest);
+  }
+
+  private final NativeCalls.Func1<StateManager, PrepareRequest, PrepareResult> prepareFunc;
+
+  private static native byte[] prepare(StateManager stateManager, byte[] payload);
+
   private final NativeCalls.Func1<StateManager, CommitRequest, Unit> commitFunc;
 
   private static native byte[] commit(StateManager stateManager, byte[] payload);
 
   private final NativeCalls.Func1<StateManager, ComponentAddress, Decimal> componentXrdAmountFunc;
+
+  public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
+    return componentXrdAmountFunc.call(componentAddress);
+  }
 
   private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
 }
