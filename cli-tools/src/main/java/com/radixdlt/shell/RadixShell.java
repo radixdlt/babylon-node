@@ -346,9 +346,9 @@ public final class RadixShell {
       sendMsg(uri.getNodeId(), message);
     }
 
-    public void sendMsg(String nodeId, Message message) throws DeserializeException {
+    public void sendMsg(String nodeAddress, Message message) throws DeserializeException {
       final var addressing = injector.getInstance(Addressing.class);
-      sendMsg(NodeId.fromPublicKey(addressing.forNodes().parse(nodeId)), message);
+      sendMsg(NodeId.fromPublicKey(addressing.decodeNodeAddress(nodeAddress)), message);
     }
 
     public void sendMsg(NodeId nodeId, Message message) {

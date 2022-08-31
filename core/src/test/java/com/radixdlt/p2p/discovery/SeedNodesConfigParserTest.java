@@ -71,7 +71,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.addressing.NodeAddressing;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
@@ -94,7 +93,7 @@ public class SeedNodesConfigParserTest {
             ImmutableList.of(
                 String.format(
                     "radix://%s@1.1.1.1",
-                    NodeAddressing.of(
+                    Addressing.encodeNodeAddressWithHrp(
                         Network.INTEGRATIONTESTNET.getNodeHrp(),
                         ECKeyPair.generateNew().getPublicKey()))))
         .when(p2pConfig)

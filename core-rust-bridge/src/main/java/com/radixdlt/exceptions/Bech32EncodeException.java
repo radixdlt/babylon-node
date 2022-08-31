@@ -62,42 +62,10 @@
  * permissions under this License.
  */
 
-package com.radixdlt.addressing;
+package com.radixdlt.exceptions;
 
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.utils.Bits;
-import java.util.Objects;
-import org.bitcoinj.core.Bech32;
-
-/**
- * A Radix resource identifier which encodes addresses with a resource behind them in Bech32
- * encoding.
- */
-public final class ResourceAddressing {
-  private final String hrp;
-
-  private ResourceAddressing(String hrp) {
-    this.hrp = hrp;
-  }
-
-  public static ResourceAddressing bech32(String hrp) {
-    Objects.requireNonNull(hrp);
-    return new ResourceAddressing(hrp);
-  }
-
-  public String getHrp() {
-    return hrp;
-  }
-
-  private static byte[] toBech32Data(byte[] bytes) {
-    return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
-  }
-
-  private static byte[] fromBech32Data(byte[] bytes) {
-    return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
-  }
-
-  public String of(REAddr addr) {
-    return Bech32.encode(hrp, toBech32Data(addr.getBytes()));
+public class Bech32EncodeException extends RuntimeException {
+  public Bech32EncodeException(String message) {
+    super(message);
   }
 }

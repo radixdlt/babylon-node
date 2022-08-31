@@ -213,8 +213,7 @@ public final class P2PTestNetworkRunner {
                 .annotatedWith(Self.class)
                 .toInstance(
                     Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                        .forValidators()
-                        .of(nodeKey.getPublicKey())
+                        .encodeNodeAddress(nodeKey.getPublicKey())
                         .substring(0, 10));
             bind(ECKeyOps.class).toInstance(ECKeyOps.fromKeyPair(nodeKey));
             bind(Environment.class)

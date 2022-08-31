@@ -65,66 +65,26 @@
 package com.radixdlt.addressing;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.Bytes;
-import java.util.Map;
+import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.ComponentAddress;
 import org.junit.Test;
 
-public class ValidatorAddressingTest {
-  private final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32("vb");
-  private final BiMap<String, String> privateKeyToValidatorId =
-      HashBiMap.create(
-          Map.of(
-              "00", "vb1qvz3anvawgvm7pwvjs7xmjg48dvndczkgnufh475k2tqa2vm5c6cq9u3702",
-              "deadbeef", "vb1qvx0emaq0tua6md7wu9c047mm5krrwnlfl8c7ws3jm2s9uf4vxcyvrwrazy",
-              "deadbeefdeadbeef", "vb1q0jym8jxnc0a4306y95j9m07tprxws6ccjz9h352tkcdfzfysh0jxll64dl",
-              "bead", "vb1qgtnc40hs73dxe2fgy5yvujnxmdnvg69w6fhj6drr68vqac525k2gkfdady",
-              "aaaaaaaaaaaaaaaa",
-                  "vb1qgyz0t0kd9j4302q8429tl0mu3w8lm8nne8l2m9e8k74t3qm3xe9z8l2049"));
-
-  private final Map<String, String> invalidAddresses =
-      Map.of(
-          "vb1qvx0emaq0tua6md7wu9c047mm5krrwnlfl8c7ws3jm2s9uf4vxcyvrwrazz", "Bad checksum",
-          "xrd_rr1gd5j68", "Bad hrp",
-          "vb1qqweu28r", "Not enough bytes for public key");
-
+public class AddressingTest {
   @Test
-  public void test_validator_address_serialization() {
-    privateKeyToValidatorId.forEach(
-        (privHex, expectedAddress) -> {
-          var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
-          var publicKey = keyPair.getPublicKey();
-          var validatorAddress = validatorAddresses.of(publicKey);
-          assertThat(validatorAddress).isEqualTo(expectedAddress);
-        });
+  public void test_system_faucet_address_encoded_correctly() {
+    assertThat(
+            Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
+                .encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS))
+        .isEqualTo("system_test1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsfkwqvf");
   }
 
   @Test
-  public void test_correct_validator_address_deserialization() throws DeserializeException {
-    for (var e : privateKeyToValidatorId.entrySet()) {
-      var address = e.getValue();
-      var privHex = e.getKey();
-      var pubKey = validatorAddresses.parseOrThrow(address, IllegalStateException::new);
-      var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
-      var expectedPubKey = keyPair.getPublicKey();
-      assertThat(pubKey).isEqualTo(expectedPubKey);
-    }
-  }
-
-  @Test
-  public void test_invalid_addresses() {
-    for (var e : invalidAddresses.entrySet()) {
-      var address = e.getKey();
-      var expectedError = e.getValue();
-      assertThatThrownBy(
-              () -> validatorAddresses.parseOrThrow(address, IllegalStateException::new),
-              expectedError)
-          .isInstanceOf(IllegalStateException.class);
-    }
+  public void test_system_faucet_address_decoded_correctly() {
+    assertThat(
+            Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
+                .decodeSystemComponentAddress(
+                    "system_test1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsfkwqvf"))
+        .isEqualTo(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
   }
 }

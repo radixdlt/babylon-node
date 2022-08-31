@@ -102,7 +102,7 @@ public class AddressBookHandlerTest extends ApiTest {
     assertThat(entries)
         .containsExactly(
             new AddressBookEntry()
-                .peerId(addressing.forNodes().of(peerKey))
+                .peerId(addressing.encodeNodeAddress(peerKey))
                 .banned(false)
                 .bannedUntil(null)
                 .addKnownAddressesItem(

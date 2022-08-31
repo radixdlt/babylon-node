@@ -163,7 +163,7 @@ final class MessagePreprocessor {
       log.error(
           String.format(
               "Failed to deserialize message from peer %s",
-              addressing.forNodes().of(inboundMessage.source().getPublicKey())),
+              addressing.encodeNodeAddress(inboundMessage.source().getPublicKey())),
           e);
       peerControl
           .get()

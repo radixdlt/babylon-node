@@ -64,56 +64,88 @@
 
 package com.radixdlt.addressing;
 
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.exceptions.Bech32DecodeException;
+import com.radixdlt.identifiers.Bech32mCoder;
 import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Pair;
 
+/** Performs Bech32m encoding/decoding. */
 public final class Addressing {
-  private final ValidatorAddressing validatorAddressing;
-  private final AccountAddressing accountAddressing;
-  private final ResourceAddressing resourceAddressing;
-  private final NodeAddressing nodeAddressing;
+  private final Network network;
 
-  private Addressing(
-      ValidatorAddressing validatorAddressing,
-      AccountAddressing accountAddressing,
-      ResourceAddressing resourceAddressing,
-      NodeAddressing nodeAddressing) {
-    this.validatorAddressing = validatorAddressing;
-    this.accountAddressing = accountAddressing;
-    this.resourceAddressing = resourceAddressing;
-    this.nodeAddressing = nodeAddressing;
+  private Addressing(Network network) {
+    this.network = network;
   }
 
   public static Addressing ofNetwork(Network network) {
-    return ofNetworkId(network.getId());
+    return new Addressing(network);
   }
 
   public static Addressing ofNetworkId(int networkId) {
-    var network =
-        Network.ofId(networkId)
-            .orElseThrow(
-                () ->
-                    new RuntimeException(
-                        "Provided Network ID does not match any known networks: " + networkId));
-    return new Addressing(
-        ValidatorAddressing.bech32(network.getValidatorHrp()),
-        AccountAddressing.bech32(network.getAccountHrp()),
-        ResourceAddressing.bech32(network.getResourceHrp()),
-        NodeAddressing.bech32(network.getNodeHrp()));
+    return ofNetwork(Network.ofIdOrThrow(networkId));
   }
 
-  public ValidatorAddressing forValidators() {
-    return validatorAddressing;
+  public String encodeNormalComponentAddress(ComponentAddress componentAddress) {
+    // TODO - checks on first bit of address
+    return Bech32mCoder.encode(network.getNormalComponentHrp(), componentAddress.value());
   }
 
-  public AccountAddressing forAccounts() {
-    return accountAddressing;
+  public ComponentAddress decodeNormalComponentAddress(String address) {
+    // TODO - checks on first bit of address
+    return ComponentAddress.create(
+        Bech32mCoder.decodeWithExpectedHrp(network.getNormalComponentHrp(), address));
   }
 
-  public ResourceAddressing forResources() {
-    return resourceAddressing;
+  public String encodeAccountAddress(ComponentAddress componentAddress) {
+    // TODO - checks on first bit of address
+    return Bech32mCoder.encode(network.getAccountComponentHrp(), componentAddress.value());
   }
 
-  public NodeAddressing forNodes() {
-    return nodeAddressing;
+  public ComponentAddress decodeAccountAddress(String address) {
+    // TODO - checks on first bit of address
+    return ComponentAddress.create(
+        Bech32mCoder.decodeWithExpectedHrp(network.getAccountComponentHrp(), address));
+  }
+
+  public String encodeSystemComponentAddress(ComponentAddress componentAddress) {
+    // TODO - checks on first bit of address
+    return Bech32mCoder.encode(network.getSystemComponentHrp(), componentAddress.value());
+  }
+
+  public ComponentAddress decodeSystemComponentAddress(String address) {
+    // TODO - checks on first bit of address
+    return ComponentAddress.create(
+        Bech32mCoder.decodeWithExpectedHrp(network.getSystemComponentHrp(), address));
+  }
+
+  public String encodeNodeAddress(ECPublicKey publicKey) {
+    return Bech32mCoder.encode(network.getNodeHrp(), publicKey.getCompressedBytes());
+  }
+
+  public ECPublicKey decodeNodeAddress(String address) throws DeserializeException {
+    try {
+      var pubKeyBytes = Bech32mCoder.decodeWithExpectedHrp(network.getNodeHrp(), address);
+      return ECPublicKey.fromBytes(pubKeyBytes);
+    } catch (Bech32DecodeException | PublicKeyException e) {
+      throw new DeserializeException("Invalid address", e);
+    }
+  }
+
+  public static String encodeNodeAddressWithHrp(String hrp, ECPublicKey publicKey) {
+    return Bech32mCoder.encode(hrp, publicKey.getCompressedBytes());
+  }
+
+  public static Pair<String, ECPublicKey> decodeNodeAddressUnknownHrp(String address)
+      throws DeserializeException {
+    try {
+      var hrpAndPubKeyBytes = Bech32mCoder.decode(address);
+      return Pair.of(hrpAndPubKeyBytes.first(), ECPublicKey.fromBytes(hrpAndPubKeyBytes.last()));
+    } catch (Bech32DecodeException | PublicKeyException e) {
+      throw new DeserializeException("Invalid address", e);
+    }
   }
 }

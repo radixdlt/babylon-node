@@ -130,7 +130,7 @@ public final class SeedNodesConfigParser {
       return Optional.of(
           RadixNodeUri.fromPubKeyAndAddress(
               networkId,
-              addressing.forNodes().parse(parsedUri.getUserInfo()),
+              addressing.decodeNodeAddress(parsedUri.getUserInfo()),
               resolved.getHostAddress(),
               parsedUri.getPort() > 0 ? parsedUri.getPort() : defaultPort));
     } catch (UnknownHostException | URISyntaxException | DeserializeException e) {

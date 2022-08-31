@@ -1350,6 +1350,7 @@ dependencies = [
 name = "state-manager"
 version = "0.1.0"
 dependencies = [
+ "bech32",
  "jni",
  "radix-engine",
  "radix-engine-stores",

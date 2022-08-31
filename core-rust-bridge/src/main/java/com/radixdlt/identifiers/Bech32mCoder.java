@@ -62,94 +62,57 @@
  * permissions under this License.
  */
 
-package com.radixdlt.addressing;
+package com.radixdlt.identifiers;
 
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.REAddr;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.Bits;
-import com.radixdlt.utils.Pair;
+import static com.radixdlt.lang.Tuple.tuple;
+
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.exceptions.Bech32DecodeException;
+import com.radixdlt.exceptions.Bech32EncodeException;
+import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.sbor.NativeCalls;
 import java.util.Objects;
-import org.bitcoinj.core.AddressFormatException;
-import org.bitcoinj.core.Bech32;
 
-/**
- * Bech-32 encoding/decoding of a node addresses.
- *
- * <p>The human-readable part is "rdn" ("radix node") for mainnet, "brn" ("betanet radix node") for
- * betanet.
- *
- * <p>The data part is a conversion of the 1-34 byte Radix Engine address {@link REAddr} to Base32
- * similar to specification described in BIP_0173 for converting witness programs.
- */
-public final class NodeAddressing {
-  private final String hrp;
-
-  private NodeAddressing(String hrp) {
-    this.hrp = hrp;
+public final class Bech32mCoder {
+  static {
+    // This is idempotent with the other calls
+    System.loadLibrary("corerust");
   }
 
-  public static NodeAddressing bech32(String hrp) {
-    Objects.requireNonNull(hrp);
-    return new NodeAddressing(hrp);
+  public static String encode(String hrp, byte[] data) {
+    return encodeBech32mFunc.call(tuple(hrp, data)).unwrap(Bech32EncodeException::new);
   }
 
-  public String getHrp() {
-    return hrp;
+  public static byte[] decodeWithExpectedHrp(String expectedHrp, String address) {
+    var result = decodeBech32mFunc.call(address).unwrap(Bech32DecodeException::new);
+    return result.map(
+        (returnedHrp, data) -> {
+          if (!Objects.equals(returnedHrp, expectedHrp)) {
+            throw new Bech32DecodeException(
+                String.format(
+                    "The decoded hrp (%s) didn't match the expected hrp (%s)",
+                    returnedHrp, expectedHrp));
+          }
+          return data;
+        });
   }
 
-  private static byte[] toBech32Data(byte[] bytes) {
-    return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
+  public static Tuple.Tuple2<String, byte[]> decode(String address) {
+    return decodeBech32mFunc.call(address).unwrap(Bech32DecodeException::new);
   }
 
-  private static byte[] fromBech32Data(byte[] bytes) {
-    return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
-  }
+  private static final NativeCalls.StaticFunc1<Tuple.Tuple2<String, byte[]>, Result<String, String>>
+      encodeBech32mFunc =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {}, new TypeToken<>() {}, Bech32mCoder::encodeBech32m);
 
-  public String of(ECPublicKey publicKey) {
-    var convert = toBech32Data(publicKey.getCompressedBytes());
-    return Bech32.encode(hrp, convert);
-  }
+  private static native byte[] encodeBech32m(byte[] requestPayload);
 
-  public static String of(String hrp, ECPublicKey publicKey) {
-    var convert = toBech32Data(publicKey.getCompressedBytes());
-    return Bech32.encode(hrp, convert);
-  }
+  private static final NativeCalls.StaticFunc1<String, Result<Tuple.Tuple2<String, byte[]>, String>>
+      decodeBech32mFunc =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {}, new TypeToken<>() {}, Bech32mCoder::decodeBech32m);
 
-  public ECPublicKey parse(String v) throws DeserializeException {
-    Bech32.Bech32Data bech32Data;
-    try {
-      bech32Data = Bech32.decode(v);
-    } catch (AddressFormatException e) {
-      throw new DeserializeException("Could not decode string: " + v, e);
-    }
-
-    if (!bech32Data.hrp.equals(hrp)) {
-      throw new DeserializeException("hrp must be " + hrp + " but was " + bech32Data.hrp);
-    }
-
-    try {
-      var pubKeyBytes = fromBech32Data(bech32Data.data);
-      return ECPublicKey.fromBytes(pubKeyBytes);
-    } catch (IllegalArgumentException | PublicKeyException e) {
-      throw new DeserializeException("Invalid address", e);
-    }
-  }
-
-  public static Pair<String, ECPublicKey> parseUnknownHrp(String v) throws DeserializeException {
-    Bech32.Bech32Data bech32Data;
-    try {
-      bech32Data = Bech32.decode(v);
-    } catch (AddressFormatException e) {
-      throw new DeserializeException("Could not decode string: " + v, e);
-    }
-
-    try {
-      var pubKeyBytes = fromBech32Data(bech32Data.data);
-      return Pair.of(bech32Data.hrp, ECPublicKey.fromBytes(pubKeyBytes));
-    } catch (IllegalArgumentException | PublicKeyException e) {
-      throw new DeserializeException("Invalid address", e);
-    }
-  }
+  private static native byte[] decodeBech32m(byte[] requestPayload);
 }

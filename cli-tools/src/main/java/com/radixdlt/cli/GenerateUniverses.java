@@ -243,8 +243,7 @@ public final class GenerateUniverses {
                   "export RADIXDLT_VALIDATOR_%s_PUBKEY=%s%n",
                   i,
                   Addressing.ofNetwork(Network.LOCALNET)
-                      .forNodes()
-                      .of(generatedValidatorKeys.get(i).getPublicKey()));
+                      .encodeNodeAddress(generatedValidatorKeys.get(i).getPublicKey()));
             });
 
     final var genesisTxnBuilder = new StringBuilder();

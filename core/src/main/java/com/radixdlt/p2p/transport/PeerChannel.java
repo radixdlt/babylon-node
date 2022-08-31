@@ -396,7 +396,7 @@ public final class PeerChannel extends SimpleChannelInboundHandler<ByteBuf> {
     return String.format(
         "{%s %s@%s:%s | %s}",
         isInitiator ? "<-" : "->",
-        remoteNodeId != null ? addressing.forNodes().of(this.remoteNodeId.getPublicKey()) : "?",
+        remoteNodeId != null ? addressing.encodeNodeAddress(this.remoteNodeId.getPublicKey()) : "?",
         getHost(),
         getPort(),
         state);

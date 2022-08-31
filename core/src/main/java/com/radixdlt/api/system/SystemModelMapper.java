@@ -116,7 +116,7 @@ public final class SystemModelMapper {
         .peerLivenessCheckInterval(config.peerLivenessCheckInterval())
         .pingTimeout(config.pingTimeout())
         .seedNodes(config.seedNodes())
-        .nodeAddress(addressing.forNodes().of(self));
+        .nodeAddress(addressing.encodeNodeAddress(self));
   }
 
   public SyncConfiguration syncConfiguration(SyncRelayConfig syncRelayConfig) {
@@ -206,7 +206,7 @@ public final class SystemModelMapper {
   }
 
   public Peer peer(PeersView.PeerInfo peerInfo) {
-    var peerId = addressing.forNodes().of(peerInfo.getNodeId().getPublicKey());
+    var peerId = addressing.encodeNodeAddress(peerInfo.getNodeId().getPublicKey());
     var peer = new Peer().peerId(peerId);
 
     peerInfo
@@ -240,7 +240,7 @@ public final class SystemModelMapper {
   public AddressBookEntry addressBookEntry(com.radixdlt.p2p.addressbook.AddressBookEntry entry) {
     var addressBookEntry =
         new AddressBookEntry()
-            .peerId(addressing.forNodes().of(entry.getNodeId().getPublicKey()))
+            .peerId(addressing.encodeNodeAddress(entry.getNodeId().getPublicKey()))
             .banned(entry.isBanned());
     entry.bannedUntil().map(Instant::toEpochMilli).ifPresent(addressBookEntry::bannedUntil);
     entry.getKnownAddresses().stream()

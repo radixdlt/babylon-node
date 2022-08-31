@@ -385,6 +385,6 @@ public final class PeerManager {
   }
 
   private String nodeAddress(NodeId nodeId) {
-    return addressing.forNodes().of(nodeId.getPublicKey());
+    return addressing.encodeNodeAddress(nodeId.getPublicKey());
   }
 }

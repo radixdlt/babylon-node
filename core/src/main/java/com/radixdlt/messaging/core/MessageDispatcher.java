@@ -126,7 +126,7 @@ class MessageDispatcher {
           String.format(
               "TTL for %s message to %s has expired",
               message.getClass().getSimpleName(),
-              addressing.forNodes().of(receiver.getPublicKey()));
+              addressing.encodeNodeAddress(receiver.getPublicKey()));
       log.warn(msg);
       this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
       return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
@@ -151,7 +151,8 @@ class MessageDispatcher {
     final var msg =
         String.format(
             "Send %s to %s failed",
-            message.getClass().getSimpleName(), addressing.forNodes().of(receiver.getPublicKey()));
+            message.getClass().getSimpleName(),
+            addressing.encodeNodeAddress(receiver.getPublicKey()));
     log.warn("{}: {}", msg, cause.getMessage());
     return IO_ERROR.result();
   }

@@ -94,15 +94,15 @@ public final class EventLoggerModule extends AbstractModule {
   private static final Logger logger = LogManager.getLogger();
 
   @Provides
-  Function<BFTNode, String> stringForValidators1(
-      Function<ECPublicKey, String> stringForValidators) {
-    return n -> stringForValidators.apply(n.getKey());
+  Function<BFTNode, String> loggingFormatterForNode(
+      Function<ECPublicKey, String> loggingFormatterForNodePublicKey) {
+    return n -> loggingFormatterForNodePublicKey.apply(n.getKey());
   }
 
   @Provides
-  Function<ECPublicKey, String> stringForValidators2(Addressing addressing) {
+  Function<ECPublicKey, String> loggingFormatterForNodePublicKey(Addressing addressing) {
     return k -> {
-      var addr = addressing.forValidators().of(k);
+      var addr = addressing.encodeNodeAddress(k);
       var len = addr.length();
       return addr.substring(0, 2) + "..." + addr.substring(len - 9);
     };

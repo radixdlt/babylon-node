@@ -26,3 +26,4 @@ transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop
 radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-950f95fc" }
 radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-950f95fc" }
 rocksdb = { version = "0.18.0" }
+bech32 = { version = "0.9.0", default-features = false }

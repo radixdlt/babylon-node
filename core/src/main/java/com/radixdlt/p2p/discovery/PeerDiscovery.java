@@ -170,7 +170,7 @@ public final class PeerDiscovery {
       if (!peersAsked.contains(senderNodeId)) {
         log.warn(
             "Received unexpected peers response from {}",
-            addressing.forNodes().of(senderNodeId.getPublicKey()));
+            addressing.encodeNodeAddress(senderNodeId.getPublicKey()));
         this.peerControl.banPeer(senderNodeId, Duration.ofMinutes(15), "Unexpected peers response");
         return;
       }
