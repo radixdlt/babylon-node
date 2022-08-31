@@ -65,7 +65,6 @@
 package com.radixdlt.harness.deterministic;
 
 import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -85,6 +84,7 @@ import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -93,12 +93,17 @@ import org.apache.logging.log4j.ThreadContext;
 public final class DeterministicNodes {
   private static final Logger log = LogManager.getLogger();
 
-  private final ImmutableList<Injector> nodeInstances;
+  private final List<Injector> nodeInstances;
   private final DeterministicNetwork network;
   private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
 
+  private final Module baseModule;
+  private final Module overrideModule;
+
   public DeterministicNodes(
       List<BFTNode> nodes, DeterministicNetwork network, Module baseModule, Module overrideModule) {
+    this.baseModule = baseModule;
+    this.overrideModule = overrideModule;
     this.network = network;
     this.nodeLookup =
         Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
@@ -106,7 +111,7 @@ public final class DeterministicNodes {
     this.nodeInstances =
         nodes.stream()
             .map(node -> createBFTInstance(node, baseModule, overrideModule))
-            .collect(ImmutableList.toImmutableList());
+            .collect(Collectors.toList());
   }
 
   private Injector createBFTInstance(BFTNode self, Module baseModule, Module overrideModule) {
@@ -166,6 +171,13 @@ public final class DeterministicNodes {
 
   public List<Injector> getNodeInjectors() {
     return this.nodeInstances;
+  }
+
+  public void restartNode(int nodeIndex) {
+    var node = this.nodeLookup.inverse().get(nodeIndex);
+    var injector = createBFTInstance(node, baseModule, overrideModule);
+    injector.getInstance(DeterministicProcessor.class).start();
+    this.nodeInstances.set(nodeIndex, injector);
   }
 
   public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {

@@ -64,44 +64,20 @@
 
 package com.radixdlt.recovery;
 
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.inject.*;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.LastEventsModule;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
-import com.radixdlt.keys.InMemoryBFTKeyModule;
-import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.CryptoModule;
+import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.UInt256;
-import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.*;
 import org.assertj.core.api.Condition;
 import org.junit.After;
@@ -127,105 +103,59 @@ public final class REv2LedgerRecoveryTest {
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private DeterministicNetwork network;
-  private Injector currentInjector;
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
+  private DeterministicTest test;
+
   private final int processForCount;
 
   public REv2LedgerRecoveryTest(int processForCount) {
     this.processForCount = processForCount;
-    this.network =
-        new DeterministicNetwork(
-            List.of(BFTNode.create(TEST_KEY.getPublicKey())),
-            MessageSelector.firstSelector(),
-            MessageMutator.nothing());
+  }
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(1, 0)
+        .messageSelector(firstSelector())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        StateComputerConfig.REV2ProposerConfig.transactionGenerator(
+                            new REV2TransactionGenerator(), 1)))));
   }
 
   @Before
   public void setup() {
-    this.currentInjector = createInjector();
-    this.currentInjector.getInstance(DeterministicProcessor.class).start();
+    this.test = createTest();
   }
 
   @After
   public void teardown() {
-    if (this.currentInjector != null) {
-      this.currentInjector.getInstance(StateManager.class).close();
+    for (var injector : this.test.getNodeInjectors()) {
+      injector.getInstance(StateManager.class).close();
     }
-  }
-
-  private Injector createInjector() {
-    return Guice.createInjector(
-        new CryptoModule(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            var validatorSet =
-                BFTValidatorSet.from(
-                    List.of(
-                        BFTValidator.from(BFTNode.create(TEST_KEY.getPublicKey()), UInt256.ONE)));
-            bind(BFTValidatorSet.class).toInstance(validatorSet);
-          }
-        },
-        new FunctionalRadixNodeModule(
-            false,
-            FunctionalRadixNodeModule.ConsensusConfig.of(),
-            FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                StateComputerConfig.rev2(
-                    Network.INTEGRATIONTESTNET.getId(),
-                    REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                    StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                        new REV2TransactionGenerator(), 1)))),
-        new MockedPersistenceStoreModule(),
-        new TestP2PModule.Builder().build(),
-        new TestMessagingModule.Builder().build(),
-        new InMemoryBFTKeyModule(TEST_KEY),
-        new LastEventsModule(EpochRoundUpdate.class, Vote.class),
-        new DeterministicEnvironmentModule(
-            network.createSender(BFTNode.create(TEST_KEY.getPublicKey()))),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-            bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-            bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-          }
-        });
-  }
-
-  private TransactionsAndProofReader getTransactionsAndProofReader() {
-    return currentInjector.getInstance(TransactionsAndProofReader.class);
   }
 
   private void restartNode() {
-    this.network.dropMessages(
-        m -> m.channelId().receiverIndex() == 0 && m.channelId().senderIndex() == 0);
-    this.currentInjector.getInstance(StateManager.class).close();
-    this.currentInjector = createInjector();
-    var processor = currentInjector.getInstance(DeterministicProcessor.class);
-    processor.start();
-  }
-
-  private void processForCount(int messageCount) {
-    for (int i = 0; i < messageCount; i++) {
-      Timed<ControlledMessage> msg = this.network.nextMessage();
-      var runner = currentInjector.getInstance(DeterministicProcessor.class);
-      runner.handleMessage(msg.value().origin(), msg.value().message(), msg.value().typeLiteral());
-    }
+    this.test.getInstance(0, StateManager.class).close();
+    this.test.restartNode(0);
   }
 
   @Test
   public void on_reboot_should_load_same_last_header() {
     // Arrange
-    processForCount(processForCount);
-    var reader = getTransactionsAndProofReader();
+    test.runForCount(processForCount);
+    var reader = test.getInstance(0, TransactionsAndProofReader.class);
     Optional<LedgerProof> proof = reader.getLastProof();
 
     // Act
     restartNode();
 
     // Assert
-    var restartedReader = getTransactionsAndProofReader();
+    var restartedReader = test.getInstance(0, TransactionsAndProofReader.class);
     Optional<LedgerProof> restartedProof = restartedReader.getLastProof();
     assertThat(restartedProof).isEqualTo(proof);
   }
@@ -233,13 +163,13 @@ public final class REv2LedgerRecoveryTest {
   @Test
   public void on_reboot_should_only_emit_pacemaker_events() {
     // Arrange
-    processForCount(processForCount);
+    test.runForCount(processForCount);
 
     // Act
     restartNode();
 
     // Assert
-    assertThat(network.allMessages())
+    assertThat(test.getNetwork().allMessages())
         .hasSize(2)
         .haveExactly(
             1,

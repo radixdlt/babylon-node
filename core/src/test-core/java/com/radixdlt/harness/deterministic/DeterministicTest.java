@@ -466,6 +466,14 @@ public final class DeterministicTest {
     };
   }
 
+  public void restartNode(int nodeIndex) {
+    // Drop local messages
+    this.network.dropMessages(
+        m ->
+            m.channelId().receiverIndex() == nodeIndex && m.channelId().senderIndex() == nodeIndex);
+    this.nodes.restartNode(nodeIndex);
+  }
+
   public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {
     return this.nodes.getInstance(nodeIndex, instanceClass);
   }
