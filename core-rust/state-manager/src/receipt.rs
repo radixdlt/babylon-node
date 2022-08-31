@@ -1,6 +1,6 @@
 use radix_engine::engine::ResourceChange;
 use radix_engine::fee::FeeSummary;
-use radix_engine::ledger::{OutputId, OutputValue};
+use radix_engine::ledger::OutputId;
 use radix_engine::state_manager::StateDiff;
 use radix_engine::transaction::{
     EntityChanges, TransactionOutcome, TransactionReceipt as EngineTransactionReceipt,
@@ -9,9 +9,7 @@ use radix_engine::transaction::{
 use sbor::{Decode, Encode, TypeId};
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::hash;
-use scrypto::engine::types::SubstateId;
 use scrypto::prelude::Level;
-use std::collections::BTreeMap;
 
 #[derive(Debug, Decode, Encode, TypeId)]
 pub enum CommittedTransactionStatus {
@@ -56,51 +54,37 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
     }
 }
 
+/// As of end of August 2022, the engine's statediff erroneously includes substate reads
+/// (even if the content didn't change) as ups and downs.
+///
+/// This needs fixing, but for now, we work around this here, by removing such up/down pairs.
 fn filter_state_updates(state_updates: StateDiff) -> StateDiff {
-    // This is a temporary filter that removes any substates
-    // that have been downed and then upped unchanged.
-    // The engine currently erroneously tracks reads as updates,
-    // and that's what's being fixed here.
-    // TODO: remove this filter once the engine receipt is fixed
-    let mut filtered_up_substates: BTreeMap<SubstateId, OutputValue> = BTreeMap::new();
-    let mut filtered_down_substates: Vec<OutputId> = state_updates.down_substates;
+    let mut possible_up_substates = state_updates.up_substates;
+    let mut valid_down_substates: Vec<OutputId> = Vec::new();
 
-    for (substate_id, output_value) in state_updates.up_substates {
-        if output_value.version == 0 {
-            // This is a new substate, all good, keep it
-            filtered_up_substates.insert(substate_id, output_value);
-        } else {
-            // Check if a previous version of this substate was downed
-            // but it had the exact same data (same hash)
-            let expected_down_output_id = OutputId {
-                substate_id: substate_id.clone(),
-                substate_hash: hash(&scrypto_encode(&output_value.substate)),
-                version: output_value.version - 1,
-            };
-
-            match filtered_down_substates
-                .iter()
-                .position(|x| x == &expected_down_output_id)
-            {
-                Some(pos) => {
-                    // If so, this was just a "read":
-                    //   remove down substate from the receipt
-                    //   and do NOT add the up substate
-                    filtered_down_substates.remove(pos);
+    // We iterate over the downed substates, and attempt to match them with an upped substate
+    // > If they match an upped substate, the down and up is erroneous, so we ignore both
+    // > If it doesn't match, this is correct and is added to valid_down_substates
+    for down_substate_output_id in state_updates.down_substates {
+        match possible_up_substates.get(&down_substate_output_id.substate_id) {
+            Some(up_substate_output_value) => {
+                let up_substate_hash = hash(&scrypto_encode(&up_substate_output_value.substate));
+                if up_substate_hash == down_substate_output_id.substate_hash {
+                    possible_up_substates.remove(&down_substate_output_id.substate_id);
+                } else {
+                    valid_down_substates.push(down_substate_output_id);
                 }
-                None => {
-                    // This is a legit substate update:
-                    //   add to up substates and do NOT remove the down substate
-                    filtered_up_substates.insert(substate_id, output_value);
-                }
+            }
+            None => {
+                valid_down_substates.push(down_substate_output_id);
             }
         }
     }
 
     StateDiff {
         down_virtual_substates: state_updates.down_virtual_substates,
-        up_substates: filtered_up_substates,
-        down_substates: filtered_down_substates,
+        up_substates: possible_up_substates,
+        down_substates: valid_down_substates,
         new_roots: state_updates.new_roots,
     }
 }
