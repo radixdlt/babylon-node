@@ -1,17 +1,9 @@
+use crate::core_api::conversions::common::{to_hex, to_sbor_hex};
+use crate::core_api::conversions::to_api_substate;
 use crate::core_api::generated::models;
 use radix_engine::fee::FeeSummary;
-use sbor::Encode;
 use scrypto::address::Bech32Encoder;
-use scrypto::prelude::scrypto_encode;
 use state_manager::{CommittedTransactionStatus, LedgerTransactionReceipt};
-
-pub fn to_hex(v: Vec<u8>) -> String {
-    hex::encode(v)
-}
-
-pub fn to_sbor_hex<T: Encode + ?Sized>(v: &T) -> String {
-    to_hex(scrypto_encode(v))
-}
 
 pub fn to_api_receipt(
     bech32_encoder: &Bech32Encoder,
@@ -45,6 +37,7 @@ pub fn to_api_receipt(
                 substate_id: to_sbor_hex(&substate_id),
                 version: output_value.version.to_string(),
                 substate_bytes: to_sbor_hex(&output_value.substate),
+                substate: to_api_substate(&output_value.substate, bech32_encoder),
             })
             .collect(),
         down_substates: state_updates
