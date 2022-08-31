@@ -205,6 +205,7 @@ public final class REv2RejectedTransactionTest {
     // Assert: Check transaction and post submission state
     assertThat(proposalGenerator.nextTransaction).isNull();
     assertThat(transactionStoreReader.getLastProof()).isPresent();
+    // Verify that no transaction was committed
     var proof =
         DefaultSerialization.getInstance()
             .fromDson(transactionStoreReader.getLastProof().orElseThrow(), LedgerProof.class);

@@ -220,8 +220,8 @@ where
             validated_prepared.push(validated_transaction);
         }
 
-        let mut successful_txns = Vec::new();
-        let mut invalid_txns = HashMap::new();
+        let mut non_rejected_txns = Vec::new();
+        let mut rejected_txns = HashMap::new();
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
 
@@ -257,21 +257,21 @@ where
                     let receipt = transaction_executor
                         .execute_and_commit(&validated_transaction, &self.execution_config);
                     match receipt.result {
-                        TransactionResult::Commit(..) => successful_txns.push(proposed),
+                        TransactionResult::Commit(..) => non_rejected_txns.push(proposed),
                         TransactionResult::Reject(reject_result) => {
-                            invalid_txns.insert(proposed, format!("{:?}", reject_result));
+                            rejected_txns.insert(proposed, format!("{:?}", reject_result));
                         }
                     }
                 }
                 Err(validation_error) => {
-                    invalid_txns.insert(proposed, format!("{:?}", validation_error));
+                    rejected_txns.insert(proposed, format!("{:?}", validation_error));
                 }
             }
         }
 
         PrepareResult {
-            successful_txns,
-            invalid_txns,
+            non_rejected_txns,
+            rejected_txns,
         }
     }
 

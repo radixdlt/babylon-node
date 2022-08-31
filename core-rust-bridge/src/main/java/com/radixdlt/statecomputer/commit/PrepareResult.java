@@ -72,8 +72,8 @@ import java.util.HashMap;
 import java.util.List;
 
 public record PrepareResult(
-    List<RawTransaction> successfulTransactions,
-    HashMap<RawTransaction, String> invalidTransactions) {
+    List<RawTransaction> nonRejectedTransactions,
+    HashMap<RawTransaction, String> rejectedTransactions) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareResult.class,
@@ -82,6 +82,6 @@ public record PrepareResult(
                 PrepareResult::new,
                 codecs.of(new TypeToken<List<RawTransaction>>() {}),
                 codecs.of(new TypeToken<HashMap<RawTransaction, String>>() {}),
-                (t, encoder) -> encoder.encode(t.successfulTransactions, t.invalidTransactions)));
+                (t, encoder) -> encoder.encode(t.nonRejectedTransactions, t.rejectedTransactions)));
   }
 }
