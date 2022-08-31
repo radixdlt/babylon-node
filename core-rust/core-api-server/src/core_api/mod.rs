@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+mod conversions;
 mod errors;
 mod network_configuration;
 mod preview;

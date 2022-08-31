@@ -69,5 +69,5 @@ mod rocks_db;
 
 pub use db::{DatabaseConfig, StateManagerDatabase};
 pub use in_memory::InMemoryStore;
-pub use query::{QueryableProofStore, QueryableTransactionStore, TemporaryTransactionReceipt};
+pub use query::{QueryableProofStore, QueryableTransactionStore};
 pub use rocks_db::RocksDBStore;

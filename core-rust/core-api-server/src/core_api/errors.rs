@@ -17,6 +17,10 @@ pub(crate) mod common_server_errors {
     use crate::core_api::errors::{server_error, RequestHandlingError};
 
     pub(crate) fn state_manager_lock_error() -> RequestHandlingError {
-        server_error(0, "Internal server error: state manager lock")
+        server_error(1, "Internal server error: state manager lock")
+    }
+
+    pub(crate) fn unexpected_state(details: &str) -> RequestHandlingError {
+        server_error(2, &format!("Unexpected state: {}", details))
     }
 }
