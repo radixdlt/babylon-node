@@ -90,8 +90,8 @@ public record SimpleRecord(
                 SimpleRecord::new,
                 codecs.of(int.class),
                 codecs.of(String.class),
-                codecs.of(new TypeToken<Either<Long, String>>() {}),
-                codecs.of(new TypeToken<Option<Boolean>>() {}),
+                codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
                 (r, encoder) -> encoder.encode(r.first, r.second, r.third, r.fourth)));
   }
 
@@ -103,7 +103,7 @@ public record SimpleRecord(
                 SimpleRecord::new,
                 Field.of(SimpleRecord::first, codecs.of(int.class)),
                 Field.of(SimpleRecord::second, codecs.of(String.class)),
-                Field.of(SimpleRecord::third, codecs.of(new TypeToken<Either<Long, String>>() {})),
-                Field.of(SimpleRecord::fourth, codecs.of(new TypeToken<Option<Boolean>>() {}))));
+                Field.of(SimpleRecord::third, codecs.of(new TypeToken<>() {})),
+                Field.of(SimpleRecord::fourth, codecs.of(new TypeToken<>() {}))));
   }
 }

@@ -110,10 +110,6 @@ public final class StateManagerSbor {
     return sbor.resolveCodec(typeToken);
   }
 
-  public static <T> Codec<T> resolve() {
-    return sbor.resolveCodec(new TypeToken<>() {});
-  }
-
   public static void registerCodecsWithCodecMap(CodecMap codecMap) {
     UInt32.registerCodec(codecMap);
     UInt64.registerCodec(codecMap);

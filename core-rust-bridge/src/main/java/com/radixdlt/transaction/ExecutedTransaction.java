@@ -83,9 +83,9 @@ public record ExecutedTransaction(
         codecs ->
             StructCodec.with(
                 ExecutedTransaction::new,
-                codecs.of(new TypeToken<byte[]>() {}),
-                codecs.of(new TypeToken<byte[]>() {}),
-                codecs.of(new TypeToken<List<ComponentAddress>>() {}),
+                codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
                 (t, encoder) ->
                     encoder.encode(
                         t.ledgerReceiptBytes, t.transactionBytes, t.newComponentAddresses)));

@@ -82,8 +82,8 @@ public record StateManagerConfig(
             StructCodec.with(
                 StateManagerConfig::new,
                 codecs.of(NetworkDefinition.class),
-                codecs.of(new TypeToken<Option<RustMempoolConfig>>() {}),
-                codecs.of(new TypeToken<REv2DatabaseConfig>() {}),
+                codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
                 (s, encoder) ->
                     encoder.encode(s.networkDefinition, s.mempoolConfigOpt, s.databaseConfig)));
   }
