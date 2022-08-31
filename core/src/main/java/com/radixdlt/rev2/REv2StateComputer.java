@@ -145,16 +145,17 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     var result = stateComputer.prepare(prepareRequest);
 
-    var successfulTransactions =
-        result.successfulTransactions().stream()
+    var nonRejectedTransactions =
+        result.nonRejectedTransactions().stream()
             .map(REv2ExecutedTransaction::new)
             .collect(Collectors.<StateComputerLedger.ExecutedTransaction>toList());
     Map<RawTransaction, Exception> invalidTransactions =
-        result.invalidTransactions().entrySet().stream()
+        result.rejectedTransactions().entrySet().stream()
             .collect(
                 Collectors.toMap(Map.Entry::getKey, e -> new InvalidREv2Transaction(e.getValue())));
 
-    return new StateComputerLedger.StateComputerResult(successfulTransactions, invalidTransactions);
+    return new StateComputerLedger.StateComputerResult(
+        nonRejectedTransactions, invalidTransactions);
   }
 
   @Override

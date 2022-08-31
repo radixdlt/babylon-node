@@ -199,6 +199,7 @@ public final class REv2RejectedTransactionTest {
 
     // Assert: Check transaction and post submission state
     assertThat(proposalGenerator.nextTransaction).isNull();
+    // Verify that no transaction was committed
     assertThat(transactionStoreReader.getLastProof()).isEmpty();
   }
 }

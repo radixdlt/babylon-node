@@ -103,6 +103,6 @@ pub struct PrepareRequest {
 
 #[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
 pub struct PrepareResult {
-    pub successful_txns: Vec<Transaction>,
-    pub invalid_txns: HashMap<Transaction, String>,
+    pub non_rejected_txns: Vec<Transaction>,
+    pub rejected_txns: HashMap<Transaction, String>,
 }

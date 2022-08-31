@@ -76,6 +76,13 @@ import java.util.Random;
  * lock_fee 2. sys-faucet free_xrd 3. Account new 4. Account new_with_resource
  */
 public final class REv2SimpleFuzzerTransactionGenerator implements TransactionGenerator {
+  private static final String SIM_XRD_ADDRESS =
+      "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag";
+  private static final String SIM_FAUCET_ADDRESS =
+      "system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs9fh54n";
+  private static final String SIM_ACCOUNT_PACKAGE_ADDRESS =
+      "package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpsuluv44";
+
   private final Random random;
   private int count = 0;
 
@@ -87,22 +94,20 @@ public final class REv2SimpleFuzzerTransactionGenerator implements TransactionGe
     count++;
 
     return switch (random.nextInt(4)) {
-      case 0 -> """
-                        CALL_METHOD ComponentAddress("system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs9fh54n") "lock_fee" Decimal("100");
-                    """;
-      case 1 -> """
-                        CALL_METHOD ComponentAddress("system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs9fh54n") "free_xrd";
-                    """;
-
-      case 2 -> """
-                        CALL_FUNCTION PackageAddress("package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpsuluv44") "Account" "new" Enum("AllowAll");
-                    """;
+      case 0 -> String.format(
+          "CALL_METHOD ComponentAddress(\"%s\") \"lock_fee\" Decimal(\"100\");",
+          SIM_FAUCET_ADDRESS);
+      case 1 -> String.format(
+          "CALL_METHOD ComponentAddress(\"%s\") \"free_xrd\";", SIM_FAUCET_ADDRESS);
+      case 2 -> String.format(
+          "CALL_FUNCTION PackageAddress(\"%s\") \"Account\" \"new\" Enum(\"AllowAll\");",
+          SIM_ACCOUNT_PACKAGE_ADDRESS);
       default -> String.format(
           """
-                              TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("%s");
-                              CALL_FUNCTION PackageAddress("package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpsuluv44") "Account" "new_with_resource" Enum("AllowAll") Bucket("%s");
+                              TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("%s");
+                              CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("%s");
                           """,
-          "bucket" + count, "bucket" + count);
+          SIM_XRD_ADDRESS, "bucket" + count, SIM_ACCOUNT_PACKAGE_ADDRESS, "bucket" + count);
     };
   }
 
