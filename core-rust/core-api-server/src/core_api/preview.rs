@@ -1,12 +1,13 @@
+use crate::core_api::conversions::{to_api_fee_summary, to_api_receipt, to_sbor_hex};
 use crate::core_api::errors::{common_server_errors, RequestHandlingError};
-use crate::core_api::generated::models::*;
-use crate::core_api::generated::TransactionPreviewPostResponse;
-use radix_engine::transaction::{PreviewResult, TransactionOutcome, TransactionResult};
+use crate::core_api::generated::models::{TransactionPreviewRequest, TransactionPreviewResponse};
+use crate::core_api::generated::{models, TransactionPreviewPostResponse};
+use radix_engine::transaction::{PreviewResult, TransactionResult};
 use scrypto::address::Bech32Encoder;
 use scrypto::crypto::EcdsaPublicKey;
 use scrypto::prelude::scrypto_decode;
 use state_manager::jni::state_manager::ActualStateManager;
-use state_manager::PreviewRequest;
+use state_manager::{LedgerTransactionReceipt, PreviewRequest};
 use std::sync::{Arc, Mutex};
 use transaction::model::{PreviewFlags, TransactionManifest};
 
@@ -41,7 +42,7 @@ fn handle_preview_internal(
 
     let bech32_encoder = Bech32Encoder::new(&locked_state_manager.network);
 
-    to_api_response(result, bech32_encoder)
+    to_api_response(result, &bech32_encoder)
 }
 
 fn parse_preview_request(
@@ -94,85 +95,64 @@ fn parse_preview_request(
 
 fn to_api_response(
     result: PreviewResult,
-    bech32_encoder: Bech32Encoder,
+    bech32_encoder: &Bech32Encoder,
 ) -> Result<TransactionPreviewResponse, RequestHandlingError> {
-    let execution = result.receipt.execution;
-    let fee_summary = execution.fee_summary;
+    let receipt = result.receipt;
 
-    let api_fee_summary = FeeSummary {
-        loan_fully_repaid: fee_summary.loan_fully_repaid,
-        cost_unit_limit: fee_summary.cost_unit_limit.to_string(),
-        cost_unit_consumed: fee_summary.cost_unit_consumed.to_string(),
-        cost_unit_price: fee_summary.cost_unit_price.to_string(),
-        tip_percentage: fee_summary.tip_percentage.to_string(),
-        xrd_burned: fee_summary.burned.to_string(),
-        xrd_tipped: fee_summary.tipped.to_string(),
-    };
-
-    let logs = execution
+    let logs = receipt
+        .execution
         .application_logs
-        .into_iter()
-        .map(|(level, message)| TransactionPreviewResponseLogsInner {
-            level: level.to_string(),
-            message,
-        })
+        .iter()
+        .map(
+            |(level, message)| models::TransactionPreviewResponseLogsInner {
+                level: level.to_string(),
+                message: message.to_string(),
+            },
+        )
         .collect();
 
-    let response = match result.receipt.result {
+    let response = match &receipt.result {
         TransactionResult::Commit(commit_result) => {
-            let new_package_addresses = commit_result
-                .entity_changes
-                .new_package_addresses
-                .into_iter()
-                .map(|addr| bech32_encoder.encode_package_address(&addr))
+            let api_resource_changes = commit_result
+                .resource_changes
+                .iter()
+                .map(|v| models::ResourceChange {
+                    resource_address: bech32_encoder.encode_resource_address(&v.resource_address),
+                    component_address: bech32_encoder
+                        .encode_component_address(&v.component_address),
+                    vault_id: to_sbor_hex(&v.vault_id),
+                    amount: v.amount.to_string(),
+                })
                 .collect();
 
-            let new_component_addresses = commit_result
-                .entity_changes
-                .new_component_addresses
-                .into_iter()
-                .map(|addr| bech32_encoder.encode_component_address(&addr))
-                .collect();
-
-            let new_resource_addresses = commit_result
-                .entity_changes
-                .new_resource_addresses
-                .into_iter()
-                .map(|addr| bech32_encoder.encode_resource_address(&addr))
-                .collect();
-
-            let (status, output, error_message) = match commit_result.outcome {
-                TransactionOutcome::Success(output) => {
-                    let output_hex = output.into_iter().map(hex::encode).collect();
-                    (TransactionStatus::SUCCEEDED, Some(output_hex), None)
-                }
-                TransactionOutcome::Failure(error) => (
-                    TransactionStatus::FAILED,
-                    None,
-                    Some(format!("{:?}", error)),
-                ),
-            };
+            let ledger_receipt: LedgerTransactionReceipt = receipt.try_into().map_err(|_| {
+                common_server_errors::unexpected_state("can't create a ledger receipt")
+            })?;
 
             TransactionPreviewResponse {
-                transaction_status: status,
-                transaction_fee: api_fee_summary,
+                receipt: to_api_receipt(bech32_encoder, ledger_receipt),
+                resource_changes: api_resource_changes,
                 logs,
-                new_package_addresses,
-                new_component_addresses,
-                new_resource_addresses,
-                output,
-                error_message,
             }
         }
         TransactionResult::Reject(reject_result) => TransactionPreviewResponse {
-            transaction_status: TransactionStatus::REJECTED,
-            transaction_fee: api_fee_summary,
+            receipt: models::TransactionReceipt {
+                status: models::TransactionStatus::REJECTED,
+                fee_summary: to_api_fee_summary(receipt.execution.fee_summary),
+                state_updates: models::StateUpdates {
+                    down_virtual_substates: vec![],
+                    up_substates: vec![],
+                    down_substates: vec![],
+                    new_roots: vec![],
+                },
+                new_package_addresses: vec![],
+                new_component_addresses: vec![],
+                new_resource_addresses: vec![],
+                output: None,
+                error_message: Some(format!("{:?}", reject_result)),
+            },
+            resource_changes: vec![],
             logs,
-            new_package_addresses: vec![],
-            new_component_addresses: vec![],
-            new_resource_addresses: vec![],
-            output: None,
-            error_message: Some(format!("{:?}", reject_result)),
         },
     };
 
@@ -184,18 +164,18 @@ mod preview_errors {
     use radix_engine::transaction::PreviewError;
 
     pub(crate) fn engine_error(err: PreviewError) -> RequestHandlingError {
-        client_error(1, &format!("Engine error: {:?}", err))
+        client_error(11, &format!("Engine error: {:?}", err))
     }
 
     pub(crate) fn invalid_int_field(field: &str) -> RequestHandlingError {
-        client_error(2, &format!("Invalid integer: {}", field))
+        client_error(12, &format!("Invalid integer: {}", field))
     }
 
     pub(crate) fn invalid_manifest() -> RequestHandlingError {
-        client_error(3, "Invalid manifest")
+        client_error(13, "Invalid manifest")
     }
 
     pub(crate) fn invalid_signer_pub_key(raw_key: &str) -> RequestHandlingError {
-        client_error(4, &format!("Invalid signer public key: {}", raw_key))
+        client_error(14, &format!("Invalid signer public key: {}", raw_key))
     }
 }

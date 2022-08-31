@@ -107,7 +107,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
                       .mapToObj(
                           i -> {
                             var receipt = transactionStore.getTransactionAtStateVersion(i);
-                            return RawTransaction.create(receipt.getTransactionBytes());
+                            return RawTransaction.create(receipt.transactionBytes());
                           })
                       .collect(Collectors.toList());
 

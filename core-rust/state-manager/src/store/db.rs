@@ -64,10 +64,7 @@
 
 use crate::jni::dtos::*;
 
-use crate::store::{
-    InMemoryStore, QueryableProofStore, QueryableTransactionStore, RocksDBStore,
-    TemporaryTransactionReceipt,
-};
+use crate::store::{InMemoryStore, QueryableProofStore, QueryableTransactionStore, RocksDBStore};
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -77,10 +74,10 @@ use radix_engine::engine::Substate;
 use radix_engine::ledger::{
     bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
-use radix_engine::transaction::TransactionReceipt;
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 
 use crate::state_manager::{WriteableProofStore, WriteableTransactionStore};
+use crate::LedgerTransactionReceipt;
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
@@ -113,7 +110,7 @@ impl StateManagerDatabase {
 }
 
 impl WriteableTransactionStore for StateManagerDatabase {
-    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
+    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, LedgerTransactionReceipt)>) {
         match self {
             StateManagerDatabase::InMemory(store, ..) => store.insert_transactions(transactions),
             StateManagerDatabase::RocksDB(store) => store.insert_transactions(transactions),
@@ -123,7 +120,7 @@ impl WriteableTransactionStore for StateManagerDatabase {
 }
 
 impl QueryableTransactionStore for StateManagerDatabase {
-    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt) {
         match self {
             StateManagerDatabase::InMemory(store, ..) => store.get_transaction(tid),
             StateManagerDatabase::RocksDB(store) => store.get_transaction(tid),

@@ -20,9 +20,10 @@ jni = "0.19.0"
 #   $ git push "develop-BLAH"
 # * Then use tag="develop-BLAH" in the below dependencies.
 #
-sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-950f95fc" }
-scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-950f95fc" }
-transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-950f95fc" }
-radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-950f95fc" }
-radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-950f95fc" }
-rocksdb = { version = "0.18.0" }
+sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-d2d1b432" }
+scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-d2d1b432" }
+transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-d2d1b432" }
+radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-d2d1b432" }
+radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-d2d1b432" }
+rocksdb = { version = "0.19.0" }
+hex = { version = "0.4.3", default-features = false }

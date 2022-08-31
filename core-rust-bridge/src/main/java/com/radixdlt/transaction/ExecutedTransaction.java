@@ -72,58 +72,45 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-/** Receipt for a transaction which has been executed */
-public final class ExecutedTransactionReceipt {
+/** A wrapper for a transaction and its ledger receipt */
+public record ExecutedTransaction(
+    byte[] ledgerReceiptBytes,
+    byte[] transactionBytes,
+    List<ComponentAddress> newComponentAddresses) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        ExecutedTransactionReceipt.class,
-        (codecs) ->
+        ExecutedTransaction.class,
+        codecs ->
             StructCodec.with(
-                ExecutedTransactionReceipt::new,
-                codecs.of(String.class),
+                ExecutedTransaction::new,
+                codecs.of(new TypeToken<byte[]>() {}),
                 codecs.of(new TypeToken<byte[]>() {}),
                 codecs.of(new TypeToken<List<ComponentAddress>>() {}),
                 (t, encoder) ->
-                    encoder.encode(t.result, t.transactionBytes, t.newComponentAddresses)));
-  }
-
-  private final String result;
-  private final byte[] transactionBytes;
-  private final List<ComponentAddress> newComponentAddresses;
-
-  private ExecutedTransactionReceipt(
-      String result, byte[] transactionBytes, List<ComponentAddress> new_component_addressses) {
-    this.result = result;
-    this.transactionBytes = transactionBytes;
-    this.newComponentAddresses = new_component_addressses;
-  }
-
-  public String getResult() {
-    return result;
-  }
-
-  public byte[] getTransactionBytes() {
-    return transactionBytes;
-  }
-
-  public List<ComponentAddress> getNewComponentAddresses() {
-    return newComponentAddresses;
+                    encoder.encode(
+                        t.ledgerReceiptBytes, t.transactionBytes, t.newComponentAddresses)));
   }
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    ExecutedTransactionReceipt receipt = (ExecutedTransactionReceipt) o;
-    return Objects.equals(result, receipt.result)
-        && Arrays.equals(transactionBytes, receipt.transactionBytes)
-        && Objects.equals(newComponentAddresses, receipt.newComponentAddresses);
+    ExecutedTransaction that = (ExecutedTransaction) o;
+    return Arrays.equals(ledgerReceiptBytes, that.ledgerReceiptBytes)
+        && Arrays.equals(transactionBytes, that.transactionBytes)
+        && Objects.equals(newComponentAddresses, that.newComponentAddresses);
   }
 
   @Override
   public int hashCode() {
-    int result1 = Objects.hash(result, newComponentAddresses);
-    result1 = 31 * result1 + Arrays.hashCode(transactionBytes);
-    return result1;
+    int result = Objects.hash(newComponentAddresses);
+    result = 31 * result + Arrays.hashCode(ledgerReceiptBytes);
+    result = 31 * result + Arrays.hashCode(transactionBytes);
+    return result;
+  }
+
+  @Override
+  public String toString() {
+    return "ExecutedTransaction{" + "newComponentAddresses=" + newComponentAddresses + '}';
   }
 }
