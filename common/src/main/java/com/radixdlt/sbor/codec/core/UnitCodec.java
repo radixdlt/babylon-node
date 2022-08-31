@@ -71,6 +71,7 @@ import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.sbor.coding.DecoderApi;
 import com.radixdlt.sbor.coding.EncoderApi;
+import com.radixdlt.sbor.exceptions.SborDecodeException;
 
 public final class UnitCodec implements Codec<Unit> {
   @Override
@@ -80,11 +81,17 @@ public final class UnitCodec implements Codec<Unit> {
 
   @Override
   public void encodeWithoutTypeId(EncoderApi encoder, Unit value) {
-    // NO-OP
+    encoder.writeByte((byte) 0x00);
   }
 
   @Override
   public Unit decodeWithoutTypeId(DecoderApi decoder) {
-    return Unit.unit();
+    final var unitByte = decoder.readByte();
+    if (unitByte == 0x00) {
+      return Unit.unit();
+    } else {
+      throw new SborDecodeException(
+          String.format("Invalid unit, expected 0x00 but got %s", unitByte));
+    }
   }
 }

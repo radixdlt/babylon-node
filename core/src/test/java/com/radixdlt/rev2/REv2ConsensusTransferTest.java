@@ -180,8 +180,8 @@ public final class REv2ConsensusTransferTest {
     }
 
     // Assert: Check transaction and post submission state
-    var receipt = transactionStoreReader.getTransactionAtStateVersion(1);
-    var componentAddress = receipt.getNewComponentAddresses().get(0);
+    var executedTransaction = transactionStoreReader.getTransactionAtStateVersion(1);
+    var componentAddress = executedTransaction.newComponentAddresses().get(0);
     var accountAmount = stateReader.getComponentXrdAmount(componentAddress);
     assertThat(accountAmount).isEqualTo(Decimal.of(1_000_000L));
     var systemAmount =

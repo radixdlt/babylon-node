@@ -70,7 +70,7 @@ import com.google.inject.Injector;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.transaction.ExecutedTransactionReceipt;
+import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import java.util.HashMap;
 import java.util.List;
@@ -113,7 +113,7 @@ public final class Checkers {
    * should agree on the order and result of transaction execution.
    */
   public static void assertLedgerTransactionsSafety(List<Injector> nodeInjectors) {
-    var receipts = new HashMap<Long, ExecutedTransactionReceipt>();
+    var executedTxns = new HashMap<Long, ExecutedTransaction>();
 
     for (var injector : nodeInjectors) {
       var reader = injector.getInstance(TransactionsAndProofReader.class);
@@ -125,12 +125,18 @@ public final class Checkers {
                 for (long txnStateVersion = 1;
                     txnStateVersion <= proof.getStateVersion();
                     txnStateVersion++) {
-                  var receipt = store.getTransactionAtStateVersion(txnStateVersion);
-                  var curReceipt = receipts.get(txnStateVersion);
-                  if (curReceipt != null) {
-                    assertThat(curReceipt).isEqualTo(receipt);
+                  var executedTxn = store.getTransactionAtStateVersion(txnStateVersion);
+                  var maybeExistingExecutedTxn = executedTxns.get(txnStateVersion);
+                  if (maybeExistingExecutedTxn != null) {
+                    // TODO (SCRY-248): this should compare executedTxn to maybeExistingExecutedTxn
+                    //                  but the generated receipt isn't yet deterministic!
+                    //                  So for now `ledgerReceiptBytes` field is excluded.
+                    assertThat(maybeExistingExecutedTxn.transactionBytes())
+                        .isEqualTo(executedTxn.transactionBytes());
+                    assertThat(maybeExistingExecutedTxn.newComponentAddresses())
+                        .isEqualTo(executedTxn.newComponentAddresses());
                   } else {
-                    receipts.put(txnStateVersion, receipt);
+                    executedTxns.put(txnStateVersion, executedTxn);
                   }
                 }
               });

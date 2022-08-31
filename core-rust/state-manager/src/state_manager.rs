@@ -67,6 +67,7 @@ use crate::query::ResourceAccounter;
 use crate::types::{
     CommitRequest, PrepareRequest, PrepareResult, PreviewRequest, TId, Transaction,
 };
+use crate::LedgerTransactionReceipt;
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
@@ -74,7 +75,7 @@ use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore, Writea
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
-    TransactionReceipt, TransactionResult,
+    TransactionResult,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::engine::types::RENodeId;
@@ -191,7 +192,7 @@ where
 }
 
 pub trait WriteableTransactionStore {
-    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>);
+    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, LedgerTransactionReceipt)>);
 }
 
 pub trait WriteableProofStore {
@@ -288,10 +289,19 @@ where
                 &mut self.wasm_engine,
                 &mut self.wasm_instrumenter,
             );
-            let receipt =
+
+            let engine_receipt =
                 transaction_executor.execute_and_commit(&validated_txn, &self.execution_config);
 
-            to_store.push((transaction, receipt));
+            let ledger_receipt: LedgerTransactionReceipt =
+                engine_receipt.try_into().unwrap_or_else(|_| {
+                    panic!(
+                        "Failed to commit a txn at state version {}",
+                        commit_request.state_version
+                    )
+                });
+
+            to_store.push((transaction, ledger_receipt));
             ids.push(transaction.id.clone());
         }
 

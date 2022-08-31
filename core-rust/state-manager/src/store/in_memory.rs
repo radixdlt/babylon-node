@@ -63,12 +63,11 @@
  */
 
 use crate::state_manager::{WriteableProofStore, WriteableTransactionStore, WriteableVertexStore};
-use crate::store::query::{
-    QueryableTransactionStore, RecoverableVertexStore, TemporaryTransactionReceipt,
-};
+use crate::store::query::{QueryableTransactionStore, RecoverableVertexStore};
 use crate::store::QueryableProofStore;
 use crate::types::{TId, Transaction};
-use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
+use crate::LedgerTransactionReceipt;
+use scrypto::prelude::{scrypto_decode, scrypto_encode};
 use std::collections::{BTreeMap, HashMap};
 
 #[derive(Debug)]
@@ -102,7 +101,7 @@ impl Default for InMemoryVertexStore {
 
 #[derive(Debug)]
 pub struct InMemoryStore {
-    transactions: HashMap<TId, (Vec<u8>, TemporaryTransactionReceipt)>,
+    transactions: HashMap<TId, (Vec<u8>, Vec<u8>)>,
     proofs: BTreeMap<u64, Vec<u8>>,
     txids: BTreeMap<u64, TId>,
 }
@@ -116,38 +115,10 @@ impl InMemoryStore {
         }
     }
 
-    fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
-        let (status, entity_changes) = match receipt.result {
-            TransactionResult::Commit(commit) => match commit.outcome {
-                TransactionOutcome::Success(..) => {
-                    ("Success".to_string(), Some(commit.entity_changes))
-                }
-                TransactionOutcome::Failure(error) => {
-                    (format!("Error: {}", error), Some(commit.entity_changes))
-                }
-            },
-            TransactionResult::Reject(reject) => (format!("Rejected: {}", reject.error), None),
-        };
-
-        let (new_package_addresses, new_component_addresses, new_resource_addresses) =
-            match entity_changes {
-                Some(ec) => (
-                    ec.new_package_addresses,
-                    ec.new_component_addresses,
-                    ec.new_resource_addresses,
-                ),
-                None => (Vec::new(), Vec::new(), Vec::new()),
-            };
-
-        let receipt = TemporaryTransactionReceipt {
-            result: status,
-            new_package_addresses,
-            new_component_addresses,
-            new_resource_addresses,
-        };
+    fn insert_transaction(&mut self, transaction: &Transaction, receipt: LedgerTransactionReceipt) {
         self.transactions.insert(
             transaction.id.clone(),
-            (transaction.payload.clone(), receipt),
+            (transaction.payload.clone(), scrypto_encode(&receipt)),
         );
     }
 }
@@ -159,7 +130,7 @@ impl Default for InMemoryStore {
 }
 
 impl WriteableTransactionStore for InMemoryStore {
-    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
+    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, LedgerTransactionReceipt)>) {
         for (txn, receipt) in transactions {
             self.insert_transaction(txn, receipt);
         }
@@ -167,11 +138,18 @@ impl WriteableTransactionStore for InMemoryStore {
 }
 
 impl QueryableTransactionStore for InMemoryStore {
-    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
-        self.transactions
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt) {
+        let (transaction_bytes, ledger_receipt_bytes) = self
+            .transactions
             .get(tid)
             .cloned()
-            .expect("Transaction missing")
+            .expect("Transaction missing");
+
+        (
+            transaction_bytes,
+            scrypto_decode(&ledger_receipt_bytes)
+                .unwrap_or_else(|_| panic!("Failed to decode a stored transaction {}", tid)),
+        )
     }
 }
 

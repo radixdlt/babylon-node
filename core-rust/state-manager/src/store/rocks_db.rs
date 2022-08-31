@@ -62,11 +62,8 @@
  * permissions under this License.
  */
 
-use crate::store::query::{
-    QueryableTransactionStore, RecoverableVertexStore, TemporaryTransactionReceipt,
-};
+use crate::store::query::{QueryableTransactionStore, RecoverableVertexStore};
 use crate::types::{TId, Transaction};
-use radix_engine::transaction::{TransactionOutcome, TransactionReceipt, TransactionResult};
 use std::collections::HashMap;
 
 use crate::state_manager::{WriteableProofStore, WriteableTransactionStore, WriteableVertexStore};
@@ -74,6 +71,7 @@ use crate::store::rocks_db::RocksDBTable::{
     Proofs, RootSubstates, StateVersions, Substates, Transactions, VertexStore,
 };
 use crate::store::QueryableProofStore;
+use crate::LedgerTransactionReceipt;
 use radix_engine::engine::Substate;
 use radix_engine::ledger::{
     OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
@@ -125,27 +123,7 @@ impl RocksDBStore {
         RocksDBStore { db }
     }
 
-    fn insert_transaction(&mut self, transaction: &Transaction, receipt: TransactionReceipt) {
-        let receipt = match receipt.result {
-            TransactionResult::Commit(commit_result) => {
-                let result = match commit_result.outcome {
-                    TransactionOutcome::Success(..) => "Success".to_string(),
-                    TransactionOutcome::Failure(error) => error.to_string(),
-                };
-
-                TemporaryTransactionReceipt {
-                    result,
-                    new_package_addresses: commit_result.entity_changes.new_package_addresses,
-                    new_component_addresses: commit_result.entity_changes.new_component_addresses,
-                    new_resource_addresses: commit_result.entity_changes.new_resource_addresses,
-                }
-            }
-            TransactionResult::Reject(reject_result) => panic!(
-                "Committed transaction should not get rejected: {:?}",
-                reject_result
-            ), // TODO: Move this check somewhere else
-        };
-
+    fn insert_transaction(&mut self, transaction: &Transaction, receipt: LedgerTransactionReceipt) {
         let value = (transaction.payload.clone(), receipt);
 
         let transaction_key = db_key!(Transactions, &transaction.id.bytes);
@@ -156,7 +134,7 @@ impl RocksDBStore {
 }
 
 impl WriteableTransactionStore for RocksDBStore {
-    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, TransactionReceipt)>) {
+    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, LedgerTransactionReceipt)>) {
         for (txn, receipt) in transactions {
             self.insert_transaction(txn, receipt);
         }
@@ -164,7 +142,7 @@ impl WriteableTransactionStore for RocksDBStore {
 }
 
 impl QueryableTransactionStore for RocksDBStore {
-    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, TemporaryTransactionReceipt) {
+    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt) {
         let transaction_key = db_key!(Transactions, &tid.bytes);
         let bytes = self.db.get(&transaction_key).unwrap().unwrap();
         scrypto_decode(&bytes).unwrap()
@@ -195,6 +173,7 @@ impl QueryableProofStore for RocksDBStore {
                 Direction::Reverse,
             ))
             .next()
+            .map(|res| res.unwrap())
             .filter(|(key, _)| key[0] == StateVersions.prefix())
             .map(|(key, _)| {
                 let (_, state_version_bytes) = key.split_first().unwrap();
@@ -218,6 +197,7 @@ impl QueryableProofStore for RocksDBStore {
             .db
             .iterator(IteratorMode::From(&proof_version_key, Direction::Forward))
             .next()
+            .map(|res| res.unwrap())
             .filter(|(key, _)| key[0] == Proofs.prefix())
             .map(|(key, proof)| {
                 let (_, state_version_bytes) = key.split_first().unwrap();
@@ -241,6 +221,7 @@ impl QueryableProofStore for RocksDBStore {
                 &[Proofs.prefix() + 1],
                 Direction::Reverse,
             ))
+            .map(|res| res.unwrap())
             .next()
             .filter(|(key, _)| key[0] == 2u8)
             .map(|(_, proof)| proof.to_vec())
@@ -297,7 +278,8 @@ impl QueryableSubstateStore for RocksDBStore {
             Direction::Forward,
         ));
         let mut items = HashMap::new();
-        for (key, value) in iter {
+        for res in iter {
+            let (key, value) = res.unwrap();
             let (prefix, key) = key.split_first().unwrap();
             if *prefix != Substates.prefix() {
                 break;
