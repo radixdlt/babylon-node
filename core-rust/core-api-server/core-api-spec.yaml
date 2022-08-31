@@ -411,13 +411,13 @@ components:
       description: SBOR-encoded and then hex-encoded substate ID.
     ResourceAddress:
       type: string
-      description: Bech32 resource address.
+      description: Bech32m resource address.
     ComponentAddress:
       type: string
-      description: Bech32 component address.
+      description: Bech32m component address.
     PackageAddress:
       type: string
-      description: Bech32 package address.
+      description: Bech32m package address.
     VirtualSubstateId:
       type: string
       description: SBOR-encoded and then hex-encoded virtual substate ID.
@@ -486,7 +486,7 @@ components:
       properties:
         package_address:
           type: string
-          description: Package address, bech32-encoded.
+          description: Package address, Bech32m-encoded.
         blueprint_name:
           type: string
     ComponentStateSubstate:
@@ -528,7 +528,7 @@ components:
           "$ref": "#/components/schemas/NetworkIdentifier"
         network_hrp_suffix:
           type: string
-          description: The network suffix used for bech32 hrps used for addressing.
+          description: The network suffix used for Bech32m HRPs used for addressing.
 ################################
 # REQUEST: /transaction/submit #
 ################################

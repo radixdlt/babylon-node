@@ -34,6 +34,7 @@ fn to_api_resource_substate(resource_manager: &ResourceManager) -> models::Resou
         ResourceType::Fungible { divisibility } => ("fungible", Some(divisibility as isize)),
         ResourceType::NonFungible => ("non_fungible", None),
     };
+    // TODO: map method_table, vault_method_table, bucket_method_table, authorization
     models::ResourceSubstate {
         resource_type: resource_type.to_string(),
         fungible_divisibility,
@@ -53,6 +54,7 @@ fn to_api_component_info_substate(
     component_info: &ComponentInfo,
     bech32_encoder: &Bech32Encoder,
 ) -> models::ComponentInfoSubstate {
+    // TODO: map access_rules
     models::ComponentInfoSubstate {
         package_address: bech32_encoder.encode_package_address(&component_info.package_address()),
         blueprint_name: component_info.blueprint_name().to_string(),
@@ -68,6 +70,7 @@ fn to_api_component_state_substate(
 }
 
 fn to_api_package_substate(validated_package: &ValidatedPackage) -> models::PackageSubstate {
+    // TODO: map blueprint_abis
     models::PackageSubstate {
         code: hex::encode(validated_package.code()),
     }

@@ -405,7 +405,7 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 }
 
 
-/// Bech32 component address.
+/// Bech32m component address.
 #[derive(Debug, Clone, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct ComponentAddress(String);
@@ -452,7 +452,7 @@ impl std::ops::DerefMut for ComponentAddress {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct ComponentInfoSubstate {
-    /// Package address, bech32-encoded.
+    /// Package address, Bech32m-encoded.
     #[serde(rename = "package_address")]
     pub package_address: String,
 
@@ -1399,7 +1399,7 @@ pub struct NetworkConfigurationResponse {
     #[serde(rename = "network_identifier")]
     pub network_identifier: models::NetworkIdentifier,
 
-    /// The network suffix used for bech32 hrps used for addressing.
+    /// The network suffix used for Bech32m HRPs used for addressing.
     #[serde(rename = "network_hrp_suffix")]
     pub network_hrp_suffix: String,
 
@@ -1892,7 +1892,7 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 }
 
 
-/// Bech32 package address.
+/// Bech32m package address.
 #[derive(Debug, Clone, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct PackageAddress(String);
@@ -2049,7 +2049,7 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 }
 
 
-/// Bech32 resource address.
+/// Bech32m resource address.
 #[derive(Debug, Clone, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct ResourceAddress(String);
@@ -2096,11 +2096,11 @@ impl std::ops::DerefMut for ResourceAddress {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct ResourceChange {
-    /// Bech32 resource address.
+    /// Bech32m resource address.
     #[serde(rename = "resource_address")]
     pub resource_address: String,
 
-    /// Bech32 component address.
+    /// Bech32m component address.
     #[serde(rename = "component_address")]
     pub component_address: String,
 
