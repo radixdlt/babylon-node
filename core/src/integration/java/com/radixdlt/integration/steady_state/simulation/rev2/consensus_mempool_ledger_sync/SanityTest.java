@@ -62,101 +62,73 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.full_function;
+package com.radixdlt.integration.steady_state.simulation.rev2.consensus_mempool_ledger_sync;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.application.MempoolFillerStarter;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.rev1.checkpoint.Genesis;
-import com.radixdlt.rev1.checkpoint.TokenIssuance;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.targeted.mempool.MempoolFillerModule;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
-import org.assertj.core.api.Condition;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-/** Runs the chaos mempool filler and verifies that all operations are working normally */
-public class MempoolFillTest {
-  private final SimulationTest.Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numNodes(4)
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .fullFunctionNodes(ConsensusConfig.of(), SyncRelayConfig.of(800L, 10, 5000L), 1000)
-          .addRadixEngineConfigModules(
-              new MainnetForksModule(), new RadixEngineForksLatestOnlyModule(), new ForksModule())
-          .addNodeModule(
-              new AbstractModule() {
-                @Override
-                protected void configure() {
-                  install(MempoolRelayConfig.of(200).asModule());
-                  install(new MempoolFillerModule());
-                }
+public class SanityTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-                @ProvidesIntoSet
-                private TokenIssuance mempoolFillerIssuance(
-                    @Genesis ImmutableList<ECPublicKey> validators) {
-                  return TokenIssuance.of(
-                      validators.get(0), TokenUnitConversions.unitsToSubunits(10000000000L));
-                }
-              })
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-              // ConsensusMonitors.noTimeouts(), // Removed for now to appease Jenkins
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered(),
-              RadixEngineMonitors.noInvalidProposedTransactions())
-          .addActor(MempoolFillerStarter.class);
-
-  @Test
-  @Ignore("Travis not playing nice")
-  public void sanity_tests_should_pass() {
-    SimulationTest simulationTest = bftTestBuilder.build();
-
-    final var runningTest = simulationTest.run();
-    final var results = runningTest.awaitCompletion();
-
-    // Post conditions
-    assertThat(results)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    long invalidTransactionsCount =
-        runningTest.getNetwork().getSystemCounters().values().stream()
-            .map(s -> s.get(SystemCounters.CounterType.RADIX_ENGINE_INVALID_PROPOSED_TRANSACTIONS))
-            .mapToLong(l -> l)
-            .sum();
-    assertThat(invalidTransactionsCount).isZero();
+  private SimulationTest createTest() {
+    return SimulationTest.builder()
+        .numNodes(4)
+        .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())),
+                    SyncRelayConfig.of(5000, 10, 3000L))))
+        .addTestModules(
+            ConsensusMonitors.safety(),
+            ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
+            ConsensusMonitors.noTimeouts(),
+            ConsensusMonitors.directParents(),
+            LedgerMonitors.consensusToLedger(),
+            LedgerMonitors.ordered())
+        .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class)
+        .build();
   }
 
   @Test
-  @Ignore("Travis not playing nicely with timeouts so disable for now until fixed.")
-  public void filler_should_overwhelm_unratelimited_mempool() {
-    SimulationTest simulationTest =
-        bftTestBuilder
-            .addOverrideModuleToAllInitialNodes(MempoolRelayConfig.of(0).asModule())
-            .build();
+  public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() {
+    // Arrange
+    var simulationTest = createTest();
 
-    final var results = simulationTest.run().awaitCompletion();
-    assertThat(results).hasValueSatisfying(new Condition<>(Optional::isPresent, "Error exists"));
+    // Run
+    var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
+
+    // Post-run assertions
+    assertThat(checkResults)
+        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    Checkers.assertNodesSyncedToVersionAtleast(runningTest.getNodeInjectors(), 1);
+    Checkers.assertLedgerTransactionsSafety(runningTest.getNodeInjectors());
   }
 }

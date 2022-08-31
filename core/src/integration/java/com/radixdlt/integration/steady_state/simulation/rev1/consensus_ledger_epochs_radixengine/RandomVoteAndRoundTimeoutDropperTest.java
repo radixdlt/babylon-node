@@ -62,89 +62,93 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.full_function_forks;
+package com.radixdlt.integration.steady_state.simulation.rev1.consensus_ledger_epochs_radixengine;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.rev1.forks.CandidateForkConfig;
-import com.radixdlt.rev1.forks.ForkBuilder;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
+import com.radixdlt.harness.simulation.NetworkDroppers;
+import com.radixdlt.harness.simulation.NetworkLatencies;
+import com.radixdlt.harness.simulation.NetworkOrdering;
+import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.SimulationTest.Builder;
+import com.radixdlt.harness.simulation.application.NodeValidatorRandomRegistrator;
+import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
+import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
+import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.rev1.forks.ForksModule;
+import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
-import com.radixdlt.rev1.forks.RERulesVersion;
+import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.LongSummaryStatistics;
 import java.util.Map;
-import java.util.OptionalInt;
 import java.util.Set;
-import java.util.regex.Pattern;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Test;
 
-public final class MockedForksModule extends AbstractModule {
+public class RandomVoteAndRoundTimeoutDropperTest {
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(8)
+          .networkModules(
+              NetworkOrdering.inOrder(),
+              NetworkLatencies.fixed(),
+              NetworkDroppers.randomVotesAndRoundTimeoutsDropped(0.2))
+          .addRadixEngineConfigModules(
+              new MainnetForksModule(),
+              new RadixEngineForksLatestOnlyModule(
+                  RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
+              new ForksModule())
+          .ledgerAndRadixEngineWithEpochMaxRound(ConsensusConfig.of())
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(20, TimeUnit.SECONDS),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered(),
+              RadixEngineMonitors.noInvalidProposedTransactions())
+          .addActor(NodeValidatorRandomRegistrator.class);
 
-  private final ForkBuilder baseForkBuilder;
+  @Test
+  public void when_random_validators__then_sanity_checks_should_pass() {
+    SimulationTest simulationTest = bftTestBuilder.build();
+    final var runningTest = simulationTest.run(Duration.of(2, ChronoUnit.MINUTES));
+    final var checkResults = runningTest.awaitCompletion();
 
-  public MockedForksModule(long maxRounds) {
-    this.baseForkBuilder =
-        new ForkBuilder(
-            "",
-            0L,
-            RERulesVersion.OLYMPIA_V1,
-            new RERulesConfig(
-                Set.of("xrd"),
-                Pattern.compile("[a-z0-9]+"),
-                FeeTable.create(Amount.zero(), Map.of()),
-                (long) 1024 * 1024,
-                OptionalInt.of(2),
-                maxRounds,
-                0,
-                Amount.ofTokens(10),
-                1,
-                Amount.zero(),
-                9800,
-                10,
-                255));
+    List<CounterType> counterTypes =
+        List.of(
+            CounterType.BFT_VERTEX_STORE_FORKS,
+            CounterType.BFT_COMMITTED_VERTICES,
+            CounterType.BFT_PACEMAKER_TIMEOUTS_SENT,
+            CounterType.LEDGER_STATE_VERSION);
+
+    Map<CounterType, LongSummaryStatistics> statistics =
+        counterTypes.stream()
+            .collect(
+                Collectors.toMap(
+                    counterType -> counterType,
+                    counterType ->
+                        runningTest.getNetwork().getSystemCounters().values().stream()
+                            .mapToLong(s -> s.get(counterType))
+                            .summaryStatistics()));
+
+    System.out.println("statistics:\n" + print(statistics.entrySet()));
+
+    assertThat(checkResults)
+        .allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
   }
 
-  @Override
-  protected void configure() {
-    Multibinder.newSetBinder(binder(), ForkBuilder.class);
-  }
+  private String print(Set<Map.Entry<CounterType, LongSummaryStatistics>> entrySet) {
+    var builder = new StringBuilder();
 
-  /* three forks at fixed epochs and one fork with stake voting, all based on the most recent "real" fork */
+    entrySet.forEach(
+        e -> builder.append(e.getKey()).append(" = ").append(e.getValue().toString()).append('\n'));
 
-  @ProvidesIntoSet
-  ForkBuilder fork1() {
-    return copyBaseAtEpoch("fork0", 0);
-  }
-
-  @ProvidesIntoSet
-  ForkBuilder fork2() {
-    return copyBaseAtEpoch("fork1", 5);
-  }
-
-  @ProvidesIntoSet
-  ForkBuilder fork3() {
-    return copyBaseAtEpoch("fork2", 10);
-  }
-
-  @ProvidesIntoSet
-  ForkBuilder fork4() {
-    return copyBaseWithVoting("fork3", (short) 7500, 20L, Long.MAX_VALUE, 1);
-  }
-
-  private ForkBuilder copyBaseAtEpoch(String name, long epoch) {
-    return new ForkBuilder(
-        name, epoch, baseForkBuilder.getReRulesVersion(), baseForkBuilder.getEngineRulesConfig());
-  }
-
-  private ForkBuilder copyBaseWithVoting(
-      String name, short requiredStake, long minEpoch, long maxEpoch, int epochsBeforeEnacted) {
-    return new ForkBuilder(
-        name,
-        ImmutableSet.of(new CandidateForkConfig.Threshold(requiredStake, epochsBeforeEnacted)),
-        minEpoch,
-        maxEpoch,
-        baseForkBuilder.getReRulesVersion(),
-        baseForkBuilder.getEngineRulesConfig());
+    return builder.toString();
   }
 }

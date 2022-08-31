@@ -62,75 +62,58 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.full_function;
+package com.radixdlt.integration.steady_state.simulation.rev1.consensus_ledger_epochs_radixengine;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.SimulationTest.Builder;
-import com.radixdlt.harness.simulation.application.RadixEngineUniqueGenerator;
+import com.radixdlt.harness.simulation.application.NodeValidatorRegistrator;
 import com.radixdlt.harness.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
+import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.sync.SyncRelayConfig;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-@RunWith(Parameterized.class)
-public class SanityTest {
-  @Parameterized.Parameters
-  public static Collection<Object[]> fees() {
-    return List.of(
-        new Object[][] {
-          {true}, {false},
-        });
-  }
-
-  private final Builder bftTestBuilder;
-
-  public SanityTest(boolean fees) {
-    bftTestBuilder =
-        SimulationTest.builder()
-            .numNodes(4)
-            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .fullFunctionNodes(ConsensusConfig.of(3000), SyncRelayConfig.of(400L, 10, 2000L), 1000)
-            .addRadixEngineConfigModules(
-                new MainnetForksModule(), new RadixEngineForksLatestOnlyModule(), new ForksModule())
-            .addNodeModule(MempoolRelayConfig.of(10).asModule())
-            .addTestModules(
-                ConsensusMonitors.safety(),
-                ConsensusMonitors.liveness(2, TimeUnit.SECONDS),
-                ConsensusMonitors.noTimeouts(),
-                ConsensusMonitors.directParents(),
-                LedgerMonitors.consensusToLedger(),
-                LedgerMonitors.ordered(),
-                RadixEngineMonitors.noInvalidProposedTransactions())
-            .addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
-
-    if (!fees) {
-      bftTestBuilder.addTestModules(ApplicationMonitors.mempoolCommitted());
-    }
-  }
+/** Slowly registers more and more validators to the network */
+public class IncreasingValidatorsTest {
+  private final Builder bftTestBuilder =
+      SimulationTest.builder()
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .numNodes(50) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware
+          // pacemaker
+          .addRadixEngineConfigModules(
+              new MainnetForksModule(),
+              new RadixEngineForksLatestOnlyModule(
+                  RERulesConfig.testingDefault().overrideMaxSigsPerRound(5)),
+              new ForksModule())
+          .ledgerAndRadixEngineWithEpochMaxRound(ConsensusConfig.of(3000))
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered(),
+              RadixEngineMonitors.noInvalidProposedTransactions(),
+              ApplicationMonitors.registeredNodeToEpoch())
+          .addActor(NodeValidatorRegistrator.class);
 
   @Test
-  public void sanity_tests_should_pass() {
+  public void when_increasing_validators__then_they_should_be_getting_registered() {
     SimulationTest simulationTest = bftTestBuilder.build();
 
-    final var results = simulationTest.run().awaitCompletion();
-    assertThat(results)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    final var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
+
+    assertThat(checkResults).allSatisfy((name, err) -> assertThat(err).isEmpty());
   }
 }

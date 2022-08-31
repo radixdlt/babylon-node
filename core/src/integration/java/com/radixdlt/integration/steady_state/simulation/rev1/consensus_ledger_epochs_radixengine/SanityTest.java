@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs_radixengine;
+package com.radixdlt.integration.steady_state.simulation.rev1.consensus_ledger_epochs_radixengine;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 

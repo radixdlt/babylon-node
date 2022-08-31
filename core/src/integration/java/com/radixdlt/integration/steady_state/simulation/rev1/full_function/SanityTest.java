@@ -62,71 +62,75 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.rev2_consensus_ledger;
+package com.radixdlt.integration.steady_state.simulation.rev1.full_function;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
+import com.radixdlt.harness.simulation.SimulationTest.Builder;
+import com.radixdlt.harness.simulation.application.RadixEngineUniqueGenerator;
+import com.radixdlt.harness.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.statecomputer.StatelessComputer;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.rev1.forks.ForksModule;
+import com.radixdlt.rev1.forks.MainnetForksModule;
+import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.sync.SyncRelayConfig;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
-import org.assertj.core.data.Offset;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-public class HalfValidTxnTest {
-  private final SimulationTest.Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numNodes(4)
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .functionalNodeModule(
-              new FunctionalRadixNodeModule(
-                  false,
-                  ConsensusConfig.of(1000),
-                  LedgerConfig.stateComputerNoSync(
-                      StateComputerConfig.rev2(
-                          Network.INTEGRATIONTESTNET.getId(),
-                          REv2DatabaseConfig.none(),
-                          REV2ProposerConfig.halfCorrectProposer()))))
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered());
+@RunWith(Parameterized.class)
+public class SanityTest {
+  @Parameterized.Parameters
+  public static Collection<Object[]> fees() {
+    return List.of(
+        new Object[][] {
+          {true}, {false},
+        });
+  }
+
+  private final Builder bftTestBuilder;
+
+  public SanityTest(boolean fees) {
+    bftTestBuilder =
+        SimulationTest.builder()
+            .numNodes(4)
+            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+            .fullFunctionNodes(ConsensusConfig.of(3000), SyncRelayConfig.of(400L, 10, 2000L), 1000)
+            .addRadixEngineConfigModules(
+                new MainnetForksModule(), new RadixEngineForksLatestOnlyModule(), new ForksModule())
+            .addNodeModule(MempoolRelayConfig.of(10).asModule())
+            .addTestModules(
+                ConsensusMonitors.safety(),
+                ConsensusMonitors.liveness(2, TimeUnit.SECONDS),
+                ConsensusMonitors.noTimeouts(),
+                ConsensusMonitors.directParents(),
+                LedgerMonitors.consensusToLedger(),
+                LedgerMonitors.ordered(),
+                RadixEngineMonitors.noInvalidProposedTransactions())
+            .addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
+
+    if (!fees) {
+      bftTestBuilder.addTestModules(ApplicationMonitors.mempoolCommitted());
+    }
+  }
 
   @Test
-  public void test_half_valid_half_invalid_rev2_transactions() {
-    // Arrange
-    var simulationTest = bftTestBuilder.build();
+  public void sanity_tests_should_pass() {
+    SimulationTest simulationTest = bftTestBuilder.build();
 
-    // Run
-    var runningTest = simulationTest.run();
-    final var checkResults = runningTest.awaitCompletion();
-
-    // Post-run assertions
-    assertThat(checkResults)
+    final var results = simulationTest.run().awaitCompletion();
+    assertThat(results)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    for (var node : runningTest.getNetwork().getNodes()) {
-      var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
-
-      // The current proposal generator for REv2 produces half correct transactions and half
-      // invalid.
-      // This part verifies that this actually happened.
-      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
-      assertThat(statelessComputer.getInvalidCount())
-          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(4));
-    }
   }
 }

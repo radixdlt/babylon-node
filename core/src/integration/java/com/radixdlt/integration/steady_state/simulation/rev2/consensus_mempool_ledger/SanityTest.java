@@ -62,104 +62,71 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.full_function_forks;
+package com.radixdlt.integration.steady_state.simulation.rev2.consensus_mempool_ledger;
 
-import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.SimulationTest.Builder;
-import com.radixdlt.harness.simulation.application.RadixEngineUniqueGenerator;
-import com.radixdlt.harness.simulation.monitors.application.ApplicationMonitors;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
 import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.rev1.forks.ForkOverwritesWithShorterEpochsModule;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RERulesConfig;
-import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.UInt256;
-import java.time.Duration;
-import java.util.Collection;
-import java.util.List;
-import java.util.OptionalInt;
-import java.util.Set;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.rules.TemporaryFolder;
 
-@RunWith(Parameterized.class)
 public class SanityTest {
-  @Parameterized.Parameters
-  public static Collection<Object[]> fees() {
-    return List.of(
-        new Object[][] {
-          {UInt256.ZERO}, {UInt256.ONE},
-        });
-  }
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private static final Logger logger = LogManager.getLogger();
-  private final Builder bftTestBuilder;
-
-  public SanityTest(UInt256 perByteFee) {
-    logger.info("Test fees={}", perByteFee);
-    bftTestBuilder =
-        SimulationTest.builder()
-            .numNodes(4)
-            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-            .fullFunctionNodes(ConsensusConfig.of(3000), SyncRelayConfig.of(400L, 10, 2000L), 1000)
-            .addRadixEngineConfigModules(
-                new MainnetForksModule(),
-                new ForkOverwritesWithShorterEpochsModule(
-                    new RERulesConfig(
-                        Set.of("xrd"),
-                        Pattern.compile("[a-z0-9]+"),
-                        FeeTable.noFees(),
-                        1024 * 1024,
-                        OptionalInt.of(5),
-                        10,
-                        2,
-                        Amount.ofTokens(10),
-                        1,
-                        Amount.ofTokens(10),
-                        9800,
-                        10,
-                        MSG.maxLength())),
-                new ForksModule())
-            .addNodeModule(MempoolRelayConfig.of(10).asModule())
-            .addTestModules(
-                ConsensusMonitors.safety(),
-                ConsensusMonitors.liveness(3, TimeUnit.SECONDS),
-                ConsensusMonitors.noTimeouts(),
-                ConsensusMonitors.directParents(),
-                LedgerMonitors.consensusToLedger(),
-                LedgerMonitors.ordered(),
-                RadixEngineMonitors.noInvalidProposedTransactions())
-            .addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
-
-    if (perByteFee.isZero()) {
-      bftTestBuilder.addTestModules(ApplicationMonitors.mempoolCommitted());
-    }
+  private SimulationTest createTest() {
+    return SimulationTest.builder()
+        .numNodes(4)
+        .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())))))
+        .addTestModules(
+            ConsensusMonitors.safety(),
+            ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
+            ConsensusMonitors.noTimeouts(),
+            ConsensusMonitors.directParents(),
+            LedgerMonitors.consensusToLedger(),
+            LedgerMonitors.ordered())
+        .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class)
+        .build();
   }
 
   @Test
-  public void sanity_tests_should_pass() {
-    SimulationTest simulationTest = bftTestBuilder.build();
+  public void sanity_test() {
+    // Arrange
+    var simulationTest = createTest();
 
-    final var results = simulationTest.run(Duration.ofMinutes(1)).awaitCompletion();
-    assertThat(results)
+    // Run
+    var runningTest = simulationTest.run();
+    final var checkResults = runningTest.awaitCompletion();
+
+    // Post-run assertions
+    assertThat(checkResults)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+    Checkers.assertNodesSyncedToVersionAtleast(runningTest.getNodeInjectors(), 1);
+    Checkers.assertLedgerTransactionsSafety(runningTest.getNodeInjectors());
   }
 }

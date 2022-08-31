@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.ledger_sync;
+package com.radixdlt.integration.steady_state.deterministic.rev1.ledger_sync;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static org.junit.Assert.assertTrue;

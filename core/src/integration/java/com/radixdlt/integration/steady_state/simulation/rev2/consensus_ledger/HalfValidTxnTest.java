@@ -62,62 +62,54 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.rev2_consensus_mempool_ledger;
+package com.radixdlt.integration.steady_state.simulation.rev2.consensus_ledger;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
 import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.statecomputer.StatelessComputer;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Rule;
+import org.assertj.core.data.Offset;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-public class SanityTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  private SimulationTest createTest() {
-    return SimulationTest.builder()
-        .numNodes(4)
-        .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())))))
-        .addTestModules(
-            ConsensusMonitors.safety(),
-            ConsensusMonitors.liveness(10, TimeUnit.SECONDS),
-            ConsensusMonitors.noTimeouts(),
-            ConsensusMonitors.directParents(),
-            LedgerMonitors.consensusToLedger(),
-            LedgerMonitors.ordered())
-        .addMempoolSubmissionsSteadyState(REV2TransactionGenerator.class)
-        .build();
-  }
+public class HalfValidTxnTest {
+  private final SimulationTest.Builder bftTestBuilder =
+      SimulationTest.builder()
+          .numNodes(4)
+          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
+          .functionalNodeModule(
+              new FunctionalRadixNodeModule(
+                  false,
+                  ConsensusConfig.of(1000),
+                  LedgerConfig.stateComputerNoSync(
+                      StateComputerConfig.rev2(
+                          Network.INTEGRATIONTESTNET.getId(),
+                          REv2DatabaseConfig.none(),
+                          REV2ProposerConfig.halfCorrectProposer()))))
+          .addTestModules(
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+              ConsensusMonitors.noTimeouts(),
+              ConsensusMonitors.directParents(),
+              LedgerMonitors.consensusToLedger(),
+              LedgerMonitors.ordered());
 
   @Test
-  public void sanity_test() {
+  public void test_half_valid_half_invalid_rev2_transactions() {
     // Arrange
-    var simulationTest = createTest();
+    var simulationTest = bftTestBuilder.build();
 
     // Run
     var runningTest = simulationTest.run();
@@ -126,7 +118,15 @@ public class SanityTest {
     // Post-run assertions
     assertThat(checkResults)
         .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
-    Checkers.assertNodesSyncedToVersionAtleast(runningTest.getNodeInjectors(), 1);
-    Checkers.assertLedgerTransactionsSafety(runningTest.getNodeInjectors());
+    for (var node : runningTest.getNetwork().getNodes()) {
+      var statelessComputer = runningTest.getNetwork().getInstance(StatelessComputer.class, node);
+
+      // The current proposal generator for REv2 produces half correct transactions and half
+      // invalid.
+      // This part verifies that this actually happened.
+      assertThat(statelessComputer.getInvalidCount()).isGreaterThan(10);
+      assertThat(statelessComputer.getInvalidCount())
+          .isCloseTo(statelessComputer.getSuccessCount(), Offset.offset(4));
+    }
   }
 }

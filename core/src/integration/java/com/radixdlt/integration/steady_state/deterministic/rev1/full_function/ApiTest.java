@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.full_function;
+package com.radixdlt.integration.steady_state.deterministic.rev1.full_function;
 
 import com.google.inject.Module;
 import com.radixdlt.application.system.FeeTable;
