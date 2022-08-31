@@ -105,14 +105,14 @@ public final class TransactionDBSizeStressTest {
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(
                             new REv2OneMBTransactionGenerator(NetworkDefinition.INT_TEST_NET),
-                            10)))));
+                            1)))));
   }
 
   @Test
   public void committing_large_transactions_should_work() {
     var test = buildTest();
-    for (int i = 0; i < 50; i++) {
-      test.runForCount(100);
+    for (int i = 0; i < 10; i++) {
+      test.runForCount(1000);
     }
   }
 }

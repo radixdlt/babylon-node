@@ -62,78 +62,23 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.statecomputer.commit;
 
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.transactions.RawTransaction;
+import java.util.List;
 
-/** Configuration options for the state computer */
-public sealed interface StateComputerConfig {
-  static StateComputerConfig mocked(MockedMempoolConfig mempoolType) {
-    return new MockedStateComputerConfig(mempoolType);
-  }
-
-  static StateComputerConfig rev1(int mempoolSize) {
-    return new REv1StateComputerConfig(mempoolSize);
-  }
-
-  static StateComputerConfig rev2(
-      int networkId, REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig) {
-    return new REv2StateComputerConfig(networkId, databaseConfig, proposerConfig);
-  }
-
-  sealed interface MockedMempoolConfig {
-    static MockedMempoolConfig noMempool() {
-      return new NoMempool();
-    }
-
-    record NoMempool() implements MockedMempoolConfig {}
-
-    record LocalOnly(int mempoolSize) implements MockedMempoolConfig {}
-
-    record Relayed(int mempoolSize) implements MockedMempoolConfig {}
-  }
-
-  record MockedStateComputerConfig(MockedMempoolConfig mempoolType)
-      implements StateComputerConfig {}
-
-  record REv1StateComputerConfig(int mempoolSize) implements StateComputerConfig {}
-
-  record REv2StateComputerConfig(
-      int networkId, REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig)
-      implements StateComputerConfig {}
-
-  sealed interface REV2ProposerConfig {
-    static REV2ProposerConfig halfCorrectProposer() {
-      return new Generated(new HalfCorrectREv2TransactionGenerator());
-    }
-
-    static REV2ProposerConfig transactionGenerator(
-        TransactionGenerator transactionGenerator, long count) {
-      return new Generated(
-          (round, prepared) ->
-              Stream.generate(transactionGenerator::nextTransaction)
-                  .limit(count)
-                  .collect(Collectors.toList()));
-    }
-
-    static REV2ProposerConfig transactionGenerator(ProposalGenerator proposalGenerator) {
-      return new Generated(proposalGenerator);
-    }
-
-    static REV2ProposerConfig mempool(int mempoolMaxSize, MempoolRelayConfig config) {
-      return new Mempool(new RustMempoolConfig(mempoolMaxSize), config);
-    }
-
-    record Generated(ProposalGenerator generator) implements REV2ProposerConfig {}
-
-    record Mempool(RustMempoolConfig mempoolConfig, MempoolRelayConfig relayConfig)
-        implements REV2ProposerConfig {}
+public record PrepareRequest(List<RawTransaction> previous, List<RawTransaction> proposed) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        PrepareRequest.class,
+        codecs ->
+            StructCodec.with(
+                PrepareRequest::new,
+                codecs.of(new TypeToken<List<RawTransaction>>() {}),
+                codecs.of(new TypeToken<List<RawTransaction>>() {}),
+                (t, encoder) -> encoder.encode(t.previous, t.proposed)));
   }
 }
