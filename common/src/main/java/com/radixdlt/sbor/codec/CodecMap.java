@@ -289,7 +289,7 @@ public final class CodecMap {
      * NB - NOT a JavaDoc on purpose, just a comment.
      * On some versions of the JDK, calling this method with TypeToken<>
      * can result in a compiler exception, as per: https://bugs.openjdk.org/browse/JDK-8262095
-     * The solution is simply to upgrade your JDK.
+     * The solution is simply to upgrade your JDK to 17.04+.
      * The error message is copied out below to assist anyone who hits this error and greps the codebase for it:
      * "An exception has occurred in the compiler (17).
      * Please file a bug against the Java compiler via the Java bug reporting page
