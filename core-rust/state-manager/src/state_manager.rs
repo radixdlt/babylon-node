@@ -206,11 +206,7 @@ pub trait WriteableVertexStore {
 impl<M, S> StateManager<M, S>
 where
     M: Mempool,
-    S: ReadableSubstateStore
-        + WriteableSubstateStore
-        + WriteableTransactionStore
-        + WriteableProofStore
-        + WriteableVertexStore,
+    S: ReadableSubstateStore,
 {
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
         let mut validated_prepared = Vec::new();
@@ -275,7 +271,17 @@ where
             rejected_txns,
         }
     }
+}
 
+impl<M, S> StateManager<M, S>
+where
+    M: Mempool,
+    S: ReadableSubstateStore
+        + WriteableSubstateStore
+        + WriteableTransactionStore
+        + WriteableProofStore
+        + WriteableVertexStore,
+{
     pub fn commit(&mut self, commit_request: CommitRequest) {
         let mut to_store = Vec::new();
         let mut ids = Vec::new();
