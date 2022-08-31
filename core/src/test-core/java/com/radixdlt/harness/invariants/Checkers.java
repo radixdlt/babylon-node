@@ -128,9 +128,9 @@ public final class Checkers {
                   var executedTxn = store.getTransactionAtStateVersion(txnStateVersion);
                   var maybeExistingExecutedTxn = executedTxns.get(txnStateVersion);
                   if (maybeExistingExecutedTxn != null) {
-                    // TODO: this should compare executedTxn to maybeExistingExecutedTxn
-                    //       but the generated receipt isn't yet deterministic!
-                    //       So for now `ledgerReceiptBytes` field is excluded.
+                    // TODO (SCRY-248): this should compare executedTxn to maybeExistingExecutedTxn
+                    //                  but the generated receipt isn't yet deterministic!
+                    //                  So for now `ledgerReceiptBytes` field is excluded.
                     assertThat(maybeExistingExecutedTxn.transactionBytes())
                         .isEqualTo(executedTxn.transactionBytes());
                     assertThat(maybeExistingExecutedTxn.newComponentAddresses())
