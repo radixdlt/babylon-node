@@ -405,7 +405,7 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 }
 
 
-/// Bech32 component address.
+/// Bech32m component address.
 #[derive(Debug, Clone, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct ComponentAddress(String);
@@ -445,6 +445,243 @@ impl std::ops::Deref for ComponentAddress {
 impl std::ops::DerefMut for ComponentAddress {
     fn deref_mut(&mut self) -> &mut String {
         &mut self.0
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct ComponentInfoSubstate {
+    /// Package address, Bech32m-encoded.
+    #[serde(rename = "package_address")]
+    pub package_address: String,
+
+    #[serde(rename = "blueprint_name")]
+    pub blueprint_name: String,
+
+}
+
+impl ComponentInfoSubstate {
+    pub fn new(package_address: String, blueprint_name: String, ) -> ComponentInfoSubstate {
+        ComponentInfoSubstate {
+            package_address: package_address,
+            blueprint_name: blueprint_name,
+        }
+    }
+}
+
+/// Converts the ComponentInfoSubstate value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for ComponentInfoSubstate {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+
+        params.push("package_address".to_string());
+        params.push(self.package_address.to_string());
+
+
+        params.push("blueprint_name".to_string());
+        params.push(self.blueprint_name.to_string());
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a ComponentInfoSubstate value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for ComponentInfoSubstate {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub package_address: Vec<String>,
+            pub blueprint_name: Vec<String>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing ComponentInfoSubstate".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "package_address" => intermediate_rep.package_address.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "blueprint_name" => intermediate_rep.blueprint_name.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing ComponentInfoSubstate".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(ComponentInfoSubstate {
+            package_address: intermediate_rep.package_address.into_iter().next().ok_or("package_address missing in ComponentInfoSubstate".to_string())?,
+            blueprint_name: intermediate_rep.blueprint_name.into_iter().next().ok_or("blueprint_name missing in ComponentInfoSubstate".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<ComponentInfoSubstate> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<ComponentInfoSubstate>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<ComponentInfoSubstate>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for ComponentInfoSubstate - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<ComponentInfoSubstate> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <ComponentInfoSubstate as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into ComponentInfoSubstate - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct ComponentStateSubstate {
+    /// hex-encoded state data
+    #[serde(rename = "state")]
+    pub state: String,
+
+}
+
+impl ComponentStateSubstate {
+    pub fn new(state: String, ) -> ComponentStateSubstate {
+        ComponentStateSubstate {
+            state: state,
+        }
+    }
+}
+
+/// Converts the ComponentStateSubstate value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for ComponentStateSubstate {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+
+        params.push("state".to_string());
+        params.push(self.state.to_string());
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a ComponentStateSubstate value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for ComponentStateSubstate {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub state: Vec<String>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing ComponentStateSubstate".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "state" => intermediate_rep.state.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing ComponentStateSubstate".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(ComponentStateSubstate {
+            state: intermediate_rep.state.into_iter().next().ok_or("state missing in ComponentStateSubstate".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<ComponentStateSubstate> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<ComponentStateSubstate>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<ComponentStateSubstate>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for ComponentStateSubstate - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<ComponentStateSubstate> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <ComponentStateSubstate as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into ComponentStateSubstate - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
     }
 }
 
@@ -575,6 +812,122 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
                         std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
                         std::result::Result::Err(err) => std::result::Result::Err(
                             format!("Unable to convert header value '{}' into DownSubstate - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+/// A not yet implemented substate model
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct EmptySubstate {
+    #[serde(rename = "dummy")]
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub dummy: Option<String>,
+
+}
+
+impl EmptySubstate {
+    pub fn new() -> EmptySubstate {
+        EmptySubstate {
+            dummy: None,
+        }
+    }
+}
+
+/// Converts the EmptySubstate value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for EmptySubstate {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+
+        if let Some(ref dummy) = self.dummy {
+            params.push("dummy".to_string());
+            params.push(dummy.to_string());
+        }
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a EmptySubstate value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for EmptySubstate {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub dummy: Vec<String>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing EmptySubstate".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "dummy" => intermediate_rep.dummy.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing EmptySubstate".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(EmptySubstate {
+            dummy: intermediate_rep.dummy.into_iter().next(),
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<EmptySubstate> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<EmptySubstate>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<EmptySubstate>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for EmptySubstate - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<EmptySubstate> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <EmptySubstate as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into EmptySubstate - {}",
                                 value, err))
                     }
              },
@@ -1046,7 +1399,7 @@ pub struct NetworkConfigurationResponse {
     #[serde(rename = "network_identifier")]
     pub network_identifier: models::NetworkIdentifier,
 
-    /// The network suffix used for bech32 hrps used for addressing.
+    /// The network suffix used for Bech32m HRPs used for addressing.
     #[serde(rename = "network_hrp_suffix")]
     pub network_hrp_suffix: String,
 
@@ -1539,7 +1892,7 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
 }
 
 
-/// Bech32 package address.
+/// Bech32m package address.
 #[derive(Debug, Clone, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct PackageAddress(String);
@@ -1583,7 +1936,120 @@ impl std::ops::DerefMut for PackageAddress {
 }
 
 
-/// Bech32 resource address.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct PackageSubstate {
+    /// Package code, hex-encoded.
+    #[serde(rename = "code")]
+    pub code: String,
+
+}
+
+impl PackageSubstate {
+    pub fn new(code: String, ) -> PackageSubstate {
+        PackageSubstate {
+            code: code,
+        }
+    }
+}
+
+/// Converts the PackageSubstate value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for PackageSubstate {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+
+        params.push("code".to_string());
+        params.push(self.code.to_string());
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a PackageSubstate value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for PackageSubstate {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub code: Vec<String>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing PackageSubstate".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "code" => intermediate_rep.code.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing PackageSubstate".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(PackageSubstate {
+            code: intermediate_rep.code.into_iter().next().ok_or("code missing in PackageSubstate".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<PackageSubstate> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<PackageSubstate>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<PackageSubstate>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for PackageSubstate - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<PackageSubstate> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <PackageSubstate as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into PackageSubstate - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+/// Bech32m resource address.
 #[derive(Debug, Clone, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct ResourceAddress(String);
@@ -1630,11 +2096,11 @@ impl std::ops::DerefMut for ResourceAddress {
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct ResourceChange {
-    /// Bech32 resource address.
+    /// Bech32m resource address.
     #[serde(rename = "resource_address")]
     pub resource_address: String,
 
-    /// Bech32 component address.
+    /// Bech32m component address.
     #[serde(rename = "component_address")]
     pub component_address: String,
 
@@ -1765,6 +2231,276 @@ impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderVal
                         std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
                         std::result::Result::Err(err) => std::result::Result::Err(
                             format!("Unable to convert header value '{}' into ResourceChange - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct ResourceSubstate {
+    // Note: inline enums are not fully supported by openapi-generator
+    #[serde(rename = "resource_type")]
+    pub resource_type: String,
+
+    #[serde(rename = "fungible_divisibility")]
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub fungible_divisibility: Option<isize>,
+
+    #[serde(rename = "metadata")]
+    pub metadata: Vec<models::ResourceSubstateMetadataInner>,
+
+    #[serde(rename = "total_supply")]
+    pub total_supply: String,
+
+}
+
+impl ResourceSubstate {
+    pub fn new(resource_type: String, metadata: Vec<models::ResourceSubstateMetadataInner>, total_supply: String, ) -> ResourceSubstate {
+        ResourceSubstate {
+            resource_type: resource_type,
+            fungible_divisibility: None,
+            metadata: metadata,
+            total_supply: total_supply,
+        }
+    }
+}
+
+/// Converts the ResourceSubstate value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for ResourceSubstate {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+
+        params.push("resource_type".to_string());
+        params.push(self.resource_type.to_string());
+
+
+        if let Some(ref fungible_divisibility) = self.fungible_divisibility {
+            params.push("fungible_divisibility".to_string());
+            params.push(fungible_divisibility.to_string());
+        }
+
+        // Skipping metadata in query parameter serialization
+
+
+        params.push("total_supply".to_string());
+        params.push(self.total_supply.to_string());
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a ResourceSubstate value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for ResourceSubstate {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub resource_type: Vec<String>,
+            pub fungible_divisibility: Vec<isize>,
+            pub metadata: Vec<Vec<models::ResourceSubstateMetadataInner>>,
+            pub total_supply: Vec<String>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing ResourceSubstate".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "resource_type" => intermediate_rep.resource_type.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "fungible_divisibility" => intermediate_rep.fungible_divisibility.push(<isize as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "metadata" => return std::result::Result::Err("Parsing a container in this style is not supported in ResourceSubstate".to_string()),
+                    "total_supply" => intermediate_rep.total_supply.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing ResourceSubstate".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(ResourceSubstate {
+            resource_type: intermediate_rep.resource_type.into_iter().next().ok_or("resource_type missing in ResourceSubstate".to_string())?,
+            fungible_divisibility: intermediate_rep.fungible_divisibility.into_iter().next(),
+            metadata: intermediate_rep.metadata.into_iter().next().ok_or("metadata missing in ResourceSubstate".to_string())?,
+            total_supply: intermediate_rep.total_supply.into_iter().next().ok_or("total_supply missing in ResourceSubstate".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<ResourceSubstate> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<ResourceSubstate>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<ResourceSubstate>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for ResourceSubstate - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<ResourceSubstate> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <ResourceSubstate as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into ResourceSubstate - {}",
+                                value, err))
+                    }
+             },
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Unable to convert header: {:?} to string: {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
+pub struct ResourceSubstateMetadataInner {
+    #[serde(rename = "key")]
+    pub key: String,
+
+    #[serde(rename = "value")]
+    pub value: String,
+
+}
+
+impl ResourceSubstateMetadataInner {
+    pub fn new(key: String, value: String, ) -> ResourceSubstateMetadataInner {
+        ResourceSubstateMetadataInner {
+            key: key,
+            value: value,
+        }
+    }
+}
+
+/// Converts the ResourceSubstateMetadataInner value to the Query Parameters representation (style=form, explode=false)
+/// specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde serializer
+impl std::string::ToString for ResourceSubstateMetadataInner {
+    fn to_string(&self) -> String {
+        let mut params: Vec<String> = vec![];
+
+        params.push("key".to_string());
+        params.push(self.key.to_string());
+
+
+        params.push("value".to_string());
+        params.push(self.value.to_string());
+
+        params.join(",").to_string()
+    }
+}
+
+/// Converts Query Parameters representation (style=form, explode=false) to a ResourceSubstateMetadataInner value
+/// as specified in https://swagger.io/docs/specification/serialization/
+/// Should be implemented in a serde deserializer
+impl std::str::FromStr for ResourceSubstateMetadataInner {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        #[derive(Default)]
+        // An intermediate representation of the struct to use for parsing.
+        struct IntermediateRep {
+            pub key: Vec<String>,
+            pub value: Vec<String>,
+        }
+
+        let mut intermediate_rep = IntermediateRep::default();
+
+        // Parse into intermediate representation
+        let mut string_iter = s.split(',').into_iter();
+        let mut key_result = string_iter.next();
+
+        while key_result.is_some() {
+            let val = match string_iter.next() {
+                Some(x) => x,
+                None => return std::result::Result::Err("Missing value while parsing ResourceSubstateMetadataInner".to_string())
+            };
+
+            if let Some(key) = key_result {
+                match key {
+                    "key" => intermediate_rep.key.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "value" => intermediate_rep.value.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    _ => return std::result::Result::Err("Unexpected key while parsing ResourceSubstateMetadataInner".to_string())
+                }
+            }
+
+            // Get the next key
+            key_result = string_iter.next();
+        }
+
+        // Use the intermediate representation to return the struct
+        std::result::Result::Ok(ResourceSubstateMetadataInner {
+            key: intermediate_rep.key.into_iter().next().ok_or("key missing in ResourceSubstateMetadataInner".to_string())?,
+            value: intermediate_rep.value.into_iter().next().ok_or("value missing in ResourceSubstateMetadataInner".to_string())?,
+        })
+    }
+}
+
+// Methods for converting between header::IntoHeaderValue<ResourceSubstateMetadataInner> and hyper::header::HeaderValue
+
+
+impl std::convert::TryFrom<header::IntoHeaderValue<ResourceSubstateMetadataInner>> for hyper::header::HeaderValue {
+    type Error = String;
+
+    fn try_from(hdr_value: header::IntoHeaderValue<ResourceSubstateMetadataInner>) -> std::result::Result<Self, Self::Error> {
+        let hdr_value = hdr_value.to_string();
+        match hyper::header::HeaderValue::from_str(&hdr_value) {
+             std::result::Result::Ok(value) => std::result::Result::Ok(value),
+             std::result::Result::Err(e) => std::result::Result::Err(
+                 format!("Invalid header value for ResourceSubstateMetadataInner - value: {} is invalid {}",
+                     hdr_value, e))
+        }
+    }
+}
+
+
+impl std::convert::TryFrom<hyper::header::HeaderValue> for header::IntoHeaderValue<ResourceSubstateMetadataInner> {
+    type Error = String;
+
+    fn try_from(hdr_value: hyper::header::HeaderValue) -> std::result::Result<Self, Self::Error> {
+        match hdr_value.to_str() {
+             std::result::Result::Ok(value) => {
+                    match <ResourceSubstateMetadataInner as std::str::FromStr>::from_str(value) {
+                        std::result::Result::Ok(value) => std::result::Result::Ok(header::IntoHeaderValue(value)),
+                        std::result::Result::Err(err) => std::result::Result::Err(
+                            format!("Unable to convert header value '{}' into ResourceSubstateMetadataInner - {}",
                                 value, err))
                     }
              },
@@ -3191,9 +3927,9 @@ pub enum TransactionStatus {
 impl std::fmt::Display for TransactionStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            TransactionStatus::SUCCEEDED => write!(f, "succeeded"),
-            TransactionStatus::FAILED => write!(f, "failed"),
-            TransactionStatus::REJECTED => write!(f, "rejected"),
+            TransactionStatus::SUCCEEDED => write!(f, "{}", "succeeded"),
+            TransactionStatus::FAILED => write!(f, "{}", "failed"),
+            TransactionStatus::REJECTED => write!(f, "{}", "rejected"),
         }
     }
 }
@@ -3461,14 +4197,19 @@ pub struct UpSubstate {
     #[serde(rename = "substate_bytes")]
     pub substate_bytes: String,
 
+    /// JSON-encoded (and then stringified) substate model.
+    #[serde(rename = "substate")]
+    pub substate: String,
+
 }
 
 impl UpSubstate {
-    pub fn new(substate_id: String, version: String, substate_bytes: String, ) -> UpSubstate {
+    pub fn new(substate_id: String, version: String, substate_bytes: String, substate: String, ) -> UpSubstate {
         UpSubstate {
             substate_id: substate_id,
             version: version,
             substate_bytes: substate_bytes,
+            substate: substate,
         }
     }
 }
@@ -3491,6 +4232,10 @@ impl std::string::ToString for UpSubstate {
         params.push("substate_bytes".to_string());
         params.push(self.substate_bytes.to_string());
 
+
+        params.push("substate".to_string());
+        params.push(self.substate.to_string());
+
         params.join(",").to_string()
     }
 }
@@ -3508,6 +4253,7 @@ impl std::str::FromStr for UpSubstate {
             pub substate_id: Vec<String>,
             pub version: Vec<String>,
             pub substate_bytes: Vec<String>,
+            pub substate: Vec<String>,
         }
 
         let mut intermediate_rep = IntermediateRep::default();
@@ -3527,6 +4273,7 @@ impl std::str::FromStr for UpSubstate {
                     "substate_id" => intermediate_rep.substate_id.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "version" => intermediate_rep.version.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "substate_bytes" => intermediate_rep.substate_bytes.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "substate" => intermediate_rep.substate.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     _ => return std::result::Result::Err("Unexpected key while parsing UpSubstate".to_string())
                 }
             }
@@ -3540,6 +4287,7 @@ impl std::str::FromStr for UpSubstate {
             substate_id: intermediate_rep.substate_id.into_iter().next().ok_or("substate_id missing in UpSubstate".to_string())?,
             version: intermediate_rep.version.into_iter().next().ok_or("version missing in UpSubstate".to_string())?,
             substate_bytes: intermediate_rep.substate_bytes.into_iter().next().ok_or("substate_bytes missing in UpSubstate".to_string())?,
+            substate: intermediate_rep.substate.into_iter().next().ok_or("substate missing in UpSubstate".to_string())?,
         })
     }
 }

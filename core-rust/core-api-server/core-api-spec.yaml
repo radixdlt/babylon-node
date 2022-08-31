@@ -378,6 +378,7 @@ components:
         - substate_id
         - version
         - substate_bytes
+        - substate
       properties:
         substate_id:
           "$ref": "#/components/schemas/SubstateId"
@@ -387,6 +388,9 @@ components:
         substate_bytes:
           type: string
           description: SBOR-encoded and then hex-encoded substate bytes.
+        substate:
+          type: string
+          description: JSON-encoded (and then stringified) substate model.
     DownSubstate:
       type: object
       required:
@@ -407,13 +411,13 @@ components:
       description: SBOR-encoded and then hex-encoded substate ID.
     ResourceAddress:
       type: string
-      description: Bech32 resource address.
+      description: Bech32m resource address.
     ComponentAddress:
       type: string
-      description: Bech32 component address.
+      description: Bech32m component address.
     PackageAddress:
       type: string
-      description: Bech32 package address.
+      description: Bech32m package address.
     VirtualSubstateId:
       type: string
       description: SBOR-encoded and then hex-encoded virtual substate ID.
@@ -435,7 +439,71 @@ components:
         amount:
           type: string
           description: The XRD amount put or taken from the vault. A fixed-scale 256-bit signed decimal number.
-    ##########################################
+#######################################
+# GENERAL / SHARED MODELS - substates #
+#######################################
+    ResourceSubstate:
+      type: object
+      required:
+        - resource_type
+        - metadata
+        - total_supply
+      properties:
+        resource_type:
+          type: string
+          enum:
+            - fungible
+            - non_fungible
+        fungible_divisibility:
+          type: integer
+        metadata:
+          type: array
+          items:
+            type: object
+            required:
+              - key
+              - value
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+        total_supply:
+          type: string
+    PackageSubstate:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          description: Package code, hex-encoded.
+    ComponentInfoSubstate:
+      type: object
+      required:
+        - package_address
+        - blueprint_name
+      properties:
+        package_address:
+          type: string
+          description: Package address, Bech32m-encoded.
+        blueprint_name:
+          type: string
+    ComponentStateSubstate:
+      type: object
+      required:
+        - state
+      properties:
+        state:
+          type: string
+          description: hex-encoded state data
+    EmptySubstate:
+      type: object
+      description: A not yet implemented substate model
+      properties:
+        dummy:
+          type: string
+##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
     NetworkConfigurationResponse:
@@ -460,7 +528,7 @@ components:
           "$ref": "#/components/schemas/NetworkIdentifier"
         network_hrp_suffix:
           type: string
-          description: The network suffix used for bech32 hrps used for addressing.
+          description: The network suffix used for Bech32m HRPs used for addressing.
 ################################
 # REQUEST: /transaction/submit #
 ################################
