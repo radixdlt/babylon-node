@@ -62,83 +62,69 @@
  * permissions under this License.
  */
 
-package com.radixdlt.identifiers;
+package com.radixdlt.addressing;
 
-import com.radixdlt.utils.Bits;
-import com.radixdlt.utils.Pair;
-import java.util.Objects;
-import java.util.function.Function;
-import org.bitcoinj.core.AddressFormatException;
-import org.bitcoinj.core.Bech32;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Bech-32 encoding/decoding of account addresses.
- *
- * <p>The human-readable part is "rdx" for mainnet, "brx" for betanet.
- *
- * <p>The data part is a conversion of the 1-34 byte Radix Engine address {@link
- * com.radixdlt.identifiers.REAddr} to Base32 similar to specification described in BIP_0173 for
- * converting witness programs.
- */
-public final class AccountAddressing {
-  private final String hrp;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.utils.Bytes;
+import java.util.Map;
+import org.junit.Test;
 
-  private AccountAddressing(String hrp) {
-    this.hrp = hrp;
+public class ValidatorAddressingTest {
+  private final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32("vb");
+  private final BiMap<String, String> privateKeyToValidatorId =
+      HashBiMap.create(
+          Map.of(
+              "00", "vb1qvz3anvawgvm7pwvjs7xmjg48dvndczkgnufh475k2tqa2vm5c6cq9u3702",
+              "deadbeef", "vb1qvx0emaq0tua6md7wu9c047mm5krrwnlfl8c7ws3jm2s9uf4vxcyvrwrazy",
+              "deadbeefdeadbeef", "vb1q0jym8jxnc0a4306y95j9m07tprxws6ccjz9h352tkcdfzfysh0jxll64dl",
+              "bead", "vb1qgtnc40hs73dxe2fgy5yvujnxmdnvg69w6fhj6drr68vqac525k2gkfdady",
+              "aaaaaaaaaaaaaaaa",
+                  "vb1qgyz0t0kd9j4302q8429tl0mu3w8lm8nne8l2m9e8k74t3qm3xe9z8l2049"));
+
+  private final Map<String, String> invalidAddresses =
+      Map.of(
+          "vb1qvx0emaq0tua6md7wu9c047mm5krrwnlfl8c7ws3jm2s9uf4vxcyvrwrazz", "Bad checksum",
+          "xrd_rr1gd5j68", "Bad hrp",
+          "vb1qqweu28r", "Not enough bytes for public key");
+
+  @Test
+  public void test_validator_address_serialization() {
+    privateKeyToValidatorId.forEach(
+        (privHex, expectedAddress) -> {
+          var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
+          var publicKey = keyPair.getPublicKey();
+          var validatorAddress = validatorAddresses.of(publicKey);
+          assertThat(validatorAddress).isEqualTo(expectedAddress);
+        });
   }
 
-  public String getHrp() {
-    return hrp;
-  }
-
-  public static AccountAddressing bech32(String hrp) {
-    Objects.requireNonNull(hrp);
-    return new AccountAddressing(hrp);
-  }
-
-  public static <X extends Exception> Pair<String, REAddr> parseUnknownHrp(
-      String v, Function<String, X> exceptionSupplier) throws X {
-    Bech32.Bech32Data bech32Data;
-    try {
-      bech32Data = Bech32.decode(v);
-    } catch (AddressFormatException e) {
-      throw exceptionSupplier.apply("Could not decode");
+  @Test
+  public void test_correct_validator_address_deserialization() throws DeserializeException {
+    for (var e : privateKeyToValidatorId.entrySet()) {
+      var address = e.getValue();
+      var privHex = e.getKey();
+      var pubKey = validatorAddresses.parseOrThrow(address, IllegalStateException::new);
+      var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
+      var expectedPubKey = keyPair.getPublicKey();
+      assertThat(pubKey).isEqualTo(expectedPubKey);
     }
+  }
 
-    final REAddr reAddr;
-    try {
-      var addrBytes = fromBech32Data(bech32Data.data);
-      reAddr = REAddr.of(addrBytes);
-    } catch (IllegalArgumentException e) {
-      throw exceptionSupplier.apply("Invalid address");
+  @Test
+  public void test_invalid_addresses() {
+    for (var e : invalidAddresses.entrySet()) {
+      var address = e.getKey();
+      var expectedError = e.getValue();
+      assertThatThrownBy(
+              () -> validatorAddresses.parseOrThrow(address, IllegalStateException::new),
+              expectedError)
+          .isInstanceOf(IllegalStateException.class);
     }
-
-    if (!reAddr.isAccount()) {
-      throw exceptionSupplier.apply("Address is not an account");
-    }
-
-    return Pair.of(bech32Data.hrp, reAddr);
-  }
-
-  private static byte[] toBech32Data(byte[] bytes) {
-    return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
-  }
-
-  private static byte[] fromBech32Data(byte[] bytes) {
-    return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
-  }
-
-  public String of(REAddr addr) {
-    var convert = toBech32Data(addr.getBytes());
-    return Bech32.encode(hrp, convert);
-  }
-
-  public <X extends Exception> REAddr parseOrThrow(String v, Function<String, X> exceptionSupplier)
-      throws X {
-    var p = parseUnknownHrp(v, exceptionSupplier);
-    if (!p.getFirst().equals(hrp)) {
-      throw exceptionSupplier.apply("hrp must be " + hrp + " but was " + p.getFirst());
-    }
-    return p.getSecond();
   }
 }

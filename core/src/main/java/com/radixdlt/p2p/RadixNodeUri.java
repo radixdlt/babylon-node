@@ -68,9 +68,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.addressing.Addressing;
+import com.radixdlt.addressing.NodeAddressing;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.serialization.DeserializeException;
 import java.net.URI;
 import java.net.URISyntaxException;

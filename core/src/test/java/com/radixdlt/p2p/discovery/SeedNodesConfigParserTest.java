@@ -70,9 +70,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.addressing.Addressing;
+import com.radixdlt.addressing.NodeAddressing;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.P2PConfig;
 import java.io.IOException;

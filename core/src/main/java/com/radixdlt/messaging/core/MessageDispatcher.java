@@ -67,12 +67,12 @@ package com.radixdlt.messaging.core;
 import static com.radixdlt.messaging.core.MessagingErrors.IO_ERROR;
 import static com.radixdlt.messaging.core.MessagingErrors.MESSAGE_EXPIRED;
 
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerManager;
 import com.radixdlt.p2p.transport.PeerChannel;

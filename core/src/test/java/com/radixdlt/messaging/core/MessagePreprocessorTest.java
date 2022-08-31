@@ -76,6 +76,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.ECKeyPair;
@@ -92,7 +93,6 @@ import com.radixdlt.messaging.ledgersync.SyncRequestMessage;
 import com.radixdlt.messaging.ledgersync.SyncResponseMessage;
 import com.radixdlt.messaging.mempool.MempoolAddMessage;
 import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerControl;

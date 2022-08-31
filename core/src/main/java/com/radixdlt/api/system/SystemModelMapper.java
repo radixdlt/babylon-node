@@ -67,6 +67,7 @@ package com.radixdlt.api.system;
 import static com.radixdlt.monitoring.SystemCounters.CounterType.*;
 
 import com.google.inject.Inject;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.system.generated.models.Address;
 import com.radixdlt.api.system.generated.models.AddressBookEntry;
 import com.radixdlt.api.system.generated.models.BFTMetrics;
@@ -84,7 +85,6 @@ import com.radixdlt.api.system.generated.models.SyncConfiguration;
 import com.radixdlt.api.system.generated.models.SyncMetrics;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.RadixNodeUri;

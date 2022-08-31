@@ -62,87 +62,42 @@
  * permissions under this License.
  */
 
-package com.radixdlt.networks;
+package com.radixdlt.addressing;
 
-import com.radixdlt.identifiers.AccountAddressing;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.identifiers.ResourceAddressing;
-import com.radixdlt.identifiers.ValidatorAddressing;
-import java.util.Optional;
-import org.bitcoinj.core.AddressFormatException;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.Bits;
+import java.util.Objects;
 import org.bitcoinj.core.Bech32;
 
-public final class Addressing {
-  private final ValidatorAddressing validatorAddressing;
-  private final AccountAddressing accountAddressing;
-  private final ResourceAddressing resourceAddressing;
-  private final NodeAddressing nodeAddressing;
+/**
+ * A Radix resource identifier which encodes addresses with a resource behind them in Bech32
+ * encoding.
+ */
+public final class ResourceAddressing {
+  private final String hrp;
 
-  private Addressing(
-      ValidatorAddressing validatorAddressing,
-      AccountAddressing accountAddressing,
-      ResourceAddressing resourceAddressing,
-      NodeAddressing nodeAddressing) {
-    this.validatorAddressing = validatorAddressing;
-    this.accountAddressing = accountAddressing;
-    this.resourceAddressing = resourceAddressing;
-    this.nodeAddressing = nodeAddressing;
+  private ResourceAddressing(String hrp) {
+    this.hrp = hrp;
   }
 
-  public static Addressing ofNetwork(Network network) {
-    return ofNetworkId(network.getId());
+  public static ResourceAddressing bech32(String hrp) {
+    Objects.requireNonNull(hrp);
+    return new ResourceAddressing(hrp);
   }
 
-  public static Addressing ofNetworkId(int networkId) {
-    var network =
-        Network.ofId(networkId)
-            .orElseThrow(
-                () ->
-                    new RuntimeException(
-                        "Provided Network ID does not match any known networks: " + networkId));
-    return new Addressing(
-        ValidatorAddressing.bech32(network.getValidatorHrp()),
-        AccountAddressing.bech32(network.getAccountHrp()),
-        ResourceAddressing.bech32(network.getResourceHrp()),
-        NodeAddressing.bech32(network.getNodeHrp()));
+  public String getHrp() {
+    return hrp;
   }
 
-  public Optional<AddressType> getAddressType(String address) {
-    Bech32.Bech32Data data;
-    try {
-      data = Bech32.decode(address);
-    } catch (AddressFormatException e) {
-      return Optional.empty();
-    }
-
-    if (data.hrp.startsWith(validatorAddressing.getHrp())) {
-      return Optional.of(AddressType.VALIDATOR);
-    }
-    if (data.hrp.startsWith(accountAddressing.getHrp())) {
-      return Optional.of(AddressType.ACCOUNT);
-    }
-    if (data.hrp.endsWith(resourceAddressing.getHrp())) {
-      return Optional.of(AddressType.RESOURCE);
-    }
-    if (data.hrp.startsWith(nodeAddressing.getHrp())) {
-      return Optional.of(AddressType.NODE);
-    }
-    return Optional.empty();
+  private static byte[] toBech32Data(byte[] bytes) {
+    return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
   }
 
-  public ValidatorAddressing forValidators() {
-    return validatorAddressing;
+  private static byte[] fromBech32Data(byte[] bytes) {
+    return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
   }
 
-  public AccountAddressing forAccounts() {
-    return accountAddressing;
-  }
-
-  public ResourceAddressing forResources() {
-    return resourceAddressing;
-  }
-
-  public NodeAddressing forNodes() {
-    return nodeAddressing;
+  public String of(REAddr addr) {
+    return Bech32.encode(hrp, toBech32Data(addr.getBytes()));
   }
 }

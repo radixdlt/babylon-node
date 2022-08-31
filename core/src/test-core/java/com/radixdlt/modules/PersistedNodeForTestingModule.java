@@ -66,6 +66,7 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
@@ -73,7 +74,6 @@ import com.radixdlt.keys.InMemoryBFTKeyModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.modules.ConsensusRecoveryModule;
 import com.radixdlt.rev1.modules.LedgerRecoveryModule;

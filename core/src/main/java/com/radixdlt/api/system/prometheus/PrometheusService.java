@@ -70,6 +70,7 @@ import static com.radixdlt.api.system.prometheus.PrometheusService.JmxMetric.jmx
 
 import com.google.inject.Inject;
 import com.radixdlt.RadixNodeApplication;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -79,7 +80,6 @@ import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.monitoring.InMemorySystemInfo;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;

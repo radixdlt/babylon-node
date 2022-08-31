@@ -70,6 +70,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.RateLimiter;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.lang.Cause;
@@ -77,7 +78,6 @@ import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.messaging.core.InboundMessage;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;

@@ -64,10 +64,10 @@
 
 package com.radixdlt.cloud;
 
+import com.radixdlt.addressing.NodeAddressing;
+import com.radixdlt.addressing.ValidatorAddressing;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;

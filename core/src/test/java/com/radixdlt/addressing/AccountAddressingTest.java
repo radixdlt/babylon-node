@@ -62,71 +62,98 @@
  * permissions under this License.
  */
 
-package com.radixdlt.identifiers;
+package com.radixdlt.addressing;
 
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.utils.Bits;
-import java.util.Objects;
-import java.util.function.Function;
-import org.bitcoinj.core.AddressFormatException;
-import org.bitcoinj.core.Bech32;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Bech-32 encoding/decoding of validators. Validators are represented as 33-byte compressed EC
- * Public Keys.
- *
- * <p>The data part is a conversion of the 33 byte compressed EC public key to Base32 similar to
- * specification described in BIP_0173 for converting witness programs.
- */
-public final class ValidatorAddressing {
-  private final String hrp;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.REAddr;
+import com.radixdlt.utils.Bytes;
+import java.util.Map;
+import org.junit.Test;
 
-  private ValidatorAddressing(String hrp) {
-    this.hrp = hrp;
+public class AccountAddressingTest {
+  private final AccountAddressing accountAddresses = AccountAddressing.bech32("brx");
+  private final BiMap<String, String> privateKeyToAccountAddress =
+      HashBiMap.create(
+          Map.of(
+              "00", "brx1qsps28kdn4epn0c9ej2rcmwfz5a4jdhq2ez03x7h6jefvr4fnwnrtqqjqllv9",
+              "deadbeef", "brx1qspsel805pa0nhtdhemshp7hm0wjcvd60a8ulre6zxtd2qh3x4smq3sraak9a",
+              "deadbeefdeadbeef",
+                  "brx1qsp7gnv7g60plkk9lgskjghdlevyve6rtrzggk7x3fwmp4yfyjza7gcumgm9f",
+              "bead", "brx1qsppw0z477r695m9f9qjs3nj2vmdkd3rg4mfx7tf5v0gasrhz32jefqwxg7ul",
+              "aaaaaaaaaaaaaaaa",
+                  "brx1qspqsfad7e5k2k9agq74g40al0j9cllv7w0ylatvhy7m64wyrwymy5g7md96s"));
+
+  private final BiMap<String, String> reAddrToAccountAddress =
+      HashBiMap.create(
+          Map.of(
+              "04" + "02".repeat(33),
+              "brx1qspqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs7cr9az"));
+
+  private final Map<String, String> invalidAddresses =
+      Map.of(
+          "vb1qvz3anvawgvm7pwvjs7xmjg48dvndczkgnufh475k2tqa2vm5c6cq9u3702", "invalid hrp",
+          "brx1xhv8x3", "invalid address length 0",
+          "brx1qsqsyqcyq5rqzjh9c6", "invalid length for address type 4");
+
+  @Test
+  public void test_validator_privkey_to_address_serialization() {
+    privateKeyToAccountAddress.forEach(
+        (privHex, expectedAddress) -> {
+          var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
+          var publicKey = keyPair.getPublicKey();
+          var addr = REAddr.ofPubKeyAccount(publicKey);
+          var accountAddress = accountAddresses.of(addr);
+          assertThat(accountAddress).isEqualTo(expectedAddress);
+        });
   }
 
-  public String getHrp() {
-    return hrp;
+  @Test
+  public void test_re_addr_to_address_serialization() {
+    reAddrToAccountAddress.forEach(
+        (hex, expectedAddress) -> {
+          var addr = REAddr.of(Bytes.fromHexString(hex));
+          var accountAddr = accountAddresses.of(addr);
+          assertThat(accountAddr).isEqualTo(expectedAddress);
+        });
   }
 
-  public static ValidatorAddressing bech32(String hrp) {
-    Objects.requireNonNull(hrp);
-    return new ValidatorAddressing(hrp);
-  }
-
-  private static byte[] toBech32Data(byte[] bytes) {
-    return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
-  }
-
-  private static byte[] fromBech32Data(byte[] bytes) {
-    return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
-  }
-
-  public String of(ECPublicKey key) {
-    var bytes = key.getCompressedBytes();
-    var convert = toBech32Data(bytes);
-    return Bech32.encode(hrp, convert);
-  }
-
-  public <X extends Exception> ECPublicKey parseOrThrow(
-      String v, Function<String, X> exceptionSupplier) throws X {
-    Bech32.Bech32Data bech32Data;
-    try {
-      bech32Data = Bech32.decode(v);
-    } catch (AddressFormatException e) {
-      throw exceptionSupplier.apply("Could not decode");
+  @Test
+  public void test_priv_key_address_deserialization() {
+    for (var e : privateKeyToAccountAddress.entrySet()) {
+      var address = e.getValue();
+      var privHex = e.getKey();
+      var reAddr = accountAddresses.parseOrThrow(address, IllegalStateException::new);
+      var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
+      var pubKey = keyPair.getPublicKey();
+      assertThat(reAddr).isEqualTo(REAddr.ofPubKeyAccount(pubKey));
     }
+  }
 
-    if (!bech32Data.hrp.equals(hrp)) {
-      throw exceptionSupplier.apply("hrp must be " + this.hrp + " but was " + bech32Data.hrp);
+  @Test
+  public void test_re_addr_from_address_deserialization() {
+    for (var e : reAddrToAccountAddress.entrySet()) {
+      var address = e.getValue();
+      var hex = e.getKey();
+      var reAddr = REAddr.of(Bytes.fromHexString(hex));
+      assertThat(reAddr)
+          .isEqualTo(accountAddresses.parseOrThrow(address, IllegalStateException::new));
     }
+  }
 
-    var keyBytes = fromBech32Data(bech32Data.data);
-    try {
-      return ECPublicKey.fromBytes(keyBytes);
-    } catch (PublicKeyException e) {
-      throw exceptionSupplier.apply("Validator address does not contain a valid public key");
+  @Test
+  public void test_invalid_addresses() {
+    for (var e : invalidAddresses.entrySet()) {
+      var address = e.getKey();
+      var expectedError = e.getValue();
+      assertThatThrownBy(
+              () -> accountAddresses.parseOrThrow(address, IllegalStateException::new),
+              expectedError)
+          .isInstanceOf(IllegalStateException.class);
     }
   }
 }

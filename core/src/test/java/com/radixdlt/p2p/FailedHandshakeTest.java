@@ -66,8 +66,8 @@ package com.radixdlt.p2p;
 
 import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.addressing.NodeAddressing;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.NodeAddressing;
 import com.radixdlt.p2p.test.DeterministicP2PNetworkTest;
 import java.net.URI;
 import java.util.Set;

@@ -67,12 +67,12 @@ package com.radixdlt.api.system;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Inject;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.ApiTest;
 import com.radixdlt.api.system.generated.models.Address;
 import com.radixdlt.api.system.generated.models.AddressBookEntry;
 import com.radixdlt.api.system.generated.models.SystemAddressBookResponse;
 import com.radixdlt.api.system.routes.AddressBookHandler;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.addressbook.AddressBook;

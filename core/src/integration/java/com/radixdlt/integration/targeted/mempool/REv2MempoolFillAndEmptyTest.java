@@ -68,6 +68,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.*;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.RoundUpdate;
@@ -92,7 +93,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.NetworkDefinition;

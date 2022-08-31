@@ -64,11 +64,11 @@
 
 package com.radixdlt.p2p.transport;
 
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeerEvent;
 import com.radixdlt.p2p.RadixNodeUri;

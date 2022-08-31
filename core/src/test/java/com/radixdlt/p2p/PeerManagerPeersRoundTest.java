@@ -70,10 +70,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.inject.TypeLiteral;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.messaging.core.InboundMessage;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
