@@ -90,34 +90,34 @@ public final class Addressing {
   }
 
   public String encodeNormalComponentAddress(ComponentAddress componentAddress) {
-    // TODO - checks on first bit of address
+    // TODO - checks on first byte of address
     return Bech32mCoder.encode(network.getNormalComponentHrp(), componentAddress.value());
   }
 
   public ComponentAddress decodeNormalComponentAddress(String address) {
-    // TODO - checks on first bit of address
+    // TODO - checks on first byte of address
     return ComponentAddress.create(
         Bech32mCoder.decodeWithExpectedHrp(network.getNormalComponentHrp(), address));
   }
 
   public String encodeAccountAddress(ComponentAddress componentAddress) {
-    // TODO - checks on first bit of address
+    // TODO - checks on first byte of address
     return Bech32mCoder.encode(network.getAccountComponentHrp(), componentAddress.value());
   }
 
   public ComponentAddress decodeAccountAddress(String address) {
-    // TODO - checks on first bit of address
+    // TODO - checks on first byte of address
     return ComponentAddress.create(
         Bech32mCoder.decodeWithExpectedHrp(network.getAccountComponentHrp(), address));
   }
 
   public String encodeSystemComponentAddress(ComponentAddress componentAddress) {
-    // TODO - checks on first bit of address
+    // TODO - checks on first byte of address
     return Bech32mCoder.encode(network.getSystemComponentHrp(), componentAddress.value());
   }
 
   public ComponentAddress decodeSystemComponentAddress(String address) {
-    // TODO - checks on first bit of address
+    // TODO - checks on first byte of address
     return ComponentAddress.create(
         Bech32mCoder.decodeWithExpectedHrp(network.getSystemComponentHrp(), address));
   }

@@ -285,12 +285,12 @@ public class AWSSecrets {
     var pubKey = keyPair.getPublicKey();
     var nodeAddress = Addressing.ofNetwork(network).encodeNodeAddress(pubKey);
 
-    publicKeyFileAwsSecret.put(
-        "bech32", nodeAddress); // Now bech32m, but kept as bech32 for back-compat
+    publicKeyFileAwsSecret.put("node_address", nodeAddress);
+    // Node address duplicated to the bech32 key to maintain backwards compatibility
+    publicKeyFileAwsSecret.put("bech32", nodeAddress);
     publicKeyFileAwsSecret.put("hex", pubKey.toHex());
 
-    // We don't have validator addresses in Babylon yet - so use the node address for now to
-    // maintain back-compat
+    // We don't have validator addresses in Babylon yet - so we use the node address here for now
     publicKeyFileAwsSecret.put("validator_address", nodeAddress);
 
     System.out.println(nodeAddress);
