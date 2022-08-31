@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledger;
+package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledger_sync;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.randomSelector;
 
@@ -74,82 +74,157 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import java.util.Collections;
-import java.util.Random;
+import com.radixdlt.sync.SyncRelayConfig;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-/**
- * Randomly reboots nodes immediately (no dropped messages except local messages) and verifies that
- * ledger safety and liveness is not broken.
- */
-public final class MultiNodeRecoveryTest {
+@RunWith(Parameterized.class)
+public final class MultiNodeRebootTest {
+  @Parameterized.Parameters
+  public static Collection<Object[]> numNodes() {
+    return List.of(new Object[][] {{4}, {10}});
+  }
+
   private static final Logger logger = LogManager.getLogger();
-  private static final int NUM_VALIDATORS = 4;
 
   private final Random random = new Random(12345);
+  private final int numValidators;
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private DeterministicTest createTest(boolean inMemory) {
-    var databaseConfig =
-        inMemory
-            ? REv2DatabaseConfig.inMemory()
-            : REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath());
+  public MultiNodeRebootTest(int numValidators) {
+    this.numValidators = numValidators;
+  }
+
+  private DeterministicTest createTest() {
+    var databaseConfig = REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath());
     return DeterministicTest.builder()
-        .numNodes(NUM_VALIDATORS, 0)
+        .numNodes(numValidators, 0)
         .messageSelector(randomSelector(random))
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         databaseConfig,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                            new REV2TransactionGenerator(), 1)))));
+                            new REV2TransactionGenerator(), 1)),
+                    SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
-  private void runTest(DeterministicTest test) throws Exception {
-    var livenessChecker = new LedgerLivenessChecker();
-
-    for (int i = 0; i < 50; i++) {
-      test.runForCount(random.nextInt(NUM_VALIDATORS * 50, NUM_VALIDATORS * 100));
-
-      Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
-      livenessChecker.progressCheck(test.getNodeInjectors());
-
-      // Reboot some count of random nodes
-      var validatorIndices =
-          IntStream.range(0, NUM_VALIDATORS).boxed().collect(Collectors.toList());
-      Collections.shuffle(validatorIndices, random);
-      var nodesToReboot = validatorIndices.subList(0, random.nextInt(NUM_VALIDATORS));
-      logger.info("Rebooting round {} nodes: {}", i, nodesToReboot);
-      for (var index : nodesToReboot) {
-        test.restartNode(index);
+  private void checkSafetyAndLiveness(
+      DeterministicTest test,
+      Map<Integer, Boolean> nodeLiveStatus,
+      LedgerLivenessChecker livenessChecker)
+      throws Exception {
+    // Bring up down nodes temporarily for checking
+    for (var e : nodeLiveStatus.entrySet()) {
+      if (!e.getValue()) {
+        test.startNode(e.getKey());
       }
     }
 
-    // Post-run assertions
-    Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 100);
     Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
+    livenessChecker.progressCheck(test.getNodeInjectors());
+
+    // Shutdown nodes which were initially down
+    for (var e : nodeLiveStatus.entrySet()) {
+      if (!e.getValue()) {
+        test.shutdownNode(e.getKey());
+      }
+    }
+  }
+
+  private void runTest(int numRounds, int numDownValidators) throws Exception {
+    try (var test = createTest()) {
+      var nodeLiveStatus =
+          IntStream.range(0, numValidators)
+              .boxed()
+              .collect(Collectors.toMap(i -> i, i -> i >= numDownValidators));
+
+      // Shutdown a subset of validators for the remainder of the test
+      for (var e : nodeLiveStatus.entrySet()) {
+        if (!e.getValue()) {
+          test.shutdownNode(e.getKey());
+        }
+      }
+
+      var livenessChecker = new LedgerLivenessChecker();
+
+      for (int testRound = 0; testRound < numRounds; testRound++) {
+        if (test.getNodeInjectors().stream().anyMatch(Objects::nonNull)) {
+          test.runForCount(random.nextInt(numValidators * 50, numValidators * 100));
+        }
+
+        if (testRound % 100 == 0) {
+          checkSafetyAndLiveness(test, nodeLiveStatus, livenessChecker);
+        }
+
+        // Reverse the status (by shutting down or starting up a node) of a random number of
+        // validators
+        var nodes =
+            IntStream.range(numDownValidators, numValidators).boxed().collect(Collectors.toList());
+        Collections.shuffle(nodes);
+        var numNodesToUpdate = random.nextInt(nodes.size());
+        var nodesToUpdate = nodes.subList(0, numNodesToUpdate);
+        for (var nodeIndex : nodesToUpdate) {
+          var isLive = nodeLiveStatus.get(nodeIndex);
+          if (isLive) {
+            test.shutdownNode(nodeIndex);
+            nodeLiveStatus.put(nodeIndex, false);
+          } else {
+            test.startNode(nodeIndex);
+            nodeLiveStatus.put(nodeIndex, true);
+          }
+        }
+        logger.info(
+            "Test_round={}/{}, updated_nodes={}, nodes={}",
+            testRound + 1,
+            numRounds,
+            nodesToUpdate,
+            nodeLiveStatus);
+      }
+
+      // Post-run assertions
+      for (int i = numDownValidators; i < numValidators; i++) {
+        test.startNode(i);
+      }
+      var aliveNodes = test.getNodeInjectors().stream().skip(numDownValidators).toList();
+      Checkers.assertLedgerTransactionsSafety(aliveNodes);
+    }
   }
 
   @Test
-  public void rebooting_nodes_with_persistent_store_should_not_cause_safety_or_liveness_issues()
-      throws Exception {
-    runTest(createTest(false));
+  public void restart_all_nodes_intermittently() throws Exception {
+    var numRounds = 2000 / numValidators;
+    var numDownValidators = 0;
+    runTest(numRounds, numDownValidators);
+  }
+
+  @Test
+  public void restart_all_nodes_intermittently_while_f_nodes_down() throws Exception {
+    var numRounds = 2000 / numValidators;
+    var numDownValidators = (numValidators - 1) / 3;
+    runTest(numRounds, numDownValidators);
   }
 
   // TODO: Architect the test checker in a better way
   @Test(expected = AssertionError.class)
-  public void rebooting_nodes_with_non_persistent_store_should_fail_test() throws Exception {
-    runTest(createTest(true));
+  public void restart_all_nodes_intermittently_while_f_plus_one_nodes_down_should_fail_test()
+      throws Exception {
+    var numRounds = 2000 / numValidators;
+    var numDownValidators = (numValidators - 1) / 3 + 1;
+    runTest(numRounds, numDownValidators);
   }
 }

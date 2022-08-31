@@ -449,10 +449,9 @@ public final class DeterministicTest implements AutoCloseable {
   public static Predicate<Timed<ControlledMessage>> roundUpdateOnNode(Round round, int nodeIndex) {
     return timedMsg -> {
       final var message = timedMsg.value();
-      if (!(message.message() instanceof RoundUpdate)) {
+      if (!(message.message() instanceof final RoundUpdate roundUpdate)) {
         return false;
       }
-      final var roundUpdate = (RoundUpdate) message.message();
       return message.channelId().receiverIndex() == nodeIndex
           && roundUpdate.getCurrentRound().gte(round);
     };
@@ -462,13 +461,24 @@ public final class DeterministicTest implements AutoCloseable {
       long stateVersion, int nodeIndex) {
     return timedMsg -> {
       final var message = timedMsg.value();
-      if (!(message.message() instanceof LedgerUpdate)) {
+      if (!(message.message() instanceof final LedgerUpdate ledgerUpdate)) {
         return false;
       }
-      final var ledgerUpdate = (LedgerUpdate) message.message();
       return message.channelId().receiverIndex() == nodeIndex
           && ledgerUpdate.getTail().getStateVersion() >= stateVersion;
     };
+  }
+
+  public void shutdownNode(int nodeIndex) throws Exception {
+    // Drop local messages
+    this.network.dropMessages(
+        m ->
+            m.channelId().receiverIndex() == nodeIndex && m.channelId().senderIndex() == nodeIndex);
+    this.nodes.shutdownNode(nodeIndex);
+  }
+
+  public void startNode(int nodeIndex) {
+    this.nodes.startNode(nodeIndex);
   }
 
   public void restartNode(int nodeIndex) throws Exception {

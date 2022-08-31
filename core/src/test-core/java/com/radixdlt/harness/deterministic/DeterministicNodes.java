@@ -134,8 +134,11 @@ public final class DeterministicNodes implements AutoCloseable {
   }
 
   public void start() {
-    for (int index = 0; index < this.nodeInstances.size(); index++) {
-      Injector injector = nodeInstances.get(index);
+    for (Injector injector : this.nodeInstances) {
+      if (injector == null) {
+        continue;
+      }
+
       var processor = injector.getInstance(DeterministicProcessor.class);
 
       ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
@@ -154,6 +157,11 @@ public final class DeterministicNodes implements AutoCloseable {
     BFTNode sender = this.nodeLookup.inverse().get(senderIndex);
 
     var injector = nodeInstances.get(receiverIndex);
+
+    if (injector == null) {
+      return;
+    }
+
     ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
       log.debug("Received message {} at {}", nextMsg, timedNextMsg.time());
@@ -170,7 +178,11 @@ public final class DeterministicNodes implements AutoCloseable {
     return this.nodeInstances;
   }
 
-  public void restartNode(int nodeIndex) throws Exception {
+  public void shutdownNode(int nodeIndex) throws Exception {
+    if (this.nodeInstances.get(nodeIndex) == null) {
+      return;
+    }
+
     var closeables =
         this.nodeInstances
             .get(nodeIndex)
@@ -179,10 +191,23 @@ public final class DeterministicNodes implements AutoCloseable {
       c.close();
     }
 
+    this.nodeInstances.set(nodeIndex, null);
+  }
+
+  public void startNode(int nodeIndex) {
+    if (this.nodeInstances.get(nodeIndex) != null) {
+      return;
+    }
+
     var node = this.nodeLookup.inverse().get(nodeIndex);
     var injector = createBFTInstance(node, baseModule, overrideModule);
     injector.getInstance(DeterministicProcessor.class).start();
     this.nodeInstances.set(nodeIndex, injector);
+  }
+
+  public void restartNode(int nodeIndex) throws Exception {
+    this.shutdownNode(nodeIndex);
+    this.startNode(nodeIndex);
   }
 
   public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {
@@ -195,11 +220,8 @@ public final class DeterministicNodes implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
-    for (var injector : this.nodeInstances) {
-      var closeables = injector.getInstance(Key.get(new TypeLiteral<Set<AutoCloseable>>() {}));
-      for (var c : closeables) {
-        c.close();
-      }
+    for (int i = 0; i < this.nodeInstances.size(); i++) {
+      this.shutdownNode(i);
     }
   }
 }
