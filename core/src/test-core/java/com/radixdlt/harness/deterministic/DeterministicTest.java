@@ -114,7 +114,7 @@ import java.util.stream.Stream;
  * A deterministic test where each event that occurs in the network is emitted and processed
  * synchronously by the caller.
  */
-public final class DeterministicTest {
+public final class DeterministicTest implements AutoCloseable {
   private final DeterministicNodes nodes;
   private final DeterministicNetwork network;
 
@@ -127,6 +127,11 @@ public final class DeterministicTest {
     this.network = new DeterministicNetwork(nodes, messageSelector, messageMutator);
 
     this.nodes = new DeterministicNodes(nodes, this.network, baseModule, overrideModule);
+  }
+
+  @Override
+  public void close() throws Exception {
+    this.nodes.close();
   }
 
   public static class Builder {
@@ -466,7 +471,7 @@ public final class DeterministicTest {
     };
   }
 
-  public void restartNode(int nodeIndex) {
+  public void restartNode(int nodeIndex) throws Exception {
     // Drop local messages
     this.network.dropMessages(
         m ->

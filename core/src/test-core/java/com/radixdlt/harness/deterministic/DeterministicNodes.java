@@ -66,12 +66,8 @@ package com.radixdlt.harness.deterministic;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Streams;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
+import com.google.inject.*;
 import com.google.inject.Module;
-import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -84,13 +80,14 @@ import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 
 /** BFT Nodes treated as a single unit where one message is processed at a time. */
-public final class DeterministicNodes {
+public final class DeterministicNodes implements AutoCloseable {
   private static final Logger log = LogManager.getLogger();
 
   private final List<Injector> nodeInstances;
@@ -173,7 +170,15 @@ public final class DeterministicNodes {
     return this.nodeInstances;
   }
 
-  public void restartNode(int nodeIndex) {
+  public void restartNode(int nodeIndex) throws Exception {
+    var closeables =
+        this.nodeInstances
+            .get(nodeIndex)
+            .getInstance(Key.get(new TypeLiteral<Set<AutoCloseable>>() {}));
+    for (var c : closeables) {
+      c.close();
+    }
+
     var node = this.nodeLookup.inverse().get(nodeIndex);
     var injector = createBFTInstance(node, baseModule, overrideModule);
     injector.getInstance(DeterministicProcessor.class).start();
@@ -186,5 +191,15 @@ public final class DeterministicNodes {
 
   public <T> T getInstance(int nodeIndex, Key<T> key) {
     return this.nodeInstances.get(nodeIndex).getInstance(key);
+  }
+
+  @Override
+  public void close() throws Exception {
+    for (var injector : this.nodeInstances) {
+      var closeables = injector.getInstance(Key.get(new TypeLiteral<Set<AutoCloseable>>() {}));
+      for (var c : closeables) {
+        c.close();
+      }
+    }
   }
 }

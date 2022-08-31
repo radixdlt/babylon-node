@@ -67,7 +67,6 @@ package com.radixdlt.recovery;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -76,12 +75,9 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.*;
 import org.assertj.core.api.Condition;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -102,8 +98,6 @@ public final class REv2LedgerRecoveryTest {
   }
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  private DeterministicTest test;
 
   private final int processForCount;
 
@@ -127,58 +121,45 @@ public final class REv2LedgerRecoveryTest {
                             new REV2TransactionGenerator(), 1)))));
   }
 
-  @Before
-  public void setup() {
-    this.test = createTest();
-  }
+  @Test
+  public void on_reboot_should_load_same_last_header() throws Exception {
+    try (var test = createTest()) {
+      // Arrange
+      test.runForCount(processForCount);
+      var reader = test.getInstance(0, TransactionsAndProofReader.class);
+      var proof = reader.getLastProof();
 
-  @After
-  public void teardown() {
-    for (var injector : this.test.getNodeInjectors()) {
-      injector.getInstance(StateManager.class).close();
+      // Act
+      test.restartNode(0);
+
+      // Assert
+      var restartedReader = test.getInstance(0, TransactionsAndProofReader.class);
+      var restartedProof = restartedReader.getLastProof();
+      assertThat(restartedProof).isEqualTo(proof);
     }
   }
 
-  private void restartNode() {
-    this.test.getInstance(0, StateManager.class).close();
-    this.test.restartNode(0);
-  }
-
   @Test
-  public void on_reboot_should_load_same_last_header() {
-    // Arrange
-    test.runForCount(processForCount);
-    var reader = test.getInstance(0, TransactionsAndProofReader.class);
-    Optional<LedgerProof> proof = reader.getLastProof();
+  public void on_reboot_should_only_emit_pacemaker_events() throws Exception {
+    try (var test = createTest()) {
+      // Arrange
+      test.runForCount(processForCount);
 
-    // Act
-    restartNode();
+      // Act
+      test.restartNode(0);
 
-    // Assert
-    var restartedReader = test.getInstance(0, TransactionsAndProofReader.class);
-    Optional<LedgerProof> restartedProof = restartedReader.getLastProof();
-    assertThat(restartedProof).isEqualTo(proof);
-  }
-
-  @Test
-  public void on_reboot_should_only_emit_pacemaker_events() {
-    // Arrange
-    test.runForCount(processForCount);
-
-    // Act
-    restartNode();
-
-    // Assert
-    assertThat(test.getNetwork().allMessages())
-        .hasSize(2)
-        .haveExactly(
-            1,
-            new Condition<>(
-                msg -> msg.message() instanceof ScheduledLocalTimeout,
-                "A single scheduled timeout update has been emitted"))
-        .haveExactly(
-            1,
-            new Condition<>(
-                msg -> msg.message() instanceof Proposal, "A proposal has been emitted"));
+      // Assert
+      assertThat(test.getNetwork().allMessages())
+          .hasSize(2)
+          .haveExactly(
+              1,
+              new Condition<>(
+                  msg -> msg.message() instanceof ScheduledLocalTimeout,
+                  "A single scheduled timeout update has been emitted"))
+          .haveExactly(
+              1,
+              new Condition<>(
+                  msg -> msg.message() instanceof Proposal, "A proposal has been emitted"));
+    }
   }
 }

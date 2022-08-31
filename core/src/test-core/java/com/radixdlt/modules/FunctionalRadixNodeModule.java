@@ -67,6 +67,7 @@ package com.radixdlt.modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provides;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
@@ -268,6 +269,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         install(new MockedLedgerModule());
       }
       case StateComputerLedgerConfig stateComputerLedgerConfig -> {
+        Multibinder.newSetBinder(binder(), AutoCloseable.class);
         install(new LedgerModule());
 
         // Sync
