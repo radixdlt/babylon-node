@@ -62,86 +62,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledger;
+package com.radixdlt.harness.invariants;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.randomSelector;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import java.util.Collections;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import com.google.inject.Injector;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import java.util.List;
 
-public final class RebootingTest {
-  private static final Logger logger = LogManager.getLogger();
-  private static final int NUM_VALIDATORS = 4;
+public final class LedgerLivenessChecker {
+  private long lastStateVersion = 0;
 
-  private final Random random = new Random(12345);
+  public LedgerLivenessChecker() {}
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
+  public void progressCheck(List<Injector> nodeInjectors) {
+    var highestStateVersion =
+        nodeInjectors.stream()
+            .mapToLong(
+                injector -> {
+                  var reader = injector.getInstance(TransactionsAndProofReader.class);
+                  return reader.getLastProof().map(LedgerProof::getStateVersion).orElse(0L);
+                })
+            .max()
+            .orElse(0);
+    assertThat(highestStateVersion).isGreaterThan(lastStateVersion);
 
-  private DeterministicTest createTest(boolean inMemory) {
-    var databaseConfig =
-        inMemory
-            ? REv2DatabaseConfig.inMemory()
-            : REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath());
-    return DeterministicTest.builder()
-        .numNodes(NUM_VALIDATORS, 0)
-        .messageSelector(randomSelector(random))
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        databaseConfig,
-                        StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                            new REV2TransactionGenerator(), 1)))));
-  }
-
-  private void runTest(DeterministicTest test) throws Exception {
-    for (int i = 0; i < 50; i++) {
-      test.runForCount(random.nextInt(NUM_VALIDATORS * 50, NUM_VALIDATORS * 100));
-      Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
-
-      // Reboot minority count of random nodes
-      var validatorIndices =
-          IntStream.range(0, NUM_VALIDATORS).boxed().collect(Collectors.toList());
-      Collections.shuffle(validatorIndices, random);
-      var nodesToReboot = validatorIndices.subList(0, random.nextInt(NUM_VALIDATORS));
-      logger.info("Rebooting round {} nodes: {}", i, nodesToReboot);
-      for (var index : nodesToReboot) {
-        test.restartNode(index);
-      }
-    }
-
-    // Post-run assertions
-    Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 100);
-    Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
-  }
-
-  @Test
-  public void rebooting_nodes_with_persistent_store_should_not_cause_safety_issues()
-      throws Exception {
-    runTest(createTest(false));
-  }
-
-  // TODO: Architect the test checker in a better way
-  @Test(expected = AssertionError.class)
-  public void rebooting_nodes_with_non_persistent_store_should_cause_safety_issues()
-      throws Exception {
-    runTest(createTest(true));
+    this.lastStateVersion = highestStateVersion;
   }
 }
