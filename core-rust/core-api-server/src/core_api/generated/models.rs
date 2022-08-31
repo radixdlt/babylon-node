@@ -3927,9 +3927,9 @@ pub enum TransactionStatus {
 impl std::fmt::Display for TransactionStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            TransactionStatus::SUCCEEDED => write!(f, "{}", "succeeded"),
-            TransactionStatus::FAILED => write!(f, "{}", "failed"),
-            TransactionStatus::REJECTED => write!(f, "{}", "rejected"),
+            TransactionStatus::SUCCEEDED => write!(f, "succeeded"),
+            TransactionStatus::FAILED => write!(f, "failed"),
+            TransactionStatus::REJECTED => write!(f, "rejected"),
         }
     }
 }
