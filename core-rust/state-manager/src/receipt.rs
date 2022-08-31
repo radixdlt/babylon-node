@@ -59,6 +59,9 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
 fn filter_state_updates(state_updates: StateDiff) -> StateDiff {
     // This is a temporary filter that removes any substates
     // that have been downed and then upped unchanged.
+    // The engine currently erroneously tracks reads as updates,
+    // and that's what's being fixed here.
+    // TODO: remove this filter once the engine receipt is fixed
     let mut filtered_up_substates: BTreeMap<SubstateId, OutputValue> = BTreeMap::new();
     let mut filtered_down_substates: Vec<OutputId> = state_updates.down_substates;
 
