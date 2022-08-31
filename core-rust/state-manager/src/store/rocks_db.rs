@@ -76,7 +76,7 @@ use radix_engine::engine::Substate;
 use radix_engine::ledger::{
     OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
-use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
+use rocksdb::{Direction, IteratorMode, SingleThreaded, TransactionDB};
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
 use std::path::PathBuf;
@@ -112,14 +112,13 @@ impl RocksDBTable {
     }
 }
 
-#[derive(Debug)]
 pub struct RocksDBStore {
-    db: DBWithThreadMode<SingleThreaded>,
+    db: TransactionDB<SingleThreaded>,
 }
 
 impl RocksDBStore {
     pub fn new(root: PathBuf) -> RocksDBStore {
-        let db = DB::open_default(root.as_path()).unwrap();
+        let db = TransactionDB::open_default(root.as_path()).unwrap();
         RocksDBStore { db }
     }
 
