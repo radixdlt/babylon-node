@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+pub mod addressing;
 pub mod dtos;
 pub mod mempool;
 pub mod state_computer;

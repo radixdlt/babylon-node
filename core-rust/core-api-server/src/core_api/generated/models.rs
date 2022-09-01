@@ -2829,6 +2829,66 @@ impl std::ops::DerefMut for SubstateId {
 }
 
 
+/// Warning! This is temporary property until we get proper polymorphism in place.
+/// Enumeration of values.
+/// Since this enum's variants do not hold data, we can easily define them them as `#[repr(C)]`
+/// which helps with FFI.
+#[allow(non_camel_case_types)]
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "conversion", derive(frunk_enum_derive::LabelledGenericEnum))]
+pub enum TemporaryUpSubstateJsonPayloadType {
+    #[serde(rename = "system")]
+    SYSTEM,
+    #[serde(rename = "resource")]
+    RESOURCE,
+    #[serde(rename = "component_info")]
+    COMPONENT_INFO,
+    #[serde(rename = "component_state")]
+    COMPONENT_STATE,
+    #[serde(rename = "package")]
+    PACKAGE,
+    #[serde(rename = "vault")]
+    VAULT,
+    #[serde(rename = "non_fungible")]
+    NON_FUNGIBLE,
+    #[serde(rename = "key_value_store_entry")]
+    KEY_VALUE_STORE_ENTRY,
+}
+
+impl std::fmt::Display for TemporaryUpSubstateJsonPayloadType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            TemporaryUpSubstateJsonPayloadType::SYSTEM => write!(f, "system"),
+            TemporaryUpSubstateJsonPayloadType::RESOURCE => write!(f, "resource"),
+            TemporaryUpSubstateJsonPayloadType::COMPONENT_INFO => write!(f, "component_info"),
+            TemporaryUpSubstateJsonPayloadType::COMPONENT_STATE => write!(f, "component_state"),
+            TemporaryUpSubstateJsonPayloadType::PACKAGE => write!(f, "package"),
+            TemporaryUpSubstateJsonPayloadType::VAULT => write!(f, "vault"),
+            TemporaryUpSubstateJsonPayloadType::NON_FUNGIBLE => write!(f, "non_fungible"),
+            TemporaryUpSubstateJsonPayloadType::KEY_VALUE_STORE_ENTRY => write!(f, "key_value_store_entry"),
+        }
+    }
+}
+
+impl std::str::FromStr for TemporaryUpSubstateJsonPayloadType {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "system" => std::result::Result::Ok(TemporaryUpSubstateJsonPayloadType::SYSTEM),
+            "resource" => std::result::Result::Ok(TemporaryUpSubstateJsonPayloadType::RESOURCE),
+            "component_info" => std::result::Result::Ok(TemporaryUpSubstateJsonPayloadType::COMPONENT_INFO),
+            "component_state" => std::result::Result::Ok(TemporaryUpSubstateJsonPayloadType::COMPONENT_STATE),
+            "package" => std::result::Result::Ok(TemporaryUpSubstateJsonPayloadType::PACKAGE),
+            "vault" => std::result::Result::Ok(TemporaryUpSubstateJsonPayloadType::VAULT),
+            "non_fungible" => std::result::Result::Ok(TemporaryUpSubstateJsonPayloadType::NON_FUNGIBLE),
+            "key_value_store_entry" => std::result::Result::Ok(TemporaryUpSubstateJsonPayloadType::KEY_VALUE_STORE_ENTRY),
+            _ => std::result::Result::Err(format!("Value not valid: {}", s)),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(feature = "conversion", derive(frunk::LabelledGeneric))]
 pub struct TransactionHeader {
@@ -4197,19 +4257,23 @@ pub struct UpSubstate {
     #[serde(rename = "substate_bytes")]
     pub substate_bytes: String,
 
-    /// JSON-encoded (and then stringified) substate model.
-    #[serde(rename = "substate")]
-    pub substate: String,
+    #[serde(rename = "substate_json_type")]
+    pub substate_json_type: models::TemporaryUpSubstateJsonPayloadType,
+
+    /// JSON-encoded (and then stringified) substate model. See \"GENERAL / SHARED MODELS - substates\" section to find out more. Warning! This is temporary property until we get proper polymorphism in place.
+    #[serde(rename = "substate_json_str")]
+    pub substate_json_str: String,
 
 }
 
 impl UpSubstate {
-    pub fn new(substate_id: String, version: String, substate_bytes: String, substate: String, ) -> UpSubstate {
+    pub fn new(substate_id: String, version: String, substate_bytes: String, substate_json_type: models::TemporaryUpSubstateJsonPayloadType, substate_json_str: String, ) -> UpSubstate {
         UpSubstate {
             substate_id: substate_id,
             version: version,
             substate_bytes: substate_bytes,
-            substate: substate,
+            substate_json_type: substate_json_type,
+            substate_json_str: substate_json_str,
         }
     }
 }
@@ -4232,9 +4296,11 @@ impl std::string::ToString for UpSubstate {
         params.push("substate_bytes".to_string());
         params.push(self.substate_bytes.to_string());
 
+        // Skipping substate_json_type in query parameter serialization
 
-        params.push("substate".to_string());
-        params.push(self.substate.to_string());
+
+        params.push("substate_json_str".to_string());
+        params.push(self.substate_json_str.to_string());
 
         params.join(",").to_string()
     }
@@ -4253,7 +4319,8 @@ impl std::str::FromStr for UpSubstate {
             pub substate_id: Vec<String>,
             pub version: Vec<String>,
             pub substate_bytes: Vec<String>,
-            pub substate: Vec<String>,
+            pub substate_json_type: Vec<models::TemporaryUpSubstateJsonPayloadType>,
+            pub substate_json_str: Vec<String>,
         }
 
         let mut intermediate_rep = IntermediateRep::default();
@@ -4273,7 +4340,8 @@ impl std::str::FromStr for UpSubstate {
                     "substate_id" => intermediate_rep.substate_id.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "version" => intermediate_rep.version.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     "substate_bytes" => intermediate_rep.substate_bytes.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
-                    "substate" => intermediate_rep.substate.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "substate_json_type" => intermediate_rep.substate_json_type.push(<models::TemporaryUpSubstateJsonPayloadType as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
+                    "substate_json_str" => intermediate_rep.substate_json_str.push(<String as std::str::FromStr>::from_str(val).map_err(|x| format!("{}", x))?),
                     _ => return std::result::Result::Err("Unexpected key while parsing UpSubstate".to_string())
                 }
             }
@@ -4287,7 +4355,8 @@ impl std::str::FromStr for UpSubstate {
             substate_id: intermediate_rep.substate_id.into_iter().next().ok_or("substate_id missing in UpSubstate".to_string())?,
             version: intermediate_rep.version.into_iter().next().ok_or("version missing in UpSubstate".to_string())?,
             substate_bytes: intermediate_rep.substate_bytes.into_iter().next().ok_or("substate_bytes missing in UpSubstate".to_string())?,
-            substate: intermediate_rep.substate.into_iter().next().ok_or("substate missing in UpSubstate".to_string())?,
+            substate_json_type: intermediate_rep.substate_json_type.into_iter().next().ok_or("substate_json_type missing in UpSubstate".to_string())?,
+            substate_json_str: intermediate_rep.substate_json_str.into_iter().next().ok_or("substate_json_str missing in UpSubstate".to_string())?,
         })
     }
 }

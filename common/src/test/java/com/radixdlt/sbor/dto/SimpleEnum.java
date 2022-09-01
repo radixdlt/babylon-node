@@ -103,7 +103,7 @@ public sealed interface SimpleEnum {
                 EnumEntry.with(
                     B.class,
                     B::new,
-                    codecs.of(new TypeToken<Either<Long, String>>() {}),
+                    codecs.of(new TypeToken<>() {}),
                     (t, encoder) -> encoder.encode(t.param1))));
   }
 
@@ -118,9 +118,7 @@ public sealed interface SimpleEnum {
                     Field.of(A::first, codecs.of(int.class)),
                     Field.of(A::second, codecs.of(String.class))),
                 EnumEntry.fromFields(
-                    B.class,
-                    B::new,
-                    Field.of(B::param1, codecs.of(new TypeToken<Either<Long, String>>() {})))));
+                    B.class, B::new, Field.of(B::param1, codecs.of(new TypeToken<>() {})))));
   }
 
   record A(int first, String second) implements SimpleEnum {}

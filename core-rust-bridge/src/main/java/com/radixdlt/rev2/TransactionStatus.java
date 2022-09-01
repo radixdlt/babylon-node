@@ -81,7 +81,7 @@ public sealed interface TransactionStatus {
                 EnumEntry.with(
                     TransactionStatus.Succeeded.class,
                     TransactionStatus.Succeeded::new,
-                    codecs.of(new TypeToken<List<byte[]>>() {}),
+                    codecs.of(new TypeToken<>() {}),
                     (t, encoder) -> encoder.encode(t.output)),
                 EnumEntry.with(
                     TransactionStatus.Failed.class,

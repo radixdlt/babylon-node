@@ -64,9 +64,11 @@
 
 package com.radixdlt.rev2;
 
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.lang.Tuple;
+import com.radixdlt.networks.Network;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -83,7 +85,8 @@ public final class REv2TestTransactions {
         CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("10");
         CLEAR_AUTH_ZONE;
         """,
-              "system_test1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsfkwqvf"),
+              Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
+                  .encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS)),
           List.of());
   public static final RawTransaction VALID_TXN_1 =
       constructTransaction("CLEAR_AUTH_ZONE;", List.of(getNewKeyPair()));

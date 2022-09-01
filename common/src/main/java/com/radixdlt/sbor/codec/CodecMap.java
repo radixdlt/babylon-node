@@ -287,12 +287,10 @@ public final class CodecMap {
   public class CodecResolver {
     /*
      * NB - NOT a JavaDoc on purpose, just a comment.
-     * The parameter type below should really be TypeToken<? extends T> or TypeToken<T>,
-     * but we explicitly don't put this. That would allow TypeToken<> to be valid for
-     * callers, but that causes a Compiler Null Pointer Exception, detailed below.
-     * It is likely related to https://bugs.openjdk.org/browse/JDK-8262095
-     * The error message is copied out below to assist anyone who hits this error
-     * and greps the codebase for it looking for help:
+     * On some versions of the JDK, calling this method with TypeToken<>
+     * can result in a compiler exception, as per: https://bugs.openjdk.org/browse/JDK-8262095
+     * The solution is simply to upgrade your JDK to 17.04+.
+     * The error message is copied out below to assist anyone who hits this error and greps the codebase for it:
      * "An exception has occurred in the compiler (17).
      * Please file a bug against the Java compiler via the Java bug reporting page
      * (http://bugreport.java.com) after checking the Bug Database (http://bugs.java.com) for
@@ -301,7 +299,7 @@ public final class CodecMap {
      * Sometimes the exception appears to be accompanied by
      * "Cannot invoke getThrownTypes because tree.meth.type is null"
      */
-    public <T> Codec<T> of(TypeToken<?> type) {
+    public <T> Codec<T> of(TypeToken<? extends T> type) {
       // First - let's try to find a pre-registered codec for this explicit type literal
       var explicitTypeCodec = typedCodecCache.get(type);
       if (explicitTypeCodec != null) {

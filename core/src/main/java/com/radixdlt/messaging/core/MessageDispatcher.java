@@ -67,12 +67,12 @@ package com.radixdlt.messaging.core;
 import static com.radixdlt.messaging.core.MessagingErrors.IO_ERROR;
 import static com.radixdlt.messaging.core.MessagingErrors.MESSAGE_EXPIRED;
 
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.lang.Cause;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerManager;
 import com.radixdlt.p2p.transport.PeerChannel;
@@ -126,7 +126,7 @@ class MessageDispatcher {
           String.format(
               "TTL for %s message to %s has expired",
               message.getClass().getSimpleName(),
-              addressing.forNodes().of(receiver.getPublicKey()));
+              addressing.encodeNodeAddress(receiver.getPublicKey()));
       log.warn(msg);
       this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
       return CompletableFuture.completedFuture(MESSAGE_EXPIRED.result());
@@ -151,7 +151,8 @@ class MessageDispatcher {
     final var msg =
         String.format(
             "Send %s to %s failed",
-            message.getClass().getSimpleName(), addressing.forNodes().of(receiver.getPublicKey()));
+            message.getClass().getSimpleName(),
+            addressing.encodeNodeAddress(receiver.getPublicKey()));
     log.warn("{}: {}", msg, cause.getMessage());
     return IO_ERROR.result();
   }

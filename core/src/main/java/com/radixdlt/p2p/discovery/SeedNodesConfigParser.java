@@ -66,7 +66,7 @@ package com.radixdlt.p2p.discovery;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.RadixNodeUri;
@@ -130,7 +130,7 @@ public final class SeedNodesConfigParser {
       return Optional.of(
           RadixNodeUri.fromPubKeyAndAddress(
               networkId,
-              addressing.forNodes().parse(parsedUri.getUserInfo()),
+              addressing.decodeNodeAddress(parsedUri.getUserInfo()),
               resolved.getHostAddress(),
               parsedUri.getPort() > 0 ? parsedUri.getPort() : defaultPort));
     } catch (UnknownHostException | URISyntaxException | DeserializeException e) {

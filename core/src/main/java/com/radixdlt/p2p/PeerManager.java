@@ -75,6 +75,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.lang.Cause;
@@ -82,7 +83,6 @@ import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.messaging.core.InboundMessage;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.p2p.PeerEvent.PeerBanned;
 import com.radixdlt.p2p.PeerEvent.PeerConnected;
 import com.radixdlt.p2p.PeerEvent.PeerConnectionTimeout;
@@ -385,6 +385,6 @@ public final class PeerManager {
   }
 
   private String nodeAddress(NodeId nodeId) {
-    return addressing.forNodes().of(nodeId.getPublicKey());
+    return addressing.encodeNodeAddress(nodeId.getPublicKey());
   }
 }

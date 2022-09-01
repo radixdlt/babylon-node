@@ -80,8 +80,8 @@ public record PrepareResult(
         codecs ->
             StructCodec.with(
                 PrepareResult::new,
-                codecs.of(new TypeToken<List<RawTransaction>>() {}),
-                codecs.of(new TypeToken<HashMap<RawTransaction, String>>() {}),
+                codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
                 (t, encoder) -> encoder.encode(t.nonRejectedTransactions, t.rejectedTransactions)));
   }
 }

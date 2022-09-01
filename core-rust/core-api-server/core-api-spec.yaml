@@ -372,13 +372,26 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/SubstateId"
+    TemporaryUpSubstateJsonPayloadType:
+      type: string
+      description: Warning! This is temporary property until we get proper polymorphism in place.
+      enum:
+        - system
+        - resource
+        - component_info
+        - component_state
+        - package
+        - vault
+        - non_fungible
+        - key_value_store_entry
     UpSubstate:
       type: object
       required:
         - substate_id
         - version
         - substate_bytes
-        - substate
+        - substate_json_type
+        - substate_json_str
       properties:
         substate_id:
           "$ref": "#/components/schemas/SubstateId"
@@ -388,9 +401,11 @@ components:
         substate_bytes:
           type: string
           description: SBOR-encoded and then hex-encoded substate bytes.
-        substate:
+        substate_json_type:
+          "$ref": "#/components/schemas/TemporaryUpSubstateJsonPayloadType"
+        substate_json_str:
           type: string
-          description: JSON-encoded (and then stringified) substate model.
+          description: JSON-encoded (and then stringified) substate model. Warning! This is temporary property until we get proper polymorphism in place.
     DownSubstate:
       type: object
       required:

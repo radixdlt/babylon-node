@@ -85,10 +85,10 @@ public record CommitRequest(
         codecs ->
             StructCodec.with(
                 CommitRequest::new,
-                codecs.of(new TypeToken<List<RawTransaction>>() {}),
+                codecs.of(new TypeToken<>() {}),
                 codecs.of(UInt64.class),
-                codecs.of(new TypeToken<byte[]>() {}),
-                codecs.of(new TypeToken<Option<byte[]>>() {}),
+                codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
                 (t, encoder) ->
                     encoder.encode(
                         t.transactions, t.stateVersion, t.proofBytes, t.vertexStoreBytes)));

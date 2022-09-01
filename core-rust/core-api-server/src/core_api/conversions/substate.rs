@@ -5,27 +5,46 @@ use scrypto::address::Bech32Encoder;
 use scrypto::prelude::ResourceType;
 use serde::Serialize;
 
-pub fn to_api_substate(substate: &Substate, bech32_encoder: &Bech32Encoder) -> String {
+pub fn to_api_substate(
+    substate: &Substate,
+    bech32_encoder: &Bech32Encoder,
+) -> (models::TemporaryUpSubstateJsonPayloadType, String) {
     match substate {
-        Substate::System(_system) => to_json(&models::EmptySubstate::new()),
-        Substate::Resource(resource_manager) => {
-            to_json(&to_api_resource_substate(resource_manager))
-        }
-        Substate::ComponentInfo(component_info) => to_json(&to_api_component_info_substate(
-            component_info,
-            bech32_encoder,
-        )),
-        Substate::ComponentState(component_state) => {
-            to_json(&to_api_component_state_substate(component_state))
-        }
-        Substate::Package(validated_package) => {
-            to_json(&to_api_package_substate(validated_package))
-        }
-        Substate::Vault(_vault) => to_json(&models::EmptySubstate::new()),
-        Substate::NonFungible(_non_fungible_wrapper) => to_json(&models::EmptySubstate::new()),
-        Substate::KeyValueStoreEntry(_kv_store_entry_wrapper) => {
-            to_json(&models::EmptySubstate::new())
-        }
+        Substate::System(_system) => (
+            models::TemporaryUpSubstateJsonPayloadType::SYSTEM,
+            to_json(&models::EmptySubstate::new()),
+        ),
+        Substate::Resource(resource_manager) => (
+            models::TemporaryUpSubstateJsonPayloadType::RESOURCE,
+            to_json(&to_api_resource_substate(resource_manager)),
+        ),
+        Substate::ComponentInfo(component_info) => (
+            models::TemporaryUpSubstateJsonPayloadType::COMPONENT_INFO,
+            to_json(&to_api_component_info_substate(
+                component_info,
+                bech32_encoder,
+            )),
+        ),
+        Substate::ComponentState(component_state) => (
+            models::TemporaryUpSubstateJsonPayloadType::COMPONENT_STATE,
+            to_json(&to_api_component_state_substate(component_state)),
+        ),
+        Substate::Package(validated_package) => (
+            models::TemporaryUpSubstateJsonPayloadType::PACKAGE,
+            to_json(&to_api_package_substate(validated_package)),
+        ),
+        Substate::Vault(_vault) => (
+            models::TemporaryUpSubstateJsonPayloadType::VAULT,
+            to_json(&models::EmptySubstate::new()),
+        ),
+        Substate::NonFungible(_non_fungible_wrapper) => (
+            models::TemporaryUpSubstateJsonPayloadType::NON_FUNGIBLE,
+            to_json(&models::EmptySubstate::new()),
+        ),
+        Substate::KeyValueStoreEntry(_kv_store_entry_wrapper) => (
+            models::TemporaryUpSubstateJsonPayloadType::KEY_VALUE_STORE_ENTRY,
+            to_json(&models::EmptySubstate::new()),
+        ),
     }
 }
 

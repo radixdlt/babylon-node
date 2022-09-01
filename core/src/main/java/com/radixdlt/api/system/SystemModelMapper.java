@@ -67,6 +67,7 @@ package com.radixdlt.api.system;
 import static com.radixdlt.monitoring.SystemCounters.CounterType.*;
 
 import com.google.inject.Inject;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.system.generated.models.Address;
 import com.radixdlt.api.system.generated.models.AddressBookEntry;
 import com.radixdlt.api.system.generated.models.BFTMetrics;
@@ -84,7 +85,6 @@ import com.radixdlt.api.system.generated.models.SyncConfiguration;
 import com.radixdlt.api.system.generated.models.SyncMetrics;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.p2p.RadixNodeUri;
@@ -116,7 +116,7 @@ public final class SystemModelMapper {
         .peerLivenessCheckInterval(config.peerLivenessCheckInterval())
         .pingTimeout(config.pingTimeout())
         .seedNodes(config.seedNodes())
-        .nodeAddress(addressing.forNodes().of(self));
+        .nodeAddress(addressing.encodeNodeAddress(self));
   }
 
   public SyncConfiguration syncConfiguration(SyncRelayConfig syncRelayConfig) {
@@ -206,7 +206,7 @@ public final class SystemModelMapper {
   }
 
   public Peer peer(PeersView.PeerInfo peerInfo) {
-    var peerId = addressing.forNodes().of(peerInfo.getNodeId().getPublicKey());
+    var peerId = addressing.encodeNodeAddress(peerInfo.getNodeId().getPublicKey());
     var peer = new Peer().peerId(peerId);
 
     peerInfo
@@ -240,7 +240,7 @@ public final class SystemModelMapper {
   public AddressBookEntry addressBookEntry(com.radixdlt.p2p.addressbook.AddressBookEntry entry) {
     var addressBookEntry =
         new AddressBookEntry()
-            .peerId(addressing.forNodes().of(entry.getNodeId().getPublicKey()))
+            .peerId(addressing.encodeNodeAddress(entry.getNodeId().getPublicKey()))
             .banned(entry.isBanned());
     entry.bannedUntil().map(Instant::toEpochMilli).ifPresent(addressBookEntry::bannedUntil);
     entry.getKnownAddresses().stream()

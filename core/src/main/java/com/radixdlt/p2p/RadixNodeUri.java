@@ -68,9 +68,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.networks.Addressing;
+import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DeserializeException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -91,12 +91,12 @@ public final class RadixNodeUri {
 
   public static RadixNodeUri fromPubKeyAndAddress(
       int networkId, ECPublicKey publicKey, String host, int port) {
-    var hrp = Addressing.ofNetworkId(networkId).forNodes().getHrp();
+    var hrp = Network.ofIdOrThrow(networkId).getNodeHrp();
     return new RadixNodeUri(host, port, hrp, NodeId.fromPublicKey(publicKey));
   }
 
   public static RadixNodeUri fromUri(URI uri) throws DeserializeException {
-    var hrpAndKey = NodeAddressing.parseUnknownHrp(uri.getUserInfo());
+    var hrpAndKey = Addressing.decodeNodeAddressUnknownHrp(uri.getUserInfo());
     return new RadixNodeUri(
         uri.getHost(),
         uri.getPort(),
@@ -136,7 +136,7 @@ public final class RadixNodeUri {
   }
 
   public String nodeAddress() {
-    return NodeAddressing.of(networkNodeHrp, nodeId.getPublicKey());
+    return Addressing.encodeNodeAddressWithHrp(networkNodeHrp, nodeId.getPublicKey());
   }
 
   public String getNetworkNodeHrp() {

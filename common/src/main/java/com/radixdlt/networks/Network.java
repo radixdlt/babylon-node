@@ -106,7 +106,9 @@ public enum Network {
   private final byte byteId;
   private final String logicalName;
   private final String hrpSuffix;
-  private final String accountHrp;
+  private final String normalComponentHrp;
+  private final String accountComponentHrp;
+  private final String systemComponentHrp;
   private final String validatorHrp;
   private final String resourceHrp;
   private final String nodeHrp;
@@ -122,15 +124,25 @@ public enum Network {
     this.byteId = (byte) id;
     this.logicalName = logicalName;
     this.hrpSuffix = hrpSuffix;
-    this.accountHrp = "account_" + hrpSuffix;
+    this.normalComponentHrp = "component_" + hrpSuffix;
+    this.accountComponentHrp = "account_" + hrpSuffix;
+    this.systemComponentHrp = "system_" + hrpSuffix;
     this.validatorHrp = "validator_" + hrpSuffix;
     this.resourceHrp = "resource_" + hrpSuffix;
     this.nodeHrp = "node_" + hrpSuffix;
     this.genesisSource = genesisSource;
   }
 
-  public String getAccountHrp() {
-    return accountHrp;
+  public String getNormalComponentHrp() {
+    return normalComponentHrp;
+  }
+
+  public String getAccountComponentHrp() {
+    return accountComponentHrp;
+  }
+
+  public String getSystemComponentHrp() {
+    return systemComponentHrp;
   }
 
   public String getValidatorHrp() {
@@ -167,6 +179,14 @@ public enum Network {
 
   public static Optional<Network> ofId(int id) {
     return find(network -> network.intId == id);
+  }
+
+  public static Network ofIdOrThrow(int networkId) {
+    return ofId(networkId)
+        .orElseThrow(
+            () ->
+                new RuntimeException(
+                    "Provided Network ID does not match any known networks: " + networkId));
   }
 
   public static Optional<Network> ofName(String logicalName) {

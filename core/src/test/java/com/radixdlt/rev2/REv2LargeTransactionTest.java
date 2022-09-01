@@ -67,6 +67,7 @@ package com.radixdlt.rev2;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.*;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -86,7 +87,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;

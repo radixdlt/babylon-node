@@ -70,11 +70,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.inject.Provider;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.messaging.consensus.ConsensusEventMessage;
 import com.radixdlt.messaging.ledgersync.SyncRequestMessage;
 import com.radixdlt.messaging.ledgersync.SyncResponseMessage;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerManager;
