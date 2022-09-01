@@ -84,7 +84,6 @@ import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -104,7 +103,6 @@ import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
 import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.KeyComparator;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
@@ -304,20 +302,6 @@ public class RecoveryLivenessTest {
     withThreadCtx(injector, () -> injector.getInstance(DeterministicProcessor.class).start());
   }
 
-  private void initSync() {
-    for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-      final var injector = nodeCreators.get(nodeIndex).get();
-      withThreadCtx(
-          injector,
-          () -> {
-            // need to manually init sync check, normally sync runner schedules it periodically
-            injector
-                .getInstance(new Key<EventDispatcher<SyncCheckTrigger>>() {})
-                .dispatch(SyncCheckTrigger.create());
-          });
-    }
-  }
-
   private void withThreadCtx(Injector injector, Runnable r) {
     ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
@@ -411,7 +395,6 @@ public class RecoveryLivenessTest {
       for (int nodeIndex = 1; nodeIndex < nodes.size(); nodeIndex++) {
         restartNode(nodeIndex);
       }
-      initSync();
     }
 
     assertThat(epochRound.getEpoch()).isGreaterThan(1);
@@ -436,7 +419,6 @@ public class RecoveryLivenessTest {
           restartNode(nodeIndex);
         }
       }
-      initSync();
     }
 
     assertThat(epochRound.getEpoch()).isGreaterThan(1);
@@ -457,7 +439,6 @@ public class RecoveryLivenessTest {
       for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
         restartNode(nodeIndex);
       }
-      initSync();
     }
 
     assertThat(epochRound.getEpoch()).isGreaterThan(1);
@@ -492,7 +473,6 @@ public class RecoveryLivenessTest {
       for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
         restartNode(nodeIndex);
       }
-      initSync();
     }
 
     assertThat(epochRound.getEpoch()).isGreaterThan(1);

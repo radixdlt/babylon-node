@@ -191,13 +191,15 @@ public final class RxEnvironmentModule extends AbstractModule {
       RxEnvironment rxEnvironment,
       Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
       RxRemoteEnvironment rxRemoteEnvironment,
-      Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers) {
+      Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers,
+      Set<StartProcessorOnRunner> startProcessors) {
 
     final var runnerName = Runners.SYNC;
     final var builder = RxModuleRunnerImpl.builder();
     addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
     addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
     addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
+    addStartProcessorsOnRunner(startProcessors, runnerName, builder);
     return builder.build("SyncRunner " + name);
   }
 

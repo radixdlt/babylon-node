@@ -70,7 +70,6 @@ import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.application.tokens.Amount;
@@ -78,7 +77,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.LastEventsModule;
 import com.radixdlt.environment.deterministic.MultiNodeDeterministicRunner;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -99,7 +97,6 @@ import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.*;
 import java.util.function.Supplier;
@@ -242,8 +239,6 @@ public abstract class DeterministicActorsTest {
       for (var actor : actors) {
         actor.tryExecute(deterministicRunner, random);
       }
-      deterministicRunner.dispatchToAll(
-          new Key<EventDispatcher<SyncCheckTrigger>>() {}, SyncCheckTrigger.create());
     }
 
     logger.info("===Test Results===");

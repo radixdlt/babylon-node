@@ -109,6 +109,7 @@ import com.radixdlt.store.DatabaseEnvironment;
 import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.sync.messages.local.SyncCheckTrigger;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Collection;
 import java.util.List;
@@ -316,7 +317,7 @@ public class REv1RecoveryTest {
 
     // Assert
     assertThat(network.allMessages())
-        .hasSize(4)
+        .hasSize(5)
         .haveExactly(
             1,
             new Condition<>(
@@ -327,6 +328,11 @@ public class REv1RecoveryTest {
             new Condition<>(
                 msg -> msg.message() instanceof MempoolRelayTrigger,
                 "A single mempool relay trigger has been emitted"))
+        .haveExactly(
+            1,
+            new Condition<>(
+                msg -> msg.message() instanceof SyncCheckTrigger,
+                "A single sync check trigger has been emitted"))
         .haveExactly(
             1,
             new Condition<>(

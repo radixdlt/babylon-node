@@ -81,6 +81,19 @@ import org.apache.logging.log4j.Logger;
 public final class Checkers {
   private static final Logger logger = LogManager.getLogger();
 
+  public static boolean allNodesHaveExactMempoolCount(List<Injector> nodeInjectors, int count) {
+    for (int i = 0; i < nodeInjectors.size(); i++) {
+      var injector = nodeInjectors.get(i);
+
+      var reader = injector.getInstance(MempoolReader.class);
+      if (reader.getCount() != count) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   /** Assert that all nodes have an exact mempool count */
   public static void assertNodesHaveExactMempoolCount(List<Injector> nodeInjectors, int count) {
     for (int i = 0; i < nodeInjectors.size(); i++) {

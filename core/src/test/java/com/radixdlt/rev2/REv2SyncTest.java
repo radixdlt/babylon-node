@@ -98,7 +98,7 @@ public class REv2SyncTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(new REV2TransactionGenerator(), 1)),
-                    SyncRelayConfig.of(200, 10, 200))));
+                    SyncRelayConfig.of(200, 10, 2000))));
   }
 
   @Test
