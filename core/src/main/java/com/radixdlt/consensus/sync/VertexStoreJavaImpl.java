@@ -79,6 +79,9 @@ import com.radixdlt.consensus.bft.VertexChain;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.lang.Option;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -92,6 +95,8 @@ import javax.annotation.concurrent.NotThreadSafe;
 /** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
 @NotThreadSafe
 public final class VertexStoreJavaImpl implements VertexStore {
+  private static final Logger logger = LogManager.getLogger();
+
   private final Hasher hasher;
   private final Ledger ledger;
 
@@ -145,6 +150,8 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
         // FIXME: If this occurs then it means that our highQC may not have an associated vertex
         // FIXME: so should save executedVertex
+        logger.warn("VertexStore initialized with missing vertices.");
+
         break;
       } else {
         var executedVertex = executedVertexMaybe.get();
