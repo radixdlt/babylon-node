@@ -62,85 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.environment;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.p2p.PeersView;
-import com.radixdlt.transactions.RawTransaction;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import javax.inject.Inject;
+import java.util.function.Supplier;
 
-/** Relays transactions from the local mempool to node neighbors. */
-@Singleton
-public final class MempoolRelayer {
-  private final PeersView peersView;
-  private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
+public final class EventProducer<T> implements EventProcessor<T> {
+  private final Supplier<T> eventCreator;
+  private final ScheduledEventDispatcher<T> dispatcher;
+  private final long intervalMillis;
 
-  private final SystemCounters counters;
-
-  private final MempoolReader mempoolRelayReader;
-  private final long initialDelayMillis;
-  private final long repeatDelayMillis;
-  private final int maxPeers;
-
-  @Inject
-  public MempoolRelayer(
-      MempoolReader mempoolRelayReader,
-      RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
-      PeersView peersView,
-      @MempoolRelayInitialDelayMs long initialDelayMillis,
-      @MempoolRelayRepeatDelayMs long repeatDelayMillis,
-      @MempoolRelayMaxPeers int maxPeers,
-      SystemCounters counters) {
-    this.mempoolRelayReader = mempoolRelayReader;
-    this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
-    this.peersView = Objects.requireNonNull(peersView);
-    this.initialDelayMillis = initialDelayMillis;
-    this.repeatDelayMillis = repeatDelayMillis;
-    this.maxPeers = maxPeers;
-    this.counters = Objects.requireNonNull(counters);
+  public EventProducer(
+      Supplier<T> eventCreator, ScheduledEventDispatcher<T> dispatcher, long intervalMillis) {
+    this.eventCreator = eventCreator;
+    this.dispatcher = dispatcher;
+    this.intervalMillis = intervalMillis;
   }
 
-  public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
-    return mempoolAddSuccess -> {
-      final var ignorePeers =
-          mempoolAddSuccess.getOrigin().map(ImmutableList::of).orElse(ImmutableList.of());
-      relayTransactions(ImmutableList.of(mempoolAddSuccess.getTxn()), ignorePeers);
-    };
+  public void start() {
+    this.dispatcher.dispatch(eventCreator.get(), intervalMillis);
   }
 
-  public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
-    return ev -> {
-      final var transactions =
-          this.mempoolRelayReader.getTransactionsToRelay(initialDelayMillis, repeatDelayMillis);
-      if (!transactions.isEmpty()) {
-        relayTransactions(transactions, ImmutableList.of());
-      }
-    };
-  }
-
-  private void relayTransactions(
-      List<RawTransaction> transactions, ImmutableList<BFTNode> ignorePeers) {
-    final var mempoolAddMsg = MempoolAdd.create(transactions);
-    final var peers =
-        this.peersView.peers().map(PeersView.PeerInfo::bftNode).collect(Collectors.toList());
-    peers.removeAll(ignorePeers);
-    Collections.shuffle(peers);
-    peers.stream()
-        .limit(maxPeers)
-        .forEach(
-            peer -> {
-              counters.add(CounterType.MEMPOOL_RELAYS_SENT, transactions.size());
-              this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
-            });
+  @Override
+  public void process(T t) {
+    this.dispatcher.dispatch(eventCreator.get(), intervalMillis);
   }
 }

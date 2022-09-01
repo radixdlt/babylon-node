@@ -64,9 +64,7 @@
 
 package com.radixdlt.mempool;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.environment.*;
@@ -83,9 +81,22 @@ public final class MempoolRelayerModule extends AbstractModule {
     eventBinder.addBinding().toInstance(MempoolRelayTrigger.class);
   }
 
+  @Provides
+  @Singleton
+  private EventProducer<MempoolRelayTrigger> eventProducer(
+      ScheduledEventDispatcher<MempoolRelayTrigger> dispatcher) {
+    return new EventProducer<>(MempoolRelayTrigger::create, dispatcher, 10000);
+  }
+
   @ProvidesIntoSet
-  private StartProcessorOnRunner mempoolRelayerStart(MempoolRelayer mempoolRelayer) {
-    return new StartProcessorOnRunner(Runners.MEMPOOL, mempoolRelayer::start);
+  private StartProcessorOnRunner mempoolRelayerStart(
+      EventProducer<MempoolRelayTrigger> dispatcher) {
+    return new StartProcessorOnRunner(Runners.MEMPOOL, dispatcher::start);
+  }
+
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> processor(EventProducer<MempoolRelayTrigger> eventProducer) {
+    return new EventProcessorOnRunner<>(Runners.MEMPOOL, MempoolRelayTrigger.class, eventProducer);
   }
 
   @ProvidesIntoSet
