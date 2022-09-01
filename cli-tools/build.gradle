@@ -99,6 +99,7 @@ configurations {
 
 dependencies {
     implementation project(':core')
+    implementation project(':core-rust-bridge')
     implementation project(':common')
     implementation project(':olympia-engine')
 
@@ -151,10 +152,13 @@ task getNativeLibPathForRadixShell {
 task generateNodeKey(type: Exec) {
     dependsOn compileJava
     dependsOn ':common:jar'
+    dependsOn ':core:jar'
+    dependsOn ':core-rust-bridge:jar'
 
     group = "Execution"
     description = "Generate Node key"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+            "-Djava.library.path=${project(':core-rust').projectDir}/target/debug/",
             "com.radixdlt.cloud.AWSSecrets",
             "--enable-aws-secrets=${enableAWSSecret}",
             "--recreate-aws-secrets=${recreateAWSSecret}",
@@ -170,10 +174,12 @@ task generateDevUniverse(type: Exec) {
 
     dependsOn ':core:jar'
     dependsOn ':common:jar'
+    dependsOn ':core-rust-bridge:jar'
     dependsOn ':olympia-engine:jar'
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+            "-Djava.library.path=${project(':core-rust').projectDir}/target/debug/",
             "-Dlog4j.configurationFile=${projectDir.path + "/src/main/resources/generateuniverses.log4j2.properties"}",
             "com.radixdlt.cli.GenerateUniverses",
             "--validator-count=${validators}"
@@ -184,10 +190,12 @@ task generateGenesisFile(type: Exec) {
 
     dependsOn ':core:jar'
     dependsOn ':common:jar'
+    dependsOn ':core-rust-bridge:jar'
     dependsOn ':olympia-engine:jar'
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+            "-Djava.library.path=${project(':core-rust').projectDir}/target/debug/",
             "-Dlog4j.configurationFile=${projectDir.path + "/src/main/resources/generateuniverses.log4j2.properties"}",
             "com.radixdlt.cli.GenerateUniverses",
             "--public-keys=${publicKeys}"
@@ -243,6 +251,7 @@ task runTargetedIntegrationTests(type: Test) {
 
 task runAllIntegrationTests(type: Test) {
     environment "RADIX_NODE_KEYSTORE_PASSWORD", "supersecret"
+    systemProperty "java.library.path", "${project(':core-rust').projectDir}/target/debug/"
     testClassesDirs = sourceSets.integration.output.classesDirs
     classpath = sourceSets.integration.runtimeClasspath
 }
