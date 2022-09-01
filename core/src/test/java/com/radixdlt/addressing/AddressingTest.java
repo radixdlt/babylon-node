@@ -62,83 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.identifiers;
+package com.radixdlt.addressing;
 
-import com.radixdlt.utils.Bits;
-import com.radixdlt.utils.Pair;
-import java.util.Objects;
-import java.util.function.Function;
-import org.bitcoinj.core.AddressFormatException;
-import org.bitcoinj.core.Bech32;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Bech-32 encoding/decoding of account addresses.
- *
- * <p>The human-readable part is "rdx" for mainnet, "brx" for betanet.
- *
- * <p>The data part is a conversion of the 1-34 byte Radix Engine address {@link
- * com.radixdlt.identifiers.REAddr} to Base32 similar to specification described in BIP_0173 for
- * converting witness programs.
- */
-public final class AccountAddressing {
-  private final String hrp;
+import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.ComponentAddress;
+import org.junit.Test;
 
-  private AccountAddressing(String hrp) {
-    this.hrp = hrp;
+public class AddressingTest {
+  @Test
+  public void test_system_faucet_address_encoded_correctly() {
+    assertThat(
+            Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
+                .encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS))
+        .isEqualTo("system_test1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsfkwqvf");
   }
 
-  public String getHrp() {
-    return hrp;
-  }
-
-  public static AccountAddressing bech32(String hrp) {
-    Objects.requireNonNull(hrp);
-    return new AccountAddressing(hrp);
-  }
-
-  public static <X extends Exception> Pair<String, REAddr> parseUnknownHrp(
-      String v, Function<String, X> exceptionSupplier) throws X {
-    Bech32.Bech32Data bech32Data;
-    try {
-      bech32Data = Bech32.decode(v);
-    } catch (AddressFormatException e) {
-      throw exceptionSupplier.apply("Could not decode");
-    }
-
-    final REAddr reAddr;
-    try {
-      var addrBytes = fromBech32Data(bech32Data.data);
-      reAddr = REAddr.of(addrBytes);
-    } catch (IllegalArgumentException e) {
-      throw exceptionSupplier.apply("Invalid address");
-    }
-
-    if (!reAddr.isAccount()) {
-      throw exceptionSupplier.apply("Address is not an account");
-    }
-
-    return Pair.of(bech32Data.hrp, reAddr);
-  }
-
-  private static byte[] toBech32Data(byte[] bytes) {
-    return Bits.convertBits(bytes, 0, bytes.length, 8, 5, true);
-  }
-
-  private static byte[] fromBech32Data(byte[] bytes) {
-    return Bits.convertBits(bytes, 0, bytes.length, 5, 8, false);
-  }
-
-  public String of(REAddr addr) {
-    var convert = toBech32Data(addr.getBytes());
-    return Bech32.encode(hrp, convert);
-  }
-
-  public <X extends Exception> REAddr parseOrThrow(String v, Function<String, X> exceptionSupplier)
-      throws X {
-    var p = parseUnknownHrp(v, exceptionSupplier);
-    if (!p.getFirst().equals(hrp)) {
-      throw exceptionSupplier.apply("hrp must be " + hrp + " but was " + p.getFirst());
-    }
-    return p.getSecond();
+  @Test
+  public void test_system_faucet_address_decoded_correctly() {
+    assertThat(
+            Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
+                .decodeSystemComponentAddress(
+                    "system_test1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsfkwqvf"))
+        .isEqualTo(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
   }
 }

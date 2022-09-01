@@ -72,6 +72,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.RadixNodeModule;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
@@ -88,7 +89,6 @@ import com.radixdlt.messaging.core.Message;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.messaging.core.MessageFromPeer;
 import com.radixdlt.modules.ModuleRunner;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.networks.GenesisSource;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
@@ -346,9 +346,9 @@ public final class RadixShell {
       sendMsg(uri.getNodeId(), message);
     }
 
-    public void sendMsg(String nodeId, Message message) throws DeserializeException {
+    public void sendMsg(String nodeAddress, Message message) throws DeserializeException {
       final var addressing = injector.getInstance(Addressing.class);
-      sendMsg(NodeId.fromPublicKey(addressing.forNodes().parse(nodeId)), message);
+      sendMsg(NodeId.fromPublicKey(addressing.decodeNodeAddress(nodeAddress)), message);
     }
 
     public void sendMsg(NodeId nodeId, Message message) {

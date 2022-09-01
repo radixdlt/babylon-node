@@ -62,11 +62,63 @@
  * permissions under this License.
  */
 
-package com.radixdlt.networks;
+use bech32::{FromBase32, ToBase32, Variant};
+use jni::objects::JClass;
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
 
-public enum AddressType {
-  ACCOUNT,
-  VALIDATOR,
-  RESOURCE,
-  NODE;
+use super::utils::jni_static_sbor_call;
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_encodeBech32m(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, do_encode_bech32m)
 }
+
+fn do_encode_bech32m(args: (String, Vec<u8>)) -> Result<String, String> {
+    let (hrp, full_data) = args;
+
+    let base32_data = full_data.to_base32();
+
+    let address = bech32::encode(&hrp, base32_data, bech32::Variant::Bech32m)
+        .map_err(|e| format!("Unable to encode bech32m address: {:?}", e))?;
+
+    Ok(address)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_decodeBech32m(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, do_decode_bech32m)
+}
+
+fn do_decode_bech32m(address: String) -> Result<(String, Vec<u8>), String> {
+    let (hrp, base32_data, variant) = bech32::decode(&address)
+        .map_err(|e| format!("Unable to decode bech32 address: {:?}", e))?;
+
+    check_variant_is_bech32m(variant)?;
+
+    let data = Vec::<u8>::from_base32(&base32_data).map_err(|e| {
+        format!(
+            "Unable to decode bech32 data from 5 bits to 8 bits: {:?}",
+            e
+        )
+    })?;
+
+    Ok((hrp, data))
+}
+
+fn check_variant_is_bech32m(variant: Variant) -> Result<(), String> {
+    match variant {
+        bech32::Variant::Bech32 => Err("Address was bech32 encoded, not bech32".to_owned()),
+        bech32::Variant::Bech32m => Ok(()),
+    }
+}
+
+pub fn export_extern_functions() {}

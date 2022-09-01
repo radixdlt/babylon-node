@@ -9,6 +9,7 @@ fn export_extern_functions() {
     state_manager::jni::state_manager::export_extern_functions();
     state_manager::jni::transaction_builder::export_extern_functions();
     state_manager::jni::transaction_store::export_extern_functions();
+    state_manager::jni::addressing::export_extern_functions();
 
     // core-api-server
     core_api_server::jni::export_extern_functions();

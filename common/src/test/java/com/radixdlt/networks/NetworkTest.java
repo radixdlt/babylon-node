@@ -78,20 +78,20 @@ public class NetworkTest {
   public void test_hrp_suffices_align_with_network_id() {
     for (var network : Network.values()) {
       if (network.getLogicalName().equals("mainnet")) {
-        assertEquals("account_rdx", network.getAccountHrp());
+        assertEquals("account_rdx", network.getAccountComponentHrp());
         assertEquals("validator_rdx", network.getValidatorHrp());
       } else if (network.getLogicalName().equals("simulator")) {
-        assertEquals("account_sim", network.getAccountHrp());
+        assertEquals("account_sim", network.getAccountComponentHrp());
         assertEquals("validator_sim", network.getValidatorHrp());
       } else if (network.getLogicalName().equals("localnet")) {
-        assertEquals("account_loc", network.getAccountHrp());
+        assertEquals("account_loc", network.getAccountComponentHrp());
         assertEquals("validator_loc", network.getValidatorHrp());
       } else if (network.getLogicalName().equals("inttestnet")) {
-        assertEquals("account_test", network.getAccountHrp());
+        assertEquals("account_test", network.getAccountComponentHrp());
         assertEquals("validator_test", network.getValidatorHrp());
       } else {
         var hexId = Integer.toString(network.getId(), 16).toLowerCase();
-        assertEquals(String.format("account_tdx_%s_", hexId), network.getAccountHrp());
+        assertEquals(String.format("account_tdx_%s_", hexId), network.getAccountComponentHrp());
         assertEquals(String.format("validator_tdx_%s_", hexId), network.getValidatorHrp());
       }
     }

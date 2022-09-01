@@ -64,67 +64,55 @@
 
 package com.radixdlt.identifiers;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.radixdlt.lang.Tuple.tuple;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.utils.Bytes;
-import java.util.Map;
-import org.junit.Test;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.exceptions.Bech32DecodeException;
+import com.radixdlt.exceptions.Bech32EncodeException;
+import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.sbor.NativeCalls;
+import java.util.Objects;
 
-public class ValidatorAddressingTest {
-  private final ValidatorAddressing validatorAddresses = ValidatorAddressing.bech32("vb");
-  private final BiMap<String, String> privateKeyToValidatorId =
-      HashBiMap.create(
-          Map.of(
-              "00", "vb1qvz3anvawgvm7pwvjs7xmjg48dvndczkgnufh475k2tqa2vm5c6cq9u3702",
-              "deadbeef", "vb1qvx0emaq0tua6md7wu9c047mm5krrwnlfl8c7ws3jm2s9uf4vxcyvrwrazy",
-              "deadbeefdeadbeef", "vb1q0jym8jxnc0a4306y95j9m07tprxws6ccjz9h352tkcdfzfysh0jxll64dl",
-              "bead", "vb1qgtnc40hs73dxe2fgy5yvujnxmdnvg69w6fhj6drr68vqac525k2gkfdady",
-              "aaaaaaaaaaaaaaaa",
-                  "vb1qgyz0t0kd9j4302q8429tl0mu3w8lm8nne8l2m9e8k74t3qm3xe9z8l2049"));
+public final class Bech32mCoder {
+  static {
+    // This is idempotent with the other calls
+    System.loadLibrary("corerust");
+  }
 
-  private final Map<String, String> invalidAddresses =
-      Map.of(
-          "vb1qvx0emaq0tua6md7wu9c047mm5krrwnlfl8c7ws3jm2s9uf4vxcyvrwrazz", "Bad checksum",
-          "xrd_rr1gd5j68", "Bad hrp",
-          "vb1qqweu28r", "Not enough bytes for public key");
+  public static String encode(String hrp, byte[] data) {
+    return encodeBech32mFunc.call(tuple(hrp, data)).unwrap(Bech32EncodeException::new);
+  }
 
-  @Test
-  public void test_validator_address_serialization() {
-    privateKeyToValidatorId.forEach(
-        (privHex, expectedAddress) -> {
-          var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
-          var publicKey = keyPair.getPublicKey();
-          var validatorAddress = validatorAddresses.of(publicKey);
-          assertThat(validatorAddress).isEqualTo(expectedAddress);
+  public static byte[] decodeWithExpectedHrp(String expectedHrp, String address) {
+    var result = decodeBech32mFunc.call(address).unwrap(Bech32DecodeException::new);
+    return result.map(
+        (returnedHrp, data) -> {
+          if (!Objects.equals(returnedHrp, expectedHrp)) {
+            throw new Bech32DecodeException(
+                String.format(
+                    "The decoded hrp (%s) didn't match the expected hrp (%s)",
+                    returnedHrp, expectedHrp));
+          }
+          return data;
         });
   }
 
-  @Test
-  public void test_correct_validator_address_deserialization() throws DeserializeException {
-    for (var e : privateKeyToValidatorId.entrySet()) {
-      var address = e.getValue();
-      var privHex = e.getKey();
-      var pubKey = validatorAddresses.parseOrThrow(address, IllegalStateException::new);
-      var keyPair = ECKeyPair.fromSeed(Bytes.fromHexString(privHex));
-      var expectedPubKey = keyPair.getPublicKey();
-      assertThat(pubKey).isEqualTo(expectedPubKey);
-    }
+  public static Tuple.Tuple2<String, byte[]> decode(String address) {
+    return decodeBech32mFunc.call(address).unwrap(Bech32DecodeException::new);
   }
 
-  @Test
-  public void test_invalid_addresses() {
-    for (var e : invalidAddresses.entrySet()) {
-      var address = e.getKey();
-      var expectedError = e.getValue();
-      assertThatThrownBy(
-              () -> validatorAddresses.parseOrThrow(address, IllegalStateException::new),
-              expectedError)
-          .isInstanceOf(IllegalStateException.class);
-    }
-  }
+  private static final NativeCalls.StaticFunc1<Tuple.Tuple2<String, byte[]>, Result<String, String>>
+      encodeBech32mFunc =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {}, new TypeToken<>() {}, Bech32mCoder::encodeBech32m);
+
+  private static native byte[] encodeBech32m(byte[] requestPayload);
+
+  private static final NativeCalls.StaticFunc1<String, Result<Tuple.Tuple2<String, byte[]>, String>>
+      decodeBech32mFunc =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {}, new TypeToken<>() {}, Bech32mCoder::decodeBech32m);
+
+  private static native byte[] decodeBech32m(byte[] requestPayload);
 }

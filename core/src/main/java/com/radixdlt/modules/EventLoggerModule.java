@@ -71,6 +71,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -83,7 +84,6 @@ import com.radixdlt.constraintmachine.REEvent.ValidatorMissedProposalsEvent;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.utils.Bytes;
 import java.util.function.Function;
 import org.apache.logging.log4j.Level;
@@ -94,15 +94,15 @@ public final class EventLoggerModule extends AbstractModule {
   private static final Logger logger = LogManager.getLogger();
 
   @Provides
-  Function<BFTNode, String> stringForValidators1(
-      Function<ECPublicKey, String> stringForValidators) {
-    return n -> stringForValidators.apply(n.getKey());
+  Function<BFTNode, String> loggingFormatterForNode(
+      Function<ECPublicKey, String> loggingFormatterForNodePublicKey) {
+    return n -> loggingFormatterForNodePublicKey.apply(n.getKey());
   }
 
   @Provides
-  Function<ECPublicKey, String> stringForValidators2(Addressing addressing) {
+  Function<ECPublicKey, String> loggingFormatterForNodePublicKey(Addressing addressing) {
     return k -> {
-      var addr = addressing.forValidators().of(k);
+      var addr = addressing.encodeNodeAddress(k);
       var len = addr.length();
       return addr.substring(0, 2) + "..." + addr.substring(len - 9);
     };

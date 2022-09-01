@@ -70,16 +70,15 @@ import static com.radixdlt.api.system.prometheus.PrometheusService.JmxMetric.jmx
 
 import com.google.inject.Inject;
 import com.radixdlt.RadixNodeApplication;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
-import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.monitoring.InMemorySystemInfo;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.networks.Addressing;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
@@ -188,10 +187,6 @@ public class PrometheusService {
 
   private String prepareNodeInfo() {
     var builder = new StringBuilder("nodeinfo{");
-    appendField(
-        builder,
-        "owner_address",
-        addressing.forAccounts().of(REAddr.ofPubKeyAccount(self.getKey())));
     addBranchAndCommit(builder);
     addValidatorAddress(builder);
     appendField(builder, "health", healthInfoService.nodeStatus().name());
@@ -201,7 +196,8 @@ public class PrometheusService {
   }
 
   private void addValidatorAddress(StringBuilder builder) {
-    appendField(builder, "own_validator_address", addressing.forValidators().of(self.getKey()));
+    // TODO - add back when validators have addresses in the engine
+    // appendField(builder, "own_validator_address", addressing.forValidators().of(self.getKey()));
 
     var inSet =
         inMemorySystemInfo

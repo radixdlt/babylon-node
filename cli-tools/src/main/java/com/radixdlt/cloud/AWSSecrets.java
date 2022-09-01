@@ -64,10 +64,9 @@
 
 package com.radixdlt.cloud;
 
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
-import com.radixdlt.identifiers.NodeAddressing;
-import com.radixdlt.identifiers.ValidatorAddressing;
 import com.radixdlt.networks.Network;
 import com.radixdlt.utils.AWSSecretManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
@@ -284,14 +283,17 @@ public class AWSSecrets {
   private static void printAddresses(
       Network network, ECKeyPair keyPair, HashMap<String, Object> publicKeyFileAwsSecret) {
     var pubKey = keyPair.getPublicKey();
-    var nodeAddressing = NodeAddressing.bech32(network.getNodeHrp());
-    var validatorAddressing = ValidatorAddressing.bech32(network.getValidatorHrp());
+    var nodeAddress = Addressing.ofNetwork(network).encodeNodeAddress(pubKey);
 
-    publicKeyFileAwsSecret.put("bech32", nodeAddressing.of(pubKey));
+    publicKeyFileAwsSecret.put("node_address", nodeAddress);
+    // Node address duplicated to the bech32 key to maintain backwards compatibility
+    publicKeyFileAwsSecret.put("bech32", nodeAddress);
     publicKeyFileAwsSecret.put("hex", pubKey.toHex());
-    publicKeyFileAwsSecret.put("validator_address", validatorAddressing.of(pubKey));
 
-    System.out.println(nodeAddressing.of(pubKey));
+    // We don't have validator addresses in Babylon yet - so we use the node address here for now
+    publicKeyFileAwsSecret.put("validator_address", nodeAddress);
+
+    System.out.println(nodeAddress);
     System.out.println(pubKey.toHex());
   }
 
