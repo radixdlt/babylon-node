@@ -67,17 +67,8 @@ use crate::store::query::RecoverableVertexStore;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-use sbor::*;
-use scrypto::prelude::ComponentAddress;
 
 use super::utils::jni_state_manager_sbor_call;
-
-#[derive(Encode, Decode, TypeId)]
-struct ExecutedTransactionReceipt {
-    result: String,
-    transaction_data: Vec<u8>,
-    new_component_addresses: Vec<ComponentAddress>,
-}
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_getVertexStore(
