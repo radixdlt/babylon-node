@@ -33,11 +33,17 @@ pub fn to_api_receipt(
         up_substates: state_updates
             .up_substates
             .into_iter()
-            .map(|(substate_id, output_value)| models::UpSubstate {
-                substate_id: to_sbor_hex(&substate_id),
-                version: output_value.version.to_string(),
-                substate_bytes: to_sbor_hex(&output_value.substate),
-                substate: to_api_substate(&output_value.substate, bech32_encoder),
+            .map(|(substate_id, output_value)| {
+                let (json_type, json_str) =
+                    to_api_substate(&output_value.substate, bech32_encoder);
+
+                models::UpSubstate {
+                    substate_id: to_sbor_hex(&substate_id),
+                    version: output_value.version.to_string(),
+                    substate_bytes: to_sbor_hex(&output_value.substate),
+                    substate_json_type: json_type,
+                    substate_json_str: json_str,
+                }
             })
             .collect(),
         down_substates: state_updates
