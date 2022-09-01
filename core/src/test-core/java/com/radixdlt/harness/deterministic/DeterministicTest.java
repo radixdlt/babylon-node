@@ -101,7 +101,6 @@ import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
-import java.io.PrintStream;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -331,7 +330,7 @@ public final class DeterministicTest implements AutoCloseable {
     return new DeterministicManualExecutor() {
       @Override
       public void start() {
-        nodes.start();
+        nodes.startAllNodes();
       }
 
       @Override
@@ -348,12 +347,31 @@ public final class DeterministicTest implements AutoCloseable {
     };
   }
 
+  public void startAllNodes() {
+    this.nodes.startAllNodes();
+  }
+
+  public void shutdownNode(int nodeIndex) throws Exception {
+    // Drop local messages
+    this.network.dropMessages(
+        m ->
+            m.channelId().receiverIndex() == nodeIndex && m.channelId().senderIndex() == nodeIndex);
+    this.nodes.shutdownNode(nodeIndex);
+  }
+
+  public void startNode(int nodeIndex) {
+    this.nodes.startNode(nodeIndex);
+  }
+
+  public void restartNode(int nodeIndex) throws Exception {
+    this.shutdownNode(nodeIndex);
+    this.startNode(nodeIndex);
+  }
+
   public DeterministicTest runUntil(
       Predicate<List<Injector>> nodeStatePredicate,
       int max,
       Predicate<ControlledMessage> predicate) {
-    this.nodes.start();
-
     int count = 0;
 
     while (!nodeStatePredicate.test(getNodeInjectors())) {
@@ -372,20 +390,7 @@ public final class DeterministicTest implements AutoCloseable {
     return this.runUntil(nodeStatePredicate, max, m -> true);
   }
 
-  public DeterministicTest runForCount(int count, Predicate<ControlledMessage> predicate) {
-    this.nodes.start();
-
-    for (int i = 0; i < count; i++) {
-      Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
-      this.nodes.handleMessage(nextMsg);
-    }
-
-    return this;
-  }
-
   public DeterministicTest runForCount(int count) {
-    this.nodes.start();
-
     for (int i = 0; i < count; i++) {
       Timed<ControlledMessage> nextMsg = this.network.nextMessage();
       this.nodes.handleMessage(nextMsg);
@@ -395,8 +400,6 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   public DeterministicTest runUntil(Predicate<Timed<ControlledMessage>> stopPredicate) {
-    this.nodes.start();
-
     while (true) {
       Timed<ControlledMessage> nextMsg = this.network.nextMessage();
       if (stopPredicate.test(nextMsg)) {
@@ -469,26 +472,6 @@ public final class DeterministicTest implements AutoCloseable {
     };
   }
 
-  public void shutdownNode(int nodeIndex) throws Exception {
-    // Drop local messages
-    this.network.dropMessages(
-        m ->
-            m.channelId().receiverIndex() == nodeIndex && m.channelId().senderIndex() == nodeIndex);
-    this.nodes.shutdownNode(nodeIndex);
-  }
-
-  public void startNode(int nodeIndex) {
-    this.nodes.startNode(nodeIndex);
-  }
-
-  public void restartNode(int nodeIndex) throws Exception {
-    // Drop local messages
-    this.network.dropMessages(
-        m ->
-            m.channelId().receiverIndex() == nodeIndex && m.channelId().senderIndex() == nodeIndex);
-    this.nodes.restartNode(nodeIndex);
-  }
-
   public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {
     return this.nodes.getInstance(nodeIndex, instanceClass);
   }
@@ -499,10 +482,5 @@ public final class DeterministicTest implements AutoCloseable {
 
   public int numNodes() {
     return this.nodes.numNodes();
-  }
-
-  // Debugging aid for messages
-  public void dumpMessages(PrintStream out) {
-    this.network.dumpMessages(out);
   }
 }

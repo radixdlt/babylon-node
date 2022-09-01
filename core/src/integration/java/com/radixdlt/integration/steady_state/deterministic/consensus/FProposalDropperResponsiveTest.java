@@ -92,19 +92,22 @@ public class FProposalDropperResponsiveTest {
 
   private void runFProposalDropperResponsiveTest(
       int numValidatorNodes, Function<Round, Set<Integer>> nodesToDropFunction) {
-    DeterministicTest.builder()
-        .numNodes(numValidatorNodes, 0)
-        .messageSelector(MessageSelector.randomSelector(random))
-        .messageMutator(
-            MessageMutator.dropTimeouts()
-                .andThen(dropNodes(numValidatorNodes, nodesToDropFunction)))
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                ConsensusConfig.of(),
-                LedgerConfig.stateComputerMockedSync(
-                    StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
-        .runForCount(30_000);
+    var test =
+        DeterministicTest.builder()
+            .numNodes(numValidatorNodes, 0)
+            .messageSelector(MessageSelector.randomSelector(random))
+            .messageMutator(
+                MessageMutator.dropTimeouts()
+                    .andThen(dropNodes(numValidatorNodes, nodesToDropFunction)))
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    ConsensusConfig.of(),
+                    LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
+
+    test.startAllNodes();
+    test.runForCount(30_000);
   }
 
   private static MessageMutator dropNodes(

@@ -105,6 +105,8 @@ public class REv2SyncTest {
   public void single_transaction_sync_should_work() throws Exception {
     // Arrange: Single transaction committed
     try (var test = buildTest()) {
+      test.startAllNodes();
+
       test.runUntil(
           n -> {
             var store = n.get(0).getInstance(REv2TransactionAndProofStore.class);

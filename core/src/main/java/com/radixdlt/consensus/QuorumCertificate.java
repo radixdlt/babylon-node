@@ -193,6 +193,10 @@ public final class QuorumCertificate {
 
   @Override
   public String toString() {
-    return String.format("QC{e=%s p=%s c=%s}", this.getEpoch(), this.getRound(), this.getCommittedHeader().map(h -> h.getRound().toString()).orElse(""));
+    return String.format(
+        "QC{e=%s p=%s c=%s}",
+        this.getEpoch(),
+        this.getRound(),
+        this.getCommittedHeader().map(h -> h.getRound().toString()).orElse(""));
   }
 }

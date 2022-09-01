@@ -125,6 +125,7 @@ public final class REv2LedgerRecoveryTest {
   public void on_reboot_should_load_same_last_header() throws Exception {
     try (var test = createTest()) {
       // Arrange
+      test.startAllNodes();
       test.runForCount(processForCount);
       var reader = test.getInstance(0, TransactionsAndProofReader.class);
       var proof = reader.getLastProof();
@@ -143,6 +144,7 @@ public final class REv2LedgerRecoveryTest {
   public void on_reboot_should_only_emit_pacemaker_events() throws Exception {
     try (var test = createTest()) {
       // Arrange
+      test.startAllNodes();
       test.runForCount(processForCount);
 
       // Act

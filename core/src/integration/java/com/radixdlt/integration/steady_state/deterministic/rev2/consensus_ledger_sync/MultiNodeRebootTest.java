@@ -119,7 +119,7 @@ public final class MultiNodeRebootTest {
                         databaseConfig,
                         StateComputerConfig.REV2ProposerConfig.transactionGenerator(
                             new REV2TransactionGenerator(), 1)),
-                    SyncRelayConfig.of(5000, 10, 3000L))));
+                    SyncRelayConfig.of(5000, 10, 5000L))));
   }
 
   private void checkSafetyAndLiveness(
@@ -147,6 +147,8 @@ public final class MultiNodeRebootTest {
 
   private void runTest(int numRounds, int numDownValidators) throws Exception {
     try (var test = createTest()) {
+      test.startAllNodes();
+
       var nodeLiveStatus =
           IntStream.range(0, numValidators)
               .boxed()

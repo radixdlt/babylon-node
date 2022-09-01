@@ -82,6 +82,7 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -106,9 +107,7 @@ public final class DeterministicNodes implements AutoCloseable {
         Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
             .collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
     this.nodeInstances =
-        nodes.stream()
-            .map(node -> createBFTInstance(node, baseModule, overrideModule))
-            .collect(Collectors.toList());
+        Stream.generate(() -> (Injector) null).limit(nodes.size()).collect(Collectors.toList());
   }
 
   private Injector createBFTInstance(BFTNode self, Module baseModule, Module overrideModule) {
@@ -133,21 +132,45 @@ public final class DeterministicNodes implements AutoCloseable {
     return this.nodeInstances.size();
   }
 
-  public void start() {
-    for (Injector injector : this.nodeInstances) {
-      if (injector == null) {
-        continue;
-      }
-
-      var processor = injector.getInstance(DeterministicProcessor.class);
-
-      ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-      try {
-        processor.start();
-      } finally {
-        ThreadContext.remove("self");
-      }
+  public void startAllNodes() {
+    for (int nodeIndex = 0; nodeIndex < this.nodeInstances.size(); nodeIndex++) {
+      this.startNode(nodeIndex);
     }
+  }
+
+  public void shutdownNode(int nodeIndex) throws Exception {
+    if (this.nodeInstances.get(nodeIndex) == null) {
+      return;
+    }
+
+    var closeables =
+        this.nodeInstances
+            .get(nodeIndex)
+            .getInstance(Key.get(new TypeLiteral<Set<AutoCloseable>>() {}));
+    for (var c : closeables) {
+      c.close();
+    }
+
+    this.nodeInstances.set(nodeIndex, null);
+  }
+
+  public void startNode(int nodeIndex) {
+    if (this.nodeInstances.get(nodeIndex) != null) {
+      return;
+    }
+
+    var node = this.nodeLookup.inverse().get(nodeIndex);
+    var injector = createBFTInstance(node, baseModule, overrideModule);
+    var processor = injector.getInstance(DeterministicProcessor.class);
+
+    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
+    try {
+      processor.start();
+    } finally {
+      ThreadContext.remove("self");
+    }
+
+    this.nodeInstances.set(nodeIndex, injector);
   }
 
   public void handleMessage(Timed<ControlledMessage> timedNextMsg) {
@@ -176,38 +199,6 @@ public final class DeterministicNodes implements AutoCloseable {
 
   public List<Injector> getNodeInjectors() {
     return this.nodeInstances;
-  }
-
-  public void shutdownNode(int nodeIndex) throws Exception {
-    if (this.nodeInstances.get(nodeIndex) == null) {
-      return;
-    }
-
-    var closeables =
-        this.nodeInstances
-            .get(nodeIndex)
-            .getInstance(Key.get(new TypeLiteral<Set<AutoCloseable>>() {}));
-    for (var c : closeables) {
-      c.close();
-    }
-
-    this.nodeInstances.set(nodeIndex, null);
-  }
-
-  public void startNode(int nodeIndex) {
-    if (this.nodeInstances.get(nodeIndex) != null) {
-      return;
-    }
-
-    var node = this.nodeLookup.inverse().get(nodeIndex);
-    var injector = createBFTInstance(node, baseModule, overrideModule);
-    injector.getInstance(DeterministicProcessor.class).start();
-    this.nodeInstances.set(nodeIndex, injector);
-  }
-
-  public void restartNode(int nodeIndex) throws Exception {
-    this.shutdownNode(nodeIndex);
-    this.startNode(nodeIndex);
   }
 
   public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {

@@ -102,8 +102,10 @@ public class RandomChannelOrderResponsiveTest {
                     false,
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
-            .runUntil(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
+                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
+
+    test.startAllNodes();
+    test.runUntil(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
 
     List<Long> proposalsMade =
         IntStream.range(0, numValidatorNodes)

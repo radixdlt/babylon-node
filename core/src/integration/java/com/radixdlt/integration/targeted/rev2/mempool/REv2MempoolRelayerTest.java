@@ -108,6 +108,8 @@ public final class REv2MempoolRelayerTest {
   @Test
   public void relayer_fills_mempool_of_all_nodes() throws Exception {
     try (var test = createTest()) {
+      test.startAllNodes();
+
       // Arrange: Fill node1 mempool
       var mempoolInserter =
           test.getInstance(1, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));

@@ -84,21 +84,22 @@ public class FullNodeSyncTest {
         new SyncRelayConfig(
             500L,
             0 /* unused */,
-            0L /* unused */,
+            Long.MAX_VALUE /* unused */,
             numNodes, /* send ledger status update to all nodes */
             Integer.MAX_VALUE /* no rate limiting */);
 
-    final var bftTest =
+    final var test =
         DeterministicTest.builder()
             .numNodes(numNodes, 0)
             .messageSelector(firstSelector())
             .epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
-            .buildWithEpochsAndSync(epochMaxRound, syncConfig)
-            .runUntil(DeterministicTest.ledgerStateVersionOnNode(targetStateVersion, numNodes - 1));
+            .buildWithEpochsAndSync(epochMaxRound, syncConfig);
+
+    test.startAllNodes();
+    test.runUntil(DeterministicTest.ledgerStateVersionOnNode(targetStateVersion, numNodes - 1));
 
     final var validatorsCounters =
-        IntStream.range(0, numValidators)
-            .mapToObj(i -> bftTest.getInstance(i, SystemCounters.class));
+        IntStream.range(0, numValidators).mapToObj(i -> test.getInstance(i, SystemCounters.class));
 
     final var validatorsMaxStateVersion =
         validatorsCounters
@@ -108,7 +109,7 @@ public class FullNodeSyncTest {
 
     final var nonValidatorsStateVersions =
         IntStream.range(numValidators, numNodes - numValidators)
-            .mapToObj(i -> bftTest.getInstance(i, SystemCounters.class))
+            .mapToObj(i -> test.getInstance(i, SystemCounters.class))
             .map(sc -> sc.get(CounterType.LEDGER_STATE_VERSION))
             .toList();
 
