@@ -77,8 +77,8 @@ public record PrepareRequest(List<RawTransaction> previous, List<RawTransaction>
         codecs ->
             StructCodec.with(
                 PrepareRequest::new,
-                codecs.of(new TypeToken<List<RawTransaction>>() {}),
-                codecs.of(new TypeToken<List<RawTransaction>>() {}),
+                codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
                 (t, encoder) -> encoder.encode(t.previous, t.proposed)));
   }
 }

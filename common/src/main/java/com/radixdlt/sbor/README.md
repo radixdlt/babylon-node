@@ -46,8 +46,8 @@ Examples of a StructCodec (from `SimpleRecord.java`):
                 SimpleRecord::new,
                 codecs.of(int.class),
                 codecs.of(String.class),
-                codecs.of(new TypeToken<Either<Long, String>>() {}),
-                codecs.of(new TypeToken<Option<Boolean>>() {}),
+                codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
                 (r, encoder) -> encoder.encode(r.first, r.second, r.third, r.fourth)));
   }
 ```
@@ -70,7 +70,7 @@ And, for Enums represented as sealed interfaces (see eg `SimpleEnum.java`):
                 EnumEntry.with(
                     B.class,
                     B::new,
-                    codecs.of(new TypeToken<Either<Long, String>>() {}),
+                    codecs.of(new TypeToken<>() {}),
                     (t, encoder) -> encoder.encode(t.param1))));
   }
 ```
