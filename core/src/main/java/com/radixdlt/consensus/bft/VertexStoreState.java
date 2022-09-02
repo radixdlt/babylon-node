@@ -76,6 +76,8 @@ import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The current overall state of the vertex store.
@@ -90,6 +92,8 @@ import javax.annotation.concurrent.Immutable;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @Immutable
 public final class VertexStoreState {
+  private static final Logger logger = LogManager.getLogger();
+
   private final VertexWithHash root;
   private final LedgerProof rootHeader;
   private final HighQC highQC;
@@ -153,29 +157,56 @@ public final class VertexStoreState {
 
     if (seen.keySet().stream()
         .noneMatch(highQC.highestCommittedQC().getProposedHeader().getVertexId()::equals)) {
+      // TODO: Reinstate illegal state exception once executed vertices (ie VertexStore.java:150)
+      // TODO: is implemented
+      logger.warn(
+          String.format(
+              "highQC=%s highCommitted proposed missing {root=%s vertices=%s}",
+              highQC, root, vertices));
+      /*
       throw new IllegalStateException(
           String.format(
               "highQC=%s highCommitted proposed missing {root=%s vertices=%s}",
               highQC, root, vertices));
+       */
     }
 
     if (seen.keySet().stream()
         .noneMatch(highQC.highestCommittedQC().getParentHeader().getVertexId()::equals)) {
+      // TODO: Reinstate illegal state exception once executed vertices (ie VertexStore.java:150)
+      // TODO: is implemented
+      logger.warn(
+          String.format(
+              "highQC=%s highCommitted parent does not have a corresponding vertex", highQC));
+      /*
       throw new IllegalStateException(
           String.format(
               "highQC=%s highCommitted parent does not have a corresponding vertex", highQC));
+       */
     }
 
     if (seen.keySet().stream()
         .noneMatch(highQC.highestQC().getParentHeader().getVertexId()::equals)) {
+      // TODO: Reinstate illegal state exception once executed vertices (ie VertexStore.java:150)
+      // TODO: is implemented
+      logger.warn(
+          String.format("highQC=%s highQC parent does not have a corresponding vertex", highQC));
+      /*
       throw new IllegalStateException(
           String.format("highQC=%s highQC parent does not have a corresponding vertex", highQC));
+       */
     }
 
     if (seen.keySet().stream()
         .noneMatch(highQC.highestQC().getProposedHeader().getVertexId()::equals)) {
+      // TODO: Reinstate illegal state exception once executed vertices (ie VertexStore.java:150)
+      // TODO: is implemented
+      logger.warn(
+          String.format("highQC=%s highQC proposed does not have a corresponding vertex", highQC));
+      /*
       throw new IllegalStateException(
           String.format("highQC=%s highQC proposed does not have a corresponding vertex", highQC));
+       */
     }
 
     return new VertexStoreState(

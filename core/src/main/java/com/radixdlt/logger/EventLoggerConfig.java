@@ -62,54 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.logger;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static org.assertj.core.api.Assertions.assertThat;
+import com.radixdlt.addressing.Addressing;
+import com.radixdlt.crypto.ECPublicKey;
+import java.util.function.Function;
 
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.modules.*;
-import com.radixdlt.networks.Network;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import org.junit.Test;
-
-public final class REv2GenesisTest {
-  private static final Decimal GENESIS_AMOUNT = Decimal.of(24_000_000_000L);
-
-  private DeterministicTest createTest() {
-    return DeterministicTest.builder()
-        .numNodes(1, 0)
-        .messageSelector(firstSelector())
-        .messageMutator(MessageMutator.dropTimeouts())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        REv2DatabaseConfig.inMemory(),
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            0, MempoolRelayConfig.of())))));
-  }
-
-  @Test
-  public void state_reader_on_genesis_returns_correct_amounts() throws Exception {
-    // Arrange/Act
-    try (var test = createTest()) {
-      test.startAllNodes();
-
-      // Assert
-      var stateReader = test.getInstance(0, REv2StateReader.class);
-      var systemAmount =
-          stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
-      assertThat(systemAmount).isEqualTo(GENESIS_AMOUNT);
-
-      var emptyAccountAmount =
-          stateReader.getComponentXrdAmount(ComponentAddress.NON_EXISTENT_COMPONENT_ADDRESS);
-      assertThat(emptyAccountAmount).isEqualTo(Decimal.of(0));
-    }
+public record EventLoggerConfig(Function<ECPublicKey, String> nodeToString) {
+  public static EventLoggerConfig addressed(Addressing addressing) {
+    return new EventLoggerConfig(
+        k -> {
+          var addr = addressing.encodeNodeAddress(k);
+          var len = addr.length();
+          return addr.substring(0, 2) + "..." + addr.substring(len - 9);
+        });
   }
 }

@@ -83,6 +83,8 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
+import com.radixdlt.logger.EventLoggerConfig;
+import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
@@ -160,11 +162,11 @@ public final class REv2MempoolFillAndEmptyTest {
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(
             network.createSender(BFTNode.create(TEST_KEY.getPublicKey()))),
+          new EventLoggerModule(EventLoggerConfig.addressed(Addressing.ofNetwork(Network.INTEGRATIONTESTNET))),
         new AbstractModule() {
           @Override
           protected void configure() {
             bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-            bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
             bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
           }
         });

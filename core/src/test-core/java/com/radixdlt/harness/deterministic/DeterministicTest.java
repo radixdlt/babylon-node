@@ -368,7 +368,7 @@ public final class DeterministicTest implements AutoCloseable {
     this.startNode(nodeIndex);
   }
 
-  public DeterministicTest runUntil(
+  public DeterministicTest processUntil(
       Predicate<List<Injector>> nodeStatePredicate,
       int max,
       Predicate<ControlledMessage> predicate) {
@@ -386,13 +386,30 @@ public final class DeterministicTest implements AutoCloseable {
     return this;
   }
 
-  public DeterministicTest runUntil(
+  public DeterministicTest processUntil(
       Predicate<List<Injector>> nodeStatePredicate, Predicate<ControlledMessage> predicate) {
-    return runUntil(nodeStatePredicate, 1000, predicate);
+    return processUntil(nodeStatePredicate, 1000, predicate);
   }
 
-  public DeterministicTest runUntil(Predicate<List<Injector>> nodeStatePredicate, int max) {
-    return this.runUntil(nodeStatePredicate, max, m -> true);
+  public DeterministicTest processUntil(Predicate<List<Injector>> nodeStatePredicate, int max) {
+    return this.processUntil(nodeStatePredicate, max, m -> true);
+  }
+
+  public DeterministicTest processUntil(Predicate<List<Injector>> nodeStatePredicate) {
+    return this.processUntil(nodeStatePredicate, 1000, m -> true);
+  }
+
+  public DeterministicTest runUntil(Predicate<Timed<ControlledMessage>> stopPredicate) {
+    while (true) {
+      Timed<ControlledMessage> nextMsg = this.network.nextMessage();
+      if (stopPredicate.test(nextMsg)) {
+        break;
+      }
+
+      this.nodes.handleMessage(nextMsg);
+    }
+
+    return this;
   }
 
   public DeterministicTest runForCount(int count) {
@@ -414,19 +431,6 @@ public final class DeterministicTest implements AutoCloseable {
       Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
       this.nodes.handleMessage(nextMsg);
     }
-  }
-
-  public DeterministicTest runUntil(Predicate<Timed<ControlledMessage>> stopPredicate) {
-    while (true) {
-      Timed<ControlledMessage> nextMsg = this.network.nextMessage();
-      if (stopPredicate.test(nextMsg)) {
-        break;
-      }
-
-      this.nodes.handleMessage(nextMsg);
-    }
-
-    return this;
   }
 
   /**

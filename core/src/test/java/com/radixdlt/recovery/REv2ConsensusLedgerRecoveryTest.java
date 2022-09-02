@@ -111,18 +111,18 @@ public final class REv2ConsensusLedgerRecoveryTest {
       test.startAllNodes();
 
       // Arrange: Situation where behindNode has consensus behind ledger
-      test.runUntil(allAtExactlyStateVersion(INITIAL_VERSION), onlyConsensusEvents());
-      test.runUntil(anyAtExactlyStateVersion(INITIAL_VERSION + 1), onlyConsensusEvents());
+      test.processUntil(allAtExactlyStateVersion(INITIAL_VERSION), onlyConsensusEvents());
+      test.processUntil(anyAtExactlyStateVersion(INITIAL_VERSION + 1), onlyConsensusEvents());
       var behindNodeIndex = test.getNodes().getNode(atExactlyStateVersion(INITIAL_VERSION));
-      test.runUntil(allAtExactlyStateVersion(INITIAL_VERSION + 1), onlyLedgerSyncEvents());
+      test.processUntil(allAtExactlyStateVersion(INITIAL_VERSION + 1), onlyLedgerSyncEvents());
 
       // Act: Reboot node
       test.restartNode(behindNodeIndex);
       test.processNext(
           msg -> msg.message() instanceof Proposal && msg.channelId().isLocal(behindNodeIndex));
 
-      // Assert: Can get to next version with no problem
-      test.runUntil(allAtExactlyStateVersion(INITIAL_VERSION + 2), onlyBFTSyncEvents());
+      // Assert: Can run bft syncing with no issue
+      test.runForCount(100, onlyBFTSyncEvents());
     }
   }
 }

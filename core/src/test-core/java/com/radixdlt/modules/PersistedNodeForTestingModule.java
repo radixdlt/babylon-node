@@ -72,6 +72,8 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
+import com.radixdlt.logger.EventLoggerConfig;
+import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Network;
@@ -100,7 +102,6 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 
   @Override
   public void configure() {
-    bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
     bindConstant()
         .annotatedWith(DatabaseCacheSize.class)
         .to((long) (Runtime.getRuntime().maxMemory() * 0.125));
@@ -109,6 +110,9 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
     bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
     bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
+    var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
+    bind(Addressing.class).toInstance(addressing);
+    install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
     install(new InMemoryBFTKeyModule(keyPair));
     install(new CryptoModule());
     install(

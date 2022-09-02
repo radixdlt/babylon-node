@@ -89,8 +89,9 @@ import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.logger.EventLoggerConfig;
+import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.modules.DispatcherModule;
-import com.radixdlt.modules.EventLoggerModule;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.ModuleRunner;
@@ -132,7 +133,6 @@ public final class MempoolRunnerTest {
         bind(LedgerAccumulator.class).toInstance(mock(LedgerAccumulator.class));
         bind(LedgerAccumulatorVerifier.class).toInstance(mock(LedgerAccumulatorVerifier.class));
         bind(new TypeLiteral<Comparator<LedgerProof>>() {}).toInstance(mock(Comparator.class));
-        bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
         Multibinder.newSetBinder(binder(), StartProcessorOnRunner.class);
         install(MempoolRelayConfig.of(10).asModule());
@@ -141,7 +141,9 @@ public final class MempoolRunnerTest {
         install(new RxEnvironmentModule());
         install(new DispatcherModule());
         install(new MempoolReceiverModule());
-        install(new EventLoggerModule());
+        install(
+            new EventLoggerModule(
+                EventLoggerConfig.addressed(Addressing.ofNetwork(Network.INTEGRATIONTESTNET))));
       }
     };
   }

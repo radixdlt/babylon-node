@@ -286,7 +286,6 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       var proof = committedUpdate.vertexStoreState().getRootHeader();
       var transactionsWithProof = CommittedTransactionsWithProof.create(transactions, proof);
 
-      // TODO: Make these two atomic (RPNV1-827)
       this.commit(transactionsWithProof, committedUpdate.vertexStoreState());
     };
   }

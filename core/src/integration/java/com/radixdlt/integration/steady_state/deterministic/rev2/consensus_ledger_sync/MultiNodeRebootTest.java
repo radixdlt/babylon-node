@@ -198,9 +198,7 @@ public final class MultiNodeRebootTest {
       }
 
       // Post-run assertions
-      for (int i = numDownValidators; i < numValidators; i++) {
-        test.startNode(i);
-      }
+      test.startAllNodes();
       var aliveNodes = test.getNodeInjectors().stream().skip(numDownValidators).toList();
       Checkers.assertLedgerTransactionsSafety(aliveNodes);
     }

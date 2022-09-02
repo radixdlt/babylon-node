@@ -99,6 +99,8 @@ import com.radixdlt.harness.simulation.monitors.SimulationNodeEventsModule;
 import com.radixdlt.harness.simulation.network.SimulationNetwork;
 import com.radixdlt.harness.simulation.network.SimulationNodes;
 import com.radixdlt.ledger.*;
+import com.radixdlt.logger.EventLoggerConfig;
+import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -469,6 +471,7 @@ public final class SimulationTest {
       modules.add(new MockedSystemModule());
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
+      modules.add(new EventLoggerModule(EventLoggerConfig.addressed(Addressing.ofNetwork(Network.INTEGRATIONTESTNET))));
       TestP2PModule.Builder mockedP2PModuleBuilder = new TestP2PModule.Builder();
       // There are two ways we can define the peers a node is aware of. 1 - Using all nodes in the
       // network. 2

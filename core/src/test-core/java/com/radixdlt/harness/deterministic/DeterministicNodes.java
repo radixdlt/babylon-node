@@ -75,6 +75,8 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.logger.EventLoggerConfig;
+import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.utils.Pair;
@@ -111,12 +113,16 @@ public final class DeterministicNodes implements AutoCloseable {
         Stream.generate(() -> (Injector) null).limit(nodes.size()).collect(Collectors.toList());
   }
 
-  private Injector createBFTInstance(BFTNode self, Module baseModule, Module overrideModule) {
+  private Injector createBFTInstance(int nodeIndex, Module baseModule, Module overrideModule) {
+    var self = this.nodeLookup.inverse().get(nodeIndex);
     Module module =
         Modules.combine(
             new AbstractModule() {
               @Override
               public void configure() {
+                install(
+                    new EventLoggerModule(
+                        new EventLoggerConfig(k -> "Node" + nodeLookup.get(BFTNode.create(k)))));
                 bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
                 bind(Environment.class).toInstance(network.createSender(self));
                 bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
@@ -160,8 +166,7 @@ public final class DeterministicNodes implements AutoCloseable {
       return;
     }
 
-    var node = this.nodeLookup.inverse().get(nodeIndex);
-    var injector = createBFTInstance(node, baseModule, overrideModule);
+    var injector = createBFTInstance(nodeIndex, baseModule, overrideModule);
     var processor = injector.getInstance(DeterministicProcessor.class);
 
     ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
@@ -195,7 +200,7 @@ public final class DeterministicNodes implements AutoCloseable {
       return;
     }
 
-    ThreadContext.put("self", " node[" + receiverIndex + "]");
+    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
     try {
       log.debug("Received message {} at {}", nextMsg, timedNextMsg.time());
       nodeInstances

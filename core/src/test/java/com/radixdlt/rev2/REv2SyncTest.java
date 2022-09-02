@@ -107,10 +107,10 @@ public class REv2SyncTest {
     try (var test = buildTest()) {
       // Arrange: Single transaction committed
       test.startAllNodes();
-      test.runUntil(nodeAt(0, atExactlyStateVersion(1)), onlyConsensusEvents());
+      test.processUntil(nodeAt(0, atExactlyStateVersion(1)), onlyConsensusEvents());
 
       // Act: Sync
-      test.runUntil(nodeAt(1, atExactlyStateVersion(1)), onlyLedgerSyncEvents());
+      test.processUntil(nodeAt(1, atExactlyStateVersion(1)), onlyLedgerSyncEvents());
 
       // Assert
       Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());

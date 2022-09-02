@@ -103,6 +103,17 @@ public final class Checkers {
   }
 
   /** Verifies that all nodes have synced to atleast some given stateVersion */
+  public static void assertNodesSyncedToExactVersion(
+      List<Injector> nodeInjectors, long stateVersion) {
+    nodeInjectors.forEach(
+        injector -> {
+          var reader = injector.getInstance(TransactionsAndProofReader.class);
+          var nodeStateVersion = reader.getLastProof().orElseThrow().getStateVersion();
+          assertThat(nodeStateVersion).isEqualTo(stateVersion);
+        });
+  }
+
+  /** Verifies that all nodes have synced to atleast some given stateVersion */
   public static void assertNodesSyncedToVersionAtleast(
       List<Injector> nodeInjectors, long stateVersion) {
     var stateVersionStatistics =
