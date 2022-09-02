@@ -65,8 +65,10 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.EventPredicate.*;
+import static com.radixdlt.harness.predicates.NodePredicate.*;
+import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -77,7 +79,6 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -103,25 +104,13 @@ public class REv2SyncTest {
 
   @Test
   public void single_transaction_sync_should_work() throws Exception {
-    // Arrange: Single transaction committed
     try (var test = buildTest()) {
+      // Arrange: Single transaction committed
       test.startAllNodes();
-
-      test.runUntil(
-          n -> {
-            var store = n.get(0).getInstance(REv2TransactionAndProofStore.class);
-            return store.getLastProof().isPresent();
-          },
-          500,
-          m -> m.channelId().senderIndex() == 0 && !(m.message() instanceof ScheduledLocalTimeout));
+      test.runUntil(nodeAt(0, atExactlyStateVersion(1)), onlyConsensusEvents());
 
       // Act: Sync
-      test.runUntil(
-          n -> {
-            var store = n.get(1).getInstance(REv2TransactionAndProofStore.class);
-            return store.getLastProof().isPresent();
-          },
-          500);
+      test.runUntil(nodeAt(1, atExactlyStateVersion(1)), onlyLedgerSyncEvents());
 
       // Assert
       Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());

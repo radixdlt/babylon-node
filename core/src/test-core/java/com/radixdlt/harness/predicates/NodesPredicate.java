@@ -73,6 +73,11 @@ public final class NodesPredicate {
     throw new IllegalStateException("Cannot instanitate.");
   }
 
+  public static Predicate<List<Injector>> nodeAt(
+      int nodeIndex, Predicate<Injector> injectorPredicate) {
+    return n -> injectorPredicate.test(n.get(nodeIndex));
+  }
+
   public static Predicate<List<Injector>> allAtExactlyStateVersion(long stateVersion) {
     return n -> n.stream().allMatch(NodePredicate.atExactlyStateVersion(stateVersion));
   }
