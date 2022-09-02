@@ -399,6 +399,15 @@ public final class DeterministicTest implements AutoCloseable {
     return this;
   }
 
+  public DeterministicTest runForCount(int count, Predicate<ControlledMessage> predicate) {
+    for (int i = 0; i < count; i++) {
+      Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
+      this.nodes.handleMessage(nextMsg);
+    }
+
+    return this;
+  }
+
   public DeterministicTest runUntil(Predicate<Timed<ControlledMessage>> stopPredicate) {
     while (true) {
       Timed<ControlledMessage> nextMsg = this.network.nextMessage();
