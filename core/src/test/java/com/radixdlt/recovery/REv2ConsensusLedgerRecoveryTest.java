@@ -62,61 +62,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment.deterministic.network;
+package com.radixdlt.recovery;
 
-import java.util.Objects;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.EventPredicate.*;
+import static com.radixdlt.harness.predicates.NodePredicate.*;
+import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
-/** ID for a channel between two nodes. */
-public final class ChannelId {
-  private final int senderIndex;
-  private final int receiverIndex;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-  private ChannelId(int senderIndex, int receiverIndex) {
-    this.senderIndex = senderIndex;
-    this.receiverIndex = receiverIndex;
+public final class REv2ConsensusLedgerRecoveryTest {
+  private static final long INITIAL_VERSION = 3L;
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(2, 0)
+        .messageSelector(firstSelector())
+        .messageMutator(MessageMutator.dropTimeouts())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        StateComputerConfig.REV2ProposerConfig.transactionGenerator(
+                            new REV2TransactionGenerator(), 1)),
+                    SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
-  public static ChannelId of(int senderIndex, int receiverIndex) {
-    return new ChannelId(senderIndex, receiverIndex);
-  }
+  @Test
+  public void recovery_should_work_when_consensus_is_behind_ledger() throws Exception {
 
-  public static ChannelId local(int index) {
-    return new ChannelId(index, index);
-  }
+    try (var test = createTest()) {
+      test.startAllNodes();
 
-  public boolean isLocal() {
-    return senderIndex == receiverIndex;
-  }
+      // Arrange: Situation where behindNode has consensus behind ledger
+      test.runUntil(allAtExactlyStateVersion(INITIAL_VERSION), onlyConsensusEvents());
+      test.runUntil(anyAtExactlyStateVersion(INITIAL_VERSION + 1), onlyConsensusEvents());
+      var behindNodeIndex = test.getNodes().getNode(atExactlyStateVersion(INITIAL_VERSION));
+      test.runUntil(allAtExactlyStateVersion(INITIAL_VERSION + 1), onlyLedgerSyncEvents());
 
-  public boolean isLocal(int index) {
-    return senderIndex == index && isLocal();
-  }
+      // Act: Reboot node
+      test.restartNode(behindNodeIndex);
+      test.processNext(
+          msg -> msg.message() instanceof Proposal && msg.channelId().isLocal(behindNodeIndex));
 
-  public int receiverIndex() {
-    return this.receiverIndex;
-  }
-
-  public int senderIndex() {
-    return this.senderIndex;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.senderIndex, this.receiverIndex);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (!(obj instanceof ChannelId)) {
-      return false;
+      // Assert: Can get to next version with no problem
+      test.runUntil(allAtExactlyStateVersion(INITIAL_VERSION + 2), onlyBFTSyncEvents());
     }
-
-    ChannelId other = (ChannelId) obj;
-    return this.senderIndex == other.senderIndex && this.receiverIndex == other.receiverIndex;
-  }
-
-  @Override
-  public String toString() {
-    return this.senderIndex + "->" + this.receiverIndex;
   }
 }

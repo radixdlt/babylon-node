@@ -386,6 +386,11 @@ public final class DeterministicTest implements AutoCloseable {
     return this;
   }
 
+  public DeterministicTest runUntil(
+      Predicate<List<Injector>> nodeStatePredicate, Predicate<ControlledMessage> predicate) {
+    return runUntil(nodeStatePredicate, 1000, predicate);
+  }
+
   public DeterministicTest runUntil(Predicate<List<Injector>> nodeStatePredicate, int max) {
     return this.runUntil(nodeStatePredicate, max, m -> true);
   }
@@ -399,13 +404,16 @@ public final class DeterministicTest implements AutoCloseable {
     return this;
   }
 
-  public DeterministicTest runForCount(int count, Predicate<ControlledMessage> predicate) {
+  public void processNext(Predicate<ControlledMessage> predicate) {
+    Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
+    this.nodes.handleMessage(nextMsg);
+  }
+
+  public void runForCount(int count, Predicate<ControlledMessage> predicate) {
     for (int i = 0; i < count; i++) {
       Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
       this.nodes.handleMessage(nextMsg);
     }
-
-    return this;
   }
 
   public DeterministicTest runUntil(Predicate<Timed<ControlledMessage>> stopPredicate) {

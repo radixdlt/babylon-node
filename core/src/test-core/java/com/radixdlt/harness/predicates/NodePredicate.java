@@ -62,61 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment.deterministic.network;
+package com.radixdlt.harness.predicates;
 
-import java.util.Objects;
+import com.google.inject.Injector;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import java.util.function.Predicate;
 
-/** ID for a channel between two nodes. */
-public final class ChannelId {
-  private final int senderIndex;
-  private final int receiverIndex;
-
-  private ChannelId(int senderIndex, int receiverIndex) {
-    this.senderIndex = senderIndex;
-    this.receiverIndex = receiverIndex;
+public class NodePredicate {
+  private NodePredicate() {
+    throw new IllegalStateException("Cannot instanitate.");
   }
 
-  public static ChannelId of(int senderIndex, int receiverIndex) {
-    return new ChannelId(senderIndex, receiverIndex);
-  }
-
-  public static ChannelId local(int index) {
-    return new ChannelId(index, index);
-  }
-
-  public boolean isLocal() {
-    return senderIndex == receiverIndex;
-  }
-
-  public boolean isLocal(int index) {
-    return senderIndex == index && isLocal();
-  }
-
-  public int receiverIndex() {
-    return this.receiverIndex;
-  }
-
-  public int senderIndex() {
-    return this.senderIndex;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.senderIndex, this.receiverIndex);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (!(obj instanceof ChannelId)) {
-      return false;
-    }
-
-    ChannelId other = (ChannelId) obj;
-    return this.senderIndex == other.senderIndex && this.receiverIndex == other.receiverIndex;
-  }
-
-  @Override
-  public String toString() {
-    return this.senderIndex + "->" + this.receiverIndex;
+  public static Predicate<Injector> atExactlyStateVersion(long stateVersion) {
+    return i ->
+        i.getInstance(TransactionsAndProofReader.class)
+            .getLastProof()
+            .map(p -> p.getStateVersion() == stateVersion)
+            .orElse(false);
   }
 }

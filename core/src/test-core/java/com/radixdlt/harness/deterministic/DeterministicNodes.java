@@ -81,6 +81,7 @@ import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -173,6 +174,15 @@ public final class DeterministicNodes implements AutoCloseable {
     this.nodeInstances.set(nodeIndex, injector);
   }
 
+  public static class EventHandleException extends RuntimeException {
+    private final ControlledMessage message;
+
+    EventHandleException(ControlledMessage message, Exception e) {
+      super("Exception: " + e + "\nOn message: " + message.toString(), e);
+      this.message = message;
+    }
+  }
+
   public void handleMessage(Timed<ControlledMessage> timedNextMsg) {
     ControlledMessage nextMsg = timedNextMsg.value();
     int senderIndex = nextMsg.channelId().senderIndex();
@@ -192,6 +202,8 @@ public final class DeterministicNodes implements AutoCloseable {
           .get(receiverIndex)
           .getInstance(DeterministicProcessor.class)
           .handleMessage(sender, nextMsg.message(), nextMsg.typeLiteral());
+    } catch (Exception e) {
+      throw new EventHandleException(nextMsg, e);
     } finally {
       ThreadContext.remove("self");
     }
@@ -199,6 +211,15 @@ public final class DeterministicNodes implements AutoCloseable {
 
   public List<Injector> getNodeInjectors() {
     return this.nodeInstances;
+  }
+
+  public int getNode(Predicate<Injector> injectorPredicate) {
+    return Streams.mapWithIndex(this.nodeInstances.stream(), Pair::of)
+        .filter(p -> injectorPredicate.test(p.getFirst()))
+        .map(Pair::getSecond)
+        .findFirst()
+        .orElseThrow()
+        .intValue();
   }
 
   public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {

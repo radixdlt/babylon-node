@@ -62,61 +62,50 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment.deterministic.network;
+package com.radixdlt.harness.predicates;
 
-import java.util.Objects;
+import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
+import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
+import java.util.function.Predicate;
 
-/** ID for a channel between two nodes. */
-public final class ChannelId {
-  private final int senderIndex;
-  private final int receiverIndex;
-
-  private ChannelId(int senderIndex, int receiverIndex) {
-    this.senderIndex = senderIndex;
-    this.receiverIndex = receiverIndex;
+public final class EventPredicate {
+  private EventPredicate() {
+    throw new IllegalStateException("Cannot instanitate.");
   }
 
-  public static ChannelId of(int senderIndex, int receiverIndex) {
-    return new ChannelId(senderIndex, receiverIndex);
+  public static Predicate<ControlledMessage> onlyConsensusEvents() {
+    return msg ->
+        msg.message() instanceof ConsensusEvent
+            || msg.message() instanceof BFTHighQCUpdate
+            || msg.message() instanceof BFTInsertUpdate
+            || msg.message() instanceof RoundQuorumReached
+            || msg.message() instanceof RoundUpdate;
   }
 
-  public static ChannelId local(int index) {
-    return new ChannelId(index, index);
+  public static Predicate<ControlledMessage> onlyBFTSyncEvents() {
+    return msg ->
+        msg.message() instanceof GetVerticesRequest || msg.message() instanceof GetVerticesResponse;
   }
 
-  public boolean isLocal() {
-    return senderIndex == receiverIndex;
-  }
-
-  public boolean isLocal(int index) {
-    return senderIndex == index && isLocal();
-  }
-
-  public int receiverIndex() {
-    return this.receiverIndex;
-  }
-
-  public int senderIndex() {
-    return this.senderIndex;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.senderIndex, this.receiverIndex);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (!(obj instanceof ChannelId)) {
-      return false;
-    }
-
-    ChannelId other = (ChannelId) obj;
-    return this.senderIndex == other.senderIndex && this.receiverIndex == other.receiverIndex;
-  }
-
-  @Override
-  public String toString() {
-    return this.senderIndex + "->" + this.receiverIndex;
+  public static Predicate<ControlledMessage> onlyLedgerSyncEvents() {
+    return msg ->
+        msg.message() instanceof SyncRequest
+            || msg.message() instanceof SyncResponse
+            || msg.message() instanceof LedgerUpdate
+            || msg.message() instanceof LedgerStatusUpdate
+            || msg.message() instanceof SyncLedgerUpdateTimeout
+            || msg.message() instanceof SyncRequestTimeout;
   }
 }
