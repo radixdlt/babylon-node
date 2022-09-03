@@ -73,6 +73,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.consensus.DoubleVote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -100,6 +101,18 @@ public final class EventLoggerModule extends AbstractModule {
 
   protected void configure() {
     bind(new TypeLiteral<Function<ECPublicKey, String>>() {}).toInstance(this.nodeToString);
+  }
+
+  @ProvidesIntoSet
+  EventProcessorOnDispatch<?> logDoubleVotes(Function<BFTNode, String> nodeString) {
+    return new EventProcessorOnDispatch<>(
+        DoubleVote.class,
+        doubleVote ->
+            logger.warn(
+                "Byzantine Behavior detected! DoubleVote{node={}, previous={} vote={}}",
+                nodeString.apply(doubleVote.author()),
+                doubleVote.previousVote(),
+                doubleVote.vote()));
   }
 
   @Provides

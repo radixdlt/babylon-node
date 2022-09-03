@@ -62,135 +62,70 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.sync.VertexStoreAdapter;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.RemoteEventDispatcher;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.bft.Round;
+import java.util.Objects;
 
-/** A helper class to help in constructing a BFT validator state machine */
-public final class BFTBuilder {
-  // BFT Configuration objects
-  private BFTValidatorSet validatorSet;
-  private Hasher hasher;
-  private HashVerifier verifier;
+// Make sure equals tester can access.
+public final class PreviousVote {
+  private final Round round;
+  private final long epoch;
+  private final HashCode hash;
+  private final boolean isTimeout;
 
-  // BFT Stateful objects
-  private Pacemaker pacemaker;
-  private VertexStoreAdapter vertexStore;
-  private BFTSyncer bftSyncer;
-  private EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher;
-  private EventDispatcher<DoubleVote> doubleVoteEventDispatcher;
-  private EventDispatcher<NoVote> noVoteEventDispatcher;
-
-  // Instance specific objects
-  private BFTNode self;
-
-  private RoundUpdate roundUpdate;
-  private RemoteEventDispatcher<Vote> voteDispatcher;
-  private SafetyRules safetyRules;
-
-  private BFTBuilder() {
-    // Just making this inaccessible
+  PreviousVote(Round round, long epoch, HashCode hash, boolean isTimeout) {
+    this.round = round;
+    this.epoch = epoch;
+    this.hash = hash;
+    this.isTimeout = isTimeout;
   }
 
-  public static BFTBuilder create() {
-    return new BFTBuilder();
+  public boolean isTimeout() {
+    return isTimeout;
   }
 
-  public BFTBuilder self(BFTNode self) {
-    this.self = self;
-    return this;
+  public Round getRound() {
+    return round;
   }
 
-  public BFTBuilder roundUpdate(RoundUpdate roundUpdate) {
-    this.roundUpdate = roundUpdate;
-    return this;
+  public HashCode getHash() {
+    return hash;
   }
 
-  public BFTBuilder voteDispatcher(RemoteEventDispatcher<Vote> voteDispatcher) {
-    this.voteDispatcher = voteDispatcher;
-    return this;
+  public long getEpoch() {
+    return epoch;
   }
 
-  public BFTBuilder doubleVoteEventDispatcher(
-      EventDispatcher<DoubleVote> doubleVoteEventDispatcher) {
-    this.doubleVoteEventDispatcher = doubleVoteEventDispatcher;
-    return this;
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.round, this.epoch, this.hash, this.isTimeout);
   }
 
-  public BFTBuilder safetyRules(SafetyRules safetyRules) {
-    this.safetyRules = safetyRules;
-    return this;
-  }
-
-  public BFTBuilder hasher(Hasher hasher) {
-    this.hasher = hasher;
-    return this;
-  }
-
-  public BFTBuilder verifier(HashVerifier verifier) {
-    this.verifier = verifier;
-    return this;
-  }
-
-  public BFTBuilder validatorSet(BFTValidatorSet validatorSet) {
-    this.validatorSet = validatorSet;
-    return this;
-  }
-
-  public BFTBuilder pacemaker(Pacemaker pacemaker) {
-    this.pacemaker = pacemaker;
-    return this;
-  }
-
-  public BFTBuilder vertexStore(VertexStoreAdapter vertexStore) {
-    this.vertexStore = vertexStore;
-    return this;
-  }
-
-  public BFTBuilder bftSyncer(BFTSyncer bftSyncer) {
-    this.bftSyncer = bftSyncer;
-    return this;
-  }
-
-  public BFTBuilder roundQuorumReachedEventDispatcher(
-      EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher) {
-    this.roundQuorumReachedEventDispatcher = roundQuorumReachedEventDispatcher;
-    return this;
-  }
-
-  public BFTBuilder noVoteEventDispatcher(EventDispatcher<NoVote> noVoteEventDispatcher) {
-    this.noVoteEventDispatcher = noVoteEventDispatcher;
-    return this;
-  }
-
-  public BFTEventProcessor build() {
-    if (!validatorSet.containsNode(self)) {
-      return EmptyBFTEventProcessor.INSTANCE;
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof PreviousVote) {
+      PreviousVote that = (PreviousVote) obj;
+      return Objects.equals(this.round, that.round)
+          && Objects.equals(this.hash, that.hash)
+          && this.epoch == that.epoch
+          && this.isTimeout == that.isTimeout;
     }
-    final PendingVotes pendingVotes = new PendingVotes(hasher, doubleVoteEventDispatcher);
+    return false;
+  }
 
-    BFTEventReducer reducer =
-        new BFTEventReducer(
-            self,
-            pacemaker,
-            vertexStore,
-            roundQuorumReachedEventDispatcher,
-            noVoteEventDispatcher,
-            voteDispatcher,
-            hasher,
-            safetyRules,
-            validatorSet,
-            pendingVotes,
-            roundUpdate);
-
-    BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(reducer, bftSyncer, roundUpdate);
-
-    return new BFTEventVerifier(validatorSet, preprocessor, hasher, verifier, safetyRules);
+  @Override
+  public String toString() {
+    return "PreviousVote{"
+        + "round="
+        + round
+        + ", epoch="
+        + epoch
+        + ", hash="
+        + hash
+        + ", isTimeout="
+        + isTimeout
+        + '}';
   }
 }

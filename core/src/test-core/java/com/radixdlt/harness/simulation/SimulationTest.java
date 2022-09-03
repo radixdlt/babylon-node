@@ -471,7 +471,9 @@ public final class SimulationTest {
       modules.add(new MockedSystemModule());
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
-      modules.add(new EventLoggerModule(EventLoggerConfig.addressed(Addressing.ofNetwork(Network.INTEGRATIONTESTNET))));
+      modules.add(
+          new EventLoggerModule(
+              EventLoggerConfig.addressed(Addressing.ofNetwork(Network.INTEGRATIONTESTNET))));
       TestP2PModule.Builder mockedP2PModuleBuilder = new TestP2PModule.Builder();
       // There are two ways we can define the peers a node is aware of. 1 - Using all nodes in the
       // network. 2

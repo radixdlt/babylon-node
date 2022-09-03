@@ -162,7 +162,8 @@ public final class REv2MempoolFillAndEmptyTest {
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(
             network.createSender(BFTNode.create(TEST_KEY.getPublicKey()))),
-          new EventLoggerModule(EventLoggerConfig.addressed(Addressing.ofNetwork(Network.INTEGRATIONTESTNET))),
+        new EventLoggerModule(
+            EventLoggerConfig.addressed(Addressing.ofNetwork(Network.INTEGRATIONTESTNET))),
         new AbstractModule() {
           @Override
           protected void configure() {

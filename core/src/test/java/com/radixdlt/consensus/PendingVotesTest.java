@@ -94,12 +94,12 @@ public class PendingVotesTest {
   @Before
   public void setup() {
     this.hasher = new RandomHasher();
-    this.pendingVotes = new PendingVotes(hasher);
+    this.pendingVotes = new PendingVotes(hasher, e -> {});
   }
 
   @Test
   public void equalsContractForPreviousVote() {
-    EqualsVerifier.forClass(PendingVotes.PreviousVote.class)
+    EqualsVerifier.forClass(PreviousVote.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
   }
