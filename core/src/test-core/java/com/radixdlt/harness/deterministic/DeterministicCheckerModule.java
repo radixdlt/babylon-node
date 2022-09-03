@@ -62,66 +62,18 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.rev2.mempool;
+package com.radixdlt.harness.deterministic;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.predicates.NodesPredicate.*;
-
+import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.mempool.MempoolInserter;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transactions.RawTransaction;
-import org.junit.Test;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import java.util.function.Consumer;
 
-public final class REv2MempoolRelayerTest {
-  private final int MEMPOOL_SIZE = 1000;
-  private final TransactionGenerator transactionGenerator =
-      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
-
-  private DeterministicTest createTest() {
-    return DeterministicTest.builder()
-        .numNodes(1, 20)
-        .messageSelector(firstSelector())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        REv2DatabaseConfig.inMemory(),
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            MEMPOOL_SIZE, new MempoolRelayConfig(0, 0, 0, 100))),
-                    SyncRelayConfig.of(5000, 10, 3000L))));
-  }
-
-  @Test
-  public void relayer_fills_mempool_of_all_nodes() throws Exception {
-    try (var test = createTest()) {
-      test.startAllNodes();
-
-      // Arrange: Fill node1 mempool
-      var mempoolInserter =
-          test.getInstance(1, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
-      for (int i = 0; i < MEMPOOL_SIZE; i++) {
-        mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
-      }
-
-      // Run all nodes except validator node0
-      test.runUntilState(
-          n -> allHaveExactMempoolCount(MEMPOOL_SIZE).test(n.subList(1, n.size())),
-          10000,
-          m -> m.channelId().senderIndex() != 0 && m.channelId().receiverIndex() != 0);
-    }
+public class DeterministicCheckerModule extends AbstractModule {
+  @Override
+  protected void configure() {
+    Multibinder.newSetBinder(binder(), Key.get(new TypeLiteral<Consumer<ControlledMessage>>() {}));
   }
 }

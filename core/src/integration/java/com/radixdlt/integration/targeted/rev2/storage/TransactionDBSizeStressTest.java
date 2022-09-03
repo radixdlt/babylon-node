@@ -67,6 +67,7 @@ package com.radixdlt.integration.targeted.rev2.storage;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
@@ -113,9 +114,7 @@ public final class TransactionDBSizeStressTest {
     try (var test = buildTest()) {
       test.startAllNodes();
 
-      for (int i = 0; i < 10; i++) {
-        test.runForCount(1000);
-      }
+      test.runUntilState(NodesPredicate.anyAtExactlyStateVersion(10));
     }
   }
 }

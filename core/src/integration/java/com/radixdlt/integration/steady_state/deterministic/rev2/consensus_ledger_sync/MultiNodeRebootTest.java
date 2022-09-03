@@ -65,6 +65,7 @@
 package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledger_sync;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.randomSelector;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicConsensusMonitors.*;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.invariants.Checkers;
@@ -109,6 +110,7 @@ public final class MultiNodeRebootTest {
     return DeterministicTest.builder()
         .numNodes(numValidators, 0)
         .messageSelector(randomSelector(random))
+        .addMonitors(byzantineEventsNotDetected())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
