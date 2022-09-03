@@ -82,7 +82,6 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -368,7 +367,7 @@ public final class DeterministicTest implements AutoCloseable {
     this.startNode(nodeIndex);
   }
 
-  public DeterministicTest processUntil(
+  public DeterministicTest runUntilState(
       Predicate<List<Injector>> nodeStatePredicate,
       int max,
       Predicate<ControlledMessage> predicate) {
@@ -386,20 +385,20 @@ public final class DeterministicTest implements AutoCloseable {
     return this;
   }
 
-  public DeterministicTest processUntil(
+  public DeterministicTest runUntilState(
       Predicate<List<Injector>> nodeStatePredicate, Predicate<ControlledMessage> predicate) {
-    return processUntil(nodeStatePredicate, 1000, predicate);
+    return runUntilState(nodeStatePredicate, 1000, predicate);
   }
 
-  public DeterministicTest processUntil(Predicate<List<Injector>> nodeStatePredicate, int max) {
-    return this.processUntil(nodeStatePredicate, max, m -> true);
+  public DeterministicTest runUntilState(Predicate<List<Injector>> nodeStatePredicate, int max) {
+    return this.runUntilState(nodeStatePredicate, max, m -> true);
   }
 
-  public DeterministicTest processUntil(Predicate<List<Injector>> nodeStatePredicate) {
-    return this.processUntil(nodeStatePredicate, 1000, m -> true);
+  public DeterministicTest runUntilState(Predicate<List<Injector>> nodeStatePredicate) {
+    return this.runUntilState(nodeStatePredicate, 1000, m -> true);
   }
 
-  public DeterministicTest runUntil(Predicate<Timed<ControlledMessage>> stopPredicate) {
+  public DeterministicTest runUntilMessage(Predicate<Timed<ControlledMessage>> stopPredicate) {
     while (true) {
       Timed<ControlledMessage> nextMsg = this.network.nextMessage();
       if (stopPredicate.test(nextMsg)) {
@@ -421,7 +420,7 @@ public final class DeterministicTest implements AutoCloseable {
     return this;
   }
 
-  public void processNext(Predicate<ControlledMessage> predicate) {
+  public void runNext(Predicate<ControlledMessage> predicate) {
     Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
     this.nodes.handleMessage(nextMsg);
   }
@@ -443,10 +442,9 @@ public final class DeterministicTest implements AutoCloseable {
   public static Predicate<Timed<ControlledMessage>> hasReachedEpochRound(EpochRound maxEpochRound) {
     return timedMsg -> {
       ControlledMessage message = timedMsg.value();
-      if (!(message.message() instanceof Proposal)) {
+      if (!(message.message() instanceof Proposal proposal)) {
         return false;
       }
-      Proposal proposal = (Proposal) message.message();
       EpochRound nev = EpochRound.of(proposal.getEpoch(), proposal.getRound());
       return (nev.compareTo(maxEpochRound) > 0);
     };
@@ -462,10 +460,9 @@ public final class DeterministicTest implements AutoCloseable {
     final long maxRoundNumber = round.previous().number();
     return timedMsg -> {
       ControlledMessage message = timedMsg.value();
-      if (!(message.message() instanceof Proposal)) {
+      if (!(message.message() instanceof Proposal p)) {
         return false;
       }
-      Proposal p = (Proposal) message.message();
       return (p.getRound().number() > maxRoundNumber);
     };
   }
@@ -478,18 +475,6 @@ public final class DeterministicTest implements AutoCloseable {
       }
       return message.channelId().receiverIndex() == nodeIndex
           && roundUpdate.getCurrentRound().gte(round);
-    };
-  }
-
-  public static Predicate<Timed<ControlledMessage>> ledgerStateVersionOnNode(
-      long stateVersion, int nodeIndex) {
-    return timedMsg -> {
-      final var message = timedMsg.value();
-      if (!(message.message() instanceof final LedgerUpdate ledgerUpdate)) {
-        return false;
-      }
-      return message.channelId().receiverIndex() == nodeIndex
-          && ledgerUpdate.getTail().getStateVersion() >= stateVersion;
     };
   }
 

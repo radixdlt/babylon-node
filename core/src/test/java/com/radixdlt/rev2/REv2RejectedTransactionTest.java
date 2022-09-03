@@ -149,7 +149,7 @@ public final class REv2RejectedTransactionTest {
       // Act: Submit transaction to mempool and run consensus
       test.startAllNodes();
       proposalGenerator.nextTransaction = newAccountTransaction;
-      test.processUntil(ignored -> proposalGenerator.nextTransaction == null);
+      test.runUntilState(ignored -> proposalGenerator.nextTransaction == null);
       test.runForCount(100, onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state

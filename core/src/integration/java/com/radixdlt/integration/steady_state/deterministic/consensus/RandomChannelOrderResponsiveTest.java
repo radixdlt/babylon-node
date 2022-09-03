@@ -105,7 +105,7 @@ public class RandomChannelOrderResponsiveTest {
                         StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
 
     test.startAllNodes();
-    test.runUntil(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
+    test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
 
     List<Long> proposalsMade =
         IntStream.range(0, numValidatorNodes)

@@ -104,7 +104,7 @@ public class MovingWindowValidatorsTest {
             .buildWithEpochs(epochMaxRound);
 
     bftTest.startAllNodes();
-    bftTest.runUntil(
+    bftTest.runUntilMessage(
         DeterministicTest.hasReachedEpochRound(EpochRound.of(maxEpoch, epochMaxRound)));
 
     LinkedList<SystemCounters> testCounters = systemCounters(bftTest);

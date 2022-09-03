@@ -118,7 +118,7 @@ public final class REv2MempoolRelayerTest {
       }
 
       // Run all nodes except validator node0
-      test.processUntil(
+      test.runUntilState(
           n -> Checkers.allNodesHaveExactMempoolCount(n.subList(1, n.size()), MEMPOOL_SIZE),
           10000,
           m -> m.channelId().senderIndex() != 0 && m.channelId().receiverIndex() != 0);

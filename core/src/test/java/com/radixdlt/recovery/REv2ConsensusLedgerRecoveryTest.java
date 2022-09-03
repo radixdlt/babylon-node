@@ -111,14 +111,14 @@ public final class REv2ConsensusLedgerRecoveryTest {
       test.startAllNodes();
 
       // Arrange: Situation where behindNode has consensus behind ledger
-      test.processUntil(allAtExactlyStateVersion(INITIAL_VERSION), onlyConsensusEvents());
-      test.processUntil(anyAtExactlyStateVersion(INITIAL_VERSION + 1), onlyConsensusEvents());
+      test.runUntilState(allAtExactlyStateVersion(INITIAL_VERSION), onlyConsensusEvents());
+      test.runUntilState(anyAtExactlyStateVersion(INITIAL_VERSION + 1), onlyConsensusEvents());
       var behindNodeIndex = test.getNodes().getNode(atExactlyStateVersion(INITIAL_VERSION));
-      test.processUntil(allAtExactlyStateVersion(INITIAL_VERSION + 1), onlyLedgerSyncEvents());
+      test.runUntilState(allAtExactlyStateVersion(INITIAL_VERSION + 1), onlyLedgerSyncEvents());
 
       // Act: Reboot node
       test.restartNode(behindNodeIndex);
-      test.processNext(
+      test.runNext(
           msg -> msg.message() instanceof Proposal && msg.channelId().isLocal(behindNodeIndex));
 
       // Assert: Can run bft syncing with no issue

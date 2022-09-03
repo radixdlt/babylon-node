@@ -106,7 +106,7 @@ public class ProposerLoadBalancedTest {
                     LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
     test.startAllNodes();
-    test.runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
+    test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     return IntStream.range(0, numValidatorNodes)
         .mapToObj(i -> test.getInstance(i, SystemCounters.class))

@@ -70,7 +70,6 @@ import static com.radixdlt.harness.predicates.NodesPredicate.allAtExactlyStateVe
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.*;
-import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -131,7 +130,7 @@ public final class REv2ConsensusTransferTest {
       var mempoolInserter =
           test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
       mempoolInserter.addTransaction(newAccountTransaction);
-      test.processUntil(allAtExactlyStateVersion(1), onlyConsensusEvents());
+      test.runUntilState(allAtExactlyStateVersion(1), onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
       var executedTransaction =

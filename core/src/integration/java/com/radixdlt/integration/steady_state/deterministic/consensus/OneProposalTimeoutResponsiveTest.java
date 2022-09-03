@@ -98,7 +98,7 @@ public class OneProposalTimeoutResponsiveTest {
                         StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
 
     test.startAllNodes();
-    test.runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
+    test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     long requiredIndirectParents =
         numValidatorNodes <= 3

@@ -103,7 +103,7 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
                     LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
     test.startAllNodes();
-    test.runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
+    test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     for (int nodeIndex = 0; nodeIndex < numValidatorNodes; ++nodeIndex) {
       final SystemCounters counters = test.getInstance(nodeIndex, SystemCounters.class);

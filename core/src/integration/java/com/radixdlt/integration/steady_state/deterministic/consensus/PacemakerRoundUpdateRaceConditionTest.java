@@ -159,7 +159,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
                         StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
 
     test.startAllNodes();
-    test.runUntil(nodeUnderTestReachesRound(Round.of(3)));
+    test.runUntilMessage(nodeUnderTestReachesRound(Round.of(3)));
 
     final var counters = test.getInstance(nodeUnderTestIndex, SystemCounters.class);
     assertThat(counters.get(SystemCounters.CounterType.BFT_VOTE_QUORUMS))
