@@ -296,16 +296,18 @@ public final class Pacemaker {
             executedVertex.getVertexHash(),
             executedVertex.getLedgerHeader());
 
-    final var baseVote =
+    final var maybeBaseVote =
         this.safetyRules.createVote(
             executedVertex.getVertex(),
             bftHeader,
             this.timeSupplier.currentTime(),
             this.latestRoundUpdate.getHighQC());
 
-    final var timeoutVote = this.safetyRules.timeoutVote(baseVote);
-
-    this.voteDispatcher.dispatch(this.validatorSet.nodes(), timeoutVote);
+    maybeBaseVote.ifPresent(
+        baseVote -> {
+          final var timeoutVote = this.safetyRules.timeoutVote(baseVote);
+          this.voteDispatcher.dispatch(this.validatorSet.nodes(), timeoutVote);
+        });
   }
 
   private void updateTimeoutCounters(ScheduledLocalTimeout scheduledTimeout) {
