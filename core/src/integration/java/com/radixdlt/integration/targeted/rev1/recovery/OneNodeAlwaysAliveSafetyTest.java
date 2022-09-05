@@ -67,13 +67,9 @@ package com.radixdlt.integration.targeted.rev1.recovery;
 import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.Proposal;
@@ -96,20 +92,31 @@ import com.radixdlt.harness.deterministic.NodeEvents;
 import com.radixdlt.harness.deterministic.NodeEvents.NodeEventProcessor;
 import com.radixdlt.harness.deterministic.NodeEventsModule;
 import com.radixdlt.harness.deterministic.SafetyCheckerModule;
+import com.radixdlt.keys.InMemoryBFTKeyModule;
+import com.radixdlt.logger.EventLoggerConfig;
+import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.PersistedNodeForTestingModule;
+import com.radixdlt.modules.CryptoModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.rev1.modules.REv1PersistenceModule;
+import com.radixdlt.rev1.modules.RadixEngineStoreModule;
 import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.DatabaseLocation;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.KeyComparator;
+import com.radixdlt.utils.TimeSupplier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -242,7 +249,18 @@ public class OneNodeAlwaysAliveSafetyTest {
                 10,
                 MSG.maxLength())),
         new ForksModule(),
-        PersistedNodeForTestingModule.rev1(ecKeyPair, 10),
+        new InMemoryBFTKeyModule(ecKeyPair),
+        new CryptoModule(),
+        new RadixEngineStoreModule(),
+        new REv1PersistenceModule(),
+        new FunctionalRadixNodeModule(
+            true,
+            FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(
+                folder.getRoot().getAbsolutePath()),
+            FunctionalRadixNodeModule.ConsensusConfig.of(200, 1000L, 2.0),
+            FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                StateComputerConfig.rev1(10),
+                new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE))),
         new TestP2PModule.Builder().build(),
         new TestMessagingModule.Builder().build(),
         new AbstractModule() {
@@ -250,9 +268,11 @@ public class OneNodeAlwaysAliveSafetyTest {
           protected void configure() {
             bind(Environment.class)
                 .toInstance(network.createSender(BFTNode.create(ecKeyPair.getPublicKey())));
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath() + "/" + ecKeyPair.getPublicKey().toHex());
+            bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+            bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+            var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
+            bind(Addressing.class).toInstance(addressing);
+            install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
           }
 
           @ProvidesIntoSet

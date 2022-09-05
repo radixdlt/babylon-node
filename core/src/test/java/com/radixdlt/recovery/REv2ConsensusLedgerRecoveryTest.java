@@ -97,8 +97,7 @@ public final class REv2ConsensusLedgerRecoveryTest {
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
-                SafetyRecoveryConfig.berkeleyStore(
-                    folder.getRoot().getAbsolutePath()),
+                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
