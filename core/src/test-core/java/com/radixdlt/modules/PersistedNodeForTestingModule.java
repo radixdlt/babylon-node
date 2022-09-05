@@ -90,7 +90,8 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
   private final ECKeyPair keyPair;
   private final StateComputerConfig stateComputerConfig;
 
-  public PersistedNodeForTestingModule(ECKeyPair keyPair, StateComputerConfig stateComputerConfig) {
+  private PersistedNodeForTestingModule(
+      ECKeyPair keyPair, StateComputerConfig stateComputerConfig) {
     this.keyPair = keyPair;
     this.stateComputerConfig = stateComputerConfig;
   }

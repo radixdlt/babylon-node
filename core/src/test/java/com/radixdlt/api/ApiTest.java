@@ -72,10 +72,8 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.radixdlt.api.common.JSON;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
@@ -103,19 +101,8 @@ public abstract class ApiTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
   @Inject private SingleNodeDeterministicRunner runner;
-  private final Amount totalTokenAmount = Amount.ofTokens(110);
-  private final Amount stakeAmount = Amount.ofTokens(10);
-  private final Amount liquidAmount =
-      Amount.ofSubunits(totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits()));
-  private final int mempoolMaxSize;
 
-  protected ApiTest(int mempoolMaxSize) {
-    this.mempoolMaxSize = mempoolMaxSize;
-  }
-
-  protected ApiTest() {
-    this.mempoolMaxSize = 10;
-  }
+  protected ApiTest() {}
 
   @Before
   public void setup() {
@@ -126,8 +113,7 @@ public abstract class ApiTest {
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
                     REv2DatabaseConfig.inMemory(),
-                    StateComputerConfig.REV2ProposerConfig.mempool(
-                        mempoolMaxSize, MempoolRelayConfig.of()))),
+                    StateComputerConfig.REV2ProposerConfig.mempool(10, MempoolRelayConfig.of()))),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),
             new AbstractModule() {
@@ -150,18 +136,6 @@ public abstract class ApiTest {
               }
             });
     injector.injectMembers(this);
-  }
-
-  protected Amount getStakeAmount() {
-    return stakeAmount;
-  }
-
-  protected Amount getLiquidAmount() {
-    return liquidAmount;
-  }
-
-  protected ECPublicKey selfKey() {
-    return TEST_KEY.getPublicKey();
   }
 
   protected final void start() {
