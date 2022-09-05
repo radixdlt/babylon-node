@@ -82,6 +82,7 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -105,7 +106,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
@@ -123,10 +123,10 @@ public final class DeterministicTest implements AutoCloseable {
       ImmutableList<BFTNode> nodes,
       MessageSelector messageSelector,
       MessageMutator messageMutator,
-      Consumer<ControlledMessage> messagePeeker,
+      MessageMonitor messageMonitor,
       Module baseModule,
       Module overrideModule) {
-    this.network = new DeterministicNetwork(nodes, messageSelector, messageMutator, messagePeeker);
+    this.network = new DeterministicNetwork(nodes, messageSelector, messageMutator, messageMonitor);
     this.nodes = new DeterministicNodes(nodes, this.network, baseModule, overrideModule);
   }
 
@@ -292,17 +292,17 @@ public final class DeterministicTest implements AutoCloseable {
       modules.add(new TestP2PModule.Builder().withAllNodes(nodes).build());
       modules.add(new TestMessagingModule.Builder().build());
 
-      var peekers =
+      var messageMonitors =
           Guice.createInjector(
                   new DeterministicCheckerModule(nodes), Modules.combine(testModules.build()))
-              .getInstance(Key.get(new TypeLiteral<Set<Consumer<ControlledMessage>>>() {}));
-      Consumer<ControlledMessage> peeker = m -> peekers.forEach(c -> c.accept(m));
+              .getInstance(Key.get(new TypeLiteral<Set<MessageMonitor>>() {}));
+      MessageMonitor messageMonitor = m -> messageMonitors.forEach(c -> c.next(m));
 
       return new DeterministicTest(
           this.nodes,
           this.messageSelector,
           this.messageMutator,
-          peeker,
+          messageMonitor,
           Modules.combine(modules.build()),
           overrideModule);
     }

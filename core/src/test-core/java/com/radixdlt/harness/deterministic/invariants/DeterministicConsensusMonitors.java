@@ -69,8 +69,6 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.DoubleVote;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public final class DeterministicConsensusMonitors {
@@ -87,8 +85,7 @@ public final class DeterministicConsensusMonitors {
   public static Module byzantineBehaviorNotDetected() {
     return new AbstractModule() {
       @ProvidesIntoSet
-      private Consumer<ControlledMessage> byzantineDetection(
-          Function<BFTNode, String> nodeToString) {
+      private MessageMonitor byzantineDetection(Function<BFTNode, String> nodeToString) {
         return m -> {
           if (m.message() instanceof DoubleVote doubleVote) {
             var nodeName = nodeToString.apply(doubleVote.author());

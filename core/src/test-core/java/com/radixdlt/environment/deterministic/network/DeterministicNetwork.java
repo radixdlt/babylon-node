@@ -67,13 +67,13 @@ package com.radixdlt.environment.deterministic.network;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Streams;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -88,7 +88,7 @@ public final class DeterministicNetwork {
   private final MessageQueue messageQueue = new MessageQueue();
   private final MessageSelector messageSelector;
   private final MessageMutator messageMutator;
-  private final Consumer<ControlledMessage> messagePeeker;
+  private final MessageMonitor messageMonitor;
 
   private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
 
@@ -110,13 +110,13 @@ public final class DeterministicNetwork {
       List<BFTNode> nodes,
       MessageSelector messageSelector,
       MessageMutator messageMutator,
-      Consumer<ControlledMessage> messagePeeker) {
+      MessageMonitor messageMonitor) {
     this.messageSelector = Objects.requireNonNull(messageSelector);
     this.messageMutator = Objects.requireNonNull(messageMutator);
     this.nodeLookup =
         Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
             .collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
-    this.messagePeeker = Objects.requireNonNull(messagePeeker);
+    this.messageMonitor = Objects.requireNonNull(messageMonitor);
 
     log.debug("Nodes {}", this.nodeLookup);
   }
@@ -193,7 +193,7 @@ public final class DeterministicNetwork {
 
   void handleMessage(ControlledMessage controlledMessage) {
     log.debug("Sent message {}", controlledMessage);
-    messagePeeker.accept(controlledMessage);
+    messageMonitor.next(controlledMessage);
 
     if (!this.messageMutator.mutate(controlledMessage, this.messageQueue)) {
       // If nothing processes this message, we just add it to the queue
