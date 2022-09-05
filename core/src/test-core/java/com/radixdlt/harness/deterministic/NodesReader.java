@@ -62,32 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.invariants;
-
-import static org.assertj.core.api.Assertions.assertThat;
+package com.radixdlt.harness.deterministic;
 
 import com.google.inject.Injector;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.List;
+import java.util.Objects;
 
-public final class LedgerLivenessChecker {
-  private long lastStateVersion = 0;
+public final class NodesReader {
+  private NodesReader() {
+    throw new IllegalStateException("Not allowed to instantiate.");
+  }
 
-  public LedgerLivenessChecker() {}
-
-  public void progressCheck(List<Injector> nodeInjectors) {
-    var highestStateVersion =
-        nodeInjectors.stream()
-            .mapToLong(
-                injector -> {
-                  var reader = injector.getInstance(TransactionsAndProofReader.class);
-                  return reader.getLastProof().map(LedgerProof::getStateVersion).orElse(0L);
-                })
-            .max()
-            .orElse(0);
-    assertThat(highestStateVersion).isGreaterThan(lastStateVersion);
-
-    this.lastStateVersion = highestStateVersion;
+  public static long getHighestStateVersion(List<Injector> nodes) {
+    return nodes.stream()
+        .filter(Objects::nonNull)
+        .mapToLong(
+            injector -> {
+              var reader = injector.getInstance(TransactionsAndProofReader.class);
+              return reader.getLastProof().map(LedgerProof::getStateVersion).orElse(0L);
+            })
+        .max()
+        .orElse(0);
   }
 }

@@ -342,6 +342,10 @@ public final class DeterministicTest implements AutoCloseable {
     return this.nodes;
   }
 
+  public int numNodesLive() {
+    return this.nodes.numNodesLive();
+  }
+
   public List<Injector> getNodeInjectors() {
     return this.nodes.getNodeInjectors();
   }
@@ -390,7 +394,7 @@ public final class DeterministicTest implements AutoCloseable {
     this.nodes.startAllNodes();
   }
 
-  public void shutdownNode(int nodeIndex) throws Exception {
+  public void shutdownNode(int nodeIndex) {
     // Drop local messages
     this.network.dropMessages(
         m ->
@@ -402,7 +406,7 @@ public final class DeterministicTest implements AutoCloseable {
     this.nodes.startNode(nodeIndex);
   }
 
-  public void restartNode(int nodeIndex) throws Exception {
+  public void restartNode(int nodeIndex) {
     this.shutdownNode(nodeIndex);
     this.startNode(nodeIndex);
   }

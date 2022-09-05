@@ -67,6 +67,7 @@ package com.radixdlt.harness.predicates;
 import com.google.inject.Injector;
 import com.radixdlt.mempool.MempoolReader;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public final class NodesPredicate {
@@ -84,7 +85,17 @@ public final class NodesPredicate {
   }
 
   public static Predicate<List<Injector>> anyAtExactlyStateVersion(long stateVersion) {
-    return n -> n.stream().anyMatch(NodePredicate.atExactlyStateVersion(stateVersion));
+    return n ->
+        n.stream()
+            .filter(Objects::nonNull)
+            .anyMatch(NodePredicate.atExactlyStateVersion(stateVersion));
+  }
+
+  public static Predicate<List<Injector>> anyAtOrOverStateVersion(long stateVersion) {
+    return n ->
+        n.stream()
+            .filter(Objects::nonNull)
+            .anyMatch(NodePredicate.atOrOverStateVersion(stateVersion));
   }
 
   public static Predicate<List<Injector>> allHaveExactMempoolCount(int count) {

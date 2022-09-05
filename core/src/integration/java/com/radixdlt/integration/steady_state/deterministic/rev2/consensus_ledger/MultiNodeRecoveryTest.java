@@ -68,8 +68,9 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.ran
 import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.harness.invariants.LedgerLivenessChecker;
+import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -100,11 +101,7 @@ public final class MultiNodeRecoveryTest {
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private DeterministicTest createTest(boolean inMemory) {
-    var databaseConfig =
-        inMemory
-            ? REv2DatabaseConfig.inMemory()
-            : REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath());
+  private DeterministicTest createTest(REv2DatabaseConfig databaseConfig) {
     return DeterministicTest.builder()
         .numNodes(NUM_VALIDATORS, 0)
         .messageSelector(randomSelector(random))
@@ -122,15 +119,12 @@ public final class MultiNodeRecoveryTest {
                             new REV2TransactionGenerator(), 1)))));
   }
 
-  private void runTest(DeterministicTest test) throws Exception {
-    var livenessChecker = new LedgerLivenessChecker();
-
+  private void runTest(DeterministicTest test) {
     test.startAllNodes();
 
     for (int i = 0; i < 50; i++) {
-      test.runForCount(random.nextInt(NUM_VALIDATORS * 50, NUM_VALIDATORS * 100));
-
-      livenessChecker.progressCheck(test.getNodeInjectors());
+      long stateVersion = NodesReader.getHighestStateVersion(test.getNodeInjectors());
+      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(stateVersion + 5), 1000000);
 
       // Reboot some count of random nodes
       var validatorIndices =
@@ -148,14 +142,7 @@ public final class MultiNodeRecoveryTest {
   }
 
   @Test
-  public void rebooting_nodes_with_persistent_store_should_not_cause_safety_or_liveness_issues()
-      throws Exception {
-    runTest(createTest(false));
-  }
-
-  // TODO: Architect the test checker in a better way
-  @Test(expected = AssertionError.class)
-  public void rebooting_nodes_with_non_persistent_store_should_fail_test() throws Exception {
-    runTest(createTest(true));
+  public void rebooting_nodes_with_persistent_store_should_not_cause_safety_or_liveness_issues() {
+    runTest(createTest(REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath())));
   }
 }
