@@ -66,20 +66,24 @@ package com.radixdlt.rev2.modules;
 
 import com.google.inject.*;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.NodeAutoCloseable;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.networks.Network;
 import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2StateComputer;
 import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.rev2.REv2TransactionsAndProofReader;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
@@ -167,6 +171,36 @@ public final class REv2StateManagerModule extends AbstractModule {
             @Provides
             private REv2StateReader stateReader(RustStateComputer stateComputer) {
               return stateComputer::getComponentXrdAmount;
+            }
+
+            @ProvidesIntoSet
+            @ProcessOnDispatch
+            public EventProcessor<BFTHighQCUpdate> persistQC(
+                RustStateComputer stateComputer,
+                SystemCounters systemCounters,
+                Serialization serialization) {
+              return update -> {
+                systemCounters.increment(SystemCounters.CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+                var vertexStoreBytes =
+                    serialization.toDson(
+                        update.getVertexStoreState().toSerialized(), DsonOutput.Output.ALL);
+                stateComputer.saveVertexStore(vertexStoreBytes);
+              };
+            }
+
+            @ProvidesIntoSet
+            @ProcessOnDispatch
+            public EventProcessor<BFTInsertUpdate> persistUpdates(
+                RustStateComputer stateComputer,
+                SystemCounters systemCounters,
+                Serialization serialization) {
+              return update -> {
+                systemCounters.increment(SystemCounters.CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+                var vertexStoreBytes =
+                    serialization.toDson(
+                        update.getVertexStoreState().toSerialized(), DsonOutput.Output.ALL);
+                stateComputer.saveVertexStore(vertexStoreBytes);
+              };
             }
           });
     }

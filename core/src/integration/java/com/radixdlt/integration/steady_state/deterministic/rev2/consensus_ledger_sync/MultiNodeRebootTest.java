@@ -141,8 +141,7 @@ public final class MultiNodeRebootTest {
       }
     }
 
-    // TODO: Add back once liveness recovery is implemented
-    // livenessChecker.progressCheck(test.getNodeInjectors());
+    livenessChecker.progressCheck(test.getNodeInjectors());
 
     Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
 
