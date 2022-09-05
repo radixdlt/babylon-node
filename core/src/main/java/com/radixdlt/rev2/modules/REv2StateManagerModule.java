@@ -65,9 +65,10 @@
 package com.radixdlt.rev2.modules;
 
 import com.google.inject.*;
-import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolInserter;
@@ -145,8 +146,6 @@ public final class REv2StateManagerModule extends AbstractModule {
           });
     }
 
-    Multibinder.newSetBinder(binder(), AutoCloseable.class).addBinding().to(StateManager.class);
-
     if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {
       bind(REv2StateComputer.class).in(Scopes.SINGLETON);
       bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
@@ -187,6 +186,11 @@ public final class REv2StateManagerModule extends AbstractModule {
             }
           });
     }
+  }
+
+  @ProvidesIntoSet
+  NodeAutoCloseable closeable(StateManager stateManager) {
+    return stateManager::shutdown;
   }
 
   @Provides

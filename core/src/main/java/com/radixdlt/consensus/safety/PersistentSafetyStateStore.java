@@ -64,10 +64,11 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.radixdlt.environment.NodeAutoCloseable;
 import java.util.Optional;
 
 /** Responsible for synchronously persisting safety state */
-public interface PersistentSafetyStateStore extends AutoCloseable {
+public interface PersistentSafetyStateStore extends NodeAutoCloseable {
   void commitState(SafetyState safetyState);
 
   void close();

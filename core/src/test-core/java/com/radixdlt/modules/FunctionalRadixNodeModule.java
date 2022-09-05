@@ -79,6 +79,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
+import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.MockedLedgerModule;
@@ -285,7 +286,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       install(new NoEpochsSafetyRecoveryModule());
     }
 
-    Multibinder.newSetBinder(binder(), AutoCloseable.class);
+    Multibinder.newSetBinder(binder(), NodeAutoCloseable.class);
 
     // Ledger
     switch (this.ledgerConfig) {

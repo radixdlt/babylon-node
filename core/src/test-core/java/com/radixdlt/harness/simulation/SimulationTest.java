@@ -505,12 +505,14 @@ public final class SimulationTest {
                 initialNodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet()),
                 Amount.ofTokens(1000000),
                 Amount.ofTokens(10000)));
-        modules.add(new AbstractModule() {
-          @Override
-          protected void configure() {
-            bind(new TypeLiteral<Optional<VertexStoreState.SerializedVertexStoreState>>() {}).toInstance(Optional.empty());
-          }
-        });
+        modules.add(
+            new AbstractModule() {
+              @Override
+              protected void configure() {
+                bind(new TypeLiteral<Optional<VertexStoreState.SerializedVertexStoreState>>() {})
+                    .toInstance(Optional.empty());
+              }
+            });
 
         // FIXME: A bit of a hack
         testModules.add(

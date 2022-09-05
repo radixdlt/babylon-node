@@ -131,7 +131,7 @@ public final class DeterministicTest implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     this.nodes.close();
   }
 

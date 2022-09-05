@@ -72,6 +72,7 @@ import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -145,7 +146,7 @@ public final class DeterministicNodes implements AutoCloseable {
     }
   }
 
-  public void shutdownNode(int nodeIndex) throws Exception {
+  public void shutdownNode(int nodeIndex) {
     if (this.nodeInstances.get(nodeIndex) == null) {
       return;
     }
@@ -153,7 +154,7 @@ public final class DeterministicNodes implements AutoCloseable {
     var closeables =
         this.nodeInstances
             .get(nodeIndex)
-            .getInstance(Key.get(new TypeLiteral<Set<AutoCloseable>>() {}));
+            .getInstance(Key.get(new TypeLiteral<Set<NodeAutoCloseable>>() {}));
     for (var c : closeables) {
       c.close();
     }
@@ -236,7 +237,7 @@ public final class DeterministicNodes implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     for (int i = 0; i < this.nodeInstances.size(); i++) {
       this.shutdownNode(i);
     }
