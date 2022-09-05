@@ -97,18 +97,25 @@ import java.util.stream.Stream;
 /** Module which injects a full one node network */
 public final class SingleNodeAndPeersDeterministicNetworkModule extends AbstractModule {
   private final ECKeyPair self;
-  private final StateComputerConfig stateComputerConfig;
+  private final FunctionalRadixNodeModule radixNodeModule;
 
   public static SingleNodeAndPeersDeterministicNetworkModule rev1(
-      ECKeyPair self, int maxMempoolSize) {
+      ECKeyPair self, int maxMempoolSize, String databasePath) {
     return new SingleNodeAndPeersDeterministicNetworkModule(
-        self, StateComputerConfig.rev1(maxMempoolSize));
+        self,
+        new FunctionalRadixNodeModule(
+            true,
+            FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(databasePath),
+            FunctionalRadixNodeModule.ConsensusConfig.of(),
+            FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                StateComputerConfig.rev1(maxMempoolSize),
+                new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE))));
   }
 
   public SingleNodeAndPeersDeterministicNetworkModule(
-      ECKeyPair self, StateComputerConfig stateComputerConfig) {
+      ECKeyPair self, FunctionalRadixNodeModule radixNodeModule) {
     this.self = self;
-    this.stateComputerConfig = stateComputerConfig;
+    this.radixNodeModule = radixNodeModule;
   }
 
   @Override
@@ -122,25 +129,20 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
     install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
     install(new InMemoryBFTKeyModule(self));
     install(new CryptoModule());
-    install(
-        new FunctionalRadixNodeModule(
-            FunctionalRadixNodeModule.ConsensusConfig.of(200, 1000L, 2.0),
-            stateComputerConfig,
-            new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)));
-    switch (stateComputerConfig) {
-      case StateComputerConfig.REv2StateComputerConfig ignored -> {
-        // FIXME: a hack for tests that use rev2 (api); fix once ledger/consensus recovery are
-        // hooked up
-        bind(BFTValidatorSet.class)
-            .toInstance(
-                BFTValidatorSet.from(
-                    List.of(BFTValidator.from(BFTNode.create(self.getPublicKey()), UInt256.ONE))));
-        install(new MockedLivenessStoreModule());
-      }
-      default -> {
-        install(new REv1PersistenceModule());
-        install(new RadixEngineStoreModule());
-      }
+    install(radixNodeModule);
+    if (radixNodeModule.supportsREv2()) {
+      // FIXME: a hack for tests that use rev2 (api); fix once ledger/consensus recovery are
+      // hooked up
+      bind(BFTValidatorSet.class)
+          .toInstance(
+              BFTValidatorSet.from(
+                  List.of(BFTValidator.from(BFTNode.create(self.getPublicKey()), UInt256.ONE))));
+      install(new MockedLivenessStoreModule());
+    }
+    if (radixNodeModule.supportsREv1()) {
+
+      install(new REv1PersistenceModule());
+      install(new RadixEngineStoreModule());
     }
   }
 

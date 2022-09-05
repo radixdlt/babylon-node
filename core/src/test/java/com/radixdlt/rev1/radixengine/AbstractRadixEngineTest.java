@@ -88,7 +88,6 @@ import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -131,14 +130,12 @@ public abstract class AbstractRadixEngineTest {
                             Map.of(ValidatorRegisteredCopy.class, Amount.ofSubunits(UInt256.ONE))))
                     .overrideMaxMessageLen(maxMessageLen)),
             new ForksModule(),
-            SingleNodeAndPeersDeterministicNetworkModule.rev1(TEST_KEY, mempoolMaxSize),
+            SingleNodeAndPeersDeterministicNetworkModule.rev1(
+                TEST_KEY, mempoolMaxSize, folder.getRoot().getAbsolutePath()),
             new MockedGenesisModule(Set.of(TEST_KEY.getPublicKey()), totalTokenAmount, stakeAmount),
             new AbstractModule() {
               @Override
               protected void configure() {
-                bindConstant()
-                    .annotatedWith(DatabaseLocation.class)
-                    .to(folder.getRoot().getAbsolutePath());
                 bindConstant()
                     .annotatedWith(NetworkId.class)
                     .to(Network.INTEGRATIONTESTNET.getId());

@@ -77,6 +77,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
@@ -86,6 +87,7 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import io.undertow.io.Sender;
@@ -110,10 +112,17 @@ public abstract class ApiTest {
         Guice.createInjector(
             new SingleNodeAndPeersDeterministicNetworkModule(
                 TEST_KEY,
-                StateComputerConfig.rev2(
-                    Network.INTEGRATIONTESTNET.getId(),
-                    REv2DatabaseConfig.inMemory(),
-                    StateComputerConfig.REV2ProposerConfig.mempool(10, MempoolRelayConfig.of()))),
+                new FunctionalRadixNodeModule(
+                    false,
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    FunctionalRadixNodeModule.ConsensusConfig.of(),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                        StateComputerConfig.rev2(
+                            Network.INTEGRATIONTESTNET.getId(),
+                            REv2DatabaseConfig.inMemory(),
+                            StateComputerConfig.REV2ProposerConfig.mempool(
+                                10, MempoolRelayConfig.of())),
+                        new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),
             new AbstractModule() {
