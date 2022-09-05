@@ -160,12 +160,14 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
       if (status == OperationStatus.SUCCESS) {
         addBytesRead(pKey.getSize() + value.getSize());
         try {
-          final SafetyState deserializedState =
+          final SafetyState safetyState =
               serialization.fromDson(value.getData(), SafetyState.class);
-          return Optional.of(deserializedState);
+
+          logger.info("SafetyState Loaded: " + safetyState);
+
+          return Optional.of(safetyState);
         } catch (DeserializeException ex) {
-          logger.error("Failed to deserialize persisted SafetyState", ex);
-          return Optional.empty();
+          throw new IllegalStateException("Failed to deserialize persisted SafetyState", ex);
         }
       } else {
         return Optional.empty();

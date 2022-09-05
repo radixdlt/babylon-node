@@ -67,7 +67,7 @@ package com.radixdlt.consensus.safety;
 import java.util.Optional;
 
 /** Responsible for synchronously persisting safety state */
-public interface PersistentSafetyStateStore {
+public interface PersistentSafetyStateStore extends AutoCloseable {
   void commitState(SafetyState safetyState);
 
   void close();

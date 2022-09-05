@@ -221,11 +221,12 @@ public final class PendingVotes {
       // then the only valid possibility is a non-timeout vote being replaced by a timeout vote
       // on the same vote data, or a byzantine node
 
-      var isValidVote = vote.isTimeout() && thisVote.getHash().equals(previousVote.getHash());
+      var isValidVote = thisVote.getHash().equals(previousVote.getHash());
       if (!isValidVote) {
-        this.doubleVoteEventDispatcher.dispatch(new DoubleVote(author, previousVote, vote));
+        this.doubleVoteEventDispatcher.dispatch(
+            new DoubleVote(author, previousVote, vote, thisVote.getHash()));
       }
-      return isValidVote && !previousVote.isTimeout();
+      return isValidVote && !previousVote.isTimeout() && vote.isTimeout();
     } else {
       // all good if vote is for a different round
       return true;

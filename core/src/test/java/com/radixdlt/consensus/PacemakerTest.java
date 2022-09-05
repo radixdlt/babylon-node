@@ -75,6 +75,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
 
@@ -85,7 +86,8 @@ public final class PacemakerTest {
         .numNodes(1, 0)
         .messageSelector(MessageSelector.firstSelector())
         .functionalNodeModule(
-            new FunctionalRadixNodeModule(false, ConsensusConfig.of(), LedgerConfig.mocked()));
+            new FunctionalRadixNodeModule(
+                false, SafetyRecoveryConfig.mocked(), ConsensusConfig.of(), LedgerConfig.mocked()));
   }
 
   @Test

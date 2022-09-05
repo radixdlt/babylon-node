@@ -86,13 +86,14 @@ import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochMaxRound;
-import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
@@ -249,6 +250,7 @@ public final class DeterministicTest implements AutoCloseable {
       this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
+              SafetyRecoveryConfig.mocked(),
               ConsensusConfig.of(),
               LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mocked(
@@ -263,6 +265,7 @@ public final class DeterministicTest implements AutoCloseable {
       this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
+              SafetyRecoveryConfig.mocked(),
               ConsensusConfig.of(),
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mocked(
@@ -285,13 +288,13 @@ public final class DeterministicTest implements AutoCloseable {
           });
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
-      modules.add(new MockedPersistenceStoreModule());
+      modules.add(new MockedLivenessStoreModule());
       modules.add(new TestP2PModule.Builder().withAllNodes(nodes).build());
       modules.add(new TestMessagingModule.Builder().build());
 
       var peekers =
           Guice.createInjector(
-                  new DeterministicCheckerModule(), Modules.combine(testModules.build()))
+                  new DeterministicCheckerModule(nodes), Modules.combine(testModules.build()))
               .getInstance(Key.get(new TypeLiteral<Set<Consumer<ControlledMessage>>>() {}));
       Consumer<ControlledMessage> peeker = m -> peekers.forEach(c -> c.accept(m));
 

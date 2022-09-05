@@ -77,10 +77,9 @@ import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev1.modules.PersistenceModule;
+import com.radixdlt.rev1.modules.REv1PersistenceModule;
 import com.radixdlt.rev1.modules.RadixEngineStoreModule;
-import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
-import com.radixdlt.store.DatabaseCacheSize;
+import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
@@ -102,10 +101,6 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
 
   @Override
   public void configure() {
-    bindConstant()
-        .annotatedWith(DatabaseCacheSize.class)
-        .to((long) (Runtime.getRuntime().maxMemory() * 0.125));
-
     // System
     bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
     bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
@@ -129,10 +124,10 @@ public final class PersistedNodeForTestingModule extends AbstractModule {
                 BFTValidatorSet.from(
                     List.of(
                         BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE))));
-        install(new MockedPersistenceStoreModule());
+        install(new MockedLivenessStoreModule());
       }
       default -> {
-        install(new PersistenceModule());
+        install(new REv1PersistenceModule());
         install(new RadixEngineStoreModule());
       }
     }

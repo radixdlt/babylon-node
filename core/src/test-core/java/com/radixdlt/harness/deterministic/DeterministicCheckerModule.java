@@ -64,16 +64,32 @@
 
 package com.radixdlt.harness.deterministic;
 
+import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.utils.Pair;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class DeterministicCheckerModule extends AbstractModule {
+  private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
+
+  public DeterministicCheckerModule(ImmutableList<BFTNode> nodes) {
+    this.nodeLookup =
+        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
+            .collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
+  }
+
   @Override
   protected void configure() {
+    bind(new TypeLiteral<Function<BFTNode, String>>() {})
+        .toInstance(n -> "Node" + nodeLookup.get(n));
     Multibinder.newSetBinder(binder(), Key.get(new TypeLiteral<Consumer<ControlledMessage>>() {}));
   }
 }

@@ -64,6 +64,7 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 
-public record DoubleVote(BFTNode author, PreviousVote previousVote, Vote vote) {}
+public record DoubleVote(BFTNode author, PreviousVote previousVote, Vote vote, HashCode voteHash) {}

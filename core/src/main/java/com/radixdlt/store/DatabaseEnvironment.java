@@ -83,7 +83,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class DatabaseEnvironment {
+public final class DatabaseEnvironment implements AutoCloseable {
   private static final Logger log = LogManager.getLogger();
 
   private Environment environment;
@@ -149,5 +149,10 @@ public final class DatabaseEnvironment {
 
     value *= Long.signum(bytes);
     return String.format("%.1f %ciB", value / 1024.0, ci.current());
+  }
+
+  @Override
+  public void close() throws Exception {
+    environment.close();
   }
 }

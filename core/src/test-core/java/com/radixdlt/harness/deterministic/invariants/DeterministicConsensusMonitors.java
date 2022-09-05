@@ -66,29 +66,30 @@ package com.radixdlt.harness.deterministic.invariants;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.DoubleVote;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public final class DeterministicConsensusMonitors {
   private DeterministicConsensusMonitors() {
     throw new IllegalStateException("Cannot instantiate");
   }
 
-  public static Module byzantineEventsNotDetected() {
+  public static Module byzantineBehaviorNotDetected() {
     return new AbstractModule() {
-      @Override
-      protected void configure() {
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Consumer<ControlledMessage>>() {})
-            .addBinding()
-            .toInstance(
-                m -> {
-                  if (m.message() instanceof DoubleVote doubleVote) {
-                    throw new IllegalStateException("Byzantine Behavior occurred: " + doubleVote);
-                  }
-                });
+      @ProvidesIntoSet
+      private Consumer<ControlledMessage> byzantineDetection(
+          Function<BFTNode, String> nodeToString) {
+        return m -> {
+          if (m.message() instanceof DoubleVote doubleVote) {
+            var nodeName = nodeToString.apply(doubleVote.author());
+            throw new IllegalStateException(
+                "Byzantine Behavior detected on " + nodeName + ": " + doubleVote);
+          }
+        };
       }
     };
   }

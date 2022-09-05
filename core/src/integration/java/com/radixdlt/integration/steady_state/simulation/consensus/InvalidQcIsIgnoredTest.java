@@ -83,6 +83,7 @@ import com.radixdlt.harness.simulation.network.SimulationNetwork.MessageInTransi
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -160,7 +161,10 @@ public final class InvalidQcIsIgnoredTest {
                 NetworkMessageModifiers.modifyVotes(REPLACE_VOTES_QC_WITH_INVALID_SIGS))
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
-                    false, ConsensusConfig.of(1000), LedgerConfig.mocked()))
+                    false,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(1000),
+                    LedgerConfig.mocked()))
             .addTestModules(ConsensusMonitors.noneCommitted())
             .numNodes(3)
             .build();

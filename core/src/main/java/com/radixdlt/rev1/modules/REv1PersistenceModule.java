@@ -62,46 +62,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.rev1.modules;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.OptionalBinder;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.VertexStoreState;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.safety.SafetyState;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
+import com.radixdlt.rev1.store.StoreConfig;
+import com.radixdlt.store.ResourceStore;
 import java.util.Optional;
 
-public class MockedPersistenceStoreModule extends AbstractModule {
-
+/** Module which manages persistent storage */
+public class REv1PersistenceModule extends AbstractModule {
   @Override
-  public void configure() {
-    bind(PersistentSafetyStateStore.class).to(MockedPersistenceStore.class);
-    bind(PersistentVertexStore.class).to(MockedPersistentVertexStore.class);
-    OptionalBinder.newOptionalBinder(binder(), VertexStoreState.SerializedVertexStoreState.class);
+  protected void configure() {
+    // TODO: should be singletons?
+    bind(ResourceStore.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
+    bind(PersistentVertexStore.class).to(BerkeleyLedgerEntryStore.class);
   }
 
-  private static class MockedPersistenceStore implements PersistentSafetyStateStore {
-    @Override
-    public Optional<SafetyState> get() {
-      return Optional.empty();
-    }
-
-    @Override
-    public void commitState(SafetyState safetyState) {
-      // Nothing to do here
-    }
-
-    @Override
-    public void close() {
-      // Nothing to do here
-    }
+  @Provides
+  Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState(
+      BerkeleyLedgerEntryStore store) {
+    return store.loadLastVertexStoreState();
   }
 
-  private static class MockedPersistentVertexStore implements PersistentVertexStore {
-    @Override
-    public void save(VertexStoreState vertexStoreState) {
-      // Nothing to do here
-    }
+  @Provides
+  StoreConfig storeConfig() {
+    return new StoreConfig(1000);
+  }
+
+  @ProvidesIntoSet
+  @ProcessOnDispatch
+  public EventProcessor<BFTHighQCUpdate> persistQC(
+      PersistentVertexStore persistentVertexStore, SystemCounters systemCounters) {
+    return update -> {
+      systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+      persistentVertexStore.save(update.getVertexStoreState());
+    };
+  }
+
+  @ProvidesIntoSet
+  @ProcessOnDispatch
+  public EventProcessor<BFTInsertUpdate> persistUpdates(
+      PersistentVertexStore persistentVertexStore, SystemCounters systemCounters) {
+    return update -> {
+      systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+      persistentVertexStore.save(update.getVertexStoreState());
+    };
   }
 }

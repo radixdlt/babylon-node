@@ -121,6 +121,7 @@ public final class SafetyRules {
           "Safety warning: Vertex {} violates earlier vote at round {}",
           proposedVertex,
           this.state.getLastVotedRound());
+
       return false;
     } else {
       return true;

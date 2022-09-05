@@ -106,6 +106,7 @@ import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
@@ -120,7 +121,7 @@ import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.forks.InMemoryForksEpochStoreModule;
 import com.radixdlt.rev1.forks.NoOpForksEpochStore;
 import com.radixdlt.rev1.modules.RadixEngineModule;
-import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
 import com.radixdlt.sync.SyncRelayConfig;
@@ -178,7 +179,8 @@ public final class SimulationTest {
   public static class Builder {
     private ImmutableList<ECKeyPair> initialNodes = ImmutableList.of(ECKeyPair.generateNew());
     private FunctionalRadixNodeModule functionalNodeModule =
-        new FunctionalRadixNodeModule(false, ConsensusConfig.of(), LedgerConfig.mocked());
+        new FunctionalRadixNodeModule(
+            false, SafetyRecoveryConfig.mocked(), ConsensusConfig.of(), LedgerConfig.mocked());
 
     private Module initialNodesModule;
     private final ImmutableList.Builder<Module> testModules = ImmutableList.builder();
@@ -281,6 +283,7 @@ public final class SimulationTest {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               true,
+              SafetyRecoveryConfig.mocked(),
               consensusConfig,
               LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mocked(
@@ -306,6 +309,7 @@ public final class SimulationTest {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               false,
+              SafetyRecoveryConfig.mocked(),
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mocked(
@@ -319,6 +323,7 @@ public final class SimulationTest {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               true,
+              SafetyRecoveryConfig.mocked(),
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.rev1(mempoolSize), syncRelayConfig));
@@ -334,6 +339,7 @@ public final class SimulationTest {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               true,
+              SafetyRecoveryConfig.mocked(),
               consensusConfig,
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mocked(
@@ -354,6 +360,7 @@ public final class SimulationTest {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               false,
+              SafetyRecoveryConfig.mocked(),
               consensusConfig,
               LedgerConfig.stateComputerNoSync(
                   StateComputerConfig.mocked(
@@ -366,6 +373,7 @@ public final class SimulationTest {
       this.functionalNodeModule =
           new FunctionalRadixNodeModule(
               true,
+              SafetyRecoveryConfig.mocked(),
               consensusConfig,
               LedgerConfig.stateComputerMockedSync(StateComputerConfig.rev1(100)));
       this.modules.add(
@@ -551,7 +559,7 @@ public final class SimulationTest {
         modules.add(mockedConsensusRecoveryModuleBuilder.build());
       }
 
-      modules.add(new MockedPersistenceStoreModule());
+      modules.add(new MockedLivenessStoreModule());
 
       // Testing
       modules.add(new SimulationNodeEventsModule());

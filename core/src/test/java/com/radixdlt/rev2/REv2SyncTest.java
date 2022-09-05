@@ -74,6 +74,7 @@ import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
@@ -93,6 +94,7 @@ public class REv2SyncTest {
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
+                SafetyRecoveryConfig.mocked(),
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(

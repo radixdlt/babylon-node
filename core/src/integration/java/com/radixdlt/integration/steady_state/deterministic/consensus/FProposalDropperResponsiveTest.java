@@ -73,6 +73,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import java.util.Collections;
@@ -102,6 +103,7 @@ public class FProposalDropperResponsiveTest {
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     false,
+                    SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
