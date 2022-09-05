@@ -78,6 +78,12 @@ public final class DeterministicConsensusMonitors {
     throw new IllegalStateException("Cannot instantiate");
   }
 
+  public static class ByzantineBehaviorDetected extends IllegalStateException {
+    ByzantineBehaviorDetected(String nodeName, DoubleVote doubleVote) {
+      super("Byzantine Behavior detected on " + nodeName + ": " + doubleVote);
+    }
+  }
+
   public static Module byzantineBehaviorNotDetected() {
     return new AbstractModule() {
       @ProvidesIntoSet
@@ -86,8 +92,7 @@ public final class DeterministicConsensusMonitors {
         return m -> {
           if (m.message() instanceof DoubleVote doubleVote) {
             var nodeName = nodeToString.apply(doubleVote.author());
-            throw new IllegalStateException(
-                "Byzantine Behavior detected on " + nodeName + ": " + doubleVote);
+            throw new ByzantineBehaviorDetected(nodeName, doubleVote);
           }
         };
       }

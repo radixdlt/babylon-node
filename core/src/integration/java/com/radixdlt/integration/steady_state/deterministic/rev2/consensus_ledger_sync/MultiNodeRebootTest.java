@@ -66,6 +66,7 @@ package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledge
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.randomSelector;
 import static com.radixdlt.harness.deterministic.invariants.DeterministicConsensusMonitors.*;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.invariants.Checkers;
@@ -108,7 +109,7 @@ public final class MultiNodeRebootTest {
     this.numValidators = numValidators;
   }
 
-  private DeterministicTest createTest() {
+  private DeterministicTest createTest(SafetyRecoveryConfig safetyRecoveryConfig) {
     var databaseConfig = REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath());
     return DeterministicTest.builder()
         .numNodes(numValidators, 0)
@@ -117,7 +118,7 @@ public final class MultiNodeRebootTest {
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
-                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                safetyRecoveryConfig,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
@@ -153,8 +154,10 @@ public final class MultiNodeRebootTest {
     }
   }
 
-  private void runTest(int numRounds, int numDownValidators) throws Exception {
-    try (var test = createTest()) {
+  private void runTest(
+      int numRounds, int numDownValidators, SafetyRecoveryConfig safetyRecoveryConfig)
+      throws Exception {
+    try (var test = createTest(safetyRecoveryConfig)) {
       test.startAllNodes();
 
       var nodeLiveStatus =
@@ -216,13 +219,27 @@ public final class MultiNodeRebootTest {
   public void restart_all_nodes_intermittently() throws Exception {
     var numRounds = 2000 / numValidators;
     var numDownValidators = 0;
-    runTest(numRounds, numDownValidators);
+    runTest(
+        numRounds,
+        numDownValidators,
+        SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()));
+  }
+
+  @Test
+  public void restart_all_nodes_intermittently_with_bad_recovery_should_fail() {
+    var numRounds = 2000 / numValidators;
+    var numDownValidators = 0;
+    assertThatThrownBy(() -> runTest(numRounds, numDownValidators, SafetyRecoveryConfig.mocked()))
+        .hasRootCauseExactlyInstanceOf(ByzantineBehaviorDetected.class);
   }
 
   @Test
   public void restart_all_nodes_intermittently_while_f_nodes_down() throws Exception {
     var numRounds = 2000 / numValidators;
     var numDownValidators = (numValidators - 1) / 3;
-    runTest(numRounds, numDownValidators);
+    runTest(
+        numRounds,
+        numDownValidators,
+        SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()));
   }
 }

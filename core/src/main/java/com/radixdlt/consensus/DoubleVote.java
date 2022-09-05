@@ -67,4 +67,5 @@ package com.radixdlt.consensus;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 
+/** A Double vote which has detected. This is proof that there is byzantine node. */
 public record DoubleVote(BFTNode author, PreviousVote previousVote, Vote vote, HashCode voteHash) {}

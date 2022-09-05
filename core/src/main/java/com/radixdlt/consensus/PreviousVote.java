@@ -68,7 +68,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.Round;
 import java.util.Objects;
 
-// Make sure equals tester can access.
+/** A vote made by another node */
 public final class PreviousVote {
   private final Round round;
   private final long epoch;
