@@ -65,9 +65,9 @@
 package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledger;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.randomSelector;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.deterministic.invariants.DeterministicConsensusMonitors;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.invariants.LedgerLivenessChecker;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -108,7 +108,7 @@ public final class MultiNodeRecoveryTest {
     return DeterministicTest.builder()
         .numNodes(NUM_VALIDATORS, 0)
         .messageSelector(randomSelector(random))
-        .addMonitors(DeterministicConsensusMonitors.byzantineBehaviorNotDetected())
+        .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
@@ -130,7 +130,6 @@ public final class MultiNodeRecoveryTest {
     for (int i = 0; i < 50; i++) {
       test.runForCount(random.nextInt(NUM_VALIDATORS * 50, NUM_VALIDATORS * 100));
 
-      Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
       livenessChecker.progressCheck(test.getNodeInjectors());
 
       // Reboot some count of random nodes
@@ -146,7 +145,6 @@ public final class MultiNodeRecoveryTest {
 
     // Post-run assertions
     Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 100);
-    Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
   }
 
   @Test

@@ -127,6 +127,10 @@ public final class Checkers {
     var executedTxns = new HashMap<Long, ExecutedTransaction>();
 
     for (var injector : nodeInjectors) {
+      if (injector == null) {
+        continue;
+      }
+
       var reader = injector.getInstance(TransactionsAndProofReader.class);
       reader
           .getLastProof()

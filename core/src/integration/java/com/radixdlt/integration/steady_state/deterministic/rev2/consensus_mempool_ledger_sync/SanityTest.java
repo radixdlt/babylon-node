@@ -65,6 +65,7 @@
 package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_mempool_ledger_sync;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 
 import com.google.inject.*;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -97,6 +98,7 @@ public final class SanityTest {
     return DeterministicTest.builder()
         .numNodes(10, 10)
         .messageSelector(firstSelector())
+        .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
@@ -127,7 +129,6 @@ public final class SanityTest {
 
       // Post-run assertions
       Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 20);
-      Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
       Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
     }
   }

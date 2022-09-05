@@ -62,32 +62,11 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.deterministic;
+package com.radixdlt.harness.deterministic.invariants;
 
-import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
-import com.radixdlt.utils.Pair;
-import java.util.function.Function;
+import com.google.inject.Injector;
+import java.util.List;
 
-public class DeterministicCheckerModule extends AbstractModule {
-  private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
-
-  public DeterministicCheckerModule(ImmutableList<BFTNode> nodes) {
-    this.nodeLookup =
-        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
-            .collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
-  }
-
-  @Override
-  protected void configure() {
-    bind(new TypeLiteral<Function<BFTNode, String>>() {})
-        .toInstance(n -> "Node" + nodeLookup.get(n));
-    Multibinder.newSetBinder(binder(), MessageMonitor.class);
-  }
+public interface StateMonitor {
+  void next(List<Injector> nodes);
 }

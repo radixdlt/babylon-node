@@ -62,37 +62,46 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.deterministic.invariants;
+package com.radixdlt.harness.deterministic;
 
+import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
-import com.google.inject.Module;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.DoubleVote;
+import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
+import com.radixdlt.harness.deterministic.invariants.StateMonitor;
+import com.radixdlt.utils.Pair;
+import java.util.Set;
 import java.util.function.Function;
 
-public final class DeterministicConsensusMonitors {
-  private DeterministicConsensusMonitors() {
-    throw new IllegalStateException("Cannot instantiate");
+public class DeterministicMonitorsModule extends AbstractModule {
+  private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
+
+  public DeterministicMonitorsModule(ImmutableList<BFTNode> nodes) {
+    this.nodeLookup =
+        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
+            .collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
   }
 
-  public static class ByzantineBehaviorDetected extends IllegalStateException {
-    ByzantineBehaviorDetected(String nodeName, DoubleVote doubleVote) {
-      super("Byzantine Behavior detected on " + nodeName + ": " + doubleVote);
-    }
+  @Override
+  protected void configure() {
+    bind(new TypeLiteral<Function<BFTNode, String>>() {})
+        .toInstance(n -> "Node" + nodeLookup.get(n));
+    Multibinder.newSetBinder(binder(), MessageMonitor.class);
+    Multibinder.newSetBinder(binder(), StateMonitor.class);
   }
 
-  public static Module byzantineBehaviorNotDetected() {
-    return new AbstractModule() {
-      @ProvidesIntoSet
-      private MessageMonitor byzantineDetection(Function<BFTNode, String> nodeToString) {
-        return m -> {
-          if (m.message() instanceof DoubleVote doubleVote) {
-            var nodeName = nodeToString.apply(doubleVote.author());
-            throw new ByzantineBehaviorDetected(nodeName, doubleVote);
-          }
-        };
-      }
-    };
+  @Provides
+  MessageMonitor messageMonitor(Set<MessageMonitor> messageMonitors) {
+    return m -> messageMonitors.forEach(c -> c.next(m));
+  }
+
+  @Provides
+  StateMonitor stateMonitor(Set<StateMonitor> stateMonitors) {
+    return s -> stateMonitors.forEach(c -> c.next(s));
   }
 }

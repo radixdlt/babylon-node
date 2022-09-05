@@ -65,11 +65,10 @@
 package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledger_sync;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.randomSelector;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicConsensusMonitors.*;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.invariants.LedgerLivenessChecker;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -114,7 +113,7 @@ public final class MultiNodeRebootTest {
     return DeterministicTest.builder()
         .numNodes(numValidators, 0)
         .messageSelector(randomSelector(random))
-        .addMonitors(byzantineBehaviorNotDetected())
+        .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
@@ -142,8 +141,6 @@ public final class MultiNodeRebootTest {
     }
 
     livenessChecker.progressCheck(test.getNodeInjectors());
-
-    Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
 
     // Shutdown nodes which were initially down
     for (var e : nodeLiveStatus.entrySet()) {
@@ -210,7 +207,6 @@ public final class MultiNodeRebootTest {
       // Post-run assertions
       test.startAllNodes();
       var aliveNodes = test.getNodeInjectors().stream().skip(numDownValidators).toList();
-      Checkers.assertLedgerTransactionsSafety(aliveNodes);
     }
   }
 
