@@ -261,6 +261,8 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       install(new NoEpochsConsensusModule());
     }
 
+    Multibinder.newSetBinder(binder(), AutoCloseable.class);
+
     // Ledger
     switch (this.ledgerConfig) {
       case MockedLedgerConfig ignored -> {
@@ -268,7 +270,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         install(new MockedLedgerModule());
       }
       case StateComputerLedgerConfig stateComputerLedgerConfig -> {
-        Multibinder.newSetBinder(binder(), AutoCloseable.class);
         install(new LedgerModule());
 
         // Sync
