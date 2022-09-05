@@ -294,6 +294,12 @@ where
     M: Mempool,
     S: CommitStore<'db>,
 {
+    pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
+        let mut db_transaction = self.store.create_db_transaction();
+        db_transaction.save_vertex_store(vertex_store);
+        db_transaction.commit();
+    }
+
     pub fn commit(&'db mut self, commit_request: CommitRequest) {
         let mut to_store = Vec::new();
         let mut ids = Vec::new();

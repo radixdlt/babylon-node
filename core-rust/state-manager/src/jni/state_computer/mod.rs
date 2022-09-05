@@ -108,6 +108,33 @@ fn do_verify(
 }
 
 #[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_saveVertexStore(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    let ret = do_save_vertex_store(&env, j_state_manager, request_payload).to_java();
+    jni_slice_to_jbytearray(&env, &ret)
+}
+
+fn do_save_vertex_store(
+    env: &JNIEnv,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> StateManagerResult<()> {
+    let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
+    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
+    let vertex_store: Vec<u8> = Vec::from_java(&request_payload)?;
+
+    state_manager
+        .lock()
+        .expect("Can't acquire a state manager mutex lock")
+        .save_vertex_store(vertex_store);
+    Ok(())
+}
+
+#[no_mangle]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
     env: JNIEnv,
     _class: JClass,

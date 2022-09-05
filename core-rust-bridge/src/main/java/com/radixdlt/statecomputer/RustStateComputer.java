@@ -93,16 +93,23 @@ public class RustStateComputer {
     this.transactionStore = new REv2TransactionAndProofStore(stateManager);
     this.vertexStoreRecovery = new VertexStoreRecovery(stateManager);
 
-    verifyFunc =
+    this.verifyFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::verify);
-    prepareFunc =
+    this.saveVertexStoreFunc =
+        NativeCalls.Func1.with(
+            stateManager,
+            new TypeToken<>() {},
+            new TypeToken<>() {},
+            RustStateComputer::saveVertexStore);
+
+    this.prepareFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::prepare);
-    commitFunc =
+    this.commitFunc =
         NativeCalls.Func1.with(
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::commit);
-    componentXrdAmountFunc =
+    this.componentXrdAmountFunc =
         NativeCalls.Func1.with(
             stateManager,
             new TypeToken<>() {},
@@ -139,17 +146,25 @@ public class RustStateComputer {
 
   private static native byte[] verify(StateManager stateManager, byte[] payload);
 
-  public PrepareResult prepare(PrepareRequest prepareRequest) {
-    return prepareFunc.call(prepareRequest);
+  public void saveVertexStore(byte[] vertexStoreBytes) {
+    saveVertexStoreFunc.call(vertexStoreBytes);
   }
 
-  public void commit(CommitRequest commitRequest) {
-    commitFunc.call(commitRequest);
+  private final NativeCalls.Func1<StateManager, byte[], Unit> saveVertexStoreFunc;
+
+  private static native byte[] saveVertexStore(StateManager stateManager, byte[] payload);
+
+  public PrepareResult prepare(PrepareRequest prepareRequest) {
+    return prepareFunc.call(prepareRequest);
   }
 
   private final NativeCalls.Func1<StateManager, PrepareRequest, PrepareResult> prepareFunc;
 
   private static native byte[] prepare(StateManager stateManager, byte[] payload);
+
+  public void commit(CommitRequest commitRequest) {
+    commitFunc.call(commitRequest);
+  }
 
   private final NativeCalls.Func1<StateManager, CommitRequest, Unit> commitFunc;
 
