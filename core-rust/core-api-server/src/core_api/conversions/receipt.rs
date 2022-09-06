@@ -34,8 +34,7 @@ pub fn to_api_receipt(
             .up_substates
             .into_iter()
             .map(|(substate_id, output_value)| {
-                let (json_type, json_str) =
-                    to_api_substate(&output_value.substate, bech32_encoder);
+                let (json_type, json_str) = to_api_substate(&output_value.substate, bech32_encoder);
 
                 models::UpSubstate {
                     substate_id: to_sbor_hex(&substate_id),
