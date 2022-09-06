@@ -78,6 +78,8 @@ public final class REv2TestTransactions {
   // This has to come first for static ordering issues
   private static int currentKey = 1;
 
+  public static final ECKeyPair DEFAULT_NOTARY = getNewKeyPair();
+
   public static final RawTransaction VALID_TXN_0 =
       constructTransaction(
           String.format(
@@ -98,9 +100,32 @@ public final class REv2TestTransactions {
     return PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
   }
 
+  public static RawTransaction constructNewAccountTransaction(NetworkDefinition networkDefinition) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+
+    final var faucetAddress =
+        addressing.encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
+    final var xrdAddress = addressing.encodeResourceAddress(ResourceAddress.XRD_ADDRESS);
+    final var accountPackageAddress =
+        addressing.encodePackageAddress(PackageAddress.ACCOUNT_PACKAGE_ADDRESS);
+
+    var manifest =
+        String.format(
+            """
+            CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("1000");
+            CALL_METHOD ComponentAddress("%s") "free_xrd";
+            TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
+            CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("xrd");
+            """,
+            faucetAddress, faucetAddress, xrdAddress, accountPackageAddress);
+    var signatories = List.<ECKeyPair>of();
+
+    return constructTransaction(networkDefinition, manifest, DEFAULT_NOTARY, false, signatories);
+  }
+
   public static RawTransaction constructTransaction(String manifest, List<ECKeyPair> signatories) {
     return constructTransaction(
-        NetworkDefinition.INT_TEST_NET, manifest, getNewKeyPair(), false, signatories);
+        NetworkDefinition.INT_TEST_NET, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
   public static RawTransaction constructTransaction(

@@ -69,17 +69,32 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
 import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.Bytes;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
 
 public final class RustMempoolTest {
+  private static final Logger log = LogManager.getLogger();
+
+  @Test
+  public void create_transactions() {
+    var create_account_one =
+        REv2TestTransactions.constructNewAccountTransaction(
+            NetworkDefinition.from(Network.ENKINET));
+
+    log.warn(Bytes.toHexString(create_account_one.getPayload()));
+  }
+
   @Test
   public void test_rust_mempool_add() throws Exception {
     final var mempoolSize = 2;

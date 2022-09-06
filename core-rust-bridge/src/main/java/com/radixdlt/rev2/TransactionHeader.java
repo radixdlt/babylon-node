@@ -119,7 +119,7 @@ public record TransactionHeader(
         UInt64.fromNonNegativeLong(1), // Nonce
         notary,
         notaryIsSignatory,
-        UInt32.fromNonNegativeInt(1000000), // Max Cost Units
+        UInt32.fromNonNegativeInt(100000000), // Max Cost Units
         UInt32.fromNonNegativeInt(0) // Tip percentage
         );
   }

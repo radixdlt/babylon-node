@@ -106,6 +106,7 @@ public enum Network {
   private final byte byteId;
   private final String logicalName;
   private final String hrpSuffix;
+  private final String packageHrp;
   private final String normalComponentHrp;
   private final String accountComponentHrp;
   private final String systemComponentHrp;
@@ -124,6 +125,7 @@ public enum Network {
     this.byteId = (byte) id;
     this.logicalName = logicalName;
     this.hrpSuffix = hrpSuffix;
+    this.packageHrp = "package_" + hrpSuffix;
     this.normalComponentHrp = "component_" + hrpSuffix;
     this.accountComponentHrp = "account_" + hrpSuffix;
     this.systemComponentHrp = "system_" + hrpSuffix;
@@ -131,6 +133,10 @@ public enum Network {
     this.resourceHrp = "resource_" + hrpSuffix;
     this.nodeHrp = "node_" + hrpSuffix;
     this.genesisSource = genesisSource;
+  }
+
+  public String getPackageHrp() {
+    return packageHrp;
   }
 
   public String getNormalComponentHrp() {

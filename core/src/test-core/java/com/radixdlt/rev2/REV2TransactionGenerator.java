@@ -65,10 +65,7 @@
 package com.radixdlt.rev2;
 
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
-import com.radixdlt.utils.PrivateKeys;
-import java.util.List;
 
 /** Generates a valid transaction for REV2 */
 public final class REV2TransactionGenerator implements TransactionGenerator {
@@ -82,13 +79,8 @@ public final class REV2TransactionGenerator implements TransactionGenerator {
     this.networkDefinition = networkDefinition;
   }
 
-  private int currentKey = 1;
-
   @Override
   public RawTransaction nextTransaction() {
-    final var notary = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
-    var intentBytes =
-        TransactionBuilder.buildNewAccountIntent(networkDefinition, notary.getPublicKey());
-    return REv2TestTransactions.constructTransaction(intentBytes, notary, List.of(notary));
+    return REv2TestTransactions.constructNewAccountTransaction(networkDefinition);
   }
 }
