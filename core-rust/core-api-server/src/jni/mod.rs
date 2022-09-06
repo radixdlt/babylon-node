@@ -71,6 +71,9 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
+use opentelemetry::global;
+use opentelemetry::trace::Tracer;
+use opentelemetry::sdk::{trace::{self, IdGenerator, Sampler}};
 use state_manager::jni::dtos::JavaStructure;
 use state_manager::jni::state_manager::{ActualStateManager, JNIStateManager};
 use state_manager::jni::utils::*;
@@ -122,6 +125,9 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
     _class: JClass,
     j_core_api_server: JObject,
 ) {
+    // TODO not sure if we shouldn't support some graceful shutdown here
+    let _tracer = init_tracer();
+
     let tokio_runtime = Arc::new(TokioRuntime::new().unwrap());
 
     let (shutdown_signal_sender, shutdown_signal_receiver) = oneshot::channel::<()>();
@@ -170,3 +176,17 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_stop(
 }
 
 pub fn export_extern_functions() {}
+
+// TODO: this shouldn't live here
+fn init_tracer() -> impl Tracer {
+    global::set_text_map_propagator(opentelemetry_jaeger::Propagator::new());
+
+    opentelemetry_jaeger::new_pipeline()
+        .with_agent_endpoint("localhost:6831")
+        .with_service_name("CoreApi")
+        .with_trace_config(trace::config()
+            .with_sampler(Sampler::AlwaysOn)
+            .with_id_generator(IdGenerator::default()))
+        .install_simple()
+        .unwrap()
+}
