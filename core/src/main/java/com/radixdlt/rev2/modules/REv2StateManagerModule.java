@@ -173,34 +173,31 @@ public final class REv2StateManagerModule extends AbstractModule {
               return stateComputer::getComponentXrdAmount;
             }
 
-            @ProvidesIntoSet
-            @ProcessOnDispatch
-            public EventProcessor<BFTHighQCUpdate> persistQC(
+            @Provides
+            private PersistentVertexStore stateReader(
                 RustStateComputer stateComputer,
                 SystemCounters systemCounters,
                 Serialization serialization) {
-              return update -> {
+              return s -> {
                 systemCounters.increment(SystemCounters.CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
                 var vertexStoreBytes =
-                    serialization.toDson(
-                        update.getVertexStoreState().toSerialized(), DsonOutput.Output.ALL);
+                    serialization.toDson(s.toSerialized(), DsonOutput.Output.ALL);
                 stateComputer.saveVertexStore(vertexStoreBytes);
               };
             }
 
             @ProvidesIntoSet
             @ProcessOnDispatch
+            public EventProcessor<BFTHighQCUpdate> persistQC(
+                PersistentVertexStore persistentVertexStore) {
+              return update -> persistentVertexStore.save(update.getVertexStoreState());
+            }
+
+            @ProvidesIntoSet
+            @ProcessOnDispatch
             public EventProcessor<BFTInsertUpdate> persistUpdates(
-                RustStateComputer stateComputer,
-                SystemCounters systemCounters,
-                Serialization serialization) {
-              return update -> {
-                systemCounters.increment(SystemCounters.CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
-                var vertexStoreBytes =
-                    serialization.toDson(
-                        update.getVertexStoreState().toSerialized(), DsonOutput.Output.ALL);
-                stateComputer.saveVertexStore(vertexStoreBytes);
-              };
+                PersistentVertexStore persistentVertexStore) {
+              return update -> persistentVertexStore.save(update.getVertexStoreState());
             }
           });
     }

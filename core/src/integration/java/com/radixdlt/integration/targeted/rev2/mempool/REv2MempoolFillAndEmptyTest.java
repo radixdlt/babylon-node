@@ -100,7 +100,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
@@ -149,7 +148,6 @@ public final class REv2MempoolFillAndEmptyTest {
             bind(BFTValidatorSet.class).toInstance(validatorSet);
           }
         },
-        new MockedLivenessStoreModule(),
         new FunctionalRadixNodeModule(
             false,
             SafetyRecoveryConfig.mocked(),

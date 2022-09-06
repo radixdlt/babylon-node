@@ -121,7 +121,6 @@ import com.radixdlt.rev1.forks.ForksEpochStore;
 import com.radixdlt.rev1.forks.InMemoryForksEpochStoreModule;
 import com.radixdlt.rev1.forks.NoOpForksEpochStore;
 import com.radixdlt.rev1.modules.RadixEngineModule;
-import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.store.InMemoryRadixEngineStoreModule;
 import com.radixdlt.sync.SyncRelayConfig;
@@ -566,8 +565,6 @@ public final class SimulationTest {
         mockedConsensusRecoveryModuleBuilder.withNodes(initialVset);
         modules.add(mockedConsensusRecoveryModuleBuilder.build());
       }
-
-      modules.add(new MockedLivenessStoreModule());
 
       // Testing
       modules.add(new SimulationNodeEventsModule());

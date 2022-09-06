@@ -95,7 +95,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochMaxRound;
-import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
@@ -295,7 +294,6 @@ public final class DeterministicTest implements AutoCloseable {
           });
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
-      modules.add(new MockedLivenessStoreModule());
       modules.add(new TestP2PModule.Builder().withAllNodes(nodes).build());
       modules.add(new TestMessagingModule.Builder().build());
 
@@ -411,6 +409,12 @@ public final class DeterministicTest implements AutoCloseable {
     this.startNode(nodeIndex);
   }
 
+  public static class NeverReachedStateException extends IllegalStateException {
+    private NeverReachedStateException(int max) {
+      super("Never reached state after " + max + " messages");
+    }
+  }
+
   public DeterministicTest runUntilState(
       Predicate<List<Injector>> nodeStatePredicate,
       int max,
@@ -419,7 +423,7 @@ public final class DeterministicTest implements AutoCloseable {
 
     while (!nodeStatePredicate.test(getNodeInjectors())) {
       if (count == max) {
-        throw new RuntimeException("Max messages reached: " + max);
+        throw new NeverReachedStateException(max);
       }
       Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
       handleMessage(nextMsg);
