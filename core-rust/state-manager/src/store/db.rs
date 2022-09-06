@@ -105,18 +105,27 @@ pub enum StateManagerDatabase {
 
 impl StateManagerDatabase {
     pub fn from_config(config: DatabaseConfig) -> Self {
-        match config {
+        let mut state_manager_db = match config {
             DatabaseConfig::InMemory => StateManagerDatabase::InMemory {
                 transactions_and_proofs: InMemoryStore::new(),
-                substates: SerializedInMemorySubstateStore::with_bootstrap(),
+                substates: SerializedInMemorySubstateStore::new(),
                 vertices: InMemoryVertexStore::new(),
             },
             DatabaseConfig::RocksDB(path) => {
                 let db = RocksDBStore::new(PathBuf::from(path));
-                StateManagerDatabase::RocksDB(bootstrap(db))
+                StateManagerDatabase::RocksDB(db)
             }
             DatabaseConfig::None => StateManagerDatabase::None,
+        };
+
+        // Bootstrap genesis
+        if !matches!(state_manager_db, StateManagerDatabase::None) {
+            let db_txn = state_manager_db.create_db_transaction();
+            let db_txn = bootstrap(db_txn);
+            db_txn.commit();
         }
+
+        state_manager_db
     }
 }
 
