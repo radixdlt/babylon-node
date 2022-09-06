@@ -65,9 +65,14 @@
 package com.radixdlt.addressing;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.exceptions.Bech32DecodeException;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.serialization.DeserializeException;
 import org.junit.Test;
 
 public class AddressingTest {
@@ -86,5 +91,36 @@ public class AddressingTest {
                 .decodeSystemComponentAddress(
                     "system_test1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsfkwqvf"))
         .isEqualTo(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
+  }
+
+  @Test
+  public void can_encode_and_decode_a_node_address()
+      throws PublicKeyException, DeserializeException {
+    var pubKey =
+        ECPublicKey.fromHex("0236856ea9fa8c243e45fc94ec27c29cf3f17e3a9e19a410ee4a41f4858e379918");
+    var address = Addressing.ofNetwork(Network.INTEGRATIONTESTNET).encodeNodeAddress(pubKey);
+    var decoded = Addressing.ofNetwork(Network.INTEGRATIONTESTNET).decodeNodeAddress(address);
+
+    assertThat(decoded).isEqualTo(pubKey);
+  }
+
+  @Test
+  public void node_address_for_enkinet_is_decoded_correctly()
+      throws PublicKeyException, DeserializeException {
+    var address = "node_tdx_21_1qfk895krd3l8t8z7z7p9sxpjdszpal24f6y2sjtqe7mdkhdele5az658ak2";
+    var expected =
+        ECPublicKey.fromHex("026c72d2c36c7e759c5e17825818326c041efd554e88a84960cfb6db5db9fe69d1");
+    var decoded = Addressing.ofNetwork(Network.ENKINET).decodeNodeAddress(address);
+
+    assertThat(decoded).isEqualTo(expected);
+  }
+
+  @Test
+  public void non_bech32m_addresses_are_not_permitted() {
+    var address = "tn211qg42kem99gpw3esdt7avcncugfl89aq4uzke8l4rakq05u99c0x86qt94jr";
+    assertThatThrownBy(() -> Addressing.decodeNodeAddressUnknownHrp(address))
+        .isInstanceOf(DeserializeException.class)
+        .hasRootCauseInstanceOf(Bech32DecodeException.class)
+        .hasRootCauseMessage("Address was bech32 encoded, not bech32m");
   }
 }

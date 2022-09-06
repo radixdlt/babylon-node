@@ -2859,14 +2859,14 @@ pub enum TemporaryUpSubstateJsonPayloadType {
 impl std::fmt::Display for TemporaryUpSubstateJsonPayloadType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            TemporaryUpSubstateJsonPayloadType::SYSTEM => write!(f, "{}", "system"),
-            TemporaryUpSubstateJsonPayloadType::RESOURCE => write!(f, "{}", "resource"),
-            TemporaryUpSubstateJsonPayloadType::COMPONENT_INFO => write!(f, "{}", "component_info"),
-            TemporaryUpSubstateJsonPayloadType::COMPONENT_STATE => write!(f, "{}", "component_state"),
-            TemporaryUpSubstateJsonPayloadType::PACKAGE => write!(f, "{}", "package"),
-            TemporaryUpSubstateJsonPayloadType::VAULT => write!(f, "{}", "vault"),
-            TemporaryUpSubstateJsonPayloadType::NON_FUNGIBLE => write!(f, "{}", "non_fungible"),
-            TemporaryUpSubstateJsonPayloadType::KEY_VALUE_STORE_ENTRY => write!(f, "{}", "key_value_store_entry"),
+            TemporaryUpSubstateJsonPayloadType::SYSTEM => write!(f, "system"),
+            TemporaryUpSubstateJsonPayloadType::RESOURCE => write!(f, "resource"),
+            TemporaryUpSubstateJsonPayloadType::COMPONENT_INFO => write!(f, "component_info"),
+            TemporaryUpSubstateJsonPayloadType::COMPONENT_STATE => write!(f, "component_state"),
+            TemporaryUpSubstateJsonPayloadType::PACKAGE => write!(f, "package"),
+            TemporaryUpSubstateJsonPayloadType::VAULT => write!(f, "vault"),
+            TemporaryUpSubstateJsonPayloadType::NON_FUNGIBLE => write!(f, "non_fungible"),
+            TemporaryUpSubstateJsonPayloadType::KEY_VALUE_STORE_ENTRY => write!(f, "key_value_store_entry"),
         }
     }
 }
@@ -3987,9 +3987,9 @@ pub enum TransactionStatus {
 impl std::fmt::Display for TransactionStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            TransactionStatus::SUCCEEDED => write!(f, "{}", "succeeded"),
-            TransactionStatus::FAILED => write!(f, "{}", "failed"),
-            TransactionStatus::REJECTED => write!(f, "{}", "rejected"),
+            TransactionStatus::SUCCEEDED => write!(f, "succeeded"),
+            TransactionStatus::FAILED => write!(f, "failed"),
+            TransactionStatus::REJECTED => write!(f, "rejected"),
         }
     }
 }
