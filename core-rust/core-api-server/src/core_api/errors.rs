@@ -1,3 +1,9 @@
+use axum::{
+    response::{IntoResponse, Response},
+    Json,
+};
+use hyper::StatusCode;
+
 use crate::core_api::generated::models::ErrorResponse;
 
 pub(crate) enum RequestHandlingError {
@@ -5,11 +11,18 @@ pub(crate) enum RequestHandlingError {
     ServerError(ErrorResponse),
 }
 
-pub(crate) fn client_error(code: isize, message: &str) -> RequestHandlingError {
+impl IntoResponse for RequestHandlingError {
+    fn into_response(self) -> Response {
+        let body = Json(()); // Fix me
+        (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+    }
+}
+
+pub(crate) fn client_error(code: i32, message: &str) -> RequestHandlingError {
     RequestHandlingError::ClientError(ErrorResponse::new(code, message.to_string()))
 }
 
-pub(crate) fn server_error(code: isize, message: &str) -> RequestHandlingError {
+pub(crate) fn server_error(code: i32, message: &str) -> RequestHandlingError {
     RequestHandlingError::ServerError(ErrorResponse::new(code, message.to_string()))
 }
 
