@@ -174,7 +174,7 @@ public final class RadixNodeModule extends AbstractModule {
     install(new MempoolReceiverModule());
 
     // Mempool Relay
-    install(new MempoolRelayConfig(5, 60000, 60000, 100).asModule());
+    install(new MempoolRelayConfig(0, 0, 0, 100).asModule());
     install(new MempoolRelayerModule());
 
     // Sync
