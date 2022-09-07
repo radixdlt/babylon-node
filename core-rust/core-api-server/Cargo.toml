@@ -20,11 +20,11 @@ state-manager = { path = "../state-manager" }
 #   $ git push "develop-BLAH"
 # * Then use tag="develop-BLAH" in the below dependencies.
 #
-sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-b30229" }
-scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-b30229" }
-transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-b30229" }
-radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-b30229" }
-radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="develop-b30229" }
+sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="genesis-receipt-f91a3b" }
+scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="genesis-receipt-f91a3b" }
+transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="genesis-receipt-f91a3b" }
+radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="genesis-receipt-f91a3b" }
+radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="genesis-receipt-f91a3b" }
 
 jni = "0.19.0"
 
