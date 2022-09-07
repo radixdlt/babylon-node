@@ -73,6 +73,7 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.*;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import org.junit.Test;
 
 public final class REv2GenesisTest {
@@ -97,13 +98,19 @@ public final class REv2GenesisTest {
   }
 
   @Test
-  public void state_reader_on_genesis_returns_correct_amounts() throws Exception {
+  public void state_reader_on_genesis_returns_correct_amounts() {
     // Arrange/Act
     try (var test = createTest()) {
       test.startAllNodes();
 
       // Assert
       var stateReader = test.getInstance(0, REv2StateReader.class);
+
+      var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
+      var genesis = transactionStore.getTransactionAtStateVersion(1);
+      assertThat(genesis.newComponentAddresses())
+          .contains(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
+
       var systemAmount =
           stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
       assertThat(systemAmount).isEqualTo(GENESIS_AMOUNT);

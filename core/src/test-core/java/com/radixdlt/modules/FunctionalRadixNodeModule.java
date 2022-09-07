@@ -345,6 +345,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             install(new REv1ConsensusRecoveryModule());
           }
           case REv2StateComputerConfig rev2Config -> {
+            // Start at stateVersion 1 for now due to lack serialized genesis transaction
+            var initialAccumulatorState = new AccumulatorState(1, HashUtils.zero256());
+
             if (REv2DatabaseConfig.isNone(rev2Config.databaseConfig())) {
               install(new REv2StatelessComputerModule());
               install(new MockedLedgerRecoveryModule());
@@ -353,10 +356,10 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     @Provides
                     private RoundUpdate initialRoundUpdate(
                         BFTConfiguration configuration, ProposerElection proposerElection) {
-                      HighQC highQC = configuration.getVertexStoreState().getHighQC();
-                      Round round = highQC.highestQC().getRound().next();
-                      final BFTNode leader = proposerElection.getProposer(round);
-                      final BFTNode nextLeader = proposerElection.getProposer(round.next());
+                      var highQC = configuration.getVertexStoreState().getHighQC();
+                      var round = highQC.highestQC().getRound().next();
+                      var leader = proposerElection.getProposer(round);
+                      var nextLeader = proposerElection.getProposer(round.next());
 
                       return RoundUpdate.create(round, highQC, leader, nextLeader);
                     }
@@ -366,12 +369,11 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         @LastEpochProof LedgerProof proof,
                         BFTValidatorSet validatorSet,
                         Hasher hasher) {
-                      var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-                      VertexWithHash genesisVertex =
+                      var genesisVertex =
                           Vertex.createGenesis(
-                                  LedgerHeader.genesis(accumulatorState, validatorSet, 0))
+                                  LedgerHeader.genesis(initialAccumulatorState, validatorSet, 0))
                               .withId(hasher);
-                      LedgerHeader nextLedgerHeader =
+                      var nextLedgerHeader =
                           LedgerHeader.create(
                               proof.getNextEpoch(),
                               Round.genesis(),
@@ -387,7 +389,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                     }
                   });
             } else {
-              install(new REv2LedgerRecoveryModule());
+              install(new REv2LedgerRecoveryModule(initialAccumulatorState));
               install(new REv2ConsensusRecoveryModule());
             }
 

@@ -89,8 +89,9 @@ use crate::store::rocks_db::RocksDBCommitTransaction;
 use crate::LedgerTransactionReceipt;
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
 
-// TODO: Remove this and use a real serialized genesis intent hash
+// TODO: Remove this when serialized genesis intent is implemented
 pub const GENESIS_TID: TId = TId { bytes: vec![] };
+pub const GENESIS_STATE_VERSION: u64 = 1;
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
@@ -137,19 +138,23 @@ impl StateManagerDatabase {
             };
             commit_result.state_updates.commit(&mut db_txn);
 
-            let ledger_receipt: LedgerTransactionReceipt = (
-                commit_result,
-                track_receipt.fee_summary,
-                track_receipt.application_logs,
-            )
-                .into();
+            // TODO: Remove this when serialized genesis intent is implemented
+            {
+                let ledger_receipt: LedgerTransactionReceipt = (
+                    commit_result,
+                    track_receipt.fee_summary,
+                    track_receipt.application_logs,
+                )
+                    .into();
 
-            let mock_genesis = Transaction {
-                payload: vec![],
-                id: GENESIS_TID,
-            };
+                let mock_genesis = Transaction {
+                    payload: vec![],
+                    id: GENESIS_TID,
+                };
 
-            db_txn.insert_transactions(vec![(&mock_genesis, ledger_receipt)]);
+                db_txn.insert_transactions(vec![(&mock_genesis, ledger_receipt)]);
+            }
+
             db_txn.commit();
         }
 
@@ -325,6 +330,11 @@ impl QueryableProofStore for StateManagerDatabase {
     }
 
     fn get_tid(&self, state_version: u64) -> Option<TId> {
+        // TODO: Remove this when serialized genesis intent is implemented
+        if state_version == GENESIS_STATE_VERSION {
+            return Some(GENESIS_TID);
+        }
+
         match self {
             StateManagerDatabase::InMemory {
                 transactions_and_proofs,

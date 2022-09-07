@@ -142,7 +142,7 @@ public final class REv2RejectedTransactionTest {
   }
 
   @Test
-  public void rejected_transaction_in_proposal_should_not_be_committed() throws Exception {
+  public void rejected_transaction_in_proposal_should_not_be_committed() {
     var proposalGenerator = new ControlledProposerGenerator();
 
     try (var test = createTest(proposalGenerator)) {
@@ -156,8 +156,8 @@ public final class REv2RejectedTransactionTest {
 
       // Assert: Check transaction and post submission state
       assertThat(proposalGenerator.nextTransaction).isNull();
-      // Verify that no transaction was committed
-      assertNodesSyncedToExactVersion(test.getNodeInjectors(), 0);
+      // Verify that transaction was not committed
+      assertNodesSyncedToExactVersion(test.getNodeInjectors(), 1);
     }
   }
 }

@@ -75,10 +75,12 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.lang.Option;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.logger.EventLoggerConfig;
 import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
@@ -197,7 +199,9 @@ public final class RadixNodeModule extends AbstractModule {
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
     install(REv2StateManagerModule.create(networkId, databaseConfig, Option.some(mempoolConfig)));
-    install(new REv2LedgerRecoveryModule());
+    // Start at stateVersion 1 for now due to lack serialized genesis transaction
+    var initialAccumulatorState = new AccumulatorState(1, HashUtils.zero256());
+    install(new REv2LedgerRecoveryModule(initialAccumulatorState));
 
     // Core API server
     final var coreApiBindAddress =
