@@ -74,10 +74,13 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use crate::types::{TId, Transaction};
-use radix_engine::engine::Substate;
+use radix_engine::engine::{Substate, Track};
+use radix_engine::fee::UnlimitedLoanFeeReserve;
 use radix_engine::ledger::{
-    bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
+    execute_genesis, OutputValue, QueryableSubstateStore, ReadableSubstateStore,
+    WriteableSubstateStore,
 };
+use radix_engine::transaction::TransactionResult;
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 
 use crate::store::in_memory::InMemoryVertexStore;
@@ -85,6 +88,9 @@ use crate::store::query::RecoverableVertexStore;
 use crate::store::rocks_db::RocksDBCommitTransaction;
 use crate::LedgerTransactionReceipt;
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
+
+// TODO: Remove this and use a real serialized genesis intent hash
+pub const GENESIS_TID: TId = TId { bytes: vec![] };
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
@@ -119,9 +125,31 @@ impl StateManagerDatabase {
         };
 
         // Bootstrap genesis
-        if !matches!(state_manager_db, StateManagerDatabase::None) {
-            let db_txn = state_manager_db.create_db_transaction();
-            let db_txn = bootstrap(db_txn);
+        if !matches!(state_manager_db, StateManagerDatabase::None)
+            && state_manager_db.max_state_version() == 0
+        {
+            let mut db_txn = state_manager_db.create_db_transaction();
+            let track = Track::new(&db_txn, UnlimitedLoanFeeReserve::default());
+            let track_receipt = execute_genesis(track);
+            let commit_result = match track_receipt.result {
+                TransactionResult::Commit(result) => result,
+                _ => panic!("Genesis execution failed"),
+            };
+            commit_result.state_updates.commit(&mut db_txn);
+
+            let ledger_receipt: LedgerTransactionReceipt = (
+                commit_result,
+                track_receipt.fee_summary,
+                track_receipt.application_logs,
+            )
+                .into();
+
+            let mock_genesis = Transaction {
+                payload: vec![],
+                id: GENESIS_TID,
+            };
+
+            db_txn.insert_transactions(vec![(&mock_genesis, ledger_receipt)]);
             db_txn.commit();
         }
 
