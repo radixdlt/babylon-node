@@ -76,8 +76,11 @@ node {
     download = true
 }
 
-// Used for eg the startScripts to know which class to start
-mainClassName = project.getProperties().get('overrideMainClassName', 'com.radixdlt.RadixNodeApplication')
+application {
+    mainClass = 'com.radixdlt.RadixNodeApplication'
+    applicationDefaultJvmArgs = ["--enable-preview"]
+}
+
 
 startScripts {
     classpath = files('src/resources') + classpath
@@ -236,7 +239,7 @@ dependencies {
 
 // More memory
 tasks.withType(JavaExec) {
-    jvmArgs = ['-Xmx1024m']
+    jvmArgs('-Xmx1024m')
 }
 
 tasks.withType(Test){

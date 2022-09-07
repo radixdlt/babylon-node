@@ -184,6 +184,11 @@ allprojects {
         jvmArgs("--enable-preview")
         systemProperty "java.library.path", "${project(':core-rust').projectDir}/target/debug"
     }
+
+    tasks.withType(JavaExec) {
+        jvmArgs("--enable-preview")
+        systemProperty "java.library.path", "${project(':core-rust').projectDir}/target/debug"
+    }
 }
 
 subprojects {
