@@ -85,6 +85,7 @@ public final class REv2SimpleFuzzerTransactionGenerator implements TransactionGe
 
   private final Random random;
   private int count = 0;
+  private int transactionNonce = 0;
 
   public REv2SimpleFuzzerTransactionGenerator(Random random) {
     this.random = random;
@@ -123,7 +124,7 @@ public final class REv2SimpleFuzzerTransactionGenerator implements TransactionGe
 
     var header =
         TransactionHeader.defaults(
-            NetworkDefinition.LOCAL_SIMULATOR, keyPair.getPublicKey(), false);
+            NetworkDefinition.LOCAL_SIMULATOR, transactionNonce++, keyPair.getPublicKey(), false);
     var intentBytes =
         TransactionBuilder.createIntent(
             NetworkDefinition.LOCAL_SIMULATOR, header, manifestBuilder.toString());

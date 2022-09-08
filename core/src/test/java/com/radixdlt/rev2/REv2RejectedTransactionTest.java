@@ -155,7 +155,7 @@ public final class REv2RejectedTransactionTest {
             + " ComponentAddress(\"account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064\")"
             + " \"withdraw_by_amount\" Decimal(\"5.0\")"
             + " ResourceAddress(\"resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag\");";
-    var header = TransactionHeader.defaults(NETWORK_DEFINITION, TEST_KEY.getPublicKey(), false);
+    var header = TransactionHeader.defaults(NETWORK_DEFINITION, 1, TEST_KEY.getPublicKey(), false);
     var intentBytes =
         TransactionBuilder.createIntent(NETWORK_DEFINITION, header, rejectableManifest);
     return REv2TestTransactions.constructTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
