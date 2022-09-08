@@ -87,13 +87,15 @@ public final class REv2TestTransactions {
         """,
               Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
                   .encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS)),
-              0,
+          0,
           List.of());
   public static final RawTransaction VALID_TXN_1 =
       constructTransaction("CLEAR_AUTH_ZONE;", 0, List.of(generateKeyPair(10)));
   public static final RawTransaction VALID_TXN_2 =
       constructTransaction(
-          "CLEAR_AUTH_ZONE; CLEAR_AUTH_ZONE;", 0, List.of(generateKeyPair(21), generateKeyPair(22)));
+          "CLEAR_AUTH_ZONE; CLEAR_AUTH_ZONE;",
+          0,
+          List.of(generateKeyPair(21), generateKeyPair(22)));
 
   private static ECKeyPair generateKeyPair(int keySource) {
     return PrivateKeys.numeric(keySource).findFirst().orElseThrow();
@@ -124,14 +126,10 @@ public final class REv2TestTransactions {
         networkDefinition, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
-  public static RawTransaction constructTransaction(String manifest, long nonce, List<ECKeyPair> signatories) {
+  public static RawTransaction constructTransaction(
+      String manifest, long nonce, List<ECKeyPair> signatories) {
     return constructTransaction(
-        NetworkDefinition.INT_TEST_NET,
-        nonce,
-        manifest,
-        DEFAULT_NOTARY,
-        false,
-        signatories);
+        NetworkDefinition.INT_TEST_NET, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
   public static RawTransaction constructTransaction(
