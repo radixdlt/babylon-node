@@ -24,7 +24,7 @@ fn handle_preview_internal(
 
     let result = state_manager
         .preview(preview_request)
-        .map_err(preview_errors::engine_error)?;
+        .map_err(preview_errors::preview_error)?;
 
     let bech32_encoder = Bech32Encoder::new(&state_manager.network);
 
@@ -146,22 +146,26 @@ fn to_api_response(
 }
 
 mod preview_errors {
-    use crate::core_api::errors::{client_error, RequestHandlingError};
+    use crate::core_api::errors::{client_error, server_error, RequestHandlingError};
     use radix_engine::transaction::PreviewError;
 
-    pub(crate) fn engine_error(err: PreviewError) -> RequestHandlingError {
-        client_error(11, &format!("Engine error: {:?}", err))
+    pub(crate) fn preview_error(err: PreviewError) -> RequestHandlingError {
+        match err {
+            PreviewError::TransactionValidationError(err) => {
+                server_error(500, &format!("Transaction validation error: {:?}", err))
+            }
+        }
     }
 
     pub(crate) fn invalid_int_field(field: &str) -> RequestHandlingError {
-        client_error(12, &format!("Invalid integer: {}", field))
+        client_error(400, &format!("Invalid integer: {}", field))
     }
 
     pub(crate) fn invalid_manifest() -> RequestHandlingError {
-        client_error(13, "Invalid manifest")
+        client_error(400, "Invalid manifest")
     }
 
     pub(crate) fn invalid_signer_pub_key(raw_key: &str) -> RequestHandlingError {
-        client_error(14, &format!("Invalid signer public key: {}", raw_key))
+        client_error(400, &format!("Invalid signer public key: {}", raw_key))
     }
 }

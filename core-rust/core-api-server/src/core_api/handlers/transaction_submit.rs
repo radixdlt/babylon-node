@@ -50,16 +50,16 @@ mod transaction_errors {
     use transaction::errors::TransactionValidationError;
 
     pub(crate) fn invalid_transaction() -> RequestHandlingError {
-        client_error(11, "Invalid transaction payload")
+        client_error(400, "Invalid transaction payload")
     }
 
     pub(crate) fn mempool_is_full() -> RequestHandlingError {
-        client_error(12, "Mempool is full")
+        client_error(400, "Mempool is full")
     }
 
     pub(crate) fn transaction_validation_error(
         err: TransactionValidationError,
     ) -> RequestHandlingError {
-        client_error(13, &format!("Transaction validation error: {:?}", err))
+        client_error(400, &format!("Transaction validation error: {:?}", err))
     }
 }

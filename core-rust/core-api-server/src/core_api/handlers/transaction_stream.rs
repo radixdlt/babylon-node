@@ -149,23 +149,23 @@ mod transaction_errors {
     use crate::core_api::errors::{client_error, server_error, RequestHandlingError};
 
     pub(crate) fn invalid_int_field(field: &str) -> RequestHandlingError {
-        client_error(14, &format!("Invalid integer: {}", field))
+        client_error(400, &format!("Invalid integer: {}", field))
     }
 
     pub(crate) fn invalid_start_state_version() -> RequestHandlingError {
         client_error(
-            15,
+            400,
             "start_state_version is invalid (minimum state version is 1)",
         )
     }
 
     pub(crate) fn invalid_committed_txn() -> RequestHandlingError {
-        server_error(16, "Internal server error: invalid committed txn payload")
+        server_error(500, "Internal server error: invalid committed txn payload")
     }
 
     pub(crate) fn missing_transaction_at_state_version(state_version: u64) -> RequestHandlingError {
         server_error(
-            17,
+            500,
             &format!(
                 "A transaction is missing at state version {}",
                 state_version
