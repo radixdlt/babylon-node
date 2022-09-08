@@ -76,10 +76,7 @@ import java.util.List;
 
 public final class REv2TestTransactions {
   // These have to come first for static ordering issues
-  private static int currentTransactionNonce = 1;
-  private static int currentKeyGenNonce = 1;
-
-  public static final ECKeyPair DEFAULT_NOTARY = getNewKeyPair();
+  public static final ECKeyPair DEFAULT_NOTARY = generateKeyPair(1);
 
   public static final RawTransaction VALID_TXN_0 =
       constructTransaction(
@@ -90,19 +87,16 @@ public final class REv2TestTransactions {
         """,
               Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
                   .encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS)),
+              0,
           List.of());
   public static final RawTransaction VALID_TXN_1 =
-      constructTransaction("CLEAR_AUTH_ZONE;", List.of(getNewKeyPair()));
+      constructTransaction("CLEAR_AUTH_ZONE;", 0, List.of(generateKeyPair(10)));
   public static final RawTransaction VALID_TXN_2 =
       constructTransaction(
-          "CLEAR_AUTH_ZONE; CLEAR_AUTH_ZONE;", List.of(getNewKeyPair(), getNewKeyPair()));
+          "CLEAR_AUTH_ZONE; CLEAR_AUTH_ZONE;", 0, List.of(generateKeyPair(21), generateKeyPair(22)));
 
-  private static ECKeyPair getNewKeyPair() {
-    return PrivateKeys.numeric(currentKeyGenNonce++).findFirst().orElseThrow();
-  }
-
-  private static long getNewTransactionNonce() {
-    return currentTransactionNonce++;
+  private static ECKeyPair generateKeyPair(int keySource) {
+    return PrivateKeys.numeric(keySource).findFirst().orElseThrow();
   }
 
   public static RawTransaction constructNewAccountTransaction(
@@ -130,10 +124,10 @@ public final class REv2TestTransactions {
         networkDefinition, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
-  public static RawTransaction constructTransaction(String manifest, List<ECKeyPair> signatories) {
+  public static RawTransaction constructTransaction(String manifest, long nonce, List<ECKeyPair> signatories) {
     return constructTransaction(
         NetworkDefinition.INT_TEST_NET,
-        getNewTransactionNonce(),
+        nonce,
         manifest,
         DEFAULT_NOTARY,
         false,
