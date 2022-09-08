@@ -75,8 +75,9 @@ import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 
 public final class REv2TestTransactions {
-  // This has to come first for static ordering issues
-  private static int currentKey = 1;
+  // These have to come first for static ordering issues
+  private static int currentTransactionNonce = 1;
+  private static int currentKeyGenNonce = 1;
 
   public static final ECKeyPair DEFAULT_NOTARY = getNewKeyPair();
 
@@ -97,10 +98,15 @@ public final class REv2TestTransactions {
           "CLEAR_AUTH_ZONE; CLEAR_AUTH_ZONE;", List.of(getNewKeyPair(), getNewKeyPair()));
 
   private static ECKeyPair getNewKeyPair() {
-    return PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
+    return PrivateKeys.numeric(currentKeyGenNonce++).findFirst().orElseThrow();
   }
 
-  public static RawTransaction constructNewAccountTransaction(NetworkDefinition networkDefinition) {
+  private static long getNewTransactionNonce() {
+    return currentTransactionNonce++;
+  }
+
+  public static RawTransaction constructNewAccountTransaction(
+      NetworkDefinition networkDefinition, long nonce) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
 
     final var faucetAddress =
@@ -120,23 +126,31 @@ public final class REv2TestTransactions {
             faucetAddress, faucetAddress, xrdAddress, accountPackageAddress);
     var signatories = List.<ECKeyPair>of();
 
-    return constructTransaction(networkDefinition, manifest, DEFAULT_NOTARY, false, signatories);
+    return constructTransaction(
+        networkDefinition, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
   public static RawTransaction constructTransaction(String manifest, List<ECKeyPair> signatories) {
     return constructTransaction(
-        NetworkDefinition.INT_TEST_NET, manifest, DEFAULT_NOTARY, false, signatories);
+        NetworkDefinition.INT_TEST_NET,
+        getNewTransactionNonce(),
+        manifest,
+        DEFAULT_NOTARY,
+        false,
+        signatories);
   }
 
   public static RawTransaction constructTransaction(
       NetworkDefinition networkDefinition,
+      long nonce,
       String manifest,
       ECKeyPair notary,
       boolean notaryIsSignatory,
       List<ECKeyPair> signatories) {
     // Build intent
     final var header =
-        TransactionHeader.defaults(networkDefinition, notary.getPublicKey(), notaryIsSignatory);
+        TransactionHeader.defaults(
+            networkDefinition, nonce, notary.getPublicKey(), notaryIsSignatory);
     var intentBytes = TransactionBuilder.createIntent(networkDefinition, header, manifest);
 
     // Sign intent
