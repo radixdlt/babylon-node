@@ -18,7 +18,7 @@ FROM base as mapped-volume-build
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
 
-CMD cargo build --target=${TARGET} ${RUST_BINARY_TYPE}
+CMD cargo build --target=$TARGET --profile=$RUST_PROFILE
 
 FROM base as cache-packages
 ARG TARGET
@@ -42,15 +42,15 @@ COPY core-rust/core-api-server/Cargo.toml ./dummy/core-api-server
 
 RUN mv ./dummy/src/main.rs ./dummy/src/lib.rs
 WORKDIR /app/dummy
-RUN cargo build --target=$TARGET --release
+RUN cargo build --target=$TARGET --profile=$RUST_PROFILE
 RUN rm -rf /app/dummy/*
 
 FROM cache-packages as prod-build
 WORKDIR /app
-# Now - we copy in everything, and do the actual built
+# Now - we copy in everything, and do the actual build
 COPY core-rust ./
 
-RUN cargo build --target=$TARGET --release
+RUN cargo build --target=$TARGET --profile=$RUST_PROFILE
 RUN cp -R target/$TARGET/release/libcorerust.so /
 RUN rm -rf /app
 

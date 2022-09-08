@@ -116,6 +116,7 @@ task buildRustForDocker(type: Exec) {
         def outputDir="core-rust/target/$target"
         def rustBuilderRepo = "eu.gcr.io/dev-container-repo/rust-builder-base"
         def rustCacheRepo = "eu.gcr.io/dev-container-repo/rust-cache-packages"
+        def env_rust_profile = project.property("rustBinaryBuildType") == "debug" ? "dev" : project.property("rustBinaryBuildType")
         def cacheTag = project.properties['cacheBranch'] ?: "latest"
         def dockerMultiStageCmd = """
              set -x
@@ -125,15 +126,15 @@ task buildRustForDocker(type: Exec) {
              docker pull $rustBuilderRepo:$cacheTag || true
              docker pull $rustCacheRepo:$cacheTag || true
              docker build -f docker/rust-builder/Dockerfile \\
-                 --target=base --build-arg TARGET=$target --build-arg BUILDKIT_INLINE_CACHE=1 \\
+                 --target=base --build-arg TARGET=$target --build-arg RUST_PROFILE=$env_rust_profile --build-arg BUILDKIT_INLINE_CACHE=1 \\
                  --cache-from=$rustBuilderRepo:$cacheTag \\
                  --tag $rustBuilderRepo:$cacheTag .
              docker build -f docker/rust-builder/Dockerfile \\
-                 --target=cache-packages --build-arg TARGET=$target --build-arg BUILDKIT_INLINE_CACHE=1 \\
+                 --target=cache-packages --build-arg TARGET=$target --build-arg RUST_PROFILE=$env_rust_profile --build-arg BUILDKIT_INLINE_CACHE=1 \\
                  --cache-from=$rustBuilderRepo:$cacheTag --cache-from=$rustCacheRepo:$cacheTag  \\
                  --tag $rustCacheRepo:$cacheTag .
              docker build -f docker/rust-builder/Dockerfile \\
-               --target=artifact --build-arg TARGET=$target --build-arg BUILDKIT_INLINE_CACHE=1 \\
+               --target=artifact --build-arg TARGET=$target --build-arg RUST_PROFILE=$env_rust_profile --build-arg BUILDKIT_INLINE_CACHE=1 \\
                --cache-from=$rustBuilderRepo:$cacheTag --cache-from=$rustCacheRepo:$cacheTag  \\
                --output type=local,dest=core-rust/target/$target/${project.property("rustBinaryBuildType")}/ .
              docker push $rustBuilderRepo:$cacheTag || true
@@ -143,11 +144,11 @@ task buildRustForDocker(type: Exec) {
 
         commandLine 'sh', '-c', dockerMultiStageCmd
     } else{
-        def env_rust_binary_type = project.property("rustBinaryBuildType") == "debug" ? "" : "--${project.property("rustBinaryBuildType")}"
+        def env_rust_profile = project.property("rustBinaryBuildType") == "debug" ? "dev" : project.property("rustBinaryBuildType")
         def dockerComposeRun = """
             docker compose -f ../docker/rust-builder/build-sm.yaml build
             docker compose -f ../docker/rust-builder/build-sm.yaml run \\
-                --env TARGET=$target --env RUST_BINARY_TYPE=${env_rust_binary_type} build-sm
+                --env TARGET=$target --env RUST_PROFILE=$env_rust_profile build-sm
             """
         commandLine 'sh', '-c', dockerComposeRun
     }
