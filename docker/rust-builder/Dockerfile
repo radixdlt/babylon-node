@@ -14,14 +14,21 @@ RUN rustup target add aarch64-unknown-linux-gnu && \
 RUN rustup target add x86_64-unknown-linux-gnu && \
     rustup toolchain install stable-x86_64-unknown-linux-gnu
 
+# This mapped-volume-build is used in development, via the build-sm.yaml docker compose.
+# By using mounts, this allows artifact caching. The whole core-rust directory is mounted, and run is called.
+# After the above stage, only this stage of the docker file is built in development.
+# This part of the docker file is ignored on CI.
 FROM base as mapped-volume-build
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
 
 CMD cargo build --target=$TARGET --profile=$RUST_PROFILE
 
+# On CI we use docker build instead of docker compose.
+# The mapped-volume-build stage is skipped, and the following stages are run, with sub-stages cached for future runs.
 FROM base as cache-packages
 ARG TARGET
+ARG RUST_PROFILE
 
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
