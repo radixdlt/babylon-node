@@ -1,46 +1,32 @@
-use crate::core_api::conversions::{to_api_fee_summary, to_api_receipt, to_sbor_hex};
-use crate::core_api::errors::{common_server_errors, RequestHandlingError};
-use crate::core_api::generated::models::{TransactionPreviewRequest, TransactionPreviewResponse};
-use crate::core_api::generated::{models, TransactionPreviewPostResponse};
+use crate::core_api::models::*;
+use crate::core_api::*;
+use axum::{Extension, Json};
 use radix_engine::transaction::{PreviewResult, TransactionResult};
 use scrypto::address::Bech32Encoder;
 use scrypto::crypto::EcdsaPublicKey;
 use scrypto::prelude::scrypto_decode;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{LedgerTransactionReceipt, PreviewRequest};
-use std::sync::{Arc, Mutex};
 use transaction::model::{PreviewFlags, TransactionManifest};
 
-pub(crate) fn handle_preview(
-    state_manager: Arc<Mutex<ActualStateManager>>,
-    request: TransactionPreviewRequest,
-) -> TransactionPreviewPostResponse {
-    match handle_preview_internal(state_manager, request) {
-        Ok(response) => TransactionPreviewPostResponse::TransactionPreviewResponse(response),
-        Err(RequestHandlingError::ClientError(error_response)) => {
-            TransactionPreviewPostResponse::ClientError(error_response)
-        }
-        Err(RequestHandlingError::ServerError(error_response)) => {
-            TransactionPreviewPostResponse::ServerError(error_response)
-        }
-    }
+pub(crate) async fn handle_transaction_preview(
+    state: Extension<CoreApiState>,
+    request: Json<TransactionPreviewRequest>,
+) -> Result<Json<TransactionPreviewResponse>, RequestHandlingError> {
+    core_api_handler(state, request, handle_preview_internal)
 }
 
 fn handle_preview_internal(
-    state_manager: Arc<Mutex<ActualStateManager>>,
+    state_manager: &mut ActualStateManager,
     request: TransactionPreviewRequest,
 ) -> Result<TransactionPreviewResponse, RequestHandlingError> {
     let preview_request = parse_preview_request(request)?;
 
-    let mut locked_state_manager = state_manager
-        .lock()
-        .map_err(|_| common_server_errors::state_manager_lock_error())?;
-
-    let result = locked_state_manager
+    let result = state_manager
         .preview(preview_request)
-        .map_err(preview_errors::engine_error)?;
+        .map_err(preview_errors::preview_error)?;
 
-    let bech32_encoder = Bech32Encoder::new(&locked_state_manager.network);
+    let bech32_encoder = Bech32Encoder::new(&state_manager.network);
 
     to_api_response(result, &bech32_encoder)
 }
@@ -130,27 +116,27 @@ fn to_api_response(
             })?;
 
             TransactionPreviewResponse {
-                receipt: to_api_receipt(bech32_encoder, ledger_receipt),
+                receipt: Box::new(to_api_receipt(bech32_encoder, ledger_receipt)),
                 resource_changes: api_resource_changes,
                 logs,
             }
         }
         TransactionResult::Reject(reject_result) => TransactionPreviewResponse {
-            receipt: models::TransactionReceipt {
-                status: models::TransactionStatus::REJECTED,
-                fee_summary: to_api_fee_summary(receipt.execution.fee_summary),
-                state_updates: models::StateUpdates {
+            receipt: Box::new(models::TransactionReceipt {
+                status: models::TransactionStatus::Rejected,
+                fee_summary: Box::new(to_api_fee_summary(receipt.execution.fee_summary)),
+                state_updates: Box::new(models::StateUpdates {
                     down_virtual_substates: vec![],
                     up_substates: vec![],
                     down_substates: vec![],
                     new_roots: vec![],
-                },
+                }),
                 new_package_addresses: vec![],
                 new_component_addresses: vec![],
                 new_resource_addresses: vec![],
                 output: None,
                 error_message: Some(format!("{:?}", reject_result)),
-            },
+            }),
             resource_changes: vec![],
             logs,
         },
@@ -160,22 +146,26 @@ fn to_api_response(
 }
 
 mod preview_errors {
-    use crate::core_api::errors::{client_error, RequestHandlingError};
+    use crate::core_api::errors::{client_error, server_error, RequestHandlingError};
     use radix_engine::transaction::PreviewError;
 
-    pub(crate) fn engine_error(err: PreviewError) -> RequestHandlingError {
-        client_error(11, &format!("Engine error: {:?}", err))
+    pub(crate) fn preview_error(err: PreviewError) -> RequestHandlingError {
+        match err {
+            PreviewError::TransactionValidationError(err) => {
+                server_error(500, &format!("Transaction validation error: {:?}", err))
+            }
+        }
     }
 
     pub(crate) fn invalid_int_field(field: &str) -> RequestHandlingError {
-        client_error(12, &format!("Invalid integer: {}", field))
+        client_error(400, &format!("Invalid integer: {}", field))
     }
 
     pub(crate) fn invalid_manifest() -> RequestHandlingError {
-        client_error(13, "Invalid manifest")
+        client_error(400, "Invalid manifest")
     }
 
     pub(crate) fn invalid_signer_pub_key(raw_key: &str) -> RequestHandlingError {
-        client_error(14, &format!("Invalid signer public key: {}", raw_key))
+        client_error(400, &format!("Invalid signer public key: {}", raw_key))
     }
 }

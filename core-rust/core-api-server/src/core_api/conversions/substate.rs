@@ -1,4 +1,4 @@
-use crate::core_api::generated::models;
+use crate::core_api::models;
 use radix_engine::engine::Substate;
 use radix_engine::model::{ComponentInfo, ComponentState, ResourceManager, ValidatedPackage};
 use scrypto::address::Bech32Encoder;
@@ -11,38 +11,38 @@ pub fn to_api_substate(
 ) -> (models::TemporaryUpSubstateJsonPayloadType, String) {
     match substate {
         Substate::System(_system) => (
-            models::TemporaryUpSubstateJsonPayloadType::SYSTEM,
+            models::TemporaryUpSubstateJsonPayloadType::System,
             to_json(&models::EmptySubstate::new()),
         ),
         Substate::Resource(resource_manager) => (
-            models::TemporaryUpSubstateJsonPayloadType::RESOURCE,
+            models::TemporaryUpSubstateJsonPayloadType::Resource,
             to_json(&to_api_resource_substate(resource_manager)),
         ),
         Substate::ComponentInfo(component_info) => (
-            models::TemporaryUpSubstateJsonPayloadType::COMPONENT_INFO,
+            models::TemporaryUpSubstateJsonPayloadType::ComponentInfo,
             to_json(&to_api_component_info_substate(
                 component_info,
                 bech32_encoder,
             )),
         ),
         Substate::ComponentState(component_state) => (
-            models::TemporaryUpSubstateJsonPayloadType::COMPONENT_STATE,
+            models::TemporaryUpSubstateJsonPayloadType::ComponentState,
             to_json(&to_api_component_state_substate(component_state)),
         ),
         Substate::Package(validated_package) => (
-            models::TemporaryUpSubstateJsonPayloadType::PACKAGE,
+            models::TemporaryUpSubstateJsonPayloadType::Package,
             to_json(&to_api_package_substate(validated_package)),
         ),
         Substate::Vault(_vault) => (
-            models::TemporaryUpSubstateJsonPayloadType::VAULT,
+            models::TemporaryUpSubstateJsonPayloadType::Vault,
             to_json(&models::EmptySubstate::new()),
         ),
         Substate::NonFungible(_non_fungible_wrapper) => (
-            models::TemporaryUpSubstateJsonPayloadType::NON_FUNGIBLE,
+            models::TemporaryUpSubstateJsonPayloadType::NonFungible,
             to_json(&models::EmptySubstate::new()),
         ),
         Substate::KeyValueStoreEntry(_kv_store_entry_wrapper) => (
-            models::TemporaryUpSubstateJsonPayloadType::KEY_VALUE_STORE_ENTRY,
+            models::TemporaryUpSubstateJsonPayloadType::KeyValueStoreEntry,
             to_json(&models::EmptySubstate::new()),
         ),
     }
@@ -50,12 +50,15 @@ pub fn to_api_substate(
 
 fn to_api_resource_substate(resource_manager: &ResourceManager) -> models::ResourceSubstate {
     let (resource_type, fungible_divisibility) = match resource_manager.resource_type() {
-        ResourceType::Fungible { divisibility } => ("fungible", Some(divisibility as isize)),
-        ResourceType::NonFungible => ("non_fungible", None),
+        ResourceType::Fungible { divisibility } => (
+            models::resource_substate::ResourceType::Fungible,
+            Some(divisibility as i32),
+        ),
+        ResourceType::NonFungible => (models::resource_substate::ResourceType::NonFungible, None),
     };
     // TODO: map method_table, vault_method_table, bucket_method_table, authorization
     models::ResourceSubstate {
-        resource_type: resource_type.to_string(),
+        resource_type,
         fungible_divisibility,
         metadata: resource_manager
             .metadata()

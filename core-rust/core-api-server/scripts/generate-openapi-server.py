@@ -27,6 +27,10 @@ def replace_in_file(filename, target, replacement):
     with open(filename, 'w') as file:
         file.write(str(file_contents))
 
+def create_file(filename, file_contents):
+    with open(filename, 'w') as file:
+        file.write(str(file_contents))
+
 def copy_file(source, dest):
     shutil.copyfile(source, dest)
 
@@ -41,32 +45,25 @@ def run(command, cwd = '.', should_log = False):
 
 def generate_models(spec_file, tmp_client_folder, out_location):
     safe_os_remove(out_location, True)
+    # See https://openapi-generator.tech/docs/generators/rust/
     run(['java', '-jar', OPENAPI_GENERATOR_FIXED_VERSION_JAR, 'generate',
-         '-g', 'rust-server',
+         '-g', 'rust',
          '-i', spec_file,
          '-o', tmp_client_folder
          ], should_log=False)
 
     rust_code_root = os.path.join(tmp_client_folder, 'src')
+    rust_models = os.path.join(rust_code_root, 'models')
+    out_models = os.path.join(out_location, 'models')
 
     os.makedirs(os.path.join(out_location))
-    # A dict of generated_file -> output_file
-    files = {
-        os.path.join('server', 'mod.rs') : 'server.rs',
-        'context.rs' : 'context.rs',
-        'header.rs' : 'header.rs',
-        'lib.rs': 'mod.rs',
-        'models.rs' : 'models.rs' }
+    shutil.copytree(rust_models, out_models)
+    create_file(os.path.join(out_location, 'mod.rs'), "pub mod models;")
 
-    for (source_file, out_file) in files.items():
-        # Copy the file
-        copy_file(os.path.join(rust_code_root, source_file), os.path.join(out_location, out_file))
-        # Fix crate imports
-        replace_in_file(os.path.join(out_location, out_file), 'crate::', 'crate::core_api::generated::')
-        # Remove server feature annotations
-        replace_in_file(os.path.join(out_location, out_file), '#[cfg(feature = "server")]', '')
-        replace_in_file(os.path.join(out_location, out_file), '#[cfg(any(feature = "client", feature = "server"))]', '')
-
+    files = [os.path.join(out_models, f) for f in os.listdir(out_models) if os.path.isfile(os.path.join(out_models, f))]
+    for file_path in files:
+        replace_in_file(file_path, 'crate::', 'crate::core_api::generated::')
+        replace_in_file(file_path, ', Serialize, Deserialize', ', serde::Serialize, serde::Deserialize')
     logging.info("Successfully generated!")
 
 if __name__ == "__main__":
@@ -101,4 +98,4 @@ if __name__ == "__main__":
     logging.info("Code has been created.")
 
     # clean up
-    safe_os_remove(OPENAPI_TEMP_GENERATION_FOLDER, silent=True)
+    # safe_os_remove(OPENAPI_TEMP_GENERATION_FOLDER, silent=True)

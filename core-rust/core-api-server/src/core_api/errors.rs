@@ -1,3 +1,9 @@
+use axum::{
+    response::{IntoResponse, Response},
+    Json,
+};
+use hyper::StatusCode;
+
 use crate::core_api::generated::models::ErrorResponse;
 
 pub(crate) enum RequestHandlingError {
@@ -5,11 +11,25 @@ pub(crate) enum RequestHandlingError {
     ServerError(ErrorResponse),
 }
 
-pub(crate) fn client_error(code: isize, message: &str) -> RequestHandlingError {
+impl IntoResponse for RequestHandlingError {
+    fn into_response(self) -> Response {
+        let error_response = match self {
+            Self::ClientError(r) => r,
+            Self::ServerError(r) => r,
+        };
+        let http_code = u16::try_from(error_response.code).unwrap_or(500);
+        let status_code = StatusCode::from_u16(http_code).expect("Http code was unexpected");
+
+        let body = Json(error_response);
+        (status_code, body).into_response()
+    }
+}
+
+pub(crate) fn client_error(code: i32, message: &str) -> RequestHandlingError {
     RequestHandlingError::ClientError(ErrorResponse::new(code, message.to_string()))
 }
 
-pub(crate) fn server_error(code: isize, message: &str) -> RequestHandlingError {
+pub(crate) fn server_error(code: i32, message: &str) -> RequestHandlingError {
     RequestHandlingError::ServerError(ErrorResponse::new(code, message.to_string()))
 }
 
@@ -17,10 +37,10 @@ pub(crate) mod common_server_errors {
     use crate::core_api::errors::{server_error, RequestHandlingError};
 
     pub(crate) fn state_manager_lock_error() -> RequestHandlingError {
-        server_error(1, "Internal server error: state manager lock")
+        server_error(500, "Internal server error: state manager lock")
     }
 
     pub(crate) fn unexpected_state(details: &str) -> RequestHandlingError {
-        server_error(2, &format!("Unexpected state: {}", details))
+        server_error(500, &format!("Unexpected state: {}", details))
     }
 }

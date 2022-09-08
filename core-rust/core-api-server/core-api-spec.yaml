@@ -108,7 +108,7 @@ paths:
             application/json:
               schema:
                 "$ref": "#/components/schemas/ErrorResponse"
-  "/transactions":
+  "/transaction/stream":
     post:
       summary: Get committed transactions
       tags:
