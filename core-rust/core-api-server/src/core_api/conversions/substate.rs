@@ -1,6 +1,6 @@
 use crate::core_api::models;
 use radix_engine::engine::Substate;
-use radix_engine::model::{ComponentInfo, ComponentState, ResourceManager, ValidatedPackage};
+use radix_engine::model::{ComponentInfo, ComponentState, Package, ResourceManager};
 use scrypto::address::Bech32Encoder;
 use scrypto::prelude::ResourceType;
 use serde::Serialize;
@@ -91,7 +91,7 @@ fn to_api_component_state_substate(
     }
 }
 
-fn to_api_package_substate(validated_package: &ValidatedPackage) -> models::PackageSubstate {
+fn to_api_package_substate(validated_package: &Package) -> models::PackageSubstate {
     // TODO: map blueprint_abis
     models::PackageSubstate {
         code: hex::encode(validated_package.code()),
