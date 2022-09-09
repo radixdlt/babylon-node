@@ -92,7 +92,7 @@ fn to_api_response(
                     resource_address: bech32_encoder.encode_resource_address(&v.resource_address),
                     component_address: bech32_encoder
                         .encode_component_address(&v.component_address),
-                    vault_id: to_sbor_hex(&v.vault_id),
+                    vault_entity_id: Box::new(to_vault_entity_id(&v.vault_id).into()),
                     amount: v.amount.to_string(),
                 })
                 .collect();

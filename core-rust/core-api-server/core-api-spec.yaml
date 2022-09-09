@@ -14,6 +14,7 @@ openapi: 3.1.0
 # => For descriptions of encoded types, we follow this pattern: 'The xyz-encoded, abc-encoded xx of the yy'
 #    EG 'The hex-encoded, SBOR-encoded data' or 'The hex-encoded double-SHA256 hash of the banana payload'
 # => Don't end in a full-stop, unless it is more than 1 sentence, then all sentences should end in a full stop
+# => It's not technically valid to have both $ref and description, but it works in ReDocly, so feel free to do it
 info:
   version: '0.1.0'
   title: 'Babylon Core API'
@@ -206,9 +207,9 @@ components:
           $ref: "#/components/schemas/StateUpdates"
         output:
           type: array
+          description: The manifest line-by-line engine return data (only present if status is Succeeded)
           items:
-            type: string
-          description: The hex-encoded, SBOR-encoded, line-by-line engine return data (only present if status is Succeeded)
+            $ref: "#/components/schemas/SborData"
         error_message:
           type: string
           description: Error message (only present if status is Failed or Rejected)
@@ -524,16 +525,15 @@ components:
       required:
         - resource_address
         - component_address
-        - vault_id
+        - vault_entity_id
         - amount
       properties:
         resource_address:
           $ref: "#/components/schemas/ResourceAddress"
         component_address:
           $ref: "#/components/schemas/ComponentAddress"
-        vault_id:
-          type: string
-          description: The hex-encoded, SBOR-encoded Vault ID
+        vault_entity_id:
+          $ref: "#/components/schemas/EntityId"
         amount:
           type: string
           description: The XRD amount put or taken from the vault. A fixed-scale 256-bit signed decimal number.
@@ -662,17 +662,13 @@ components:
     DataStruct:
       type: object
       required:
-        - struct_data_bytes
-        - struct_data_json
+        - struct_data
         - owned_entities
         - referenced_entities
       properties:
-        struct_data_bytes:
-          type: string
-          description: The hex-encoded, SBOR-encoded struct data
-        struct_data_json:
-          type: string
-          description: The string-encoded JSON representing the encoded struct SBOR
+        struct_data:
+          $ref: '#/components/schemas/SborData'
+          description: The struct data
         owned_entities:
           type: array
           items:
@@ -681,6 +677,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EntityId'
+    SborData:
+      type: object
+      required:
+        - data_bytes
+        - data_json
+      properties:
+        data_bytes:
+          type: string
+          description: The hex-encoded, raw SBOR-encoded data
+        data_json:
+          type: string
+          description: A JSON string representing the encoded SBOR
     PackageSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'

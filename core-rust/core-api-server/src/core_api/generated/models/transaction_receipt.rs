@@ -20,9 +20,9 @@ pub struct TransactionReceipt {
     pub fee_summary: Box<crate::core_api::generated::models::FeeSummary>,
     #[serde(rename = "state_updates")]
     pub state_updates: Box<crate::core_api::generated::models::StateUpdates>,
-    /// The hex-encoded, SBOR-encoded, line-by-line engine return data (only present if status is Succeeded)
+    /// The manifest line-by-line engine return data (only present if status is Succeeded)
     #[serde(rename = "output", skip_serializing_if = "Option::is_none")]
-    pub output: Option<Vec<String>>,
+    pub output: Option<Vec<crate::core_api::generated::models::SborData>>,
     /// Error message (only present if status is Failed or Rejected)
     #[serde(rename = "error_message", skip_serializing_if = "Option::is_none")]
     pub error_message: Option<String>,

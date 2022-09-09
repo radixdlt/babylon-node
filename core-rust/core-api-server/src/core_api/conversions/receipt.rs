@@ -18,8 +18,7 @@ pub fn to_api_receipt(
 
     let (status, output, error_message) = match receipt.status {
         CommittedTransactionStatus::Success(output) => {
-            let output_hex: Vec<String> = output.into_iter().map(to_hex).collect();
-            (TransactionStatus::Succeeded, Some(output_hex), None)
+            (TransactionStatus::Succeeded, Some(output), None)
         }
         CommittedTransactionStatus::Failure(error) => {
             (TransactionStatus::Failed, None, Some(error))
@@ -62,11 +61,21 @@ pub fn to_api_receipt(
 
     let api_fee_summary = to_api_fee_summary(fee_summary);
 
+    let api_output = match output {
+        Some(output) => Some(
+            output
+                .into_iter()
+                .map(|line_output| scrypto_bytes_to_api_sbor_data(&line_output))
+                .collect::<Result<Vec<_>, _>>()?,
+        ),
+        None => None,
+    };
+
     Ok(TransactionReceipt {
         status,
         fee_summary: Box::new(api_fee_summary),
         state_updates: Box::new(api_state_updates),
-        output,
+        output: api_output,
         error_message,
     })
 }

@@ -13,12 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct DataStruct {
-    /// The hex-encoded, SBOR-encoded struct data
-    #[serde(rename = "struct_data_bytes")]
-    pub struct_data_bytes: String,
-    /// The string-encoded JSON representing the encoded struct SBOR
-    #[serde(rename = "struct_data_json")]
-    pub struct_data_json: String,
+    #[serde(rename = "struct_data")]
+    pub struct_data: Box<crate::core_api::generated::models::SborData>,
     #[serde(rename = "owned_entities")]
     pub owned_entities: Vec<crate::core_api::generated::models::EntityId>,
     #[serde(rename = "referenced_entities")]
@@ -26,10 +22,9 @@ pub struct DataStruct {
 }
 
 impl DataStruct {
-    pub fn new(struct_data_bytes: String, struct_data_json: String, owned_entities: Vec<crate::core_api::generated::models::EntityId>, referenced_entities: Vec<crate::core_api::generated::models::EntityId>) -> DataStruct {
+    pub fn new(struct_data: crate::core_api::generated::models::SborData, owned_entities: Vec<crate::core_api::generated::models::EntityId>, referenced_entities: Vec<crate::core_api::generated::models::EntityId>) -> DataStruct {
         DataStruct {
-            struct_data_bytes,
-            struct_data_json,
+            struct_data: Box::new(struct_data),
             owned_entities,
             referenced_entities,
         }

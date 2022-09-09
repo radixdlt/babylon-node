@@ -4,6 +4,7 @@ use std::collections::BTreeSet;
 use super::{addressing::*, to_hex};
 use crate::core_api::models;
 use models::EntityType;
+
 use radix_engine::engine::Substate;
 use radix_engine::model::{
     ComponentInfo, ComponentState, KeyValueStoreEntryWrapper, NonFungible, NonFungibleWrapper,
@@ -97,8 +98,10 @@ fn scrypto_value_to_api_data_struct(
 ) -> Result<models::DataStruct, MappingError> {
     let entities = extract_entities(&scrypto_value)?;
     Ok(models::DataStruct {
-        struct_data_bytes: to_hex(scrypto_value.raw),
-        struct_data_json: serde_json::to_string(&scrypto_value.dom).expect("JSON serialize error"),
+        struct_data: Box::new(models::SborData {
+            data_bytes: to_hex(scrypto_value.raw),
+            data_json: serde_json::to_string(&scrypto_value.dom).expect("JSON serialize error"),
+        }),
         owned_entities: entities.owned_entities,
         referenced_entities: entities.referenced_entities,
     })
@@ -294,7 +297,7 @@ fn to_api_key_value_story_entry_substate(
 
 fn to_api_data_struct(data: &[u8]) -> Result<models::DataStruct, MappingError> {
     let scrypto_value =
-        ScryptoValue::from_slice(data).map_err(|err| MappingError::InvalidDataStruct {
+        ScryptoValue::from_slice(data).map_err(|err| MappingError::InvalidSbor {
             decode_error: err,
             bytes: data.to_vec(),
         })?;

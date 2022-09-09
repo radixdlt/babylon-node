@@ -14,7 +14,7 @@ pub enum MappingError {
     InvalidRootEntity {
         message: String,
     },
-    InvalidDataStruct {
+    InvalidSbor {
         decode_error: DecodeError,
         bytes: Vec<u8>,
     },

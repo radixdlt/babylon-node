@@ -74,6 +74,8 @@ pub mod resource_manager_substate_all_of_metadata;
 pub use self::resource_manager_substate_all_of_metadata::ResourceManagerSubstateAllOfMetadata;
 pub mod resource_type;
 pub use self::resource_type::ResourceType;
+pub mod sbor_data;
+pub use self::sbor_data::SborData;
 pub mod signed_transaction_intent;
 pub use self::signed_transaction_intent::SignedTransactionIntent;
 pub mod state_identifier;
