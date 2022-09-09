@@ -600,11 +600,32 @@ components:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - state
+            - state_bytes
+            - substate_data_struct
           properties:
-            state:
+            state_bytes:
               type: string
-              description: hex-encoded state data
+              description: Hex-encoded SBOR-encoded state data
+            substate_data_struct:
+              $ref: '#/components/schemas/SubstateDataStruct'
+    SubstateDataStruct:
+      type: object
+      required:
+        - struct_json_str
+        - owned_entities
+        - referenced_entities
+      properties:
+        struct_json_str:
+          type: string
+          description: A json representation of the SBOR encoded struct
+        owned_entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntityId'
+        referenced_entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntityId'
     PackageSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'

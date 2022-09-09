@@ -52,6 +52,8 @@ def generate_models(spec_file, tmp_client_folder, out_location):
          '-o', tmp_client_folder
          ], should_log=False)
 
+    logging.info("Successfully generated.")
+
     rust_code_root = os.path.join(tmp_client_folder, 'src')
     rust_models = os.path.join(rust_code_root, 'models')
     out_models = os.path.join(out_location, 'models')
@@ -77,7 +79,7 @@ def generate_models(spec_file, tmp_client_folder, out_location):
     replace_in_file(up_substate_file, 'Box<crate::core_api::generated::models::Substate>,', 'Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use')
     replace_in_file(up_substate_file, 'substate_data: Box::new(substate_data)', 'substate_data: Option::Some(substate_data)')
     
-    logging.info("Successfully generated!")
+    logging.info("Successfully fixed up.")
 
 if __name__ == "__main__":
     logger.info('Will generate models from the API specifications')

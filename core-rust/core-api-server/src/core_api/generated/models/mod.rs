@@ -58,6 +58,8 @@ pub mod substate;
 pub use self::substate::Substate;
 pub mod substate_base;
 pub use self::substate_base::SubstateBase;
+pub mod substate_data_struct;
+pub use self::substate_data_struct::SubstateDataStruct;
 pub mod substate_id;
 pub use self::substate_id::SubstateId;
 pub mod substate_type;

@@ -27,9 +27,11 @@ pub enum Substate {
     ComponentStateSubstate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
-        /// hex-encoded state data
-        #[serde(rename = "state")]
-        state: String,
+        /// Hex-encoded SBOR-encoded state data
+        #[serde(rename = "state_bytes")]
+        state_bytes: String,
+        #[serde(rename = "substate_data_struct")]
+        substate_data_struct: Box<crate::core_api::generated::models::SubstateDataStruct>,
     },
     #[serde(rename="KeyValueStoreEntry")]
     KeyValueStoreEntrySubstate {

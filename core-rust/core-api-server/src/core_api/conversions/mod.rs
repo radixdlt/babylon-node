@@ -1,3 +1,4 @@
+mod addressing;
 mod common;
 mod errors;
 mod receipt;

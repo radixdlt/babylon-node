@@ -17,17 +17,20 @@ pub struct ComponentStateSubstate {
     pub entity_type: crate::core_api::generated::models::EntityType,
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// hex-encoded state data
-    #[serde(rename = "state")]
-    pub state: String,
+    /// Hex-encoded SBOR-encoded state data
+    #[serde(rename = "state_bytes")]
+    pub state_bytes: String,
+    #[serde(rename = "substate_data_struct")]
+    pub substate_data_struct: Box<crate::core_api::generated::models::SubstateDataStruct>,
 }
 
 impl ComponentStateSubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, state: String) -> ComponentStateSubstate {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, state_bytes: String, substate_data_struct: crate::core_api::generated::models::SubstateDataStruct) -> ComponentStateSubstate {
         ComponentStateSubstate {
             entity_type,
             substate_type,
-            state,
+            state_bytes,
+            substate_data_struct: Box::new(substate_data_struct),
         }
     }
 }

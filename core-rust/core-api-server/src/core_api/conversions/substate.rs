@@ -1,3 +1,4 @@
+use super::addressing::*;
 use crate::core_api::models;
 use models::EntityType;
 use radix_engine::engine::Substate;
@@ -5,6 +6,7 @@ use radix_engine::model::{
     ComponentInfo, ComponentState, KeyValueStoreEntryWrapper, NonFungibleWrapper, Package,
     ResourceManager, System, Vault,
 };
+use radix_engine::types::ScryptoValue;
 use scrypto::address::Bech32Encoder;
 use scrypto::prelude::ResourceType;
 
@@ -21,7 +23,7 @@ pub fn to_api_substate(
             to_api_component_info_substate(component_info, bech32_encoder)
         }
         Substate::ComponentState(component_state) => {
-            to_api_component_state_substate(component_state)
+            to_api_component_state_substate(component_state)?
         }
         Substate::Package(validated_package) => to_api_package_substate(validated_package),
         Substate::Vault(vault) => to_api_vault_substate(vault),
@@ -84,11 +86,89 @@ fn to_api_component_info_substate(
     }
 }
 
-fn to_api_component_state_substate(component_state: &ComponentState) -> models::Substate {
-    models::Substate::ComponentStateSubstate {
+fn to_api_component_state_substate(
+    component_state: &ComponentState,
+) -> Result<models::Substate, MappingError> {
+    let scrypto_value = ScryptoValue::from_slice(component_state.state()).map_err(|err| {
+        MappingError::InvalidComponentState {
+            decode_error: err,
+            bytes: component_state.state().to_vec(),
+        }
+    })?;
+
+    Ok(models::Substate::ComponentStateSubstate {
         entity_type: EntityType::Component,
-        state: hex::encode(component_state.state()),
+        state_bytes: hex::encode(component_state.state()),
+        substate_data_struct: Box::new(to_api_substate_data_struct(scrypto_value)?),
+    })
+}
+
+fn to_api_substate_data_struct(
+    scrypto_value: ScryptoValue,
+) -> Result<models::SubstateDataStruct, MappingError> {
+    let entities = extract_entities(&scrypto_value)?;
+    Ok(models::SubstateDataStruct {
+        struct_json_str: serde_json::to_string(&scrypto_value.dom).expect("JSON serialize error"),
+        owned_entities: entities.owned_entities,
+        referenced_entities: entities.referenced_entities,
+    })
+}
+
+struct Entities {
+    pub owned_entities: Vec<models::EntityId>,
+    pub referenced_entities: Vec<models::EntityId>,
+}
+
+fn extract_entities(struct_scrypto_value: &ScryptoValue) -> Result<Entities, MappingError> {
+    if !struct_scrypto_value.bucket_ids.is_empty() {
+        Err(MappingError::InvalidComponentStateEntities {
+            message: "Bucket/s in state".to_owned(),
+        })?;
     }
+    if !struct_scrypto_value.proof_ids.is_empty() {
+        Err(MappingError::InvalidComponentStateEntities {
+            message: "Proof/s in state".to_owned(),
+        })?;
+    }
+
+    let mut owned_entities = Vec::<models::EntityId>::new();
+    owned_entities.extend(
+        struct_scrypto_value
+            .owned_component_addresses
+            .iter()
+            .map(|x| to_component_entity_id(*x).into()),
+    );
+    owned_entities.extend(
+        struct_scrypto_value
+            .vault_ids
+            .iter()
+            .map(|x| to_vault_entity_id(*x).into()),
+    );
+    owned_entities.extend(
+        struct_scrypto_value
+            .kv_store_ids
+            .iter()
+            .map(|x| to_key_value_store_entity_id(*x).into()),
+    );
+
+    let mut referenced_entities = Vec::<models::EntityId>::new();
+    referenced_entities.extend(
+        struct_scrypto_value
+            .refed_component_addresses
+            .iter()
+            .map(|x| to_component_entity_id(*x).into()),
+    );
+    referenced_entities.extend(
+        struct_scrypto_value
+            .resource_addresses
+            .iter()
+            .map(|x| to_resource_entity_id(*x).into()),
+    );
+
+    Ok(Entities {
+        owned_entities,
+        referenced_entities,
+    })
 }
 
 fn to_api_package_substate(package: &Package) -> models::Substate {
