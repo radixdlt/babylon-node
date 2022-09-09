@@ -18,7 +18,7 @@ pub struct ResourceManagerSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
     #[serde(rename = "resource_type")]
-    pub resource_type: ResourceType,
+    pub resource_type: crate::core_api::generated::models::ResourceType,
     #[serde(rename = "fungible_divisibility", skip_serializing_if = "Option::is_none")]
     pub fungible_divisibility: Option<i32>,
     #[serde(rename = "metadata")]
@@ -28,7 +28,7 @@ pub struct ResourceManagerSubstate {
 }
 
 impl ResourceManagerSubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, resource_type: ResourceType, metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>, total_supply: String) -> ResourceManagerSubstate {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, resource_type: crate::core_api::generated::models::ResourceType, metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>, total_supply: String) -> ResourceManagerSubstate {
         ResourceManagerSubstate {
             entity_type,
             substate_type,
@@ -40,18 +40,4 @@ impl ResourceManagerSubstate {
     }
 }
 
-/// 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
-pub enum ResourceType {
-    #[serde(rename = "fungible")]
-    Fungible,
-    #[serde(rename = "non_fungible")]
-    NonFungible,
-}
-
-impl Default for ResourceType {
-    fn default() -> ResourceType {
-        Self::Fungible
-    }
-}
 

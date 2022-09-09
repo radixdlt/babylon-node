@@ -20,11 +20,14 @@ pub enum MappingError {
     InvalidRootEntity {
         message: String,
     },
-    InvalidComponentState {
+    InvalidDataStruct {
         decode_error: DecodeError,
         bytes: Vec<u8>,
     },
     InvalidComponentStateEntities {
+        message: String,
+    },
+    MismatchedSubstateId {
         message: String,
     },
 }

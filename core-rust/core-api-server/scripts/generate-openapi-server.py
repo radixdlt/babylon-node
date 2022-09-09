@@ -71,6 +71,8 @@ def generate_models(spec_file, tmp_client_folder, out_location):
     # Fix bugs in generation:
     substate_enum_file = os.path.join(out_models, "substate.rs")
     up_substate_file = os.path.join(out_models, "up_substate.rs")
+    vault_substate_file = os.path.join(out_models, "vault_substate.rs")
+    vault_substate_all_of_file = os.path.join(out_models, "vault_substate_all_of.rs")
     
     # Fix bug that discriminator tags are stripped and lower cased
     replace_in_file(substate_enum_file, 'tag = "substatetype"', 'tag = "substate_type"')
@@ -79,6 +81,11 @@ def generate_models(spec_file, tmp_client_folder, out_location):
     replace_in_file(up_substate_file, 'Box<crate::core_api::generated::models::Substate>,', 'Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use')
     replace_in_file(up_substate_file, 'substate_data: Box::new(substate_data)', 'substate_data: Option::Some(substate_data)')
     
+    replace_in_file(vault_substate_file, 'Box<crate::core_api::generated::models::ResourceAmount>,', 'Option<crate::core_api::generated::models::ResourceAmount>, // Using Option permits Default trait; Will always be Some in normal use')
+    replace_in_file(vault_substate_all_of_file, 'Box<crate::core_api::generated::models::ResourceAmount>,', 'Option<crate::core_api::generated::models::ResourceAmount>, // Using Option permits Default trait; Will always be Some in normal use')
+    replace_in_file(vault_substate_file, 'resource_amount: Box::new(resource_amount)', 'resource_amount: Option::Some(resource_amount)')
+    replace_in_file(vault_substate_all_of_file, 'resource_amount: Box::new(resource_amount)', 'resource_amount: Option::Some(resource_amount)')
+
     logging.info("Successfully fixed up.")
 
 if __name__ == "__main__":

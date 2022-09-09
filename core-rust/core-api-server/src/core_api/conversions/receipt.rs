@@ -51,7 +51,7 @@ pub fn to_api_receipt(
     let new_global_entities = state_updates
         .new_roots
         .into_iter()
-        .map(|x| to_api_global_entity_id(bech32_encoder, x))
+        .map(|x| to_api_global_entity_id_from_substate_id(bech32_encoder, x))
         .collect::<Result<Vec<_>, _>>()?;
 
     let api_state_updates = StateUpdates {
@@ -93,12 +93,18 @@ pub fn to_api_up_substate(
 ) -> Result<UpSubstate, MappingError> {
     let substate_bytes = scrypto_encode(&output_value.substate);
     let hash = to_hex(hash(&substate_bytes));
+
+    let api_substate_data = Option::Some(to_api_substate(
+        &substate_id,
+        &output_value.substate,
+        bech32_encoder,
+    )?);
     Ok(UpSubstate {
         substate_id: Box::new(to_api_substate_id(substate_id)?),
         version: output_value.version.to_string(),
         substate_bytes: to_hex(substate_bytes),
         substate_data_hash: hash,
-        substate_data: Option::Some(to_api_substate(&output_value.substate, bech32_encoder)?),
+        substate_data: api_substate_data,
     })
 }
 

@@ -12,20 +12,14 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct VaultSubstate {
-    #[serde(rename = "entity_type")]
-    pub entity_type: crate::core_api::generated::models::EntityType,
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
+pub struct VaultSubstateAllOf {
     #[serde(rename = "resource_amount")]
     pub resource_amount: Option<crate::core_api::generated::models::ResourceAmount>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-impl VaultSubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, resource_amount: crate::core_api::generated::models::ResourceAmount) -> VaultSubstate {
-        VaultSubstate {
-            entity_type,
-            substate_type,
+impl VaultSubstateAllOf {
+    pub fn new(resource_amount: crate::core_api::generated::models::ResourceAmount) -> VaultSubstateAllOf {
+        VaultSubstateAllOf {
             resource_amount: Option::Some(resource_amount),
         }
     }

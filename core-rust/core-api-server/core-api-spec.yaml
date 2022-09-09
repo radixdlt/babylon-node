@@ -562,10 +562,7 @@ components:
             - total_supply
           properties:
             resource_type:
-              type: string
-              enum:
-                - fungible
-                - non_fungible
+              $ref: '#/components/schemas/ResourceType'
             fungible_divisibility:
               type: integer
             metadata:
@@ -582,6 +579,11 @@ components:
                     type: string
             total_supply:
               type: string
+    ResourceType:
+      type: string
+      enum:
+        - Fungible
+        - NonFungible
     ComponentInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -601,23 +603,27 @@ components:
         - type: object
           required:
             - state_bytes
-            - substate_data_struct
+            - data_struct
           properties:
             state_bytes:
               type: string
               description: Hex-encoded SBOR-encoded state data
-            substate_data_struct:
-              $ref: '#/components/schemas/SubstateDataStruct'
-    SubstateDataStruct:
+            data_struct:
+              $ref: '#/components/schemas/DataStruct'
+    DataStruct:
       type: object
       required:
-        - struct_json_str
+        - struct_data_bytes
+        - struct_data_json
         - owned_entities
         - referenced_entities
       properties:
-        struct_json_str:
+        struct_data_bytes:
           type: string
-          description: A json representation of the SBOR encoded struct
+          description: Hex-encoded SBOR-encoded struct data
+        struct_data_json:
+          type: string
+          description: String-encoded JSON representing the encoded struct SBOR
         owned_entities:
           type: array
           items:
@@ -639,12 +645,100 @@ components:
     VaultSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - resource_amount
+          properties:
+            resource_amount:
+              $ref: '#/components/schemas/ResourceAmount'
+    ResourceAmount:
+      oneOf:
+        - $ref: '#/components/schemas/FungibleResourceAmount'
+        - $ref: '#/components/schemas/NonFungibleResourceAmount'
+      discriminator:
+        propertyName: resource_type
+        mapping:
+          # NOTE: These need to match ResourceType options
+          Fungible: '#/components/schemas/FungibleResourceAmount'
+          NonFungible: '#/components/schemas/NonFungibleResourceAmount'
+    ResourceAmountBase:
+      type: object
+      required:
+        - resource_type
+        - resource_global_address_bytes
+        - resource_global_address_string
+      properties:
+        resource_type:
+          $ref: '#/components/schemas/ResourceType'
+        resource_global_address_bytes:
+          type: string
+          description: Hex-encoded bytes of the resource's global address
+        resource_global_address_string:
+          type: string
+          description: The Bech32m-encoded human readable representation of the resource's global address
+    FungibleResourceAmount:
+      allOf:
+        - $ref: '#/components/schemas/ResourceAmountBase'
+        - type: object
+          required:
+            - amount_subunits
+          properties:
+            amount_subunits:
+              type: string
+              description: The string-encoded decimal subunits of the amount (10^-18)
+    NonFungibleResourceAmount:
+      allOf:
+        - $ref: '#/components/schemas/ResourceAmountBase'
+        - type: object
+          required:
+            - nf_ids
+          properties:
+            nf_ids:
+              type: array
+              items:
+                type: string
+                description: Hex-encoded bytes of the non-fungible ids
     NonFungibleSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - nf_id
+            - is_deleted
+          properties:
+            nf_id:
+              type: string
+              description: Hex-encoded bytes of its non-fungible id
+            is_deleted:
+              type: boolean
+            non_fungible_data:
+              $ref: '#/components/schemas/NonFungibleData'
+    NonFungibleData:
+      type: object
+      description: Only present if the non fungible isn't deleted
+      required:
+        - immutable_data
+        - mutable_data
+      properties:
+        immutable_data:
+          $ref: '#/components/schemas/DataStruct'
+        mutable_data:
+          $ref: '#/components/schemas/DataStruct'
     KeyValueStoreEntrySubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - key
+            - is_deleted
+          properties:
+            key:
+              type: string
+              description: Hex-encoded bytes of its key
+            is_deleted:
+              type: boolean
+            data_struct:
+              $ref: '#/components/schemas/DataStruct'
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################

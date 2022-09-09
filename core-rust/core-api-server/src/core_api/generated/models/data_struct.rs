@@ -12,20 +12,24 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct SubstateDataStruct {
-    /// A json representation of the SBOR encoded struct
-    #[serde(rename = "struct_json_str")]
-    pub struct_json_str: String,
+pub struct DataStruct {
+    /// Hex-encoded SBOR-encoded struct data
+    #[serde(rename = "struct_data_bytes")]
+    pub struct_data_bytes: String,
+    /// String-encoded JSON representing the encoded struct SBOR
+    #[serde(rename = "struct_data_json")]
+    pub struct_data_json: String,
     #[serde(rename = "owned_entities")]
     pub owned_entities: Vec<crate::core_api::generated::models::EntityId>,
     #[serde(rename = "referenced_entities")]
     pub referenced_entities: Vec<crate::core_api::generated::models::EntityId>,
 }
 
-impl SubstateDataStruct {
-    pub fn new(struct_json_str: String, owned_entities: Vec<crate::core_api::generated::models::EntityId>, referenced_entities: Vec<crate::core_api::generated::models::EntityId>) -> SubstateDataStruct {
-        SubstateDataStruct {
-            struct_json_str,
+impl DataStruct {
+    pub fn new(struct_data_bytes: String, struct_data_json: String, owned_entities: Vec<crate::core_api::generated::models::EntityId>, referenced_entities: Vec<crate::core_api::generated::models::EntityId>) -> DataStruct {
+        DataStruct {
+            struct_data_bytes,
+            struct_data_json,
             owned_entities,
             referenced_entities,
         }

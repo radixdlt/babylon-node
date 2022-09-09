@@ -9,13 +9,20 @@ pub const FAKED_SYSTEM_ADDRESS: ComponentAddress = ComponentAddress::System([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5,
 ]);
 
-pub fn to_api_global_entity_id(
+pub fn to_api_global_entity_id_from_substate_id(
     bech32_encoder: &Bech32Encoder,
     substate_id: SubstateId,
 ) -> Result<models::GlobalEntityId, MappingError> {
     let mapped = to_mapped_substate_id(substate_id)?;
-    let entity_type = mapped.0;
-    let address_bytes = mapped.1;
+    to_api_global_entity_id(bech32_encoder, mapped.into())
+}
+
+pub fn to_api_global_entity_id(
+    bech32_encoder: &Bech32Encoder,
+    entity_id: MappedEntityId,
+) -> Result<models::GlobalEntityId, MappingError> {
+    let entity_type = entity_id.entity_type;
+    let address_bytes = entity_id.entity_address;
     let address_bytes_hex = to_hex(&address_bytes);
 
     let global_address_str = match entity_type {
@@ -38,7 +45,7 @@ pub fn to_api_global_entity_id(
     };
 
     Ok(models::GlobalEntityId {
-        entity_type: mapped.0,
+        entity_type,
         entity_address: address_bytes_hex.clone(),
         global_address_bytes: address_bytes_hex,
         global_address_str,
@@ -89,6 +96,15 @@ impl From<MappedSubstateId> for models::SubstateId {
             entity_address: to_hex(mapped_substate_id.1),
             substate_type: mapped_substate_id.2,
             substate_key: to_hex(mapped_substate_id.3),
+        }
+    }
+}
+
+impl From<MappedSubstateId> for MappedEntityId {
+    fn from(mapped_substate_id: MappedSubstateId) -> Self {
+        MappedEntityId {
+            entity_type: mapped_substate_id.0,
+            entity_address: mapped_substate_id.1,
         }
     }
 }
@@ -156,14 +172,14 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         })?,
         SubstateId::KeyValueStoreEntry(basic_address, key) => MappedSubstateId(
             EntityType::KeyValueStore,
-            basic_address_to_vec(basic_address),
+            basic_address_to_vec(&basic_address),
             SubstateType::KeyValueStoreEntry,
             prefix(vec![1], key),
         ),
         // VAULT SUBSTATES
         SubstateId::Vault(basic_address) => MappedSubstateId(
             EntityType::Vault,
-            basic_address_to_vec(basic_address),
+            basic_address_to_vec(&basic_address),
             SubstateType::Vault,
             vec![0],
         ),
@@ -196,7 +212,7 @@ pub fn to_api_virtual_substate_id(
         // KeyValueStoreSpace key is downed to create a KeyValueStoreEntry
         SubstateId::KeyValueStoreSpace(basic_address) => MappedSubstateId(
             EntityType::KeyValueStore,
-            basic_address_to_vec(basic_address),
+            basic_address_to_vec(&basic_address),
             SubstateType::KeyValueStoreEntry,
             prefix(vec![1], key),
         ),
@@ -213,14 +229,14 @@ pub fn to_api_virtual_substate_id(
     })
 }
 
-pub fn to_component_entity_id(component_address: ComponentAddress) -> MappedEntityId {
+pub fn to_component_entity_id(component_address: &ComponentAddress) -> MappedEntityId {
     MappedEntityId {
         entity_type: EntityType::Component,
         entity_address: component_address.to_vec(),
     }
 }
 
-pub fn to_resource_entity_id(resource_address: ResourceAddress) -> MappedEntityId {
+pub fn to_resource_entity_id(resource_address: &ResourceAddress) -> MappedEntityId {
     MappedEntityId {
         entity_type: EntityType::ResourceManager,
         entity_address: resource_address.to_vec(),
@@ -228,21 +244,21 @@ pub fn to_resource_entity_id(resource_address: ResourceAddress) -> MappedEntityI
 }
 
 #[allow(dead_code)]
-pub fn to_package_entity_id(package_address: PackageAddress) -> MappedEntityId {
+pub fn to_package_entity_id(package_address: &PackageAddress) -> MappedEntityId {
     MappedEntityId {
         entity_type: EntityType::Package,
         entity_address: package_address.to_vec(),
     }
 }
 
-pub fn to_vault_entity_id(basic_address: BasicAddress) -> MappedEntityId {
+pub fn to_vault_entity_id(basic_address: &BasicAddress) -> MappedEntityId {
     MappedEntityId {
         entity_type: EntityType::Vault,
         entity_address: basic_address_to_vec(basic_address),
     }
 }
 
-pub fn to_key_value_store_entity_id(basic_address: BasicAddress) -> MappedEntityId {
+pub fn to_key_value_store_entity_id(basic_address: &BasicAddress) -> MappedEntityId {
     MappedEntityId {
         entity_type: EntityType::KeyValueStore,
         entity_address: basic_address_to_vec(basic_address),
@@ -251,7 +267,7 @@ pub fn to_key_value_store_entity_id(basic_address: BasicAddress) -> MappedEntity
 
 // NB - see id_allocator.rs - addresses are formed from (tx_hash, index_in_tx_for_exec_mode + offset_for_exec_mode)
 // There is a separate exec_mode for the manifest and the standard Application executor
-fn basic_address_to_vec(basic_address: BasicAddress) -> Vec<u8> {
+fn basic_address_to_vec(basic_address: &BasicAddress) -> Vec<u8> {
     // NOTE - this only works because the trunc of basic_address is of fixed length.
     // If basic_address became variable length, we'd need to do something else (eg sbor encode) to ensure a 1:1 mapping here
 

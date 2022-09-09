@@ -12,11 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct NonFungibleSubstate {
-    #[serde(rename = "entity_type")]
-    pub entity_type: crate::core_api::generated::models::EntityType,
-    #[serde(rename = "substate_type")]
-    pub substate_type: crate::core_api::generated::models::SubstateType,
+pub struct NonFungibleSubstateAllOf {
     /// Hex-encoded bytes of its non-fungible id
     #[serde(rename = "nf_id")]
     pub nf_id: String,
@@ -26,11 +22,9 @@ pub struct NonFungibleSubstate {
     pub non_fungible_data: Option<Box<crate::core_api::generated::models::NonFungibleData>>,
 }
 
-impl NonFungibleSubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, nf_id: String, is_deleted: bool) -> NonFungibleSubstate {
-        NonFungibleSubstate {
-            entity_type,
-            substate_type,
+impl NonFungibleSubstateAllOf {
+    pub fn new(nf_id: String, is_deleted: bool) -> NonFungibleSubstateAllOf {
+        NonFungibleSubstateAllOf {
             nf_id,
             is_deleted,
             non_fungible_data: None,

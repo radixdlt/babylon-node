@@ -16,15 +16,15 @@ pub struct ComponentStateSubstateAllOf {
     /// Hex-encoded SBOR-encoded state data
     #[serde(rename = "state_bytes")]
     pub state_bytes: String,
-    #[serde(rename = "substate_data_struct")]
-    pub substate_data_struct: Box<crate::core_api::generated::models::SubstateDataStruct>,
+    #[serde(rename = "data_struct")]
+    pub data_struct: Box<crate::core_api::generated::models::DataStruct>,
 }
 
 impl ComponentStateSubstateAllOf {
-    pub fn new(state_bytes: String, substate_data_struct: crate::core_api::generated::models::SubstateDataStruct) -> ComponentStateSubstateAllOf {
+    pub fn new(state_bytes: String, data_struct: crate::core_api::generated::models::DataStruct) -> ComponentStateSubstateAllOf {
         ComponentStateSubstateAllOf {
             state_bytes,
-            substate_data_struct: Box::new(substate_data_struct),
+            data_struct: Box::new(data_struct),
         }
     }
 }
