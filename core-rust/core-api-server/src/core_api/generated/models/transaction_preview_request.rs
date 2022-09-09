@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionPreviewRequest {
-    /// The name of the network.
+    /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
     /// A hex-encoded, SBOR-encoded transaction manifest

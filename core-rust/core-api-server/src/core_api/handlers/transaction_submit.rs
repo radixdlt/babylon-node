@@ -17,6 +17,8 @@ fn handle_transaction_submit_internal(
     state_manager: &mut ActualStateManager,
     request: TransactionSubmitRequest,
 ) -> Result<TransactionSubmitResponse, RequestHandlingError> {
+    assert_matching_network(&request.network, &state_manager.network)?;
+
     let transaction_bytes = hex::decode(request.notarized_transaction)
         .map_err(|_| transaction_errors::invalid_transaction())?;
 

@@ -3,6 +3,7 @@ use axum::{
     Json,
 };
 use hyper::StatusCode;
+use radix_engine::types::NetworkDefinition;
 
 use crate::core_api::generated::models::ErrorResponse;
 
@@ -33,6 +34,22 @@ impl From<ErrorResponse> for ErrorResponseWithCode {
         let body = Json(error_response);
         (status_code, body)
     }
+}
+
+pub(crate) fn assert_matching_network(
+    request_network: &str,
+    network_definition: &NetworkDefinition,
+) -> Result<(), RequestHandlingError> {
+    if request_network != network_definition.logical_name {
+        return Err(client_error(
+            400,
+            &format!(
+                "Invalid network - the network is actually: {}",
+                network_definition.logical_name
+            ),
+        ));
+    }
+    Ok(())
 }
 
 pub(crate) fn client_error(code: u32, message: &str) -> RequestHandlingError {

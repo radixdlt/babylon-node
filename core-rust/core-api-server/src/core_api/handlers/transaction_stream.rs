@@ -23,6 +23,8 @@ fn handle_transaction_stream_internal(
     state_manager: &mut ActualStateManager,
     request: CommittedTransactionsRequest,
 ) -> Result<CommittedTransactionsResponse, RequestHandlingError> {
+    assert_matching_network(&request.network, &state_manager.network)?;
+
     let start_state_version: u64 = request.start_state_version;
 
     if start_state_version < 1 {

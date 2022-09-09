@@ -19,6 +19,8 @@ fn handle_preview_internal(
     state_manager: &mut ActualStateManager,
     request: TransactionPreviewRequest,
 ) -> Result<TransactionPreviewResponse, RequestHandlingError> {
+    assert_matching_network(&request.network, &state_manager.network)?;
+
     let preview_request = parse_preview_request(request)?;
 
     let result = state_manager

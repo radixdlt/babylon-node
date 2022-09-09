@@ -91,6 +91,7 @@ pub async fn create_server<F>(
             "/status/network-configuration",
             post(handle_network_configuration),
         )
+        .route("/status/network-status", post(handle_network_status))
         .route("/transaction/submit", post(handle_transaction_submit))
         .route("/transaction/preview", post(handle_transaction_preview))
         .route("/transaction/stream", post(handle_transaction_stream))

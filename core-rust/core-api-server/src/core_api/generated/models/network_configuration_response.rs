@@ -15,7 +15,7 @@
 pub struct NetworkConfigurationResponse {
     #[serde(rename = "version")]
     pub version: Box<crate::core_api::generated::models::NetworkConfigurationResponseVersion>,
-    /// The name of the network.
+    /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
     /// The network suffix used for Bech32m HRPs used for addressing.

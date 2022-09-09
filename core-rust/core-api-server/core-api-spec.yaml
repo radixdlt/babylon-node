@@ -61,6 +61,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  "/status/network-status":
+    post:
+      summary: Get Network Status
+      description: Returns the current state and status of the node's copy of the ledger.
+      tags:
+        - Status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/NetworkStatusRequest"
+      responses:
+        '200':
+          description: Network Status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetworkStatusResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   "/transaction/submit":
     post:
       summary: Submit transaction to the network
@@ -303,9 +328,21 @@ components:
           type: string
           description: Specifies the validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of "1" corresponds to 1%).
     NetworkIdentifier:
-      description: The name of the network.
+      description: The logical name of the network
       type: string
       example: mainnet
+    StateIdentifier:
+      type: object
+      # This should expand to include transaction accumulator and state hash
+      required:
+        - version
+      properties:
+        version:
+          description: The state version increments with each transaction.
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 18446744073709551615
     ErrorResponse:
       type: object
       required:
@@ -774,6 +811,34 @@ components:
         network_hrp_suffix:
           type: string
           description: The network suffix used for Bech32m HRPs used for addressing.
+###################################
+# REQUEST: /status/network-status #
+###################################
+    NetworkStatusRequest:
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+    NetworkStatusResponse:
+      type: object
+      required:
+        - pre_genesis_state_identifier
+        - post_genesis_state_identifier
+        - current_state_identifier
+      properties:
+        pre_genesis_state_identifier:
+          $ref: "#/components/schemas/StateIdentifier"
+          description: The ledger state identifier before the genesis transaction
+        post_genesis_state_identifier:
+          $ref: "#/components/schemas/StateIdentifier"
+          description: The ledger state identifier after the genesis transaction
+        current_state_identifier:
+          $ref: "#/components/schemas/StateIdentifier"
+          description: |
+            The current state identifier at the top of the node's copy of the ledger.
+            This is also the resultant state identifier of the node's last committed transaction.
 ################################
 # REQUEST: /transaction/submit #
 ################################
