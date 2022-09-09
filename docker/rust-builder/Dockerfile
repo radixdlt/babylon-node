@@ -2,17 +2,19 @@ FROM rust:1.62.1-slim as base
 WORKDIR /app
 
 RUN apt update; apt upgrade -y && \
-    apt install -y curl && \
-    apt install -y g++-x86-64-linux-gnu && \
-    apt install -y g++-aarch64-linux-gnu libc6-dev-arm64-cross && \
-    apt install -y build-essential && \
-    apt install -y libclang-dev
+  apt install -y \
+  build-essential \
+  curl \
+  g++-aarch64-linux-gnu \
+  g++-x86-64-linux-gnu \
+  libc6-dev-arm64-cross \
+  libclang-dev
 
 RUN rustup target add aarch64-unknown-linux-gnu && \
-    rustup toolchain install stable-aarch64-unknown-linux-gnu
+  rustup toolchain install stable-aarch64-unknown-linux-gnu
 
 RUN rustup target add x86_64-unknown-linux-gnu && \
-    rustup toolchain install stable-x86_64-unknown-linux-gnu
+  rustup toolchain install stable-x86_64-unknown-linux-gnu
 
 # This mapped-volume-build is used in development, via the build-sm.yaml docker compose.
 # By using mounts, this allows artifact caching. The whole core-rust directory is mounted, and run is called.
