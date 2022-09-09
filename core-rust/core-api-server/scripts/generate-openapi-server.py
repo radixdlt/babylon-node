@@ -62,8 +62,21 @@ def generate_models(spec_file, tmp_client_folder, out_location):
 
     files = [os.path.join(out_models, f) for f in os.listdir(out_models) if os.path.isfile(os.path.join(out_models, f))]
     for file_path in files:
+        replace_in_file(file_path, 'tag = "substatetype"', 'tag = "substate_type"') # Fix bug in generation
         replace_in_file(file_path, 'crate::', 'crate::core_api::generated::')
         replace_in_file(file_path, ', Serialize, Deserialize', ', serde::Serialize, serde::Deserialize')
+
+    # Fix bugs in generation:
+    substate_enum_file = os.path.join(out_models, "substate.rs")
+    up_substate_file = os.path.join(out_models, "up_substate.rs")
+    
+    # Fix bug that discriminator tags are stripped and lower cased
+    replace_in_file(substate_enum_file, 'tag = "substatetype"', 'tag = "substate_type"')
+
+    # Fix bug that enums don't implement Default... So replace their references with Options
+    replace_in_file(up_substate_file, 'Box<crate::core_api::generated::models::Substate>,', 'Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use')
+    replace_in_file(up_substate_file, 'substate_data: Box::new(substate_data)', 'substate_data: Option::Some(substate_data)')
+    
     logging.info("Successfully generated!")
 
 if __name__ == "__main__":

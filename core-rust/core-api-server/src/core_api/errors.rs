@@ -6,6 +6,7 @@ use hyper::StatusCode;
 
 use crate::core_api::generated::models::ErrorResponse;
 
+#[derive(Debug, Clone)]
 pub(crate) enum RequestHandlingError {
     ClientError(ErrorResponse),
     ServerError(ErrorResponse),
@@ -33,6 +34,7 @@ pub(crate) fn server_error(code: i32, message: &str) -> RequestHandlingError {
     RequestHandlingError::ServerError(ErrorResponse::new(code, message.to_string()))
 }
 
+// TODO - Add logging, metrics and tracing for all of these errors - require the error is passed in here
 pub(crate) mod common_server_errors {
     use crate::core_api::errors::{server_error, RequestHandlingError};
 
@@ -42,5 +44,12 @@ pub(crate) mod common_server_errors {
 
     pub(crate) fn unexpected_state(details: &str) -> RequestHandlingError {
         server_error(500, &format!("Unexpected state: {}", details))
+    }
+
+    pub(crate) fn mapping_error(details: &str) -> RequestHandlingError {
+        server_error(
+            500,
+            &format!("Unexpected state, mapping failed: {}", details),
+        )
     }
 }

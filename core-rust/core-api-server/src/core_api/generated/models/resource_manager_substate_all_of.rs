@@ -12,20 +12,20 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ResourceSubstate {
+pub struct ResourceManagerSubstateAllOf {
     #[serde(rename = "resource_type")]
     pub resource_type: ResourceType,
     #[serde(rename = "fungible_divisibility", skip_serializing_if = "Option::is_none")]
     pub fungible_divisibility: Option<i32>,
     #[serde(rename = "metadata")]
-    pub metadata: Vec<crate::core_api::generated::models::ResourceSubstateMetadataInner>,
+    pub metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>,
     #[serde(rename = "total_supply")]
     pub total_supply: String,
 }
 
-impl ResourceSubstate {
-    pub fn new(resource_type: ResourceType, metadata: Vec<crate::core_api::generated::models::ResourceSubstateMetadataInner>, total_supply: String) -> ResourceSubstate {
-        ResourceSubstate {
+impl ResourceManagerSubstateAllOf {
+    pub fn new(resource_type: ResourceType, metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>, total_supply: String) -> ResourceManagerSubstateAllOf {
+        ResourceManagerSubstateAllOf {
             resource_type,
             fungible_divisibility: None,
             metadata,

@@ -1,7 +1,7 @@
 use sbor::Encode;
 use scrypto::prelude::scrypto_encode;
 
-pub fn to_hex(v: Vec<u8>) -> String {
+pub fn to_hex<T: AsRef<[u8]>>(v: T) -> String {
     hex::encode(v)
 }
 

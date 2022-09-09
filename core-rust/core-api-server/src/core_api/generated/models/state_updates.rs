@@ -15,23 +15,23 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct StateUpdates {
     #[serde(rename = "down_virtual_substates")]
-    pub down_virtual_substates: Vec<String>,
+    pub down_virtual_substates: Vec<crate::core_api::generated::models::SubstateId>,
     #[serde(rename = "up_substates")]
     pub up_substates: Vec<crate::core_api::generated::models::UpSubstate>,
     #[serde(rename = "down_substates")]
     pub down_substates: Vec<crate::core_api::generated::models::DownSubstate>,
-    #[serde(rename = "new_roots")]
-    pub new_roots: Vec<String>,
+    #[serde(rename = "new_global_entities")]
+    pub new_global_entities: Vec<crate::core_api::generated::models::GlobalEntityId>,
 }
 
 impl StateUpdates {
     /// Transaction state updates
-    pub fn new(down_virtual_substates: Vec<String>, up_substates: Vec<crate::core_api::generated::models::UpSubstate>, down_substates: Vec<crate::core_api::generated::models::DownSubstate>, new_roots: Vec<String>) -> StateUpdates {
+    pub fn new(down_virtual_substates: Vec<crate::core_api::generated::models::SubstateId>, up_substates: Vec<crate::core_api::generated::models::UpSubstate>, down_substates: Vec<crate::core_api::generated::models::DownSubstate>, new_global_entities: Vec<crate::core_api::generated::models::GlobalEntityId>) -> StateUpdates {
         StateUpdates {
             down_virtual_substates,
             up_substates,
             down_substates,
-            new_roots,
+            new_global_entities,
         }
     }
 }

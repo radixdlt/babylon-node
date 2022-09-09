@@ -39,13 +39,13 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/NetworkConfigurationResponse"
+                $ref: "#/components/schemas/NetworkConfigurationResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
   "/transaction/submit":
     post:
       summary: Submit transaction to the network
@@ -57,26 +57,26 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/TransactionSubmitRequest"
+              $ref: "#/components/schemas/TransactionSubmitRequest"
       responses:
         '200':
           description: Transaction Submit Response
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/TransactionSubmitResponse"
+                $ref: "#/components/schemas/TransactionSubmitResponse"
         '400':
           description: Client error
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
   "/transaction/preview":
     post:
       summary: Preview a transaction against the latest network state
@@ -88,26 +88,26 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/TransactionPreviewRequest"
+              $ref: "#/components/schemas/TransactionPreviewRequest"
       responses:
         '200':
           description: Transaction preview response
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/TransactionPreviewResponse"
+                $ref: "#/components/schemas/TransactionPreviewResponse"
         '400':
           description: Client error
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
   "/transaction/stream":
     post:
       summary: Get committed transactions
@@ -118,26 +118,26 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/CommittedTransactionsRequest"
+              $ref: "#/components/schemas/CommittedTransactionsRequest"
       responses:
         '200':
           description: Committed transactions response
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/CommittedTransactionsResponse"
+                $ref: "#/components/schemas/CommittedTransactionsResponse"
         '400':
           description: Client error
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Server error
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
 ###########################
@@ -162,26 +162,26 @@ components:
         - new_resource_addresses
       properties:
         status:
-          "$ref": "#/components/schemas/TransactionStatus"
+          $ref: "#/components/schemas/TransactionStatus"
         fee_summary:
-          "$ref": "#/components/schemas/FeeSummary"
+          $ref: "#/components/schemas/FeeSummary"
         state_updates:
-          "$ref": "#/components/schemas/StateUpdates"
+          $ref: "#/components/schemas/StateUpdates"
         new_package_addresses:
           description: A list of new package addresses.
           type: array
           items:
-            "$ref": "#/components/schemas/PackageAddress"
+            $ref: "#/components/schemas/PackageAddress"
         new_component_addresses:
           description: A list of new component addresses.
           type: array
           items:
-            "$ref": "#/components/schemas/ComponentAddress"
+            $ref: "#/components/schemas/ComponentAddress"
         new_resource_addresses:
           description: A list of new resource addresses.
           type: array
           items:
-            "$ref": "#/components/schemas/ResourceAddress"
+            $ref: "#/components/schemas/ResourceAddress"
         output:
           type: array
           items:
@@ -201,7 +201,7 @@ components:
           type: string
           description: The transaction hash, hex-encoded.
         signed_intent:
-          "$ref": "#/components/schemas/SignedTransactionIntent"
+          $ref: "#/components/schemas/SignedTransactionIntent"
         notary_signature:
           type: string
           description: The notary signature, hex-encoded.
@@ -216,11 +216,11 @@ components:
           type: string
           description: Signed transaction intent hash, hex-encoded.
         intent:
-          "$ref": "#/components/schemas/TransactionIntent"
+          $ref: "#/components/schemas/TransactionIntent"
         intent_signatures:
           type: array
           items:
-            "$ref": "#/components/schemas/IntentSignature"
+            $ref: "#/components/schemas/IntentSignature"
     IntentSignature:
       type: object
       required:
@@ -244,7 +244,7 @@ components:
           type: string
           description: Transaction intent hash, hex-encoded.
         header:
-          "$ref": "#/components/schemas/TransactionHeader"
+          $ref: "#/components/schemas/TransactionHeader"
         manifest:
           type: string
           description: Transaction manifest, SBOR-encoded and then hex-encoded.
@@ -354,76 +354,111 @@ components:
         - down_virtual_substates
         - up_substates
         - down_substates
-        - new_roots
+        - new_global_entities
       properties:
         down_virtual_substates:
           type: array
           items:
-            "$ref": "#/components/schemas/VirtualSubstateId"
+            $ref: "#/components/schemas/SubstateId"
         up_substates:
           type: array
           items:
-            "$ref": "#/components/schemas/UpSubstate"
+            $ref: "#/components/schemas/UpSubstate"
         down_substates:
           type: array
           items:
-            "$ref": "#/components/schemas/DownSubstate"
-        new_roots:
+            $ref: "#/components/schemas/DownSubstate"
+        new_global_entities:
           type: array
           items:
-            "$ref": "#/components/schemas/SubstateId"
-    TemporaryUpSubstateJsonPayloadType:
-      type: string
-      description: Warning! This is temporary property until we get proper polymorphism in place.
-      enum:
-        - system
-        - resource
-        - component_info
-        - component_state
-        - package
-        - vault
-        - non_fungible
-        - key_value_store_entry
+            $ref: "#/components/schemas/GlobalEntityId"
     UpSubstate:
       type: object
       required:
         - substate_id
         - version
         - substate_bytes
-        - substate_json_type
-        - substate_json_str
+        - substate_data_hash
+        - substate_data
       properties:
         substate_id:
-          "$ref": "#/components/schemas/SubstateId"
+          $ref: "#/components/schemas/SubstateId"
         version:
           type: string
           description: A decimal 32-bit unsigned integer
         substate_bytes:
           type: string
-          description: SBOR-encoded and then hex-encoded substate bytes.
-        substate_json_type:
-          "$ref": "#/components/schemas/TemporaryUpSubstateJsonPayloadType"
-        substate_json_str:
+          description: SBOR-encoded and then hex-encoded substate data bytes.
+        substate_data_hash:
           type: string
-          description: JSON-encoded (and then stringified) substate model. Warning! This is temporary property until we get proper polymorphism in place.
+          description: A hex-encoded hash of the substate data bytes, SHA256(SHA256(substate_bytes)).
+        substate_data:
+          $ref: "#/components/schemas/Substate"
     DownSubstate:
       type: object
       required:
         - substate_id
-        - substate_hash
+        - substate_data_hash
         - version
       properties:
         substate_id:
-          "$ref": "#/components/schemas/SubstateId"
-        substate_hash:
+          $ref: "#/components/schemas/SubstateId"
+        substate_data_hash:
           type: string
-          description: Substate hash.
+          description: A hex-encoded hash of the substate data bytes, SHA256(SHA256(substate_bytes)).
         version:
-          type: string
+          type: integer
+          format: int32
+          minimum: 0
           description: A decimal 32-bit unsigned integer
+    GlobalEntityId:
+      type: object
+      required:
+        - entity_type
+        - entity_address
+        - global_address_bytes
+        - global_address_str
+      properties:
+        entity_type:
+          $ref: "#/components/schemas/EntityType"
+        entity_address:
+          type: string
+          description: Hex-encoded bytes
+        global_address_bytes:
+          type: string
+          description: Hex-encoded bytes. This is currently the same as entity_address, but may change in future.
+        global_address_str:
+          type: string
+          description: Bech32m-encoded human readabl address
+    EntityId:
+      type: object
+      required:
+        - entity_type
+        - entity_address
+      properties:
+        entity_type:
+          $ref: "#/components/schemas/EntityType"
+        entity_address:
+          type: string
+          description: Hex-encoded bytes
     SubstateId:
-      type: string
-      description: SBOR-encoded and then hex-encoded substate ID.
+      type: object
+      required:
+        - entity_type
+        - entity_address
+        - substate_type
+        - substate_key
+      properties:
+        entity_type:
+          $ref: "#/components/schemas/EntityType"
+        entity_address:
+          type: string
+          description: Hex-encoded bytes
+        substate_type:
+          $ref: "#/components/schemas/SubstateType"
+        substate_key:
+          type: string
+          description: Hex-encoded bytes
     ResourceAddress:
       type: string
       description: Bech32m resource address.
@@ -433,9 +468,6 @@ components:
     PackageAddress:
       type: string
       description: Bech32m package address.
-    VirtualSubstateId:
-      type: string
-      description: SBOR-encoded and then hex-encoded virtual substate ID.
     ResourceChange:
       type: object
       required:
@@ -445,9 +477,9 @@ components:
         - amount
       properties:
         resource_address:
-          "$ref": "#/components/schemas/ResourceAddress"
+          $ref: "#/components/schemas/ResourceAddress"
         component_address:
-          "$ref": "#/components/schemas/ComponentAddress"
+          $ref: "#/components/schemas/ComponentAddress"
         vault_id:
           type: string
           description: Vault ID, SBOR-encoded and then hex-encoded.
@@ -457,67 +489,141 @@ components:
 #######################################
 # GENERAL / SHARED MODELS - substates #
 #######################################
-    ResourceSubstate:
+    EntityType:
+      type: string
+      enum:
+        - System
+        - ResourceManager
+        - Component
+        - Package
+        - Vault
+        - KeyValueStore
+    Substate:
+      oneOf:
+        - $ref: '#/components/schemas/SystemSubstate'
+        - $ref: '#/components/schemas/ResourceManagerSubstate'
+        - $ref: '#/components/schemas/ComponentInfoSubstate'
+        - $ref: '#/components/schemas/ComponentStateSubstate'
+        - $ref: '#/components/schemas/PackageSubstate'
+        - $ref: '#/components/schemas/VaultSubstate'
+        - $ref: '#/components/schemas/NonFungibleSubstate'
+        - $ref: '#/components/schemas/KeyValueStoreEntrySubstate'
+      discriminator:
+        propertyName: substate_type
+        mapping:
+          # NOTE: These need to match SubstateType options below
+          System: '#/components/schemas/SystemSubstate'
+          ResourceManager: '#/components/schemas/ResourceManagerSubstate'
+          ComponentInfo: '#/components/schemas/ComponentInfoSubstate'
+          ComponentState: '#/components/schemas/ComponentStateSubstate'
+          Package: '#/components/schemas/PackageSubstate'
+          Vault: '#/components/schemas/VaultSubstate'
+          NonFungible: '#/components/schemas/NonFungibleSubstate'
+          KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntrySubstate'
+    SubstateType:
+      type: string
+      enum:
+        - System
+        - ResourceManager
+        - ComponentInfo
+        - ComponentState
+        - Package
+        - Vault
+        - NonFungible
+        - KeyValueStoreEntry
+    SubstateBase:
       type: object
       required:
-        - resource_type
-        - metadata
-        - total_supply
+        - entity_type
+        - substate_type
       properties:
-        resource_type:
-          type: string
-          enum:
-            - fungible
-            - non_fungible
-        fungible_divisibility:
-          type: integer
-        metadata:
-          type: array
-          items:
-            type: object
-            required:
-              - key
-              - value
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-        total_supply:
-          type: string
-    PackageSubstate:
-      type: object
-      required:
-        - code
-      properties:
-        code:
-          type: string
-          description: Package code, hex-encoded.
+        entity_type:
+          $ref: '#/components/schemas/EntityType'
+        substate_type:
+          $ref: '#/components/schemas/SubstateType'
+    SystemSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - epoch
+          properties:
+            epoch:
+              type: integer
+              format: int64
+              minimum: 0
+    ResourceManagerSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - resource_type
+            - metadata
+            - total_supply
+          properties:
+            resource_type:
+              type: string
+              enum:
+                - fungible
+                - non_fungible
+            fungible_divisibility:
+              type: integer
+            metadata:
+              type: array
+              items:
+                type: object
+                required:
+                  - key
+                  - value
+                properties:
+                  key:
+                    type: string
+                  value:
+                    type: string
+            total_supply:
+              type: string
     ComponentInfoSubstate:
-      type: object
-      required:
-        - package_address
-        - blueprint_name
-      properties:
-        package_address:
-          type: string
-          description: Package address, Bech32m-encoded.
-        blueprint_name:
-          type: string
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - package_address
+            - blueprint_name
+          properties:
+            package_address:
+              type: string
+              description: Package address, Bech32m-encoded.
+            blueprint_name:
+              type: string
     ComponentStateSubstate:
-      type: object
-      required:
-        - state
-      properties:
-        state:
-          type: string
-          description: hex-encoded state data
-    EmptySubstate:
-      type: object
-      description: A not yet implemented substate model
-      properties:
-        dummy:
-          type: string
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - state
+          properties:
+            state:
+              type: string
+              description: hex-encoded state data
+    PackageSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - code
+          properties:
+            code:
+              type: string
+              description: Package code, hex-encoded.
+    VaultSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+    NonFungibleSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+    KeyValueStoreEntrySubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -540,7 +646,7 @@ components:
             api_version:
               type: string
         network_identifier:
-          "$ref": "#/components/schemas/NetworkIdentifier"
+          $ref: "#/components/schemas/NetworkIdentifier"
         network_hrp_suffix:
           type: string
           description: The network suffix used for Bech32m HRPs used for addressing.
@@ -554,7 +660,7 @@ components:
         - notarized_transaction
       properties:
         network_identifier:
-          "$ref": "#/components/schemas/NetworkIdentifier"
+          $ref: "#/components/schemas/NetworkIdentifier"
         notarized_transaction:
           description: A notarized transaction encoded in the Radix transaction format, and then hex encoded.
           type: string
@@ -582,7 +688,7 @@ components:
         - flags
       properties:
         network_identifier:
-          "$ref": "#/components/schemas/NetworkIdentifier"
+          $ref: "#/components/schemas/NetworkIdentifier"
         manifest:
           description: A transaction manifest. Sbor encoded, and then hex encoded.
           type: string
@@ -615,11 +721,11 @@ components:
         - logs
       properties:
         receipt:
-          "$ref": "#/components/schemas/TransactionReceipt"
+          $ref: "#/components/schemas/TransactionReceipt"
         resource_changes:
           type: array
           items:
-            "$ref": "#/components/schemas/ResourceChange"
+            $ref: "#/components/schemas/ResourceChange"
         logs:
           type: array
           items:
@@ -645,7 +751,7 @@ components:
         - limit
       properties:
         network_identifier:
-          "$ref": "#/components/schemas/NetworkIdentifier"
+          $ref: "#/components/schemas/NetworkIdentifier"
         start_state_version:
           type: string
           description: A decimal 64-bit unsigned integer.
@@ -669,7 +775,7 @@ components:
           description: A committed transactions list starting from the `start_state_version_inclusive`.
           type: array
           items:
-            "$ref": "#/components/schemas/CommittedTransaction"
+            $ref: "#/components/schemas/CommittedTransaction"
     CommittedTransaction:
       type: object
       required:
@@ -681,6 +787,6 @@ components:
           type: string
           description: The resultant state version after the txn has been committed. A decimal 64-bit unsigned integer.
         notarized_transaction:
-          "$ref": "#/components/schemas/NotarizedTransaction"
+          $ref: "#/components/schemas/NotarizedTransaction"
         receipt:
-          "$ref": "#/components/schemas/TransactionReceipt"
+          $ref: "#/components/schemas/TransactionReceipt"

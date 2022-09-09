@@ -64,11 +64,12 @@ fn handle_transaction_stream_internal(
     let api_txns = txns
         .into_iter()
         .map(|((tx, receipt), state_version)| {
-            scrypto_decode(&tx)
-                .map(|notarized_tx| {
-                    to_api_committed_transaction(&network, notarized_tx, receipt, state_version)
-                })
-                .map_err(|_| transaction_errors::invalid_committed_txn())
+            let notarized_tx = scrypto_decode::<EngineNotarizedTransaction>(&tx)
+                .map_err(|_| transaction_errors::invalid_committed_txn())?;
+            let api_tx =
+                to_api_committed_transaction(&network, notarized_tx, receipt, state_version)
+                    .map_err(|_| common_server_errors::mapping_error("Unable to map receipt"))?;
+            Ok(api_tx)
         })
         .collect::<Result<Vec<models::CommittedTransaction>, RequestHandlingError>>()?;
 
@@ -90,15 +91,15 @@ fn to_api_committed_transaction(
     tx: EngineNotarizedTransaction,
     receipt: LedgerTransactionReceipt,
     state_version: u64,
-) -> models::CommittedTransaction {
+) -> Result<models::CommittedTransaction, MappingError> {
     let bech32_encoder = Bech32Encoder::new(network);
-    let receipt = to_api_receipt(&bech32_encoder, receipt);
+    let receipt = to_api_receipt(&bech32_encoder, receipt)?;
 
-    models::CommittedTransaction {
+    Ok(models::CommittedTransaction {
         state_version: state_version.to_string(),
         notarized_transaction: Box::new(to_api_notarized_transaction(tx, &bech32_encoder)),
         receipt: Box::new(receipt),
-    }
+    })
 }
 
 fn to_api_notarized_transaction(

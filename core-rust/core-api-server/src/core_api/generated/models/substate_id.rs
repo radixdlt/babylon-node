@@ -12,25 +12,26 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ComponentInfoSubstate {
+pub struct SubstateId {
     #[serde(rename = "entity_type")]
     pub entity_type: crate::core_api::generated::models::EntityType,
+    /// Hex-encoded bytes
+    #[serde(rename = "entity_address")]
+    pub entity_address: String,
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// Package address, Bech32m-encoded.
-    #[serde(rename = "package_address")]
-    pub package_address: String,
-    #[serde(rename = "blueprint_name")]
-    pub blueprint_name: String,
+    /// Hex-encoded bytes
+    #[serde(rename = "substate_key")]
+    pub substate_key: String,
 }
 
-impl ComponentInfoSubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, package_address: String, blueprint_name: String) -> ComponentInfoSubstate {
-        ComponentInfoSubstate {
+impl SubstateId {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, entity_address: String, substate_type: crate::core_api::generated::models::SubstateType, substate_key: String) -> SubstateId {
+        SubstateId {
             entity_type,
+            entity_address,
             substate_type,
-            package_address,
-            blueprint_name,
+            substate_key,
         }
     }
 }

@@ -116,7 +116,11 @@ fn to_api_response(
             })?;
 
             TransactionPreviewResponse {
-                receipt: Box::new(to_api_receipt(bech32_encoder, ledger_receipt)),
+                receipt: Box::new(
+                    to_api_receipt(bech32_encoder, ledger_receipt).map_err(|_| {
+                        common_server_errors::mapping_error("Unable to map receipt")
+                    })?,
+                ),
                 resource_changes: api_resource_changes,
                 logs,
             }
@@ -129,7 +133,7 @@ fn to_api_response(
                     down_virtual_substates: vec![],
                     up_substates: vec![],
                     down_substates: vec![],
-                    new_roots: vec![],
+                    new_global_entities: vec![],
                 }),
                 new_package_addresses: vec![],
                 new_component_addresses: vec![],
