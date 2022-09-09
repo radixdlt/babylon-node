@@ -16,7 +16,7 @@ pub struct ResourceManagerSubstateAllOf {
     #[serde(rename = "resource_type")]
     pub resource_type: crate::core_api::generated::models::ResourceType,
     #[serde(rename = "fungible_divisibility", skip_serializing_if = "Option::is_none")]
-    pub fungible_divisibility: Option<i32>,
+    pub fungible_divisibility: Option<u32>,
     #[serde(rename = "metadata")]
     pub metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>,
     #[serde(rename = "total_supply")]

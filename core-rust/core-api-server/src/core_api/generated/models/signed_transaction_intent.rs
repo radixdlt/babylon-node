@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SignedTransactionIntent {
-    /// Signed transaction intent hash, hex-encoded.
+    /// The hex-encoded double-SHA256 hash of the signed transaction intent.
     #[serde(rename = "hash")]
     pub hash: String,
     #[serde(rename = "intent")]

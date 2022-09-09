@@ -24,24 +24,18 @@ fn handle_transaction_stream_internal(
     state_manager: &mut ActualStateManager,
     request: CommittedTransactionsRequest,
 ) -> Result<CommittedTransactionsResponse, RequestHandlingError> {
-    let start_state_version: u64 = request
-        .start_state_version
-        .parse()
-        .map_err(|_| transaction_errors::invalid_int_field("state_version"))?;
+    let start_state_version: u64 = request.start_state_version;
 
     if start_state_version < 1 {
         return Err(transaction_errors::invalid_start_state_version());
     }
 
-    let limit: u64 = request
-        .limit
-        .try_into()
-        .map_err(|_| transaction_errors::invalid_int_field("limit"))?;
+    let limit: u64 = request.limit.into();
 
     let state_version_at_limit: u64 = start_state_version
         .checked_add(limit)
         .and_then(|v| v.checked_sub(1))
-        .ok_or_else(|| transaction_errors::invalid_int_field("limit"))?;
+        .ok_or_else(|| transaction_errors::invalid_int_field("start_state_version + limit - 1"))?;
 
     let up_to_state_version_inclusive = cmp::min(
         state_version_at_limit,
@@ -80,8 +74,8 @@ fn handle_transaction_stream_internal(
     };
 
     Ok(CommittedTransactionsResponse {
-        start_state_version: start_state_version.to_string(),
-        max_state_version: up_to_state_version_inclusive.to_string(),
+        start_state_version,
+        max_state_version: up_to_state_version_inclusive,
         transactions: api_txns,
     })
 }
@@ -96,7 +90,7 @@ fn to_api_committed_transaction(
     let receipt = to_api_receipt(&bech32_encoder, receipt)?;
 
     Ok(models::CommittedTransaction {
-        state_version: state_version.to_string(),
+        state_version,
         notarized_transaction: Box::new(to_api_notarized_transaction(tx, &bech32_encoder)),
         receipt: Box::new(receipt),
     })
@@ -106,7 +100,8 @@ fn to_api_notarized_transaction(
     tx: EngineNotarizedTransaction,
     bech32_encoder: &Bech32Encoder,
 ) -> models::NotarizedTransaction {
-    let tx_hash = tx.hash();
+    let payload = tx.to_bytes();
+    let payload_hash = tx.hash();
     let signed_intent = tx.signed_intent;
     let signed_intent_hash = signed_intent.hash();
     let intent = signed_intent.intent;
@@ -114,17 +109,18 @@ fn to_api_notarized_transaction(
     let header = intent.header;
 
     models::NotarizedTransaction {
-        hash: tx_hash.to_string(),
+        hash: to_hex(payload_hash),
+        payload: to_hex(payload),
         signed_intent: Box::new(models::SignedTransactionIntent {
-            hash: signed_intent_hash.to_string(),
+            hash: to_hex(signed_intent_hash),
             intent: Box::new(models::TransactionIntent {
-                hash: intent_hash.to_string(),
+                hash: to_hex(intent_hash),
                 header: Box::new(models::TransactionHeader {
-                    version: header.version as i32,
-                    network_id: header.network_id as i32,
-                    start_epoch_inclusive: header.start_epoch_inclusive.to_string(),
-                    end_epoch_exclusive: header.end_epoch_exclusive.to_string(),
-                    nonce: header.nonce.to_string(),
+                    version: header.version.into(),
+                    network_id: header.network_id.into(),
+                    start_epoch_inclusive: header.start_epoch_inclusive,
+                    end_epoch_exclusive: header.end_epoch_exclusive,
+                    nonce: header.nonce,
                     notary_public_key: header.notary_public_key.to_string(),
                     notary_as_signatory: header.notary_as_signatory,
                     cost_unit_limit: header.cost_unit_limit.to_string(),

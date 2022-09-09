@@ -13,13 +13,13 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ResourceChange {
-    /// Bech32m resource address.
+    /// The Bech32m-encoded human readable version of the resource address
     #[serde(rename = "resource_address")]
     pub resource_address: String,
-    /// Bech32m component address.
+    /// The Bech32m-encoded human readable version of the component address
     #[serde(rename = "component_address")]
     pub component_address: String,
-    /// Vault ID, SBOR-encoded and then hex-encoded.
+    /// The hex-encoded, SBOR-encoded Vault ID
     #[serde(rename = "vault_id")]
     pub vault_id: String,
     /// The XRD amount put or taken from the vault. A fixed-scale 256-bit signed decimal number.

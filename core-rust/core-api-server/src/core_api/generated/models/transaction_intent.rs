@@ -13,12 +13,12 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionIntent {
-    /// Transaction intent hash, hex-encoded.
+    /// The hex-encoded double-SHA256 hash of the transaction intent. Also known as the Transaction ID, Transaction Hash, or Intent Hash. 
     #[serde(rename = "hash")]
     pub hash: String,
     #[serde(rename = "header")]
     pub header: Box<crate::core_api::generated::models::TransactionHeader>,
-    /// Transaction manifest, SBOR-encoded and then hex-encoded.
+    /// The hex-encoded, SBOR-encoded transaction manifest.
     #[serde(rename = "manifest")]
     pub manifest: String,
 }

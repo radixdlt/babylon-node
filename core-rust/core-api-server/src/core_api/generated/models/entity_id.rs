@@ -15,7 +15,7 @@
 pub struct EntityId {
     #[serde(rename = "entity_type")]
     pub entity_type: crate::core_api::generated::models::EntityType,
-    /// Hex-encoded bytes
+    /// The hex-encoded bytes of the entity address
     #[serde(rename = "entity_address")]
     pub entity_address: String,
 }

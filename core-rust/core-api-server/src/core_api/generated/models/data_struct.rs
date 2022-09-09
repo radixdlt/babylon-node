@@ -13,10 +13,10 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct DataStruct {
-    /// Hex-encoded SBOR-encoded struct data
+    /// The hex-encoded, SBOR-encoded struct data
     #[serde(rename = "struct_data_bytes")]
     pub struct_data_bytes: String,
-    /// String-encoded JSON representing the encoded struct SBOR
+    /// The string-encoded JSON representing the encoded struct SBOR
     #[serde(rename = "struct_data_json")]
     pub struct_data_json: String,
     #[serde(rename = "owned_entities")]

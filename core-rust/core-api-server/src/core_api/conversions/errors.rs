@@ -1,13 +1,7 @@
-use std::num::TryFromIntError;
-
 use sbor::DecodeError;
 
 #[derive(Debug, Clone)]
 pub enum MappingError {
-    Integer {
-        message: String,
-        error: TryFromIntError,
-    },
     VirtualRootSubstatePersisted {
         message: String,
     },

@@ -15,13 +15,13 @@
 pub struct UpSubstate {
     #[serde(rename = "substate_id")]
     pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
-    /// A decimal 32-bit unsigned integer
+    /// A decimal 32-bit unsigned integer, counting the number of times the substate was updated
     #[serde(rename = "version")]
-    pub version: String,
-    /// SBOR-encoded and then hex-encoded substate data bytes.
+    pub version: u32,
+    /// The hex-encoded, SBOR-encoded substate data bytes
     #[serde(rename = "substate_bytes")]
     pub substate_bytes: String,
-    /// A hex-encoded hash of the substate data bytes, SHA256(SHA256(substate_bytes)).
+    /// The hex-encoded double-SHA256 hash of the substate data bytes
     #[serde(rename = "substate_data_hash")]
     pub substate_data_hash: String,
     #[serde(rename = "substate_data")]
@@ -29,7 +29,7 @@ pub struct UpSubstate {
 }
 
 impl UpSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, version: String, substate_bytes: String, substate_data_hash: String, substate_data: crate::core_api::generated::models::Substate) -> UpSubstate {
+    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, version: u32, substate_bytes: String, substate_data_hash: String, substate_data: crate::core_api::generated::models::Substate) -> UpSubstate {
         UpSubstate {
             substate_id: Box::new(substate_id),
             version,

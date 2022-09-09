@@ -14,19 +14,19 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionHeader {
     #[serde(rename = "version")]
-    pub version: i32,
+    pub version: u32,
     #[serde(rename = "network_id")]
-    pub network_id: i32,
-    /// A decimal 64-bit unsigned integer.
+    pub network_id: u32,
+    /// A decimal 64-bit unsigned integer, marking the epoch from which the transaction can be submitted
     #[serde(rename = "start_epoch_inclusive")]
-    pub start_epoch_inclusive: String,
-    /// A decimal 64-bit unsigned integer.
+    pub start_epoch_inclusive: u64,
+    /// A decimal 64-bit unsigned integer, marking the epoch from which the transaction will no longer be valid, and be rejected
     #[serde(rename = "end_epoch_exclusive")]
-    pub end_epoch_exclusive: String,
-    /// A decimal 64-bit unsigned integer.
+    pub end_epoch_exclusive: u64,
+    /// A decimal 64-bit unsigned integer, chosen to be unique to allow replay of transaction intents
     #[serde(rename = "nonce")]
-    pub nonce: String,
-    /// A hex-encoded public key of a notary.
+    pub nonce: u64,
+    /// A hex-encoded public key of a notary
     #[serde(rename = "notary_public_key")]
     pub notary_public_key: String,
     /// Specifies whether the notary's signature should be included in transaction signers list
@@ -41,7 +41,7 @@ pub struct TransactionHeader {
 }
 
 impl TransactionHeader {
-    pub fn new(version: i32, network_id: i32, start_epoch_inclusive: String, end_epoch_exclusive: String, nonce: String, notary_public_key: String, notary_as_signatory: bool, cost_unit_limit: String, tip_percentage: String) -> TransactionHeader {
+    pub fn new(version: u32, network_id: u32, start_epoch_inclusive: u64, end_epoch_exclusive: u64, nonce: u64, notary_public_key: String, notary_as_signatory: bool, cost_unit_limit: String, tip_percentage: String) -> TransactionHeader {
         TransactionHeader {
             version,
             network_id,

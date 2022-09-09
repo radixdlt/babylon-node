@@ -17,7 +17,7 @@ pub struct PackageSubstate {
     pub entity_type: crate::core_api::generated::models::EntityType,
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// Package code, hex-encoded.
+    /// The hex-encoded package code
     #[serde(rename = "code")]
     pub code: String,
 }

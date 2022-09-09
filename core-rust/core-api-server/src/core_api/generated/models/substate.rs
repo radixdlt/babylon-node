@@ -17,7 +17,7 @@ pub enum Substate {
     ComponentInfoSubstate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
-        /// Package address, Bech32m-encoded.
+        /// The Bech32m-encoded human readable version of the package address
         #[serde(rename = "package_address")]
         package_address: String,
         #[serde(rename = "blueprint_name")]
@@ -27,9 +27,6 @@ pub enum Substate {
     ComponentStateSubstate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
-        /// Hex-encoded SBOR-encoded state data
-        #[serde(rename = "state_bytes")]
-        state_bytes: String,
         #[serde(rename = "data_struct")]
         data_struct: Box<crate::core_api::generated::models::DataStruct>,
     },
@@ -37,7 +34,7 @@ pub enum Substate {
     KeyValueStoreEntrySubstate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
-        /// Hex-encoded bytes of its key
+        /// The hex-encoded bytes of its key
         #[serde(rename = "key")]
         key: String,
         #[serde(rename = "is_deleted")]
@@ -49,7 +46,7 @@ pub enum Substate {
     NonFungibleSubstate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
-        /// Hex-encoded bytes of its non-fungible id
+        /// The hex-encoded bytes of its non-fungible id
         #[serde(rename = "nf_id")]
         nf_id: String,
         #[serde(rename = "is_deleted")]
@@ -61,7 +58,7 @@ pub enum Substate {
     PackageSubstate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
-        /// Package code, hex-encoded.
+        /// The hex-encoded package code
         #[serde(rename = "code")]
         code: String,
     },
@@ -72,7 +69,7 @@ pub enum Substate {
         #[serde(rename = "resource_type")]
         resource_type: crate::core_api::generated::models::ResourceType,
         #[serde(rename = "fungible_divisibility", skip_serializing_if = "Option::is_none")]
-        fungible_divisibility: Option<i32>,
+        fungible_divisibility: Option<u32>,
         #[serde(rename = "metadata")]
         metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>,
         #[serde(rename = "total_supply")]
@@ -83,7 +80,7 @@ pub enum Substate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
         #[serde(rename = "epoch")]
-        epoch: i64,
+        epoch: u64,
     },
     #[serde(rename="Vault")]
     VaultSubstate {

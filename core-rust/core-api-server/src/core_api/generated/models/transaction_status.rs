@@ -13,11 +13,11 @@
 /// The status of the transaction
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum TransactionStatus {
-    #[serde(rename = "succeeded")]
+    #[serde(rename = "Succeeded")]
     Succeeded,
-    #[serde(rename = "failed")]
+    #[serde(rename = "Failed")]
     Failed,
-    #[serde(rename = "rejected")]
+    #[serde(rename = "Rejected")]
     Rejected,
 
 }
@@ -25,9 +25,9 @@ pub enum TransactionStatus {
 impl ToString for TransactionStatus {
     fn to_string(&self) -> String {
         match self {
-            Self::Succeeded => String::from("succeeded"),
-            Self::Failed => String::from("failed"),
-            Self::Rejected => String::from("rejected"),
+            Self::Succeeded => String::from("Succeeded"),
+            Self::Failed => String::from("Failed"),
+            Self::Rejected => String::from("Rejected"),
         }
     }
 }

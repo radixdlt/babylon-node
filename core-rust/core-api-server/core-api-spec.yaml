@@ -1,4 +1,19 @@
 openapi: 3.1.0
+# NOTES TO EDITORS:
+#
+# Guidance for integer types (see https://swagger.io/docs/specification/data-models/data-types/#numbers)
+# => If a u8, use type: integer, format: int32, minimum: 0, maximum: 255
+# => If an i8, use type: integer, format: int32, minimum: -128, maximum: 127 (also, why are you using an i8!?)
+# => If a u32, use type: integer, format: int32, minimum: 0, maximum: 4294967295 = 2^32 - 1
+# => If an i32, use type: integer, format: int32
+# => If a u64, use type: integer, format: int64, minimum: 0, maximum: 18446744073709551615 = 2^64 - 1
+# => If an i64, use type: integer, format: int64
+# => If something over i64/u64, use type: string
+#
+# Descriptions guidance:
+# => For descriptions of encoded types, we follow this pattern: 'The xyz-encoded, abc-encoded xx of the yy'
+#    EG 'The hex-encoded, SBOR-encoded data' or 'The hex-encoded double-SHA256 hash of the banana payload'
+# => Don't end in a full-stop, unless it is more than 1 sentence, then all sentences should end in a full stop
 info:
   version: '0.1.0'
   title: 'Babylon Core API'
@@ -146,9 +161,9 @@ components:
     TransactionStatus:
       type: string
       enum:
-        - succeeded
-        - failed
-        - rejected
+        - Succeeded
+        - Failed
+        - Rejected
       description: The status of the transaction
     TransactionReceipt:
       type: object
@@ -157,9 +172,6 @@ components:
         - status
         - fee_summary
         - state_updates
-        - new_package_addresses
-        - new_component_addresses
-        - new_resource_addresses
       properties:
         status:
           $ref: "#/components/schemas/TransactionStatus"
@@ -167,44 +179,33 @@ components:
           $ref: "#/components/schemas/FeeSummary"
         state_updates:
           $ref: "#/components/schemas/StateUpdates"
-        new_package_addresses:
-          description: A list of new package addresses.
-          type: array
-          items:
-            $ref: "#/components/schemas/PackageAddress"
-        new_component_addresses:
-          description: A list of new component addresses.
-          type: array
-          items:
-            $ref: "#/components/schemas/ComponentAddress"
-        new_resource_addresses:
-          description: A list of new resource addresses.
-          type: array
-          items:
-            $ref: "#/components/schemas/ResourceAddress"
         output:
           type: array
           items:
             type: string
-          description: The engine return data (only present if status is succeeded)
+          description: The hex-encoded, SBOR-encoded, line-by-line engine return data (only present if status is Succeeded)
         error_message:
           type: string
-          description: Error message (only present if status is failed or rejected)
+          description: Error message (only present if status is Failed or Rejected)
     NotarizedTransaction:
       type: object
       required:
         - hash
+        - payload
         - signed_intent
         - notary_signature
       properties:
         hash:
           type: string
-          description: The transaction hash, hex-encoded.
+          description: The hex-encoded double-SHA256 hash of the notarized transaction payload.
+        payload:
+          type: string
+          description: The hex-encoded full notarized transaction payload.
         signed_intent:
           $ref: "#/components/schemas/SignedTransactionIntent"
         notary_signature:
           type: string
-          description: The notary signature, hex-encoded.
+          description: The hex-encoded SBOR-encoded notary signature.
     SignedTransactionIntent:
       type: object
       required:
@@ -214,7 +215,7 @@ components:
       properties:
         hash:
           type: string
-          description: Signed transaction intent hash, hex-encoded.
+          description: The hex-encoded double-SHA256 hash of the signed transaction intent.
         intent:
           $ref: "#/components/schemas/TransactionIntent"
         intent_signatures:
@@ -229,10 +230,10 @@ components:
       properties:
         public_key:
           type: string
-          description: Signer public key, hex-encoded.
+          description: The hex-encoded signer public key.
         signature:
           type: string
-          description: The signature, hex-encoded.
+          description: The hex-encoded signature.
     TransactionIntent:
       type: object
       required:
@@ -242,12 +243,14 @@ components:
       properties:
         hash:
           type: string
-          description: Transaction intent hash, hex-encoded.
+          description: |
+            The hex-encoded double-SHA256 hash of the transaction intent.
+            Also known as the Transaction ID, Transaction Hash, or Intent Hash.
         header:
           $ref: "#/components/schemas/TransactionHeader"
         manifest:
           type: string
-          description: Transaction manifest, SBOR-encoded and then hex-encoded.
+          description: The hex-encoded, SBOR-encoded transaction manifest.
     TransactionHeader:
       type: object
       required:
@@ -263,20 +266,33 @@ components:
       properties:
         version:
           type: integer
+          minimum: 0
+          maximum: 255
         network_id:
           type: integer
+          minimum: 0
+          maximum: 255
         start_epoch_inclusive:
-          type: string
-          description: A decimal 64-bit unsigned integer.
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 18446744073709551615
+          description: A decimal 64-bit unsigned integer, marking the epoch from which the transaction can be submitted
         end_epoch_exclusive:
-          type: string
-          description: A decimal 64-bit unsigned integer.
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 18446744073709551615
+          description: A decimal 64-bit unsigned integer, marking the epoch from which the transaction will no longer be valid, and be rejected
         nonce:
-          type: string
-          description: A decimal 64-bit unsigned integer.
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 18446744073709551615
+          description: A decimal 64-bit unsigned integer, chosen to be unique to allow replay of transaction intents
         notary_public_key:
           type: string
-          description: A hex-encoded public key of a notary.
+          description: A hex-encoded public key of a notary
         notary_as_signatory:
           type: boolean
           description: Specifies whether the notary's signature should be included in transaction signers list
@@ -288,14 +304,8 @@ components:
           description: Specifies the validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of "1" corresponds to 1%).
     NetworkIdentifier:
       description: The name of the network.
-      type: object
-      required:
-        - network
-      properties:
-        network:
-          type: string
-      example:
-        network: mainnet
+      type: string
+      example: mainnet
     ErrorResponse:
       type: object
       required:
@@ -348,8 +358,8 @@ components:
           type: string
           description: The total amount of XRD tipped to validators. A fixed-scale 256-bit signed decimal number.
     StateUpdates:
-      description: Transaction state updates
       type: object
+      description: Transaction state updates (only present if status is Succeeded or Failed)
       required:
         - down_virtual_substates
         - up_substates
@@ -384,14 +394,17 @@ components:
         substate_id:
           $ref: "#/components/schemas/SubstateId"
         version:
-          type: string
-          description: A decimal 32-bit unsigned integer
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 4294967295
+          description: A decimal 32-bit unsigned integer, counting the number of times the substate was updated
         substate_bytes:
           type: string
-          description: SBOR-encoded and then hex-encoded substate data bytes.
+          description: The hex-encoded, SBOR-encoded substate data bytes
         substate_data_hash:
           type: string
-          description: A hex-encoded hash of the substate data bytes, SHA256(SHA256(substate_bytes)).
+          description: The hex-encoded double-SHA256 hash of the substate data bytes
         substate_data:
           $ref: "#/components/schemas/Substate"
     DownSubstate:
@@ -405,12 +418,13 @@ components:
           $ref: "#/components/schemas/SubstateId"
         substate_data_hash:
           type: string
-          description: A hex-encoded hash of the substate data bytes, SHA256(SHA256(substate_bytes)).
+          description: The hex-encoded double-SHA256 hash of the substate data bytes
         version:
           type: integer
           format: int32
           minimum: 0
-          description: A decimal 32-bit unsigned integer
+          maximum: 4294967295
+          description: A decimal 32-bit unsigned integer, counting the number of times the substate was updated
     GlobalEntityId:
       type: object
       required:
@@ -423,13 +437,13 @@ components:
           $ref: "#/components/schemas/EntityType"
         entity_address:
           type: string
-          description: Hex-encoded bytes
+          description: The hex-encoded bytes of the entity address
         global_address_bytes:
           type: string
-          description: Hex-encoded bytes. This is currently the same as entity_address, but may change in future.
+          description: The hex-encoded bytes of the entity's global address. This is currently the same as entity_address, but may change in future.
         global_address_str:
           type: string
-          description: Bech32m-encoded human readabl address
+          description: The Bech32m-encoded human readable version of the entity's global address
     EntityId:
       type: object
       required:
@@ -440,7 +454,7 @@ components:
           $ref: "#/components/schemas/EntityType"
         entity_address:
           type: string
-          description: Hex-encoded bytes
+          description: The hex-encoded bytes of the entity address
     SubstateId:
       type: object
       required:
@@ -453,21 +467,21 @@ components:
           $ref: "#/components/schemas/EntityType"
         entity_address:
           type: string
-          description: Hex-encoded bytes
+          description: The hex-encoded bytes of the entity address
         substate_type:
           $ref: "#/components/schemas/SubstateType"
         substate_key:
           type: string
-          description: Hex-encoded bytes
+          description: The hex-encoded bytes of the substate key, under the entity
     ResourceAddress:
       type: string
-      description: Bech32m resource address.
+      description: The Bech32m-encoded human readable version of the resource address
     ComponentAddress:
       type: string
-      description: Bech32m component address.
+      description: The Bech32m-encoded human readable version of the component address
     PackageAddress:
       type: string
-      description: Bech32m package address.
+      description: The Bech32m-encoded human readable version of the package address
     ResourceChange:
       type: object
       required:
@@ -482,7 +496,7 @@ components:
           $ref: "#/components/schemas/ComponentAddress"
         vault_id:
           type: string
-          description: Vault ID, SBOR-encoded and then hex-encoded.
+          description: The hex-encoded, SBOR-encoded Vault ID
         amount:
           type: string
           description: The XRD amount put or taken from the vault. A fixed-scale 256-bit signed decimal number.
@@ -552,6 +566,7 @@ components:
               type: integer
               format: int64
               minimum: 0
+              maximum: 18446744073709551615
     ResourceManagerSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -565,6 +580,8 @@ components:
               $ref: '#/components/schemas/ResourceType'
             fungible_divisibility:
               type: integer
+              minimum: 0
+              maximum: 18
             metadata:
               type: array
               items:
@@ -593,8 +610,7 @@ components:
             - blueprint_name
           properties:
             package_address:
-              type: string
-              description: Package address, Bech32m-encoded.
+              $ref: '#/components/schemas/PackageAddress'
             blueprint_name:
               type: string
     ComponentStateSubstate:
@@ -602,12 +618,8 @@ components:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - state_bytes
             - data_struct
           properties:
-            state_bytes:
-              type: string
-              description: Hex-encoded SBOR-encoded state data
             data_struct:
               $ref: '#/components/schemas/DataStruct'
     DataStruct:
@@ -620,10 +632,10 @@ components:
       properties:
         struct_data_bytes:
           type: string
-          description: Hex-encoded SBOR-encoded struct data
+          description: The hex-encoded, SBOR-encoded struct data
         struct_data_json:
           type: string
-          description: String-encoded JSON representing the encoded struct SBOR
+          description: The string-encoded JSON representing the encoded struct SBOR
         owned_entities:
           type: array
           items:
@@ -641,7 +653,7 @@ components:
           properties:
             code:
               type: string
-              description: Package code, hex-encoded.
+              description: The hex-encoded package code
     VaultSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -665,17 +677,12 @@ components:
       type: object
       required:
         - resource_type
-        - resource_global_address_bytes
-        - resource_global_address_string
+        - resource_address
       properties:
         resource_type:
           $ref: '#/components/schemas/ResourceType'
-        resource_global_address_bytes:
-          type: string
-          description: Hex-encoded bytes of the resource's global address
-        resource_global_address_string:
-          type: string
-          description: The Bech32m-encoded human readable representation of the resource's global address
+        resource_address:
+          $ref: '#/components/schemas/ResourceAddress'
     FungibleResourceAmount:
       allOf:
         - $ref: '#/components/schemas/ResourceAmountBase'
@@ -685,7 +692,9 @@ components:
           properties:
             amount_subunits:
               type: string
-              description: The string-encoded decimal subunits of the amount (10^-18)
+              description: |
+                The string-encoded decimal subunits of the amount (10^-18) in a signed 256-bit integer.
+                This is string-encoded as it doesn't fit well into common numeric types.
     NonFungibleResourceAmount:
       allOf:
         - $ref: '#/components/schemas/ResourceAmountBase'
@@ -697,7 +706,7 @@ components:
               type: array
               items:
                 type: string
-                description: Hex-encoded bytes of the non-fungible ids
+                description: The hex-encoded bytes of the non-fungible ids
     NonFungibleSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -708,7 +717,7 @@ components:
           properties:
             nf_id:
               type: string
-              description: Hex-encoded bytes of its non-fungible id
+              description: The hex-encoded bytes of its non-fungible id
             is_deleted:
               type: boolean
             non_fungible_data:
@@ -734,7 +743,7 @@ components:
           properties:
             key:
               type: string
-              description: Hex-encoded bytes of its key
+              description: The hex-encoded bytes of its key
             is_deleted:
               type: boolean
             data_struct:
@@ -746,7 +755,7 @@ components:
       type: object
       required:
         - version
-        - network_identifier
+        - network
         - network_hrp_suffix
       properties:
         version:
@@ -760,7 +769,7 @@ components:
               type: string
             api_version:
               type: string
-        network_identifier:
+        network:
           $ref: "#/components/schemas/NetworkIdentifier"
         network_hrp_suffix:
           type: string
@@ -771,10 +780,10 @@ components:
     TransactionSubmitRequest:
       type: object
       required:
-        - network_identifier
+        - network
         - notarized_transaction
       properties:
-        network_identifier:
+        network:
           $ref: "#/components/schemas/NetworkIdentifier"
         notarized_transaction:
           description: A notarized transaction encoded in the Radix transaction format, and then hex encoded.
@@ -794,7 +803,7 @@ components:
     TransactionPreviewRequest:
       type: object
       required:
-        - network_identifier
+        - network
         - manifest
         - cost_unit_limit
         - tip_percentage
@@ -802,19 +811,28 @@ components:
         - signer_public_keys
         - flags
       properties:
-        network_identifier:
+        network:
           $ref: "#/components/schemas/NetworkIdentifier"
         manifest:
-          description: A transaction manifest. Sbor encoded, and then hex encoded.
+          description: A hex-encoded, SBOR-encoded transaction manifest
           type: string
         cost_unit_limit:
-          type: string
-          description: Maximum number of cost units available for transaction execution. A decimal 32-bit unsigned integer.
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 4294967295
+          description: The maximum number of cost units available for transaction execution. A decimal 32-bit unsigned integer.
         tip_percentage:
-          type: string
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
           description: The validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of "1" corresponds to 1%).
         nonce:
-          type: string
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 18446744073709551615
           description: The nonce value to use for execution. A decimal 64-bit unsigned integer.
         signer_public_keys:
           type: array
@@ -857,18 +875,21 @@ components:
 # REQUEST: /transactions #
 ##########################
     CommittedTransactionsRequest:
-      description: A request to retrieve a sublist of committed transactions from the
-        ledger.
+      description: |
+        A request to retrieve a sublist of committed transactions from the ledger.
       type: object
       required:
-        - network_identifier
+        - network
         - start_state_version
         - limit
       properties:
-        network_identifier:
+        network:
           $ref: "#/components/schemas/NetworkIdentifier"
         start_state_version:
-          type: string
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 18446744073709551615
           description: A decimal 64-bit unsigned integer.
         limit:
           description: The maximum number of transactions that will be returned.
@@ -881,10 +902,16 @@ components:
         - transactions
       properties:
         start_state_version:
-          type: string
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 18446744073709551615
           description: The first state version returned. A decimal 64-bit unsigned integer.
         max_state_version:
-          type: string
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 18446744073709551615
           description: The maximum state version returned. A decimal 64-bit unsigned integer.
         transactions:
           description: A committed transactions list starting from the `start_state_version_inclusive`.
@@ -899,7 +926,10 @@ components:
         - receipt
       properties:
         state_version:
-          type: string
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 18446744073709551615
           description: The resultant state version after the txn has been committed. A decimal 64-bit unsigned integer.
         notarized_transaction:
           $ref: "#/components/schemas/NotarizedTransaction"

@@ -13,10 +13,10 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct IntentSignature {
-    /// Signer public key, hex-encoded.
+    /// The hex-encoded signer public key.
     #[serde(rename = "public_key")]
     pub public_key: String,
-    /// The signature, hex-encoded.
+    /// The hex-encoded signature.
     #[serde(rename = "signature")]
     pub signature: String,
 }

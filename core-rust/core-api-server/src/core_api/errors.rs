@@ -26,11 +26,11 @@ impl IntoResponse for RequestHandlingError {
     }
 }
 
-pub(crate) fn client_error(code: i32, message: &str) -> RequestHandlingError {
+pub(crate) fn client_error(code: u32, message: &str) -> RequestHandlingError {
     RequestHandlingError::ClientError(ErrorResponse::new(code, message.to_string()))
 }
 
-pub(crate) fn server_error(code: i32, message: &str) -> RequestHandlingError {
+pub(crate) fn server_error(code: u32, message: &str) -> RequestHandlingError {
     RequestHandlingError::ServerError(ErrorResponse::new(code, message.to_string()))
 }
 

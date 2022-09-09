@@ -15,24 +15,18 @@
 pub enum ResourceAmount {
     #[serde(rename="Fungible")]
     FungibleResourceAmount {
-        /// Hex-encoded bytes of the resource's global address
-        #[serde(rename = "resource_global_address_bytes")]
-        resource_global_address_bytes: String,
-        /// The Bech32m-encoded human readable representation of the resource's global address
-        #[serde(rename = "resource_global_address_string")]
-        resource_global_address_string: String,
-        /// The string-encoded decimal subunits of the amount (10^-18)
+        /// The Bech32m-encoded human readable version of the resource address
+        #[serde(rename = "resource_address")]
+        resource_address: String,
+        /// The string-encoded decimal subunits of the amount (10^-18) in a signed 256-bit integer. This is string-encoded as it doesn't fit well into common numeric types. 
         #[serde(rename = "amount_subunits")]
         amount_subunits: String,
     },
     #[serde(rename="NonFungible")]
     NonFungibleResourceAmount {
-        /// Hex-encoded bytes of the resource's global address
-        #[serde(rename = "resource_global_address_bytes")]
-        resource_global_address_bytes: String,
-        /// The Bech32m-encoded human readable representation of the resource's global address
-        #[serde(rename = "resource_global_address_string")]
-        resource_global_address_string: String,
+        /// The Bech32m-encoded human readable version of the resource address
+        #[serde(rename = "resource_address")]
+        resource_address: String,
         #[serde(rename = "nf_ids")]
         nf_ids: Vec<String>,
     },

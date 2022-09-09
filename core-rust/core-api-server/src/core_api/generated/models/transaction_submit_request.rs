@@ -13,17 +13,18 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionSubmitRequest {
-    #[serde(rename = "network_identifier")]
-    pub network_identifier: Box<crate::core_api::generated::models::NetworkIdentifier>,
+    /// The name of the network.
+    #[serde(rename = "network")]
+    pub network: String,
     /// A notarized transaction encoded in the Radix transaction format, and then hex encoded.
     #[serde(rename = "notarized_transaction")]
     pub notarized_transaction: String,
 }
 
 impl TransactionSubmitRequest {
-    pub fn new(network_identifier: crate::core_api::generated::models::NetworkIdentifier, notarized_transaction: String) -> TransactionSubmitRequest {
+    pub fn new(network: String, notarized_transaction: String) -> TransactionSubmitRequest {
         TransactionSubmitRequest {
-            network_identifier: Box::new(network_identifier),
+            network,
             notarized_transaction,
         }
     }

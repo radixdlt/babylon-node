@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NonFungibleSubstateAllOf {
-    /// Hex-encoded bytes of its non-fungible id
+    /// The hex-encoded bytes of its non-fungible id
     #[serde(rename = "nf_id")]
     pub nf_id: String,
     #[serde(rename = "is_deleted")]

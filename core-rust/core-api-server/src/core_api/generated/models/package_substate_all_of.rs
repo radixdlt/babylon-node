@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PackageSubstateAllOf {
-    /// Package code, hex-encoded.
+    /// The hex-encoded package code
     #[serde(rename = "code")]
     pub code: String,
 }

@@ -17,7 +17,7 @@ pub struct ComponentInfoSubstate {
     pub entity_type: crate::core_api::generated::models::EntityType,
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// Package address, Bech32m-encoded.
+    /// The Bech32m-encoded human readable version of the package address
     #[serde(rename = "package_address")]
     pub package_address: String,
     #[serde(rename = "blueprint_name")]

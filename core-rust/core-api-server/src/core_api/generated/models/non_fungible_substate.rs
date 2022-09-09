@@ -17,7 +17,7 @@ pub struct NonFungibleSubstate {
     pub entity_type: crate::core_api::generated::models::EntityType,
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// Hex-encoded bytes of its non-fungible id
+    /// The hex-encoded bytes of its non-fungible id
     #[serde(rename = "nf_id")]
     pub nf_id: String,
     #[serde(rename = "is_deleted")]

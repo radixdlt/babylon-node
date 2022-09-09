@@ -34,21 +34,6 @@ fn handle_preview_internal(
 fn parse_preview_request(
     request: TransactionPreviewRequest,
 ) -> Result<PreviewRequest, RequestHandlingError> {
-    let cost_unit_limit: u32 = request
-        .cost_unit_limit
-        .parse()
-        .map_err(|_| preview_errors::invalid_int_field("cost_unit_limit"))?;
-
-    let tip_percentage: u32 = request
-        .tip_percentage
-        .parse()
-        .map_err(|_| preview_errors::invalid_int_field("tip_percentage"))?;
-
-    let nonce: u64 = request
-        .nonce
-        .parse()
-        .map_err(|_| preview_errors::invalid_int_field("nonce"))?;
-
     let manifest = hex::decode(request.manifest)
         .map(|manifest_bytes| {
             scrypto_decode::<TransactionManifest>(&manifest_bytes)
@@ -69,9 +54,9 @@ fn parse_preview_request(
 
     Ok(PreviewRequest {
         manifest,
-        cost_unit_limit,
-        tip_percentage,
-        nonce,
+        cost_unit_limit: request.cost_unit_limit,
+        tip_percentage: request.tip_percentage,
+        nonce: request.nonce,
         signer_public_keys,
         flags: PreviewFlags {
             unlimited_loan: request.flags.unlimited_loan,
@@ -135,9 +120,6 @@ fn to_api_response(
                     down_substates: vec![],
                     new_global_entities: vec![],
                 }),
-                new_package_addresses: vec![],
-                new_component_addresses: vec![],
-                new_resource_addresses: vec![],
                 output: None,
                 error_message: Some(format!("{:?}", reject_result)),
             }),
@@ -159,10 +141,6 @@ mod preview_errors {
                 server_error(500, &format!("Transaction validation error: {:?}", err))
             }
         }
-    }
-
-    pub(crate) fn invalid_int_field(field: &str) -> RequestHandlingError {
-        client_error(400, &format!("Invalid integer: {}", field))
     }
 
     pub(crate) fn invalid_manifest() -> RequestHandlingError {

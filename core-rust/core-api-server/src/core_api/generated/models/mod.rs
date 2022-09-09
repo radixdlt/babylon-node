@@ -40,8 +40,6 @@ pub mod network_configuration_response;
 pub use self::network_configuration_response::NetworkConfigurationResponse;
 pub mod network_configuration_response_version;
 pub use self::network_configuration_response_version::NetworkConfigurationResponseVersion;
-pub mod network_identifier;
-pub use self::network_identifier::NetworkIdentifier;
 pub mod non_fungible_data;
 pub use self::non_fungible_data::NonFungibleData;
 pub mod non_fungible_resource_amount;

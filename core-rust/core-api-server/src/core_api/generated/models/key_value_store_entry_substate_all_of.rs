@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct KeyValueStoreEntrySubstateAllOf {
-    /// Hex-encoded bytes of its key
+    /// The hex-encoded bytes of its key
     #[serde(rename = "key")]
     pub key: String,
     #[serde(rename = "is_deleted")]

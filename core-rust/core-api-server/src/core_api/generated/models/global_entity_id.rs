@@ -15,13 +15,13 @@
 pub struct GlobalEntityId {
     #[serde(rename = "entity_type")]
     pub entity_type: crate::core_api::generated::models::EntityType,
-    /// Hex-encoded bytes
+    /// The hex-encoded bytes of the entity address
     #[serde(rename = "entity_address")]
     pub entity_address: String,
-    /// Hex-encoded bytes. This is currently the same as entity_address, but may change in future.
+    /// The hex-encoded bytes of the entity's global address. This is currently the same as entity_address, but may change in future.
     #[serde(rename = "global_address_bytes")]
     pub global_address_bytes: String,
-    /// Bech32m-encoded human readabl address
+    /// The Bech32m-encoded human readable version of the entity's global address
     #[serde(rename = "global_address_str")]
     pub global_address_str: String,
 }

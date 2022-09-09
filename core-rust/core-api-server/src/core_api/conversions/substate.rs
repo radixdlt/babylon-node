@@ -43,20 +43,14 @@ pub fn to_api_substate(
 fn to_api_system_substate(system: &System) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::SystemSubstate {
         entity_type: EntityType::System,
-        epoch: system
-            .epoch
-            .try_into()
-            .map_err(|err| MappingError::Integer {
-                message: "System Epoch could not be mapped to i64".to_owned(),
-                error: err,
-            })?,
+        epoch: system.epoch,
     })
 }
 
 fn to_api_resource_substate(resource_manager: &ResourceManager) -> models::Substate {
     let (resource_type, fungible_divisibility) = match resource_manager.resource_type() {
         ResourceType::Fungible { divisibility } => {
-            (models::ResourceType::Fungible, Some(divisibility as i32))
+            (models::ResourceType::Fungible, Some(divisibility as u32))
         }
         ResourceType::NonFungible => (models::ResourceType::NonFungible, None),
     };
@@ -94,7 +88,6 @@ fn to_api_component_state_substate(
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::ComponentStateSubstate {
         entity_type: EntityType::Component,
-        state_bytes: hex::encode(component_state.state()),
         data_struct: Box::new(to_api_data_struct(component_state.state())?),
     })
 }
@@ -217,8 +210,7 @@ fn to_api_fungible_resource_amount(
     let resource_entity =
         to_api_global_entity_id(bech32_encoder, to_resource_entity_id(resource_address))?;
     Ok(models::ResourceAmount::FungibleResourceAmount {
-        resource_global_address_bytes: resource_entity.global_address_bytes,
-        resource_global_address_string: resource_entity.global_address_str,
+        resource_address: resource_entity.global_address_str,
         amount_subunits: amount.0.to_string(),
     })
 }
@@ -232,8 +224,7 @@ fn to_api_non_fungible_resource_amount(
         to_api_global_entity_id(bech32_encoder, to_resource_entity_id(resource_address))?;
     let nf_ids = ids.iter().map(|nf_id| to_hex(&nf_id.0)).collect::<Vec<_>>();
     Ok(models::ResourceAmount::NonFungibleResourceAmount {
-        resource_global_address_bytes: resource_entity.global_address_bytes,
-        resource_global_address_string: resource_entity.global_address_str,
+        resource_address: resource_entity.global_address_str,
         nf_ids,
     })
 }

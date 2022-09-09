@@ -15,7 +15,6 @@ pub fn to_api_receipt(
     receipt: LedgerTransactionReceipt,
 ) -> Result<TransactionReceipt, MappingError> {
     let fee_summary = receipt.fee_summary;
-    let entity_changes = receipt.entity_changes;
 
     let (status, output, error_message) = match receipt.status {
         CommittedTransactionStatus::Success(output) => {
@@ -67,21 +66,6 @@ pub fn to_api_receipt(
         status,
         fee_summary: Box::new(api_fee_summary),
         state_updates: Box::new(api_state_updates),
-        new_package_addresses: entity_changes
-            .new_package_addresses
-            .into_iter()
-            .map(|v| bech32_encoder.encode_package_address(&v))
-            .collect(),
-        new_component_addresses: entity_changes
-            .new_component_addresses
-            .into_iter()
-            .map(|v| bech32_encoder.encode_component_address(&v))
-            .collect(),
-        new_resource_addresses: entity_changes
-            .new_resource_addresses
-            .into_iter()
-            .map(|v| bech32_encoder.encode_resource_address(&v))
-            .collect(),
         output,
         error_message,
     })
@@ -101,7 +85,7 @@ pub fn to_api_up_substate(
     )?);
     Ok(UpSubstate {
         substate_id: Box::new(to_api_substate_id(substate_id)?),
-        version: output_value.version.to_string(),
+        version: output_value.version,
         substate_bytes: to_hex(substate_bytes),
         substate_data_hash: hash,
         substate_data: api_substate_data,
@@ -112,13 +96,7 @@ pub fn to_api_down_substate(output_id: OutputId) -> Result<DownSubstate, Mapping
     Ok(DownSubstate {
         substate_id: Box::new(to_api_substate_id(output_id.substate_id)?),
         substate_data_hash: to_hex(output_id.substate_hash),
-        version: output_id
-            .version
-            .try_into()
-            .map_err(|err| MappingError::Integer {
-                message: "Substate version could not be mapped to i32".to_owned(),
-                error: err,
-            })?,
+        version: output_id.version,
     })
 }
 

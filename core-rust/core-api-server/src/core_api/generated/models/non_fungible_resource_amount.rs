@@ -15,22 +15,18 @@
 pub struct NonFungibleResourceAmount {
     #[serde(rename = "resource_type")]
     pub resource_type: crate::core_api::generated::models::ResourceType,
-    /// Hex-encoded bytes of the resource's global address
-    #[serde(rename = "resource_global_address_bytes")]
-    pub resource_global_address_bytes: String,
-    /// The Bech32m-encoded human readable representation of the resource's global address
-    #[serde(rename = "resource_global_address_string")]
-    pub resource_global_address_string: String,
+    /// The Bech32m-encoded human readable version of the resource address
+    #[serde(rename = "resource_address")]
+    pub resource_address: String,
     #[serde(rename = "nf_ids")]
     pub nf_ids: Vec<String>,
 }
 
 impl NonFungibleResourceAmount {
-    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, resource_global_address_bytes: String, resource_global_address_string: String, nf_ids: Vec<String>) -> NonFungibleResourceAmount {
+    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, resource_address: String, nf_ids: Vec<String>) -> NonFungibleResourceAmount {
         NonFungibleResourceAmount {
             resource_type,
-            resource_global_address_bytes,
-            resource_global_address_string,
+            resource_address,
             nf_ids,
         }
     }

@@ -15,17 +15,17 @@
 pub struct CommittedTransactionsResponse {
     /// The first state version returned. A decimal 64-bit unsigned integer.
     #[serde(rename = "start_state_version")]
-    pub start_state_version: String,
+    pub start_state_version: u64,
     /// The maximum state version returned. A decimal 64-bit unsigned integer.
     #[serde(rename = "max_state_version")]
-    pub max_state_version: String,
+    pub max_state_version: u64,
     /// A committed transactions list starting from the `start_state_version_inclusive`.
     #[serde(rename = "transactions")]
     pub transactions: Vec<crate::core_api::generated::models::CommittedTransaction>,
 }
 
 impl CommittedTransactionsResponse {
-    pub fn new(start_state_version: String, max_state_version: String, transactions: Vec<crate::core_api::generated::models::CommittedTransaction>) -> CommittedTransactionsResponse {
+    pub fn new(start_state_version: u64, max_state_version: u64, transactions: Vec<crate::core_api::generated::models::CommittedTransaction>) -> CommittedTransactionsResponse {
         CommittedTransactionsResponse {
             start_state_version,
             max_state_version,

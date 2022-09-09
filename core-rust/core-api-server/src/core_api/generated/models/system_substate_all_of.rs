@@ -14,11 +14,11 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SystemSubstateAllOf {
     #[serde(rename = "epoch")]
-    pub epoch: i64,
+    pub epoch: u64,
 }
 
 impl SystemSubstateAllOf {
-    pub fn new(epoch: i64) -> SystemSubstateAllOf {
+    pub fn new(epoch: u64) -> SystemSubstateAllOf {
         SystemSubstateAllOf {
             epoch,
         }

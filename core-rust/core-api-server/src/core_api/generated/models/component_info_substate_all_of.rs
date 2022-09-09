@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ComponentInfoSubstateAllOf {
-    /// Package address, Bech32m-encoded.
+    /// The Bech32m-encoded human readable version of the package address
     #[serde(rename = "package_address")]
     pub package_address: String,
     #[serde(rename = "blueprint_name")]

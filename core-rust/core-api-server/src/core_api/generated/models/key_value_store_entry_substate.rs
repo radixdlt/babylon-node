@@ -17,7 +17,7 @@ pub struct KeyValueStoreEntrySubstate {
     pub entity_type: crate::core_api::generated::models::EntityType,
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    /// Hex-encoded bytes of its key
+    /// The hex-encoded bytes of its key
     #[serde(rename = "key")]
     pub key: String,
     #[serde(rename = "is_deleted")]
