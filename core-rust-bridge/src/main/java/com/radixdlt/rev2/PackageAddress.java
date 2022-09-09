@@ -79,6 +79,82 @@ public record PackageAddress(byte[] value) {
                 TypeId.TYPE_CUSTOM_PACKAGE_ADDRESS, PackageAddress::value, PackageAddress::new));
   }
 
+  private static final int BYTE_LENGTH = 27;
+  public static byte PACKAGE_ADDRESS_ENTITY_ID = 1;
+
+  public static final PackageAddress ACCOUNT_PACKAGE_ADDRESS =
+      // See constants.rs (component.rs defines the encoding)
+      PackageAddress.create(
+          new byte[] {
+            PACKAGE_ADDRESS_ENTITY_ID,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            3
+          });
+
+  public static final PackageAddress SYS_UTILS_PACKAGE_ADDRESS =
+      // See constants.rs (component.rs defines the encoding)
+      PackageAddress.create(
+          new byte[] {
+            PACKAGE_ADDRESS_ENTITY_ID,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2
+          });
+
+  public static PackageAddress create(byte[] addressBytes) {
+    if (addressBytes.length != BYTE_LENGTH) {
+      throw new IllegalArgumentException("Invalid package address length");
+    }
+    return new PackageAddress(addressBytes);
+  }
+
   public String toHexString() {
     return Hex.toHexString(value);
   }

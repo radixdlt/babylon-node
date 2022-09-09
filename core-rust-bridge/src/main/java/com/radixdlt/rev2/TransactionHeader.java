@@ -110,16 +110,19 @@ public record TransactionHeader(
   }
 
   public static TransactionHeader defaults(
-      NetworkDefinition networkDefinition, ECPublicKey notary, Boolean notaryIsSignatory) {
+      NetworkDefinition networkDefinition,
+      long nonce,
+      ECPublicKey notary,
+      Boolean notaryIsSignatory) {
     return new TransactionHeader(
         (byte) 1, // Version
         networkDefinition.id(),
         UInt64.fromNonNegativeLong(1), // From Epoch (inclusive)
         UInt64.fromNonNegativeLong(100), // To Epoch (exclusive)
-        UInt64.fromNonNegativeLong(1), // Nonce
+        UInt64.fromNonNegativeLong(nonce), // Nonce
         notary,
         notaryIsSignatory,
-        UInt32.fromNonNegativeInt(1000000), // Max Cost Units
+        UInt32.fromNonNegativeInt(100000000), // Max Cost Units
         UInt32.fromNonNegativeInt(0) // Tip percentage
         );
   }

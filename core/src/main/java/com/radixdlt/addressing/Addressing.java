@@ -70,6 +70,9 @@ import com.radixdlt.exceptions.Bech32DecodeException;
 import com.radixdlt.identifiers.Bech32mCoder;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.PackageAddress;
+import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 
@@ -85,8 +88,30 @@ public final class Addressing {
     return new Addressing(network);
   }
 
+  public static Addressing ofNetwork(NetworkDefinition networkDefinition) {
+    return new Addressing(networkDefinition.toNetwork());
+  }
+
   public static Addressing ofNetworkId(int networkId) {
     return ofNetwork(Network.ofIdOrThrow(networkId));
+  }
+
+  public String encodePackageAddress(PackageAddress packageAddress) {
+    return Bech32mCoder.encode(network.getPackageHrp(), packageAddress.value());
+  }
+
+  public PackageAddress decodePackageAddress(String address) {
+    return PackageAddress.create(
+        Bech32mCoder.decodeWithExpectedHrp(network.getPackageHrp(), address));
+  }
+
+  public String encodeResourceAddress(ResourceAddress resourceAddress) {
+    return Bech32mCoder.encode(network.getResourceHrp(), resourceAddress.value());
+  }
+
+  public ResourceAddress decodeResourceAddress(String address) {
+    return ResourceAddress.create(
+        Bech32mCoder.decodeWithExpectedHrp(network.getResourceHrp(), address));
   }
 
   public String encodeNormalComponentAddress(ComponentAddress componentAddress) {

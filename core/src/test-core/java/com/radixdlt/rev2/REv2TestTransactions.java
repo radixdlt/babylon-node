@@ -75,8 +75,8 @@ import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 
 public final class REv2TestTransactions {
-  // This has to come first for static ordering issues
-  private static int currentKey = 1;
+  // These have to come first for static ordering issues
+  public static final ECKeyPair DEFAULT_NOTARY = generateKeyPair(1);
 
   public static final RawTransaction VALID_TXN_0 =
       constructTransaction(
@@ -87,31 +87,62 @@ public final class REv2TestTransactions {
         """,
               Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
                   .encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS)),
+          0,
           List.of());
   public static final RawTransaction VALID_TXN_1 =
-      constructTransaction("CLEAR_AUTH_ZONE;", List.of(getNewKeyPair()));
+      constructTransaction("CLEAR_AUTH_ZONE;", 0, List.of(generateKeyPair(10)));
   public static final RawTransaction VALID_TXN_2 =
       constructTransaction(
-          "CLEAR_AUTH_ZONE; CLEAR_AUTH_ZONE;", List.of(getNewKeyPair(), getNewKeyPair()));
+          "CLEAR_AUTH_ZONE; CLEAR_AUTH_ZONE;",
+          0,
+          List.of(generateKeyPair(21), generateKeyPair(22)));
 
-  private static ECKeyPair getNewKeyPair() {
-    return PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
+  private static ECKeyPair generateKeyPair(int keySource) {
+    return PrivateKeys.numeric(keySource).findFirst().orElseThrow();
   }
 
-  public static RawTransaction constructTransaction(String manifest, List<ECKeyPair> signatories) {
+  public static RawTransaction constructNewAccountTransaction(
+      NetworkDefinition networkDefinition, long nonce) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+
+    final var faucetAddress =
+        addressing.encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
+    final var xrdAddress = addressing.encodeResourceAddress(ResourceAddress.XRD_ADDRESS);
+    final var accountPackageAddress =
+        addressing.encodePackageAddress(PackageAddress.ACCOUNT_PACKAGE_ADDRESS);
+
+    var manifest =
+        String.format(
+            """
+            CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("1000");
+            CALL_METHOD ComponentAddress("%s") "free_xrd";
+            TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
+            CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("xrd");
+            """,
+            faucetAddress, faucetAddress, xrdAddress, accountPackageAddress);
+    var signatories = List.<ECKeyPair>of();
+
     return constructTransaction(
-        NetworkDefinition.INT_TEST_NET, manifest, getNewKeyPair(), false, signatories);
+        networkDefinition, nonce, manifest, DEFAULT_NOTARY, false, signatories);
+  }
+
+  public static RawTransaction constructTransaction(
+      String manifest, long nonce, List<ECKeyPair> signatories) {
+    return constructTransaction(
+        NetworkDefinition.INT_TEST_NET, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
   public static RawTransaction constructTransaction(
       NetworkDefinition networkDefinition,
+      long nonce,
       String manifest,
       ECKeyPair notary,
       boolean notaryIsSignatory,
       List<ECKeyPair> signatories) {
     // Build intent
     final var header =
-        TransactionHeader.defaults(networkDefinition, notary.getPublicKey(), notaryIsSignatory);
+        TransactionHeader.defaults(
+            networkDefinition, nonce, notary.getPublicKey(), notaryIsSignatory);
     var intentBytes = TransactionBuilder.createIntent(networkDefinition, header, manifest);
 
     // Sign intent
