@@ -1,6 +1,5 @@
 use crate::core_api::models::*;
 use crate::core_api::*;
-use axum::{Extension, Json};
 use state_manager::jni::state_manager::ActualStateManager;
 
 pub(crate) async fn handle_network_configuration(

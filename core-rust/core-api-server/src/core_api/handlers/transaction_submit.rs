@@ -1,6 +1,5 @@
 use crate::core_api::models::*;
 use crate::core_api::*;
-use axum::{Extension, Json};
 use scrypto::crypto::sha256_twice;
 
 use state_manager::jni::state_manager::ActualStateManager;

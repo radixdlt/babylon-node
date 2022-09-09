@@ -18,11 +18,20 @@ impl IntoResponse for RequestHandlingError {
             Self::ClientError(r) => r,
             Self::ServerError(r) => r,
         };
+        let coded_response: ErrorResponseWithCode = error_response.into();
+        coded_response.into_response()
+    }
+}
+
+pub type ErrorResponseWithCode = (StatusCode, Json<ErrorResponse>);
+
+impl From<ErrorResponse> for ErrorResponseWithCode {
+    fn from(error_response: ErrorResponse) -> Self {
         let http_code = u16::try_from(error_response.code).unwrap_or(500);
         let status_code = StatusCode::from_u16(http_code).expect("Http code was unexpected");
 
         let body = Json(error_response);
-        (status_code, body).into_response()
+        (status_code, body)
     }
 }
 
