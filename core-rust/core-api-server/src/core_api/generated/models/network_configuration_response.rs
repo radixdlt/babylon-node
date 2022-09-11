@@ -15,18 +15,19 @@
 pub struct NetworkConfigurationResponse {
     #[serde(rename = "version")]
     pub version: Box<crate::core_api::generated::models::NetworkConfigurationResponseVersion>,
-    #[serde(rename = "network_identifier")]
-    pub network_identifier: Box<crate::core_api::generated::models::NetworkIdentifier>,
+    /// The logical name of the network
+    #[serde(rename = "network")]
+    pub network: String,
     /// The network suffix used for Bech32m HRPs used for addressing.
     #[serde(rename = "network_hrp_suffix")]
     pub network_hrp_suffix: String,
 }
 
 impl NetworkConfigurationResponse {
-    pub fn new(version: crate::core_api::generated::models::NetworkConfigurationResponseVersion, network_identifier: crate::core_api::generated::models::NetworkIdentifier, network_hrp_suffix: String) -> NetworkConfigurationResponse {
+    pub fn new(version: crate::core_api::generated::models::NetworkConfigurationResponseVersion, network: String, network_hrp_suffix: String) -> NetworkConfigurationResponse {
         NetworkConfigurationResponse {
             version: Box::new(version),
-            network_identifier: Box::new(network_identifier),
+            network,
             network_hrp_suffix,
         }
     }

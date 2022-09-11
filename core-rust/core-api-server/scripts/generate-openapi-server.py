@@ -49,8 +49,14 @@ def generate_models(spec_file, tmp_client_folder, out_location):
     run(['java', '-jar', OPENAPI_GENERATOR_FIXED_VERSION_JAR, 'generate',
          '-g', 'rust',
          '-i', spec_file,
-         '-o', tmp_client_folder
+         '-o', tmp_client_folder,
+         # Prepare for the release 6.0.2, which will include these properties:
+         # From this PR: https://github.com/OpenAPITools/openapi-generator/commit/a1892b163688d205ee8a44051b59aba3928ec5fc
+         # This will enable us removing the i32/i64 changes below
+         '--additional-properties=preferUnsignedInt=true,bestFitInt=true'
          ], should_log=False)
+
+    logging.info("Successfully generated.")
 
     rust_code_root = os.path.join(tmp_client_folder, 'src')
     rust_models = os.path.join(rust_code_root, 'models')
@@ -60,11 +66,38 @@ def generate_models(spec_file, tmp_client_folder, out_location):
     shutil.copytree(rust_models, out_models)
     create_file(os.path.join(out_location, 'mod.rs'), "pub mod models;")
 
-    files = [os.path.join(out_models, f) for f in os.listdir(out_models) if os.path.isfile(os.path.join(out_models, f))]
-    for file_path in files:
+    file_names = [file_name for file_name in os.listdir(out_models) if os.path.isfile(os.path.join(out_models, file_name))]
+    file_names_to_not_convert_to_unsigned = set(["resource_change.rs"])
+    for file_name in file_names:
+        file_path = os.path.join(out_models, file_name)
         replace_in_file(file_path, 'crate::', 'crate::core_api::generated::')
         replace_in_file(file_path, ', Serialize, Deserialize', ', serde::Serialize, serde::Deserialize')
-    logging.info("Successfully generated!")
+        # This can be removed when we update to 6.0.2 when it's out - see above
+        if file_name not in file_names_to_not_convert_to_unsigned:
+            replace_in_file(file_path, 'i8', 'u8')
+            replace_in_file(file_path, 'i16', 'u16')
+            replace_in_file(file_path, 'i32', 'u32')
+            replace_in_file(file_path, 'i64', 'u64')
+
+    # Fix bugs in generation:
+    substate_enum_file = os.path.join(out_models, "substate.rs")
+    up_substate_file = os.path.join(out_models, "up_substate.rs")
+    vault_substate_file = os.path.join(out_models, "vault_substate.rs")
+    vault_substate_all_of_file = os.path.join(out_models, "vault_substate_all_of.rs")
+    
+    # Fix bug that discriminator tags are stripped and lower cased
+    replace_in_file(substate_enum_file, 'tag = "substatetype"', 'tag = "substate_type"')
+
+    # Fix bug that enums don't implement Default... So replace their references with Options
+    replace_in_file(up_substate_file, 'Box<crate::core_api::generated::models::Substate>,', 'Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use')
+    replace_in_file(up_substate_file, 'substate_data: Box::new(substate_data)', 'substate_data: Option::Some(substate_data)')
+    
+    replace_in_file(vault_substate_file, 'Box<crate::core_api::generated::models::ResourceAmount>,', 'Option<crate::core_api::generated::models::ResourceAmount>, // Using Option permits Default trait; Will always be Some in normal use')
+    replace_in_file(vault_substate_all_of_file, 'Box<crate::core_api::generated::models::ResourceAmount>,', 'Option<crate::core_api::generated::models::ResourceAmount>, // Using Option permits Default trait; Will always be Some in normal use')
+    replace_in_file(vault_substate_file, 'resource_amount: Box::new(resource_amount)', 'resource_amount: Option::Some(resource_amount)')
+    replace_in_file(vault_substate_all_of_file, 'resource_amount: Box::new(resource_amount)', 'resource_amount: Option::Some(resource_amount)')
+
+    logging.info("Successfully fixed up.")
 
 if __name__ == "__main__":
     logger.info('Will generate models from the API specifications')

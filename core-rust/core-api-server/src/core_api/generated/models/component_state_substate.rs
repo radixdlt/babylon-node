@@ -13,15 +13,20 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ComponentStateSubstate {
-    /// hex-encoded state data
-    #[serde(rename = "state")]
-    pub state: String,
+    #[serde(rename = "entity_type")]
+    pub entity_type: crate::core_api::generated::models::EntityType,
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
+    #[serde(rename = "data_struct")]
+    pub data_struct: Box<crate::core_api::generated::models::DataStruct>,
 }
 
 impl ComponentStateSubstate {
-    pub fn new(state: String) -> ComponentStateSubstate {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, data_struct: crate::core_api::generated::models::DataStruct) -> ComponentStateSubstate {
         ComponentStateSubstate {
-            state,
+            entity_type,
+            substate_type,
+            data_struct: Box::new(data_struct),
         }
     }
 }

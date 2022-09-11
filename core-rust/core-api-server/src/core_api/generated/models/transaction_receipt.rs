@@ -20,33 +20,21 @@ pub struct TransactionReceipt {
     pub fee_summary: Box<crate::core_api::generated::models::FeeSummary>,
     #[serde(rename = "state_updates")]
     pub state_updates: Box<crate::core_api::generated::models::StateUpdates>,
-    /// A list of new package addresses.
-    #[serde(rename = "new_package_addresses")]
-    pub new_package_addresses: Vec<String>,
-    /// A list of new component addresses.
-    #[serde(rename = "new_component_addresses")]
-    pub new_component_addresses: Vec<String>,
-    /// A list of new resource addresses.
-    #[serde(rename = "new_resource_addresses")]
-    pub new_resource_addresses: Vec<String>,
-    /// The engine return data (only present if status is succeeded)
+    /// The manifest line-by-line engine return data (only present if status is Succeeded)
     #[serde(rename = "output", skip_serializing_if = "Option::is_none")]
-    pub output: Option<Vec<String>>,
-    /// Error message (only present if status is failed or rejected)
+    pub output: Option<Vec<crate::core_api::generated::models::SborData>>,
+    /// Error message (only present if status is Failed or Rejected)
     #[serde(rename = "error_message", skip_serializing_if = "Option::is_none")]
     pub error_message: Option<String>,
 }
 
 impl TransactionReceipt {
     /// The transaction execution receipt
-    pub fn new(status: crate::core_api::generated::models::TransactionStatus, fee_summary: crate::core_api::generated::models::FeeSummary, state_updates: crate::core_api::generated::models::StateUpdates, new_package_addresses: Vec<String>, new_component_addresses: Vec<String>, new_resource_addresses: Vec<String>) -> TransactionReceipt {
+    pub fn new(status: crate::core_api::generated::models::TransactionStatus, fee_summary: crate::core_api::generated::models::FeeSummary, state_updates: crate::core_api::generated::models::StateUpdates) -> TransactionReceipt {
         TransactionReceipt {
             status,
             fee_summary: Box::new(fee_summary),
             state_updates: Box::new(state_updates),
-            new_package_addresses,
-            new_component_addresses,
-            new_resource_addresses,
             output: None,
             error_message: None,
         }

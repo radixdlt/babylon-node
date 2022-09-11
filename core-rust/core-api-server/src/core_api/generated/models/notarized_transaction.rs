@@ -13,20 +13,24 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NotarizedTransaction {
-    /// The transaction hash, hex-encoded.
+    /// The hex-encoded double-SHA256 hash of the notarized transaction payload.
     #[serde(rename = "hash")]
     pub hash: String,
+    /// The hex-encoded full notarized transaction payload.
+    #[serde(rename = "payload")]
+    pub payload: String,
     #[serde(rename = "signed_intent")]
     pub signed_intent: Box<crate::core_api::generated::models::SignedTransactionIntent>,
-    /// The notary signature, hex-encoded.
+    /// The hex-encoded SBOR-encoded notary signature.
     #[serde(rename = "notary_signature")]
     pub notary_signature: String,
 }
 
 impl NotarizedTransaction {
-    pub fn new(hash: String, signed_intent: crate::core_api::generated::models::SignedTransactionIntent, notary_signature: String) -> NotarizedTransaction {
+    pub fn new(hash: String, payload: String, signed_intent: crate::core_api::generated::models::SignedTransactionIntent, notary_signature: String) -> NotarizedTransaction {
         NotarizedTransaction {
             hash,
+            payload,
             signed_intent: Box::new(signed_intent),
             notary_signature,
         }

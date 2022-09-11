@@ -13,22 +13,21 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct DownSubstate {
-    /// SBOR-encoded and then hex-encoded substate ID.
     #[serde(rename = "substate_id")]
-    pub substate_id: String,
-    /// Substate hash.
-    #[serde(rename = "substate_hash")]
-    pub substate_hash: String,
-    /// A decimal 32-bit unsigned integer
+    pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
+    /// The hex-encoded double-SHA256 hash of the substate data bytes
+    #[serde(rename = "substate_data_hash")]
+    pub substate_data_hash: String,
+    /// A decimal 32-bit unsigned integer, counting the number of times the substate was updated
     #[serde(rename = "version")]
-    pub version: String,
+    pub version: u32,
 }
 
 impl DownSubstate {
-    pub fn new(substate_id: String, substate_hash: String, version: String) -> DownSubstate {
+    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, substate_data_hash: String, version: u32) -> DownSubstate {
         DownSubstate {
-            substate_id,
-            substate_hash,
+            substate_id: Box::new(substate_id),
+            substate_data_hash,
             version,
         }
     }

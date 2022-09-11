@@ -13,20 +13,21 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionPreviewRequest {
-    #[serde(rename = "network_identifier")]
-    pub network_identifier: Box<crate::core_api::generated::models::NetworkIdentifier>,
-    /// A transaction manifest. Sbor encoded, and then hex encoded.
+    /// The logical name of the network
+    #[serde(rename = "network")]
+    pub network: String,
+    /// A hex-encoded, SBOR-encoded transaction manifest
     #[serde(rename = "manifest")]
     pub manifest: String,
-    /// Maximum number of cost units available for transaction execution. A decimal 32-bit unsigned integer.
+    /// The maximum number of cost units available for transaction execution. A decimal 32-bit unsigned integer.
     #[serde(rename = "cost_unit_limit")]
-    pub cost_unit_limit: String,
+    pub cost_unit_limit: u32,
     /// The validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of \"1\" corresponds to 1%).
     #[serde(rename = "tip_percentage")]
-    pub tip_percentage: String,
+    pub tip_percentage: u32,
     /// The nonce value to use for execution. A decimal 64-bit unsigned integer.
     #[serde(rename = "nonce")]
-    pub nonce: String,
+    pub nonce: u64,
     /// A list of public keys to be used as transaction signers, in a compressed format, hex encoded.
     #[serde(rename = "signer_public_keys")]
     pub signer_public_keys: Vec<String>,
@@ -35,9 +36,9 @@ pub struct TransactionPreviewRequest {
 }
 
 impl TransactionPreviewRequest {
-    pub fn new(network_identifier: crate::core_api::generated::models::NetworkIdentifier, manifest: String, cost_unit_limit: String, tip_percentage: String, nonce: String, signer_public_keys: Vec<String>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
+    pub fn new(network: String, manifest: String, cost_unit_limit: u32, tip_percentage: u32, nonce: u64, signer_public_keys: Vec<String>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
         TransactionPreviewRequest {
-            network_identifier: Box::new(network_identifier),
+            network,
             manifest,
             cost_unit_limit,
             tip_percentage,

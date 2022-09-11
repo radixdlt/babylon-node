@@ -12,16 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ResourceSubstateMetadataInner {
+pub struct ResourceManagerSubstateAllOfMetadata {
     #[serde(rename = "key")]
     pub key: String,
     #[serde(rename = "value")]
     pub value: String,
 }
 
-impl ResourceSubstateMetadataInner {
-    pub fn new(key: String, value: String) -> ResourceSubstateMetadataInner {
-        ResourceSubstateMetadataInner {
+impl ResourceManagerSubstateAllOfMetadata {
+    pub fn new(key: String, value: String) -> ResourceManagerSubstateAllOfMetadata {
+        ResourceManagerSubstateAllOfMetadata {
             key,
             value,
         }

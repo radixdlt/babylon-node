@@ -13,14 +13,20 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PackageSubstate {
-    /// Package code, hex-encoded.
+    #[serde(rename = "entity_type")]
+    pub entity_type: crate::core_api::generated::models::EntityType,
+    #[serde(rename = "substate_type")]
+    pub substate_type: crate::core_api::generated::models::SubstateType,
+    /// The hex-encoded package code
     #[serde(rename = "code")]
     pub code: String,
 }
 
 impl PackageSubstate {
-    pub fn new(code: String) -> PackageSubstate {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, code: String) -> PackageSubstate {
         PackageSubstate {
+            entity_type,
+            substate_type,
             code,
         }
     }

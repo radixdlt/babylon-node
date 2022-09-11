@@ -13,30 +13,29 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct UpSubstate {
-    /// SBOR-encoded and then hex-encoded substate ID.
     #[serde(rename = "substate_id")]
-    pub substate_id: String,
-    /// A decimal 32-bit unsigned integer
+    pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
+    /// A decimal 32-bit unsigned integer, counting the number of times the substate was updated
     #[serde(rename = "version")]
-    pub version: String,
-    /// SBOR-encoded and then hex-encoded substate bytes.
+    pub version: u32,
+    /// The hex-encoded, SBOR-encoded substate data bytes
     #[serde(rename = "substate_bytes")]
     pub substate_bytes: String,
-    #[serde(rename = "substate_json_type")]
-    pub substate_json_type: crate::core_api::generated::models::TemporaryUpSubstateJsonPayloadType,
-    /// JSON-encoded (and then stringified) substate model. Warning! This is temporary property until we get proper polymorphism in place.
-    #[serde(rename = "substate_json_str")]
-    pub substate_json_str: String,
+    /// The hex-encoded double-SHA256 hash of the substate data bytes
+    #[serde(rename = "substate_data_hash")]
+    pub substate_data_hash: String,
+    #[serde(rename = "substate_data")]
+    pub substate_data: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl UpSubstate {
-    pub fn new(substate_id: String, version: String, substate_bytes: String, substate_json_type: crate::core_api::generated::models::TemporaryUpSubstateJsonPayloadType, substate_json_str: String) -> UpSubstate {
+    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, version: u32, substate_bytes: String, substate_data_hash: String, substate_data: crate::core_api::generated::models::Substate) -> UpSubstate {
         UpSubstate {
-            substate_id,
+            substate_id: Box::new(substate_id),
             version,
             substate_bytes,
-            substate_json_type,
-            substate_json_str,
+            substate_data_hash,
+            substate_data: Option::Some(substate_data),
         }
     }
 }

@@ -1,6 +1,5 @@
 use crate::core_api::models::*;
 use crate::core_api::*;
-use axum::{Extension, Json};
 use radix_engine::transaction::{PreviewResult, TransactionResult};
 use scrypto::address::Bech32Encoder;
 use scrypto::crypto::EcdsaPublicKey;
@@ -20,6 +19,8 @@ fn handle_preview_internal(
     state_manager: &mut ActualStateManager,
     request: TransactionPreviewRequest,
 ) -> Result<TransactionPreviewResponse, RequestHandlingError> {
+    assert_matching_network(&request.network, &state_manager.network)?;
+
     let preview_request = parse_preview_request(request)?;
 
     let result = state_manager
@@ -34,21 +35,6 @@ fn handle_preview_internal(
 fn parse_preview_request(
     request: TransactionPreviewRequest,
 ) -> Result<PreviewRequest, RequestHandlingError> {
-    let cost_unit_limit: u32 = request
-        .cost_unit_limit
-        .parse()
-        .map_err(|_| preview_errors::invalid_int_field("cost_unit_limit"))?;
-
-    let tip_percentage: u32 = request
-        .tip_percentage
-        .parse()
-        .map_err(|_| preview_errors::invalid_int_field("tip_percentage"))?;
-
-    let nonce: u64 = request
-        .nonce
-        .parse()
-        .map_err(|_| preview_errors::invalid_int_field("nonce"))?;
-
     let manifest = hex::decode(request.manifest)
         .map(|manifest_bytes| {
             scrypto_decode::<TransactionManifest>(&manifest_bytes)
@@ -69,9 +55,9 @@ fn parse_preview_request(
 
     Ok(PreviewRequest {
         manifest,
-        cost_unit_limit,
-        tip_percentage,
-        nonce,
+        cost_unit_limit: request.cost_unit_limit,
+        tip_percentage: request.tip_percentage,
+        nonce: request.nonce,
         signer_public_keys,
         flags: PreviewFlags {
             unlimited_loan: request.flags.unlimited_loan,
@@ -106,7 +92,7 @@ fn to_api_response(
                     resource_address: bech32_encoder.encode_resource_address(&v.resource_address),
                     component_address: bech32_encoder
                         .encode_component_address(&v.component_address),
-                    vault_id: to_sbor_hex(&v.vault_id),
+                    vault_entity_id: Box::new(to_vault_entity_id(&v.vault_id).into()),
                     amount: v.amount.to_string(),
                 })
                 .collect();
@@ -116,7 +102,11 @@ fn to_api_response(
             })?;
 
             TransactionPreviewResponse {
-                receipt: Box::new(to_api_receipt(bech32_encoder, ledger_receipt)),
+                receipt: Box::new(
+                    to_api_receipt(bech32_encoder, ledger_receipt).map_err(|_| {
+                        common_server_errors::mapping_error("Unable to map receipt")
+                    })?,
+                ),
                 resource_changes: api_resource_changes,
                 logs,
             }
@@ -129,11 +119,8 @@ fn to_api_response(
                     down_virtual_substates: vec![],
                     up_substates: vec![],
                     down_substates: vec![],
-                    new_roots: vec![],
+                    new_global_entities: vec![],
                 }),
-                new_package_addresses: vec![],
-                new_component_addresses: vec![],
-                new_resource_addresses: vec![],
                 output: None,
                 error_message: Some(format!("{:?}", reject_result)),
             }),
@@ -155,10 +142,6 @@ mod preview_errors {
                 server_error(500, &format!("Transaction validation error: {:?}", err))
             }
         }
-    }
-
-    pub(crate) fn invalid_int_field(field: &str) -> RequestHandlingError {
-        client_error(400, &format!("Invalid integer: {}", field))
     }
 
     pub(crate) fn invalid_manifest() -> RequestHandlingError {
