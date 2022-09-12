@@ -6,7 +6,7 @@ import urllib.request, logging, subprocess, os, shutil
 logger = logging.getLogger()
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', level=logging.INFO)
 
-CORE_API_SPEC_LOCATION = '../core-api-spec.yaml'
+CORE_API_SPEC_LOCATION = '../core-api-schema.yaml'
 CORE_API_GENERATED_DESTINATION = '../src/core_api/generated/'
 
 OPENAPI_GENERATION_FOLDER='.'
@@ -50,11 +50,7 @@ def generate_models(spec_file, tmp_client_folder, out_location):
          '-g', 'rust',
          '-i', spec_file,
          '-o', tmp_client_folder,
-         # Prepare for the release 6.0.2, which will include these properties:
-         # From this PR: https://github.com/OpenAPITools/openapi-generator/commit/a1892b163688d205ee8a44051b59aba3928ec5fc
-         # This will enable us removing the i32/i64 changes below
-         '--additional-properties=preferUnsignedInt=true,bestFitInt=true'
-         ], should_log=False)
+    ], should_log=False)
 
     logging.info("Successfully generated.")
 
@@ -67,26 +63,19 @@ def generate_models(spec_file, tmp_client_folder, out_location):
     create_file(os.path.join(out_location, 'mod.rs'), "pub mod models;")
 
     file_names = [file_name for file_name in os.listdir(out_models) if os.path.isfile(os.path.join(out_models, file_name))]
-    file_names_to_not_convert_to_unsigned = set(["resource_change.rs"])
     for file_name in file_names:
         file_path = os.path.join(out_models, file_name)
         replace_in_file(file_path, 'crate::', 'crate::core_api::generated::')
         replace_in_file(file_path, ', Serialize, Deserialize', ', serde::Serialize, serde::Deserialize')
-        # This can be removed when we update to 6.0.2 when it's out - see above
-        if file_name not in file_names_to_not_convert_to_unsigned:
-            replace_in_file(file_path, 'i8', 'u8')
-            replace_in_file(file_path, 'i16', 'u16')
-            replace_in_file(file_path, 'i32', 'u32')
-            replace_in_file(file_path, 'i64', 'u64')
 
     # Fix bugs in generation:
-    substate_enum_file = os.path.join(out_models, "substate.rs")
     up_substate_file = os.path.join(out_models, "up_substate.rs")
     vault_substate_file = os.path.join(out_models, "vault_substate.rs")
     vault_substate_all_of_file = os.path.join(out_models, "vault_substate_all_of.rs")
     
     # Fix bug that discriminator tags are stripped and lower cased
-    replace_in_file(substate_enum_file, 'tag = "substatetype"', 'tag = "substate_type"')
+    replace_in_file(os.path.join(out_models, "substate.rs"), 'tag = "substatetype"', 'tag = "substate_type"')
+    replace_in_file(os.path.join(out_models, "resource_amount.rs"), 'tag = "resourcetype"', 'tag = "resource_type"')
 
     # Fix bug that enums don't implement Default... So replace their references with Options
     replace_in_file(up_substate_file, 'Box<crate::core_api::generated::models::Substate>,', 'Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use')
@@ -119,7 +108,7 @@ if __name__ == "__main__":
     os.makedirs(OPENAPI_TEMP_GENERATION_FOLDER)
 
     # download & fix the spec files
-    core_api_spec_temp_filename = os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, 'core_api_spec.yaml')
+    core_api_spec_temp_filename = os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, 'core_api_schema.yaml')
     copy_file(CORE_API_SPEC_LOCATION, core_api_spec_temp_filename)
     replace_in_file(core_api_spec_temp_filename, 'openapi: 3.1.0', 'openapi: 3.0.0')
     logging.info('Loaded Core API Spec from {}'.format(os.path.abspath(CORE_API_SPEC_LOCATION)))

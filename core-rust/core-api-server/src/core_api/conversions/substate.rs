@@ -1,7 +1,7 @@
 use std::cell::Ref;
 use std::collections::BTreeSet;
 
-use super::{addressing::*, to_hex};
+use super::*;
 use crate::core_api::models;
 use models::EntityType;
 
@@ -44,14 +44,14 @@ pub fn to_api_substate(
 fn to_api_system_substate(system: &System) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::SystemSubstate {
         entity_type: EntityType::System,
-        epoch: system.epoch,
+        epoch: to_api_epoch(system.epoch)?,
     })
 }
 
 fn to_api_resource_substate(resource_manager: &ResourceManager) -> models::Substate {
     let (resource_type, fungible_divisibility) = match resource_manager.resource_type() {
         ResourceType::Fungible { divisibility } => {
-            (models::ResourceType::Fungible, Some(divisibility as u32))
+            (models::ResourceType::Fungible, Some(divisibility as i32))
         }
         ResourceType::NonFungible => (models::ResourceType::NonFungible, None),
     };
@@ -68,7 +68,7 @@ fn to_api_resource_substate(resource_manager: &ResourceManager) -> models::Subst
                 value: v.clone(),
             })
             .collect(),
-        total_supply: resource_manager.total_supply().to_string(),
+        total_supply_attos: to_api_decimal_attos(&resource_manager.total_supply()),
     }
 }
 
@@ -214,7 +214,7 @@ fn to_api_fungible_resource_amount(
         to_api_global_entity_id(bech32_encoder, to_resource_entity_id(resource_address))?;
     Ok(models::ResourceAmount::FungibleResourceAmount {
         resource_address: resource_entity.global_address_str,
-        amount_subunits: amount.0.to_string(),
+        amount_attos: to_api_decimal_attos(amount),
     })
 }
 

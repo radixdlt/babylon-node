@@ -18,13 +18,13 @@ pub struct DownSubstate {
     /// The hex-encoded double-SHA256 hash of the substate data bytes
     #[serde(rename = "substate_data_hash")]
     pub substate_data_hash: String,
-    /// A decimal 32-bit unsigned integer, counting the number of times the substate was updated
+    /// An integer between 0 and 10^13, counting the number of times the substate was updated
     #[serde(rename = "version")]
-    pub version: u32,
+    pub version: i64,
 }
 
 impl DownSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, substate_data_hash: String, version: u32) -> DownSubstate {
+    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, substate_data_hash: String, version: i64) -> DownSubstate {
         DownSubstate {
             substate_id: Box::new(substate_id),
             substate_data_hash,

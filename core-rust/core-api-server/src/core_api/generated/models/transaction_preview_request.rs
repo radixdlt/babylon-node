@@ -19,15 +19,15 @@ pub struct TransactionPreviewRequest {
     /// A hex-encoded, SBOR-encoded transaction manifest
     #[serde(rename = "manifest")]
     pub manifest: String,
-    /// The maximum number of cost units available for transaction execution. A decimal 32-bit unsigned integer.
+    /// An integer between 0 and 2^32 - 1, giving the maximum number of cost units available for transaction execution
     #[serde(rename = "cost_unit_limit")]
-    pub cost_unit_limit: u32,
-    /// The validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of \"1\" corresponds to 1%).
+    pub cost_unit_limit: i64,
+    /// An integer between 0 and 2^32 - 1, specifying the validator tip as a percentage amount. A value of \"1\" corresponds to 1% of the fee.
     #[serde(rename = "tip_percentage")]
-    pub tip_percentage: u32,
-    /// The nonce value to use for execution. A decimal 64-bit unsigned integer.
+    pub tip_percentage: i64,
+    /// A decimal-string-encoded integer between 0 and 2^64-1, used to ensure the transaction intent is unique.
     #[serde(rename = "nonce")]
-    pub nonce: u64,
+    pub nonce: String,
     /// A list of public keys to be used as transaction signers, in a compressed format, hex encoded.
     #[serde(rename = "signer_public_keys")]
     pub signer_public_keys: Vec<String>,
@@ -36,7 +36,7 @@ pub struct TransactionPreviewRequest {
 }
 
 impl TransactionPreviewRequest {
-    pub fn new(network: String, manifest: String, cost_unit_limit: u32, tip_percentage: u32, nonce: u64, signer_public_keys: Vec<String>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
+    pub fn new(network: String, manifest: String, cost_unit_limit: i64, tip_percentage: i64, nonce: String, signer_public_keys: Vec<String>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
         TransactionPreviewRequest {
             network,
             manifest,

@@ -13,9 +13,9 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ErrorResponse {
-    /// A numeric code corresponding to the given error type.
+    /// A numeric code corresponding to the given HTTP error code.
     #[serde(rename = "code")]
-    pub code: u32,
+    pub code: i32,
     /// A human-readable error message.
     #[serde(rename = "message")]
     pub message: String,
@@ -25,7 +25,7 @@ pub struct ErrorResponse {
 }
 
 impl ErrorResponse {
-    pub fn new(code: u32, message: String) -> ErrorResponse {
+    pub fn new(code: i32, message: String) -> ErrorResponse {
         ErrorResponse {
             code,
             message,

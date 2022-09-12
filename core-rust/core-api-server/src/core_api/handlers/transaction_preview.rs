@@ -55,9 +55,15 @@ fn parse_preview_request(
 
     Ok(PreviewRequest {
         manifest,
-        cost_unit_limit: request.cost_unit_limit,
-        tip_percentage: request.tip_percentage,
-        nonce: request.nonce,
+        cost_unit_limit: extract_api_u32_as_i64("cost_unit_limit", request.cost_unit_limit).map_err(|_| {
+            preview_errors::invalid_request("Invalid cost_unit_limit")
+        })?,
+        tip_percentage: extract_api_u32_as_i64("tip_percentage", request.tip_percentage).map_err(|_| {
+            preview_errors::invalid_request("Invalid tip_percentage")
+        })?,
+        nonce: extract_api_u64_as_string("nonce", request.nonce).map_err(|_| {
+            preview_errors::invalid_request("Invalid nonce")
+        })?,
         signer_public_keys,
         flags: PreviewFlags {
             unlimited_loan: request.flags.unlimited_loan,
@@ -93,7 +99,7 @@ fn to_api_response(
                     component_address: bech32_encoder
                         .encode_component_address(&v.component_address),
                     vault_entity_id: Box::new(to_vault_entity_id(&v.vault_id).into()),
-                    amount: v.amount.to_string(),
+                    amount_attos: to_api_decimal_attos(&v.amount),
                 })
                 .collect();
 
@@ -103,8 +109,8 @@ fn to_api_response(
 
             TransactionPreviewResponse {
                 receipt: Box::new(
-                    to_api_receipt(bech32_encoder, ledger_receipt).map_err(|_| {
-                        common_server_errors::mapping_error("Unable to map receipt")
+                    to_api_receipt(bech32_encoder, ledger_receipt).map_err(|err| {
+                        common_server_errors::mapping_error(err, "Unable to map receipt")
                     })?,
                 ),
                 resource_changes: api_resource_changes,
@@ -150,5 +156,9 @@ mod preview_errors {
 
     pub(crate) fn invalid_signer_pub_key(raw_key: &str) -> RequestHandlingError {
         client_error(400, &format!("Invalid signer public key: {}", raw_key))
+    }
+
+    pub(crate) fn invalid_request(message: &str) -> RequestHandlingError {
+        client_error(400, message)
     }
 }

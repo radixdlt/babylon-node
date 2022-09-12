@@ -13,9 +13,9 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct CommittedTransaction {
-    /// The resultant state version after the txn has been committed. A decimal 64-bit unsigned integer.
+    /// An integer between 1 and 10^13, giving the resultant state version after the transaction has been committed
     #[serde(rename = "state_version")]
-    pub state_version: u64,
+    pub state_version: i64,
     #[serde(rename = "notarized_transaction")]
     pub notarized_transaction: Box<crate::core_api::generated::models::NotarizedTransaction>,
     #[serde(rename = "receipt")]
@@ -23,7 +23,7 @@ pub struct CommittedTransaction {
 }
 
 impl CommittedTransaction {
-    pub fn new(state_version: u64, notarized_transaction: crate::core_api::generated::models::NotarizedTransaction, receipt: crate::core_api::generated::models::TransactionReceipt) -> CommittedTransaction {
+    pub fn new(state_version: i64, notarized_transaction: crate::core_api::generated::models::NotarizedTransaction, receipt: crate::core_api::generated::models::TransactionReceipt) -> CommittedTransaction {
         CommittedTransaction {
             state_version,
             notarized_transaction: Box::new(notarized_transaction),

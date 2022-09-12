@@ -13,21 +13,25 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct CommittedTransactionsResponse {
-    /// The first state version returned. A decimal 64-bit unsigned integer.
-    #[serde(rename = "start_state_version")]
-    pub start_state_version: u64,
-    /// The maximum state version returned. A decimal 64-bit unsigned integer.
+    /// An integer between 1 and 10^13, giving the first (resultant) state version in the returned response
+    #[serde(rename = "from_state_version")]
+    pub from_state_version: i64,
+    /// An integer between 1 and 10^13, giving the final (resultant) state version in the returned response
+    #[serde(rename = "to_state_version")]
+    pub to_state_version: i64,
+    /// An integer between 1 and 10^13, giving the maximum state version currently committed
     #[serde(rename = "max_state_version")]
-    pub max_state_version: u64,
-    /// A committed transactions list starting from the `start_state_version_inclusive`.
+    pub max_state_version: i64,
+    /// A committed transactions list starting from the `from_state_version` (inclusive).
     #[serde(rename = "transactions")]
     pub transactions: Vec<crate::core_api::generated::models::CommittedTransaction>,
 }
 
 impl CommittedTransactionsResponse {
-    pub fn new(start_state_version: u64, max_state_version: u64, transactions: Vec<crate::core_api::generated::models::CommittedTransaction>) -> CommittedTransactionsResponse {
+    pub fn new(from_state_version: i64, to_state_version: i64, max_state_version: i64, transactions: Vec<crate::core_api::generated::models::CommittedTransaction>) -> CommittedTransactionsResponse {
         CommittedTransactionsResponse {
-            start_state_version,
+            from_state_version,
+            to_state_version,
             max_state_version,
             transactions,
         }

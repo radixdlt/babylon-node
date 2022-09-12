@@ -17,12 +17,13 @@ pub struct SystemSubstate {
     pub entity_type: crate::core_api::generated::models::EntityType,
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
+    /// An integer between 0 and 10^10, marking the current epoch
     #[serde(rename = "epoch")]
-    pub epoch: u64,
+    pub epoch: i64,
 }
 
 impl SystemSubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, epoch: u64) -> SystemSubstate {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, epoch: i64) -> SystemSubstate {
         SystemSubstate {
             entity_type,
             substate_type,

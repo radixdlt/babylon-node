@@ -21,18 +21,18 @@ pub struct ResourceChange {
     pub component_address: String,
     #[serde(rename = "vault_entity_id")]
     pub vault_entity_id: Box<crate::core_api::generated::models::EntityId>,
-    /// The XRD amount put or taken from the vault. A fixed-scale 256-bit signed decimal number.
-    #[serde(rename = "amount")]
-    pub amount: String,
+    /// A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in the XRD amount put or taken from the vault 
+    #[serde(rename = "amount_attos")]
+    pub amount_attos: String,
 }
 
 impl ResourceChange {
-    pub fn new(resource_address: String, component_address: String, vault_entity_id: crate::core_api::generated::models::EntityId, amount: String) -> ResourceChange {
+    pub fn new(resource_address: String, component_address: String, vault_entity_id: crate::core_api::generated::models::EntityId, amount_attos: String) -> ResourceChange {
         ResourceChange {
             resource_address,
             component_address,
             vault_entity_id: Box::new(vault_entity_id),
-            amount,
+            amount_attos,
         }
     }
 }

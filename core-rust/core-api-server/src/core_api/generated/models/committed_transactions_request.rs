@@ -17,20 +17,20 @@ pub struct CommittedTransactionsRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
-    /// A decimal 64-bit unsigned integer.
-    #[serde(rename = "start_state_version")]
-    pub start_state_version: u64,
+    /// An integer between 1 and 10^13, giving the first (resultant) state version to be returned
+    #[serde(rename = "from_state_version")]
+    pub from_state_version: i64,
     /// The maximum number of transactions that will be returned.
     #[serde(rename = "limit")]
-    pub limit: u32,
+    pub limit: i32,
 }
 
 impl CommittedTransactionsRequest {
     /// A request to retrieve a sublist of committed transactions from the ledger. 
-    pub fn new(network: String, start_state_version: u64, limit: u32) -> CommittedTransactionsRequest {
+    pub fn new(network: String, from_state_version: i64, limit: i32) -> CommittedTransactionsRequest {
         CommittedTransactionsRequest {
             network,
-            start_state_version,
+            from_state_version,
             limit,
         }
     }
