@@ -19,8 +19,8 @@ pub enum ResourceAmount {
         #[serde(rename = "resource_address")]
         resource_address: String,
         /// The string-encoded decimal subunits of the amount (10^-18) in a signed 256-bit integer. This is string-encoded as it doesn't fit well into common numeric types. 
-        #[serde(rename = "amount_subunits")]
-        amount_subunits: String,
+        #[serde(rename = "amount_attos")]
+        amount_attos: String,
     },
     #[serde(rename="NonFungible")]
     NonFungibleResourceAmount {

@@ -16,20 +16,21 @@ pub struct ResourceManagerSubstateAllOf {
     #[serde(rename = "resource_type")]
     pub resource_type: crate::core_api::generated::models::ResourceType,
     #[serde(rename = "fungible_divisibility", skip_serializing_if = "Option::is_none")]
-    pub fungible_divisibility: Option<u32>,
+    pub fungible_divisibility: Option<i32>,
     #[serde(rename = "metadata")]
     pub metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>,
-    #[serde(rename = "total_supply")]
-    pub total_supply: String,
+    /// A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in the total supply of this resource. 
+    #[serde(rename = "total_supply_attos")]
+    pub total_supply_attos: String,
 }
 
 impl ResourceManagerSubstateAllOf {
-    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>, total_supply: String) -> ResourceManagerSubstateAllOf {
+    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>, total_supply_attos: String) -> ResourceManagerSubstateAllOf {
         ResourceManagerSubstateAllOf {
             resource_type,
             fungible_divisibility: None,
             metadata,
-            total_supply,
+            total_supply_attos,
         }
     }
 }

@@ -1,3 +1,5 @@
+pub mod committed_state_identifier;
+pub use self::committed_state_identifier::CommittedStateIdentifier;
 pub mod committed_transaction;
 pub use self::committed_transaction::CommittedTransaction;
 pub mod committed_transactions_request;
@@ -78,8 +80,6 @@ pub mod sbor_data;
 pub use self::sbor_data::SborData;
 pub mod signed_transaction_intent;
 pub use self::signed_transaction_intent::SignedTransactionIntent;
-pub mod state_identifier;
-pub use self::state_identifier::StateIdentifier;
 pub mod state_updates;
 pub use self::state_updates::StateUpdates;
 pub mod substate;

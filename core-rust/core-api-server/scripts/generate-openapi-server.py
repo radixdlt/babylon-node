@@ -53,7 +53,7 @@ def generate_models(spec_file, tmp_client_folder, out_location):
          # Prepare for the release 6.0.2, which will include these properties:
          # From this PR: https://github.com/OpenAPITools/openapi-generator/commit/a1892b163688d205ee8a44051b59aba3928ec5fc
          # This will enable us removing the i32/i64 changes below
-         '--additional-properties=preferUnsignedInt=true,bestFitInt=true'
+         #  '--additional-properties=bestFitInt=true'
          ], should_log=False)
 
     logging.info("Successfully generated.")
@@ -73,11 +73,11 @@ def generate_models(spec_file, tmp_client_folder, out_location):
         replace_in_file(file_path, 'crate::', 'crate::core_api::generated::')
         replace_in_file(file_path, ', Serialize, Deserialize', ', serde::Serialize, serde::Deserialize')
         # This can be removed when we update to 6.0.2 when it's out - see above
-        if file_name not in file_names_to_not_convert_to_unsigned:
-            replace_in_file(file_path, 'i8', 'u8')
-            replace_in_file(file_path, 'i16', 'u16')
-            replace_in_file(file_path, 'i32', 'u32')
-            replace_in_file(file_path, 'i64', 'u64')
+        # if file_name not in file_names_to_not_convert_to_unsigned:
+        #     replace_in_file(file_path, 'i8', 'u8')
+        #     replace_in_file(file_path, 'i16', 'u16')
+        #     replace_in_file(file_path, 'i32', 'u32')
+        #     replace_in_file(file_path, 'i64', 'u64')
 
     # Fix bugs in generation:
     substate_enum_file = os.path.join(out_models, "substate.rs")

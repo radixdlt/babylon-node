@@ -17,37 +17,37 @@ pub struct FeeSummary {
     /// Specifies whether the transaction execution loan has been fully repaid.
     #[serde(rename = "loan_fully_repaid")]
     pub loan_fully_repaid: bool,
-    /// Maximum amount of cost units available for the transaction execution. A decimal 32-bit unsigned integer.
+    /// An integer between 0 and 2^32 - 1, representing the maximum amount of cost units available for the transaction execution.
     #[serde(rename = "cost_unit_limit")]
-    pub cost_unit_limit: String,
-    /// The amount of cost units consumed by the transaction execution. A decimal 32-bit unsigned integer.
+    pub cost_unit_limit: i64,
+    /// An integer between 0 and 2^32 - 1, representing the amount of cost units consumed by the transaction execution.
     #[serde(rename = "cost_unit_consumed")]
-    pub cost_unit_consumed: String,
-    /// The XRD price of a single cost unit. A fixed-scale 256-bit signed decimal number.
-    #[serde(rename = "cost_unit_price")]
-    pub cost_unit_price: String,
-    /// The validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of \"1\" corresponds to 1%).
+    pub cost_unit_consumed: i64,
+    /// A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in the XRD price of a single cost unit. 
+    #[serde(rename = "cost_unit_price_attos")]
+    pub cost_unit_price_attos: String,
+    /// An integer between 0 and 2^32 - 1, specifying the validator tip as a percentage amount. A value of \"1\" corresponds to 1% of the fee.
     #[serde(rename = "tip_percentage")]
-    pub tip_percentage: String,
-    /// The total amount of XRD burned. A fixed-scale 256-bit signed decimal number.
-    #[serde(rename = "xrd_burned")]
-    pub xrd_burned: String,
-    /// The total amount of XRD tipped to validators. A fixed-scale 256-bit signed decimal number.
-    #[serde(rename = "xrd_tipped")]
-    pub xrd_tipped: String,
+    pub tip_percentage: i64,
+    /// A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in the total amount of XRD burned in the transaction. 
+    #[serde(rename = "xrd_burned_attos")]
+    pub xrd_burned_attos: String,
+    /// A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in the total amount of XRD tipped to validators in the transaction. 
+    #[serde(rename = "xrd_tipped_attos")]
+    pub xrd_tipped_attos: String,
 }
 
 impl FeeSummary {
     /// Fees paid
-    pub fn new(loan_fully_repaid: bool, cost_unit_limit: String, cost_unit_consumed: String, cost_unit_price: String, tip_percentage: String, xrd_burned: String, xrd_tipped: String) -> FeeSummary {
+    pub fn new(loan_fully_repaid: bool, cost_unit_limit: i64, cost_unit_consumed: i64, cost_unit_price_attos: String, tip_percentage: i64, xrd_burned_attos: String, xrd_tipped_attos: String) -> FeeSummary {
         FeeSummary {
             loan_fully_repaid,
             cost_unit_limit,
             cost_unit_consumed,
-            cost_unit_price,
+            cost_unit_price_attos,
             tip_percentage,
-            xrd_burned,
-            xrd_tipped,
+            xrd_burned_attos,
+            xrd_tipped_attos,
         }
     }
 }

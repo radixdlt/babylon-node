@@ -2,13 +2,28 @@ openapi: 3.1.0
 # NOTES TO EDITORS:
 #
 # Guidance for integer types (see https://swagger.io/docs/specification/data-models/data-types/#numbers)
+#
 # => If a u8, use type: integer, format: int32, minimum: 0, maximum: 255
 # => If an i8, use type: integer, format: int32, minimum: -128, maximum: 127 (also, why are you using an i8!?)
-# => If a u32, use type: integer, format: int32, minimum: 0, maximum: 4294967295 = 2^32 - 1
+# => If a u32:
+#    => If there's a domain-imposed requirement that fits it within an i32 (2,147,483,647 = 2^31 - 1), with bound B use
+#       type: integer, format: int32, minimum: 0, maximum: B
+#       And be sure to validate against B in the code which maps into the type. See EG epoch max length in numerics.rs
+#    => If not, to be compatible with OAS, we need to put it into an int64:
+#       type: integer, format: int64, minimum: 0, maximum: 4294967295 = 2^32 - 1
 # => If an i32, use type: integer, format: int32
-# => If a u64, use type: integer, format: int64, minimum: 0, maximum: 18446744073709551615 = 2^64 - 1
+# => If a u64: , use type: integer, format: int64, minimum: 0, maximum: 18446744073709551615 = 2^64 - 1
+#    => If there's a domain-imposed requirement that fits it within an i64 (9,223,372,036,854,775,807 = 2^63 - 1), with bound B use
+#       type: integer, format: int64, minimum: 0, maximum: B
+#       And be sure to validate against B in the code which maps into the type. See EG epoch max length in numerics.rs
+#    => If not, to be compatible with OAS, it won't fit in a numeric type, so use a string instead
 # => If an i64, use type: integer, format: int64
 # => If something over i64/u64, use type: string
+#
+# Regardless of the type, specify in the description what the underlying type and bounds are, by starting with something like:
+# - An integer between 0 and 10^10, giving
+# - A decimal-string-encoded integer between 0 and 2^64 - 1, which
+# - A decimal-string-encoded integer between 0 and 10^123, that
 #
 # Descriptions guidance:
 # => For descriptions of encoded types, we follow this pattern: 'The xyz-encoded, abc-encoded xx of the yy'
@@ -302,20 +317,17 @@ components:
           type: integer
           format: int64
           minimum: 0
-          maximum: 18446744073709551615
-          description: A decimal 64-bit unsigned integer, marking the epoch from which the transaction can be submitted
+          maximum: 10000000000
+          description: An integer between 0 and 10^10, marking the epoch from which the transaction can be submitted
         end_epoch_exclusive:
           type: integer
           format: int64
           minimum: 0
-          maximum: 18446744073709551615
-          description: A decimal 64-bit unsigned integer, marking the epoch from which the transaction will no longer be valid, and be rejected
+          maximum: 10000000000
+          description: An integer between 0 and 10^10, marking the epoch from which the transaction will no longer be valid, and be rejected
         nonce:
-          type: integer
-          format: int64
-          minimum: 0
-          maximum: 18446744073709551615
-          description: A decimal 64-bit unsigned integer, chosen to be unique to allow replay of transaction intents
+          type: string
+          description: A decimal-string-encoded integer between 0 and 2^64 - 1, chosen to be unique to allow replay of transaction intents
         notary_public_key:
           type: string
           description: A hex-encoded public key of a notary
@@ -323,27 +335,33 @@ components:
           type: boolean
           description: Specifies whether the notary's signature should be included in transaction signers list
         cost_unit_limit:
-          type: string
-          description: Maximum number of cost units available for transaction execution. A decimal 32-bit unsigned integer.
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between 0 and 2^32 - 1, giving the maximum number of cost units available for transaction execution.
         tip_percentage:
-          type: string
-          description: Specifies the validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of "1" corresponds to 1%).
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between 0 and 2^32 - 1, giving the validator tip as a percentage amount. A value of "1" corresponds to 1% of the fee.
     NetworkIdentifier:
       description: The logical name of the network
       type: string
       example: mainnet
-    StateIdentifier:
+    CommittedStateIdentifier:
       type: object
       # This should expand to include transaction accumulator and state hash
       required:
-        - version
+        - state_version
       properties:
-        version:
-          description: The state version increments with each transaction.
+        state_version:
           type: integer
           format: int64
           minimum: 0
-          maximum: 18446744073709551615
+          maximum: 100000000000000
+          description: An integer between 0 and 10^13, representing the state version. The state version increments with each transaction, starting at 0 pre-genesis.
     ErrorResponse:
       type: object
       required:
@@ -351,8 +369,8 @@ components:
         - message
       properties:
         code:
-          description: A numeric code corresponding to the given error type.
           type: integer
+          description: A numeric code corresponding to the given HTTP error code.
         message:
           description: A human-readable error message.
           type: string
@@ -369,32 +387,47 @@ components:
         - loan_fully_repaid
         - cost_unit_limit
         - cost_unit_consumed
-        - cost_unit_price
+        - cost_unit_price_attos
         - tip_percentage
-        - xrd_burned
-        - xrd_tipped
+        - xrd_burned_attos
+        - xrd_tipped_attos
       properties:
         loan_fully_repaid:
           type: boolean
           description: Specifies whether the transaction execution loan has been fully repaid.
         cost_unit_limit:
-          type: string
-          description: Maximum amount of cost units available for the transaction execution. A decimal 32-bit unsigned integer.
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between 0 and 2^32 - 1, representing the maximum amount of cost units available for the transaction execution.
         cost_unit_consumed:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between 0 and 2^32 - 1, representing the amount of cost units consumed by the transaction execution.
+        cost_unit_price_attos:
           type: string
-          description: The amount of cost units consumed by the transaction execution. A decimal 32-bit unsigned integer.
-        cost_unit_price:
-          type: string
-          description: The XRD price of a single cost unit. A fixed-scale 256-bit signed decimal number.
+          description: |
+            A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+            the XRD price of a single cost unit.
         tip_percentage:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: An integer between 0 and 2^32 - 1, specifying the validator tip as a percentage amount. A value of "1" corresponds to 1% of the fee.
+        xrd_burned_attos:
           type: string
-          description: The validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of "1" corresponds to 1%).
-        xrd_burned:
+          description: |
+            A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+            the total amount of XRD burned in the transaction.
+        xrd_tipped_attos:
           type: string
-          description: The total amount of XRD burned. A fixed-scale 256-bit signed decimal number.
-        xrd_tipped:
-          type: string
-          description: The total amount of XRD tipped to validators. A fixed-scale 256-bit signed decimal number.
+          description: |
+            A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+            the total amount of XRD tipped to validators in the transaction.
     StateUpdates:
       type: object
       description: Transaction state updates (only present if status is Succeeded or Failed)
@@ -433,10 +466,10 @@ components:
           $ref: "#/components/schemas/SubstateId"
         version:
           type: integer
-          format: int32
+          format: int64
           minimum: 0
-          maximum: 4294967295
-          description: A decimal 32-bit unsigned integer, counting the number of times the substate was updated
+          maximum: 100000000000000
+          description: An integer between 0 and 10^13, counting the number of times the substate was updated
         substate_bytes:
           type: string
           description: The hex-encoded, SBOR-encoded substate data bytes
@@ -459,10 +492,10 @@ components:
           description: The hex-encoded double-SHA256 hash of the substate data bytes
         version:
           type: integer
-          format: int32
+          format: int64
           minimum: 0
-          maximum: 4294967295
-          description: A decimal 32-bit unsigned integer, counting the number of times the substate was updated
+          maximum: 100000000000000
+          description: An integer between 0 and 10^13, counting the number of times the substate was updated
     GlobalEntityId:
       type: object
       required:
@@ -526,7 +559,7 @@ components:
         - resource_address
         - component_address
         - vault_entity_id
-        - amount
+        - amount_attos
       properties:
         resource_address:
           $ref: "#/components/schemas/ResourceAddress"
@@ -534,9 +567,11 @@ components:
           $ref: "#/components/schemas/ComponentAddress"
         vault_entity_id:
           $ref: "#/components/schemas/EntityId"
-        amount:
+        amount_attos:
           type: string
-          description: The XRD amount put or taken from the vault. A fixed-scale 256-bit signed decimal number.
+          description: |
+            A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+            the XRD amount put or taken from the vault
 #######################################
 # GENERAL / SHARED MODELS - substates #
 #######################################
@@ -603,7 +638,8 @@ components:
               type: integer
               format: int64
               minimum: 0
-              maximum: 18446744073709551615
+              maximum: 10000000000
+              description: An integer between 0 and 10^10, marking the current epoch
     ResourceManagerSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -611,7 +647,7 @@ components:
           required:
             - resource_type
             - metadata
-            - total_supply
+            - total_supply_attos
           properties:
             resource_type:
               $ref: '#/components/schemas/ResourceType'
@@ -631,8 +667,11 @@ components:
                     type: string
                   value:
                     type: string
-            total_supply:
+            total_supply_attos:
               type: string
+              description: |
+                A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+                the total supply of this resource.
     ResourceType:
       type: string
       enum:
@@ -733,9 +772,9 @@ components:
         - $ref: '#/components/schemas/ResourceAmountBase'
         - type: object
           required:
-            - amount_subunits
+            - amount_attos
           properties:
-            amount_subunits:
+            amount_attos:
               type: string
               description: |
                 The string-encoded decimal subunits of the amount (10^-18) in a signed 256-bit integer.
@@ -837,13 +876,13 @@ components:
         - current_state_identifier
       properties:
         pre_genesis_state_identifier:
-          $ref: "#/components/schemas/StateIdentifier"
+          $ref: "#/components/schemas/CommittedStateIdentifier"
           description: The ledger state identifier before the genesis transaction
         post_genesis_state_identifier:
-          $ref: "#/components/schemas/StateIdentifier"
+          $ref: "#/components/schemas/CommittedStateIdentifier"
           description: The ledger state identifier after the genesis transaction
         current_state_identifier:
-          $ref: "#/components/schemas/StateIdentifier"
+          $ref: "#/components/schemas/CommittedStateIdentifier"
           description: |
             The current state identifier at the top of the node's copy of the ledger.
             This is also the resultant state identifier of the node's last committed transaction.
@@ -867,8 +906,7 @@ components:
         - duplicate
       properties:
         duplicate:
-          description: Is true if the transaction is a duplicate of an existing transaction
-            in the mempool.
+          description: Is true if the transaction is a duplicate of an existing transaction in the mempool.
           type: boolean
 #################################
 # REQUEST: /transaction/preview #
@@ -891,22 +929,19 @@ components:
           type: string
         cost_unit_limit:
           type: integer
-          format: int32
+          format: int64
           minimum: 0
           maximum: 4294967295
-          description: The maximum number of cost units available for transaction execution. A decimal 32-bit unsigned integer.
+          description: An integer between 0 and 2^32 - 1, giving the maximum number of cost units available for transaction execution
         tip_percentage:
-          type: integer
-          format: int32
-          minimum: 0
-          maximum: 100
-          description: The validator tip. A decimal 32-bit unsigned integer, representing the percentage amount (a value of "1" corresponds to 1%).
-        nonce:
           type: integer
           format: int64
           minimum: 0
-          maximum: 18446744073709551615
-          description: The nonce value to use for execution. A decimal 64-bit unsigned integer.
+          maximum: 4294967295
+          description: An integer between 0 and 2^32 - 1, specifying the validator tip as a percentage amount. A value of "1" corresponds to 1% of the fee.
+        nonce:
+          type: string
+          description: A decimal-string-encoded integer between 0 and 2^64-1, used to ensure the transaction intent is unique.
         signer_public_keys:
           type: array
           items:
@@ -953,41 +988,48 @@ components:
       type: object
       required:
         - network
-        - start_state_version
+        - from_state_version
         - limit
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
-        start_state_version:
+        from_state_version:
           type: integer
           format: int64
-          minimum: 0
-          maximum: 18446744073709551615
-          description: A decimal 64-bit unsigned integer.
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between 1 and 10^13, giving the first (resultant) state version to be returned
         limit:
           description: The maximum number of transactions that will be returned.
           type: integer
     CommittedTransactionsResponse:
       type: object
       required:
-        - start_state_version
+        - from_state_version
+        - to_state_version
         - max_state_version
         - transactions
       properties:
-        start_state_version:
+        from_state_version:
           type: integer
           format: int64
-          minimum: 0
-          maximum: 18446744073709551615
-          description: The first state version returned. A decimal 64-bit unsigned integer.
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between 1 and 10^13, giving the first (resultant) state version in the returned response
+        to_state_version:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between 1 and 10^13, giving the final (resultant) state version in the returned response
         max_state_version:
           type: integer
           format: int64
-          minimum: 0
-          maximum: 18446744073709551615
-          description: The maximum state version returned. A decimal 64-bit unsigned integer.
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between 1 and 10^13, giving the maximum state version currently committed
         transactions:
-          description: A committed transactions list starting from the `start_state_version_inclusive`.
+          description: A committed transactions list starting from the `from_state_version` (inclusive).
           type: array
           items:
             $ref: "#/components/schemas/CommittedTransaction"
@@ -1001,9 +1043,9 @@ components:
         state_version:
           type: integer
           format: int64
-          minimum: 0
-          maximum: 18446744073709551615
-          description: The resultant state version after the txn has been committed. A decimal 64-bit unsigned integer.
+          minimum: 1
+          maximum: 100000000000000
+          description: An integer between 1 and 10^13, giving the resultant state version after the transaction has been committed
         notarized_transaction:
           $ref: "#/components/schemas/NotarizedTransaction"
         receipt:

@@ -25,26 +25,26 @@ fn handle_transaction_stream_internal(
 ) -> Result<CommittedTransactionsResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
-    let start_state_version: u64 = request.start_state_version;
+    let from_state_version: u64 = extract_api_state_version(request.from_state_version)
+        .map_err(|_| transaction_errors::invalid_start_state_version())?;
 
-    if start_state_version < 1 {
-        return Err(transaction_errors::invalid_start_state_version());
-    }
+    let limit: u64 = request.limit.try_into()
+        .map_err(|_| transaction_errors::invalid_int_field("limit"))?;
 
-    let limit: u64 = request.limit.into();
-
-    let state_version_at_limit: u64 = start_state_version
+    let state_version_at_limit: u64 = from_state_version
         .checked_add(limit)
         .and_then(|v| v.checked_sub(1))
         .ok_or_else(|| transaction_errors::invalid_int_field("start_state_version + limit - 1"))?;
 
+    let max_state_version = state_manager.store.max_state_version();
+
     let up_to_state_version_inclusive = cmp::min(
         state_version_at_limit,
-        state_manager.store.max_state_version(),
+        max_state_version,
     );
 
     let mut txns = vec![];
-    let mut state_version = start_state_version;
+    let mut state_version = from_state_version;
     while state_version <= up_to_state_version_inclusive {
         let next_tid = state_manager.store.get_tid(state_version).ok_or_else(|| {
             transaction_errors::missing_transaction_at_state_version(state_version)
@@ -63,7 +63,7 @@ fn handle_transaction_stream_internal(
                 .map_err(|_| transaction_errors::invalid_committed_txn())?;
             let api_tx =
                 to_api_committed_transaction(&network, notarized_tx, receipt, state_version)
-                    .map_err(|_| common_server_errors::mapping_error("Unable to map receipt"))?;
+                    .map_err(|err| common_server_errors::mapping_error(err, "Unable to map receipt"))?;
             Ok(api_tx)
         })
         .collect::<Result<Vec<models::CommittedTransaction>, RequestHandlingError>>()?;
@@ -71,12 +71,16 @@ fn handle_transaction_stream_internal(
     let start_state_version = if api_txns.is_empty() {
         0
     } else {
-        start_state_version
+        from_state_version
     };
 
     Ok(CommittedTransactionsResponse {
-        start_state_version,
-        max_state_version: up_to_state_version_inclusive,
+        from_state_version: to_api_state_version(start_state_version)
+            .map_err(|err| common_server_errors::mapping_error(err, "Unable to map from_state_version in response"))?,
+        to_state_version: to_api_state_version(up_to_state_version_inclusive)
+            .map_err(|err| common_server_errors::mapping_error(err, "Unable to map to_state_version in response"))?,
+        max_state_version: to_api_state_version(max_state_version)
+            .map_err(|err| common_server_errors::mapping_error(err, "Unable to map max_state_version in response"))?,
         transactions: api_txns,
     })
 }
@@ -91,8 +95,8 @@ fn to_api_committed_transaction(
     let receipt = to_api_receipt(&bech32_encoder, receipt)?;
 
     Ok(models::CommittedTransaction {
-        state_version,
-        notarized_transaction: Box::new(to_api_notarized_transaction(tx, &bech32_encoder)),
+        state_version: to_api_state_version(state_version)?,
+        notarized_transaction: Box::new(to_api_notarized_transaction(tx, &bech32_encoder)?),
         receipt: Box::new(receipt),
     })
 }
@@ -100,7 +104,7 @@ fn to_api_committed_transaction(
 fn to_api_notarized_transaction(
     tx: EngineNotarizedTransaction,
     bech32_encoder: &Bech32Encoder,
-) -> models::NotarizedTransaction {
+) -> Result<models::NotarizedTransaction, MappingError> {
     let payload = tx.to_bytes();
     let payload_hash = tx.hash();
     let signed_intent = tx.signed_intent;
@@ -109,7 +113,7 @@ fn to_api_notarized_transaction(
     let intent_hash = intent.hash();
     let header = intent.header;
 
-    models::NotarizedTransaction {
+    Ok(models::NotarizedTransaction {
         hash: to_hex(payload_hash),
         payload: to_hex(payload),
         signed_intent: Box::new(models::SignedTransactionIntent {
@@ -119,13 +123,13 @@ fn to_api_notarized_transaction(
                 header: Box::new(models::TransactionHeader {
                     version: header.version.into(),
                     network_id: header.network_id.into(),
-                    start_epoch_inclusive: header.start_epoch_inclusive,
-                    end_epoch_exclusive: header.end_epoch_exclusive,
-                    nonce: header.nonce,
+                    start_epoch_inclusive: to_api_epoch(header.start_epoch_inclusive)?,
+                    end_epoch_exclusive: to_api_epoch(header.end_epoch_exclusive)?,
+                    nonce: to_api_u64_as_string(header.nonce),
                     notary_public_key: header.notary_public_key.to_string(),
                     notary_as_signatory: header.notary_as_signatory,
-                    cost_unit_limit: header.cost_unit_limit.to_string(),
-                    tip_percentage: header.tip_percentage.to_string(),
+                    cost_unit_limit: to_api_u32_as_i64(header.cost_unit_limit),
+                    tip_percentage: to_api_u32_as_i64(header.tip_percentage),
                 }),
                 manifest: manifest::decompile(&intent.manifest, bech32_encoder)
                     .expect("Failed to decompile a transaction manifest"),
@@ -140,7 +144,7 @@ fn to_api_notarized_transaction(
                 .collect(),
         }),
         notary_signature: tx.notary_signature.to_string(),
-    }
+    })
 }
 
 mod transaction_errors {
