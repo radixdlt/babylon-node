@@ -11,7 +11,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(tag = "resourcetype")]
+#[serde(tag = "resource_type")]
 pub enum ResourceAmount {
     #[serde(rename="Fungible")]
     FungibleResourceAmount {
