@@ -62,30 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.serialization;
+package com.radixdlt.statemanager;
 
-import com.radixdlt.TestSetupUtils;
-import com.radixdlt.crypto.ECDSASignature;
-import java.math.BigInteger;
-import java.util.Random;
-import java.util.function.Supplier;
-import org.junit.BeforeClass;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-/** JSON Serialization round trip of {@link ECDSASignature} */
-public class ECDSASignatureSerializationTest extends SerializeObjectEngine<ECDSASignature> {
-
-  public ECDSASignatureSerializationTest() {
-    super(ECDSASignature.class, ECDSASignatureSerializationTest::getECDSASignature);
+public record StateManagerLoggingConfig(boolean logOnTransactionRejection) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        StateManagerLoggingConfig.class,
+        codecs ->
+            StructCodec.with(
+                StateManagerLoggingConfig::new,
+                codecs.of(new TypeToken<>() {}),
+                (s, encoder) -> encoder.encode(s.logOnTransactionRejection)));
   }
 
-  @BeforeClass
-  public static void startRadixTest() {
-    TestSetupUtils.installBouncyCastleProvider();
+  public static StateManagerLoggingConfig getDefault() {
+    return new StateManagerLoggingConfig(false);
   }
 
-  private static ECDSASignature getECDSASignature() {
-    Supplier<BigInteger> randomBigInt = () -> BigInteger.valueOf(new Random().nextLong());
-    return ECDSASignature.create(
-        randomBigInt.get(), randomBigInt.get(), randomBigInt.get().signum());
+  public static StateManagerLoggingConfig getDebug() {
+    return new StateManagerLoggingConfig(true);
   }
 }

@@ -73,7 +73,7 @@ import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkMessageModifiers;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -146,7 +146,7 @@ public final class InvalidQcIsIgnoredTest {
                     Map.Entry::getKey,
                     e ->
                         TimestampedECDSASignature.from(
-                            e.getValue().timestamp(), ECDSASignature.zeroSignature()))));
+                            e.getValue().timestamp(), ECDSASecp256k1Signature.zeroSignature()))));
   }
 
   @Test

@@ -70,7 +70,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.application.TokenUnitConversions;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
@@ -114,7 +114,7 @@ public class MempoolFillTest {
 
                 @ProvidesIntoSet
                 private TokenIssuance mempoolFillerIssuance(
-                    @Genesis ImmutableList<ECPublicKey> validators) {
+                    @Genesis ImmutableList<ECDSASecp256k1PublicKey> validators) {
                   return TokenIssuance.of(
                       validators.get(0), TokenUnitConversions.unitsToSubunits(10000000000L));
                 }

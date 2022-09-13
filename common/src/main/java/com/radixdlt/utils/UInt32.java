@@ -126,6 +126,10 @@ public class UInt32 implements Comparable<UInt32>, Serializable {
     return Integer.toUnsignedString(underlyingValue, 16);
   }
 
+  public static UInt32 Min(UInt32 a, UInt32 b) {
+    return a.lte(b) ? a : b;
+  }
+
   @Override
   public String toString() {
     return Integer.toUnsignedString(underlyingValue);

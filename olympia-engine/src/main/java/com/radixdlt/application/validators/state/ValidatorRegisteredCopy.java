@@ -64,14 +64,14 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import java.util.OptionalLong;
 
 public record ValidatorRegisteredCopy(
-    OptionalLong epochUpdate, ECPublicKey validatorKey, boolean isRegistered)
+    OptionalLong epochUpdate, ECDSASecp256k1PublicKey validatorKey, boolean isRegistered)
     implements ValidatorUpdatingData {
 
-  public static ValidatorRegisteredCopy createVirtual(ECPublicKey validatorKey) {
+  public static ValidatorRegisteredCopy createVirtual(ECDSASecp256k1PublicKey validatorKey) {
     return new ValidatorRegisteredCopy(OptionalLong.empty(), validatorKey, false);
   }
 }

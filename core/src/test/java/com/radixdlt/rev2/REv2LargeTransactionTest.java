@@ -135,7 +135,8 @@ public final class REv2LargeTransactionTest {
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
                     new REv2DatabaseConfig.RocksDB(folder.getRoot().getAbsolutePath()),
-                    REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))),
+                    REV2ProposerConfig.mempool(1, MempoolRelayConfig.of()),
+                    true))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(
@@ -150,9 +151,10 @@ public final class REv2LargeTransactionTest {
         });
   }
 
-  private static RawTransaction create1MBTransaction() {
+  private static RawTransaction create100KBTransaction() {
     var intentBytes =
-        TransactionBuilder.build1MBIntent(NETWORK_DEFINITION, TEST_KEY.getPublicKey());
+        TransactionBuilder.build100KBIntent(
+            NETWORK_DEFINITION, TEST_KEY.getPublicKey().toPublicKey());
     return REv2TestTransactions.constructTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
   }
 
@@ -160,7 +162,7 @@ public final class REv2LargeTransactionTest {
   public void large_transaction_should_be_committable() throws Exception {
     // Arrange: Start single node network
     createInjector().injectMembers(this);
-    var newAccountTransaction = create1MBTransaction();
+    var newAccountTransaction = create100KBTransaction();
 
     // Act: Submit transaction to mempool and run consensus
     processor.start();

@@ -82,7 +82,7 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class ECDSASignatureTest {
+public class ECDSASecp256k1SignatureTest {
   @BeforeClass
   public static void startRadixTest() {
     TestSetupUtils.installBouncyCastleProvider();
@@ -90,7 +90,7 @@ public class ECDSASignatureTest {
 
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(ECDSASignature.class)
+    EqualsVerifier.forClass(ECDSASecp256k1Signature.class)
         .suppress(
             Warning.NONFINAL_FIELDS) // serialization prevents us from making `r` and `s` final.
         .verify();
@@ -98,12 +98,12 @@ public class ECDSASignatureTest {
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException1() {
-    ECDSASignature.deserialize(null, BigInteger.ONE.toByteArray(), 1);
+    ECDSASecp256k1Signature.deserialize(null, BigInteger.ONE.toByteArray(), 1);
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException2() {
-    ECDSASignature.deserialize(BigInteger.ONE.toByteArray(), null, 1);
+    ECDSASecp256k1Signature.deserialize(BigInteger.ONE.toByteArray(), null, 1);
   }
 
   @Test
@@ -254,8 +254,13 @@ public class ECDSASignatureTest {
       assertEquals(vector.get("expectedSignatureS"), signature.getS().toString(16));
       assertTrue("Should verify", publicKey.verify(message, signature));
 
+      assertEquals(
+          signature,
+          ECDSASecp256k1Signature.decodeFromConcatRecoveryRSBytes(
+              signature.getConcatRecoveryRSBytes()));
+
       var expectedSignatureDERBytes = Bytes.fromHexString(vector.get("expectedDer"));
-      var sigFromDER = ECDSASignature.decodeFromDER(expectedSignatureDERBytes);
+      var sigFromDER = ECDSASecp256k1Signature.decodeFromDER(expectedSignatureDERBytes);
 
       // Signature from DER has no `v` byte, so comparing using `equals` fails.
       assertEquals(sigFromDER.getR(), signature.getR());

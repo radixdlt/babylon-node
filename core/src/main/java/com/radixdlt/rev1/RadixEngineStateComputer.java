@@ -80,8 +80,8 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REProcessedTxn;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.PostProcessorException;
 import com.radixdlt.engine.RadixEngine;
@@ -172,7 +172,9 @@ public final class RadixEngineStateComputer implements StateComputer {
       var txn =
           isSigned
               ? RawTransaction.create(payload)
-              : TxLowLevelBuilder.newBuilder(payload).sig(ECDSASignature.zeroSignature()).build();
+              : TxLowLevelBuilder.newBuilder(payload)
+                  .sig(ECDSASecp256k1Signature.zeroSignature())
+                  .build();
 
       var checker = radixEngine.transientBranch();
 
@@ -355,7 +357,7 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
   }
 
-  private LongFunction<ECPublicKey> getValidatorMapping() {
+  private LongFunction<ECDSASecp256k1PublicKey> getValidatorMapping() {
     return l -> proposerElection.getProposer(Round.of(l)).getKey();
   }
 

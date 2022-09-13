@@ -76,7 +76,7 @@ import com.radixdlt.constraintmachine.exceptions.MultipleFeeReserveDepositExcept
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ResourceAllocationAndDestructionException;
 import com.radixdlt.constraintmachine.exceptions.SignedSystemException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt256;
@@ -91,7 +91,7 @@ public final class ExecutionContext {
   private final PermissionLevel level;
   private final boolean skipAuthorization;
   private final TokenHoldingBucket reserve;
-  private ECPublicKey key;
+  private ECDSASecp256k1PublicKey key;
   private boolean disableResourceAllocAndDestroy;
   private UInt256 feeDeposit;
   private UInt256 systemLoan = UInt256.ZERO;
@@ -202,11 +202,11 @@ public final class ExecutionContext {
     this.disableResourceAllocAndDestroy = disableResourceAllocAndDestroy;
   }
 
-  public void setKey(ECPublicKey key) {
+  public void setKey(ECDSASecp256k1PublicKey key) {
     this.key = key;
   }
 
-  public Optional<ECPublicKey> key() {
+  public Optional<ECDSASecp256k1PublicKey> key() {
     return Optional.ofNullable(key);
   }
 

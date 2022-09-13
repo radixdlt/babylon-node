@@ -74,8 +74,8 @@ use radix_engine::constants::{
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
-    ExecutionConfig, PreviewError, PreviewExecutor, PreviewResult, TransactionExecutor,
-    TransactionResult,
+    ExecutionConfig, FeeReserveConfig, PreviewError, PreviewExecutor, PreviewResult,
+    TransactionExecutor, TransactionResult,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::engine::types::RENodeId;
@@ -94,6 +94,18 @@ struct OwnedValidationConfig {
     pub min_tip_percentage: u32,
 }
 
+#[derive(Debug, TypeId, Encode, Decode, Clone)]
+pub struct LoggingConfig {
+    pub engine_trace: bool,
+    pub state_manager_config: StateManagerLoggingConfig,
+}
+
+// TODO: Replace this with better loglevel integration
+#[derive(Debug, TypeId, Encode, Decode, Clone)]
+pub struct StateManagerLoggingConfig {
+    pub log_on_transaction_rejection: bool,
+}
+
 pub struct StateManager<M: Mempool, S> {
     pub mempool: M,
     pub network: NetworkDefinition,
@@ -102,11 +114,18 @@ pub struct StateManager<M: Mempool, S> {
     wasm_instrumenter: WasmInstrumenter,
     validation_config: OwnedValidationConfig,
     execution_config: ExecutionConfig,
+    fee_reserve_config: FeeReserveConfig,
     intent_hash_manager: TestIntentHashManager,
+    logging_config: StateManagerLoggingConfig,
 }
 
 impl<M: Mempool, S> StateManager<M, S> {
-    pub fn new(network: NetworkDefinition, mempool: M, store: S) -> StateManager<M, S> {
+    pub fn new(
+        network: NetworkDefinition,
+        mempool: M,
+        store: S,
+        logging_config: LoggingConfig,
+    ) -> StateManager<M, S> {
         StateManager {
             network,
             mempool,
@@ -119,13 +138,16 @@ impl<M: Mempool, S> StateManager<M, S> {
                 min_tip_percentage: 0,
             },
             execution_config: ExecutionConfig {
-                cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                 max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                system_loan: DEFAULT_SYSTEM_LOAN,
                 is_system: false,
-                trace: false,
+                trace: logging_config.engine_trace,
+            },
+            fee_reserve_config: FeeReserveConfig {
+                cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                system_loan: DEFAULT_SYSTEM_LOAN,
             },
             intent_hash_manager: TestIntentHashManager::new(),
+            logging_config: logging_config.state_manager_config,
         }
     }
 
@@ -167,7 +189,7 @@ where
                     start_epoch_inclusive: 0,
                     end_epoch_exclusive: 100,
                     nonce: preview_request.nonce,
-                    notary_public_key: notary_private_key.public_key(),
+                    notary_public_key: PublicKey::Ecdsa(notary_private_key.public_key()),
                     notary_as_signatory: false,
                     cost_unit_limit: preview_request.cost_unit_limit,
                     tip_percentage: preview_request.tip_percentage,
@@ -228,7 +250,11 @@ where
                 &mut self.wasm_engine,
                 &mut self.wasm_instrumenter,
             );
-            transaction_executor.execute_and_commit(&prepared, &self.execution_config);
+            transaction_executor.execute_and_commit(
+                &prepared,
+                &self.fee_reserve_config,
+                &self.execution_config,
+            );
         }
 
         for proposed in prepare_request.proposed {
@@ -250,17 +276,26 @@ where
                         &mut self.wasm_engine,
                         &mut self.wasm_instrumenter,
                     );
-                    let receipt = transaction_executor
-                        .execute_and_commit(&validated_transaction, &self.execution_config);
+                    let receipt = transaction_executor.execute_and_commit(
+                        &validated_transaction,
+                        &self.fee_reserve_config,
+                        &self.execution_config,
+                    );
                     match receipt.result {
                         TransactionResult::Commit(..) => non_rejected_txns.push(proposed),
                         TransactionResult::Reject(reject_result) => {
                             rejected_txns.insert(proposed, format!("{:?}", reject_result));
+                            if self.logging_config.log_on_transaction_rejection {
+                                println!("TXN REJECTED: {:?}", reject_result);
+                            }
                         }
                     }
                 }
                 Err(validation_error) => {
                     rejected_txns.insert(proposed, format!("{:?}", validation_error));
+                    if self.logging_config.log_on_transaction_rejection {
+                        println!("TXN INVALID: {:?}", validation_error);
+                    }
                 }
             }
         }
@@ -285,8 +320,11 @@ where
                 &mut self.wasm_instrumenter,
             );
 
-            let engine_receipt =
-                transaction_executor.execute_and_commit(&validated_txn, &self.execution_config);
+            let engine_receipt = transaction_executor.execute_and_commit(
+                &validated_txn,
+                &self.fee_reserve_config,
+                &self.execution_config,
+            );
 
             let ledger_receipt: LedgerTransactionReceipt =
                 engine_receipt.try_into().unwrap_or_else(|_| {

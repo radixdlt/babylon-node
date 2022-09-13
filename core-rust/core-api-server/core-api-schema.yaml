@@ -238,15 +238,14 @@ components:
       properties:
         hash:
           type: string
-          description: The hex-encoded double-SHA256 hash of the notarized transaction payload.
+          description: The hex-encoded double-SHA256 hash of the notarized transaction payload
         payload:
           type: string
-          description: The hex-encoded full notarized transaction payload.
+          description: The hex-encoded full notarized transaction payload
         signed_intent:
           $ref: "#/components/schemas/SignedTransactionIntent"
         notary_signature:
-          type: string
-          description: The hex-encoded SBOR-encoded notary signature.
+          $ref: "#/components/schemas/Signature"
     SignedTransactionIntent:
       type: object
       required:
@@ -262,19 +261,7 @@ components:
         intent_signatures:
           type: array
           items:
-            $ref: "#/components/schemas/IntentSignature"
-    IntentSignature:
-      type: object
-      required:
-        - public_key
-        - signature
-      properties:
-        public_key:
-          type: string
-          description: The hex-encoded signer public key.
-        signature:
-          type: string
-          description: The hex-encoded signature.
+            $ref: "#/components/schemas/SignatureWithPublicKey"
     TransactionIntent:
       type: object
       required:
@@ -329,8 +316,7 @@ components:
           type: string
           description: A decimal-string-encoded integer between 0 and 2^64 - 1, chosen to be unique to allow replay of transaction intents
         notary_public_key:
-          type: string
-          description: A hex-encoded public key of a notary
+          $ref: "#/components/schemas/PublicKey"
         notary_as_signatory:
           type: boolean
           description: Specifies whether the notary's signature should be included in transaction signers list
@@ -572,6 +558,121 @@ components:
           description: |
             A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
             the XRD amount put or taken from the vault
+#################################################
+# GENERAL / SHARED MODELS - keys and signatures #
+#################################################
+    PublicKeyType:
+      type: string
+      enum:
+        - EcdsaSecp256k1
+        - EddsaEd25519
+    PublicKey:
+      oneOf:
+        - $ref: '#/components/schemas/EcdsaSecp256k1PublicKey'
+        - $ref: '#/components/schemas/EddsaEd25519PublicKey'
+      discriminator:
+        propertyName: key_type
+        mapping:
+          # NOTE: These need to match PublicKeyType
+          EcdsaSecp256k1: '#/components/schemas/EcdsaSecp256k1PublicKey'
+          EddsaEd25519: '#/components/schemas/EddsaEd25519PublicKey'
+    EcdsaSecp256k1PublicKey:
+      type: object
+      required:
+        - key_type
+        - key_bytes
+      properties:
+        key_type:
+          $ref: '#/components/schemas/PublicKeyType'
+        key_bytes:
+          type: string
+          minLength: 66
+          maxLength: 66
+          description: The hex-encoded compressed ECDSA Secp256k1 public key (33 bytes)
+    EddsaEd25519PublicKey:
+      type: object
+      required:
+        - key_type
+        - key_bytes
+      properties:
+        key_type:
+          $ref: '#/components/schemas/PublicKeyType'
+        key_bytes:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: The hex-encoded compressed EdDSA Ed25519 public key (32 bytes)
+    Signature:
+      oneOf:
+        - $ref: '#/components/schemas/EcdsaSecp256k1Signature'
+        - $ref: '#/components/schemas/EddsaEd25519Signature'
+      discriminator:
+        propertyName: key_type
+        mapping:
+          # NOTE: These need to match PublicKeyType
+          EcdsaSecp256k1: '#/components/schemas/EcdsaSecp256k1Signature'
+          EddsaEd25519: '#/components/schemas/EddsaEd25519Signature'
+    EcdsaSecp256k1Signature:
+      type: object
+      required:
+        - key_type
+        - signature_bytes
+      properties:
+        key_type:
+          $ref: '#/components/schemas/PublicKeyType'
+        signature_bytes:
+          type: string
+          minLength: 130
+          maxLength: 130
+          description: A hex-encoded recoverable ECDSA Secp256k1 signature (65 bytes). The first byte is the recovery id, the remaining 64 bytes are the compact signature, ie CONCAT(R, s) where R and s are each 32-bytes in padded big-endian format.
+    EddsaEd25519Signature:
+      type: object
+      required:
+        - key_type
+        - signature_bytes
+      properties:
+        key_type:
+          $ref: '#/components/schemas/PublicKeyType'
+        signature_bytes:
+          type: string
+          minLength: 128
+          maxLength: 128
+          description: A hex-encoded EdDSA Ed25519 signature (64 bytes). This is CONCAT(R, s) where R and s are each 32-bytes in padded big-endian format.
+    SignatureWithPublicKey:
+      oneOf:
+        - $ref: '#/components/schemas/EcdsaSecp256k1SignatureWithPublicKey'
+        - $ref: '#/components/schemas/EddsaEd25519SignatureWithPublicKey'
+      discriminator:
+        propertyName: key_type
+        mapping:
+          # NOTE: These need to match PublicKeyType
+          EcdsaSecp256k1: '#/components/schemas/EcdsaSecp256k1SignatureWithPublicKey'
+          EddsaEd25519: '#/components/schemas/EddsaEd25519SignatureWithPublicKey'
+    EcdsaSecp256k1SignatureWithPublicKey:
+      type: object
+      required:
+        - key_type
+        - recoverable_signature
+      description: Because ECDSA has recoverable signatures, this only includes a signature
+      properties:
+        key_type:
+          $ref: '#/components/schemas/PublicKeyType'
+        recoverable_signature:
+          $ref: '#/components/schemas/EcdsaSecp256k1Signature'
+    EddsaEd25519SignatureWithPublicKey:
+      type: object
+      required:
+        - key_type
+        - public_key
+        - signature
+      description: The EDDSA public key and signature 
+      properties:
+        key_type:
+          $ref: '#/components/schemas/PublicKeyType'
+        public_key:
+          $ref: '#/components/schemas/EddsaEd25519PublicKey'
+        signature:
+          $ref: '#/components/schemas/EddsaEd25519Signature'
 #######################################
 # GENERAL / SHARED MODELS - substates #
 #######################################
@@ -945,8 +1046,8 @@ components:
         signer_public_keys:
           type: array
           items:
-            type: string
-          description: A list of public keys to be used as transaction signers, in a compressed format, hex encoded.
+            $ref: "#/components/schemas/PublicKey"
+          description: A list of public keys to be used as transaction signers
         flags:
           type: object
           required:

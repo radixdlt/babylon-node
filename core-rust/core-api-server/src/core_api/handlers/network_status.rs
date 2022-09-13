@@ -20,10 +20,9 @@ pub(crate) fn handle_network_status_internal(
         pre_genesis_state_identifier: Box::new(CommittedStateIdentifier { state_version: 0 }),
         post_genesis_state_identifier: Box::new(CommittedStateIdentifier { state_version: 1 }),
         current_state_identifier: Box::new(CommittedStateIdentifier {
-            state_version: to_api_state_version(state_manager.store.max_state_version())
-                .map_err(|err| {
-                    common_server_errors::mapping_error(err, "Unable to map state_version")
-                })?,
+            state_version: to_api_state_version(state_manager.store.max_state_version()).map_err(
+                |err| common_server_errors::mapping_error(err, "Unable to map state_version"),
+            )?,
         }),
     })
 }

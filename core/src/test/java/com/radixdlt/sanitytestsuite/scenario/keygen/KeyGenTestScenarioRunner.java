@@ -67,8 +67,8 @@ package com.radixdlt.sanitytestsuite.scenario.keygen;
 import static com.radixdlt.utils.Bytes.fromHexString;
 import static junit.framework.TestCase.assertEquals;
 
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 
 public final class KeyGenTestScenarioRunner extends SanityTestScenarioRunner<KeyGenTestVector> {
@@ -88,7 +88,8 @@ public final class KeyGenTestScenarioRunner extends SanityTestScenarioRunner<Key
       var publicKey =
           ECKeyPair.fromPrivateKey(fromHexString(testVector.input.privateKey)).getPublicKey();
       var expectedPublicKey =
-          ECPublicKey.fromBytes(fromHexString(testVector.expected.uncompressedPublicKey));
+          ECDSASecp256k1PublicKey.fromBytes(
+              fromHexString(testVector.expected.uncompressedPublicKey));
 
       assertEquals(publicKey, expectedPublicKey);
     } catch (Exception e) {

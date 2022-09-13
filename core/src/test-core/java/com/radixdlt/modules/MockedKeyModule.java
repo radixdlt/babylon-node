@@ -70,7 +70,7 @@ import com.google.inject.Provides;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.monitoring.SystemCounters;
 import java.math.BigInteger;
 import java.util.function.Function;
@@ -93,7 +93,8 @@ public final class MockedKeyModule extends AbstractModule {
       var hashCode = hashFunction.hashBytes(concat).asBytes();
       counters.increment(SystemCounters.CounterType.SIGNATURES_SIGNED);
 
-      return ECDSASignature.create(new BigInteger(1, hashCode), new BigInteger(1, hashCode), 0);
+      return ECDSASecp256k1Signature.create(
+          new BigInteger(1, hashCode), new BigInteger(1, hashCode), 0);
     };
   }
 }

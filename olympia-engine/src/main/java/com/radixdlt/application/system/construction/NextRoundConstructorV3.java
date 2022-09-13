@@ -68,7 +68,7 @@ import static com.radixdlt.substate.TxAction.*;
 
 import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.application.system.state.ValidatorBFTData;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.substate.ActionConstructor;
 import com.radixdlt.substate.TxBuilder;
 import com.radixdlt.substate.TxBuilderException;
@@ -83,7 +83,8 @@ public class NextRoundConstructorV3 implements ActionConstructor<NextRound> {
       throw new InvalidRoundException(prevRound.round(), action.roundNumber());
     }
 
-    var validatorsToUpdate = new TreeMap<ECPublicKey, ValidatorBFTData>(KeyComparator.instance());
+    var validatorsToUpdate =
+        new TreeMap<ECDSASecp256k1PublicKey, ValidatorBFTData>(KeyComparator.instance());
     for (long round = prevRound.round() + 1; round < action.roundNumber(); round++) {
       var missingLeader = action.leaderMapping().apply(round);
       if (!validatorsToUpdate.containsKey(missingLeader)) {

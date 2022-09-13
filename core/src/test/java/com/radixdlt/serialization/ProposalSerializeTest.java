@@ -74,7 +74,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.transactions.RawTransaction;
@@ -100,6 +100,6 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 
     BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
     Vertex vertex = Vertex.create(qc, round, List.of(transaction), author);
-    return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
+    return new Proposal(vertex, qc, ECDSASecp256k1Signature.zeroSignature(), Optional.empty());
   }
 }

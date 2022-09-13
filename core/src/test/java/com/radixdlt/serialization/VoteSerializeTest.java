@@ -74,7 +74,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.LedgerHeaderMock;
@@ -97,6 +97,11 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
     QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
     HighQC highQC = HighQC.from(qc, qc, Optional.empty());
     return new Vote(
-        author, voteData, 123456L, ECDSASignature.zeroSignature(), highQC, Optional.empty());
+        author,
+        voteData,
+        123456L,
+        ECDSASecp256k1Signature.zeroSignature(),
+        highQC,
+        Optional.empty());
   }
 }

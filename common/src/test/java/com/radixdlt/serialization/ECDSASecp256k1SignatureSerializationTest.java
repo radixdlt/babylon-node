@@ -62,26 +62,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.serialization;
 
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.utils.Bytes;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.bouncycastle.math.ec.ECPoint;
-import org.junit.Test;
+import com.radixdlt.TestSetupUtils;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
+import java.math.BigInteger;
+import java.util.Random;
+import java.util.function.Supplier;
+import org.junit.BeforeClass;
 
-public class ECPublicKeyTest {
-  @Test
-  public void equalsContract() throws PublicKeyException {
-    final var p1 = ECKeyPair.generateNew().getPublicKey().getEcPoint();
-    final var p2 = ECKeyPair.generateNew().getPublicKey().getEcPoint();
-    var key = Bytes.fromBase64String("AtuRjZPGw0b0BIYx46e0iKCaFU5EPnPx7/wLk6Vcursg");
-    ECPublicKey pk = ECPublicKey.fromBytes(key);
-    EqualsVerifier.forClass(ECPublicKey.class)
-        .withNonnullFields("ecPoint", "compressed")
-        .withIgnoredFields("uid", "ecPoint", "uncompressedBytes") // cached value
-        .withPrefabValues(ECPoint.class, p1, p2)
-        .withCachedHashCode("hashCode", "computeHashCode", pk)
-        .verify();
+/** JSON Serialization round trip of {@link ECDSASecp256k1Signature} */
+public class ECDSASecp256k1SignatureSerializationTest
+    extends SerializeObjectEngine<ECDSASecp256k1Signature> {
+
+  public ECDSASecp256k1SignatureSerializationTest() {
+    super(
+        ECDSASecp256k1Signature.class, ECDSASecp256k1SignatureSerializationTest::getECDSASignature);
+  }
+
+  @BeforeClass
+  public static void startRadixTest() {
+    TestSetupUtils.installBouncyCastleProvider();
+  }
+
+  private static ECDSASecp256k1Signature getECDSASignature() {
+    Supplier<BigInteger> randomBigInt = () -> BigInteger.valueOf(new Random().nextLong());
+    return ECDSASecp256k1Signature.create(
+        randomBigInt.get(), randomBigInt.get(), randomBigInt.get().signum());
   }
 }

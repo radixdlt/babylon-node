@@ -64,165 +64,138 @@
 
 package com.radixdlt.crypto;
 
-import static java.util.Objects.requireNonNull;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Suppliers;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.CustomTypeCodec;
 import com.radixdlt.sbor.codec.constants.TypeId;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
-import java.io.IOException;
-import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Objects;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.DLSequence;
-import org.bouncycastle.util.encoders.Hex;
+import java.util.Optional;
+import java.util.function.Supplier;
+import org.bouncycastle.math.ec.ECPoint;
 
-/**
- * An <a href="https://en.wikipedia.org/wiki/ Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a>
- * signature represented as a tuple of {@link BigInteger}s {@code (R, S)}/
- */
-@SerializerId2("sig")
-public final class ECDSASignature {
+/** Asymmetric EC public key provider fixed to curve 'secp256k1' */
+public final class ECDSASecp256k1PublicKey {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        ECDSASignature.class,
+        ECDSASecp256k1PublicKey.class,
         codecs ->
             new CustomTypeCodec<>(
-                TypeId.TYPE_CUSTOM_ECDSA_SIGNATURE,
-                ECDSASignature::getConcatRSBytes,
-                k -> {
-                  throw new UnsupportedOperationException("Decoding unsupported.");
-                }));
+                TypeId.TYPE_CUSTOM_ECDSA_SECP256K1_PUBLIC_KEY,
+                ECDSASecp256k1PublicKey::getCompressedBytes,
+                ECDSASecp256k1PublicKey::fromCompressedBytesUnchecked));
   }
 
-  // Placeholder for the serializer ID
-  @JsonProperty(SerializerConstants.SERIALIZER_NAME)
-  @DsonOutput(Output.ALL)
-  private SerializerDummy serializer = SerializerDummy.DUMMY;
+  public static final int COMPRESSED_BYTES = 33; // 32 + header byte
+  public static final int UNCOMPRESSED_BYTES = 65; // 64 + header byte
 
-  /* The two components of the signature. */
-  private final BigInteger r;
-  private final BigInteger s;
-  private final byte v;
+  private final ECPoint ecPoint;
+  private final Supplier<byte[]> uncompressedBytes;
+  private final Supplier<EUID> uid;
+  private final int hashCode;
+  private final byte[] compressed;
 
-  private static final ECDSASignature ZERO_SIGNATURE =
-      new ECDSASignature(BigInteger.ZERO, BigInteger.ZERO, 0);
+  private ECDSASecp256k1PublicKey(ECPoint ecPoint) {
+    this.ecPoint = Objects.requireNonNull(ecPoint);
+    this.uncompressedBytes = Suppliers.memoize(() -> this.ecPoint.getEncoded(false));
+    this.compressed = this.ecPoint.getEncoded(true);
+    this.uid = Suppliers.memoize(this::computeUID);
+    this.hashCode = computeHashCode();
+  }
 
-  private ECDSASignature(BigInteger r, BigInteger s, int v) {
-    this.r = requireNonNull(r);
-    this.s = requireNonNull(s);
-    this.v = ((v & 1) == 0 ? (byte) 0x00 : (byte) 0x01);
+  private int computeHashCode() {
+    return Arrays.hashCode(compressed);
+  }
+
+  public static ECDSASecp256k1PublicKey fromEcPoint(ECPoint ecPoint) {
+    return new ECDSASecp256k1PublicKey(ecPoint);
   }
 
   @JsonCreator
-  public static ECDSASignature deserialize(
-      @JsonProperty(value = "r", required = true) byte[] r,
-      @JsonProperty(value = "s", required = true) byte[] s,
-      @JsonProperty(value = "v", required = true) int v) {
-    return create(new BigInteger(1, requireNonNull(r)), new BigInteger(1, requireNonNull(s)), v);
+  public static ECDSASecp256k1PublicKey fromBytes(byte[] key) throws PublicKeyException {
+    ECKeyUtils.validatePublic(key);
+    return new ECDSASecp256k1PublicKey(ECKeyUtils.spec().getCurve().decodePoint(key));
   }
 
-  /**
-   * Constructs a signature with the given components. Does NOT automatically canonicalise the
-   * signature.
-   */
-  public static ECDSASignature create(BigInteger r, BigInteger s, int v) {
-    requireNonNull(r);
-    requireNonNull(s);
-
-    return new ECDSASignature(r, s, v);
+  @JsonCreator
+  public static ECDSASecp256k1PublicKey fromHex(String hex) throws PublicKeyException {
+    return fromBytes(Bytes.fromHexString(hex));
   }
 
-  public static ECDSASignature zeroSignature() {
-    return ZERO_SIGNATURE;
+  public static Optional<ECDSASecp256k1PublicKey> recoverFrom(
+      HashCode hash, ECDSASecp256k1Signature signature) {
+    return ECKeyUtils.recoverFromSignature(signature, hash.asBytes())
+        .map(ECDSASecp256k1PublicKey::new);
   }
 
-  public BigInteger getR() {
-    return r;
+  public EUID euid() {
+    return uid.get();
   }
 
-  public BigInteger getS() {
-    return s;
+  public ECPoint getEcPoint() {
+    return ecPoint;
   }
 
-  public byte getV() {
-    return v;
+  @JsonProperty("publicKey")
+  @DsonOutput(DsonOutput.Output.ALL)
+  public byte[] getBytes() {
+    return uncompressedBytes.get();
   }
 
-  @JsonProperty("r")
-  @DsonOutput(Output.ALL)
-  private byte[] getJsonR() {
-    return Bytes.trimLeadingZeros(r.toByteArray());
+  public byte[] getCompressedBytes() {
+    return compressed;
   }
 
-  @JsonProperty("s")
-  @DsonOutput(Output.ALL)
-  private byte[] getJsonS() {
-    return Bytes.trimLeadingZeros(s.toByteArray());
+  private static ECDSASecp256k1PublicKey fromCompressedBytesUnchecked(byte[] key) {
+    return new ECDSASecp256k1PublicKey(ECKeyUtils.spec().getCurve().decodePoint(key));
   }
 
-  @JsonProperty("v")
-  @DsonOutput(Output.ALL)
-  private int getJsonV() {
-    return v;
+  public boolean verify(HashCode hash, ECDSASecp256k1Signature signature) {
+    return verify(hash.asBytes(), signature);
   }
 
-  @Override
-  public String toString() {
-    return toHexString();
+  public boolean verify(byte[] hash, ECDSASecp256k1Signature signature) {
+    return signature != null && ECKeyUtils.keyHandler.verify(hash, signature, ecPoint);
   }
 
-  public byte[] getConcatRSBytes() {
-    return com.google.common.primitives.Bytes.concat(
-        Bytes.bigIntegerToBytes(r, 32), Bytes.bigIntegerToBytes(s, 32));
+  public String toHex() {
+    return Bytes.toHexString(getCompressedBytes());
   }
 
-  public String toHexString() {
-    return Bytes.toHexString(getConcatRSBytes());
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (o == this) {
-      return true;
-    }
-
-    return (o instanceof ECDSASignature signature)
-        && Objects.equals(r, signature.r)
-        && Objects.equals(s, signature.s)
-        && Objects.equals(v, signature.v);
+  public PublicKey toPublicKey() {
+    return new PublicKey.Ecdsa(this);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(r, s, v);
+    return this.hashCode;
   }
 
-  // WARNING: Never ever use this method to restore recoverable signature! It misses 'v' bit
-  // necessary for recovery.
-  public static ECDSASignature decodeFromHexDer(String input) {
-    return decodeFromDER(Hex.decode(input));
-  }
-
-  public static ECDSASignature decodeFromDER(byte[] bytes) {
-    try (ASN1InputStream decoder = new ASN1InputStream(bytes)) {
-      var seq = (DLSequence) decoder.readObject();
-      var r = (ASN1Integer) seq.getObjectAt(0);
-      var s = (ASN1Integer) seq.getObjectAt(1);
-
-      return new ECDSASignature(r.getPositiveValue(), s.getPositiveValue(), 0);
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Failed to read bytes as ASN1 decode bytes", e);
-    } catch (ClassCastException e) {
-      throw new IllegalArgumentException("Failed to cast to ASN1Integer", e);
+  @Override
+  public boolean equals(Object object) {
+    if (object == this) {
+      return true;
     }
+    if (object instanceof ECDSASecp256k1PublicKey) {
+      final var that = (ECDSASecp256k1PublicKey) object;
+      return Arrays.equals(this.compressed, that.compressed);
+    }
+    return false;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s[%s]", getClass().getSimpleName(), toHex());
+  }
+
+  private EUID computeUID() {
+    return EUID.sha256(getCompressedBytes());
   }
 }

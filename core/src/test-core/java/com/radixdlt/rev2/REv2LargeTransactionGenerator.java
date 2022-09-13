@@ -72,19 +72,20 @@ import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 
 /** Generates valid REv2 1 MB transactions */
-public final class REv2OneMBTransactionGenerator implements TransactionGenerator {
+public final class REv2LargeTransactionGenerator implements TransactionGenerator {
   private final NetworkDefinition networkDefinition;
 
   private int currentKey = 1;
 
-  public REv2OneMBTransactionGenerator(NetworkDefinition networkDefinition) {
+  public REv2LargeTransactionGenerator(NetworkDefinition networkDefinition) {
     this.networkDefinition = networkDefinition;
   }
 
   @Override
   public RawTransaction nextTransaction() {
     final ECKeyPair key = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
-    var intentBytes = TransactionBuilder.build1MBIntent(networkDefinition, key.getPublicKey());
+    var intentBytes =
+        TransactionBuilder.build100KBIntent(networkDefinition, key.getPublicKey().toPublicKey());
     return REv2TestTransactions.constructTransaction(intentBytes, key, List.of(key));
   }
 }
