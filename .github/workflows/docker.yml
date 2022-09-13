@@ -116,4 +116,8 @@ jobs:
           jenkins_user: radixbot
           jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
           job_name: "ephemeral-deployment-test/job/testing-ephemeral-deploy-test-destroy"
+          job_params: |
+            {
+              "nodeDockerTag": "DO-692-create-a-test-network-for-babylon-node-8acb54d75-tst"
+            }
           job_timeout: "3600"
