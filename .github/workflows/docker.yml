@@ -109,6 +109,7 @@ jobs:
     name: Trigger ephemeral deploy and test
     needs:
       - build_push_container
+      - build_deb
     runs-on: ubuntu-22.04
     steps:
       - name: Deploy and test on ephemeral network
@@ -120,6 +121,6 @@ jobs:
           job_name: "ephemeral-deployment-test/job/testing-ephemeral-deploy-test-destroy"
           job_params: |
             {
-              "nodeDockerTag": "${{ needs.build_deb.outputs.tags }}"
+              "nodeDockerTag": "${{ needs.build_deb.outputs.tags[0] }}"
             }
           job_timeout: "3600"
