@@ -81,6 +81,8 @@ public record TransactionHeader(
     UInt32 costUnitLimit,
     UInt32 tipPercentage) {
 
+  public static final UInt32 MAX_COST_UNIT_LIMIT = UInt32.fromNonNegativeInt(10_000_000);
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         TransactionHeader.class,
@@ -122,7 +124,7 @@ public record TransactionHeader(
         UInt64.fromNonNegativeLong(nonce), // Nonce
         notary,
         notaryIsSignatory,
-        UInt32.fromNonNegativeInt(100000000), // Max Cost Units
+        MAX_COST_UNIT_LIMIT, // Max Cost Units
         UInt32.fromNonNegativeInt(0) // Tip percentage
         );
   }
@@ -133,6 +135,7 @@ public record TransactionHeader(
       PublicKey notary,
       UInt32 costUnitLimit,
       Boolean notaryIsSignatory) {
+    var costUnitLimitToUse = UInt32.Min(MAX_COST_UNIT_LIMIT, costUnitLimit);
     return new TransactionHeader(
         (byte) 1, // Version
         networkDefinition.id(),
@@ -141,7 +144,7 @@ public record TransactionHeader(
         UInt64.fromNonNegativeLong(nonce), // Nonce
         notary,
         notaryIsSignatory,
-        costUnitLimit,
+        costUnitLimitToUse,
         UInt32.fromNonNegativeInt(0) // Tip percentage
         );
   }
