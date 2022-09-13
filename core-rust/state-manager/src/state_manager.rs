@@ -167,7 +167,7 @@ where
                     start_epoch_inclusive: 0,
                     end_epoch_exclusive: 100,
                     nonce: preview_request.nonce,
-                    notary_public_key: notary_private_key.public_key(),
+                    notary_public_key: PublicKey::Ecdsa(notary_private_key.public_key()),
                     notary_as_signatory: false,
                     cost_unit_limit: preview_request.cost_unit_limit,
                     tip_percentage: preview_request.tip_percentage,

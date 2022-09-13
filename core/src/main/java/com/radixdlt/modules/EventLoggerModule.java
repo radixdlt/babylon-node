@@ -81,7 +81,7 @@ import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.constraintmachine.REEvent.ValidatorMissedProposalsEvent;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.Bytes;
@@ -95,12 +95,13 @@ public final class EventLoggerModule extends AbstractModule {
 
   @Provides
   Function<BFTNode, String> loggingFormatterForNode(
-      Function<ECPublicKey, String> loggingFormatterForNodePublicKey) {
+      Function<ECDSASecp256k1PublicKey, String> loggingFormatterForNodePublicKey) {
     return n -> loggingFormatterForNodePublicKey.apply(n.getKey());
   }
 
   @Provides
-  Function<ECPublicKey, String> loggingFormatterForNodePublicKey(Addressing addressing) {
+  Function<ECDSASecp256k1PublicKey, String> loggingFormatterForNodePublicKey(
+      Addressing addressing) {
     return k -> {
       var addr = addressing.encodeNodeAddress(k);
       var len = addr.length();
@@ -153,7 +154,7 @@ public final class EventLoggerModule extends AbstractModule {
   @Singleton
   @SuppressWarnings("UnstableApiUsage")
   EventProcessorOnDispatch<?> ledgerUpdate(
-      @Self BFTNode self, Function<ECPublicKey, String> nodeString) {
+      @Self BFTNode self, Function<ECDSASecp256k1PublicKey, String> nodeString) {
     final var logLimiter = RateLimiter.create(1.0);
     return new EventProcessorOnDispatch<>(
         LedgerUpdate.class,
@@ -163,7 +164,7 @@ public final class EventLoggerModule extends AbstractModule {
   @SuppressWarnings("UnstableApiUsage")
   private static void processLedgerUpdate(
       BFTNode self,
-      Function<ECPublicKey, String> nodeString,
+      Function<ECDSASecp256k1PublicKey, String> nodeString,
       RateLimiter logLimiter,
       LedgerUpdate ledgerUpdate) {
 
@@ -237,7 +238,7 @@ public final class EventLoggerModule extends AbstractModule {
   }
 
   private static void logValidatorEvents(
-      BFTNode self, Function<ECPublicKey, String> nodeString, REEvent e) {
+      BFTNode self, Function<ECDSASecp256k1PublicKey, String> nodeString, REEvent e) {
     if (e instanceof ValidatorBFTDataEvent event) {
       var level = event.missedProposals() > 0 ? WARN : INFO;
 

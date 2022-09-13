@@ -6,6 +6,10 @@ pub fn to_hex<T: AsRef<[u8]>>(v: T) -> String {
     hex::encode(v)
 }
 
+pub fn from_hex<T: AsRef<[u8]>>(v: T) -> Result<Vec<u8>, ExtractionError> {
+    hex::decode(v).map_err(|_| ExtractionError::InvalidHex)
+}
+
 pub fn scrypto_bytes_to_api_sbor_data(
     scrypto_bytes: &[u8],
 ) -> Result<models::SborData, MappingError> {

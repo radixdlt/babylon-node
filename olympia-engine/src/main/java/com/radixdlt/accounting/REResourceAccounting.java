@@ -67,7 +67,7 @@ package com.radixdlt.accounting;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.constraintmachine.REStateUpdate;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.math.BigInteger;
@@ -78,12 +78,12 @@ import java.util.stream.Stream;
 
 public class REResourceAccounting {
   private final Map<Bucket, BigInteger> bucketAccounting;
-  private final Map<ECPublicKey, BigInteger> stakeOwnershipAccounting;
+  private final Map<ECDSASecp256k1PublicKey, BigInteger> stakeOwnershipAccounting;
   private final Map<REAddr, BigInteger> resourceAccounting;
 
   private REResourceAccounting(
       Map<Bucket, BigInteger> bucketAccounting,
-      Map<ECPublicKey, BigInteger> stakeOwnershipAccounting,
+      Map<ECDSASecp256k1PublicKey, BigInteger> stakeOwnershipAccounting,
       Map<REAddr, BigInteger> resourceAccounting) {
     this.bucketAccounting = bucketAccounting;
     this.stakeOwnershipAccounting = stakeOwnershipAccounting;
@@ -94,7 +94,7 @@ public class REResourceAccounting {
     return bucketAccounting;
   }
 
-  public Map<ECPublicKey, BigInteger> stakeOwnershipAccounting() {
+  public Map<ECDSASecp256k1PublicKey, BigInteger> stakeOwnershipAccounting() {
     return stakeOwnershipAccounting;
   }
 

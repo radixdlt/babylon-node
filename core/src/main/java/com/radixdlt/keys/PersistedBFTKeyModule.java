@@ -70,8 +70,8 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyOps;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.utils.properties.RuntimeProperties;
@@ -94,7 +94,7 @@ public final class PersistedBFTKeyModule extends AbstractModule {
 
   @Provides
   @Self
-  ECPublicKey key(@Self BFTNode bftNode) {
+  ECDSASecp256k1PublicKey key(@Self BFTNode bftNode) {
     return bftNode.getKey();
   }
 
@@ -111,7 +111,8 @@ public final class PersistedBFTKeyModule extends AbstractModule {
 
   @Provides
   @Self
-  String name(Function<ECPublicKey, String> nodeToString, @Self ECPublicKey key) {
+  String name(
+      Function<ECDSASecp256k1PublicKey, String> nodeToString, @Self ECDSASecp256k1PublicKey key) {
     return nodeToString.apply(key);
   }
 

@@ -65,10 +65,10 @@
 package com.radixdlt.application.system.state;
 
 import com.radixdlt.application.validators.state.ValidatorData;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 
 public record ValidatorBFTData(
-    ECPublicKey validatorKey, long completedProposals, long missedProposals)
+    ECDSASecp256k1PublicKey validatorKey, long completedProposals, long missedProposals)
     implements ValidatorData {
   public ValidatorBFTData incrementCompletedProposals() {
     return new ValidatorBFTData(validatorKey, completedProposals + 1, missedProposals);

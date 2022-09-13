@@ -70,13 +70,13 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
 public final class StakeOwnershipHoldingBucket implements ReducerState {
-  private final ECPublicKey delegate;
+  private final ECDSASecp256k1PublicKey delegate;
   private final REAddr accountAddr;
   private UInt384 ownershipAmount;
 
@@ -87,7 +87,8 @@ public final class StakeOwnershipHoldingBucket implements ReducerState {
         UInt384.from(stakeOwnership.amount()));
   }
 
-  public StakeOwnershipHoldingBucket(ECPublicKey delegate, REAddr accountAddr, UInt384 amount) {
+  public StakeOwnershipHoldingBucket(
+      ECDSASecp256k1PublicKey delegate, REAddr accountAddr, UInt384 amount) {
     this.delegate = delegate;
     this.accountAddr = accountAddr;
     this.ownershipAmount = amount;

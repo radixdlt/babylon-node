@@ -70,7 +70,7 @@ import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.system.state.StakeOwnershipBucket;
 import com.radixdlt.application.tokens.state.PreparedUnstakeOwnership;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.substate.*;
 import java.nio.ByteBuffer;
 
@@ -78,7 +78,10 @@ public class UnstakeOwnershipConstructor implements ActionConstructor<UnstakeOwn
   @Override
   public void construct(UnstakeOwnership action, TxBuilder txBuilder) throws TxBuilderException {
     var buf =
-        ByteBuffer.allocate(2 + ECPublicKey.COMPRESSED_BYTES + (1 + ECPublicKey.COMPRESSED_BYTES));
+        ByteBuffer.allocate(
+            2
+                + ECDSASecp256k1PublicKey.COMPRESSED_BYTES
+                + (1 + ECDSASecp256k1PublicKey.COMPRESSED_BYTES));
     buf.put(SubstateTypeId.STAKE_OWNERSHIP.id());
     buf.put((byte) 0);
     buf.put(action.fromDelegate().getCompressedBytes());

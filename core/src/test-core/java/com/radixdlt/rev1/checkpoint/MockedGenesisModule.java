@@ -74,7 +74,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.substate.TxAction;
@@ -88,12 +88,12 @@ import java.util.stream.Collectors;
  * generated should be deterministic.
  */
 public final class MockedGenesisModule extends AbstractModule {
-  private final Set<ECPublicKey> validators;
+  private final Set<ECDSASecp256k1PublicKey> validators;
   private final Amount xrdPerValidator;
   private final Amount stakePerValidator;
 
   public MockedGenesisModule(
-      Set<ECPublicKey> validators, Amount xrdPerValidator, Amount stakePerValidator) {
+      Set<ECDSASecp256k1PublicKey> validators, Amount xrdPerValidator, Amount stakePerValidator) {
     this.validators = validators;
     this.xrdPerValidator = xrdPerValidator;
     this.stakePerValidator = stakePerValidator;
@@ -101,7 +101,7 @@ public final class MockedGenesisModule extends AbstractModule {
 
   @Override
   public void configure() {
-    bind(new TypeLiteral<Set<ECPublicKey>>() {})
+    bind(new TypeLiteral<Set<ECDSASecp256k1PublicKey>>() {})
         .annotatedWith(Genesis.class)
         .toInstance(validators);
     bind(new TypeLiteral<CommittedTransactionsWithProof>() {})
@@ -120,7 +120,7 @@ public final class MockedGenesisModule extends AbstractModule {
 
   @Provides
   @Genesis
-  public Set<StakeTokens> stakeDelegations(@Genesis Set<ECPublicKey> validators) {
+  public Set<StakeTokens> stakeDelegations(@Genesis Set<ECDSASecp256k1PublicKey> validators) {
     return validators.stream()
         .map(v -> new StakeTokens(REAddr.ofPubKeyAccount(v), v, stakePerValidator.toSubunits()))
         .collect(Collectors.toSet());
@@ -128,7 +128,8 @@ public final class MockedGenesisModule extends AbstractModule {
 
   @Provides
   @Genesis
-  public ImmutableList<TokenIssuance> tokenIssuanceList(@Genesis Set<ECPublicKey> validators) {
+  public ImmutableList<TokenIssuance> tokenIssuanceList(
+      @Genesis Set<ECDSASecp256k1PublicKey> validators) {
     return validators.stream()
         .map(v -> TokenIssuance.of(v, xrdPerValidator.toSubunits()))
         .sorted(Comparator.comparing(t -> t.receiver().toHex()))

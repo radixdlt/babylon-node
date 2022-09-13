@@ -62,10 +62,12 @@
  * permissions under this License.
  */
 
+use std::collections::HashMap;
+
 use crate::jni::dtos::JavaStructure;
 use crate::result::StateManagerResult;
 use crate::transaction_builder::{
-    create_1mb_txn_intent, create_intent_bytes, create_new_account_intent_bytes,
+    create_1mb_txn_intent, create_intent_bytes, create_manifest, create_new_account_intent_bytes,
     create_notarized_bytes, create_signed_intent_bytes,
 };
 use jni::objects::JClass;
@@ -73,8 +75,7 @@ use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::scrypto_encode;
 use sbor::{Decode, Encode, TypeId};
-use scrypto::prelude::{EcdsaPublicKey, EcdsaSignature, NetworkDefinition};
-use transaction::manifest::compile;
+use scrypto::prelude::{NetworkDefinition, PublicKey, Signature, SignatureWithPublicKey};
 use transaction::model::{SignedTransactionIntent, TransactionHeader, TransactionIntent};
 
 use super::utils::{jni_static_sbor_call, jni_static_sbor_call_flatten_result};
@@ -88,10 +89,12 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_compileManif
     jni_static_sbor_call(env, request_payload, do_compile_manifest)
 }
 
-fn do_compile_manifest(args: (NetworkDefinition, String)) -> Result<Vec<u8>, String> {
-    let (network, manifest_str) = args;
+fn do_compile_manifest(
+    args: (NetworkDefinition, String, HashMap<String, Vec<u8>>),
+) -> Result<Vec<u8>, String> {
+    let (network, manifest_str, blobs) = args;
 
-    compile(&manifest_str, &network)
+    create_manifest(&network, &manifest_str, blobs)
         .map_err(|err| format!("{:?}", err))
         .map(|manifest| scrypto_encode(&manifest))
 }
@@ -105,7 +108,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_newAccountIn
     jni_static_sbor_call(env, request_payload, do_create_new_account_intent)
 }
 
-fn do_create_new_account_intent(args: (NetworkDefinition, EcdsaPublicKey)) -> Vec<u8> {
+fn do_create_new_account_intent(args: (NetworkDefinition, PublicKey)) -> Vec<u8> {
     let (network_definition, public_key) = args;
 
     create_new_account_intent_bytes(&network_definition, public_key)
@@ -129,7 +132,7 @@ struct TransactionHeaderJava {
     pub start_epoch_inclusive: u64,
     pub end_epoch_exclusive: u64,
     pub nonce: u64,
-    pub notary_public_key: EcdsaPublicKey,
+    pub notary_public_key: PublicKey,
     pub notary_as_signatory: bool,
     pub cost_unit_limit: u32,
     pub tip_percentage: u32,
@@ -152,11 +155,16 @@ impl From<TransactionHeaderJava> for TransactionHeader {
 }
 
 fn do_create_intent_bytes(
-    args: (NetworkDefinition, TransactionHeaderJava, String),
+    args: (
+        NetworkDefinition,
+        TransactionHeaderJava,
+        String,
+        HashMap<String, Vec<u8>>,
+    ),
 ) -> Result<Vec<u8>, String> {
-    let (network_definition, header, manifest) = args;
+    let (network_definition, header, manifest, blobs) = args;
 
-    create_intent_bytes(&network_definition, header.into(), manifest)
+    create_intent_bytes(&network_definition, header.into(), manifest, blobs)
         .map_err(|err| format!("{:?}", err))
 }
 
@@ -169,7 +177,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_build1MBInte
     jni_static_sbor_call(env, request_payload, do_build_1mb_intent)
 }
 
-fn do_build_1mb_intent(args: (NetworkDefinition, EcdsaPublicKey)) -> Vec<u8> {
+fn do_build_1mb_intent(args: (NetworkDefinition, PublicKey)) -> Vec<u8> {
     create_1mb_txn_intent(args.0, args.1)
 }
 
@@ -183,7 +191,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createSigned
 }
 
 fn do_create_signed_intent_bytes(
-    args: (Vec<u8>, Vec<(EcdsaPublicKey, EcdsaSignature)>),
+    args: (Vec<u8>, Vec<SignatureWithPublicKey>),
 ) -> StateManagerResult<Vec<u8>> {
     let (intent_bytes, signatures) = args;
 
@@ -202,7 +210,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_createNotari
     jni_static_sbor_call_flatten_result(env, request_payload, do_create_notarized_bytes)
 }
 
-fn do_create_notarized_bytes(args: (Vec<u8>, EcdsaSignature)) -> StateManagerResult<Vec<u8>> {
+fn do_create_notarized_bytes(args: (Vec<u8>, Signature)) -> StateManagerResult<Vec<u8>> {
     let (signed_intent_bytes, signature) = args;
 
     // It's passed through to us as bytes - and need to decode these bytes

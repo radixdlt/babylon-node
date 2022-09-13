@@ -66,7 +66,7 @@ package com.radixdlt.p2p.transport.handshake;
 
 import static org.junit.Assert.*;
 
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.capability.Capabilities;
@@ -194,7 +194,7 @@ public class AuthInitMessageTest {
   private AuthInitiateMessage getAuthInitiateMessage(
       Set<RemotePeerCapability> remotePeerCapabilities) {
     return new AuthInitiateMessage(
-        ECDSASignature.zeroSignature(),
+        ECDSASecp256k1Signature.zeroSignature(),
         HashUtils.random256(),
         HashUtils.random256(),
         Network.INTEGRATIONTESTNET.getId(),

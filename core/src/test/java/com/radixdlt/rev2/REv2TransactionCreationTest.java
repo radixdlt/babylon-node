@@ -62,134 +62,69 @@
  * permissions under this License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.rev2;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Suppliers;
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.CustomTypeCodec;
-import com.radixdlt.sbor.codec.constants.TypeId;
-import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Bytes;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Supplier;
-import org.bouncycastle.math.ec.ECPoint;
+import com.radixdlt.utils.UInt32;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.Test;
 
-/** Asymmetric EC public key provider fixed to curve 'secp256k1' */
-public final class ECPublicKey {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        ECPublicKey.class,
-        codecs ->
-            new CustomTypeCodec<>(
-                TypeId.TYPE_CUSTOM_ECDSA_PUBLIC_KEY,
-                ECPublicKey::getCompressedBytes,
-                ECPublicKey::fromCompressedBytesUnchecked));
+public class REv2TransactionCreationTest {
+  private static final Logger log = LogManager.getLogger();
+
+  @Test
+  public void can_create_some_test_transactions() {
+    // This test is mostly used to create signed transactions for testing the Core API
+    var network = NetworkDefinition.LOCALNET;
+
+    var transaction0 = constructNewAccountTransactionRust(network);
+    log.info(
+        String.format(
+            "New Account Transaction Rust: %s", Bytes.toHexString(transaction0.getPayload())));
+
+    var transaction1 = REv2TestTransactions.constructNewAccountTransaction(network, 1);
+    log.info(
+        String.format(
+            "New Account Transaction Java: %s", Bytes.toHexString(transaction1.getPayload())));
+
+    var invalidTransaction = constructInvalidTransaction(network, 1);
+    log.info(
+        String.format(
+            "Not enough cost units Transaction: %s",
+            Bytes.toHexString(invalidTransaction.getPayload())));
   }
 
-  public static final int COMPRESSED_BYTES = 33; // 32 + header byte
-  public static final int UNCOMPRESSED_BYTES = 65; // 64 + header byte
+  public static RawTransaction constructNewAccountTransactionRust(
+      NetworkDefinition networkDefinition) {
 
-  private final ECPoint ecPoint;
-  private final Supplier<byte[]> uncompressedBytes;
-  private final Supplier<EUID> uid;
-  private final int hashCode;
-  private final byte[] compressed;
+    final var notary = REv2TestTransactions.DEFAULT_NOTARY;
 
-  private ECPublicKey(ECPoint ecPoint) {
-    this.ecPoint = Objects.requireNonNull(ecPoint);
-    this.uncompressedBytes = Suppliers.memoize(() -> this.ecPoint.getEncoded(false));
-    this.compressed = this.ecPoint.getEncoded(true);
-    this.uid = Suppliers.memoize(this::computeUID);
-    this.hashCode = computeHashCode();
+    final var intentBytes =
+        TransactionBuilder.buildNewAccountIntent(
+            networkDefinition, notary.getPublicKey().toPublicKey());
+
+    return REv2TestTransactions.constructTransaction(intentBytes, notary, List.of());
   }
 
-  private int computeHashCode() {
-    return Arrays.hashCode(compressed);
-  }
+  public static RawTransaction constructInvalidTransaction(
+      NetworkDefinition networkDefinition, long nonce) {
 
-  public static ECPublicKey fromEcPoint(ECPoint ecPoint) {
-    return new ECPublicKey(ecPoint);
-  }
+    final var notary = REv2TestTransactions.DEFAULT_NOTARY;
+    final var manifest = REv2TestTransactions.constructNewAccountManifest(networkDefinition);
+    final var signatories = List.<ECKeyPair>of();
 
-  @JsonCreator
-  public static ECPublicKey fromBytes(byte[] key) throws PublicKeyException {
-    ECKeyUtils.validatePublic(key);
-    return new ECPublicKey(ECKeyUtils.spec().getCurve().decodePoint(key));
-  }
+    final var insufficientLimit = UInt32.fromNonNegativeInt(1000);
 
-  @JsonCreator
-  public static ECPublicKey fromHex(String hex) throws PublicKeyException {
-    return fromBytes(Bytes.fromHexString(hex));
-  }
+    final var header =
+        TransactionHeader.defaults(
+            networkDefinition, nonce, notary.getPublicKey().toPublicKey(), insufficientLimit, true);
 
-  public static Optional<ECPublicKey> recoverFrom(HashCode hash, ECDSASignature signature) {
-    return ECKeyUtils.recoverFromSignature(signature, hash.asBytes()).map(ECPublicKey::new);
-  }
-
-  public EUID euid() {
-    return uid.get();
-  }
-
-  public ECPoint getEcPoint() {
-    return ecPoint;
-  }
-
-  @JsonProperty("publicKey")
-  @DsonOutput(DsonOutput.Output.ALL)
-  public byte[] getBytes() {
-    return uncompressedBytes.get();
-  }
-
-  public byte[] getCompressedBytes() {
-    return compressed;
-  }
-
-  private static ECPublicKey fromCompressedBytesUnchecked(byte[] key) {
-    return new ECPublicKey(ECKeyUtils.spec().getCurve().decodePoint(key));
-  }
-
-  public boolean verify(HashCode hash, ECDSASignature signature) {
-    return verify(hash.asBytes(), signature);
-  }
-
-  public boolean verify(byte[] hash, ECDSASignature signature) {
-    return signature != null && ECKeyUtils.keyHandler.verify(hash, signature, ecPoint);
-  }
-
-  public String toHex() {
-    return Bytes.toHexString(getCompressedBytes());
-  }
-
-  @Override
-  public int hashCode() {
-    return this.hashCode;
-  }
-
-  @Override
-  public boolean equals(Object object) {
-    if (object == this) {
-      return true;
-    }
-    if (object instanceof ECPublicKey) {
-      final var that = (ECPublicKey) object;
-      return Arrays.equals(this.compressed, that.compressed);
-    }
-    return false;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s[%s]", getClass().getSimpleName(), toHex());
-  }
-
-  private EUID computeUID() {
-    return EUID.sha256(getCompressedBytes());
+    return REv2TestTransactions.constructTransaction(
+        networkDefinition, header, manifest, REv2TestTransactions.DEFAULT_NOTARY, signatories);
   }
 }

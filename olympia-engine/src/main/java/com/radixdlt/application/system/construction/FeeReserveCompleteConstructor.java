@@ -67,7 +67,7 @@ package com.radixdlt.application.system.construction;
 import static com.radixdlt.substate.TxAction.*;
 
 import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.substate.ActionConstructor;
 import com.radixdlt.substate.TxBuilder;
 import com.radixdlt.substate.TxBuilderException;
@@ -145,7 +145,7 @@ public class FeeReserveCompleteConstructor implements ActionConstructor<FeeReser
     returnSubstateSize += 2; // Substate size
     returnSubstateSize++; // Substate typeId
     returnSubstateSize++; // Reserved
-    returnSubstateSize += ECPublicKey.COMPRESSED_BYTES + 1; // PubKey addr
+    returnSubstateSize += ECDSASecp256k1PublicKey.COMPRESSED_BYTES + 1; // PubKey addr
     returnSubstateSize++; // Native token addr
     returnSubstateSize += UInt256.BYTES; // amount
     return returnSubstateSize;

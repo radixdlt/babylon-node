@@ -83,8 +83,8 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.simulation.NodeNetworkMessagesModule;
@@ -113,7 +113,7 @@ public class SimulationNodes {
   private final ImmutableList<ECKeyPair> initialNodes;
   private final SimulationNetwork underlyingNetwork;
   private final Module baseModule;
-  private final ImmutableMultimap<ECPublicKey, Module> overrideModules;
+  private final ImmutableMultimap<ECDSASecp256k1PublicKey, Module> overrideModules;
 
   /**
    * Create a BFT test network with an underlying simulated network.
@@ -125,7 +125,7 @@ public class SimulationNodes {
       ImmutableList<ECKeyPair> initialNodes,
       SimulationNetwork underlyingNetwork,
       Module baseModule,
-      ImmutableMultimap<ECPublicKey, Module> overrideModules) {
+      ImmutableMultimap<ECDSASecp256k1PublicKey, Module> overrideModules) {
     this.initialNodes = initialNodes;
     this.baseModule = baseModule;
     this.overrideModules = overrideModules;
@@ -144,7 +144,7 @@ public class SimulationNodes {
 
               @Provides
               @Self
-              private ECPublicKey key() {
+              private ECDSASecp256k1PublicKey key() {
                 return self.getPublicKey();
               }
 

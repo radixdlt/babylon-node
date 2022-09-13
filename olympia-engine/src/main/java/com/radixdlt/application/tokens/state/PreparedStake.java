@@ -68,7 +68,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
@@ -76,7 +76,7 @@ import com.radixdlt.utils.UInt256;
  * A substate which represents an amount of staked fungible tokens owned by some key owner, stored
  * in an account and staked to a delegate address.
  */
-public record PreparedStake(UInt256 amount, REAddr owner, ECPublicKey delegateKey)
+public record PreparedStake(UInt256 amount, REAddr owner, ECDSASecp256k1PublicKey delegateKey)
     implements ResourceInBucket {
   public PreparedStake {
     requireNonNull(delegateKey);

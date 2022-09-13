@@ -67,7 +67,7 @@ package com.radixdlt.addressing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.exceptions.Bech32DecodeException;
 import com.radixdlt.networks.Network;
@@ -97,7 +97,8 @@ public class AddressingTest {
   public void can_encode_and_decode_a_node_address()
       throws PublicKeyException, DeserializeException {
     var pubKey =
-        ECPublicKey.fromHex("0236856ea9fa8c243e45fc94ec27c29cf3f17e3a9e19a410ee4a41f4858e379918");
+        ECDSASecp256k1PublicKey.fromHex(
+            "0236856ea9fa8c243e45fc94ec27c29cf3f17e3a9e19a410ee4a41f4858e379918");
     var address = Addressing.ofNetwork(Network.INTEGRATIONTESTNET).encodeNodeAddress(pubKey);
     var decoded = Addressing.ofNetwork(Network.INTEGRATIONTESTNET).decodeNodeAddress(address);
 
@@ -109,7 +110,8 @@ public class AddressingTest {
       throws PublicKeyException, DeserializeException {
     var address = "node_tdx_21_1qfk895krd3l8t8z7z7p9sxpjdszpal24f6y2sjtqe7mdkhdele5az658ak2";
     var expected =
-        ECPublicKey.fromHex("026c72d2c36c7e759c5e17825818326c041efd554e88a84960cfb6db5db9fe69d1");
+        ECDSASecp256k1PublicKey.fromHex(
+            "026c72d2c36c7e759c5e17825818326c041efd554e88a84960cfb6db5db9fe69d1");
     var decoded = Addressing.ofNetwork(Network.ENKINET).decodeNodeAddress(address);
 
     assertThat(decoded).isEqualTo(expected);

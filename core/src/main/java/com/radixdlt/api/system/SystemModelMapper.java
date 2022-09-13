@@ -83,7 +83,7 @@ import com.radixdlt.api.system.generated.models.Peer;
 import com.radixdlt.api.system.generated.models.PeerChannel;
 import com.radixdlt.api.system.generated.models.SyncConfiguration;
 import com.radixdlt.api.system.generated.models.SyncMetrics;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.p2p.P2PConfig;
 import com.radixdlt.p2p.PeersView;
@@ -102,7 +102,8 @@ public final class SystemModelMapper {
     this.addressing = addressing;
   }
 
-  public NetworkingConfiguration networkingConfiguration(ECPublicKey self, P2PConfig config) {
+  public NetworkingConfiguration networkingConfiguration(
+      ECDSASecp256k1PublicKey self, P2PConfig config) {
     return new NetworkingConfiguration()
         .defaultPort(config.defaultPort())
         .discoveryInterval(config.discoveryInterval())

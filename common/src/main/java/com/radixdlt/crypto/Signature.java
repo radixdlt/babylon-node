@@ -62,30 +62,31 @@
  * permissions under this License.
  */
 
-package com.radixdlt.serialization;
+package com.radixdlt.crypto;
 
-import com.radixdlt.TestSetupUtils;
-import com.radixdlt.crypto.ECDSASignature;
-import java.math.BigInteger;
-import java.util.Random;
-import java.util.function.Supplier;
-import org.junit.BeforeClass;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.EnumEntry;
 
-/** JSON Serialization round trip of {@link ECDSASignature} */
-public class ECDSASignatureSerializationTest extends SerializeObjectEngine<ECDSASignature> {
-
-  public ECDSASignatureSerializationTest() {
-    super(ECDSASignature.class, ECDSASignatureSerializationTest::getECDSASignature);
+public sealed interface Signature {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        Signature.class,
+        (codecs) ->
+            EnumCodec.fromEntries(
+                EnumEntry.with(
+                    Ecdsa.class,
+                    Ecdsa::new,
+                    codecs.of(ECDSASecp256k1Signature.class),
+                    (t, encoder) -> encoder.encode(t.sig)),
+                EnumEntry.with(
+                    Ed25519.class,
+                    Ed25519::new,
+                    codecs.of(EdDSAEd25519Signature.class),
+                    (t, encoder) -> encoder.encode(t.sig))));
   }
 
-  @BeforeClass
-  public static void startRadixTest() {
-    TestSetupUtils.installBouncyCastleProvider();
-  }
+  record Ecdsa(ECDSASecp256k1Signature sig) implements Signature {}
 
-  private static ECDSASignature getECDSASignature() {
-    Supplier<BigInteger> randomBigInt = () -> BigInteger.valueOf(new Random().nextLong());
-    return ECDSASignature.create(
-        randomBigInt.get(), randomBigInt.get(), randomBigInt.get().signum());
-  }
+  record Ed25519(EdDSAEd25519Signature sig) implements Signature {}
 }

@@ -82,7 +82,7 @@ import com.radixdlt.application.validators.state.ValidatorFeeCopy;
 import com.radixdlt.application.validators.state.ValidatorOwnerCopy;
 import com.radixdlt.application.validators.state.ValidatorRegisteredCopy;
 import com.radixdlt.constraintmachine.SubstateIndex;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.substate.*;
 import com.radixdlt.utils.KeyComparator;
@@ -101,8 +101,8 @@ public record NextEpochConstructorV3(
 
   private static ValidatorScratchPad loadValidatorStakeData(
       TxBuilder txBuilder,
-      ECPublicKey k,
-      TreeMap<ECPublicKey, ValidatorScratchPad> validatorsToUpdate)
+      ECDSASecp256k1PublicKey k,
+      TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> validatorsToUpdate)
       throws TxBuilderException {
     var scratchPad = validatorsToUpdate.get(k);
     if (scratchPad == null) {
@@ -116,14 +116,14 @@ public record NextEpochConstructorV3(
 
   private static <T extends ValidatorData, U extends ValidatorData> void prepare(
       TxBuilder txBuilder,
-      TreeMap<ECPublicKey, ValidatorScratchPad> validatorsToUpdate,
+      TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> validatorsToUpdate,
       Class<T> preparedClass,
       byte typeId,
       long epoch,
       BiConsumer<ValidatorScratchPad, T> updater,
       Function<T, U> copy)
       throws TxBuilderException {
-    var preparing = new TreeMap<ECPublicKey, T>(KeyComparator.instance());
+    var preparing = new TreeMap<ECDSASecp256k1PublicKey, T>(KeyComparator.instance());
     var buf = ByteBuffer.allocate(3 + Long.BYTES);
     buf.put(typeId);
     buf.put((byte) 0); // Reserved byte
@@ -172,18 +172,18 @@ public record NextEpochConstructorV3(
     }
 
     var validatorsToUpdate =
-        new TreeMap<ECPublicKey, ValidatorScratchPad>(KeyComparator.instance());
+        new TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad>(KeyComparator.instance());
     var validatorBFTData =
         txBuilder.shutdownAll(
             ValidatorBFTData.class,
             i -> {
-              final TreeMap<ECPublicKey, ValidatorBFTData> bftData =
+              final TreeMap<ECDSASecp256k1PublicKey, ValidatorBFTData> bftData =
                   new TreeMap<>(KeyComparator.instance());
               i.forEachRemaining(e -> bftData.put(e.validatorKey(), e));
               return bftData;
             });
     var preparingStake =
-        new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(KeyComparator.instance());
+        new TreeMap<ECDSASecp256k1PublicKey, TreeMap<REAddr, UInt256>>(KeyComparator.instance());
     for (var e : validatorBFTData.entrySet()) {
       var k = e.getKey();
       var bftData = e.getValue();
@@ -229,7 +229,8 @@ public record NextEpochConstructorV3(
             PreparedUnstakeOwnership.class,
             i -> {
               var map =
-                  new TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>>(KeyComparator.instance());
+                  new TreeMap<ECDSASecp256k1PublicKey, TreeMap<REAddr, UInt256>>(
+                      KeyComparator.instance());
               i.forEachRemaining(
                   preparedStake ->
                       map.computeIfAbsent(

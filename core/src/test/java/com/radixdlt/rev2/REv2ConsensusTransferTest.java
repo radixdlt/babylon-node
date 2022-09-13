@@ -152,7 +152,7 @@ public final class REv2ConsensusTransferTest {
     var notary = TEST_KEY;
     var intentBytes =
         TransactionBuilder.buildNewAccountIntent(
-            NetworkDefinition.INT_TEST_NET, notary.getPublicKey());
+            NetworkDefinition.INT_TEST_NET, notary.getPublicKey().toPublicKey());
     return REv2TestTransactions.constructTransaction(intentBytes, notary, List.of(TEST_KEY));
   }
 

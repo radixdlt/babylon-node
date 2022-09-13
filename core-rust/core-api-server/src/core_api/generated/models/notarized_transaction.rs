@@ -13,26 +13,25 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NotarizedTransaction {
-    /// The hex-encoded double-SHA256 hash of the notarized transaction payload.
+    /// The hex-encoded double-SHA256 hash of the notarized transaction payload
     #[serde(rename = "hash")]
     pub hash: String,
-    /// The hex-encoded full notarized transaction payload.
+    /// The hex-encoded full notarized transaction payload
     #[serde(rename = "payload")]
     pub payload: String,
     #[serde(rename = "signed_intent")]
     pub signed_intent: Box<crate::core_api::generated::models::SignedTransactionIntent>,
-    /// The hex-encoded SBOR-encoded notary signature.
     #[serde(rename = "notary_signature")]
-    pub notary_signature: String,
+    pub notary_signature: Option<crate::core_api::generated::models::Signature>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl NotarizedTransaction {
-    pub fn new(hash: String, payload: String, signed_intent: crate::core_api::generated::models::SignedTransactionIntent, notary_signature: String) -> NotarizedTransaction {
+    pub fn new(hash: String, payload: String, signed_intent: crate::core_api::generated::models::SignedTransactionIntent, notary_signature: crate::core_api::generated::models::Signature) -> NotarizedTransaction {
         NotarizedTransaction {
             hash,
             payload,
             signed_intent: Box::new(signed_intent),
-            notary_signature,
+            notary_signature: Option::Some(notary_signature),
         }
     }
 }

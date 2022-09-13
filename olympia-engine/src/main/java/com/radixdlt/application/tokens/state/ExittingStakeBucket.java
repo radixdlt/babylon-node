@@ -67,16 +67,17 @@ package com.radixdlt.application.tokens.state;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import java.util.Objects;
 
 public final class ExittingStakeBucket implements Bucket {
   private final REAddr owner;
-  private final ECPublicKey delegateKey;
+  private final ECDSASecp256k1PublicKey delegateKey;
   private final Long epochUnlocked;
 
-  public ExittingStakeBucket(REAddr owner, ECPublicKey delegateKey, Long epochUnlocked) {
+  public ExittingStakeBucket(
+      REAddr owner, ECDSASecp256k1PublicKey delegateKey, Long epochUnlocked) {
     this.owner = owner;
     this.delegateKey = delegateKey;
     this.epochUnlocked = epochUnlocked;
@@ -98,7 +99,7 @@ public final class ExittingStakeBucket implements Bucket {
   }
 
   @Override
-  public ECPublicKey getValidatorKey() {
+  public ECDSASecp256k1PublicKey getValidatorKey() {
     return delegateKey;
   }
 

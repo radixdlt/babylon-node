@@ -62,21 +62,19 @@
  * permissions under this License.
  */
 
-use scrypto::prelude::{
-    args, AccessRule, EcdsaPublicKey, EcdsaSignature, MintParams, Mutability, NetworkDefinition,
-    ResourceMethodAuthKey, RADIX_TOKEN, SYS_FAUCET_COMPONENT, SYS_UTILS_PACKAGE,
-};
+use scrypto::prelude::*;
 use scrypto::resource::ResourceType;
 use std::collections::HashMap;
 use transaction::builder::ManifestBuilder;
-use transaction::manifest::{compile, CompileError};
+use transaction::manifest::{compile, CompileError, InMemoryBlobLoader};
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
+    TransactionManifest,
 };
 
 pub fn create_new_account_intent_bytes(
     network_definition: &NetworkDefinition,
-    public_key: EcdsaPublicKey,
+    public_key: PublicKey,
 ) -> Vec<u8> {
     let manifest = ManifestBuilder::new(network_definition)
         .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
@@ -106,7 +104,7 @@ pub fn create_new_account_intent_bytes(
 
 pub fn create_1mb_txn_intent(
     network_definition: NetworkDefinition,
-    public_key: EcdsaPublicKey,
+    public_key: PublicKey,
 ) -> Vec<u8> {
     let mut metadata = HashMap::new();
     let large_string = "s".repeat(1024 * 1024);
@@ -151,17 +149,31 @@ pub fn create_intent_bytes(
     network_definition: &NetworkDefinition,
     header: TransactionHeader,
     manifest_str: String,
+    blobs: HashMap<String, Vec<u8>>,
 ) -> Result<Vec<u8>, CompileError> {
-    let manifest = compile(&manifest_str, network_definition)?;
+    let manifest = create_manifest(network_definition, &manifest_str, blobs)?;
 
     let intent = TransactionIntent { header, manifest };
 
     Ok(intent.to_bytes())
 }
 
+pub fn create_manifest(
+    network_definition: &NetworkDefinition,
+    manifest_str: &str,
+    blobs: HashMap<String, Vec<u8>>,
+) -> Result<TransactionManifest, CompileError> {
+    let mut blob_loader = InMemoryBlobLoader::default();
+    blobs
+        .into_iter()
+        .for_each(|(name, blob)| blob_loader.insert(name, blob));
+
+    compile(manifest_str, network_definition, &blob_loader)
+}
+
 pub fn create_signed_intent_bytes(
     intent: TransactionIntent,
-    signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
+    signatures: Vec<SignatureWithPublicKey>,
 ) -> Vec<u8> {
     let signed_intent = SignedTransactionIntent {
         intent,
@@ -172,7 +184,7 @@ pub fn create_signed_intent_bytes(
 
 pub fn create_notarized_bytes(
     signed_intent: SignedTransactionIntent,
-    notary_signature: EcdsaSignature,
+    notary_signature: Signature,
 ) -> Vec<u8> {
     let notarized = NotarizedTransaction {
         signed_intent,

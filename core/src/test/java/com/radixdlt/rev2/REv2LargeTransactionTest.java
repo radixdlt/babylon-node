@@ -152,7 +152,8 @@ public final class REv2LargeTransactionTest {
 
   private static RawTransaction create1MBTransaction() {
     var intentBytes =
-        TransactionBuilder.build1MBIntent(NETWORK_DEFINITION, TEST_KEY.getPublicKey());
+        TransactionBuilder.build1MBIntent(
+            NETWORK_DEFINITION, TEST_KEY.getPublicKey().toPublicKey());
     return REv2TestTransactions.constructTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
   }
 

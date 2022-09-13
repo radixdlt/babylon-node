@@ -84,7 +84,8 @@ public final class REv2OneMBTransactionGenerator implements TransactionGenerator
   @Override
   public RawTransaction nextTransaction() {
     final ECKeyPair key = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
-    var intentBytes = TransactionBuilder.build1MBIntent(networkDefinition, key.getPublicKey());
+    var intentBytes =
+        TransactionBuilder.build1MBIntent(networkDefinition, key.getPublicKey().toPublicKey());
     return REv2TestTransactions.constructTransaction(intentBytes, key, List.of(key));
   }
 }

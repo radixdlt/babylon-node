@@ -62,7 +62,10 @@ pub(crate) fn server_error(code: i32, message: &str) -> RequestHandlingError {
 
 // TODO - Add logging, metrics and tracing for all of these errors - require the error is passed in here
 pub(crate) mod common_server_errors {
-    use crate::core_api::{errors::{server_error, RequestHandlingError}, MappingError};
+    use crate::core_api::{
+        errors::{server_error, RequestHandlingError},
+        MappingError,
+    };
 
     pub(crate) fn state_manager_lock_error() -> RequestHandlingError {
         server_error(500, "Internal server error: state manager lock")

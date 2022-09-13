@@ -64,7 +64,7 @@
 
 package com.radixdlt.rev2;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.PublicKey;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt32;
@@ -76,7 +76,7 @@ public record TransactionHeader(
     UInt64 startEpochInclusive,
     UInt64 endEpochExclusive,
     UInt64 nonce,
-    ECPublicKey notaryPublicKey,
+    PublicKey notaryPublicKey,
     boolean notaryAsSignatory,
     UInt32 costUnitLimit,
     UInt32 tipPercentage) {
@@ -92,7 +92,7 @@ public record TransactionHeader(
                 codecs.of(UInt64.class),
                 codecs.of(UInt64.class),
                 codecs.of(UInt64.class),
-                codecs.of(ECPublicKey.class),
+                codecs.of(PublicKey.class),
                 codecs.of(boolean.class),
                 codecs.of(UInt32.class),
                 codecs.of(UInt32.class),
@@ -112,7 +112,7 @@ public record TransactionHeader(
   public static TransactionHeader defaults(
       NetworkDefinition networkDefinition,
       long nonce,
-      ECPublicKey notary,
+      PublicKey notary,
       Boolean notaryIsSignatory) {
     return new TransactionHeader(
         (byte) 1, // Version
@@ -123,6 +123,25 @@ public record TransactionHeader(
         notary,
         notaryIsSignatory,
         UInt32.fromNonNegativeInt(100000000), // Max Cost Units
+        UInt32.fromNonNegativeInt(0) // Tip percentage
+        );
+  }
+
+  public static TransactionHeader defaults(
+      NetworkDefinition networkDefinition,
+      long nonce,
+      PublicKey notary,
+      UInt32 costUnitLimit,
+      Boolean notaryIsSignatory) {
+    return new TransactionHeader(
+        (byte) 1, // Version
+        networkDefinition.id(),
+        UInt64.fromNonNegativeLong(1), // From Epoch (inclusive)
+        UInt64.fromNonNegativeLong(100), // To Epoch (exclusive)
+        UInt64.fromNonNegativeLong(nonce), // Nonce
+        notary,
+        notaryIsSignatory,
+        costUnitLimit,
         UInt32.fromNonNegativeInt(0) // Tip percentage
         );
   }

@@ -19,11 +19,11 @@ pub struct SignedTransactionIntent {
     #[serde(rename = "intent")]
     pub intent: Box<crate::core_api::generated::models::TransactionIntent>,
     #[serde(rename = "intent_signatures")]
-    pub intent_signatures: Vec<crate::core_api::generated::models::IntentSignature>,
+    pub intent_signatures: Vec<crate::core_api::generated::models::SignatureWithPublicKey>,
 }
 
 impl SignedTransactionIntent {
-    pub fn new(hash: String, intent: crate::core_api::generated::models::TransactionIntent, intent_signatures: Vec<crate::core_api::generated::models::IntentSignature>) -> SignedTransactionIntent {
+    pub fn new(hash: String, intent: crate::core_api::generated::models::TransactionIntent, intent_signatures: Vec<crate::core_api::generated::models::SignatureWithPublicKey>) -> SignedTransactionIntent {
         SignedTransactionIntent {
             hash,
             intent: Box::new(intent),

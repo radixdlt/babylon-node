@@ -66,8 +66,7 @@ package com.radixdlt.sbor;
 
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.*;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.identifiers.TID;
 import com.radixdlt.mempool.MempoolError;
@@ -127,8 +126,13 @@ public final class StateManagerSbor {
     StateManagerRuntimeError.registerCodec(codecMap);
     MempoolError.registerCodec(codecMap);
     ExecutedTransaction.registerCodec(codecMap);
-    ECPublicKey.registerCodec(codecMap);
-    ECDSASignature.registerCodec(codecMap);
+    PublicKey.registerCodec(codecMap);
+    ECDSASecp256k1PublicKey.registerCodec(codecMap);
+    EdDSAEd25519PublicKey.registerCodec(codecMap);
+    Signature.registerCodec(codecMap);
+    ECDSASecp256k1Signature.registerCodec(codecMap);
+    EdDSAEd25519Signature.registerCodec(codecMap);
+    SignatureWithPublicKey.registerCodec(codecMap);
     PrepareRequest.registerCodec(codecMap);
     PrepareResult.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);

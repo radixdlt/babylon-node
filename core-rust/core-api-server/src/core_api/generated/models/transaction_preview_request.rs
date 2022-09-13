@@ -28,15 +28,15 @@ pub struct TransactionPreviewRequest {
     /// A decimal-string-encoded integer between 0 and 2^64-1, used to ensure the transaction intent is unique.
     #[serde(rename = "nonce")]
     pub nonce: String,
-    /// A list of public keys to be used as transaction signers, in a compressed format, hex encoded.
+    /// A list of public keys to be used as transaction signers
     #[serde(rename = "signer_public_keys")]
-    pub signer_public_keys: Vec<String>,
+    pub signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>,
     #[serde(rename = "flags")]
     pub flags: Box<crate::core_api::generated::models::TransactionPreviewRequestFlags>,
 }
 
 impl TransactionPreviewRequest {
-    pub fn new(network: String, manifest: String, cost_unit_limit: i64, tip_percentage: i64, nonce: String, signer_public_keys: Vec<String>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
+    pub fn new(network: String, manifest: String, cost_unit_limit: i64, tip_percentage: i64, nonce: String, signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
         TransactionPreviewRequest {
             network,
             manifest,

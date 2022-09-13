@@ -68,7 +68,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.utils.UInt256;
 import java.util.HashMap;
 import java.util.Map;
@@ -128,7 +128,7 @@ public final class ValidationState {
    * @param signature The signature to verify
    * @return whether the key was added or not
    */
-  public boolean addSignature(BFTNode node, long timestamp, ECDSASignature signature) {
+  public boolean addSignature(BFTNode node, long timestamp, ECDSASecp256k1Signature signature) {
     if (validatorSet.containsNode(node) && !this.signedNodes.containsKey(node)) {
       this.signedNodes.computeIfAbsent(
           node,
