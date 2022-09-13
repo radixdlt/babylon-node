@@ -67,13 +67,13 @@ def generate_models(spec_file, tmp_client_folder, out_location):
     shutil.copytree(rust_models, out_models)
     create_file(os.path.join(out_location, 'mod.rs'), "pub mod models;")
     
-    def fix_key_type(file_path, tag_name):
-        # Fix bug that discriminator tags are stripped and lower cased
+    def fix_broken_discriminator_tag(file_path, tag_name):
+        # Fix bug that discriminator tags are incorrectly stripped and lower cased
         broken_tag_name = re.sub(r'[^A-Za-z0-9]+', "", tag_name.lower())
         replace_in_file(file_path, 'tag = "' + broken_tag_name +'"', 'tag = "' + tag_name + '"')
 
-    def fix_enum_default(file_path, type_name):
-        # Fix bug that enums don't implement Default... So replace their references with Options
+    def fix_for_enum_not_implementing_default(file_path, type_name):
+        # Fix bug that enums don't implement Default... So replace their Boxes with Options
         regex_pattern = 'pub ([^: ]+): Box<crate::core_api::generated::models::' + type_name + '>'
         field_names = find_in_file_multiline(file_path, re.compile(regex_pattern))
         if len(field_names) == 0:
@@ -85,41 +85,20 @@ def generate_models(spec_file, tmp_client_folder, out_location):
     file_names = [file_name for file_name in os.listdir(out_models) if os.path.isfile(os.path.join(out_models, file_name))]
     for file_name in file_names:
         file_path = os.path.join(out_models, file_name)
+        # Fix changes due to putting generated files directly into the crate
         replace_in_file(file_path, 'crate::', 'crate::core_api::generated::')
         replace_in_file(file_path, ', Serialize, Deserialize', ', serde::Serialize, serde::Deserialize')
-        fix_key_type(file_path, "substate_type")
-        fix_key_type(file_path, "resource_type")
-        fix_key_type(file_path, "key_type")
-        fix_enum_default(file_path, "Substate")
-        fix_enum_default(file_path, "ResourceAmount")
-        fix_enum_default(file_path, "Signature")
-        fix_enum_default(file_path, "PublicKey")
-        fix_enum_default(file_path, "SignatureWithPublicKey")
-
-
-    # Fix bugs in generation:
-    # up_substate_file = os.path.join(out_models, "up_substate.rs")
-    # vault_substate_file = os.path.join(out_models, "vault_substate.rs")
-    # vault_substate_all_of_file = os.path.join(out_models, "vault_substate_all_of.rs")
-    
-    # Fix bug that discriminator tags are stripped and lower cased
-    # replace_in_file(os.path.join(out_models, "substate.rs"), 'tag = "substatetype"', 'tag = "substate_type"')
-    # replace_in_file(os.path.join(out_models, "resource_amount.rs"), 'tag = "resourcetype"', 'tag = "resource_type"')
-    # replace_in_file(os.path.join(out_models, "public_key.rs"), 'tag = "keytype"', 'tag = "key_type"')
-    # replace_in_file(os.path.join(out_models, "signature.rs"), 'tag = "keytype"', 'tag = "key_type"')
-    # replace_in_file(os.path.join(out_models, "signature_with_public_key.rs"), 'tag = "keytype"', 'tag = "key_type"')
-
-    # Fix bug that enums don't implement Default... So replace their references with Options
-    # replace_in_file(os.path.join(out_models, "up_substate.rs"), 'Box<crate::core_api::generated::models::Substate>,', 'Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use')
-    # replace_in_file(os.path.join(out_models, "up_substate.rs"), 'substate_data: Box::new(substate_data)', 'substate_data: Option::Some(substate_data)')
-    
-    # replace_in_file(os.path.join(out_models, "vault_substate.rs"), 'Box<crate::core_api::generated::models::ResourceAmount>,', 'Option<crate::core_api::generated::models::ResourceAmount>, // Using Option permits Default trait; Will always be Some in normal use')
-    # replace_in_file(os.path.join(out_models, "vault_substate.rs"), 'resource_amount: Box::new(resource_amount)', 'resource_amount: Option::Some(resource_amount)')
-    # replace_in_file(os.path.join(out_models, "vault_substate_all_of.rs"), 'Box<crate::core_api::generated::models::ResourceAmount>,', 'Option<crate::core_api::generated::models::ResourceAmount>, // Using Option permits Default trait; Will always be Some in normal use')
-    # replace_in_file(os.path.join(out_models, "vault_substate_all_of.rs"), 'resource_amount: Box::new(resource_amount)', 'resource_amount: Option::Some(resource_amount)')
+        # Fix bugs in the OAS generation:
+        fix_broken_discriminator_tag(file_path, "substate_type")
+        fix_broken_discriminator_tag(file_path, "resource_type")
+        fix_broken_discriminator_tag(file_path, "key_type")
+        fix_for_enum_not_implementing_default(file_path, "Substate")
+        fix_for_enum_not_implementing_default(file_path, "ResourceAmount")
+        fix_for_enum_not_implementing_default(file_path, "Signature")
+        fix_for_enum_not_implementing_default(file_path, "PublicKey")
+        fix_for_enum_not_implementing_default(file_path, "SignatureWithPublicKey")
 
     logging.info("Successfully fixed up.")
-
 
 if __name__ == "__main__":
     logger.info('Will generate models from the API specifications')
@@ -153,4 +132,4 @@ if __name__ == "__main__":
     logging.info("Code has been created.")
 
     # clean up
-    # safe_os_remove(OPENAPI_TEMP_GENERATION_FOLDER, silent=True)
+    safe_os_remove(OPENAPI_TEMP_GENERATION_FOLDER, silent=True)
