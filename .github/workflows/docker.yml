@@ -107,7 +107,7 @@ jobs:
           tags: ${{ needs.build_deb.outputs.tags }}
           labels: ${{ needs.build_deb.outputs.labels }}
   trigger-ephemeral-deploy-and-test:
-    runs-on: latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Deploy and test on ephemeral network
         uses: toptal/jenkins-job-trigger-action@master
@@ -115,5 +115,5 @@ jobs:
           jenkins_url: "https://jenkins-preprod.radixdlt.com"
           jenkins_user: radixbot
           jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
-          job_name: "ephemeral-deployment-test/job/testing-ephemeral-deploy-test-destroy/"
+          job_name: "ephemeral-deployment-test/job/testing-ephemeral-deploy-test-destroy"
           job_timeout: "3600"
