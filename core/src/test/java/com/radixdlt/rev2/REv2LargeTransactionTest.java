@@ -151,9 +151,9 @@ public final class REv2LargeTransactionTest {
         });
   }
 
-  private static RawTransaction create1MBTransaction() {
+  private static RawTransaction create100KBTransaction() {
     var intentBytes =
-        TransactionBuilder.build1MBIntent(
+        TransactionBuilder.build100KBIntent(
             NETWORK_DEFINITION, TEST_KEY.getPublicKey().toPublicKey());
     return REv2TestTransactions.constructTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
   }
@@ -162,7 +162,7 @@ public final class REv2LargeTransactionTest {
   public void large_transaction_should_be_committable() throws Exception {
     // Arrange: Start single node network
     createInjector().injectMembers(this);
-    var newAccountTransaction = create1MBTransaction();
+    var newAccountTransaction = create100KBTransaction();
 
     // Act: Submit transaction to mempool and run consensus
     processor.start();

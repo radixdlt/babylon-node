@@ -83,16 +83,16 @@ public final class TransactionBuilder {
     System.loadLibrary("corerust");
   }
 
-  public static byte[] build1MBIntent(NetworkDefinition network, PublicKey publicKey) {
-    return build1MBIntentFunc.call(tuple(network, publicKey));
+  public static byte[] build100KBIntent(NetworkDefinition network, PublicKey publicKey) {
+    return build100KBIntentFunc.call(tuple(network, publicKey));
   }
 
   private static final NativeCalls.StaticFunc1<Tuple.Tuple2<NetworkDefinition, PublicKey>, byte[]>
-      build1MBIntentFunc =
+      build100KBIntentFunc =
           NativeCalls.StaticFunc1.with(
-              new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::build1MBIntent);
+              new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::build100KBIntent);
 
-  private static native byte[] build1MBIntent(byte[] requestPayload);
+  private static native byte[] build100KBIntent(byte[] requestPayload);
 
   public static byte[] compileManifest(
       NetworkDefinition network, String manifest, HashMap<String, byte[]> blobs) {

@@ -102,12 +102,12 @@ pub fn create_new_account_intent_bytes(
     intent.to_bytes()
 }
 
-pub fn create_1mb_txn_intent(
+pub fn create_100kb_txn_intent(
     network_definition: NetworkDefinition,
     public_key: PublicKey,
 ) -> Vec<u8> {
     let mut metadata = HashMap::new();
-    let large_string = "s".repeat(1024 * 1024);
+    let large_string = "s".repeat(1024 * 100);
     metadata.insert("key".to_string(), large_string);
     let access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> = HashMap::new();
     let initial_supply: Option<MintParams> = None;
