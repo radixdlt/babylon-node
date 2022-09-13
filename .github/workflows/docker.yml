@@ -115,5 +115,5 @@ jobs:
           jenkins_url: "https://jenkins-preprod.radixdlt.com"
           jenkins_user: radixbot
           jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
-          job_name: "ephemeral-deployment-test/job/testing-ephemeral-deploy-test-destroy"
+          job_name: "ephemeral deployment test/job/testing-ephemeral-deploy-test-destroy"
           job_timeout: "3600"
