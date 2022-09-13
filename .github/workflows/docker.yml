@@ -107,7 +107,12 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ needs.build_deb.outputs.tags }}
           labels: ${{ needs.build_deb.outputs.labels }}
+  deploy-and-test-on-ephemeral:
+    name: Deploy and Test on Ephemeral
+    runs-on: ubuntu-22.04
+    steps:
       - name: Deploy and test on ephemeral network
+        runs-on: ubuntu-22.04
         uses: toptal/jenkins-job-trigger-action@master
         with:
           jenkins_url: "https://jenkins-preprod.radixdlt.com"
@@ -116,6 +121,6 @@ jobs:
           job_name: "Development-Jobs/job/tmp-test-ephemeral"
           job_params: |
             {
-             "nodeDockerTag" : ${{ steps.build-and-push.outputs.imageid }}
+             
             }
           job_timeout: "3600"
