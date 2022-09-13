@@ -120,6 +120,6 @@ jobs:
           job_name: "ephemeral-deployment-test/job/testing-ephemeral-deploy-test-destroy"
           job_params: |
             {
-              "nodeDockerTag": "${{ needs.build_deb.outputs.tags[0] }}"
+              "nodeDockerTag": "${{ needs.build_deb.outputs.tags }}"
             }
           job_timeout: "3600"
