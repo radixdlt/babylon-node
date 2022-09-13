@@ -62,96 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.sbor;
+package com.radixdlt.statemanager;
 
-import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.crypto.*;
-import com.radixdlt.exceptions.StateManagerRuntimeError;
-import com.radixdlt.identifiers.TID;
-import com.radixdlt.mempool.MempoolError;
-import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.rev2.*;
-import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.statecomputer.commit.CommitRequest;
-import com.radixdlt.statecomputer.commit.PrepareRequest;
-import com.radixdlt.statecomputer.commit.PrepareResult;
-import com.radixdlt.statemanager.*;
-import com.radixdlt.transaction.ExecutedTransaction;
-import com.radixdlt.transactions.RawTransaction;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
 
-public final class StateManagerSbor {
-  private static final Sbor sbor = createSborForStateManager();
-
-  private static Sbor createSborForStateManager() {
-    return new Sbor(
-        true,
-        new CodecMap()
-            .register(StateManagerSbor::registerCodecsWithCodecMap)
-            .register(StateManagerSbor::registerCodecsForExistingTypes));
-  }
-
-  public static <T> byte[] encode(T value, Codec<T> codec) {
-    return sbor.encode(value, codec);
-  }
-
-  public static <T> T decode(byte[] sborBytes, Codec<T> codec) {
-    return sbor.decode(sborBytes, codec);
-  }
-
-  public static <T> Codec<T> resolveCodec(TypeToken<T> typeToken) {
-    return sbor.resolveCodec(typeToken);
-  }
-
-  public static void registerCodecsWithCodecMap(CodecMap codecMap) {
-    UInt32.registerCodec(codecMap);
-    UInt64.registerCodec(codecMap);
-    RustMempoolConfig.registerCodec(codecMap);
-    NetworkDefinition.registerCodec(codecMap);
-    LoggingConfig.registerCodec(codecMap);
-    StateManagerLoggingConfig.registerCodec(codecMap);
-    StateManagerConfig.registerCodec(codecMap);
-    RawTransaction.registerCodec(codecMap);
-    TransactionStatus.registerCodec(codecMap);
-    Decimal.registerCodec(codecMap);
-    LogLevel.registerCodec(codecMap);
-    ComponentAddress.registerCodec(codecMap);
-    PackageAddress.registerCodec(codecMap);
-    ResourceAddress.registerCodec(codecMap);
-    TID.registerCodec(codecMap);
-    StateManagerRuntimeError.registerCodec(codecMap);
-    MempoolError.registerCodec(codecMap);
-    ExecutedTransaction.registerCodec(codecMap);
-    PublicKey.registerCodec(codecMap);
-    ECDSASecp256k1PublicKey.registerCodec(codecMap);
-    EdDSAEd25519PublicKey.registerCodec(codecMap);
-    Signature.registerCodec(codecMap);
-    ECDSASecp256k1Signature.registerCodec(codecMap);
-    EdDSAEd25519Signature.registerCodec(codecMap);
-    SignatureWithPublicKey.registerCodec(codecMap);
-    PrepareRequest.registerCodec(codecMap);
-    PrepareResult.registerCodec(codecMap);
-    CommitRequest.registerCodec(codecMap);
-    REv2DatabaseConfig.registerCodec(codecMap);
-    TransactionHeader.registerCodec(codecMap);
-    CoreApiServerConfig.registerCodec(codecMap);
-  }
-
-  public static void registerCodecsForExistingTypes(CodecMap codecMap) {
-    registerCodecForHashCode(codecMap);
-  }
-
-  public static void registerCodecForHashCode(CodecMap codecMap) {
+public record StateManagerLoggingConfig(boolean logOnTransactionRejection) {
+  public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        HashCode.class,
+        StateManagerLoggingConfig.class,
         codecs ->
             StructCodec.with(
-                HashCode::fromBytes,
-                codecs.of(byte[].class),
-                (t, encoder) -> encoder.encode(t.asBytes())));
+                StateManagerLoggingConfig::new,
+                codecs.of(new TypeToken<>() {}),
+                (s, encoder) -> encoder.encode(s.logOnTransactionRejection)));
+  }
+
+  public static StateManagerLoggingConfig getDefault() {
+    return new StateManagerLoggingConfig(false);
+  }
+
+  public static StateManagerLoggingConfig getDebug() {
+    return new StateManagerLoggingConfig(true);
   }
 }

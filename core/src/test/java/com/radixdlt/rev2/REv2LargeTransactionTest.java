@@ -135,7 +135,8 @@ public final class REv2LargeTransactionTest {
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
                     new REv2DatabaseConfig.RocksDB(folder.getRoot().getAbsolutePath()),
-                    REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))),
+                    REV2ProposerConfig.mempool(1, MempoolRelayConfig.of()),
+                    true))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),
         new DeterministicEnvironmentModule(

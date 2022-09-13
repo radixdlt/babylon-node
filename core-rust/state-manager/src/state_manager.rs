@@ -94,6 +94,18 @@ struct OwnedValidationConfig {
     pub min_tip_percentage: u32,
 }
 
+#[derive(Debug, TypeId, Encode, Decode, Clone)]
+pub struct LoggingConfig {
+    pub engine_trace: bool,
+    pub state_manager_config: StateManagerLoggingConfig,
+}
+
+// TODO: Replace this with better loglevel integration
+#[derive(Debug, TypeId, Encode, Decode, Clone)]
+pub struct StateManagerLoggingConfig {
+    pub log_on_transaction_rejection: bool,
+}
+
 pub struct StateManager<M: Mempool, S> {
     pub mempool: M,
     pub network: NetworkDefinition,
@@ -104,10 +116,16 @@ pub struct StateManager<M: Mempool, S> {
     execution_config: ExecutionConfig,
     fee_reserve_config: FeeReserveConfig,
     intent_hash_manager: TestIntentHashManager,
+    logging_config: StateManagerLoggingConfig,
 }
 
 impl<M: Mempool, S> StateManager<M, S> {
-    pub fn new(network: NetworkDefinition, mempool: M, store: S) -> StateManager<M, S> {
+    pub fn new(
+        network: NetworkDefinition,
+        mempool: M,
+        store: S,
+        logging_config: LoggingConfig,
+    ) -> StateManager<M, S> {
         StateManager {
             network,
             mempool,
@@ -122,13 +140,14 @@ impl<M: Mempool, S> StateManager<M, S> {
             execution_config: ExecutionConfig {
                 max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                 is_system: false,
-                trace: false,
+                trace: logging_config.engine_trace,
             },
             fee_reserve_config: FeeReserveConfig {
                 cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                 system_loan: DEFAULT_SYSTEM_LOAN,
             },
             intent_hash_manager: TestIntentHashManager::new(),
+            logging_config: logging_config.state_manager_config,
         }
     }
 
@@ -266,11 +285,17 @@ where
                         TransactionResult::Commit(..) => non_rejected_txns.push(proposed),
                         TransactionResult::Reject(reject_result) => {
                             rejected_txns.insert(proposed, format!("{:?}", reject_result));
+                            if self.logging_config.log_on_transaction_rejection {
+                                println!("TXN REJECTED: {:?}", reject_result);
+                            }
                         }
                     }
                 }
                 Err(validation_error) => {
                     rejected_txns.insert(proposed, format!("{:?}", validation_error));
+                    if self.logging_config.log_on_transaction_rejection {
+                        println!("TXN INVALID: {:?}", validation_error);
+                    }
                 }
             }
         }
