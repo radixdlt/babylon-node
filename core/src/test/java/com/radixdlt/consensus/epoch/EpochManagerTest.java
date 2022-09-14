@@ -205,6 +205,8 @@ public class EpochManagerTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
             .toInstance(rmock(EventDispatcher.class));
+        bind(new TypeLiteral<EventDispatcher<DoubleVote>>() {})
+            .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<GetVerticesRequest>>() {})

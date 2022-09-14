@@ -68,11 +68,8 @@ import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ClassToInstanceMap;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
+import com.google.inject.*;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.application.system.FeeTable;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.LedgerProof;
@@ -94,22 +91,36 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.keys.InMemoryBFTKeyModule;
+import com.radixdlt.logger.EventLoggerConfig;
+import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.MempoolRelayTrigger;
 import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.PersistedNodeForTestingModule;
+import com.radixdlt.modules.CryptoModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
 import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
+import com.radixdlt.rev1.modules.REv1PersistenceModule;
+import com.radixdlt.rev1.modules.RadixEngineStoreModule;
 import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.sync.messages.local.SyncCheckTrigger;
+import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Collection;
 import java.util.List;
@@ -206,12 +217,24 @@ public class REv1RecoveryTest {
           @Override
           protected void configure() {
             bind(Environment.class).toInstance(network.createSender(BFTNode.create(self.getKey())));
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
+            bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+            bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+            var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
+            bind(Addressing.class).toInstance(addressing);
+            install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
           }
         },
-        PersistedNodeForTestingModule.rev1(ecKeyPair, 10),
+        new InMemoryBFTKeyModule(ecKeyPair),
+        new CryptoModule(),
+        new RadixEngineStoreModule(),
+        new REv1PersistenceModule(),
+        new FunctionalRadixNodeModule(
+            true,
+            SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+            ConsensusConfig.of(200, 1000L, 2.0),
+            LedgerConfig.stateComputerWithSyncRelay(
+                StateComputerConfig.rev1(10),
+                new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE))),
         new TestP2PModule.Builder().build(),
         new TestMessagingModule.Builder().build());
   }

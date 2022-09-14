@@ -189,7 +189,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
     // TODO: what if insertUpdate occurs before roundUpdate
     final BFTNode nextLeader = this.latestRoundUpdate.getNextLeader();
     final Optional<Vote> maybeVote =
-        this.safetyRules.voteFor(
+        this.safetyRules.createVote(
             update.getInserted().getVertex(),
             update.getHeader(),
             update.getInserted().getTimeOfExecution(),

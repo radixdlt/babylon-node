@@ -80,4 +80,12 @@ public class NodePredicate {
             .map(p -> p.getStateVersion() == stateVersion)
             .orElse(false);
   }
+
+  public static Predicate<Injector> atOrOverStateVersion(long stateVersion) {
+    return i ->
+        i.getInstance(TransactionsAndProofReader.class)
+            .getLastProof()
+            .map(p -> p.getStateVersion() >= stateVersion)
+            .orElse(false);
+  }
 }

@@ -128,7 +128,7 @@ public class SafetyRulesTest {
     var vertex = mock(VertexWithHash.class);
     when(vertex.getRound()).thenReturn(round);
 
-    assertThat(this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
+    assertThat(this.safetyRules.createVote(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
         .isEmpty();
   }
 
@@ -161,7 +161,7 @@ public class SafetyRulesTest {
     when(parent.getRound()).thenReturn(Round.of(0));
     when(vertex.getParentHeader()).thenReturn(parent);
 
-    assertThat(safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
+    assertThat(safetyRules.createVote(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
         .isEmpty();
   }
 
@@ -182,7 +182,7 @@ public class SafetyRulesTest {
     when(grandParent.getRound()).thenReturn(mock(Round.class));
     when(vertex.getGrandParentHeader()).thenReturn(grandParent);
     BFTHeader header = mock(BFTHeader.class);
-    Optional<Vote> voteMaybe = safetyRules.voteFor(vertex, header, 1L, mock(HighQC.class));
+    Optional<Vote> voteMaybe = safetyRules.createVote(vertex, header, 1L, mock(HighQC.class));
     assertThat(voteMaybe).isNotEmpty();
     Vote vote = voteMaybe.get();
     assertThat(vote.getVoteData().getProposed()).isEqualTo(header);
@@ -207,7 +207,7 @@ public class SafetyRulesTest {
     when(grandParent.getRound()).thenReturn(mock(Round.class));
     when(proposal.getGrandParentHeader()).thenReturn(grandParent);
     Optional<Vote> voteMaybe =
-        safetyRules.voteFor(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
+        safetyRules.createVote(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
     assertThat(voteMaybe).isNotEmpty();
     Vote vote = voteMaybe.get();
     assertThat(vote.getVoteData().getCommitted()).isEmpty();
@@ -232,7 +232,7 @@ public class SafetyRulesTest {
     when(proposal.getRound()).thenReturn(Round.of(3));
 
     Optional<Vote> voteMaybe =
-        safetyRules.voteFor(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
+        safetyRules.createVote(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
     assertThat(voteMaybe).isNotEmpty();
     Vote vote = voteMaybe.get();
     assertThat(vote.getVoteData().getCommitted()).hasValue(grandparentHeader);
@@ -258,7 +258,7 @@ public class SafetyRulesTest {
     when(proposal.getGrandParentHeader()).thenReturn(grandParent);
 
     Optional<Vote> voteMaybe =
-        safetyRules.voteFor(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
+        safetyRules.createVote(proposal, mock(BFTHeader.class), 1L, mock(HighQC.class));
     assertThat(voteMaybe).isNotEmpty();
     Vote vote = voteMaybe.get();
     assertThat(vote.getVoteData().getCommitted()).isEmpty();

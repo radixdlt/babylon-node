@@ -67,9 +67,13 @@ package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledge
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.invariants.DeterministicConsensusMonitors;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
@@ -90,11 +94,13 @@ public final class SimpleFuzzerTransactionsTest {
     return DeterministicTest.builder()
         .numNodes(10, 10)
         .messageSelector(firstSelector())
+        .addMonitors(DeterministicConsensusMonitors.byzantineBehaviorNotDetected())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                SafetyRecoveryConfig.mocked(),
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.LOCALSIMULATOR.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),

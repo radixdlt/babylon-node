@@ -62,79 +62,32 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.harness.deterministic;
 
+import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.radixdlt.addressing.Addressing;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.keys.InMemoryBFTKeyModule;
-import com.radixdlt.logger.EventLoggerConfig;
-import com.radixdlt.logger.EventLoggerModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev1.modules.PersistenceModule;
-import com.radixdlt.rev1.modules.RadixEngineStoreModule;
-import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
-import com.radixdlt.store.DatabaseCacheSize;
-import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.UInt256;
-import java.util.List;
+import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
+import com.radixdlt.utils.Pair;
+import java.util.function.Function;
 
-/** Helper class for modules to be used for recovery tests. */
-public final class PersistedNodeForTestingModule extends AbstractModule {
-  private final ECKeyPair keyPair;
-  private final StateComputerConfig stateComputerConfig;
+public class DeterministicCheckerModule extends AbstractModule {
+  private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
 
-  public PersistedNodeForTestingModule(ECKeyPair keyPair, StateComputerConfig stateComputerConfig) {
-    this.keyPair = keyPair;
-    this.stateComputerConfig = stateComputerConfig;
-  }
-
-  public static PersistedNodeForTestingModule rev1(ECKeyPair keyPair, int mempoolSize) {
-    return new PersistedNodeForTestingModule(keyPair, StateComputerConfig.rev1(mempoolSize));
+  public DeterministicCheckerModule(ImmutableList<BFTNode> nodes) {
+    this.nodeLookup =
+        Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
+            .collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
   }
 
   @Override
-  public void configure() {
-    bindConstant()
-        .annotatedWith(DatabaseCacheSize.class)
-        .to((long) (Runtime.getRuntime().maxMemory() * 0.125));
-
-    // System
-    bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-    bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
-    var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
-    bind(Addressing.class).toInstance(addressing);
-    install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
-    install(new InMemoryBFTKeyModule(keyPair));
-    install(new CryptoModule());
-    install(
-        new FunctionalRadixNodeModule(
-            FunctionalRadixNodeModule.ConsensusConfig.of(200, 1000L, 2.0),
-            stateComputerConfig,
-            new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)));
-    switch (stateComputerConfig) {
-      case StateComputerConfig.REv2StateComputerConfig ignored -> {
-        // FIXME: a hack for tests that use rev2 (api); fix once ledger/consensus recovery are
-        // hooked up
-        bind(BFTValidatorSet.class)
-            .toInstance(
-                BFTValidatorSet.from(
-                    List.of(
-                        BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE))));
-        install(new MockedPersistenceStoreModule());
-      }
-      default -> {
-        install(new PersistenceModule());
-        install(new RadixEngineStoreModule());
-      }
-    }
+  protected void configure() {
+    bind(new TypeLiteral<Function<BFTNode, String>>() {})
+        .toInstance(n -> "Node" + nodeLookup.get(n));
+    Multibinder.newSetBinder(binder(), MessageMonitor.class);
   }
 }

@@ -62,65 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1.modules;
+package com.radixdlt.rev2.modules;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
-import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
-import com.radixdlt.rev1.store.StoreConfig;
-import com.radixdlt.store.DatabaseEnvironment;
-import com.radixdlt.store.ResourceStore;
+import com.radixdlt.consensus.safety.SafetyState;
 import java.util.Optional;
 
-/** Module which manages persistent storage */
-public class PersistenceModule extends AbstractModule {
+public final class MockedSafetyStoreModule extends AbstractModule {
   @Override
   protected void configure() {
-    // TODO: should be singletons?
-    bind(ResourceStore.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
-    bind(PersistentVertexStore.class).to(BerkeleyLedgerEntryStore.class);
-    bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
-    bind(BerkeleySafetyStateStore.class).in(Scopes.SINGLETON);
-    bind(DatabaseEnvironment.class).in(Scopes.SINGLETON);
+    bind(PersistentSafetyStateStore.class).to(MockedSafetyStore.class);
   }
 
-  @Provides
-  Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState(
-      BerkeleyLedgerEntryStore store) {
-    return store.loadLastVertexStoreState();
-  }
+  public static class MockedSafetyStore implements PersistentSafetyStateStore {
+    @Override
+    public Optional<SafetyState> get() {
+      return Optional.empty();
+    }
 
-  @Provides
-  StoreConfig storeConfig() {
-    return new StoreConfig(1000);
-  }
+    @Override
+    public void commitState(SafetyState safetyState) {
+      // Nothing to do here
+    }
 
-  @ProvidesIntoSet
-  @ProcessOnDispatch
-  public EventProcessor<BFTHighQCUpdate> persistQC(
-      PersistentVertexStore persistentVertexStore, SystemCounters systemCounters) {
-    return update -> {
-      systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
-      persistentVertexStore.save(update.getVertexStoreState());
-    };
-  }
-
-  @ProvidesIntoSet
-  @ProcessOnDispatch
-  public EventProcessor<BFTInsertUpdate> persistUpdates(
-      PersistentVertexStore persistentVertexStore, SystemCounters systemCounters) {
-    return update -> {
-      systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
-      persistentVertexStore.save(update.getVertexStoreState());
-    };
+    @Override
+    public void close() {
+      // Nothing to do here
+    }
   }
 }

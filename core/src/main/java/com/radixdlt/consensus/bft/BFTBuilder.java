@@ -64,10 +64,7 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.PendingVotes;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.VertexStoreAdapter;
@@ -87,6 +84,7 @@ public final class BFTBuilder {
   private VertexStoreAdapter vertexStore;
   private BFTSyncer bftSyncer;
   private EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher;
+  private EventDispatcher<DoubleVote> doubleVoteEventDispatcher;
   private EventDispatcher<NoVote> noVoteEventDispatcher;
 
   // Instance specific objects
@@ -116,6 +114,12 @@ public final class BFTBuilder {
 
   public BFTBuilder voteDispatcher(RemoteEventDispatcher<Vote> voteDispatcher) {
     this.voteDispatcher = voteDispatcher;
+    return this;
+  }
+
+  public BFTBuilder doubleVoteEventDispatcher(
+      EventDispatcher<DoubleVote> doubleVoteEventDispatcher) {
+    this.doubleVoteEventDispatcher = doubleVoteEventDispatcher;
     return this;
   }
 
@@ -169,7 +173,7 @@ public final class BFTBuilder {
     if (!validatorSet.containsNode(self)) {
       return EmptyBFTEventProcessor.INSTANCE;
     }
-    final PendingVotes pendingVotes = new PendingVotes(hasher);
+    final PendingVotes pendingVotes = new PendingVotes(hasher, doubleVoteEventDispatcher);
 
     BFTEventReducer reducer =
         new BFTEventReducer(

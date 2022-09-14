@@ -199,6 +199,8 @@ public class ConsensusModuleTest {
             .toInstance(errorResponseSender);
         bind(new TypeLiteral<EventDispatcher<NoVote>>() {})
             .toInstance(rmock(EventDispatcher.class));
+        bind(new TypeLiteral<EventDispatcher<DoubleVote>>() {})
+            .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<Round>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() {})

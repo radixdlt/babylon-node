@@ -121,6 +121,7 @@ public final class SafetyRules {
           "Safety warning: Vertex {} violates earlier vote at round {}",
           proposedVertex,
           this.state.getLastVotedRound());
+
       return false;
     } else {
       return true;
@@ -186,37 +187,6 @@ public final class SafetyRules {
     return new VoteData(proposedHeader, parent, toCommit);
   }
 
-  /**
-   * Vote for a proposed vertex while ensuring that safety invariants are upheld.
-   *
-   * @param proposedVertex The proposed vertex
-   * @param proposedHeader results of vertex execution
-   * @param timestamp timestamp to use for the vote in milliseconds since epoch
-   * @param highQC our current sync state
-   * @return A vote result containing the vote and any committed vertices
-   */
-  public Optional<Vote> voteFor(
-      VertexWithHash proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
-    Builder safetyStateBuilder = this.state.toBuilder();
-
-    if (!checkLastVoted(proposedVertex)) {
-      return Optional.empty();
-    }
-
-    if (!checkLocked(proposedVertex, safetyStateBuilder)) {
-      return Optional.empty();
-    }
-
-    final Vote vote = createVote(proposedVertex, proposedHeader, timestamp, highQC);
-
-    safetyStateBuilder.lastVote(vote);
-
-    this.state = safetyStateBuilder.build();
-    this.persistentSafetyStateStore.commitState(this.state);
-
-    return Optional.of(vote);
-  }
-
   public Vote timeoutVote(Vote vote) {
     if (vote.isTimeout()) { // vote is already timed out
       return vote;
@@ -234,14 +204,40 @@ public final class SafetyRules {
     return timeoutVote;
   }
 
-  public Vote createVote(
+  /**
+   * Vote for a proposed vertex while ensuring that safety invariants are upheld.
+   *
+   * @param proposedVertex The proposed vertex
+   * @param proposedHeader results of vertex execution
+   * @param timestamp timestamp to use for the vote in milliseconds since epoch
+   * @param highQC our current sync state
+   * @return A vote result containing the vote and any committed vertices
+   */
+  public Optional<Vote> createVote(
       VertexWithHash proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
+    var safetyStateBuilder = this.state.toBuilder();
+
+    if (!checkLastVoted(proposedVertex)) {
+      return Optional.empty();
+    }
+
+    if (!checkLocked(proposedVertex, safetyStateBuilder)) {
+      return Optional.empty();
+    }
+
     final VoteData voteData = constructVoteData(proposedVertex, proposedHeader);
     final var voteHash = Vote.getHashOfData(hasher, voteData, timestamp);
 
     // TODO make signing more robust by including author in signed hash
     final ECDSASecp256k1Signature signature = this.signer.sign(voteHash);
-    return new Vote(this.self, voteData, timestamp, signature, highQC, Optional.empty());
+    var vote = new Vote(this.self, voteData, timestamp, signature, highQC, Optional.empty());
+
+    safetyStateBuilder.lastVote(vote);
+
+    this.state = safetyStateBuilder.build();
+    this.persistentSafetyStateStore.commitState(this.state);
+
+    return Optional.of(vote);
   }
 
   public Optional<Vote> getLastVote(Round round) {

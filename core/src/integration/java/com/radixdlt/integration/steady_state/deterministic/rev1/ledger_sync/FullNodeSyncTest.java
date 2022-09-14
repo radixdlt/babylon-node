@@ -65,6 +65,8 @@
 package com.radixdlt.integration.steady_state.deterministic.rev1.ledger_sync;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.NodePredicate.*;
+import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.consensus.bft.Round;
@@ -96,7 +98,7 @@ public class FullNodeSyncTest {
             .buildWithEpochsAndSync(epochMaxRound, syncConfig);
 
     test.startAllNodes();
-    test.runUntil(DeterministicTest.ledgerStateVersionOnNode(targetStateVersion, numNodes - 1));
+    test.runUntilState(nodeAt(numNodes - 1, atOrOverStateVersion(targetStateVersion)), 10000000);
 
     final var validatorsCounters =
         IntStream.range(0, numValidators).mapToObj(i -> test.getInstance(i, SystemCounters.class));

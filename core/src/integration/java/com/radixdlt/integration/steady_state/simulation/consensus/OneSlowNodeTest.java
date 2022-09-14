@@ -74,6 +74,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -95,7 +96,10 @@ public class OneSlowNodeTest {
               NetworkLatencies.oneSlowProposalSender(minLatency, maxLatency))
           .functionalNodeModule(
               new FunctionalRadixNodeModule(
-                  false, ConsensusConfig.of(synchronousTimeout), LedgerConfig.mocked()))
+                  false,
+                  SafetyRecoveryConfig.mocked(),
+                  ConsensusConfig.of(synchronousTimeout),
+                  LedgerConfig.mocked()))
           .addTestModules(ConsensusMonitors.safety(), ConsensusMonitors.directParents());
 
   /**

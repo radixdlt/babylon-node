@@ -92,6 +92,7 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.*;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
@@ -99,7 +100,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REV2TransactionGenerator;
-import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
@@ -148,11 +149,12 @@ public final class REv2MempoolFillAndEmptyTest {
             bind(BFTValidatorSet.class).toInstance(validatorSet);
           }
         },
-        new MockedPersistenceStoreModule(),
+        new MockedLivenessStoreModule(),
         new FunctionalRadixNodeModule(
             false,
-            FunctionalRadixNodeModule.ConsensusConfig.of(),
-            FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+            SafetyRecoveryConfig.mocked(),
+            ConsensusConfig.of(),
+            LedgerConfig.stateComputerWithSyncRelay(
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
                     REv2DatabaseConfig.inMemory(),

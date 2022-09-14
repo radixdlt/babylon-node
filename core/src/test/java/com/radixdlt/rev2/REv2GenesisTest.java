@@ -86,6 +86,7 @@ public final class REv2GenesisTest {
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(

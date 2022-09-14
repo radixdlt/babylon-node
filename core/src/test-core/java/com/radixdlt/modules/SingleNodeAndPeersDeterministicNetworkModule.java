@@ -66,38 +66,84 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.keys.InMemoryBFTKeyModule;
+import com.radixdlt.logger.EventLoggerConfig;
+import com.radixdlt.logger.EventLoggerModule;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PeersView;
+import com.radixdlt.rev1.modules.REv1PersistenceModule;
+import com.radixdlt.rev1.modules.RadixEngineStoreModule;
+import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
+import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.stream.Stream;
 
 /** Module which injects a full one node network */
 public final class SingleNodeAndPeersDeterministicNetworkModule extends AbstractModule {
   private final ECKeyPair self;
-  private final StateComputerConfig stateComputerConfig;
+  private final FunctionalRadixNodeModule radixNodeModule;
 
   public static SingleNodeAndPeersDeterministicNetworkModule rev1(
-      ECKeyPair self, int maxMempoolSize) {
+      ECKeyPair self, int maxMempoolSize, String databasePath) {
     return new SingleNodeAndPeersDeterministicNetworkModule(
-        self, StateComputerConfig.rev1(maxMempoolSize));
+        self,
+        new FunctionalRadixNodeModule(
+            true,
+            FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(databasePath),
+            FunctionalRadixNodeModule.ConsensusConfig.of(),
+            FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                StateComputerConfig.rev1(maxMempoolSize),
+                new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE))));
   }
 
   public SingleNodeAndPeersDeterministicNetworkModule(
-      ECKeyPair self, StateComputerConfig stateComputerConfig) {
+      ECKeyPair self, FunctionalRadixNodeModule radixNodeModule) {
     this.self = self;
-    this.stateComputerConfig = stateComputerConfig;
+    this.radixNodeModule = radixNodeModule;
   }
 
   @Override
   protected void configure() {
-    install(new PersistedNodeForTestingModule(self, stateComputerConfig));
+    // System
+    bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+    bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+
+    var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
+    bind(Addressing.class).toInstance(addressing);
+    install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
+    install(new InMemoryBFTKeyModule(self));
+    install(new CryptoModule());
+    install(radixNodeModule);
+    if (radixNodeModule.supportsREv2()) {
+      // FIXME: a hack for tests that use rev2 (api); fix once ledger/consensus recovery are
+      // hooked up
+      bind(BFTValidatorSet.class)
+          .toInstance(
+              BFTValidatorSet.from(
+                  List.of(BFTValidator.from(BFTNode.create(self.getPublicKey()), UInt256.ONE))));
+      install(new MockedLivenessStoreModule());
+    }
+    if (radixNodeModule.supportsREv1()) {
+
+      install(new REv1PersistenceModule());
+      install(new RadixEngineStoreModule());
+    }
   }
 
   @Provides

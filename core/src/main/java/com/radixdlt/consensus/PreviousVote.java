@@ -62,46 +62,70 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.consensus;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.OptionalBinder;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.VertexStoreState;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.safety.SafetyState;
-import java.util.Optional;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.bft.Round;
+import java.util.Objects;
 
-public class MockedPersistenceStoreModule extends AbstractModule {
+/** A vote made by another node */
+public final class PreviousVote {
+  private final Round round;
+  private final long epoch;
+  private final HashCode hash;
+  private final boolean isTimeout;
+
+  PreviousVote(Round round, long epoch, HashCode hash, boolean isTimeout) {
+    this.round = round;
+    this.epoch = epoch;
+    this.hash = hash;
+    this.isTimeout = isTimeout;
+  }
+
+  public boolean isTimeout() {
+    return isTimeout;
+  }
+
+  public Round getRound() {
+    return round;
+  }
+
+  public HashCode getHash() {
+    return hash;
+  }
+
+  public long getEpoch() {
+    return epoch;
+  }
 
   @Override
-  public void configure() {
-    bind(PersistentSafetyStateStore.class).to(MockedPersistenceStore.class);
-    bind(PersistentVertexStore.class).to(MockedPersistentVertexStore.class);
-    OptionalBinder.newOptionalBinder(binder(), VertexStoreState.SerializedVertexStoreState.class);
+  public int hashCode() {
+    return Objects.hash(this.round, this.epoch, this.hash, this.isTimeout);
   }
 
-  private static class MockedPersistenceStore implements PersistentSafetyStateStore {
-    @Override
-    public Optional<SafetyState> get() {
-      return Optional.empty();
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof PreviousVote) {
+      PreviousVote that = (PreviousVote) obj;
+      return Objects.equals(this.round, that.round)
+          && Objects.equals(this.hash, that.hash)
+          && this.epoch == that.epoch
+          && this.isTimeout == that.isTimeout;
     }
-
-    @Override
-    public void commitState(SafetyState safetyState) {
-      // Nothing to do here
-    }
-
-    @Override
-    public void close() {
-      // Nothing to do here
-    }
+    return false;
   }
 
-  private static class MockedPersistentVertexStore implements PersistentVertexStore {
-    @Override
-    public void save(VertexStoreState vertexStoreState) {
-      // Nothing to do here
-    }
+  @Override
+  public String toString() {
+    return "PreviousVote{"
+        + "round="
+        + round
+        + ", epoch="
+        + epoch
+        + ", hash="
+        + hash
+        + ", isTimeout="
+        + isTimeout
+        + '}';
   }
 }

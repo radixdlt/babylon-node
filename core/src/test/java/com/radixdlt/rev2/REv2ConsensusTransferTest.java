@@ -70,13 +70,15 @@ import static com.radixdlt.harness.predicates.NodesPredicate.allAtExactlyStateVe
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.*;
-import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
@@ -103,8 +105,9 @@ public final class REv2ConsensusTransferTest {
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
@@ -131,7 +134,7 @@ public final class REv2ConsensusTransferTest {
       var mempoolInserter =
           test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
       mempoolInserter.addTransaction(newAccountTransaction);
-      test.processUntil(allAtExactlyStateVersion(1), onlyConsensusEvents());
+      test.runUntilState(allAtExactlyStateVersion(1), onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
       var executedTransaction =

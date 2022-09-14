@@ -82,18 +82,19 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.MockedCryptoModule;
 import com.radixdlt.modules.MockedKeyModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochMaxRound;
-import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
@@ -104,6 +105,7 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
@@ -121,15 +123,15 @@ public final class DeterministicTest implements AutoCloseable {
       ImmutableList<BFTNode> nodes,
       MessageSelector messageSelector,
       MessageMutator messageMutator,
+      MessageMonitor messageMonitor,
       Module baseModule,
       Module overrideModule) {
-    this.network = new DeterministicNetwork(nodes, messageSelector, messageMutator);
-
+    this.network = new DeterministicNetwork(nodes, messageSelector, messageMutator, messageMonitor);
     this.nodes = new DeterministicNodes(nodes, this.network, baseModule, overrideModule);
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     this.nodes.close();
   }
 
@@ -144,7 +146,8 @@ public final class DeterministicTest implements AutoCloseable {
     private Function<Long, IntStream> epochToNodeIndexesMapping;
     private EpochNodeWeightMapping epochNodeWeightMapping;
     private Module overrideModule = null;
-    private ImmutableList.Builder<Module> modules = ImmutableList.builder();
+    private final ImmutableList.Builder<Module> modules = ImmutableList.builder();
+    private final ImmutableList.Builder<Module> testModules = ImmutableList.builder();
 
     private Builder() {
       // Nothing to do here
@@ -237,11 +240,17 @@ public final class DeterministicTest implements AutoCloseable {
       return this.messageMutator(combinedMutator);
     }
 
+    public Builder addMonitors(Module module) {
+      this.testModules.add(module);
+      return this;
+    }
+
     public DeterministicTest buildWithEpochs(Round epochMaxRound) {
       Objects.requireNonNull(epochMaxRound);
       this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
+              SafetyRecoveryConfig.mocked(),
               ConsensusConfig.of(),
               LedgerConfig.stateComputerMockedSync(
                   StateComputerConfig.mocked(
@@ -256,6 +265,7 @@ public final class DeterministicTest implements AutoCloseable {
       this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
+              SafetyRecoveryConfig.mocked(),
               ConsensusConfig.of(),
               LedgerConfig.stateComputerWithSyncRelay(
                   StateComputerConfig.mocked(
@@ -278,14 +288,21 @@ public final class DeterministicTest implements AutoCloseable {
           });
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
-      modules.add(new MockedPersistenceStoreModule());
+      modules.add(new MockedLivenessStoreModule());
       modules.add(new TestP2PModule.Builder().withAllNodes(nodes).build());
       modules.add(new TestMessagingModule.Builder().build());
+
+      var messageMonitors =
+          Guice.createInjector(
+                  new DeterministicCheckerModule(nodes), Modules.combine(testModules.build()))
+              .getInstance(Key.get(new TypeLiteral<Set<MessageMonitor>>() {}));
+      MessageMonitor messageMonitor = m -> messageMonitors.forEach(c -> c.next(m));
 
       return new DeterministicTest(
           this.nodes,
           this.messageSelector,
           this.messageMutator,
+          messageMonitor,
           Modules.combine(modules.build()),
           overrideModule);
     }
@@ -368,7 +385,7 @@ public final class DeterministicTest implements AutoCloseable {
     this.startNode(nodeIndex);
   }
 
-  public DeterministicTest processUntil(
+  public DeterministicTest runUntilState(
       Predicate<List<Injector>> nodeStatePredicate,
       int max,
       Predicate<ControlledMessage> predicate) {
@@ -386,20 +403,20 @@ public final class DeterministicTest implements AutoCloseable {
     return this;
   }
 
-  public DeterministicTest processUntil(
+  public DeterministicTest runUntilState(
       Predicate<List<Injector>> nodeStatePredicate, Predicate<ControlledMessage> predicate) {
-    return processUntil(nodeStatePredicate, 1000, predicate);
+    return runUntilState(nodeStatePredicate, 1000, predicate);
   }
 
-  public DeterministicTest processUntil(Predicate<List<Injector>> nodeStatePredicate, int max) {
-    return this.processUntil(nodeStatePredicate, max, m -> true);
+  public DeterministicTest runUntilState(Predicate<List<Injector>> nodeStatePredicate, int max) {
+    return this.runUntilState(nodeStatePredicate, max, m -> true);
   }
 
-  public DeterministicTest processUntil(Predicate<List<Injector>> nodeStatePredicate) {
-    return this.processUntil(nodeStatePredicate, 1000, m -> true);
+  public DeterministicTest runUntilState(Predicate<List<Injector>> nodeStatePredicate) {
+    return this.runUntilState(nodeStatePredicate, 1000, m -> true);
   }
 
-  public DeterministicTest runUntil(Predicate<Timed<ControlledMessage>> stopPredicate) {
+  public DeterministicTest runUntilMessage(Predicate<Timed<ControlledMessage>> stopPredicate) {
     while (true) {
       Timed<ControlledMessage> nextMsg = this.network.nextMessage();
       if (stopPredicate.test(nextMsg)) {
@@ -421,7 +438,7 @@ public final class DeterministicTest implements AutoCloseable {
     return this;
   }
 
-  public void processNext(Predicate<ControlledMessage> predicate) {
+  public void runNext(Predicate<ControlledMessage> predicate) {
     Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
     this.nodes.handleMessage(nextMsg);
   }
@@ -443,10 +460,9 @@ public final class DeterministicTest implements AutoCloseable {
   public static Predicate<Timed<ControlledMessage>> hasReachedEpochRound(EpochRound maxEpochRound) {
     return timedMsg -> {
       ControlledMessage message = timedMsg.value();
-      if (!(message.message() instanceof Proposal)) {
+      if (!(message.message() instanceof Proposal proposal)) {
         return false;
       }
-      Proposal proposal = (Proposal) message.message();
       EpochRound nev = EpochRound.of(proposal.getEpoch(), proposal.getRound());
       return (nev.compareTo(maxEpochRound) > 0);
     };
@@ -462,10 +478,9 @@ public final class DeterministicTest implements AutoCloseable {
     final long maxRoundNumber = round.previous().number();
     return timedMsg -> {
       ControlledMessage message = timedMsg.value();
-      if (!(message.message() instanceof Proposal)) {
+      if (!(message.message() instanceof Proposal p)) {
         return false;
       }
-      Proposal p = (Proposal) message.message();
       return (p.getRound().number() > maxRoundNumber);
     };
   }
@@ -478,18 +493,6 @@ public final class DeterministicTest implements AutoCloseable {
       }
       return message.channelId().receiverIndex() == nodeIndex
           && roundUpdate.getCurrentRound().gte(round);
-    };
-  }
-
-  public static Predicate<Timed<ControlledMessage>> ledgerStateVersionOnNode(
-      long stateVersion, int nodeIndex) {
-    return timedMsg -> {
-      final var message = timedMsg.value();
-      if (!(message.message() instanceof final LedgerUpdate ledgerUpdate)) {
-        return false;
-      }
-      return message.channelId().receiverIndex() == nodeIndex
-          && ledgerUpdate.getTail().getStateVersion() >= stateVersion;
     };
   }
 

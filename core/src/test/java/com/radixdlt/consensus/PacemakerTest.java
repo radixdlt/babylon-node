@@ -66,164 +66,98 @@ package com.radixdlt.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.epoch.EpochRoundUpdate;
-import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.ControlledMessage;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
-import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev1.checkpoint.MockedGenesisModule;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
-import com.radixdlt.utils.PrivateKeys;
-import java.util.Set;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import org.assertj.core.api.Condition;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 /** Verifies pacemaker functionality */
-public class PacemakerTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  @Inject private DeterministicProcessor processor;
-
-  @Inject private RoundUpdate initialRoundUpdate;
-
-  @Inject private DeterministicNetwork network;
-
-  private Injector createRunner() {
-    return Guice.createInjector(
-        MempoolRelayConfig.of(10).asModule(),
-        new MainnetForksModule(),
-        new RadixEngineForksLatestOnlyModule(),
-        new ForksModule(),
-        new MockedGenesisModule(
-            Set.of(PrivateKeys.ofNumeric(1).getPublicKey()),
-            Amount.ofTokens(1000),
-            Amount.ofTokens(100)),
-        SingleNodeAndPeersDeterministicNetworkModule.rev1(PrivateKeys.ofNumeric(1), 10),
-        new TestP2PModule.Builder().build(),
-        new TestMessagingModule.Builder().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath());
-          }
-        });
+public final class PacemakerTest {
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(1, 0)
+        .messageSelector(MessageSelector.firstSelector())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false, SafetyRecoveryConfig.mocked(), ConsensusConfig.of(), LedgerConfig.mocked()));
   }
 
   @Test
-  public void on_startup_pacemaker_should_schedule_timeouts() {
+  public void on_startup_pacemaker_should_schedule_timeouts() throws Exception {
     // Arrange
-    createRunner().injectMembers(this);
+    try (var test = createTest()) {
 
-    // Act
-    processor.start();
+      // Act
+      test.startAllNodes();
 
-    // Assert
-    assertThat(network.allMessages())
-        // .hasSize(3) // FIXME: Added hack to include a message regarding genesis committed so
-        // ignore this check
-        .haveExactly(
-            1,
-            new Condition<>(
-                msg -> Epoched.isInstance(msg.message(), ScheduledLocalTimeout.class),
-                "A single epoched scheduled timeout has been emitted"))
-        .haveExactly(
-            1,
-            new Condition<>(
-                msg -> msg.message() instanceof ScheduledLocalTimeout,
-                "A single scheduled timeout update has been emitted"))
-        .haveExactly(
-            1,
-            new Condition<>(
-                msg -> msg.message() instanceof Proposal, "A proposal has been emitted"));
+      // Assert
+      assertThat(test.getNetwork().allMessages())
+          .hasSize(2)
+          .haveExactly(
+              1,
+              new Condition<>(
+                  msg -> msg.message() instanceof ScheduledLocalTimeout,
+                  "A single scheduled timeout update has been emitted"))
+          .haveExactly(
+              1,
+              new Condition<>(
+                  msg -> msg.message() instanceof Proposal, "A proposal has been emitted"));
+    }
   }
 
   @Test
-  public void on_timeout_pacemaker_should_send_vote_with_timeout() {
+  public void on_timeout_pacemaker_should_send_vote_with_timeout() throws Exception {
     // Arrange
-    createRunner().injectMembers(this);
-    processor.start();
+    try (var test = createTest()) {
+      test.startAllNodes();
 
-    // Act
-    ControlledMessage timeoutMsg =
-        network
-            .nextMessage(e -> Epoched.isInstance(e.message(), ScheduledLocalTimeout.class))
-            .value();
-    processor.handleMessage(
-        timeoutMsg.origin(),
-        timeoutMsg.message(),
-        new TypeLiteral<Epoched<ScheduledLocalTimeout>>() {});
-    ControlledMessage bftUpdateMsg =
-        network.nextMessage(e -> e.message() instanceof BFTInsertUpdate).value();
-    processor.handleMessage(bftUpdateMsg.origin(), bftUpdateMsg.message(), null);
+      // Act
+      test.runNext(e -> e.message() instanceof ScheduledLocalTimeout);
+      test.runNext(e -> e.message() instanceof BFTInsertUpdate);
 
-    // Assert
-    assertThat(network.allMessages())
-        .haveExactly(
-            1,
-            new Condition<>(
-                msg -> (msg.message() instanceof Vote) && ((Vote) msg.message()).isTimeout(),
-                "A remote timeout vote has been emitted"));
+      // Assert
+      assertThat(test.getNetwork().allMessages())
+          .haveExactly(
+              1,
+              new Condition<>(
+                  msg -> (msg.message() instanceof Vote) && ((Vote) msg.message()).isTimeout(),
+                  "A remote timeout vote has been emitted"));
+    }
   }
 
   @Test
-  public void on_round_timeout_quorum_pacemaker_should_move_to_next_round() {
+  public void on_round_timeout_quorum_pacemaker_should_move_to_next_round() throws Exception {
     // Arrange
-    createRunner().injectMembers(this);
-    processor.start();
-    ControlledMessage timeoutMsg =
-        network
-            .nextMessage(e -> Epoched.isInstance(e.message(), ScheduledLocalTimeout.class))
-            .value();
-    processor.handleMessage(
-        timeoutMsg.origin(),
-        timeoutMsg.message(),
-        new TypeLiteral<Epoched<ScheduledLocalTimeout>>() {});
-    ControlledMessage bftUpdateMsg =
-        network.nextMessage(e -> e.message() instanceof BFTInsertUpdate).value();
-    processor.handleMessage(bftUpdateMsg.origin(), bftUpdateMsg.message(), null);
+    try (var test = createTest()) {
+      test.startAllNodes();
+      test.runNext(e -> e.message() instanceof ScheduledLocalTimeout);
+      test.runNext(e -> e.message() instanceof BFTInsertUpdate);
 
-    // Act
-    ControlledMessage roundTimeout =
-        network
-            .nextMessage(e -> (e.message() instanceof Vote) && ((Vote) e.message()).isTimeout())
-            .value();
-    processor.handleMessage(roundTimeout.origin(), roundTimeout.message(), null);
+      // Act
+      test.runNext(e -> (e.message() instanceof Vote) && ((Vote) e.message()).isTimeout());
 
-    // Assert
-    assertThat(network.allMessages())
-        .haveExactly(
-            1,
-            new Condition<>(
-                msg -> msg.message() instanceof EpochRoundUpdate,
-                "A remote round timeout has been emitted"));
-    EpochRoundUpdate nextEpochRoundUpdate =
-        network.allMessages().stream()
-            .filter(msg -> msg.message() instanceof EpochRoundUpdate)
-            .map(ControlledMessage::message)
-            .map(EpochRoundUpdate.class::cast)
-            .findAny()
-            .orElseThrow();
-    assertThat(nextEpochRoundUpdate.getRoundUpdate().getCurrentRound())
-        .isEqualTo(initialRoundUpdate.getCurrentRound().next());
+      // Assert
+      assertThat(test.getNetwork().allMessages())
+          .haveExactly(
+              1,
+              new Condition<>(
+                  msg -> msg.message() instanceof RoundUpdate,
+                  "A remote round timeout has been emitted"));
+      var nextRoundUpdate =
+          test.getNetwork().allMessages().stream()
+              .filter(msg -> msg.message() instanceof RoundUpdate)
+              .map(msg -> (RoundUpdate) msg.message())
+              .findAny()
+              .orElseThrow();
+      assertThat(nextRoundUpdate.getCurrentRound()).isEqualTo(Round.genesis().next().next());
+    }
   }
 }

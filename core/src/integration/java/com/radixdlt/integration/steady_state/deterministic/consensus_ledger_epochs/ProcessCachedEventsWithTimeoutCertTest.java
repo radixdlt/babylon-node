@@ -98,7 +98,7 @@ public class ProcessCachedEventsWithTimeoutCertTest {
             .buildWithEpochs(Round.of(100));
 
     test.startAllNodes();
-    test.runUntil(nodeVotesForRound(Round.of(3), TEST_NODE));
+    test.runUntilMessage(nodeVotesForRound(Round.of(3), TEST_NODE));
 
     // just to check if the node indeed needed to sync
     final var counters = test.getInstance(TEST_NODE, SystemCounters.class);

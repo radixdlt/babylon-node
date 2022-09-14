@@ -79,6 +79,7 @@ import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.time.Duration;
@@ -107,6 +108,7 @@ public class TimeoutPreviousVoteWithDroppedProposalsTest {
           .functionalNodeModule(
               new FunctionalRadixNodeModule(
                   false,
+                  SafetyRecoveryConfig.mocked(),
                   ConsensusConfig.of(1000L),
                   LedgerConfig.stateComputerNoSync(
                       StateComputerConfig.mocked(

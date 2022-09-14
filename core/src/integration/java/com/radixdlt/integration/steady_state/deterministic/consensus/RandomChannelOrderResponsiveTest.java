@@ -75,6 +75,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.SystemCounters;
@@ -100,12 +101,13 @@ public class RandomChannelOrderResponsiveTest {
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     false,
+                    SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
 
     test.startAllNodes();
-    test.runUntil(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
+    test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
 
     List<Long> proposalsMade =
         IntStream.range(0, numValidatorNodes)

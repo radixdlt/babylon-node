@@ -75,6 +75,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import java.util.Collection;
 import java.util.List;
@@ -114,7 +115,10 @@ public final class OutOfOrderTest {
                 NetworkDroppers.fRandomProposalsPerRoundDropped())
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
-                    false, ConsensusConfig.of(5000), LedgerConfig.mocked()))
+                    false,
+                    SafetyRecoveryConfig.mocked(),
+                    ConsensusConfig.of(5000),
+                    LedgerConfig.mocked()))
             .addTestModules(
                 ConsensusMonitors.safety(),
                 ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),

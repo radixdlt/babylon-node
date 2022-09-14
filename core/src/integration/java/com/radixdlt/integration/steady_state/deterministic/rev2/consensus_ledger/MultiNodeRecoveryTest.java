@@ -67,9 +67,13 @@ package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledge
 import static com.radixdlt.environment.deterministic.network.MessageSelector.randomSelector;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.invariants.DeterministicConsensusMonitors;
 import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.invariants.LedgerLivenessChecker;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.REV2TransactionGenerator;
@@ -104,11 +108,13 @@ public final class MultiNodeRecoveryTest {
     return DeterministicTest.builder()
         .numNodes(NUM_VALIDATORS, 0)
         .messageSelector(randomSelector(random))
+        .addMonitors(DeterministicConsensusMonitors.byzantineBehaviorNotDetected())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         databaseConfig,

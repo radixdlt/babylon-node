@@ -199,7 +199,8 @@ public class PacemakerTest {
         .thenReturn(hasher.hashDsonEncoded(Vertex.createTimeout(highestQc, round, node)));
 
     when(this.safetyRules.getLastVote(round)).thenReturn(Optional.empty());
-    when(this.safetyRules.createVote(any(), any(), anyLong(), any())).thenReturn(emptyVote);
+    when(this.safetyRules.createVote(any(), any(), anyLong(), any()))
+        .thenReturn(Optional.of(emptyVote));
     when(this.safetyRules.timeoutVote(emptyVote)).thenReturn(emptyVoteWithTimeout);
     when(this.validatorSet.nodes()).thenReturn(validators);
 

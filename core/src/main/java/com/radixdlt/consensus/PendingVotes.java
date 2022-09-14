@@ -71,19 +71,17 @@ import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.VoteProcessingResult;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected.VoteRejectedReason;
 import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.NotThreadSafe;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Manages pending votes for various vertices.
@@ -95,62 +93,15 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 @SecurityCritical({SecurityKind.SIG_VERIFY, SecurityKind.GENERAL})
 public final class PendingVotes {
-  private static final Logger logger = LogManager.getLogger();
-
-  @VisibleForTesting
-  // Make sure equals tester can access.
-  static final class PreviousVote {
-    private final Round round;
-    private final long epoch;
-    private final HashCode hash;
-    private final boolean isTimeout;
-
-    PreviousVote(Round round, long epoch, HashCode hash, boolean isTimeout) {
-      this.round = round;
-      this.epoch = epoch;
-      this.hash = hash;
-      this.isTimeout = isTimeout;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(this.round, this.epoch, this.hash, this.isTimeout);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (obj instanceof PreviousVote) {
-        PreviousVote that = (PreviousVote) obj;
-        return Objects.equals(this.round, that.round)
-            && Objects.equals(this.hash, that.hash)
-            && this.epoch == that.epoch
-            && this.isTimeout == that.isTimeout;
-      }
-      return false;
-    }
-
-    @Override
-    public String toString() {
-      return "PreviousVote{"
-          + "round="
-          + round
-          + ", epoch="
-          + epoch
-          + ", hash="
-          + hash
-          + ", isTimeout="
-          + isTimeout
-          + '}';
-    }
-  }
-
   private final Map<HashCode, ValidationState> voteState = Maps.newHashMap();
   private final Map<HashCode, ValidationState> timeoutVoteState = Maps.newHashMap();
   private final Map<BFTNode, PreviousVote> previousVotes = Maps.newHashMap();
   private final Hasher hasher;
+  private final EventDispatcher<DoubleVote> doubleVoteEventDispatcher;
 
-  public PendingVotes(Hasher hasher) {
+  public PendingVotes(Hasher hasher, EventDispatcher<DoubleVote> doubleVoteEventDispatcher) {
     this.hasher = Objects.requireNonNull(hasher);
+    this.doubleVoteEventDispatcher = Objects.requireNonNull(doubleVoteEventDispatcher);
   }
 
   /**
@@ -244,16 +195,16 @@ public final class PendingVotes {
 
     // Prune last pending vote from the pending votes.
     // This limits the number of pending vertices that are in the pipeline.
-    var validationState = this.voteState.get(previousVote.hash);
+    var validationState = this.voteState.get(previousVote.getHash());
     if (validationState != null) {
       validationState.removeSignature(author);
       if (validationState.isEmpty()) {
-        this.voteState.remove(previousVote.hash);
+        this.voteState.remove(previousVote.getHash());
       }
     }
 
-    if (previousVote.isTimeout) {
-      final var voteTimeout = new VoteTimeout(previousVote.round, previousVote.epoch);
+    if (previousVote.isTimeout()) {
+      final var voteTimeout = new VoteTimeout(previousVote.getRound(), previousVote.getEpoch());
       final var voteTimeoutHash = this.hasher.hashDsonEncoded(voteTimeout);
 
       var timeoutValidationState = this.timeoutVoteState.get(voteTimeoutHash);
@@ -265,20 +216,17 @@ public final class PendingVotes {
       }
     }
 
-    if (vote.getRound().equals(previousVote.round)) {
+    if (vote.getRound().equals(previousVote.getRound())) {
       // If the validator already voted in this round for something else,
       // then the only valid possibility is a non-timeout vote being replaced by a timeout vote
       // on the same vote data, or a byzantine node
 
-      var isValidVote = vote.isTimeout() && thisVote.hash.equals(previousVote.hash);
+      var isValidVote = thisVote.getHash().equals(previousVote.getHash());
       if (!isValidVote) {
-        logger.warn(
-            "Double vote by Byzantine validator {} detected! Previous vote: {} New vote: {}",
-            author,
-            previousVote,
-            vote);
+        this.doubleVoteEventDispatcher.dispatch(
+            new DoubleVote(author, previousVote, vote, thisVote.getHash()));
       }
-      return isValidVote && !previousVote.isTimeout;
+      return isValidVote && !previousVote.isTimeout() && vote.isTimeout();
     } else {
       // all good if vote is for a different round
       return true;

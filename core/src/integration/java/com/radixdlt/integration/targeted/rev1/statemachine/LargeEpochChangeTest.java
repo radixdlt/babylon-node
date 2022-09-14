@@ -68,7 +68,6 @@ import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
 import static com.radixdlt.substate.TxAction.*;
 
 import com.google.common.base.Stopwatch;
-import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -107,7 +106,6 @@ import com.radixdlt.rev1.forks.ForksModule;
 import com.radixdlt.rev1.forks.MainnetForksModule;
 import com.radixdlt.rev1.forks.RERulesConfig;
 import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.store.DatabaseLocation;
 import com.radixdlt.store.LastStoredProof;
 import com.radixdlt.substate.TxnConstructionRequest;
 import com.radixdlt.transactions.RawTransaction;
@@ -173,19 +171,12 @@ public class LargeEpochChangeTest {
                 100, // 100 max validators
                 MSG.maxLength())),
         new ForksModule(),
-        SingleNodeAndPeersDeterministicNetworkModule.rev1(TEST_KEY, 1000),
+        SingleNodeAndPeersDeterministicNetworkModule.rev1(
+            TEST_KEY, 1000, folder.getRoot().getAbsolutePath()),
         new MockedGenesisModule(
             Set.of(TEST_KEY.getPublicKey()), Amount.ofTokens(100000), Amount.ofTokens(1000)),
         new TestP2PModule.Builder().build(),
-        new TestMessagingModule.Builder().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            bindConstant()
-                .annotatedWith(DatabaseLocation.class)
-                .to(folder.getRoot().getAbsolutePath());
-          }
-        });
+        new TestMessagingModule.Builder().build());
   }
 
   @Test

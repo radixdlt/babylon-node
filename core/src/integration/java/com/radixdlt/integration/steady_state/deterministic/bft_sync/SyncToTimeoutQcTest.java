@@ -108,7 +108,7 @@ public class SyncToTimeoutQcTest {
             .buildWithEpochs(Round.of(10));
 
     test.startAllNodes();
-    test.runUntil(DeterministicTest.roundUpdateOnNode(Round.of(2), 0));
+    test.runUntilMessage(DeterministicTest.roundUpdateOnNode(Round.of(2), 0));
 
     for (int nodeIndex = 0; nodeIndex < NUM_NODES; ++nodeIndex) {
       final var counters = test.getInstance(nodeIndex, SystemCounters.class);

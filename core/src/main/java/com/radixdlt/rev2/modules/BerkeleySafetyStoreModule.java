@@ -62,45 +62,42 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1.modules;
+package com.radixdlt.rev2.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.RoundUpdate;
-import com.radixdlt.consensus.bft.VertexStoreState;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.store.LastEpochProof;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.environment.NodeAutoCloseable;
+import com.radixdlt.store.DatabaseCacheSize;
+import com.radixdlt.store.DatabaseEnvironment;
+import com.radixdlt.store.DatabaseLocation;
 
-/** Manages consensus recovery on startup */
-public class REv1ConsensusRecoveryModule extends AbstractModule {
-  @Provides
-  private RoundUpdate initialRoundUpdate(
-      VertexStoreState vertexStoreState, BFTConfiguration configuration) {
-    var highQC = vertexStoreState.getHighQC();
-    var round = highQC.highestQC().getRound().next();
-    var proposerElection = configuration.getProposerElection();
-    var leader = proposerElection.getProposer(round);
-    var nextLeader = proposerElection.getProposer(round.next());
+public class BerkeleySafetyStoreModule extends AbstractModule {
+  private final String rootPath;
 
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
+  public BerkeleySafetyStoreModule(String rootPath) {
+    this.rootPath = rootPath;
+  }
+
+  @Override
+  protected void configure() {
+    bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
+    bind(BerkeleySafetyStateStore.class).in(Scopes.SINGLETON);
+    bind(DatabaseEnvironment.class).in(Scopes.SINGLETON);
+    bindConstant().annotatedWith(DatabaseCacheSize.class).to(1024L * 1024L);
+    Multibinder.newSetBinder(binder(), NodeAutoCloseable.class)
+        .addBinding()
+        .to(BerkeleySafetyStateStore.class);
   }
 
   @Provides
-  @Singleton
-  private BFTConfiguration initialConfig(
-      BFTValidatorSet validatorSet, VertexStoreState vertexStoreState) {
-    var proposerElection = new WeightedRotatingLeaders(validatorSet);
-    return new BFTConfiguration(proposerElection, validatorSet, vertexStoreState);
-  }
-
-  @Provides
-  private BFTValidatorSet initialValidatorSet(@LastEpochProof LedgerProof lastEpochProof) {
-    return lastEpochProof
-        .getNextValidatorSet()
-        .orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+  @DatabaseLocation
+  private String databaseLocation(@Self BFTNode node) {
+    return rootPath + "/" + node;
   }
 }

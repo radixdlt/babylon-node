@@ -67,8 +67,12 @@ package com.radixdlt.integration.targeted.rev2.storage;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.integration.Slow;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
@@ -98,8 +102,9 @@ public final class TransactionDBSizeStressTest {
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
@@ -113,9 +118,7 @@ public final class TransactionDBSizeStressTest {
     try (var test = buildTest()) {
       test.startAllNodes();
 
-      for (int i = 0; i < 10; i++) {
-        test.runForCount(1000);
-      }
+      test.runUntilState(NodesPredicate.anyAtExactlyStateVersion(10));
     }
   }
 }

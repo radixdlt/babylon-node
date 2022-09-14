@@ -71,6 +71,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.system.health.ScheduledStatsCollecting;
+import com.radixdlt.consensus.DoubleVote;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -139,6 +140,9 @@ public class DispatcherModule extends AbstractModule {
 
   @Override
   public void configure() {
+    bind(new TypeLiteral<EventDispatcher<DoubleVote>>() {})
+        .toProvider(Dispatchers.dispatcherProvider(DoubleVote.class))
+        .in(Scopes.SINGLETON);
     bind(new TypeLiteral<EventDispatcher<MempoolAdd>>() {})
         .toProvider(Dispatchers.dispatcherProvider(MempoolAdd.class))
         .in(Scopes.SINGLETON);
@@ -197,6 +201,9 @@ public class DispatcherModule extends AbstractModule {
     bind(new TypeLiteral<RemoteEventDispatcher<MempoolAdd>>() {})
         .toProvider(Dispatchers.remoteDispatcherProvider(MempoolAdd.class))
         .in(Scopes.SINGLETON);
+
+    final var doubleVoteKey = new TypeLiteral<EventProcessor<DoubleVote>>() {};
+    Multibinder.newSetBinder(binder(), doubleVoteKey, ProcessOnDispatch.class);
 
     final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() {};
     Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);

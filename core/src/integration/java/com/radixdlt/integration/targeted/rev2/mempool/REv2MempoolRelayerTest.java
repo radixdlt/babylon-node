@@ -65,15 +65,18 @@
 package com.radixdlt.integration.targeted.rev2.mempool;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.invariants.Checkers;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.NetworkDefinition;
@@ -95,8 +98,9 @@ public final class REv2MempoolRelayerTest {
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                SafetyRecoveryConfig.mocked(),
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.inMemory(),
@@ -118,8 +122,8 @@ public final class REv2MempoolRelayerTest {
       }
 
       // Run all nodes except validator node0
-      test.processUntil(
-          n -> Checkers.allNodesHaveExactMempoolCount(n.subList(1, n.size()), MEMPOOL_SIZE),
+      test.runUntilState(
+          n -> allHaveExactMempoolCount(MEMPOOL_SIZE).test(n.subList(1, n.size())),
           10000,
           m -> m.channelId().senderIndex() != 0 && m.channelId().receiverIndex() != 0);
     }

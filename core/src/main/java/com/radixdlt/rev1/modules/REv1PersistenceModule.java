@@ -62,73 +62,59 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.rev1.full_function;
+package com.radixdlt.rev1.modules;
 
-import com.google.inject.Module;
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.harness.deterministic.ActorConfiguration;
-import com.radixdlt.harness.deterministic.DeterministicActorsTest;
-import com.radixdlt.harness.deterministic.actors.RandomNodeRestarter;
-import com.radixdlt.rev1.forks.ForkOverwritesWithShorterEpochsModule;
-import com.radixdlt.rev1.forks.RERulesConfig;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import java.util.List;
-import java.util.Map;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.rev1.store.BerkeleyLedgerEntryStore;
+import com.radixdlt.rev1.store.StoreConfig;
+import com.radixdlt.store.ResourceStore;
+import java.util.Optional;
 
-public abstract class ApiTest extends DeterministicActorsTest {
-  private static final RERulesConfig config =
-      RERulesConfig.testingDefault().overrideMaxSigsPerRound(2);
-  private static final Amount PER_BYTE_FEE = Amount.ofMicroTokens(2);
-  private static final List<ActorConfiguration> ACTOR_CONFIGURATIONS =
-      List.of(new ActorConfiguration(RandomNodeRestarter::new, 1, 10));
-
-  public ApiTest(Module forkOverrideModule, Module byzantineModule) {
-    super(forkOverrideModule, byzantineModule);
-    this.setActorConfigurations(ACTOR_CONFIGURATIONS);
+/** Module which manages persistent storage */
+public class REv1PersistenceModule extends AbstractModule {
+  @Override
+  protected void configure() {
+    // TODO: should be singletons?
+    bind(ResourceStore.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
+    bind(PersistentVertexStore.class).to(BerkeleyLedgerEntryStore.class);
   }
 
-  // The following class is created as a workaround as gradle cannot run the tests inside a test
-  // class in parallel. We can achieve some level of parallelism splitting the tests across
-  // different test classes.
-
-  public static class ApiTest2 extends ApiTest {
-    public ApiTest2() {
-      super(new RadixEngineForksLatestOnlyModule(config.overrideMaxRounds(98)), null);
-    }
+  @Provides
+  Optional<VertexStoreState.SerializedVertexStoreState> serializedVertexStoreState(
+      BerkeleyLedgerEntryStore store) {
+    return store.loadLastVertexStoreState();
   }
 
-  public static class ApiTest1 extends ApiTest {
-    public ApiTest1() {
-      super(new RadixEngineForksLatestOnlyModule(config), null);
-    }
+  @Provides
+  StoreConfig storeConfig() {
+    return new StoreConfig(1000);
   }
 
-  public static class ApiTest0 extends ApiTest {
-    public ApiTest0() {
-      super(
-          new ForkOverwritesWithShorterEpochsModule(config),
-          new ForkOverwritesWithShorterEpochsModule(config.removeSigsPerRoundLimit()));
-    }
+  @ProvidesIntoSet
+  @ProcessOnDispatch
+  public EventProcessor<BFTHighQCUpdate> persistQC(
+      PersistentVertexStore persistentVertexStore, SystemCounters systemCounters) {
+    return update -> {
+      systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+      persistentVertexStore.save(update.getVertexStoreState());
+    };
   }
 
-  public static class ApiTest3 extends ApiTest {
-    public ApiTest3() {
-      super(
-          new RadixEngineForksLatestOnlyModule(
-              config
-                  .overrideMaxRounds(98)
-                  .overrideFeeTable(FeeTable.create(PER_BYTE_FEE, Map.of()))),
-          null);
-    }
-  }
-
-  public static class ApiTest4 extends ApiTest {
-    public ApiTest4() {
-      super(
-          new ForkOverwritesWithShorterEpochsModule(
-              config.overrideFeeTable(FeeTable.create(PER_BYTE_FEE, Map.of()))),
-          null);
-    }
+  @ProvidesIntoSet
+  @ProcessOnDispatch
+  public EventProcessor<BFTInsertUpdate> persistUpdates(
+      PersistentVertexStore persistentVertexStore, SystemCounters systemCounters) {
+    return update -> {
+      systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+      persistentVertexStore.save(update.getVertexStoreState());
+    };
   }
 }

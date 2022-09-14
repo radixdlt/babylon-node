@@ -79,6 +79,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
+import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.MockedLedgerModule;
@@ -90,14 +91,8 @@ import com.radixdlt.rev1.MockedMempoolStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
 import com.radixdlt.rev1.ReV1DispatcherModule;
-import com.radixdlt.rev1.modules.REv1ConsensusRecoveryModule;
-import com.radixdlt.rev1.modules.REv1LedgerRecoveryModule;
-import com.radixdlt.rev1.modules.RadixEngineModule;
-import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
-import com.radixdlt.rev2.modules.MockedSyncServiceModule;
-import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
-import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
+import com.radixdlt.rev1.modules.*;
+import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statecomputer.REv2StatelessComputerModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
@@ -107,6 +102,26 @@ import java.util.Optional;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
+  public static final class SafetyRecoveryConfig {
+    private final Option<String> root;
+
+    private SafetyRecoveryConfig(Option<String> root) {
+      this.root = root;
+    }
+
+    public static SafetyRecoveryConfig mocked() {
+      return new SafetyRecoveryConfig(Option.none());
+    }
+
+    public static SafetyRecoveryConfig berkeleyStore(String root) {
+      return new SafetyRecoveryConfig(Option.some(root));
+    }
+
+    public Module asModule() {
+      return root.fold(BerkeleySafetyStoreModule::new, MockedSafetyStoreModule::new);
+    }
+  }
+
   public static final class ConsensusConfig {
     private final int bftSyncPatienceMillis;
     private final long pacemakerBaseTimeoutMs;
@@ -201,6 +216,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   }
 
   private final boolean epochs;
+  private final SafetyRecoveryConfig safetyRecoveryConfig;
   private final ConsensusConfig consensusConfig;
   private final LedgerConfig ledgerConfig;
 
@@ -208,25 +224,31 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   private final Module mockedSyncServiceModule = new MockedSyncServiceModule();
 
   public FunctionalRadixNodeModule(
+      boolean epochs,
+      SafetyRecoveryConfig safetyRecoveryConfig,
+      ConsensusConfig consensusConfig,
+      LedgerConfig ledgerConfig) {
+    this.epochs = epochs;
+    this.safetyRecoveryConfig = safetyRecoveryConfig;
+    this.consensusConfig = consensusConfig;
+    this.ledgerConfig = ledgerConfig;
+  }
+
+  public FunctionalRadixNodeModule(
       ConsensusConfig consensusConfig,
       StateComputerConfig stateComputerConfig,
       SyncRelayConfig syncRelayConfig) {
     this(
         true,
+        SafetyRecoveryConfig.mocked(),
         consensusConfig,
         LedgerConfig.stateComputerWithSyncRelay(stateComputerConfig, syncRelayConfig));
-  }
-
-  public FunctionalRadixNodeModule(
-      boolean epochs, ConsensusConfig consensusConfig, LedgerConfig ledgerConfig) {
-    this.epochs = epochs;
-    this.consensusConfig = consensusConfig;
-    this.ledgerConfig = ledgerConfig;
   }
 
   public static FunctionalRadixNodeModule justLedger() {
     return new FunctionalRadixNodeModule(
         false,
+        SafetyRecoveryConfig.mocked(),
         ConsensusConfig.of(),
         LedgerConfig.stateComputerNoSync(
             StateComputerConfig.mocked(new MockedMempoolConfig.NoMempool())));
@@ -255,11 +277,16 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     // Consensus
     install(consensusConfig.asModule());
     install(new ConsensusModule());
+    install(safetyRecoveryConfig.asModule());
     if (this.epochs) {
       install(new EpochsConsensusModule());
+      install(new EpochsSafetyRecoveryModule());
     } else {
       install(new NoEpochsConsensusModule());
+      install(new NoEpochsSafetyRecoveryModule());
     }
+
+    Multibinder.newSetBinder(binder(), NodeAutoCloseable.class);
 
     // Ledger
     switch (this.ledgerConfig) {
@@ -268,7 +295,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         install(new MockedLedgerModule());
       }
       case StateComputerLedgerConfig stateComputerLedgerConfig -> {
-        Multibinder.newSetBinder(binder(), AutoCloseable.class);
         install(new LedgerModule());
 
         // Sync

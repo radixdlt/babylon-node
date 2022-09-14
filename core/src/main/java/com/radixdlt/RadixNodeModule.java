@@ -91,12 +91,12 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
-import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
+import com.radixdlt.rev2.modules.BerkeleySafetyStoreModule;
+import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.CoreApiServerConfig;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.store.DatabasePropertiesModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.IOUtils;
@@ -166,6 +166,11 @@ public final class RadixNodeModule extends AbstractModule {
     install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
     install(new DispatcherModule());
 
+    var databasePath = properties.get("db.location", ".//RADIXDB");
+
+    // Recovery
+    install(new BerkeleySafetyStoreModule(databasePath));
+
     // Consensus
     install(new PersistedBFTKeyModule());
     install(new CryptoModule());
@@ -191,10 +196,9 @@ public final class RadixNodeModule extends AbstractModule {
     // State Computer
     var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
-    var databasePath = properties.get("db.location", ".//RADIXDB");
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
     install(REv2StateManagerModule.create(networkId, databaseConfig, Option.some(mempoolConfig)));
-    install(new MockedPersistenceStoreModule());
+    install(new MockedLivenessStoreModule());
     install(new REv2LedgerRecoveryModule());
 
     // Core API server
@@ -206,7 +210,7 @@ public final class RadixNodeModule extends AbstractModule {
     install(new CoreApiServerModule(coreApiServerConfig));
 
     // Storage
-    install(new DatabasePropertiesModule());
+    // install(new DatabasePropertiesModule());
     // install(new PersistenceModule());
     // install(new ConsensusRecoveryModule());
     // install(new LedgerRecoveryModule());

@@ -72,6 +72,7 @@ import static com.sleepycat.je.EnvironmentConfig.LOG_FILE_CACHE_SIZE;
 import static com.sleepycat.je.EnvironmentConfig.TREE_MAX_EMBEDDED_LN;
 
 import com.google.inject.Inject;
+import com.radixdlt.environment.NodeAutoCloseable;
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Durability;
@@ -83,7 +84,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class DatabaseEnvironment {
+public final class DatabaseEnvironment implements NodeAutoCloseable {
   private static final Logger log = LogManager.getLogger();
 
   private Environment environment;
@@ -149,5 +150,10 @@ public final class DatabaseEnvironment {
 
     value *= Long.signum(bytes);
     return String.format("%.1f %ciB", value / 1024.0, ci.current());
+  }
+
+  @Override
+  public void close() {
+    environment.close();
   }
 }

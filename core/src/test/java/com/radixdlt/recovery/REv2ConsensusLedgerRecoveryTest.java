@@ -73,6 +73,9 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.REV2TransactionGenerator;
@@ -94,8 +97,9 @@ public final class REv2ConsensusLedgerRecoveryTest {
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
@@ -111,14 +115,14 @@ public final class REv2ConsensusLedgerRecoveryTest {
       test.startAllNodes();
 
       // Arrange: Situation where behindNode has consensus behind ledger
-      test.processUntil(allAtExactlyStateVersion(INITIAL_VERSION), onlyConsensusEvents());
-      test.processUntil(anyAtExactlyStateVersion(INITIAL_VERSION + 1), onlyConsensusEvents());
+      test.runUntilState(allAtExactlyStateVersion(INITIAL_VERSION), onlyConsensusEvents());
+      test.runUntilState(anyAtExactlyStateVersion(INITIAL_VERSION + 1), onlyConsensusEvents());
       var behindNodeIndex = test.getNodes().getNode(atExactlyStateVersion(INITIAL_VERSION));
-      test.processUntil(allAtExactlyStateVersion(INITIAL_VERSION + 1), onlyLedgerSyncEvents());
+      test.runUntilState(allAtExactlyStateVersion(INITIAL_VERSION + 1), onlyLedgerSyncEvents());
 
       // Act: Reboot node
       test.restartNode(behindNodeIndex);
-      test.processNext(
+      test.runNext(
           msg -> msg.message() instanceof Proposal && msg.channelId().isLocal(behindNodeIndex));
 
       // Assert: Can run bft syncing with no issue

@@ -77,6 +77,7 @@ import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -87,7 +88,11 @@ public class OneByzantineGenesisTest {
       SimulationTest.builder()
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .functionalNodeModule(
-              new FunctionalRadixNodeModule(false, ConsensusConfig.of(1000), LedgerConfig.mocked()))
+              new FunctionalRadixNodeModule(
+                  false,
+                  SafetyRecoveryConfig.mocked(),
+                  ConsensusConfig.of(1000),
+                  LedgerConfig.mocked()))
           .addTestModules(ConsensusMonitors.safety());
 
   @Test

@@ -72,13 +72,12 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.radixdlt.api.common.JSON;
-import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.SingleNodeAndPeersDeterministicNetworkModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
@@ -88,6 +87,7 @@ import com.radixdlt.p2p.RadixNodeUri;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import io.undertow.io.Sender;
@@ -103,19 +103,8 @@ public abstract class ApiTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
 
   @Inject private SingleNodeDeterministicRunner runner;
-  private final Amount totalTokenAmount = Amount.ofTokens(110);
-  private final Amount stakeAmount = Amount.ofTokens(10);
-  private final Amount liquidAmount =
-      Amount.ofSubunits(totalTokenAmount.toSubunits().subtract(stakeAmount.toSubunits()));
-  private final int mempoolMaxSize;
 
-  protected ApiTest(int mempoolMaxSize) {
-    this.mempoolMaxSize = mempoolMaxSize;
-  }
-
-  protected ApiTest() {
-    this.mempoolMaxSize = 10;
-  }
+  protected ApiTest() {}
 
   @Before
   public void setup() {
@@ -123,11 +112,17 @@ public abstract class ApiTest {
         Guice.createInjector(
             new SingleNodeAndPeersDeterministicNetworkModule(
                 TEST_KEY,
-                StateComputerConfig.rev2(
-                    Network.INTEGRATIONTESTNET.getId(),
-                    REv2DatabaseConfig.inMemory(),
-                    StateComputerConfig.REV2ProposerConfig.mempool(
-                        mempoolMaxSize, MempoolRelayConfig.of()))),
+                new FunctionalRadixNodeModule(
+                    false,
+                    FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                    FunctionalRadixNodeModule.ConsensusConfig.of(),
+                    FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                        StateComputerConfig.rev2(
+                            Network.INTEGRATIONTESTNET.getId(),
+                            REv2DatabaseConfig.inMemory(),
+                            StateComputerConfig.REV2ProposerConfig.mempool(
+                                10, MempoolRelayConfig.of())),
+                        new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),
             new AbstractModule() {
@@ -150,18 +145,6 @@ public abstract class ApiTest {
               }
             });
     injector.injectMembers(this);
-  }
-
-  protected Amount getStakeAmount() {
-    return stakeAmount;
-  }
-
-  protected Amount getLiquidAmount() {
-    return liquidAmount;
-  }
-
-  protected ECDSASecp256k1PublicKey selfKey() {
-    return TEST_KEY.getPublicKey();
   }
 
   protected final void start() {

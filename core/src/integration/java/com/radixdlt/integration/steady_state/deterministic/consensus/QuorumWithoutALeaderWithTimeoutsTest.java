@@ -74,6 +74,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.SystemCounters;
@@ -99,11 +100,12 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     false,
+                    SafetyRecoveryConfig.mocked(),
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
     test.startAllNodes();
-    test.runUntil(DeterministicTest.hasReachedRound(Round.of(numRounds)));
+    test.runUntilMessage(DeterministicTest.hasReachedRound(Round.of(numRounds)));
 
     for (int nodeIndex = 0; nodeIndex < numValidatorNodes; ++nodeIndex) {
       final SystemCounters counters = test.getInstance(nodeIndex, SystemCounters.class);
@@ -123,8 +125,7 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
   private static MessageMutator dropAllNonTimeoutVotes() {
     return (message, queue) -> {
       final Object msg = message.message();
-      if (msg instanceof Vote) {
-        final Vote vote = (Vote) msg;
+      if (msg instanceof final Vote vote) {
         return vote.getTimeoutSignature().isEmpty();
       }
       return false;

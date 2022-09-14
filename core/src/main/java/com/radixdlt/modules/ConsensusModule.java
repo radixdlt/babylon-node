@@ -71,15 +71,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
@@ -150,6 +142,7 @@ public final class ConsensusModule extends AbstractModule {
       HashVerifier verifier,
       EventDispatcher<RoundQuorumReached> roundQuorumReachedEventDispatcher,
       EventDispatcher<NoVote> noVoteEventDispatcher,
+      EventDispatcher<DoubleVote> doubleVoteEventDispatcher,
       RemoteEventDispatcher<Vote> voteDispatcher) {
     return (self,
         pacemaker,
@@ -174,6 +167,7 @@ public final class ConsensusModule extends AbstractModule {
                   roundQuorumReachedEventDispatcher.dispatch(roundQuorumReached);
                 })
             .noVoteEventDispatcher(noVoteEventDispatcher)
+            .doubleVoteEventDispatcher(doubleVoteEventDispatcher)
             .roundUpdate(roundUpdate)
             .bftSyncer(bftSyncer)
             .validatorSet(validatorSet)
