@@ -76,8 +76,8 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.application.tokens.Amount;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
@@ -148,11 +148,11 @@ public final class GenerateUniverses {
       return;
     }
 
-    var validatorKeys = new HashSet<ECPublicKey>();
+    var validatorKeys = new HashSet<ECDSASecp256k1PublicKey>();
     if (cmd.getOptionValue("p") != null) {
       var hexKeys = cmd.getOptionValue("p").split(",");
       for (var hexKey : hexKeys) {
-        validatorKeys.add(ECPublicKey.fromHex(hexKey));
+        validatorKeys.add(ECDSASecp256k1PublicKey.fromHex(hexKey));
       }
     }
     final int validatorsCount =
@@ -161,7 +161,7 @@ public final class GenerateUniverses {
     generatedValidatorKeys.stream().map(ECKeyPair::getPublicKey).forEach(validatorKeys::add);
 
     // Issuances to mnemomic account, keys 1-5, and 1st validator
-    final var mnemomicKey = ECPublicKey.fromHex(mnemomicKeyHex);
+    final var mnemomicKey = ECDSASecp256k1PublicKey.fromHex(mnemomicKeyHex);
     final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
     tokenIssuancesBuilder.add(TokenIssuance.of(mnemomicKey, DEFAULT_ISSUANCE));
     PrivateKeys.numeric(1)
@@ -222,7 +222,7 @@ public final class GenerateUniverses {
                     bind(new TypeLiteral<ImmutableList<TokenIssuance>>() {})
                         .annotatedWith(Genesis.class)
                         .toInstance(tokenIssuancesBuilder.build());
-                    bind(new TypeLiteral<Set<ECPublicKey>>() {})
+                    bind(new TypeLiteral<Set<ECDSASecp256k1PublicKey>>() {})
                         .annotatedWith(Genesis.class)
                         .toInstance(validatorKeys);
                     bindConstant().annotatedWith(MaxValidators.class).to(100);

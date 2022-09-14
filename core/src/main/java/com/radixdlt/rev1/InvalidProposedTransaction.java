@@ -64,7 +64,7 @@
 
 package com.radixdlt.rev1;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.Objects;
 
@@ -73,25 +73,25 @@ import java.util.Objects;
  * verification.
  */
 public final class InvalidProposedTransaction {
-  private final ECPublicKey proposer;
+  private final ECDSASecp256k1PublicKey proposer;
   private final RawTransaction transaction;
   private final Exception e;
 
   private InvalidProposedTransaction(
-      ECPublicKey proposer, RawTransaction transaction, Exception e) {
+      ECDSASecp256k1PublicKey proposer, RawTransaction transaction, Exception e) {
     this.proposer = proposer;
     this.transaction = transaction;
     this.e = e;
   }
 
   public static InvalidProposedTransaction create(
-      ECPublicKey proposer, RawTransaction transaction, Exception e) {
+      ECDSASecp256k1PublicKey proposer, RawTransaction transaction, Exception e) {
     Objects.requireNonNull(transaction);
     Objects.requireNonNull(e);
     return new InvalidProposedTransaction(proposer, transaction, e);
   }
 
-  public ECPublicKey getProposer() {
+  public ECDSASecp256k1PublicKey getProposer() {
     return proposer;
   }
 

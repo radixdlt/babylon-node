@@ -62,118 +62,50 @@
  * permissions under this License.
  */
 
-use crate::core_api::generated::server::MakeService;
-use crate::core_api::generated::{models, TransactionsPostResponse};
-use crate::core_api::generated::{
-    Api, StatusNetworkConfigurationPostResponse, TransactionPreviewPostResponse,
-    TransactionSubmitPostResponse,
-};
-
-use async_trait::async_trait;
-
 use std::future::Future;
-use std::marker::PhantomData;
 
+use axum::{routing::post, Extension, Router};
 use std::sync::{Arc, Mutex};
 
-use crate::core_api::generated::models::CommittedTransactionsRequest;
-use crate::core_api::{network_configuration, preview, transactions};
 use scrypto::prelude::*;
 use state_manager::jni::state_manager::ActualStateManager;
-use swagger::ApiError;
-use swagger::EmptyContext;
-use swagger::{Has, XSpanIdString};
 
-pub async fn create<F>(
+use super::handlers::*;
+
+#[derive(Clone)]
+pub(crate) struct CoreApiState {
+    pub state_manager: Arc<Mutex<ActualStateManager>>,
+}
+// TODO - try mapping request JSON errors into Response type
+pub async fn create_server<F>(
     bind_addr: &str,
     shutdown_signal: F,
     state_manager: Arc<Mutex<ActualStateManager>>,
 ) where
     F: Future<Output = ()>,
 {
-    let server = Server::new(state_manager);
+    let core_api_state = CoreApiState { state_manager };
 
-    let service = MakeService::new(server);
-    let service =
-        crate::core_api::generated::context::MakeAddContext::<_, EmptyContext>::new(service);
+    let router = Router::new()
+        .route(
+            "/status/network-configuration",
+            post(handle_network_configuration),
+        )
+        .route("/status/network-status", post(handle_network_status))
+        .route("/transaction/submit", post(handle_transaction_submit))
+        .route("/transaction/preview", post(handle_transaction_preview))
+        .route("/transaction/stream", post(handle_transaction_stream))
+        .layer(Extension(core_api_state));
+
+    let prefixed_router = Router::new().nest("/core", router);
 
     let bind_addr = bind_addr.parse().expect("Failed to parse bind address");
-    hyper::server::Server::bind(&bind_addr)
-        .serve(service)
+
+    axum::Server::bind(&bind_addr)
+        .serve(prefixed_router.into_make_service())
         .with_graceful_shutdown(shutdown_signal)
         .await
         .unwrap();
-}
-
-pub struct Server<C> {
-    state_manager: Arc<Mutex<ActualStateManager>>,
-    marker: PhantomData<C>,
-}
-
-/// Keeping this for the future when, at some point we'll potentially replace ActualStateManager with a generic type.
-/// The `derive` macro doesn't always work reliably in such cases.
-/// See: https://users.rust-lang.org/t/why-does-deriving-clone-not-work-in-this-case-but-implementing-manually-does/29075
-impl<C> Clone for Server<C> {
-    fn clone(&self) -> Self {
-        Server {
-            state_manager: self.state_manager.clone(),
-            marker: self.marker,
-        }
-    }
-}
-
-impl<C> Server<C> {
-    pub fn new(state_manager: Arc<Mutex<ActualStateManager>>) -> Self {
-        Server {
-            state_manager,
-            marker: PhantomData,
-        }
-    }
-}
-
-#[async_trait]
-impl<C> Api<C> for Server<C>
-where
-    C: Has<XSpanIdString> + Send + Sync,
-{
-    async fn status_network_configuration_post(
-        &self,
-        _context: &C,
-    ) -> Result<StatusNetworkConfigurationPostResponse, ApiError> {
-        Ok(network_configuration::handle_network_configuration(
-            self.state_manager.clone(),
-        ))
-    }
-
-    async fn transaction_preview_post(
-        &self,
-        request: models::TransactionPreviewRequest,
-        _context: &C,
-    ) -> Result<TransactionPreviewPostResponse, ApiError> {
-        Ok(preview::handle_preview(self.state_manager.clone(), request))
-    }
-
-    async fn transaction_submit_post(
-        &self,
-        request: models::TransactionSubmitRequest,
-        _context: &C,
-    ) -> Result<TransactionSubmitPostResponse, ApiError> {
-        Ok(transactions::handle_submit_transaction(
-            self.state_manager.clone(),
-            request,
-        ))
-    }
-
-    async fn transactions_post(
-        &self,
-        request: CommittedTransactionsRequest,
-        _context: &C,
-    ) -> Result<TransactionsPostResponse, ApiError> {
-        Ok(transactions::handle_get_committed_transactions(
-            self.state_manager.clone(),
-            request,
-        ))
-    }
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]

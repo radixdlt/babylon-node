@@ -89,7 +89,7 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointUtil;
 import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
 
-/** Utilities used by both {@link ECPublicKey} and {@link ECKeyPair}. */
+/** Utilities used by both {@link ECDSASecp256k1PublicKey} and {@link ECKeyPair}. */
 public class ECKeyUtils {
 
   private ECKeyUtils() {
@@ -195,12 +195,12 @@ public class ECKeyUtils {
     switch (pubkey0) {
       case 2:
       case 3:
-        if (publicKey.length != ECPublicKey.COMPRESSED_BYTES) {
+        if (publicKey.length != ECDSASecp256k1PublicKey.COMPRESSED_BYTES) {
           throw new PublicKeyException("Public key has invalid compressed size");
         }
         break;
       case 4:
-        if (publicKey.length != ECPublicKey.UNCOMPRESSED_BYTES) {
+        if (publicKey.length != ECDSASecp256k1PublicKey.UNCOMPRESSED_BYTES) {
           throw new PublicKeyException("Public key has invalid uncompressed size");
         }
         break;
@@ -250,7 +250,7 @@ public class ECKeyUtils {
    * @param hash hash from which signature was created
    * @return recovered public key
    */
-  static Optional<ECPoint> recoverFromSignature(ECDSASignature signature, byte[] hash) {
+  static Optional<ECPoint> recoverFromSignature(ECDSASecp256k1Signature signature, byte[] hash) {
     return recoverFromSignature(signature.getV(), signature.getR(), signature.getS(), hash);
   }
 

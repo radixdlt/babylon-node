@@ -68,7 +68,7 @@ import com.radixdlt.application.system.state.ValidatorBFTData;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokenResourceMetadata;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import java.util.List;
 
 public sealed interface REEvent {
@@ -83,7 +83,8 @@ public sealed interface REEvent {
       implements REEvent {}
 
   record ValidatorBFTDataEvent(
-      ECPublicKey validatorKey, long completedProposals, long missedProposals) implements REEvent {
+      ECDSASecp256k1PublicKey validatorKey, long completedProposals, long missedProposals)
+      implements REEvent {
 
     public static ValidatorBFTDataEvent fromData(ValidatorBFTData data) {
       return new ValidatorBFTDataEvent(
@@ -91,6 +92,6 @@ public sealed interface REEvent {
     }
   }
 
-  record ValidatorMissedProposalsEvent(ECPublicKey validatorKey, long missedProposals)
+  record ValidatorMissedProposalsEvent(ECDSASecp256k1PublicKey validatorKey, long missedProposals)
       implements REEvent {}
 }

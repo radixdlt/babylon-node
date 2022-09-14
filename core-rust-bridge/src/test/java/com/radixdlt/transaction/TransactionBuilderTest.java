@@ -69,6 +69,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.exceptions.ManifestCompilationException;
 import com.radixdlt.rev2.NetworkDefinition;
+import java.util.HashMap;
 import org.junit.Test;
 
 public final class TransactionBuilderTest {
@@ -92,7 +93,8 @@ public final class TransactionBuilderTest {
 
     // Act
     final var result =
-        TransactionBuilder.compileManifest(NetworkDefinition.LOCAL_SIMULATOR, manifest);
+        TransactionBuilder.compileManifest(
+            NetworkDefinition.LOCAL_SIMULATOR, manifest, new HashMap<>());
 
     // Assert
     assertTrue(result.length > 100); // Just to make sure that it's non-empty
@@ -105,7 +107,7 @@ public final class TransactionBuilderTest {
             ManifestCompilationException.class,
             () ->
                 TransactionBuilder.compileManifest(
-                    NetworkDefinition.INT_TEST_NET, "INVALID INSTRUCTION;"));
+                    NetworkDefinition.INT_TEST_NET, "INVALID INSTRUCTION;", new HashMap<>()));
     assertTrue(exception.getMessage().contains("UnknownIdentifier"));
   }
 }

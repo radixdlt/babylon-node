@@ -1,100 +1,128 @@
-use crate::core_api::conversions::common::{to_hex, to_sbor_hex};
-use crate::core_api::conversions::to_api_substate;
-use crate::core_api::generated::models;
-use radix_engine::fee::FeeSummary;
+use super::addressing::*;
+use crate::core_api::models::*;
+use crate::core_api::*;
+use radix_engine::{
+    fee::FeeSummary as EngineFeeSummary,
+    ledger::{OutputId, OutputValue},
+    state_manager::VirtualSubstateId,
+    types::{hash, scrypto_encode, SubstateId},
+};
 use scrypto::address::Bech32Encoder;
 use state_manager::{CommittedTransactionStatus, LedgerTransactionReceipt};
 
 pub fn to_api_receipt(
     bech32_encoder: &Bech32Encoder,
     receipt: LedgerTransactionReceipt,
-) -> models::TransactionReceipt {
+) -> Result<TransactionReceipt, MappingError> {
     let fee_summary = receipt.fee_summary;
-    let entity_changes = receipt.entity_changes;
 
     let (status, output, error_message) = match receipt.status {
         CommittedTransactionStatus::Success(output) => {
-            let output_hex: Vec<String> = output.into_iter().map(to_hex).collect();
-            (models::TransactionStatus::SUCCEEDED, Some(output_hex), None)
+            (TransactionStatus::Succeeded, Some(output), None)
         }
         CommittedTransactionStatus::Failure(error) => {
-            (models::TransactionStatus::FAILED, None, Some(error))
+            (TransactionStatus::Failed, None, Some(error))
         }
     };
 
     let state_updates = receipt.state_updates;
 
-    let api_state_updates = models::StateUpdates {
-        down_virtual_substates: state_updates
-            .down_virtual_substates
-            .into_iter()
-            .map(|v| to_sbor_hex(&v).into())
-            .collect(),
-        up_substates: state_updates
-            .up_substates
-            .into_iter()
-            .map(|(substate_id, output_value)| {
-                let (json_type, json_str) = to_api_substate(&output_value.substate, bech32_encoder);
+    let up_substates = state_updates
+        .up_substates
+        .into_iter()
+        .map(|substate_kv| to_api_up_substate(bech32_encoder, substate_kv))
+        .collect::<Result<Vec<_>, _>>()?;
 
-                models::UpSubstate {
-                    substate_id: to_sbor_hex(&substate_id),
-                    version: output_value.version.to_string(),
-                    substate_bytes: to_sbor_hex(&output_value.substate),
-                    substate_json_type: json_type,
-                    substate_json_str: json_str,
-                }
-            })
-            .collect(),
-        down_substates: state_updates
-            .down_substates
-            .into_iter()
-            .map(|v| models::DownSubstate {
-                substate_id: to_sbor_hex(&v.substate_id),
-                substate_hash: v.substate_hash.to_string(),
-                version: v.version.to_string(),
-            })
-            .collect(),
-        new_roots: state_updates
-            .new_roots
-            .into_iter()
-            .map(|v| to_sbor_hex(&v).into())
-            .collect(),
+    let down_substates = state_updates
+        .down_substates
+        .into_iter()
+        .map(to_api_down_substate)
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let down_virtual_substates = state_updates
+        .down_virtual_substates
+        .into_iter()
+        .map(to_api_down_virtual_substate)
+        .collect::<Result<Vec<_>, _>>()?;
+
+    // These should be entity ids, not substate ids
+    let new_global_entities = state_updates
+        .new_roots
+        .into_iter()
+        .map(|x| to_api_global_entity_id_from_substate_id(bech32_encoder, x))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let api_state_updates = StateUpdates {
+        up_substates,
+        down_substates,
+        down_virtual_substates,
+        new_global_entities,
     };
 
     let api_fee_summary = to_api_fee_summary(fee_summary);
 
-    models::TransactionReceipt {
+    let api_output = match output {
+        Some(output) => Some(
+            output
+                .into_iter()
+                .map(|line_output| scrypto_bytes_to_api_sbor_data(&line_output))
+                .collect::<Result<Vec<_>, _>>()?,
+        ),
+        None => None,
+    };
+
+    Ok(TransactionReceipt {
         status,
-        fee_summary: api_fee_summary,
-        state_updates: api_state_updates,
-        new_package_addresses: entity_changes
-            .new_package_addresses
-            .into_iter()
-            .map(|v| bech32_encoder.encode_package_address(&v).into())
-            .collect(),
-        new_component_addresses: entity_changes
-            .new_component_addresses
-            .into_iter()
-            .map(|v| bech32_encoder.encode_component_address(&v).into())
-            .collect(),
-        new_resource_addresses: entity_changes
-            .new_resource_addresses
-            .into_iter()
-            .map(|v| bech32_encoder.encode_resource_address(&v).into())
-            .collect(),
-        output,
+        fee_summary: Box::new(api_fee_summary),
+        state_updates: Box::new(api_state_updates),
+        output: api_output,
         error_message,
-    }
+    })
 }
 
-pub fn to_api_fee_summary(fee_summary: FeeSummary) -> models::FeeSummary {
-    models::FeeSummary {
+pub fn to_api_up_substate(
+    bech32_encoder: &Bech32Encoder,
+    (substate_id, output_value): (SubstateId, OutputValue),
+) -> Result<UpSubstate, MappingError> {
+    let substate_bytes = scrypto_encode(&output_value.substate);
+    let hash = to_hex(hash(&substate_bytes));
+
+    let api_substate_data = Option::Some(to_api_substate(
+        &substate_id,
+        &output_value.substate,
+        bech32_encoder,
+    )?);
+    Ok(UpSubstate {
+        substate_id: Box::new(to_api_substate_id(substate_id)?),
+        version: to_api_substate_version(output_value.version)?,
+        substate_bytes: to_hex(substate_bytes),
+        substate_data_hash: hash,
+        substate_data: api_substate_data,
+    })
+}
+
+pub fn to_api_down_substate(output_id: OutputId) -> Result<DownSubstate, MappingError> {
+    Ok(DownSubstate {
+        substate_id: Box::new(to_api_substate_id(output_id.substate_id)?),
+        substate_data_hash: to_hex(output_id.substate_hash),
+        version: to_api_substate_version(output_id.version)?,
+    })
+}
+
+pub fn to_api_down_virtual_substate(
+    VirtualSubstateId(root_substate_id, key): VirtualSubstateId,
+) -> Result<models::SubstateId, MappingError> {
+    to_api_virtual_substate_id(root_substate_id, key)
+}
+
+pub fn to_api_fee_summary(fee_summary: EngineFeeSummary) -> FeeSummary {
+    FeeSummary {
         loan_fully_repaid: fee_summary.loan_fully_repaid,
-        cost_unit_limit: fee_summary.cost_unit_limit.to_string(),
-        cost_unit_consumed: fee_summary.cost_unit_consumed.to_string(),
-        cost_unit_price: fee_summary.cost_unit_price.to_string(),
-        tip_percentage: fee_summary.tip_percentage.to_string(),
-        xrd_burned: fee_summary.burned.to_string(),
-        xrd_tipped: fee_summary.tipped.to_string(),
+        cost_unit_limit: to_api_u32_as_i64(fee_summary.cost_unit_limit),
+        cost_unit_consumed: to_api_u32_as_i64(fee_summary.cost_unit_consumed),
+        cost_unit_price_attos: to_api_decimal_attos(&fee_summary.cost_unit_price),
+        tip_percentage: to_api_u32_as_i64(fee_summary.tip_percentage),
+        xrd_burned_attos: to_api_decimal_attos(&fee_summary.burned),
+        xrd_tipped_attos: to_api_decimal_attos(&fee_summary.tipped),
     }
 }

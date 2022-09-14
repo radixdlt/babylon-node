@@ -65,8 +65,8 @@
 package com.radixdlt.consensus;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 
 /** Verifies signatures against hashes. */
 @FunctionalInterface
@@ -79,5 +79,5 @@ public interface HashVerifier {
    * @param sig The signature to verify
    * @return {@code true} if the signature matches, {@code false} otherwise
    */
-  boolean verify(ECPublicKey pubKey, HashCode hash, ECDSASignature sig);
+  boolean verify(ECDSASecp256k1PublicKey pubKey, HashCode hash, ECDSASecp256k1Signature sig);
 }

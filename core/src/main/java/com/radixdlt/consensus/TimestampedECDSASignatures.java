@@ -69,6 +69,8 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -129,8 +131,8 @@ public final class TimestampedECDSASignatures {
   /**
    * Returns a new instance containing {@code nodeToTimestampAndSignature}.
    *
-   * @param nodeToTimestampAndSignature The map of {@link com.radixdlt.crypto.ECDSASignature}s and
-   *     their corresponding timestamps and {@link com.radixdlt.crypto.ECPublicKey}
+   * @param nodeToTimestampAndSignature The map of {@link ECDSASecp256k1Signature}s and their
+   *     corresponding timestamps and {@link ECDSASecp256k1PublicKey}
    */
   public TimestampedECDSASignatures(
       Map<BFTNode, TimestampedECDSASignature> nodeToTimestampAndSignature) {

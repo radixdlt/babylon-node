@@ -68,11 +68,11 @@ import static java.util.Objects.requireNonNull;
 
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 
-public record StakeOwnership(ECPublicKey delegateKey, REAddr owner, UInt256 amount)
+public record StakeOwnership(ECDSASecp256k1PublicKey delegateKey, REAddr owner, UInt256 amount)
     implements ResourceInBucket {
   public StakeOwnership {
     if (amount.isZero()) {

@@ -68,20 +68,20 @@ import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import java.util.Objects;
 
 public final class StakeOwnershipBucket implements Bucket {
   private final REAddr owner;
-  private final ECPublicKey delegateKey;
+  private final ECDSASecp256k1PublicKey delegateKey;
 
-  private StakeOwnershipBucket(ECPublicKey delegateKey, REAddr owner) {
+  private StakeOwnershipBucket(ECDSASecp256k1PublicKey delegateKey, REAddr owner) {
     this.delegateKey = Objects.requireNonNull(delegateKey);
     this.owner = Objects.requireNonNull(owner);
   }
 
-  public static StakeOwnershipBucket from(ECPublicKey validator, REAddr owner) {
+  public static StakeOwnershipBucket from(ECDSASecp256k1PublicKey validator, REAddr owner) {
     return new StakeOwnershipBucket(validator, owner);
   }
 
@@ -109,7 +109,7 @@ public final class StakeOwnershipBucket implements Bucket {
   }
 
   @Override
-  public ECPublicKey getValidatorKey() {
+  public ECDSASecp256k1PublicKey getValidatorKey() {
     return delegateKey;
   }
 

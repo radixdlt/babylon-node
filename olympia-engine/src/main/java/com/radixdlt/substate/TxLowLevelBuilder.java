@@ -76,7 +76,7 @@ import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Shorts;
@@ -364,7 +364,7 @@ public final class TxLowLevelBuilder {
     return HashUtils.sha256Twice(blob()); // this is a double hash
   }
 
-  public TxLowLevelBuilder sig(ECDSASignature signature) {
+  public TxLowLevelBuilder sig(ECDSASecp256k1Signature signature) {
     instruction(REInstruction.REMicroOp.SIG, REFieldSerialization.serializeSignature(signature));
     return this;
   }

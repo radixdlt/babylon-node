@@ -64,7 +64,7 @@
 
 package com.radixdlt.identifiers;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import java.nio.ByteBuffer;
@@ -129,16 +129,16 @@ public final class REAddr {
     },
     PUB_KEY((byte) 4) {
       public REAddr parse(ByteBuffer buf) {
-        var addr = new byte[ECPublicKey.COMPRESSED_BYTES + 1];
+        var addr = new byte[ECDSASecp256k1PublicKey.COMPRESSED_BYTES + 1];
         addr[0] = type;
-        buf.get(addr, 1, ECPublicKey.COMPRESSED_BYTES);
+        buf.get(addr, 1, ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
         return new REAddr(addr);
       }
 
       public Optional<String> verify(ByteBuffer buf) {
-        if (buf.remaining() != ECPublicKey.COMPRESSED_BYTES) {
+        if (buf.remaining() != ECDSASecp256k1PublicKey.COMPRESSED_BYTES) {
           return Optional.of(
-              "Pub key address must have " + ECPublicKey.COMPRESSED_BYTES + " bytes");
+              "Pub key address must have " + ECDSASecp256k1PublicKey.COMPRESSED_BYTES + " bytes");
         }
         return Optional.empty();
       }
@@ -171,7 +171,7 @@ public final class REAddr {
     }
   }
 
-  public static final int PUB_KEY_BYTES = ECPublicKey.COMPRESSED_BYTES + 1;
+  public static final int PUB_KEY_BYTES = ECDSASecp256k1PublicKey.COMPRESSED_BYTES + 1;
   public static final int HASHED_KEY_BYTES = 26;
   private final byte[] addr;
 
@@ -197,7 +197,7 @@ public final class REAddr {
     return new REAddr(hash);
   }
 
-  public static byte[] pkToHash(String name, ECPublicKey publicKey) {
+  public static byte[] pkToHash(String name, ECDSASecp256k1PublicKey publicKey) {
     var nameBytes = name.getBytes(StandardCharsets.UTF_8);
     var dataToHash = new byte[33 + nameBytes.length];
     System.arraycopy(publicKey.getCompressedBytes(), 0, dataToHash, 0, 33);
@@ -206,7 +206,7 @@ public final class REAddr {
     return Arrays.copyOfRange(hash.asBytes(), 32 - HASHED_KEY_BYTES, 32);
   }
 
-  public boolean allowToClaimAddress(ECPublicKey publicKey, byte[] arg) {
+  public boolean allowToClaimAddress(ECDSASecp256k1PublicKey publicKey, byte[] arg) {
     if (addr[0] == REAddrType.HASHED_KEY.type) {
       var hash = REAddr.pkToHash(new String(arg), publicKey);
       return Arrays.equals(addr, 1, HASHED_KEY_BYTES + 1, hash, 0, HASHED_KEY_BYTES);
@@ -219,13 +219,14 @@ public final class REAddr {
     return getType() == REAddrType.PUB_KEY;
   }
 
-  public Optional<ECPublicKey> publicKey() {
+  public Optional<ECDSASecp256k1PublicKey> publicKey() {
     if (!isAccount()) {
       return Optional.empty();
     }
 
     try {
-      return Optional.of(ECPublicKey.fromBytes(Arrays.copyOfRange(addr, 1, addr.length)));
+      return Optional.of(
+          ECDSASecp256k1PublicKey.fromBytes(Arrays.copyOfRange(addr, 1, addr.length)));
     } catch (PublicKeyException e) {
       return Optional.empty();
     }
@@ -238,7 +239,7 @@ public final class REAddr {
     }
   }
 
-  public void verifyWithdrawAuthorization(Optional<ECPublicKey> publicKey)
+  public void verifyWithdrawAuthorization(Optional<ECDSASecp256k1PublicKey> publicKey)
       throws BucketWithdrawAuthorizationException {
     if (getType() != REAddrType.PUB_KEY) {
       throw new BucketWithdrawAuthorizationException(this + " is not an account address.");
@@ -251,10 +252,10 @@ public final class REAddr {
     if (!Arrays.equals(
         addr,
         1,
-        1 + ECPublicKey.COMPRESSED_BYTES,
+        1 + ECDSASecp256k1PublicKey.COMPRESSED_BYTES,
         publicKey.get().getCompressedBytes(),
         0,
-        ECPublicKey.COMPRESSED_BYTES)) {
+        ECDSASecp256k1PublicKey.COMPRESSED_BYTES)) {
       throw new BucketWithdrawAuthorizationException("Invalid key.");
     }
   }
@@ -292,7 +293,7 @@ public final class REAddr {
     return new REAddr(addr);
   }
 
-  public static REAddr ofHashedKey(ECPublicKey key, String name) {
+  public static REAddr ofHashedKey(ECDSASecp256k1PublicKey key, String name) {
     Objects.requireNonNull(key);
     var hash = pkToHash(name, key);
     var buf = ByteBuffer.allocate(HASHED_KEY_BYTES + 1);
@@ -308,9 +309,9 @@ public final class REAddr {
     return create(buf.array());
   }
 
-  public static REAddr ofPubKeyAccount(ECPublicKey key) {
+  public static REAddr ofPubKeyAccount(ECDSASecp256k1PublicKey key) {
     Objects.requireNonNull(key);
-    var buf = ByteBuffer.allocate(ECPublicKey.COMPRESSED_BYTES + 1);
+    var buf = ByteBuffer.allocate(ECDSASecp256k1PublicKey.COMPRESSED_BYTES + 1);
     buf.put(REAddrType.PUB_KEY.type);
     buf.put(key.getCompressedBytes());
     return create(buf.array());

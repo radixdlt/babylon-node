@@ -71,7 +71,7 @@ import static org.mockito.Mockito.mock;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -99,7 +99,7 @@ public class VoteTest {
             author,
             this.voteData,
             123456L,
-            ECDSASignature.zeroSignature(),
+            ECDSASecp256k1Signature.zeroSignature(),
             highQC,
             Optional.empty());
   }
@@ -135,9 +135,9 @@ public class VoteTest {
         null,
         mock(VoteData.class),
         1L,
-        mock(ECDSASignature.class),
+        mock(ECDSASecp256k1Signature.class),
         mock(HighQC.class),
-        mock(ECDSASignature.class));
+        mock(ECDSASecp256k1Signature.class));
   }
 
   @Test(expected = NullPointerException.class)
@@ -147,16 +147,21 @@ public class VoteTest {
         author,
         null,
         1L,
-        mock(ECDSASignature.class),
+        mock(ECDSASecp256k1Signature.class),
         mock(HighQC.class),
-        mock(ECDSASignature.class));
+        mock(ECDSASecp256k1Signature.class));
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializationWithNullThrowsException3() throws PublicKeyException {
     var author = ECKeyPair.generateNew().getPublicKey().getBytes();
     new Vote(
-        author, mock(VoteData.class), 1L, null, mock(HighQC.class), mock(ECDSASignature.class));
+        author,
+        mock(VoteData.class),
+        1L,
+        null,
+        mock(HighQC.class),
+        mock(ECDSASecp256k1Signature.class));
   }
 
   @Test(expected = NullPointerException.class)
@@ -166,9 +171,9 @@ public class VoteTest {
         author,
         mock(VoteData.class),
         1L,
-        mock(ECDSASignature.class),
+        mock(ECDSASecp256k1Signature.class),
         null,
-        mock(ECDSASignature.class));
+        mock(ECDSASecp256k1Signature.class));
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -178,9 +183,9 @@ public class VoteTest {
         author,
         mock(VoteData.class),
         -1L,
-        mock(ECDSASignature.class),
+        mock(ECDSASecp256k1Signature.class),
         mock(HighQC.class),
-        mock(ECDSASignature.class));
+        mock(ECDSASecp256k1Signature.class));
   }
 
   @Test(expected = PublicKeyException.class)
@@ -190,8 +195,8 @@ public class VoteTest {
         author,
         mock(VoteData.class),
         1L,
-        mock(ECDSASignature.class),
+        mock(ECDSASecp256k1Signature.class),
         mock(HighQC.class),
-        mock(ECDSASignature.class));
+        mock(ECDSASecp256k1Signature.class));
   }
 }

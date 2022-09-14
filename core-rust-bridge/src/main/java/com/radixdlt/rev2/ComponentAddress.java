@@ -82,7 +82,7 @@ public record ComponentAddress(byte[] value) {
                 ComponentAddress::new));
   }
 
-  private static final int COMPONENT_ADDRESS_BYTES_LENGTH = 27;
+  private static final int BYTE_LENGTH = 27;
 
   // See entity.rs
   public static byte RESOURCE_ADDRESS_ENTITY_ID = 0;
@@ -158,7 +158,7 @@ public record ComponentAddress(byte[] value) {
           });
 
   public static ComponentAddress create(byte[] addressBytes) {
-    if (addressBytes.length != COMPONENT_ADDRESS_BYTES_LENGTH) {
+    if (addressBytes.length != BYTE_LENGTH) {
       throw new IllegalArgumentException("Invalid component address length");
     }
     return new ComponentAddress(addressBytes);

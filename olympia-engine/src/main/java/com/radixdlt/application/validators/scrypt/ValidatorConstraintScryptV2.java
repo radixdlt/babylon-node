@@ -79,7 +79,7 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.substate.REFieldSerialization;
 import com.radixdlt.substate.SubstateTypeId;
@@ -124,8 +124,10 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
               REFieldSerialization.serializeFixedLengthBytes(buf, s.data());
             },
             REFieldSerialization::deserializeKey,
-            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-            k -> new ValidatorSystemMetadata((ECPublicKey) k, HashUtils.zero256().asBytes())));
+            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECDSASecp256k1PublicKey) k),
+            k ->
+                new ValidatorSystemMetadata(
+                    (ECDSASecp256k1PublicKey) k, HashUtils.zero256().asBytes())));
 
     os.procedure(
         new DownProcedure<>(
@@ -168,8 +170,8 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
               REFieldSerialization.serializeString(buf, s.url());
             },
             buf -> REFieldSerialization.deserializeKey(buf),
-            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-            k -> ValidatorMetaData.createVirtual((ECPublicKey) k)));
+            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECDSASecp256k1PublicKey) k),
+            k -> ValidatorMetaData.createVirtual((ECDSASecp256k1PublicKey) k)));
 
     os.procedure(
         new DownProcedure<>(
@@ -220,8 +222,8 @@ public class ValidatorConstraintScryptV2 implements ConstraintScrypt {
               buf.put((byte) (s.allowsDelegation() ? 1 : 0));
             },
             buf -> REFieldSerialization.deserializeKey(buf),
-            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-            k -> new AllowDelegationFlag((ECPublicKey) k, false)));
+            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECDSASecp256k1PublicKey) k),
+            k -> new AllowDelegationFlag((ECDSASecp256k1PublicKey) k, false)));
 
     os.procedure(
         new DownProcedure<>(
