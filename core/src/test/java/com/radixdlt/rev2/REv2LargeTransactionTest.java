@@ -64,39 +64,28 @@
 
 package com.radixdlt.rev2;
 
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.EventPredicate.*;
+import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.*;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.deterministic.DeterministicProcessor;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
-import com.radixdlt.keys.InMemoryBFTKeyModule;
+import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.messaging.TestMessagingModule;
-import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.UInt256;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
@@ -107,53 +96,22 @@ public final class REv2LargeTransactionTest {
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
   private static final NetworkDefinition NETWORK_DEFINITION = NetworkDefinition.INT_TEST_NET;
 
-  private final DeterministicNetwork network =
-      new DeterministicNetwork(
-          List.of(BFTNode.create(TEST_KEY.getPublicKey())),
-          MessageSelector.firstSelector(),
-          MessageMutator.nothing());
-
   @Rule public TemporaryFolder folder = new TemporaryFolder();
-  @Inject private DeterministicProcessor processor;
-  @Inject private MempoolInserter<RawTransaction> mempoolInserter;
-  @Inject private REv2TransactionAndProofStore transactionStoreReader;
 
-  private Injector createInjector() {
-    return Guice.createInjector(
-        new CryptoModule(),
-        new TestMessagingModule.Builder().withDefaultRateLimit().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            var validatorSet =
-                BFTValidatorSet.from(
-                    List.of(
-                        BFTValidator.from(BFTNode.create(TEST_KEY.getPublicKey()), UInt256.ONE)));
-            bind(BFTValidatorSet.class).toInstance(validatorSet);
-          }
-        },
-        new MockedPersistenceStoreModule(),
-        new FunctionalRadixNodeModule(
-            false,
-            ConsensusConfig.of(),
-            LedgerConfig.stateComputerNoSync(
-                StateComputerConfig.rev2(
-                    Network.INTEGRATIONTESTNET.getId(),
-                    new REv2DatabaseConfig.RocksDB(folder.getRoot().getAbsolutePath()),
-                    REV2ProposerConfig.mempool(1, MempoolRelayConfig.of()),
-                    true))),
-        new TestP2PModule.Builder().build(),
-        new InMemoryBFTKeyModule(TEST_KEY),
-        new DeterministicEnvironmentModule(
-            network.createSender(BFTNode.create(TEST_KEY.getPublicKey()))),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-            bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-            bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-          }
-        });
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(1, 0)
+        .messageSelector(firstSelector())
+        .messageMutator(MessageMutator.dropTimeouts())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))));
   }
 
   private static RawTransaction create100KBTransaction() {
@@ -165,25 +123,22 @@ public final class REv2LargeTransactionTest {
 
   @Test
   public void large_transaction_should_be_committable() throws Exception {
-    // Arrange: Start single node network
-    createInjector().injectMembers(this);
-    var newAccountTransaction = create100KBTransaction();
+    try (var test = createTest()) {
+      // Arrange: Start single node network
+      var newAccountTransaction = create100KBTransaction();
 
-    // Act: Submit transaction to mempool and run consensus
-    processor.start();
-    for (int i = 0; i < 1000; i++) {
-      var msg = network.nextMessage().value();
-      processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-    }
-    mempoolInserter.addTransaction(newAccountTransaction);
-    for (int i = 0; i < 1000; i++) {
-      var msg = network.nextMessage().value();
-      processor.handleMessage(msg.origin(), msg.message(), msg.typeLiteral());
-    }
+      // Act: Submit transaction to mempool and run consensus
+      test.startAllNodes();
+      var mempoolInserter =
+          test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+      mempoolInserter.addTransaction(newAccountTransaction);
+      test.processUntil(allAtExactlyStateVersion(1), onlyConsensusEvents());
 
-    // Assert: Check transaction and post submission state
-    var receipt = transactionStoreReader.getTransactionAtStateVersion(1);
-    var receiptTransaction = RawTransaction.create(receipt.transactionBytes());
-    assertThat(newAccountTransaction).isEqualTo(receiptTransaction);
+      // Assert: Check transaction and post submission state
+      var receipt =
+          test.getInstance(0, REv2TransactionAndProofStore.class).getTransactionAtStateVersion(1);
+      var receiptTransaction = RawTransaction.create(receipt.transactionBytes());
+      assertThat(newAccountTransaction).isEqualTo(receiptTransaction);
+    }
   }
 }

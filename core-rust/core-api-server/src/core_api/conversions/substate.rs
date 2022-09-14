@@ -114,14 +114,14 @@ struct Entities {
 
 fn extract_entities(struct_scrypto_value: &ScryptoValue) -> Result<Entities, MappingError> {
     if !struct_scrypto_value.bucket_ids.is_empty() {
-        Err(MappingError::InvalidComponentStateEntities {
+        return Err(MappingError::InvalidComponentStateEntities {
             message: "Bucket/s in state".to_owned(),
-        })?;
+        });
     }
     if !struct_scrypto_value.proof_ids.is_empty() {
-        Err(MappingError::InvalidComponentStateEntities {
+        return Err(MappingError::InvalidComponentStateEntities {
             message: "Proof/s in state".to_owned(),
-        })?;
+        });
     }
 
     let mut owned_entities = Vec::<models::EntityId>::new();
@@ -238,9 +238,12 @@ fn to_api_non_fungible_substate(
 ) -> Result<models::Substate, MappingError> {
     let nf_id_bytes = match substate_id {
         SubstateId::NonFungible(_, nf_id) => &nf_id.0,
-        _ => Err(MappingError::MismatchedSubstateId {
-            message: "KVStoreEntry Substate was matched with a different substate id".to_owned(),
-        })?,
+        _ => {
+            return Err(MappingError::MismatchedSubstateId {
+                message: "KVStoreEntry Substate was matched with a different substate id"
+                    .to_owned(),
+            })
+        }
     };
 
     Ok(match &non_fungible.0 {
@@ -274,9 +277,12 @@ fn to_api_key_value_story_entry_substate(
 ) -> Result<models::Substate, MappingError> {
     let key = match substate_id {
         SubstateId::KeyValueStoreEntry(_, key) => key,
-        _ => Err(MappingError::MismatchedSubstateId {
-            message: "KVStoreEntry Substate was matched with a different substate id".to_owned(),
-        })?,
+        _ => {
+            return Err(MappingError::MismatchedSubstateId {
+                message: "KVStoreEntry Substate was matched with a different substate id"
+                    .to_owned(),
+            })
+        }
     };
 
     Ok(match &key_value_store_entry.0 {

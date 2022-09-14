@@ -107,7 +107,9 @@ public final class SimpleFuzzerTransactionsTest {
       throws Exception {
     // Arrange
     try (var test = createTest()) {
+
       // Run
+      test.startAllNodes();
       test.runForCount(10000);
 
       // Post-run assertions

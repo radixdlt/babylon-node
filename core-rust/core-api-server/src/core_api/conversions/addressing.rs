@@ -36,12 +36,16 @@ pub fn to_api_global_entity_id(
         ),
         entity_type::EntityType::Package => bech32_encoder
             .encode_package_address(&PackageAddress::try_from(address_bytes.as_slice()).unwrap()),
-        entity_type::EntityType::Vault => Err(MappingError::InvalidRootEntity {
-            message: "Vault".to_owned(),
-        })?,
-        entity_type::EntityType::KeyValueStore => Err(MappingError::InvalidRootEntity {
-            message: "KeyValueStore".to_owned(),
-        })?,
+        entity_type::EntityType::Vault => {
+            return Err(MappingError::InvalidRootEntity {
+                message: "Vault".to_owned(),
+            })
+        }
+        entity_type::EntityType::KeyValueStore => {
+            return Err(MappingError::InvalidRootEntity {
+                message: "KeyValueStore".to_owned(),
+            })
+        }
     };
 
     Ok(models::GlobalEntityId {
@@ -157,9 +161,11 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             SubstateType::ResourceManager,
             vec![0],
         ),
-        SubstateId::NonFungibleSpace(_) => Err(MappingError::VirtualRootSubstatePersisted {
-            message: "No state_update known/possible for NonFungibleSpace".to_owned(),
-        })?,
+        SubstateId::NonFungibleSpace(_) => {
+            return Err(MappingError::VirtualRootSubstatePersisted {
+                message: "No state_update known/possible for NonFungibleSpace".to_owned(),
+            })
+        }
         SubstateId::NonFungible(addr, id) => MappedSubstateId(
             EntityType::ResourceManager,
             addr.to_vec(),
@@ -167,9 +173,11 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             prefix(vec![2], id.0),
         ),
         // KEY VALUE STORE SUBSTATES
-        SubstateId::KeyValueStoreSpace(_) => Err(MappingError::VirtualRootSubstatePersisted {
-            message: "No state_update known/possible for KeyValueStoreSpace".to_owned(),
-        })?,
+        SubstateId::KeyValueStoreSpace(_) => {
+            return Err(MappingError::VirtualRootSubstatePersisted {
+                message: "No state_update known/possible for KeyValueStoreSpace".to_owned(),
+            })
+        }
         SubstateId::KeyValueStoreEntry(basic_address, key) => MappedSubstateId(
             EntityType::KeyValueStore,
             basic_address_to_vec(&basic_address),
@@ -184,15 +192,21 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             vec![0],
         ),
         // TRANSIENT? SUBSTATES
-        SubstateId::Bucket(_) => Err(MappingError::TransientSubstatePersisted {
-            message: "Proof persisted".to_owned(),
-        })?,
-        SubstateId::Proof(_) => Err(MappingError::TransientSubstatePersisted {
-            message: "Bucket persisted".to_owned(),
-        })?,
-        SubstateId::Worktop => Err(MappingError::TransientSubstatePersisted {
-            message: "Worktop persisted".to_owned(),
-        })?,
+        SubstateId::Bucket(_) => {
+            return Err(MappingError::TransientSubstatePersisted {
+                message: "Proof persisted".to_owned(),
+            })
+        }
+        SubstateId::Proof(_) => {
+            return Err(MappingError::TransientSubstatePersisted {
+                message: "Bucket persisted".to_owned(),
+            })
+        }
+        SubstateId::Worktop => {
+            return Err(MappingError::TransientSubstatePersisted {
+                message: "Worktop persisted".to_owned(),
+            })
+        }
     })
 }
 
@@ -217,9 +231,11 @@ pub fn to_api_virtual_substate_id(
             prefix(vec![1], key),
         ),
         // Assume all other substates are not root spaces
-        other => Err(MappingError::VirtualSubstateDownedWithInvalidParent {
-            message: format!("{:?}", other),
-        })?,
+        other => {
+            return Err(MappingError::VirtualSubstateDownedWithInvalidParent {
+                message: format!("{:?}", other),
+            })
+        }
     };
     Ok(models::SubstateId {
         entity_type: sub_id.0,

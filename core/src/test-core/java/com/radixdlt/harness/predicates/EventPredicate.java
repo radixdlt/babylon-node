@@ -62,77 +62,50 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.consensus;
+package com.radixdlt.harness.predicates;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.junit.Assert.assertEquals;
+import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.RoundQuorumReached;
+import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.sync.messages.local.SyncLedgerUpdateTimeout;
+import com.radixdlt.sync.messages.local.SyncRequestTimeout;
+import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
+import com.radixdlt.sync.messages.remote.SyncRequest;
+import com.radixdlt.sync.messages.remote.SyncResponse;
+import java.util.function.Predicate;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.IntStream;
-import org.assertj.core.api.Condition;
-import org.junit.Test;
-
-public class RandomChannelOrderResponsiveTest {
-
-  private void run(int numValidatorNodes, long roundsToRun) {
-    assertEquals(0, roundsToRun % numValidatorNodes);
-
-    final Random random = new Random(12345);
-
-    DeterministicTest test =
-        DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
-            .messageSelector(MessageSelector.randomSelector(random))
-            .messageMutator(MessageMutator.dropTimeouts())
-            .functionalNodeModule(
-                new FunctionalRadixNodeModule(
-                    false,
-                    ConsensusConfig.of(),
-                    LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
-
-    test.startAllNodes();
-    test.runUntil(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
-
-    List<Long> proposalsMade =
-        IntStream.range(0, numValidatorNodes)
-            .mapToObj(i -> test.getInstance(i, SystemCounters.class))
-            .map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
-            .collect(ImmutableList.toImmutableList());
-
-    final long numRounds = roundsToRun / numValidatorNodes;
-
-    assertThat(proposalsMade)
-        .hasSize(numValidatorNodes)
-        .areAtLeast(
-            numValidatorNodes - 1,
-            new Condition<>(l -> l == numRounds, "has as many proposals as rounds"))
-        // the last round in the epoch doesn't have a proposal
-        .areAtMost(1, new Condition<>(l -> l == numRounds - 1, "has one less proposal"));
+public final class EventPredicate {
+  private EventPredicate() {
+    throw new IllegalStateException("Cannot instanitate.");
   }
 
-  @Test
-  public void
-      when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-    run(4, 4 * 25000L);
+  public static Predicate<ControlledMessage> onlyConsensusEvents() {
+    return msg ->
+        msg.message() instanceof ConsensusEvent
+            || msg.message() instanceof BFTHighQCUpdate
+            || msg.message() instanceof BFTInsertUpdate
+            || msg.message() instanceof RoundQuorumReached
+            || msg.message() instanceof RoundUpdate;
   }
 
-  @Test
-  public void
-      when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-    run(100, 100 * 5L);
+  public static Predicate<ControlledMessage> onlyBFTSyncEvents() {
+    return msg ->
+        msg.message() instanceof GetVerticesRequest || msg.message() instanceof GetVerticesResponse;
+  }
+
+  public static Predicate<ControlledMessage> onlyLedgerSyncEvents() {
+    return msg ->
+        msg.message() instanceof SyncRequest
+            || msg.message() instanceof SyncResponse
+            || msg.message() instanceof LedgerUpdate
+            || msg.message() instanceof LedgerStatusUpdate
+            || msg.message() instanceof SyncLedgerUpdateTimeout
+            || msg.message() instanceof SyncRequestTimeout;
   }
 }

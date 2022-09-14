@@ -80,6 +80,18 @@ public final class ChannelId {
     return new ChannelId(senderIndex, receiverIndex);
   }
 
+  public static ChannelId local(int index) {
+    return new ChannelId(index, index);
+  }
+
+  public boolean isLocal() {
+    return senderIndex == receiverIndex;
+  }
+
+  public boolean isLocal(int index) {
+    return senderIndex == index && isLocal();
+  }
+
   public int receiverIndex() {
     return this.receiverIndex;
   }

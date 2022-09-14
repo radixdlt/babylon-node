@@ -169,10 +169,11 @@ public final class MessageQueue {
     out.println("}");
   }
 
-  Set<ControlledMessage> allMessages() {
-    return this.messagesByTime.values().stream()
-        .flatMap(LinkedList::stream)
-        .collect(Collectors.toSet());
+  List<ControlledMessage> allMessages() {
+    return this.messagesByTime.entrySet().stream()
+        .sorted(Map.Entry.comparingByKey())
+        .flatMap(e -> e.getValue().stream())
+        .collect(Collectors.toList());
   }
 
   List<ControlledMessage> lowestTimeMessages() {

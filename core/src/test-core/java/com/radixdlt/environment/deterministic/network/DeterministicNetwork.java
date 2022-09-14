@@ -72,7 +72,6 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
@@ -134,11 +133,11 @@ public final class DeterministicNetwork {
   }
 
   public Timed<ControlledMessage> nextMessage(Predicate<ControlledMessage> predicate) {
-    Set<ControlledMessage> allMessages = this.messageQueue.allMessages();
+    List<ControlledMessage> allMessages = this.messageQueue.allMessages();
     ControlledMessage controlledMessage =
         allMessages.stream()
             .filter(predicate)
-            .findAny()
+            .findFirst()
             .orElseThrow(
                 () ->
                     new IllegalStateException(
@@ -150,7 +149,7 @@ public final class DeterministicNetwork {
     return new Timed<>(controlledMessage, this.currentTime, TimeUnit.MILLISECONDS);
   }
 
-  public Set<ControlledMessage> allMessages() {
+  public List<ControlledMessage> allMessages() {
     return this.messageQueue.allMessages();
   }
 

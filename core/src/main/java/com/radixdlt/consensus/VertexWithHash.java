@@ -180,11 +180,11 @@ public final class VertexWithHash {
   @Override
   public String toString() {
     return String.format(
-        "%s{epoch=%s round=%s parentRound=%s hash=%s}",
+        "%s{epoch=%s round=%s qc=%s hash=%s}",
         this.getClass().getSimpleName(),
         this.vertex.getQCToParent().getProposedHeader().getLedgerHeader().getEpoch(),
         this.vertex.getRound(),
-        this.vertex.getQCToParent().getProposedHeader().getRound(),
+        this.vertex.getQCToParent(),
         this.vertexHash);
   }
 }

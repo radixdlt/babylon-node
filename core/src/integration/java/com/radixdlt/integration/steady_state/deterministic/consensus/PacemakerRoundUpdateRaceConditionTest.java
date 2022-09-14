@@ -156,8 +156,10 @@ public class PacemakerRoundUpdateRaceConditionTest {
                     false,
                     ConsensusConfig.of(pacemakerTimeout),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
-            .runUntil(nodeUnderTestReachesRound(Round.of(3)));
+                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
+
+    test.startAllNodes();
+    test.runUntil(nodeUnderTestReachesRound(Round.of(3)));
 
     final var counters = test.getInstance(nodeUnderTestIndex, SystemCounters.class);
     assertThat(counters.get(SystemCounters.CounterType.BFT_VOTE_QUORUMS))

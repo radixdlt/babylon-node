@@ -62,77 +62,67 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.consensus;
+package com.radixdlt.recovery;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.junit.Assert.assertEquals;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.EventPredicate.*;
+import static com.radixdlt.harness.predicates.NodePredicate.*;
+import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.IntStream;
-import org.assertj.core.api.Condition;
+import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public class RandomChannelOrderResponsiveTest {
+public final class REv2ConsensusLedgerRecoveryTest {
+  private static final long INITIAL_VERSION = 3L;
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private void run(int numValidatorNodes, long roundsToRun) {
-    assertEquals(0, roundsToRun % numValidatorNodes);
-
-    final Random random = new Random(12345);
-
-    DeterministicTest test =
-        DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
-            .messageSelector(MessageSelector.randomSelector(random))
-            .messageMutator(MessageMutator.dropTimeouts())
-            .functionalNodeModule(
-                new FunctionalRadixNodeModule(
-                    false,
-                    ConsensusConfig.of(),
-                    LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
-
-    test.startAllNodes();
-    test.runUntil(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
-
-    List<Long> proposalsMade =
-        IntStream.range(0, numValidatorNodes)
-            .mapToObj(i -> test.getInstance(i, SystemCounters.class))
-            .map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
-            .collect(ImmutableList.toImmutableList());
-
-    final long numRounds = roundsToRun / numValidatorNodes;
-
-    assertThat(proposalsMade)
-        .hasSize(numValidatorNodes)
-        .areAtLeast(
-            numValidatorNodes - 1,
-            new Condition<>(l -> l == numRounds, "has as many proposals as rounds"))
-        // the last round in the epoch doesn't have a proposal
-        .areAtMost(1, new Condition<>(l -> l == numRounds - 1, "has one less proposal"));
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(2, 0)
+        .messageSelector(firstSelector())
+        .messageMutator(MessageMutator.dropTimeouts())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        StateComputerConfig.REV2ProposerConfig.transactionGenerator(
+                            new REV2TransactionGenerator(), 1)),
+                    SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
   @Test
-  public void
-      when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-    run(4, 4 * 25000L);
-  }
+  public void recovery_should_work_when_consensus_is_behind_ledger() throws Exception {
 
-  @Test
-  public void
-      when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-    run(100, 100 * 5L);
+    try (var test = createTest()) {
+      test.startAllNodes();
+
+      // Arrange: Situation where behindNode has consensus behind ledger
+      test.processUntil(allAtExactlyStateVersion(INITIAL_VERSION), onlyConsensusEvents());
+      test.processUntil(anyAtExactlyStateVersion(INITIAL_VERSION + 1), onlyConsensusEvents());
+      var behindNodeIndex = test.getNodes().getNode(atExactlyStateVersion(INITIAL_VERSION));
+      test.processUntil(allAtExactlyStateVersion(INITIAL_VERSION + 1), onlyLedgerSyncEvents());
+
+      // Act: Reboot node
+      test.restartNode(behindNodeIndex);
+      test.processNext(
+          msg -> msg.message() instanceof Proposal && msg.channelId().isLocal(behindNodeIndex));
+
+      // Assert: Can run bft syncing with no issue
+      test.runForCount(100, onlyBFTSyncEvents());
+    }
   }
 }

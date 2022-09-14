@@ -119,6 +119,8 @@ public final class MultiNodeRecoveryTest {
   private void runTest(DeterministicTest test) throws Exception {
     var livenessChecker = new LedgerLivenessChecker();
 
+    test.startAllNodes();
+
     for (int i = 0; i < 50; i++) {
       test.runForCount(random.nextInt(NUM_VALIDATORS * 50, NUM_VALIDATORS * 100));
 

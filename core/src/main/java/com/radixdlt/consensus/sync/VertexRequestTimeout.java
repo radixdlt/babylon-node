@@ -89,11 +89,15 @@ public final class VertexRequestTimeout {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof VertexRequestTimeout)) {
+    if (!(o instanceof VertexRequestTimeout other)) {
       return false;
     }
 
-    VertexRequestTimeout other = (VertexRequestTimeout) o;
     return Objects.equals(this.request, other.request);
+  }
+
+  @Override
+  public String toString() {
+    return "VertexRequestTimeout{" + "request=" + request + '}';
   }
 }

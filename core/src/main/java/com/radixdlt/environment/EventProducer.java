@@ -62,77 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.consensus;
+package com.radixdlt.environment;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.junit.Assert.assertEquals;
+import java.util.function.Supplier;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCounters.CounterType;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.IntStream;
-import org.assertj.core.api.Condition;
-import org.junit.Test;
+public final class EventProducer<T> implements EventProcessor<T> {
+  private final Supplier<T> eventCreator;
+  private final ScheduledEventDispatcher<T> dispatcher;
+  private final long intervalMillis;
 
-public class RandomChannelOrderResponsiveTest {
-
-  private void run(int numValidatorNodes, long roundsToRun) {
-    assertEquals(0, roundsToRun % numValidatorNodes);
-
-    final Random random = new Random(12345);
-
-    DeterministicTest test =
-        DeterministicTest.builder()
-            .numNodes(numValidatorNodes, 0)
-            .messageSelector(MessageSelector.randomSelector(random))
-            .messageMutator(MessageMutator.dropTimeouts())
-            .functionalNodeModule(
-                new FunctionalRadixNodeModule(
-                    false,
-                    ConsensusConfig.of(),
-                    LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
-
-    test.startAllNodes();
-    test.runUntil(DeterministicTest.hasReachedRound(Round.of(roundsToRun)));
-
-    List<Long> proposalsMade =
-        IntStream.range(0, numValidatorNodes)
-            .mapToObj(i -> test.getInstance(i, SystemCounters.class))
-            .map(counters -> counters.get(CounterType.BFT_PACEMAKER_PROPOSALS_SENT))
-            .collect(ImmutableList.toImmutableList());
-
-    final long numRounds = roundsToRun / numValidatorNodes;
-
-    assertThat(proposalsMade)
-        .hasSize(numValidatorNodes)
-        .areAtLeast(
-            numValidatorNodes - 1,
-            new Condition<>(l -> l == numRounds, "has as many proposals as rounds"))
-        // the last round in the epoch doesn't have a proposal
-        .areAtMost(1, new Condition<>(l -> l == numRounds - 1, "has one less proposal"));
+  public EventProducer(
+      Supplier<T> eventCreator, ScheduledEventDispatcher<T> dispatcher, long intervalMillis) {
+    this.eventCreator = eventCreator;
+    this.dispatcher = dispatcher;
+    this.intervalMillis = intervalMillis;
   }
 
-  @Test
-  public void
-      when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-    run(4, 4 * 25000L);
+  public void start() {
+    this.dispatcher.dispatch(eventCreator.get(), intervalMillis);
   }
 
-  @Test
-  public void
-      when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-    run(100, 100 * 5L);
+  @Override
+  public void process(T t) {
+    this.dispatcher.dispatch(eventCreator.get(), intervalMillis);
   }
 }

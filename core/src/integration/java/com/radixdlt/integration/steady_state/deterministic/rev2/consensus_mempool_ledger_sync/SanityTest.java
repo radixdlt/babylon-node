@@ -111,6 +111,8 @@ public final class SanityTest {
   @Test
   public void rev2_consensus_mempool_ledger_sync_cause_no_unexpected_errors() throws Exception {
     try (var test = createTest()) {
+      test.startAllNodes();
+
       // Run
       for (int i = 0; i < 100; i++) {
         test.runForCount(1000);

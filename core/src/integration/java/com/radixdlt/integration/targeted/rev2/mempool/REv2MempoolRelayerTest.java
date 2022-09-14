@@ -81,7 +81,6 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
-import java.util.stream.Collectors;
 import org.junit.Test;
 
 public final class REv2MempoolRelayerTest {
@@ -109,6 +108,8 @@ public final class REv2MempoolRelayerTest {
   @Test
   public void relayer_fills_mempool_of_all_nodes() throws Exception {
     try (var test = createTest()) {
+      test.startAllNodes();
+
       // Arrange: Fill node1 mempool
       var mempoolInserter =
           test.getInstance(1, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
@@ -117,12 +118,10 @@ public final class REv2MempoolRelayerTest {
       }
 
       // Run all nodes except validator node0
-      test.runForCount(
-          200, m -> m.channelId().senderIndex() != 0 && m.channelId().receiverIndex() != 0);
-
-      // Post-run assertions
-      Checkers.assertNodesHaveExactMempoolCount(
-          test.getNodeInjectors().stream().skip(1).collect(Collectors.toList()), MEMPOOL_SIZE);
+      test.processUntil(
+          n -> Checkers.allNodesHaveExactMempoolCount(n.subList(1, n.size()), MEMPOOL_SIZE),
+          10000,
+          m -> m.channelId().senderIndex() != 0 && m.channelId().receiverIndex() != 0);
     }
   }
 }

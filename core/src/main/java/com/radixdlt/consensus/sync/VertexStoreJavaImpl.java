@@ -88,10 +88,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** Manages the BFT Vertex chain. TODO: Move this logic into ledger package. */
 @NotThreadSafe
 public final class VertexStoreJavaImpl implements VertexStore {
+  private static final Logger logger = LogManager.getLogger();
+
   private final Hasher hasher;
   private final Ledger ledger;
 
@@ -145,6 +149,8 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
         // FIXME: If this occurs then it means that our highQC may not have an associated vertex
         // FIXME: so should save executedVertex
+        logger.warn("VertexStore initialized with missing vertices.");
+
         break;
       } else {
         var executedVertex = executedVertexMaybe.get();

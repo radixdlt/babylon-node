@@ -64,93 +64,52 @@
 
 package com.radixdlt.rev2;
 
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.inject.*;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
-import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
-import com.radixdlt.keys.InMemoryBFTKeyModule;
+import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.*;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.TestP2PModule;
-import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.utils.PrivateKeys;
-import com.radixdlt.utils.TimeSupplier;
-import com.radixdlt.utils.UInt256;
-import java.util.List;
 import org.junit.Test;
 
 public final class REv2GenesisTest {
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
   private static final Decimal GENESIS_AMOUNT = Decimal.of(24_000_000_000L);
 
-  private final DeterministicNetwork network =
-      new DeterministicNetwork(
-          List.of(BFTNode.create(TEST_KEY.getPublicKey())),
-          MessageSelector.firstSelector(),
-          MessageMutator.nothing());
-
-  @Inject private REv2StateReader stateReader;
-
-  private Injector createInjector() {
-    return Guice.createInjector(
-        new CryptoModule(),
-        new TestMessagingModule.Builder().withDefaultRateLimit().build(),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            var validatorSet =
-                BFTValidatorSet.from(
-                    List.of(
-                        BFTValidator.from(BFTNode.create(TEST_KEY.getPublicKey()), UInt256.ONE)));
-            bind(BFTValidatorSet.class).toInstance(validatorSet);
-          }
-        },
-        new MockedPersistenceStoreModule(),
-        new FunctionalRadixNodeModule(
-            false,
-            FunctionalRadixNodeModule.ConsensusConfig.of(),
-            FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                StateComputerConfig.rev2(
-                    Network.INTEGRATIONTESTNET.getId(),
-                    REv2DatabaseConfig.inMemory(),
-                    StateComputerConfig.REV2ProposerConfig.mempool(0, MempoolRelayConfig.of())))),
-        new TestP2PModule.Builder().build(),
-        new InMemoryBFTKeyModule(TEST_KEY),
-        new DeterministicEnvironmentModule(
-            network.createSender(BFTNode.create(TEST_KEY.getPublicKey()))),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-            bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.INTEGRATIONTESTNET));
-            bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-          }
-        });
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(1, 0)
+        .messageSelector(firstSelector())
+        .messageMutator(MessageMutator.dropTimeouts())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        REv2DatabaseConfig.inMemory(),
+                        StateComputerConfig.REV2ProposerConfig.mempool(
+                            0, MempoolRelayConfig.of())))));
   }
 
   @Test
-  public void state_reader_on_genesis_returns_correct_amounts() {
+  public void state_reader_on_genesis_returns_correct_amounts() throws Exception {
     // Arrange/Act
-    createInjector().injectMembers(this);
+    try (var test = createTest()) {
+      test.startAllNodes();
 
-    // Assert
-    var systemAmount =
-        this.stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
-    assertThat(systemAmount).isEqualTo(GENESIS_AMOUNT);
+      // Assert
+      var stateReader = test.getInstance(0, REv2StateReader.class);
+      var systemAmount =
+          stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
+      assertThat(systemAmount).isEqualTo(GENESIS_AMOUNT);
 
-    var emptyAccountAmount =
-        this.stateReader.getComponentXrdAmount(ComponentAddress.NON_EXISTENT_COMPONENT_ADDRESS);
-    assertThat(emptyAccountAmount).isEqualTo(Decimal.of(0));
+      var emptyAccountAmount =
+          stateReader.getComponentXrdAmount(ComponentAddress.NON_EXISTENT_COMPONENT_ADDRESS);
+      assertThat(emptyAccountAmount).isEqualTo(Decimal.of(0));
+    }
   }
 }

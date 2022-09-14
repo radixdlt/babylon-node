@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-package com.radixdlt.modules;
+package com.radixdlt.logger;
 
 import static org.apache.logging.log4j.Level.*;
 
@@ -70,8 +70,8 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.addressing.Addressing;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -92,21 +92,21 @@ import org.apache.logging.log4j.Logger;
 
 public final class EventLoggerModule extends AbstractModule {
   private static final Logger logger = LogManager.getLogger();
+  private final Function<ECDSASecp256k1PublicKey, String> nodeToString;
+
+  public EventLoggerModule(EventLoggerConfig config) {
+    this.nodeToString = config.nodeToString();
+  }
+
+  protected void configure() {
+    bind(new TypeLiteral<Function<ECDSASecp256k1PublicKey, String>>() {})
+        .toInstance(this.nodeToString);
+  }
 
   @Provides
   Function<BFTNode, String> loggingFormatterForNode(
       Function<ECDSASecp256k1PublicKey, String> loggingFormatterForNodePublicKey) {
     return n -> loggingFormatterForNodePublicKey.apply(n.getKey());
-  }
-
-  @Provides
-  Function<ECDSASecp256k1PublicKey, String> loggingFormatterForNodePublicKey(
-      Addressing addressing) {
-    return k -> {
-      var addr = addressing.encodeNodeAddress(k);
-      var len = addr.length();
-      return addr.substring(0, 2) + "..." + addr.substring(len - 9);
-    };
   }
 
   /* BAB-TODO: Add something equivalent back in

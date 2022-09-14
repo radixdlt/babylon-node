@@ -85,18 +85,22 @@ public class OneProposalDropperResponsiveTest {
 
   private void runOneProposalDropperResponsiveTest(
       int numValidatorNodes, Function<Round, Integer> nodeToDropFunction) {
-    DeterministicTest.builder()
-        .numNodes(numValidatorNodes, 0)
-        .messageSelector(MessageSelector.randomSelector(random))
-        .messageMutator(
-            MessageMutator.dropTimeouts().andThen(dropNode(numValidatorNodes, nodeToDropFunction)))
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                ConsensusConfig.of(),
-                LedgerConfig.stateComputerMockedSync(
-                    StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))))
-        .runForCount(30_000);
+    var test =
+        DeterministicTest.builder()
+            .numNodes(numValidatorNodes, 0)
+            .messageSelector(MessageSelector.randomSelector(random))
+            .messageMutator(
+                MessageMutator.dropTimeouts()
+                    .andThen(dropNode(numValidatorNodes, nodeToDropFunction)))
+            .functionalNodeModule(
+                new FunctionalRadixNodeModule(
+                    false,
+                    ConsensusConfig.of(),
+                    LedgerConfig.stateComputerMockedSync(
+                        StateComputerConfig.mocked(MockedMempoolConfig.noMempool()))));
+
+    test.startAllNodes();
+    test.runForCount(30_000);
   }
 
   private MessageMutator dropNode(int numNodes, Function<Round, Integer> nodeToDropFunction) {

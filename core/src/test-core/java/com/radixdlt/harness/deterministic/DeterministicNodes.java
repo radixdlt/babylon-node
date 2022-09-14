@@ -75,13 +75,17 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.logger.EventLoggerConfig;
+import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -106,17 +110,19 @@ public final class DeterministicNodes implements AutoCloseable {
         Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
             .collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
     this.nodeInstances =
-        nodes.stream()
-            .map(node -> createBFTInstance(node, baseModule, overrideModule))
-            .collect(Collectors.toList());
+        Stream.generate(() -> (Injector) null).limit(nodes.size()).collect(Collectors.toList());
   }
 
-  private Injector createBFTInstance(BFTNode self, Module baseModule, Module overrideModule) {
+  private Injector createBFTInstance(int nodeIndex, Module baseModule, Module overrideModule) {
+    var self = this.nodeLookup.inverse().get(nodeIndex);
     Module module =
         Modules.combine(
             new AbstractModule() {
               @Override
               public void configure() {
+                install(
+                    new EventLoggerModule(
+                        new EventLoggerConfig(k -> "Node" + nodeLookup.get(BFTNode.create(k)))));
                 bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
                 bind(Environment.class).toInstance(network.createSender(self));
                 bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
@@ -133,49 +139,10 @@ public final class DeterministicNodes implements AutoCloseable {
     return this.nodeInstances.size();
   }
 
-  public void start() {
-    for (Injector injector : this.nodeInstances) {
-      if (injector == null) {
-        continue;
-      }
-
-      var processor = injector.getInstance(DeterministicProcessor.class);
-
-      ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-      try {
-        processor.start();
-      } finally {
-        ThreadContext.remove("self");
-      }
+  public void startAllNodes() {
+    for (int nodeIndex = 0; nodeIndex < this.nodeInstances.size(); nodeIndex++) {
+      this.startNode(nodeIndex);
     }
-  }
-
-  public void handleMessage(Timed<ControlledMessage> timedNextMsg) {
-    ControlledMessage nextMsg = timedNextMsg.value();
-    int senderIndex = nextMsg.channelId().senderIndex();
-    int receiverIndex = nextMsg.channelId().receiverIndex();
-    BFTNode sender = this.nodeLookup.inverse().get(senderIndex);
-
-    var injector = nodeInstances.get(receiverIndex);
-
-    if (injector == null) {
-      return;
-    }
-
-    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
-    try {
-      log.debug("Received message {} at {}", nextMsg, timedNextMsg.time());
-      nodeInstances
-          .get(receiverIndex)
-          .getInstance(DeterministicProcessor.class)
-          .handleMessage(sender, nextMsg.message(), nextMsg.typeLiteral());
-    } finally {
-      ThreadContext.remove("self");
-    }
-  }
-
-  public List<Injector> getNodeInjectors() {
-    return this.nodeInstances;
   }
 
   public void shutdownNode(int nodeIndex) throws Exception {
@@ -199,15 +166,65 @@ public final class DeterministicNodes implements AutoCloseable {
       return;
     }
 
-    var node = this.nodeLookup.inverse().get(nodeIndex);
-    var injector = createBFTInstance(node, baseModule, overrideModule);
-    injector.getInstance(DeterministicProcessor.class).start();
+    var injector = createBFTInstance(nodeIndex, baseModule, overrideModule);
+    var processor = injector.getInstance(DeterministicProcessor.class);
+
+    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
+    try {
+      processor.start();
+    } finally {
+      ThreadContext.remove("self");
+    }
+
     this.nodeInstances.set(nodeIndex, injector);
   }
 
-  public void restartNode(int nodeIndex) throws Exception {
-    this.shutdownNode(nodeIndex);
-    this.startNode(nodeIndex);
+  public static class EventHandleException extends RuntimeException {
+    private final ControlledMessage message;
+
+    EventHandleException(ControlledMessage message, Exception e) {
+      super("Exception: " + e + "\nOn message: " + message.toString(), e);
+      this.message = message;
+    }
+  }
+
+  public void handleMessage(Timed<ControlledMessage> timedNextMsg) {
+    ControlledMessage nextMsg = timedNextMsg.value();
+    int senderIndex = nextMsg.channelId().senderIndex();
+    int receiverIndex = nextMsg.channelId().receiverIndex();
+    BFTNode sender = this.nodeLookup.inverse().get(senderIndex);
+
+    var injector = nodeInstances.get(receiverIndex);
+
+    if (injector == null) {
+      return;
+    }
+
+    ThreadContext.put("self", " " + injector.getInstance(Key.get(String.class, Self.class)));
+    try {
+      log.debug("Received message {} at {}", nextMsg, timedNextMsg.time());
+      nodeInstances
+          .get(receiverIndex)
+          .getInstance(DeterministicProcessor.class)
+          .handleMessage(sender, nextMsg.message(), nextMsg.typeLiteral());
+    } catch (Exception e) {
+      throw new EventHandleException(nextMsg, e);
+    } finally {
+      ThreadContext.remove("self");
+    }
+  }
+
+  public List<Injector> getNodeInjectors() {
+    return this.nodeInstances;
+  }
+
+  public int getNode(Predicate<Injector> injectorPredicate) {
+    return Streams.mapWithIndex(this.nodeInstances.stream(), Pair::of)
+        .filter(p -> injectorPredicate.test(p.getFirst()))
+        .map(Pair::getSecond)
+        .findFirst()
+        .orElseThrow()
+        .intValue();
   }
 
   public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {

@@ -111,6 +111,8 @@ public final class TransactionDBSizeStressTest {
   @Test
   public void committing_large_transactions_should_work() throws Exception {
     try (var test = buildTest()) {
+      test.startAllNodes();
+
       for (int i = 0; i < 10; i++) {
         test.runForCount(1000);
       }

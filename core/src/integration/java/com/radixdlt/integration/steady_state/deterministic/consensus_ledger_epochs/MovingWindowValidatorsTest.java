@@ -101,9 +101,11 @@ public class MovingWindowValidatorsTest {
             .messageMutator(mutator())
             .messageSelector(firstSelector())
             .epochNodeIndexesMapping(windowedEpochToNodesMapper(windowSize, numNodes))
-            .buildWithEpochs(epochMaxRound)
-            .runUntil(
-                DeterministicTest.hasReachedEpochRound(EpochRound.of(maxEpoch, epochMaxRound)));
+            .buildWithEpochs(epochMaxRound);
+
+    bftTest.startAllNodes();
+    bftTest.runUntil(
+        DeterministicTest.hasReachedEpochRound(EpochRound.of(maxEpoch, epochMaxRound)));
 
     LinkedList<SystemCounters> testCounters = systemCounters(bftTest);
     assertThat(testCounters)

@@ -250,7 +250,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
   @Override
   public void configure() {
-    install(new EventLoggerModule());
     install(new DispatcherModule());
 
     // Consensus

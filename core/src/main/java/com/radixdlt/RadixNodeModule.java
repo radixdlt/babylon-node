@@ -79,6 +79,8 @@ import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
 import com.radixdlt.lang.Option;
+import com.radixdlt.logger.EventLoggerConfig;
+import com.radixdlt.logger.EventLoggerModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.MempoolRelayerModule;
@@ -137,8 +139,6 @@ public final class RadixNodeModule extends AbstractModule {
           "NetworkId " + networkId + " does not match any known networks");
     }
 
-    var addressing = Addressing.ofNetworkId(networkId);
-    bind(Addressing.class).toInstance(addressing);
     bindConstant().annotatedWith(NetworkId.class).to(networkId);
 
     bind(RuntimeProperties.class).toInstance(properties);
@@ -161,7 +161,9 @@ public final class RadixNodeModule extends AbstractModule {
 
     install(new RxEnvironmentModule());
 
-    install(new EventLoggerModule());
+    var addressing = Addressing.ofNetworkId(networkId);
+    bind(Addressing.class).toInstance(addressing);
+    install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
     install(new DispatcherModule());
 
     // Consensus

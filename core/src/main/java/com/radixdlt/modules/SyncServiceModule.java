@@ -67,16 +67,13 @@ package com.radixdlt.modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.RemoteEventProcessorOnRunner;
-import com.radixdlt.environment.Runners;
-import com.radixdlt.environment.ScheduledEventProducerOnRunner;
+import com.radixdlt.environment.*;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.SystemCounters;
@@ -183,15 +180,21 @@ public class SyncServiceModule extends AbstractModule {
     return new RemoteSyncResponseSignaturesVerifier(hasher, hashVerifier);
   }
 
+  @Provides
+  @Singleton
+  private EventProducer<SyncCheckTrigger> eventProducer(
+      ScheduledEventDispatcher<SyncCheckTrigger> dispatcher, SyncRelayConfig syncRelayConfig) {
+    return new EventProducer<>(
+        SyncCheckTrigger::create, dispatcher, syncRelayConfig.syncCheckInterval());
+  }
+
   @ProvidesIntoSet
-  public ScheduledEventProducerOnRunner<?> syncCheckTriggerEventProducer(
-      EventDispatcher<SyncCheckTrigger> syncCheckTriggerEventDispatcher,
-      SyncRelayConfig syncRelayConfig) {
-    return new ScheduledEventProducerOnRunner<>(
-        Runners.SYNC,
-        syncCheckTriggerEventDispatcher,
-        SyncCheckTrigger::create,
-        Duration.ofMillis(syncRelayConfig.syncCheckInterval()),
-        Duration.ofMillis(syncRelayConfig.syncCheckInterval()));
+  private StartProcessorOnRunner syncCheckStart(EventProducer<SyncCheckTrigger> dispatcher) {
+    return new StartProcessorOnRunner(Runners.SYNC, dispatcher::start);
+  }
+
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> processor(EventProducer<SyncCheckTrigger> eventProducer) {
+    return new EventProcessorOnRunner<>(Runners.SYNC, SyncCheckTrigger.class, eventProducer);
   }
 }
