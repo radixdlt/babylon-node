@@ -112,6 +112,11 @@ jobs:
       - build_push_container
     runs-on: ubuntu-22.04
     steps:
+      - name: Get docker image tag
+        run: |
+          TAGS=${{ needs.build_deb.outputs.tags }}
+          DOCKER_TAG=$(echo "$TAGS" | awk -F',' '{print $1}')
+          echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
       - name: Deploy and test on ephemeral network
         uses: toptal/jenkins-job-trigger-action@master
         with:
@@ -121,6 +126,6 @@ jobs:
           job_name: "ephemeral-deployment-test/job/testing-ephemeral-deploy-test-destroy"
           job_params: |
             {
-              "nodeDockerTag": ${{ needs.build_deb.outputs.tags }} 
+              "nodeDockerTag": ${{ env.DOCKER_TAG }} 
             }
           job_timeout: "3600"
