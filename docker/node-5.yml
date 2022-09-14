@@ -11,14 +11,12 @@ services:
     networks:
       - five_nodes
     ports:
-      - "3333:3333"
-      - "3334:3334"
-      - "8080:8080"
-      - "9011:9011"
-      - "50505:50505"
-      - "10000:10000/tcp"
-      - "20000:20000/tcp"
-      - "30000:30000/tcp"
+      - "3333:3333"   # Core API
+      - "3334:3334"   # System API
+      - "3335:3335"   # Prometheus API
+      - "9011:9011"   # JMX Port for Java debugging
+      - "50505:50505" # JDWP Port for Java debugging
+      # Gossip port on 30000 can be called by other nodes inside docker, but isn't exposed outside docker
   core1:
     extends:
       file: core.yml
@@ -30,8 +28,9 @@ services:
     networks:
       - five_nodes
     ports:
-      - "3335:3333"
-      - "3336:3334"
+      - "3343:3333"
+      - "3344:3334"
+      - "3345:3335"
       - "8081:8080"
       - "9012:9011"
       - "50506:50505"
@@ -46,8 +45,9 @@ services:
     networks:
       - five_nodes
     ports:
-      - "3337:3333"
-      - "3338:3334"
+      - "3363:3333"
+      - "3364:3334"
+      - "3365:3335"
       - "8082:8080"
       - "9013:9011"
       - "50507:50505"
@@ -62,8 +62,9 @@ services:
     networks:
       - five_nodes
     ports:
-      - "3339:3333"
-      - "3340:3334"
+      - "3373:3333"
+      - "3374:3334"
+      - "3375:3335"
       - "8083:8080"
       - "9014:9011"
       - "50508:50505"

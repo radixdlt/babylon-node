@@ -65,9 +65,9 @@
 package com.radixdlt.api.system.prometheus;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.api.common.HandlerRoute;
+import com.radixdlt.api.prometheus.PrometheusHandler;
 import io.undertow.server.HttpHandler;
 
 public final class PrometheusApiModule extends AbstractModule {
@@ -79,7 +79,6 @@ public final class PrometheusApiModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bind(PrometheusHandler.class).in(Scopes.SINGLETON);
     MapBinder.newMapBinder(binder(), HandlerRoute.class, HttpHandler.class)
         .addBinding(HandlerRoute.get(path))
         .to(PrometheusHandler.class);

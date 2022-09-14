@@ -11,13 +11,11 @@ services:
     networks:
       - single_node
     ports:
-      - "3333:3333"
-      - "3334:3334"
-      - "8080:8080"
-      - "9011:9011"
-      - "50505:50505"
-      - "10000:10000/tcp"
-      - "20000:20000/tcp"
-      - "30000:30000/tcp"
+      - "3333:3333"   # Core API
+      - "3334:3334"   # System API
+      - "3335:3335"   # Prometheus API
+      - "9011:9011"   # JMX Port for Java debugging
+      - "50505:50505" # JDWP Port for Java debugging
+      # Gossip port on 30000 can be called by other nodes inside docker, but isn't exposed outside docker
 networks:
   single_node:

@@ -62,11 +62,11 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.prometheus;
+package com.radixdlt.api.prometheus;
 
 import static com.radixdlt.RadixNodeApplication.SYSTEM_VERSION_KEY;
 import static com.radixdlt.RadixNodeApplication.VERSION_STRING_KEY;
-import static com.radixdlt.api.system.prometheus.PrometheusService.JmxMetric.jmxMetric;
+import static com.radixdlt.api.prometheus.PrometheusService.JmxMetric.jmxMetric;
 
 import com.google.inject.Inject;
 import com.radixdlt.RadixNodeApplication;

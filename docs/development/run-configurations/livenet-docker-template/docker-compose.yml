@@ -7,6 +7,7 @@ services:
     ports:
       - "${RADIXDLT_CORE_API_PORT}:3333"
       - "${RADIXDLT_SYSTEM_API_PORT}:3334"
+      - "${RADIXDLT_PROMETHEUS_API_PORT}:3335"
     mem_limit: 12000m
     cap_add:
       - NET_ADMIN
@@ -19,6 +20,7 @@ services:
       RADIXDLT_VALIDATOR_KEY_LOCATION: "/home/radixdlt/node-keystore.ks"
       RADIXDLT_CORE_API_PORT: 3333
       RADIXDLT_SYSTEM_API_PORT: 3334
+      RADIXDLT_PROMETHEUS_API_PORT: 3335
 
     volumes:
       -  "./node/ledger:/home/radixdlt/RADIXDB"

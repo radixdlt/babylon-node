@@ -62,37 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system.prometheus;
+package com.radixdlt.api.prometheus;
 
-import com.google.inject.Inject;
+import com.radixdlt.api.common.ApiBase;
+import com.radixdlt.api.common.HandlerRoute;
 import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
+import java.util.Map;
 
-public class PrometheusHandler implements HttpHandler {
-  // 	https://prometheus.io/docs/instrumenting/exposition_formats/
-  private static final String CONTENT_TYPE_TEXT_PLAIN_004 =
-      "text/plain; version=0.0.4;charset=utf-8";
-
-  private final PrometheusService metricsService;
-
-  @Inject
-  public PrometheusHandler(PrometheusService metricsService) {
-    this.metricsService = metricsService;
-  }
-
-  @Override
-  public void handleRequest(HttpServerExchange exchange) throws Exception {
-    if (exchange.isInIoThread()) {
-      exchange.dispatch(this);
-      return;
-    }
-
-    exchange.startBlocking();
-
-    var text = metricsService.getMetrics();
-    exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, CONTENT_TYPE_TEXT_PLAIN_004);
-    exchange.setStatusCode(200);
-    exchange.getResponseSender().send(text);
+public class PrometheusApi extends ApiBase {
+  public PrometheusApi(
+      String apiBindAddress,
+      int apiPort,
+      Map<HandlerRoute, HttpHandler> handlers,
+      int maximumConcurrentRequests,
+      int maxQueueSize) {
+    super(apiBindAddress, apiPort, handlers, maximumConcurrentRequests, maxQueueSize);
   }
 }

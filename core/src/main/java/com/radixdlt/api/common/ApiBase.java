@@ -62,67 +62,66 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.system;
+package com.radixdlt.api.common;
 
-import static java.lang.annotation.ElementType.*;
-
-import com.google.inject.*;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.api.common.HandlerRoute;
-import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.api.system.health.ScheduledStatsCollecting;
-import com.radixdlt.api.system.routes.*;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.Runners;
+import io.undertow.Handlers;
+import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.RequestLimitingHandler;
+import io.undertow.util.StatusCodes;
 import java.util.Map;
 
-public class SystemApiModule extends AbstractModule {
-  private static final int MAXIMUM_CONCURRENT_REQUESTS =
-      Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
-  private static final int QUEUE_SIZE = 2000;
-  private final String bindAddress;
-  private final int port;
+public abstract class ApiBase {
+  private final Undertow undertowServer;
 
-  public SystemApiModule(String bindAddress, int port) {
-    this.bindAddress = bindAddress;
-    this.port = port;
+  public ApiBase(
+      String apiBindAddress,
+      int apiPort,
+      Map<HandlerRoute, HttpHandler> handlers,
+      int maximumConcurrentRequests,
+      int maxQueueSize) {
+    var handler =
+        new RequestLimitingHandler(
+            maximumConcurrentRequests, maxQueueSize, configureRoutes(handlers));
+
+    this.undertowServer =
+        Undertow.builder().addHttpListener(apiPort, apiBindAddress).setHandler(handler).build();
   }
 
-  @Override
-  protected void configure() {
-    var eventBinder =
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-            .permitDuplicates();
-    eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
-    bind(HealthInfoService.class).in(Scopes.SINGLETON);
-
-    var binder =
-        MapBinder.newMapBinder(
-            binder(), HandlerRoute.class, HttpHandler.class, SystemApiEndpoints.class);
-    binder.addBinding(HandlerRoute.get("/system/configuration")).to(ConfigurationHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/metrics")).to(MetricsHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/health")).to(HealthHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/peers")).to(PeersHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/addressbook")).to(AddressBookHandler.class);
-    binder
-        .addBinding(HandlerRoute.get("/system/network-sync-status"))
-        .to(NetworkSyncStatusHandler.class);
+  public void start() {
+    undertowServer.start();
   }
 
-  @ProvidesIntoSet
-  public EventProcessorOnRunner<?> healthInfoService(HealthInfoService healthInfoService) {
-    return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO, ScheduledStatsCollecting.class, healthInfoService.updateStats());
+  public void stop() {
+    undertowServer.stop();
   }
 
-  @Provides
-  @Singleton
-  public SystemApi systemApi(@SystemApiEndpoints Map<HandlerRoute, HttpHandler> handlers) {
-    return new SystemApi(bindAddress, port, handlers, MAXIMUM_CONCURRENT_REQUESTS, QUEUE_SIZE);
+  private static void fallbackHandler(HttpServerExchange exchange) {
+    exchange.setStatusCode(StatusCodes.NOT_FOUND);
+    exchange.getResponseSender().send("No API route found at this path");
+  }
+
+  private static void invalidMethodHandler(HttpServerExchange exchange) {
+    exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
+    exchange
+        .getResponseSender()
+        .send("Invalid method " + exchange.getRequestMethod() + " for the route at this path");
+  }
+
+  private static HttpHandler configureRoutes(Map<HandlerRoute, HttpHandler> allRouteHandlers) {
+    // The true flag enables query parameters to be rewriting to path parameters
+    var combinedApiHandler = Handlers.routing(true);
+    allRouteHandlers.forEach((route, h) -> combinedApiHandler.add(route.method(), route.path(), h));
+    combinedApiHandler.setFallbackHandler(ApiBase::fallbackHandler);
+    combinedApiHandler.setInvalidMethodHandler(ApiBase::invalidMethodHandler);
+
+    // NB - the Core API and System API have already caught/handled exceptions in the
+    //      CoreJsonRpcHandler, and SystemGetJsonHandler, so we don't need to override a default
+    // error handler here.
+    //      The default undertow handler should be sufficient in any edge cases:
+    //
+    // https://github.com/undertow-io/undertow-docs/blob/master/src/main/asciidoc/error-handling.asciidoc
+    return combinedApiHandler;
   }
 }
