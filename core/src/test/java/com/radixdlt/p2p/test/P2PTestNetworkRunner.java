@@ -76,9 +76,9 @@ import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
@@ -205,7 +205,9 @@ public final class P2PTestNetworkRunner {
                 .to(dbDir.getRoot().getAbsolutePath());
             bindConstant().annotatedWith(DatabaseCacheSize.class).to(100_000L);
             bind(ECKeyPair.class).annotatedWith(Self.class).toInstance(nodeKey);
-            bind(ECPublicKey.class).annotatedWith(Self.class).toInstance(nodeKey.getPublicKey());
+            bind(ECDSASecp256k1PublicKey.class)
+                .annotatedWith(Self.class)
+                .toInstance(nodeKey.getPublicKey());
             bind(BFTNode.class)
                 .annotatedWith(Self.class)
                 .toInstance(BFTNode.create(nodeKey.getPublicKey()));

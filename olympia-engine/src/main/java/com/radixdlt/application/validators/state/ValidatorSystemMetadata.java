@@ -64,13 +64,13 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.HashUtils;
 import java.util.Arrays;
 import java.util.Objects;
 import org.bouncycastle.util.encoders.Hex;
 
-public record ValidatorSystemMetadata(ECPublicKey validatorKey, byte[] data)
+public record ValidatorSystemMetadata(ECDSASecp256k1PublicKey validatorKey, byte[] data)
     implements ValidatorData {
   public ValidatorSystemMetadata {
     if (data.length != 32) {
@@ -78,7 +78,7 @@ public record ValidatorSystemMetadata(ECPublicKey validatorKey, byte[] data)
     }
   }
 
-  public static ValidatorSystemMetadata createVirtual(ECPublicKey validatorKey) {
+  public static ValidatorSystemMetadata createVirtual(ECDSASecp256k1PublicKey validatorKey) {
     return new ValidatorSystemMetadata(validatorKey, HashUtils.zero256().asBytes());
   }
 

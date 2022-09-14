@@ -77,7 +77,7 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.REv2OneMBTransactionGenerator;
+import com.radixdlt.rev2.REv2LargeTransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import org.junit.Rule;
 import org.junit.Test;
@@ -109,7 +109,7 @@ public final class TransactionDBSizeStressTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(
-                            new REv2OneMBTransactionGenerator(NetworkDefinition.INT_TEST_NET),
+                            new REv2LargeTransactionGenerator(NetworkDefinition.INT_TEST_NET),
                             1)))));
   }
 

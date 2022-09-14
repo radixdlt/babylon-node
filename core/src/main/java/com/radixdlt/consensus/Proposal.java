@@ -71,7 +71,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -95,7 +95,7 @@ public final class Proposal implements ConsensusEvent {
 
   @JsonProperty("signature")
   @DsonOutput(Output.ALL)
-  private final ECDSASignature signature;
+  private final ECDSASecp256k1Signature signature;
 
   @JsonProperty("committedQC")
   @DsonOutput(Output.ALL)
@@ -109,7 +109,7 @@ public final class Proposal implements ConsensusEvent {
   Proposal(
       @JsonProperty(value = "vertex", required = true) Vertex vertex,
       @JsonProperty(value = "committedQC", required = true) QuorumCertificate committedQC,
-      @JsonProperty(value = "signature", required = true) ECDSASignature signature,
+      @JsonProperty(value = "signature", required = true) ECDSASecp256k1Signature signature,
       @JsonProperty("highestTC") TimeoutCertificate highestTC) {
     this(vertex, committedQC, signature, Optional.ofNullable(highestTC));
   }
@@ -117,7 +117,7 @@ public final class Proposal implements ConsensusEvent {
   public Proposal(
       Vertex vertex,
       QuorumCertificate committedQC,
-      ECDSASignature signature,
+      ECDSASecp256k1Signature signature,
       Optional<TimeoutCertificate> highestTC) {
     this.vertex = requireNonNull(vertex);
     this.committedQC = requireNonNull(committedQC);
@@ -151,7 +151,7 @@ public final class Proposal implements ConsensusEvent {
     return vertex;
   }
 
-  public ECDSASignature getSignature() {
+  public ECDSASecp256k1Signature getSignature() {
     return signature;
   }
 

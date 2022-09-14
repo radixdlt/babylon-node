@@ -74,7 +74,7 @@ import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.keys.PersistedBFTKeyModule;
@@ -226,12 +226,14 @@ public final class RadixNodeModule extends AbstractModule {
     log.info("Using genesis txn: {}", genesisTxn);
 
     final var initialVset =
-        Streams.stream(Splitter.fixedLength(ECPublicKey.COMPRESSED_BYTES * 2).split(genesisTxn))
+        Streams.stream(
+                Splitter.fixedLength(ECDSASecp256k1PublicKey.COMPRESSED_BYTES * 2)
+                    .split(genesisTxn))
             .map(
                 pubKeyBytes -> {
                   log.info("Initial vset validator: {}", pubKeyBytes);
                   try {
-                    return BFTNode.create(ECPublicKey.fromHex(pubKeyBytes));
+                    return BFTNode.create(ECDSASecp256k1PublicKey.fromHex(pubKeyBytes));
                   } catch (PublicKeyException e) {
                     throw new RuntimeException(e);
                   }

@@ -73,18 +73,18 @@ import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 /** An interface used for actions that require access to node's private key */
 public interface ECKeyOps {
   /** Calculates an ECDH agreement using node's private key */
-  BigInteger ecdhAgreement(ECPublicKey publicKey);
+  BigInteger ecdhAgreement(ECDSASecp256k1PublicKey publicKey);
 
   /** Decrypts a message using node's private key */
   byte[] eciesDecrypt(byte[] cipher, byte[] macData) throws InvalidCipherTextException;
 
   /** Returns this node's public key. */
-  ECPublicKey nodePubKey();
+  ECDSASecp256k1PublicKey nodePubKey();
 
   static ECKeyOps fromKeyPair(ECKeyPair keyPair) {
     return new ECKeyOps() {
       @Override
-      public BigInteger ecdhAgreement(ECPublicKey publicKey) {
+      public BigInteger ecdhAgreement(ECDSASecp256k1PublicKey publicKey) {
         final var agreement = new ECDHBasicAgreement();
         agreement.init(
             new ECPrivateKeyParameters(
@@ -99,7 +99,7 @@ public interface ECKeyOps {
       }
 
       @Override
-      public ECPublicKey nodePubKey() {
+      public ECDSASecp256k1PublicKey nodePubKey() {
         return keyPair.getPublicKey();
       }
     };

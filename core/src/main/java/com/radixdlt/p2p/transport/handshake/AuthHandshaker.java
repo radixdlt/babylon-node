@@ -69,12 +69,12 @@ import static com.radixdlt.utils.Bytes.bigIntegerToBytes;
 import static com.radixdlt.utils.Bytes.xor;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.ECIESCoder;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECKeyUtils;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.capability.Capabilities;
@@ -118,7 +118,7 @@ public final class AuthHandshaker {
   private boolean isInitiator = false;
   private Optional<byte[]> initiatePacketOpt = Optional.empty();
   private Optional<byte[]> responsePacketOpt = Optional.empty();
-  private Optional<ECPublicKey> remotePubKeyOpt;
+  private Optional<ECDSASecp256k1PublicKey> remotePubKeyOpt;
   private final Capabilities capabilities;
 
   public AuthHandshaker(
@@ -138,7 +138,7 @@ public final class AuthHandshaker {
     this.newestForkName = newestForkName;
   }
 
-  public byte[] initiate(ECPublicKey remotePubKey) {
+  public byte[] initiate(ECDSASecp256k1PublicKey remotePubKey) {
     final var message = createAuthInitiateMessage(remotePubKey);
     final var encoded = serialization.toDson(message, DsonOutput.Output.WIRE);
     final var padding = randomBytes(secureRandom.nextInt(MAX_PADDING - MIN_PADDING) + MIN_PADDING);
@@ -160,7 +160,7 @@ public final class AuthHandshaker {
     return packet;
   }
 
-  private AuthInitiateMessage createAuthInitiateMessage(ECPublicKey remotePubKey) {
+  private AuthInitiateMessage createAuthInitiateMessage(ECDSASecp256k1PublicKey remotePubKey) {
     final var sharedSecret = bigIntegerToBytes(ecKeyOps.ecdhAgreement(remotePubKey), NONCE_SIZE);
     final var messageToSign = xor(sharedSecret, nonce);
     final var signature = ephemeralKey.sign(messageToSign);
@@ -181,7 +181,7 @@ public final class AuthHandshaker {
       data.getBytes(sizeBytes.length, encryptedPayload, 0, encryptedPayload.length);
       final var plaintext = ecKeyOps.eciesDecrypt(encryptedPayload, sizeBytes);
       final var message = serialization.fromDson(plaintext, AuthInitiateMessage.class);
-      final var remotePubKey = ECPublicKey.fromBytes(message.getPublicKey().asBytes());
+      final var remotePubKey = ECDSASecp256k1PublicKey.fromBytes(message.getPublicKey().asBytes());
 
       if (message.getNetworkId() != this.networkId) {
         return Pair.of(
@@ -258,7 +258,7 @@ public final class AuthHandshaker {
       data.getBytes(0, responsePacket);
       this.responsePacketOpt = Optional.of(responsePacket);
       final var remoteEphemeralKey =
-          ECPublicKey.fromBytes(message.getEphemeralPublicKey().asBytes());
+          ECDSASecp256k1PublicKey.fromBytes(message.getEphemeralPublicKey().asBytes());
       return finalizeHandshake(
           remoteEphemeralKey,
           message.getNonce(),
@@ -270,16 +270,16 @@ public final class AuthHandshaker {
     }
   }
 
-  private ECPublicKey extractEphemeralKey(
-      ECDSASignature signature, HashCode nonce, ECPublicKey publicKey) {
+  private ECDSASecp256k1PublicKey extractEphemeralKey(
+      ECDSASecp256k1Signature signature, HashCode nonce, ECDSASecp256k1PublicKey publicKey) {
     final var sharedSecret = ecKeyOps.ecdhAgreement(publicKey);
     final var token = bigIntegerToBytes(sharedSecret, NONCE_SIZE);
     final var signed = xor(token, nonce.asBytes());
-    return ECPublicKey.recoverFrom(HashCode.fromBytes(signed), signature).orElseThrow();
+    return ECDSASecp256k1PublicKey.recoverFrom(HashCode.fromBytes(signed), signature).orElseThrow();
   }
 
   private AuthHandshakeSuccess finalizeHandshake(
-      ECPublicKey remoteEphemeralKey,
+      ECDSASecp256k1PublicKey remoteEphemeralKey,
       HashCode remoteNonce,
       Optional<String> remoteNewestForkName,
       Set<RemotePeerCapability> remotePeerCapabilities) {

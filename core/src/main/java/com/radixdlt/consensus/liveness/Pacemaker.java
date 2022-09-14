@@ -296,6 +296,10 @@ public final class Pacemaker {
             executedVertex.getVertexHash(),
             executedVertex.getLedgerHeader());
 
+    // TODO: It is possible that an empty vote may be returned here if
+    // TODO: we are missing the vertex which we voted for is missing.
+    // TODO: This would occur if the liveness bug in VertexStoreJavaImpl:150
+    // TODO: occurs. Once liveness bug is fixed we should never hit this state.
     final var maybeBaseVote =
         this.safetyRules.createVote(
             executedVertex.getVertex(),

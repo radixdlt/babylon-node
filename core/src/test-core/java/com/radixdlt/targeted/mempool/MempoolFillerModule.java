@@ -71,7 +71,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.*;
 import com.radixdlt.identifiers.REAddr;
 
@@ -99,7 +99,7 @@ public final class MempoolFillerModule extends AbstractModule {
 
   @Provides
   @Self
-  private REAddr addr(@Self ECPublicKey self) {
+  private REAddr addr(@Self ECDSASecp256k1PublicKey self) {
     return REAddr.ofPubKeyAccount(self);
   }
 

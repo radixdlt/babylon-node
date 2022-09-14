@@ -64,13 +64,13 @@
 
 package com.radixdlt.substate;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import java.util.Objects;
 
 /** Specifies high level parameters to a token definition */
 public final class MutableTokenDefinition {
-  private final ECPublicKey key;
+  private final ECDSASecp256k1PublicKey key;
   private final String symbol;
   private final String name;
   private final String description;
@@ -78,7 +78,7 @@ public final class MutableTokenDefinition {
   private final String tokenUrl;
 
   public MutableTokenDefinition(
-      ECPublicKey key,
+      ECDSASecp256k1PublicKey key,
       String symbol,
       String name,
       String description,
@@ -92,7 +92,7 @@ public final class MutableTokenDefinition {
     this.tokenUrl = tokenUrl;
   }
 
-  public MutableTokenDefinition(ECPublicKey key, String symbol) {
+  public MutableTokenDefinition(ECDSASecp256k1PublicKey key, String symbol) {
     this.key = key;
     this.symbol = symbol.toLowerCase();
     this.name = null;
@@ -105,7 +105,7 @@ public final class MutableTokenDefinition {
     return REAddr.ofHashedKey(key, symbol);
   }
 
-  public ECPublicKey getOwner() {
+  public ECDSASecp256k1PublicKey getOwner() {
     return key;
   }
 

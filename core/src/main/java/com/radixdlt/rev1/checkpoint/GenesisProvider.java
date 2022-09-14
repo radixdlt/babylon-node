@@ -71,7 +71,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
@@ -92,7 +92,7 @@ import org.apache.logging.log4j.Logger;
 public final class GenesisProvider implements Provider<CommittedTransactionsWithProof> {
   private static final Logger logger = LogManager.getLogger();
   private final ImmutableList<TokenIssuance> tokenIssuances;
-  private final Set<ECPublicKey> validatorKeys;
+  private final Set<ECDSASecp256k1PublicKey> validatorKeys;
   private final Set<StakeTokens> stakeTokens;
   private final Optional<List<TxAction>> additionalActions;
   private final GenesisBuilder genesisBuilder;
@@ -104,7 +104,7 @@ public final class GenesisProvider implements Provider<CommittedTransactionsWith
       @Genesis long timestamp,
       @Genesis ImmutableList<TokenIssuance> tokenIssuances,
       @Genesis Set<StakeTokens> stakeTokens,
-      @Genesis Set<ECPublicKey> validatorKeys,
+      @Genesis Set<ECDSASecp256k1PublicKey> validatorKeys,
       @Genesis Optional<List<TxAction>> additionalActions) {
     this.genesisBuilder = genesisBuilder;
     this.timestamp = timestamp;

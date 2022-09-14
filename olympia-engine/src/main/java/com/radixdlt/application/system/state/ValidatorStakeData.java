@@ -69,13 +69,13 @@ import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeCons
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.application.tokens.ResourceInBucket;
 import com.radixdlt.application.validators.state.ValidatorData;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 
 public record ValidatorStakeData(
-    ECPublicKey validatorKey,
+    ECDSASecp256k1PublicKey validatorKey,
     UInt256 totalStake,
     UInt256 totalOwnership,
     int rakePercentage,
@@ -93,7 +93,7 @@ public record ValidatorStakeData(
     Objects.requireNonNull(validatorKey);
   }
 
-  public static ValidatorStakeData createVirtual(ECPublicKey validatorKey) {
+  public static ValidatorStakeData createVirtual(ECDSASecp256k1PublicKey validatorKey) {
     return new ValidatorStakeData(
         validatorKey,
         UInt256.ZERO,
@@ -104,7 +104,7 @@ public record ValidatorStakeData(
   }
 
   public static ValidatorStakeData create(
-      ECPublicKey validatorKey,
+      ECDSASecp256k1PublicKey validatorKey,
       UInt256 totalStake,
       UInt256 totalOwnership,
       int rakePercentage,

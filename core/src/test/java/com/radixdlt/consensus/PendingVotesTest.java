@@ -75,7 +75,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected.VoteRejectedReason;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.utils.RandomHasher;
@@ -150,10 +150,10 @@ public class PendingVotesTest {
     HashCode vertexId1 = HashUtils.random256();
     HashCode vertexId2 = HashUtils.random256();
     Vote vote1 = makeSignedVoteFor(mock(BFTNode.class), Round.genesis(), vertexId1);
-    when(vote1.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+    when(vote1.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote1.isTimeout()).thenReturn(true);
     Vote vote2 = makeSignedVoteFor(mock(BFTNode.class), Round.genesis(), vertexId2);
-    when(vote2.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+    when(vote2.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote2.isTimeout()).thenReturn(true);
 
     BFTValidatorSet validatorSet =
@@ -209,7 +209,7 @@ public class PendingVotesTest {
   public void when_voting_again__previous_timeoutvote_is_removed() {
     BFTNode author = mock(BFTNode.class);
     Vote vote = makeSignedVoteFor(author, Round.genesis(), HashUtils.random256());
-    when(vote.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+    when(vote.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote.isTimeout()).thenReturn(true);
 
     BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
@@ -247,7 +247,7 @@ public class PendingVotesTest {
     when(vote1.getTimeoutSignature()).thenReturn(Optional.empty());
     when(vote1.isTimeout()).thenReturn(false);
     final var vote2 = makeSignedVoteFor(mock(BFTNode.class), Round.genesis(), vertexId2);
-    when(vote2.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+    when(vote2.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote2.isTimeout()).thenReturn(true);
 
     BFTValidatorSet validatorSet =
@@ -266,7 +266,7 @@ public class PendingVotesTest {
         this.pendingVotes.insertVote(vote1, validatorSet));
 
     // submit again, but this time with a timeout
-    when(vote1.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+    when(vote1.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASecp256k1Signature.class)));
     when(vote1.isTimeout()).thenReturn(true);
 
     // should be accepted
@@ -286,7 +286,7 @@ public class PendingVotesTest {
 
   private Vote makeSignedVoteFor(BFTNode author, Round parentRound, HashCode vertexId) {
     Vote vote = makeVoteWithoutSignatureFor(author, parentRound, vertexId);
-    when(vote.getSignature()).thenReturn(ECDSASignature.zeroSignature());
+    when(vote.getSignature()).thenReturn(ECDSASecp256k1Signature.zeroSignature());
     return vote;
   }
 

@@ -67,7 +67,7 @@ package com.radixdlt.consensus;
 import com.google.common.hash.HashCode;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 
 /** Signs a hash. */
 @FunctionalInterface
@@ -77,17 +77,17 @@ public interface HashSigner {
    * Sign the specified hash with the specified key.
    *
    * @param hash The hash to sign
-   * @return The {@link ECDSASignature}
+   * @return The {@link ECDSASecp256k1Signature}
    */
-  ECDSASignature sign(byte[] hash);
+  ECDSASecp256k1Signature sign(byte[] hash);
 
   /**
    * Sign the specified hash with the specified key.
    *
    * @param hash The hash to sign
-   * @return The {@link ECDSASignature}
+   * @return The {@link ECDSASecp256k1Signature}
    */
-  default ECDSASignature sign(HashCode hash) {
+  default ECDSASecp256k1Signature sign(HashCode hash) {
     return sign(hash.asBytes());
   }
 }

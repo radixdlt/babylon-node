@@ -71,7 +71,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventProcessorOnRunner;
 import com.radixdlt.environment.LocalEvents;
 import com.radixdlt.environment.Runners;
@@ -148,7 +148,10 @@ public final class P2PModule extends AbstractModule {
   @Provides
   @Self
   public RadixNodeUri selfUri(
-      @NetworkId int networkId, @Self ECPublicKey selfKey, HostIp hostIp, P2PConfig p2pConfig) {
+      @NetworkId int networkId,
+      @Self ECDSASecp256k1PublicKey selfKey,
+      HostIp hostIp,
+      P2PConfig p2pConfig) {
     final var host =
         hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
     final var port = p2pConfig.broadcastPort();

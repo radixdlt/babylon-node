@@ -64,7 +64,7 @@
 
 package com.radixdlt.rev2;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.PublicKey;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt32;
@@ -76,10 +76,12 @@ public record TransactionHeader(
     UInt64 startEpochInclusive,
     UInt64 endEpochExclusive,
     UInt64 nonce,
-    ECPublicKey notaryPublicKey,
+    PublicKey notaryPublicKey,
     boolean notaryAsSignatory,
     UInt32 costUnitLimit,
     UInt32 tipPercentage) {
+
+  public static final UInt32 MAX_COST_UNIT_LIMIT = UInt32.fromNonNegativeInt(10_000_000);
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -92,7 +94,7 @@ public record TransactionHeader(
                 codecs.of(UInt64.class),
                 codecs.of(UInt64.class),
                 codecs.of(UInt64.class),
-                codecs.of(ECPublicKey.class),
+                codecs.of(PublicKey.class),
                 codecs.of(boolean.class),
                 codecs.of(UInt32.class),
                 codecs.of(UInt32.class),
@@ -110,16 +112,39 @@ public record TransactionHeader(
   }
 
   public static TransactionHeader defaults(
-      NetworkDefinition networkDefinition, ECPublicKey notary, Boolean notaryIsSignatory) {
+      NetworkDefinition networkDefinition,
+      long nonce,
+      PublicKey notary,
+      Boolean notaryIsSignatory) {
     return new TransactionHeader(
         (byte) 1, // Version
         networkDefinition.id(),
         UInt64.fromNonNegativeLong(1), // From Epoch (inclusive)
         UInt64.fromNonNegativeLong(100), // To Epoch (exclusive)
-        UInt64.fromNonNegativeLong(1), // Nonce
+        UInt64.fromNonNegativeLong(nonce), // Nonce
         notary,
         notaryIsSignatory,
-        UInt32.fromNonNegativeInt(1000000), // Max Cost Units
+        MAX_COST_UNIT_LIMIT, // Max Cost Units
+        UInt32.fromNonNegativeInt(0) // Tip percentage
+        );
+  }
+
+  public static TransactionHeader defaults(
+      NetworkDefinition networkDefinition,
+      long nonce,
+      PublicKey notary,
+      UInt32 costUnitLimit,
+      Boolean notaryIsSignatory) {
+    var costUnitLimitToUse = UInt32.Min(MAX_COST_UNIT_LIMIT, costUnitLimit);
+    return new TransactionHeader(
+        (byte) 1, // Version
+        networkDefinition.id(),
+        UInt64.fromNonNegativeLong(1), // From Epoch (inclusive)
+        UInt64.fromNonNegativeLong(100), // To Epoch (exclusive)
+        UInt64.fromNonNegativeLong(nonce), // Nonce
+        notary,
+        notaryIsSignatory,
+        costUnitLimitToUse,
         UInt32.fromNonNegativeInt(0) // Tip percentage
         );
   }

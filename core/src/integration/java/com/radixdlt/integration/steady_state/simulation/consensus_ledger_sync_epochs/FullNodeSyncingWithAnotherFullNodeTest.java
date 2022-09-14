@@ -71,8 +71,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
@@ -98,8 +98,8 @@ public class FullNodeSyncingWithAnotherFullNodeTest {
   private static final int MAX_LEDGER_SYNC_LAG = 1000;
 
   private final Builder testBuilder;
-  private ECPublicKey nodeUnderTestKey;
-  private ECPublicKey nonValidatorSyncNodeKey;
+  private ECDSASecp256k1PublicKey nodeUnderTestKey;
+  private ECDSASecp256k1PublicKey nonValidatorSyncNodeKey;
 
   public FullNodeSyncingWithAnotherFullNodeTest() {
     this.testBuilder =
