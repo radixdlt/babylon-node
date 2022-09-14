@@ -99,6 +99,7 @@ pub struct CommitRequest {
     pub transactions: Vec<Transaction>,
     pub state_version: u64,
     pub proof: Vec<u8>,
+    pub vertex_store: Option<Vec<u8>>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]

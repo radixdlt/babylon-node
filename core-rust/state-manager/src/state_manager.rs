@@ -172,7 +172,7 @@ impl<M: Mempool, S> StateManager<M, S> {
 impl<M, S> StateManager<M, S>
 where
     M: Mempool,
-    S: ReadableSubstateStore + WriteableSubstateStore,
+    S: ReadableSubstateStore,
 {
     pub fn preview(
         &mut self,
@@ -213,21 +213,10 @@ where
     }
 }
 
-pub trait WriteableTransactionStore {
-    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, LedgerTransactionReceipt)>);
-}
-
-pub trait WriteableProofStore {
-    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>);
-}
-
 impl<M, S> StateManager<M, S>
 where
     M: Mempool,
-    S: ReadableSubstateStore
-        + WriteableSubstateStore
-        + WriteableTransactionStore
-        + WriteableProofStore,
+    S: ReadableSubstateStore,
 {
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
         let mut validated_prepared = Vec::new();
@@ -305,17 +294,63 @@ where
             rejected_txns,
         }
     }
+}
 
-    pub fn commit(&mut self, commit_request: CommitRequest) {
+pub trait CommitStoreTransaction<'db>:
+    WriteableTransactionStore
+    + WriteableProofStore
+    + WriteableVertexStore
+    + WriteableSubstateStore
+    + ReadableSubstateStore
+{
+    fn commit(self);
+}
+
+pub trait CommitStore<'db> {
+    type DBTransaction: CommitStoreTransaction<'db>;
+
+    fn create_db_transaction(&'db mut self) -> Self::DBTransaction;
+}
+
+pub trait WriteableTransactionStore {
+    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, LedgerTransactionReceipt)>);
+}
+
+pub trait WriteableProofStore {
+    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>);
+}
+
+pub trait WriteableVertexStore {
+    fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>);
+}
+
+impl<'db, M, S> StateManager<M, S>
+where
+    M: Mempool,
+    S: CommitStore<'db>,
+{
+    pub fn commit(&'db mut self, commit_request: CommitRequest) {
         let mut to_store = Vec::new();
         let mut ids = Vec::new();
+
+        let mut db_transaction = self.store.create_db_transaction();
+
         for transaction in &commit_request.transactions {
-            let validated_txn = self
-                .decode_transaction(transaction)
-                .expect("Error on Byzantine quorum");
+            let validation_config = ValidationConfig {
+                network: &self.network,
+                current_epoch: self.validation_config.current_epoch,
+                max_cost_unit_limit: self.validation_config.max_cost_unit_limit,
+                min_tip_percentage: self.validation_config.min_tip_percentage,
+            };
+            let validated_txn = TransactionValidator::validate_from_slice(
+                &transaction.payload,
+                &self.intent_hash_manager,
+                &validation_config,
+            )
+            .expect("Error on Byzantine quorum");
 
             let mut transaction_executor = TransactionExecutor::new(
-                &mut self.store,
+                &mut db_transaction,
                 &mut self.wasm_engine,
                 &mut self.wasm_instrumenter,
             );
@@ -338,9 +373,18 @@ where
             ids.push(transaction.id.clone());
         }
 
-        self.store.insert_transactions(to_store);
-        self.store
-            .insert_tids_and_proof(commit_request.state_version, ids, commit_request.proof);
+        db_transaction.insert_transactions(to_store);
+        db_transaction.insert_tids_and_proof(
+            commit_request.state_version,
+            ids,
+            commit_request.proof,
+        );
+        if let Some(vertex_store) = commit_request.vertex_store {
+            db_transaction.save_vertex_store(vertex_store);
+        }
+
+        db_transaction.commit();
+
         self.mempool
             .handle_committed_transactions(&commit_request.transactions);
     }

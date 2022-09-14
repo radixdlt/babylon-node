@@ -83,7 +83,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -100,6 +99,7 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
 import java.util.List;
@@ -114,7 +114,7 @@ import java.util.stream.Stream;
  * A deterministic test where each event that occurs in the network is emitted and processed
  * synchronously by the caller.
  */
-public final class DeterministicTest {
+public final class DeterministicTest implements AutoCloseable {
   private final DeterministicNodes nodes;
   private final DeterministicNetwork network;
 
@@ -127,6 +127,11 @@ public final class DeterministicTest {
     this.network = new DeterministicNetwork(nodes, messageSelector, messageMutator);
 
     this.nodes = new DeterministicNodes(nodes, this.network, baseModule, overrideModule);
+  }
+
+  @Override
+  public void close() throws Exception {
+    this.nodes.close();
   }
 
   public static class Builder {
@@ -172,9 +177,39 @@ public final class DeterministicTest {
       return this;
     }
 
-    public DeterministicTest functionalNodeModule(FunctionalRadixNodeModule module) {
+    private void addFunctionalNodeModule(FunctionalRadixNodeModule module) {
       modules.add(module);
-      return build(false);
+
+      if (module.supportsREv2()) {
+        modules.add(
+            new AbstractModule() {
+              @Override
+              protected void configure() {
+                var validatorSet =
+                    BFTValidatorSet.from(
+                        initialValidatorNodes.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
+                bind(BFTValidatorSet.class).toInstance(validatorSet);
+              }
+            });
+      } else {
+        MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder =
+            new MockedConsensusRecoveryModule.Builder(module.supportsEpochs());
+        mockedConsensusRecoveryModuleBuilder.withNodes(initialValidatorNodes);
+
+        if (this.epochNodeWeightMapping != null) {
+          mockedConsensusRecoveryModuleBuilder.withEpochNodeWeightMapping(
+              this.epochNodeWeightMapping);
+        } else if (this.epochToNodeIndexesMapping != null) {
+          mockedConsensusRecoveryModuleBuilder.withEpochNodeIndexesMapping(
+              this.epochToNodeIndexesMapping);
+        }
+        modules.add(mockedConsensusRecoveryModuleBuilder.build());
+      }
+    }
+
+    public DeterministicTest functionalNodeModule(FunctionalRadixNodeModule module) {
+      addFunctionalNodeModule(module);
+      return build();
     }
 
     public Builder epochNodeIndexesMapping(Function<Long, IntStream> epochToNodeIndexesMapping) {
@@ -205,7 +240,7 @@ public final class DeterministicTest {
 
     public DeterministicTest buildWithEpochs(Round epochMaxRound) {
       Objects.requireNonNull(epochMaxRound);
-      modules.add(
+      this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
               ConsensusConfig.of(),
@@ -213,13 +248,13 @@ public final class DeterministicTest {
                   StateComputerConfig.mocked(
                       new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
       addEpochedConsensusProcessorModule(epochMaxRound);
-      return build(true);
+      return build();
     }
 
     public DeterministicTest buildWithEpochsAndSync(
         Round epochMaxRound, SyncRelayConfig syncRelayConfig) {
       Objects.requireNonNull(epochMaxRound);
-      modules.add(
+      this.addFunctionalNodeModule(
           new FunctionalRadixNodeModule(
               true,
               ConsensusConfig.of(),
@@ -229,10 +264,10 @@ public final class DeterministicTest {
                   syncRelayConfig)));
       modules.add(new InMemoryCommittedReaderModule());
       addEpochedConsensusProcessorModule(epochMaxRound);
-      return build(true);
+      return build();
     }
 
-    private DeterministicTest build(boolean withEpoch) {
+    private DeterministicTest build() {
       modules.add(
           new AbstractModule() {
             @Override
@@ -245,22 +280,6 @@ public final class DeterministicTest {
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
       modules.add(new MockedPersistenceStoreModule());
-
-      MockedConsensusRecoveryModule.Builder mockedConsensusRecoveryModuleBuilder =
-          new MockedConsensusRecoveryModule.Builder(withEpoch);
-      mockedConsensusRecoveryModuleBuilder.withNodes(initialValidatorNodes);
-
-      if (this.epochNodeWeightMapping != null) {
-        mockedConsensusRecoveryModuleBuilder.withEpochNodeWeightMapping(
-            this.epochNodeWeightMapping);
-      } else if (this.epochToNodeIndexesMapping != null) {
-        mockedConsensusRecoveryModuleBuilder.withEpochNodeIndexesMapping(
-            this.epochToNodeIndexesMapping);
-      }
-      modules.add(mockedConsensusRecoveryModuleBuilder.build());
-
-      modules.add(new MockedLedgerRecoveryModule());
-
       modules.add(new TestP2PModule.Builder().withAllNodes(nodes).build());
       modules.add(new TestMessagingModule.Builder().build());
 
@@ -327,6 +346,30 @@ public final class DeterministicTest {
         nodes.handleMessage(nextMsg);
       }
     };
+  }
+
+  public DeterministicTest runUntil(
+      Predicate<List<Injector>> nodeStatePredicate,
+      int max,
+      Predicate<ControlledMessage> predicate) {
+    this.nodes.start();
+
+    int count = 0;
+
+    while (!nodeStatePredicate.test(getNodeInjectors())) {
+      if (count == max) {
+        throw new RuntimeException("Max messages reached: " + max);
+      }
+      Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
+      this.nodes.handleMessage(nextMsg);
+      count++;
+    }
+
+    return this;
+  }
+
+  public DeterministicTest runUntil(Predicate<List<Injector>> nodeStatePredicate, int max) {
+    return this.runUntil(nodeStatePredicate, max, m -> true);
   }
 
   public DeterministicTest runForCount(int count, Predicate<ControlledMessage> predicate) {
@@ -406,10 +449,9 @@ public final class DeterministicTest {
   public static Predicate<Timed<ControlledMessage>> roundUpdateOnNode(Round round, int nodeIndex) {
     return timedMsg -> {
       final var message = timedMsg.value();
-      if (!(message.message() instanceof RoundUpdate)) {
+      if (!(message.message() instanceof final RoundUpdate roundUpdate)) {
         return false;
       }
-      final var roundUpdate = (RoundUpdate) message.message();
       return message.channelId().receiverIndex() == nodeIndex
           && roundUpdate.getCurrentRound().gte(round);
     };
@@ -419,13 +461,32 @@ public final class DeterministicTest {
       long stateVersion, int nodeIndex) {
     return timedMsg -> {
       final var message = timedMsg.value();
-      if (!(message.message() instanceof LedgerUpdate)) {
+      if (!(message.message() instanceof final LedgerUpdate ledgerUpdate)) {
         return false;
       }
-      final var ledgerUpdate = (LedgerUpdate) message.message();
       return message.channelId().receiverIndex() == nodeIndex
           && ledgerUpdate.getTail().getStateVersion() >= stateVersion;
     };
+  }
+
+  public void shutdownNode(int nodeIndex) throws Exception {
+    // Drop local messages
+    this.network.dropMessages(
+        m ->
+            m.channelId().receiverIndex() == nodeIndex && m.channelId().senderIndex() == nodeIndex);
+    this.nodes.shutdownNode(nodeIndex);
+  }
+
+  public void startNode(int nodeIndex) {
+    this.nodes.startNode(nodeIndex);
+  }
+
+  public void restartNode(int nodeIndex) throws Exception {
+    // Drop local messages
+    this.network.dropMessages(
+        m ->
+            m.channelId().receiverIndex() == nodeIndex && m.channelId().senderIndex() == nodeIndex);
+    this.nodes.restartNode(nodeIndex);
   }
 
   public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {

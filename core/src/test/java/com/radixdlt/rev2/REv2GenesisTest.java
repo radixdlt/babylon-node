@@ -68,7 +68,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.*;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -76,7 +75,6 @@ import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.keys.InMemoryBFTKeyModule;
-import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.*;
@@ -88,6 +86,7 @@ import com.radixdlt.rev2.modules.MockedPersistenceStoreModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
+import com.radixdlt.utils.UInt256;
 import java.util.List;
 import org.junit.Test;
 
@@ -107,10 +106,16 @@ public final class REv2GenesisTest {
     return Guice.createInjector(
         new CryptoModule(),
         new TestMessagingModule.Builder().withDefaultRateLimit().build(),
-        new MockedLedgerRecoveryModule(),
-        new MockedConsensusRecoveryModule.Builder()
-            .withNodes(List.of(BFTNode.create(TEST_KEY.getPublicKey())))
-            .build(),
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            var validatorSet =
+                BFTValidatorSet.from(
+                    List.of(
+                        BFTValidator.from(BFTNode.create(TEST_KEY.getPublicKey()), UInt256.ONE)));
+            bind(BFTValidatorSet.class).toInstance(validatorSet);
+          }
+        },
         new MockedPersistenceStoreModule(),
         new FunctionalRadixNodeModule(
             false,

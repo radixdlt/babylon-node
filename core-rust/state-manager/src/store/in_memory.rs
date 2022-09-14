@@ -62,13 +62,42 @@
  * permissions under this License.
  */
 
-use crate::state_manager::{WriteableProofStore, WriteableTransactionStore};
-use crate::store::query::QueryableTransactionStore;
+use crate::state_manager::{WriteableProofStore, WriteableTransactionStore, WriteableVertexStore};
+use crate::store::query::{QueryableTransactionStore, RecoverableVertexStore};
 use crate::store::QueryableProofStore;
 use crate::types::{TId, Transaction};
 use crate::LedgerTransactionReceipt;
 use scrypto::prelude::{scrypto_decode, scrypto_encode};
 use std::collections::{BTreeMap, HashMap};
+
+#[derive(Debug)]
+pub struct InMemoryVertexStore {
+    vertex_store: Option<Vec<u8>>,
+}
+
+impl InMemoryVertexStore {
+    pub fn new() -> Self {
+        Self { vertex_store: None }
+    }
+}
+
+impl WriteableVertexStore for InMemoryVertexStore {
+    fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>) {
+        self.vertex_store = Some(vertex_store_bytes);
+    }
+}
+
+impl RecoverableVertexStore for InMemoryVertexStore {
+    fn get_vertex_store(&self) -> Option<Vec<u8>> {
+        self.vertex_store.clone()
+    }
+}
+
+impl Default for InMemoryVertexStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[derive(Debug)]
 pub struct InMemoryStore {
@@ -126,10 +155,12 @@ impl QueryableTransactionStore for InMemoryStore {
 
 impl WriteableProofStore for InMemoryStore {
     fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
-        let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
-        for (index, id) in ids.into_iter().enumerate() {
-            let txn_state_version = first_state_version + index as u64;
-            self.txids.insert(txn_state_version, id);
+        if !ids.is_empty() {
+            let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
+            for (index, id) in ids.into_iter().enumerate() {
+                let txn_state_version = first_state_version + index as u64;
+                self.txids.insert(txn_state_version, id);
+            }
         }
 
         self.proofs.insert(state_version, proof_bytes);

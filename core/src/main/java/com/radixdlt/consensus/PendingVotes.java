@@ -82,6 +82,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.NotThreadSafe;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Manages pending votes for various vertices.
@@ -93,6 +95,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 @NotThreadSafe
 @SecurityCritical({SecurityKind.SIG_VERIFY, SecurityKind.GENERAL})
 public final class PendingVotes {
+  private static final Logger logger = LogManager.getLogger();
 
   @VisibleForTesting
   // Make sure equals tester can access.
@@ -124,6 +127,20 @@ public final class PendingVotes {
             && this.isTimeout == that.isTimeout;
       }
       return false;
+    }
+
+    @Override
+    public String toString() {
+      return "PreviousVote{"
+          + "round="
+          + round
+          + ", epoch="
+          + epoch
+          + ", hash="
+          + hash
+          + ", isTimeout="
+          + isTimeout
+          + '}';
     }
   }
 
@@ -252,7 +269,16 @@ public final class PendingVotes {
       // If the validator already voted in this round for something else,
       // then the only valid possibility is a non-timeout vote being replaced by a timeout vote
       // on the same vote data, or a byzantine node
-      return vote.isTimeout() && !previousVote.isTimeout && thisVote.hash.equals(previousVote.hash);
+
+      var isValidVote = vote.isTimeout() && thisVote.hash.equals(previousVote.hash);
+      if (!isValidVote) {
+        logger.warn(
+            "Double vote by Byzantine validator {} detected! Previous vote: {} New vote: {}",
+            author,
+            previousVote,
+            vote);
+      }
+      return isValidVote && !previousVote.isTimeout;
     } else {
       // all good if vote is for a different round
       return true;

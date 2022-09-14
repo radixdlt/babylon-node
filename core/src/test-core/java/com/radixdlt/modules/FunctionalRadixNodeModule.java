@@ -66,16 +66,23 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.radixdlt.consensus.bft.PacemakerBackoffRate;
-import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
-import com.radixdlt.consensus.bft.PacemakerMaxExponent;
+import com.google.inject.Provides;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.consensus.*;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.lang.Option;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.MockedLedgerModule;
+import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
@@ -83,14 +90,20 @@ import com.radixdlt.rev1.MockedMempoolStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerModule;
 import com.radixdlt.rev1.MockedStateComputerWithEpochsModule;
 import com.radixdlt.rev1.ReV1DispatcherModule;
+import com.radixdlt.rev1.modules.REv1ConsensusRecoveryModule;
+import com.radixdlt.rev1.modules.REv1LedgerRecoveryModule;
 import com.radixdlt.rev1.modules.RadixEngineModule;
 import com.radixdlt.rev1.modules.RadixEngineStateComputerModule;
 import com.radixdlt.rev2.modules.MockedSyncServiceModule;
+import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
+import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.REv2StatelessComputerModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.SyncRelayConfig;
+import java.util.Optional;
 
 /** Manages the functional components of a node */
 public final class FunctionalRadixNodeModule extends AbstractModule {
@@ -251,8 +264,12 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
     // Ledger
     switch (this.ledgerConfig) {
-      case MockedLedgerConfig ignored -> install(new MockedLedgerModule());
+      case MockedLedgerConfig ignored -> {
+        install(new MockedLedgerRecoveryModule());
+        install(new MockedLedgerModule());
+      }
       case StateComputerLedgerConfig stateComputerLedgerConfig -> {
+        Multibinder.newSetBinder(binder(), AutoCloseable.class);
         install(new LedgerModule());
 
         // Sync
@@ -269,8 +286,10 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           case SyncConfig.None ignored -> {}
         }
 
+        // State Computer
         switch (stateComputerLedgerConfig.config) {
           case MockedStateComputerConfig c -> {
+            install(new MockedLedgerRecoveryModule());
             switch (c.mempoolType()) {
               case MockedMempoolConfig.NoMempool ignored -> {
                 bind(ProposalGenerator.class).to(RandomTransactionGenerator.class);
@@ -297,10 +316,54 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
             install(new RadixEngineStateComputerModule(config.mempoolSize()));
             install(new RadixEngineModule());
             install(new ReV1DispatcherModule());
+            install(new REv1LedgerRecoveryModule());
+            install(new REv1ConsensusRecoveryModule());
           }
           case REv2StateComputerConfig rev2Config -> {
             if (REv2DatabaseConfig.isNone(rev2Config.databaseConfig())) {
               install(new REv2StatelessComputerModule());
+              install(new MockedLedgerRecoveryModule());
+              install(
+                  new AbstractModule() {
+                    @Provides
+                    private RoundUpdate initialRoundUpdate(
+                        BFTConfiguration configuration, ProposerElection proposerElection) {
+                      HighQC highQC = configuration.getVertexStoreState().getHighQC();
+                      Round round = highQC.highestQC().getRound().next();
+                      final BFTNode leader = proposerElection.getProposer(round);
+                      final BFTNode nextLeader = proposerElection.getProposer(round.next());
+
+                      return RoundUpdate.create(round, highQC, leader, nextLeader);
+                    }
+
+                    @Provides
+                    private BFTConfiguration configuration(
+                        @LastEpochProof LedgerProof proof,
+                        BFTValidatorSet validatorSet,
+                        Hasher hasher) {
+                      var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
+                      VertexWithHash genesisVertex =
+                          Vertex.createGenesis(
+                                  LedgerHeader.genesis(accumulatorState, validatorSet, 0))
+                              .withId(hasher);
+                      LedgerHeader nextLedgerHeader =
+                          LedgerHeader.create(
+                              proof.getNextEpoch(),
+                              Round.genesis(),
+                              proof.getAccumulatorState(),
+                              proof.timestamp());
+                      var genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                      var proposerElection = new WeightedRotatingLeaders(validatorSet);
+                      return new BFTConfiguration(
+                          proposerElection,
+                          validatorSet,
+                          VertexStoreState.create(
+                              HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher));
+                    }
+                  });
+            } else {
+              install(new REv2LedgerRecoveryModule());
+              install(new REv2ConsensusRecoveryModule());
             }
 
             switch (rev2Config.proposerConfig()) {

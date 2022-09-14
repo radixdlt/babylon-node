@@ -70,3 +70,4 @@ pub mod state_manager;
 pub mod transaction_builder;
 pub mod transaction_store;
 pub mod utils;
+pub mod vertex_store_recovery;

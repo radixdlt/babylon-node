@@ -65,6 +65,7 @@
 package com.radixdlt.rev2.modules;
 
 import com.google.inject.*;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.lang.Option;
@@ -73,6 +74,7 @@ import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.networks.Network;
+import com.radixdlt.recovery.VertexStoreRecovery;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2StateComputer;
 import com.radixdlt.rev2.REv2StateReader;
@@ -156,6 +158,8 @@ public final class REv2StateManagerModule extends AbstractModule {
           });
     }
 
+    Multibinder.newSetBinder(binder(), AutoCloseable.class).addBinding().to(StateManager.class);
+
     if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {
       bind(REv2StateComputer.class).in(Scopes.SINGLETON);
       bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
@@ -167,6 +171,11 @@ public final class REv2StateManagerModule extends AbstractModule {
             private REv2TransactionAndProofStore transactionAndProofStore(
                 RustStateComputer stateComputer) {
               return stateComputer.getTransactionAndProofStore();
+            }
+
+            @Provides
+            private VertexStoreRecovery rEv2VertexStoreRecovery(RustStateComputer stateComputer) {
+              return stateComputer.getVertexStoreRecovery();
             }
 
             @Provides

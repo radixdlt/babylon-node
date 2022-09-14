@@ -65,6 +65,7 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawTransaction;
@@ -74,7 +75,10 @@ import java.util.List;
 import java.util.Objects;
 
 public record CommitRequest(
-    List<RawTransaction> transactions, UInt64 stateVersion, byte[] proofBytes) {
+    List<RawTransaction> transactions,
+    UInt64 stateVersion,
+    byte[] proofBytes,
+    Option<byte[]> vertexStoreBytes) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         CommitRequest.class,
@@ -84,7 +88,10 @@ public record CommitRequest(
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(UInt64.class),
                 codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.transactions, t.stateVersion, t.proofBytes)));
+                codecs.of(new TypeToken<>() {}),
+                (t, encoder) ->
+                    encoder.encode(
+                        t.transactions, t.stateVersion, t.proofBytes, t.vertexStoreBytes)));
   }
 
   @Override
@@ -94,12 +101,13 @@ public record CommitRequest(
     CommitRequest that = (CommitRequest) o;
     return Objects.equals(transactions, that.transactions)
         && Objects.equals(stateVersion, that.stateVersion)
-        && Arrays.equals(proofBytes, that.proofBytes);
+        && Arrays.equals(proofBytes, that.proofBytes)
+        && Objects.equals(vertexStoreBytes, that.vertexStoreBytes);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(transactions, stateVersion);
+    int result = Objects.hash(transactions, stateVersion, vertexStoreBytes);
     result = 31 * result + Arrays.hashCode(proofBytes);
     return result;
   }
@@ -113,6 +121,8 @@ public record CommitRequest(
         + stateVersion
         + ", proofBytes="
         + Arrays.toString(proofBytes)
+        + ", vertexStoreBytes="
+        + vertexStoreBytes
         + '}';
   }
 }

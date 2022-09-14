@@ -64,7 +64,7 @@
 
 mod db;
 mod in_memory;
-mod query;
+pub(crate) mod query;
 mod rocks_db;
 
 pub use db::{DatabaseConfig, StateManagerDatabase};

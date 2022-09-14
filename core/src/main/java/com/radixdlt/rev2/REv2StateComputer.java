@@ -69,6 +69,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
@@ -162,8 +163,18 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   public void commit(
       CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
     var proofBytes = serialization.toDson(txnsAndProof.getProof(), DsonOutput.Output.ALL);
+    final Option<byte[]> vertexStoreBytes;
+    if (vertexStoreState != null) {
+      vertexStoreBytes =
+          Option.some(serialization.toDson(vertexStoreState.toSerialized(), DsonOutput.Output.ALL));
+    } else {
+      vertexStoreBytes = Option.none();
+    }
+
     var stateVersion = UInt64.fromNonNegativeLong(txnsAndProof.getProof().getStateVersion());
-    var commitRequest = new CommitRequest(txnsAndProof.getTransactions(), stateVersion, proofBytes);
+    var commitRequest =
+        new CommitRequest(
+            txnsAndProof.getTransactions(), stateVersion, proofBytes, vertexStoreBytes);
 
     stateComputer.commit(commitRequest);
 
