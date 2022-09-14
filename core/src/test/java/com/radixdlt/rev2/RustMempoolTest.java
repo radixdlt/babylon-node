@@ -69,6 +69,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.statemanager.LoggingConfig;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
@@ -87,7 +88,8 @@ public final class RustMempoolTest {
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(new RustMempoolConfig(mempoolSize)),
-            REv2DatabaseConfig.inMemory());
+            REv2DatabaseConfig.inMemory(),
+            LoggingConfig.getDefault());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
       var transaction1 = REv2TestTransactions.VALID_TXN_0;
@@ -145,7 +147,8 @@ public final class RustMempoolTest {
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(new RustMempoolConfig(mempoolSize)),
-            REv2DatabaseConfig.inMemory());
+            REv2DatabaseConfig.inMemory(),
+            LoggingConfig.getDefault());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
       var transaction1 = REv2TestTransactions.VALID_TXN_0;
@@ -241,7 +244,8 @@ public final class RustMempoolTest {
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
             Option.some(new RustMempoolConfig(mempoolSize)),
-            REv2DatabaseConfig.inMemory());
+            REv2DatabaseConfig.inMemory(),
+            LoggingConfig.getDefault());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
       var transaction1 = REv2TestTransactions.VALID_TXN_0;

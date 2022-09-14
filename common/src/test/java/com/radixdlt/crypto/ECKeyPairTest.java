@@ -121,7 +121,7 @@ public class ECKeyPairTest {
           keyPair.sign(
               HashUtils.sha256Twice(helloWorld.getBytes(StandardCharsets.UTF_8)).asBytes());
 
-      var pubKey = ECPublicKey.fromBytes(pub);
+      var pubKey = ECDSASecp256k1PublicKey.fromBytes(pub);
       assertTrue(
           pubKey.verify(
               HashUtils.sha256Twice(helloWorld.getBytes(StandardCharsets.UTF_8)).asBytes(),

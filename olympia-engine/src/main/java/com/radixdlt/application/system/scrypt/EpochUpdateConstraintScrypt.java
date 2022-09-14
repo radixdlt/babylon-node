@@ -89,7 +89,7 @@ import com.radixdlt.constraintmachine.REEvent.NextValidatorSetEvent;
 import com.radixdlt.constraintmachine.REEvent.ValidatorBFTDataEvent;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.substate.REFieldSerialization;
 import com.radixdlt.substate.SubstateTypeId;
@@ -174,11 +174,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
   }
 
   private final class RewardingValidators implements ReducerState {
-    private final TreeMap<ECPublicKey, ValidatorScratchPad> updatingValidators =
+    private final TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> updatingValidators =
         new TreeMap<>(KeyComparator.instance());
-    private final TreeMap<ECPublicKey, ValidatorBFTData> validatorBFTData =
+    private final TreeMap<ECDSASecp256k1PublicKey, ValidatorBFTData> validatorBFTData =
         new TreeMap<>(KeyComparator.instance());
-    private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake =
+    private final TreeMap<ECDSASecp256k1PublicKey, TreeMap<REAddr, UInt256>> preparingStake =
         new TreeMap<>(KeyComparator.instance());
     private final UpdatingEpoch updatingEpoch;
 
@@ -372,15 +372,15 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
   private final class PreparingUnstake implements ReducerState {
     private final UpdatingEpoch updatingEpoch;
-    private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingUnstake =
+    private final TreeMap<ECDSASecp256k1PublicKey, TreeMap<REAddr, UInt256>> preparingUnstake =
         new TreeMap<>(KeyComparator.instance());
-    private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake;
-    private final TreeMap<ECPublicKey, ValidatorScratchPad> updatingValidators;
+    private final TreeMap<ECDSASecp256k1PublicKey, TreeMap<REAddr, UInt256>> preparingStake;
+    private final TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> updatingValidators;
 
     PreparingUnstake(
         UpdatingEpoch updatingEpoch,
-        TreeMap<ECPublicKey, ValidatorScratchPad> updatingValidators,
-        TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake) {
+        TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> updatingValidators,
+        TreeMap<ECDSASecp256k1PublicKey, TreeMap<REAddr, UInt256>> preparingStake) {
       this.updatingEpoch = updatingEpoch;
       this.updatingValidators = updatingValidators;
       this.preparingStake = preparingStake;
@@ -454,10 +454,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
   }
 
   private static final class LoadingStake implements ReducerState {
-    private final ECPublicKey key;
+    private final ECDSASecp256k1PublicKey key;
     private final Function<ValidatorScratchPad, ReducerState> onDone;
 
-    LoadingStake(ECPublicKey key, Function<ValidatorScratchPad, ReducerState> onDone) {
+    LoadingStake(ECDSASecp256k1PublicKey key, Function<ValidatorScratchPad, ReducerState> onDone) {
       this.key = key;
       this.onDone = onDone;
     }
@@ -477,13 +477,13 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
   private final class PreparingStake implements ReducerState {
     private final UpdatingEpoch updatingEpoch;
-    private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-    private final TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake;
+    private final TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> validatorsScratchPad;
+    private final TreeMap<ECDSASecp256k1PublicKey, TreeMap<REAddr, UInt256>> preparingStake;
 
     PreparingStake(
         UpdatingEpoch updatingEpoch,
-        TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad,
-        TreeMap<ECPublicKey, TreeMap<REAddr, UInt256>> preparingStake) {
+        TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> validatorsScratchPad,
+        TreeMap<ECDSASecp256k1PublicKey, TreeMap<REAddr, UInt256>> preparingStake) {
       this.validatorsScratchPad = validatorsScratchPad;
       this.updatingEpoch = updatingEpoch;
       this.preparingStake = preparingStake;
@@ -553,13 +553,13 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
   private final class PreparingRakeUpdate implements ReducerState {
     private final UpdatingEpoch updatingEpoch;
-    private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-    private final TreeMap<ECPublicKey, ValidatorFeeCopy> preparingRakeUpdates =
+    private final TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> validatorsScratchPad;
+    private final TreeMap<ECDSASecp256k1PublicKey, ValidatorFeeCopy> preparingRakeUpdates =
         new TreeMap<>(KeyComparator.instance());
 
     PreparingRakeUpdate(
         UpdatingEpoch updatingEpoch,
-        TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
+        TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> validatorsScratchPad) {
       this.updatingEpoch = updatingEpoch;
       this.validatorsScratchPad = validatorsScratchPad;
     }
@@ -610,10 +610,10 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
   }
 
   private static final class ResetOwnerUpdate implements ReducerState {
-    private final ECPublicKey validatorKey;
+    private final ECDSASecp256k1PublicKey validatorKey;
     private final Supplier<ReducerState> next;
 
-    ResetOwnerUpdate(ECPublicKey validatorKey, Supplier<ReducerState> next) {
+    ResetOwnerUpdate(ECDSASecp256k1PublicKey validatorKey, Supplier<ReducerState> next) {
       this.validatorKey = validatorKey;
       this.next = next;
     }
@@ -633,13 +633,13 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
   private final class PreparingOwnerUpdate implements ReducerState {
     private final UpdatingEpoch updatingEpoch;
-    private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-    private final TreeMap<ECPublicKey, ValidatorOwnerCopy> preparingOwnerUpdates =
+    private final TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> validatorsScratchPad;
+    private final TreeMap<ECDSASecp256k1PublicKey, ValidatorOwnerCopy> preparingOwnerUpdates =
         new TreeMap<>(KeyComparator.instance());
 
     PreparingOwnerUpdate(
         UpdatingEpoch updatingEpoch,
-        TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
+        TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> validatorsScratchPad) {
       this.updatingEpoch = updatingEpoch;
       this.validatorsScratchPad = validatorsScratchPad;
     }
@@ -718,13 +718,13 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
   private final class PreparingRegisteredUpdate implements ReducerState {
     private final UpdatingEpoch updatingEpoch;
-    private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
-    private final TreeMap<ECPublicKey, ValidatorRegisteredCopy> preparingRegisteredUpdates =
-        new TreeMap<>(KeyComparator.instance());
+    private final TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> validatorsScratchPad;
+    private final TreeMap<ECDSASecp256k1PublicKey, ValidatorRegisteredCopy>
+        preparingRegisteredUpdates = new TreeMap<>(KeyComparator.instance());
 
     PreparingRegisteredUpdate(
         UpdatingEpoch updatingEpoch,
-        TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
+        TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> validatorsScratchPad) {
       this.updatingEpoch = updatingEpoch;
       this.validatorsScratchPad = validatorsScratchPad;
     }
@@ -773,11 +773,11 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
 
   private final class UpdatingValidatorStakes implements ReducerState {
     private final UpdatingEpoch updatingEpoch;
-    private final TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad;
+    private final TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> validatorsScratchPad;
 
     UpdatingValidatorStakes(
         UpdatingEpoch updatingEpoch,
-        TreeMap<ECPublicKey, ValidatorScratchPad> validatorsScratchPad) {
+        TreeMap<ECDSASecp256k1PublicKey, ValidatorScratchPad> validatorsScratchPad) {
       this.updatingEpoch = updatingEpoch;
       this.validatorsScratchPad = validatorsScratchPad;
     }
@@ -977,8 +977,8 @@ public final class EpochUpdateConstraintScrypt implements ConstraintScrypt {
               REFieldSerialization.serializeREAddr(buf, s.ownerAddr());
             },
             buf -> REFieldSerialization.deserializeKey(buf),
-            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-            k -> ValidatorStakeData.createVirtual((ECPublicKey) k)));
+            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECDSASecp256k1PublicKey) k),
+            k -> ValidatorStakeData.createVirtual((ECDSASecp256k1PublicKey) k)));
     os.substate(
         new SubstateDefinition<>(
             StakeOwnership.class,

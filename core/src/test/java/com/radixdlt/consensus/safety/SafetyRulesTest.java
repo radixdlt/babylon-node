@@ -83,7 +83,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import java.util.Optional;
@@ -104,7 +104,7 @@ public class SafetyRulesTest {
     when(hasher.hashDsonEncoded(any())).thenReturn(HashUtils.random256());
     when(hasher.hashBytes(any())).thenReturn(HashUtils.random256());
     HashSigner hashSigner = mock(HashSigner.class);
-    when(hashSigner.sign(any(HashCode.class))).thenReturn(ECDSASignature.zeroSignature());
+    when(hashSigner.sign(any(HashCode.class))).thenReturn(ECDSASecp256k1Signature.zeroSignature());
 
     final var hashVerifier = mock(HashVerifier.class);
     final var validatorSet = mock(BFTValidatorSet.class);
@@ -137,7 +137,7 @@ public class SafetyRulesTest {
     Hasher hasher = mock(Hasher.class);
     when(hasher.hashDsonEncoded(any())).thenReturn(mock(HashCode.class));
     HashSigner hashSigner = mock(HashSigner.class);
-    when(hashSigner.sign(any(HashCode.class))).thenReturn(ECDSASignature.zeroSignature());
+    when(hashSigner.sign(any(HashCode.class))).thenReturn(ECDSASecp256k1Signature.zeroSignature());
 
     Vote lastVote = mock(Vote.class);
     when(lastVote.getRound()).thenReturn(Round.of(1));

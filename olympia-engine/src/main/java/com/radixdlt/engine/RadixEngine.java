@@ -73,7 +73,7 @@ import com.radixdlt.constraintmachine.*;
 import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ConstraintMachineException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.engine.parser.REParser;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
@@ -260,8 +260,8 @@ public final class RadixEngine<M> {
     }
   }
 
-  private Optional<ECPublicKey> getSignedByKey(ParsedTxn parsedTxn, ExecutionContext context)
-      throws AuthorizationException {
+  private Optional<ECDSASecp256k1PublicKey> getSignedByKey(
+      ParsedTxn parsedTxn, ExecutionContext context) throws AuthorizationException {
     if (!context.skipAuthorization() && context.permissionLevel() != PermissionLevel.SYSTEM) {
       var payloadHashAndSigMaybe = parsedTxn.getPayloadHashAndSig();
       if (payloadHashAndSigMaybe.isPresent()) {
@@ -269,7 +269,7 @@ public final class RadixEngine<M> {
         var hash = payloadHashAndSig.getFirst();
         var sig = payloadHashAndSig.getSecond();
         var pubKey =
-            ECPublicKey.recoverFrom(hash, sig)
+            ECDSASecp256k1PublicKey.recoverFrom(hash, sig)
                 .orElseThrow(() -> new AuthorizationException("Invalid signature"));
         // TODO: do we still need this verify?
         if (!pubKey.verify(hash, sig)) {

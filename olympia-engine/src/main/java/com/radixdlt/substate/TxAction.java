@@ -67,7 +67,7 @@ package com.radixdlt.substate;
 import static com.radixdlt.utils.Strings.asEmptyIfNull;
 import static java.util.Objects.requireNonNull;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
@@ -112,7 +112,7 @@ public sealed interface TxAction {
       String description,
       String iconUrl,
       String tokenUrl,
-      ECPublicKey owner)
+      ECDSASecp256k1PublicKey owner)
       implements TxAction {
     public CreateMutableToken(
         REAddr resourceAddress,
@@ -121,7 +121,7 @@ public sealed interface TxAction {
         String description,
         String iconUrl,
         String tokenUrl,
-        ECPublicKey owner) {
+        ECDSASecp256k1PublicKey owner) {
       this.resourceAddress = resourceAddress;
       this.symbol = symbol.toLowerCase();
       this.owner = owner;
@@ -166,10 +166,10 @@ public sealed interface TxAction {
       long roundNumber,
       boolean roundIsTimeout,
       long roundTimestamp,
-      LongFunction<ECPublicKey> leaderMapping)
+      LongFunction<ECDSASecp256k1PublicKey> leaderMapping)
       implements TxAction {}
 
-  record RegisterValidator(ECPublicKey validatorKey) implements TxAction {
+  record RegisterValidator(ECDSASecp256k1PublicKey validatorKey) implements TxAction {
     @Override
     public String toString() {
       return String.format("%s{key=%s}", this.getClass().getSimpleName(), validatorKey.toHex());
@@ -178,7 +178,8 @@ public sealed interface TxAction {
 
   record SplitToken(REAddr rri, REAddr userAcct, UInt256 minSize) implements TxAction {}
 
-  record StakeTokens(REAddr fromAddr, ECPublicKey toDelegate, UInt256 amount) implements TxAction {
+  record StakeTokens(REAddr fromAddr, ECDSASecp256k1PublicKey toDelegate, UInt256 amount)
+      implements TxAction {
     public StakeTokens {
       ensureNonZeroAmount(amount);
     }
@@ -191,44 +192,47 @@ public sealed interface TxAction {
     }
   }
 
-  record UnregisterValidator(ECPublicKey validatorKey) implements TxAction {
+  record UnregisterValidator(ECDSASecp256k1PublicKey validatorKey) implements TxAction {
     public UnregisterValidator {
       requireNonNull(validatorKey);
     }
   }
 
-  record UnstakeOwnership(REAddr accountAddr, ECPublicKey fromDelegate, UInt256 amount)
+  record UnstakeOwnership(REAddr accountAddr, ECDSASecp256k1PublicKey fromDelegate, UInt256 amount)
       implements TxAction {
     public UnstakeOwnership {
       ensureNonZeroAmount(amount);
     }
   }
 
-  record UnstakeTokens(ECPublicKey fromDelegate, REAddr accountAddr, UInt256 amount)
+  record UnstakeTokens(ECDSASecp256k1PublicKey fromDelegate, REAddr accountAddr, UInt256 amount)
       implements TxAction {
     public UnstakeTokens {
       ensureNonZeroAmount(amount);
     }
   }
 
-  record UpdateAllowDelegationFlag(ECPublicKey validatorKey, boolean allowDelegation)
+  record UpdateAllowDelegationFlag(ECDSASecp256k1PublicKey validatorKey, boolean allowDelegation)
       implements TxAction {}
 
   /**
    * @see com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt for details
    */
-  record UpdateValidatorFee(ECPublicKey validatorKey, int feePercentage) implements TxAction {}
+  record UpdateValidatorFee(ECDSASecp256k1PublicKey validatorKey, int feePercentage)
+      implements TxAction {}
 
-  record UpdateValidatorMetadata(ECPublicKey validatorKey, String name, String url)
+  record UpdateValidatorMetadata(ECDSASecp256k1PublicKey validatorKey, String name, String url)
       implements TxAction {
     public UpdateValidatorMetadata {
       requireNonNull(validatorKey);
     }
   }
 
-  record UpdateValidatorOwner(ECPublicKey validatorKey, REAddr ownerAddress) implements TxAction {}
+  record UpdateValidatorOwner(ECDSASecp256k1PublicKey validatorKey, REAddr ownerAddress)
+      implements TxAction {}
 
-  record UpdateValidatorSystemMetadata(ECPublicKey validatorKey, byte[] bytes) implements TxAction {
+  record UpdateValidatorSystemMetadata(ECDSASecp256k1PublicKey validatorKey, byte[] bytes)
+      implements TxAction {
     public UpdateValidatorSystemMetadata {
       requireNonNull(validatorKey);
     }

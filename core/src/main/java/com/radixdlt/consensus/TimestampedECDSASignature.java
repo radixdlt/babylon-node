@@ -66,7 +66,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -93,7 +93,7 @@ public final class TimestampedECDSASignature {
 
   @JsonProperty("signature")
   @DsonOutput(Output.ALL)
-  private final ECDSASignature signature;
+  private final ECDSASecp256k1Signature signature;
 
   /**
    * Create a timestamped signature from a timestamp, weight and signature.
@@ -105,11 +105,11 @@ public final class TimestampedECDSASignature {
   @JsonCreator
   public static TimestampedECDSASignature from(
       @JsonProperty("timestamp") long timestamp,
-      @JsonProperty(value = "signature", required = true) ECDSASignature signature) {
+      @JsonProperty(value = "signature", required = true) ECDSASecp256k1Signature signature) {
     return new TimestampedECDSASignature(timestamp, signature);
   }
 
-  private TimestampedECDSASignature(long timestamp, ECDSASignature signature) {
+  private TimestampedECDSASignature(long timestamp, ECDSASecp256k1Signature signature) {
     if (timestamp <= 0) { // we don't expect timestamps before epoch or at the start of the epoch
       throw new IllegalArgumentException("Timestamp before epoch: " + timestamp);
     }
@@ -132,7 +132,7 @@ public final class TimestampedECDSASignature {
    *
    * @return the signature
    */
-  public ECDSASignature signature() {
+  public ECDSASecp256k1Signature signature() {
     return this.signature;
   }
 

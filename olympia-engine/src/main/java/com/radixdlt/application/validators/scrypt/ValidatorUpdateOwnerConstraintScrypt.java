@@ -79,7 +79,7 @@ import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.substate.REFieldSerialization;
 import com.radixdlt.substate.SubstateTypeId;
 import java.util.OptionalLong;
@@ -87,10 +87,10 @@ import java.util.OptionalLong;
 public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
 
   private static class UpdatingValidatorOwner implements ReducerState {
-    private final ECPublicKey validatorKey;
+    private final ECDSASecp256k1PublicKey validatorKey;
     private final EpochData epochData;
 
-    UpdatingValidatorOwner(ECPublicKey validatorKey, EpochData epochData) {
+    UpdatingValidatorOwner(ECDSASecp256k1PublicKey validatorKey, EpochData epochData) {
       this.validatorKey = validatorKey;
       this.epochData = epochData;
     }
@@ -109,9 +109,9 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
   }
 
   private static class UpdatingOwnerNeedToReadEpoch implements ReducerState {
-    private final ECPublicKey validatorKey;
+    private final ECDSASecp256k1PublicKey validatorKey;
 
-    UpdatingOwnerNeedToReadEpoch(ECPublicKey validatorKey) {
+    UpdatingOwnerNeedToReadEpoch(ECDSASecp256k1PublicKey validatorKey) {
       this.validatorKey = validatorKey;
     }
 
@@ -141,8 +141,8 @@ public class ValidatorUpdateOwnerConstraintScrypt implements ConstraintScrypt {
               REFieldSerialization.serializeREAddr(buf, s.owner());
             },
             buf -> REFieldSerialization.deserializeKey(buf),
-            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k),
-            k -> ValidatorOwnerCopy.createVirtual((ECPublicKey) k)));
+            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECDSASecp256k1PublicKey) k),
+            k -> ValidatorOwnerCopy.createVirtual((ECDSASecp256k1PublicKey) k)));
 
     os.procedure(
         new DownProcedure<>(

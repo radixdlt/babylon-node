@@ -78,7 +78,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
 import java.util.Optional;
 import org.junit.Before;
@@ -129,7 +129,7 @@ public class BFTEventVerifierTest {
     Proposal proposal = mock(Proposal.class);
     BFTNode author = mock(BFTNode.class);
     when(proposal.getAuthor()).thenReturn(author);
-    when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
+    when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
     when(validatorSet.containsNode(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), any())).thenReturn(true);
     when(safetyRules.verifyHighQcAgainstTheValidatorSet(any())).thenReturn(true);
@@ -142,7 +142,7 @@ public class BFTEventVerifierTest {
     Proposal proposal = mock(Proposal.class);
     BFTNode author = mock(BFTNode.class);
     when(proposal.getAuthor()).thenReturn(author);
-    when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
+    when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
     when(validatorSet.containsNode(eq(author))).thenReturn(false);
     when(verifier.verify(any(), any(), any())).thenReturn(true);
     eventVerifier.processProposal(proposal);
@@ -154,7 +154,7 @@ public class BFTEventVerifierTest {
     Proposal proposal = mock(Proposal.class);
     BFTNode author = mock(BFTNode.class);
     when(proposal.getAuthor()).thenReturn(author);
-    when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
+    when(proposal.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
     when(validatorSet.containsNode(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), any())).thenReturn(false);
     eventVerifier.processProposal(proposal);
@@ -168,8 +168,8 @@ public class BFTEventVerifierTest {
     when(vote.getEpoch()).thenReturn(0L);
     BFTNode author = mock(BFTNode.class);
     when(vote.getAuthor()).thenReturn(author);
-    ECDSASignature voteSignature = mock(ECDSASignature.class);
-    ECDSASignature timeoutSignature = mock(ECDSASignature.class);
+    ECDSASecp256k1Signature voteSignature = mock(ECDSASecp256k1Signature.class);
+    ECDSASecp256k1Signature timeoutSignature = mock(ECDSASecp256k1Signature.class);
     when(vote.getSignature()).thenReturn(voteSignature);
     when(vote.getTimeoutSignature()).thenReturn(Optional.of(timeoutSignature));
     when(validatorSet.containsNode(eq(author))).thenReturn(true);
@@ -185,7 +185,7 @@ public class BFTEventVerifierTest {
     Vote vote = mock(Vote.class);
     BFTNode author = mock(BFTNode.class);
     when(vote.getAuthor()).thenReturn(author);
-    when(vote.getSignature()).thenReturn(mock(ECDSASignature.class));
+    when(vote.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
     when(validatorSet.containsNode(eq(author))).thenReturn(false);
     when(verifier.verify(any(), any(), any())).thenReturn(true);
     eventVerifier.processVote(vote);
@@ -197,7 +197,7 @@ public class BFTEventVerifierTest {
     Vote vote = mock(Vote.class);
     BFTNode author = mock(BFTNode.class);
     when(vote.getAuthor()).thenReturn(author);
-    when(vote.getSignature()).thenReturn(mock(ECDSASignature.class));
+    when(vote.getSignature()).thenReturn(mock(ECDSASecp256k1Signature.class));
     when(validatorSet.containsNode(eq(author))).thenReturn(true);
     when(verifier.verify(any(), any(), any())).thenReturn(false);
     eventVerifier.processVote(vote);
@@ -211,8 +211,8 @@ public class BFTEventVerifierTest {
     when(vote.getEpoch()).thenReturn(0L);
     BFTNode author = mock(BFTNode.class);
     when(vote.getAuthor()).thenReturn(author);
-    ECDSASignature voteSignature = mock(ECDSASignature.class);
-    ECDSASignature timeoutSignature = mock(ECDSASignature.class);
+    ECDSASecp256k1Signature voteSignature = mock(ECDSASecp256k1Signature.class);
+    ECDSASecp256k1Signature timeoutSignature = mock(ECDSASecp256k1Signature.class);
     when(vote.getSignature()).thenReturn(voteSignature);
     when(vote.getTimeoutSignature()).thenReturn(Optional.of(timeoutSignature));
     when(validatorSet.containsNode(eq(author))).thenReturn(true);

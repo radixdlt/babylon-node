@@ -88,9 +88,9 @@ interface KeyHandler {
    *     href="https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures">BIP-62</a>
    * @param useDeterministicSignatures If signing should use randomness or be deterministic
    *     according to <a href="https://tools.ietf.org/html/rfc6979">RFC6979</a>.
-   * @return An {@link ECDSASignature} with {@code r} and {@code s} values included
+   * @return An {@link ECDSASecp256k1Signature} with {@code r} and {@code s} values included
    */
-  ECDSASignature sign(
+  ECDSASecp256k1Signature sign(
       byte[] hash,
       byte[] privateKey,
       byte[] publicKey,
@@ -105,7 +105,7 @@ interface KeyHandler {
    * @param publicKeyPoint The public key point to verify the signature with
    * @return An boolean indicating whether the signature could be successfully validated
    */
-  boolean verify(byte[] hash, ECDSASignature signature, ECPoint publicKeyPoint);
+  boolean verify(byte[] hash, ECDSASecp256k1Signature signature, ECPoint publicKeyPoint);
 
   /**
    * Compute a public key for the specified private key.
@@ -124,9 +124,9 @@ interface KeyHandler {
    *
    * @param hash The hash to sign
    * @param privateKey The private key to sign the hash with
-   * @return An {@link ECDSASignature} with {@code r} and {@code s} values included
+   * @return An {@link ECDSASecp256k1Signature} with {@code r} and {@code s} values included
    */
-  default ECDSASignature sign(byte[] hash, byte[] privateKey, byte[] publicKey) {
+  default ECDSASecp256k1Signature sign(byte[] hash, byte[] privateKey, byte[] publicKey) {
     return sign(hash, privateKey, publicKey, true, false);
   }
 }

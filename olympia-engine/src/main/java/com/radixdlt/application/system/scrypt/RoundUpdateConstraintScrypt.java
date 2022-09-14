@@ -77,7 +77,7 @@ import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.UpProcedure;
 import com.radixdlt.constraintmachine.VoidReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.substate.REFieldSerialization;
 import com.radixdlt.substate.SubstateTypeId;
 import com.radixdlt.utils.KeyComparator;
@@ -92,7 +92,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
 
   private class StartValidatorBFTUpdate implements ReducerState {
     private final long closedRound;
-    private final TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate =
+    private final TreeMap<ECDSASecp256k1PublicKey, ValidatorBFTData> validatorsToUpdate =
         new TreeMap<>(KeyComparator.instance());
 
     StartValidatorBFTUpdate(long closedRound) {
@@ -133,7 +133,7 @@ public class RoundUpdateConstraintScrypt implements ConstraintScrypt {
               buf.putLong(s.completedProposals());
               buf.putLong(s.missedProposals());
             },
-            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECPublicKey) k)));
+            (k, buf) -> REFieldSerialization.serializeKey(buf, (ECDSASecp256k1PublicKey) k)));
 
     os.procedure(
         new DownProcedure<>(

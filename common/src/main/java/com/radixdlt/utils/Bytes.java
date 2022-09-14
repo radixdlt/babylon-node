@@ -273,6 +273,10 @@ public class Bytes {
     return bytes;
   }
 
+  public static BigInteger bytesToBigInteger(byte[] bytes) {
+    return new BigInteger(1, bytes);
+  }
+
   public static byte[] xor(byte[] a, byte[] b) {
     final var ret = new byte[a.length];
     var i = 0;

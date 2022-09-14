@@ -64,8 +64,8 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import java.util.Objects;
 
@@ -76,28 +76,28 @@ import java.util.Objects;
  * of BFT messages are currently what prevent this from happening
  */
 public final class BFTNode {
-  private final ECPublicKey key;
+  private final ECDSASecp256k1PublicKey key;
   private final String simpleName;
 
-  private BFTNode(ECPublicKey key, String simpleName) {
+  private BFTNode(ECDSASecp256k1PublicKey key, String simpleName) {
     this.key = Objects.requireNonNull(key);
     this.simpleName = Objects.requireNonNull(simpleName);
   }
 
-  public static BFTNode create(ECPublicKey key) {
+  public static BFTNode create(ECDSASecp256k1PublicKey key) {
     var shortenedAddress = key.toHex().substring(0, 10);
     return new BFTNode(key, shortenedAddress);
   }
 
   public static BFTNode fromPublicKeyBytes(byte[] key) throws PublicKeyException {
-    return create(ECPublicKey.fromBytes(key));
+    return create(ECDSASecp256k1PublicKey.fromBytes(key));
   }
 
   public static BFTNode random() {
     return create(ECKeyPair.generateNew().getPublicKey());
   }
 
-  public ECPublicKey getKey() {
+  public ECDSASecp256k1PublicKey getKey() {
     return key;
   }
 

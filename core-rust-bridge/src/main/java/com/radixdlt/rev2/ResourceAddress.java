@@ -79,6 +79,149 @@ public record ResourceAddress(byte[] value) {
                 TypeId.TYPE_CUSTOM_RESOURCE_ADDRESS, ResourceAddress::value, ResourceAddress::new));
   }
 
+  private static final int BYTE_LENGTH = 27;
+
+  public static byte RESOURCE_ADDRESS_ENTITY_ID = 0;
+
+  public static final ResourceAddress XRD_ADDRESS =
+      // See constants.rs (component.rs defines the encoding)
+      ResourceAddress.create(
+          new byte[] {
+            RESOURCE_ADDRESS_ENTITY_ID,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            4
+          });
+
+  public static final ResourceAddress ECDSA_TOKEN_ADDRESS =
+      // See constants.rs (component.rs defines the encoding)
+      ResourceAddress.create(
+          new byte[] {
+            RESOURCE_ADDRESS_ENTITY_ID,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2
+          });
+
+  public static final ResourceAddress ED25519_TOKEN_ADDRESS =
+      // See constants.rs (component.rs defines the encoding)
+      ResourceAddress.create(
+          new byte[] {
+            RESOURCE_ADDRESS_ENTITY_ID,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            3
+          });
+
+  public static final ResourceAddress SYSTEM_TOKEN_ADDRESS =
+      // See constants.rs (component.rs defines the encoding)
+      ResourceAddress.create(
+          new byte[] {
+            RESOURCE_ADDRESS_ENTITY_ID,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          });
+
+  public static ResourceAddress create(byte[] addressBytes) {
+    if (addressBytes.length != BYTE_LENGTH) {
+      throw new IllegalArgumentException("Invalid resource address length");
+    }
+    return new ResourceAddress(addressBytes);
+  }
+
   public String toHexString() {
     return Hex.toHexString(value);
   }

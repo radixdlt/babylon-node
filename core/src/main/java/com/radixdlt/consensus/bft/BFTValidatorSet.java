@@ -67,7 +67,7 @@ package com.radixdlt.consensus.bft;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.utils.UInt256;
 import java.util.Collection;
 import java.util.Objects;
@@ -142,7 +142,7 @@ public final class BFTValidatorSet {
     return validators.containsKey(node);
   }
 
-  public boolean containsNode(ECPublicKey publicKey) {
+  public boolean containsNode(ECDSASecp256k1PublicKey publicKey) {
     return containsNode(BFTNode.create(publicKey));
   }
 
@@ -150,7 +150,7 @@ public final class BFTValidatorSet {
     return validators.get(node).getPower();
   }
 
-  public UInt256 getPower(ECPublicKey publicKey) {
+  public UInt256 getPower(ECDSASecp256k1PublicKey publicKey) {
     return getPower(BFTNode.create(publicKey));
   }
 

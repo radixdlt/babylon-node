@@ -74,8 +74,8 @@ import com.google.inject.Scopes;
 import com.radixdlt.api.common.JSON;
 import com.radixdlt.application.tokens.Amount;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.messaging.TestMessagingModule;
@@ -160,7 +160,7 @@ public abstract class ApiTest {
     return liquidAmount;
   }
 
-  protected ECPublicKey selfKey() {
+  protected ECDSASecp256k1PublicKey selfKey() {
     return TEST_KEY.getPublicKey();
   }
 

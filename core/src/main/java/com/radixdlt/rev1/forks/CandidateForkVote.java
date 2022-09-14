@@ -66,7 +66,7 @@ package com.radixdlt.rev1.forks;
 
 import com.google.common.hash.HashCode;
 import com.google.common.primitives.Bytes;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.Longs;
@@ -89,7 +89,8 @@ public record CandidateForkVote(HashCode payload) {
   public static final int NONCE_HASH_LEN = 8;
   public static final int TOTAL_LEN = CANDIDATE_FORK_ID_LEN + NONCE_HASH_LEN;
 
-  public static CandidateForkVote create(ECPublicKey publicKey, CandidateForkConfig forkConfig) {
+  public static CandidateForkVote create(
+      ECDSASecp256k1PublicKey publicKey, CandidateForkConfig forkConfig) {
     final var payload = new byte[TOTAL_LEN];
     System.arraycopy(nameBytesWithPadding(forkConfig), 0, payload, 0, NAME_LEN);
     System.arraycopy(candidateForkHash(forkConfig), 0, payload, NAME_LEN, CANDIDATE_FORK_HASH_LEN);
@@ -137,7 +138,7 @@ public record CandidateForkVote(HashCode payload) {
     return nameBytesWithPadding;
   }
 
-  private static byte[] nonceHash(ECPublicKey publicKey) {
+  private static byte[] nonceHash(ECDSASecp256k1PublicKey publicKey) {
     return HashUtils.sha256Twice(Bytes.concat(FORK_VOTE_NONCE.asBytes(), publicKey.getBytes()))
         .asBytes();
   }

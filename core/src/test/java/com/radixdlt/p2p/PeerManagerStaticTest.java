@@ -71,8 +71,8 @@ import static org.mockito.Mockito.when;
 
 import com.google.inject.TypeLiteral;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.messaging.core.InboundMessage;
 import com.radixdlt.monitoring.SystemCounters;
@@ -160,7 +160,7 @@ public class PeerManagerStaticTest {
     return makeNodeUri(ECKeyPair.generateNew().getPublicKey(), host, port);
   }
 
-  private RadixNodeUri makeNodeUri(ECPublicKey pubKey, String host, int port) {
+  private RadixNodeUri makeNodeUri(ECDSASecp256k1PublicKey pubKey, String host, int port) {
     return RadixNodeUri.fromPubKeyAndAddress(
         Network.INTEGRATIONTESTNET.getId(), pubKey, host, port);
   }

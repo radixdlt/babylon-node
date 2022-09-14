@@ -86,13 +86,13 @@ import org.bouncycastle.math.ec.ECPoint;
   SecurityKind.PK_DECRYPT,
   SecurityKind.PK_ENCRYPT
 })
-public final class ECKeyPair implements Signing<ECDSASignature> {
+public final class ECKeyPair implements Signing<ECDSASecp256k1Signature> {
   public static final int BYTES = 32;
 
   private final byte[] privateKey;
-  private final ECPublicKey publicKey;
+  private final ECDSASecp256k1PublicKey publicKey;
 
-  private ECKeyPair(final byte[] privateKey, final ECPublicKey publicKey) {
+  private ECKeyPair(final byte[] privateKey, final ECDSASecp256k1PublicKey publicKey) {
     this.privateKey = privateKey;
     this.publicKey = publicKey;
   }
@@ -100,7 +100,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
   /**
    * Generates a new private and public key pair based on randomness.
    *
-   * @return a newly generated private key and it's corresponding {@link ECPublicKey}.
+   * @return a newly generated private key and it's corresponding {@link ECDSASecp256k1PublicKey}.
    */
   public static ECKeyPair generateNew() {
     try {
@@ -112,7 +112,8 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
       ECPrivateKeyParameters privParams = (ECPrivateKeyParameters) keypair.getPrivate();
       ECPublicKeyParameters pubParams = (ECPublicKeyParameters) keypair.getPublic();
 
-      final ECPublicKey publicKey = ECPublicKey.fromEcPoint(pubParams.getQ());
+      final ECDSASecp256k1PublicKey publicKey =
+          ECDSASecp256k1PublicKey.fromEcPoint(pubParams.getQ());
       byte[] privateKeyBytes = ECKeyUtils.adjustArray(privParams.getD().toByteArray(), BYTES);
       ECKeyUtils.validatePrivate(privateKeyBytes);
 
@@ -157,7 +158,8 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
     ECKeyUtils.validatePrivate(privateKey);
 
     return new ECKeyPair(
-        privateKey, ECPublicKey.fromBytes(ECKeyUtils.keyHandler.computePublicKey(privateKey)));
+        privateKey,
+        ECDSASecp256k1PublicKey.fromBytes(ECKeyUtils.keyHandler.computePublicKey(privateKey)));
   }
 
   public EUID euid() {
@@ -168,7 +170,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
     return privateKey;
   }
 
-  public ECPublicKey getPublicKey() {
+  public ECDSASecp256k1PublicKey getPublicKey() {
     return publicKey;
   }
   // TODO move this to new class (yet to be created) `ECPrivateKey`.
@@ -180,7 +182,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
   }
 
   @Override
-  public ECDSASignature sign(byte[] hash) {
+  public ECDSASecp256k1Signature sign(byte[] hash) {
     return ECKeyUtils.keyHandler.sign(hash, privateKey, publicKey.getBytes());
   }
 
@@ -195,7 +197,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
    *     href="https://tools.ietf.org/html/rfc6979">RFC6979</a>.
    * @return An ECDSA Signature.
    */
-  public ECDSASignature sign(byte[] data, boolean enforceLowS, boolean beDeterministic) {
+  public ECDSASecp256k1Signature sign(byte[] data, boolean enforceLowS, boolean beDeterministic) {
     return ECKeyUtils.keyHandler.sign(
         data, privateKey, publicKey.getBytes(), enforceLowS, beDeterministic);
   }

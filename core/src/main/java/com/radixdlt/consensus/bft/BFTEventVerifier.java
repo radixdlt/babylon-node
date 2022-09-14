@@ -75,7 +75,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
 import java.util.Objects;
 import java.util.Optional;
@@ -199,7 +199,7 @@ public final class BFTEventVerifier implements BFTEventProcessor {
   }
 
   private boolean verifyHashSignature(
-      BFTNode author, HashCode hash, ECDSASignature signature, Object what) {
+      BFTNode author, HashCode hash, ECDSASecp256k1Signature signature, Object what) {
     boolean verified = this.verifier.verify(author.getKey(), hash, signature);
     if (!verified) {
       log.info("Ignoring invalid signature from {} for {}", author, what);
@@ -208,7 +208,7 @@ public final class BFTEventVerifier implements BFTEventProcessor {
   }
 
   private boolean verifyObjectSignature(
-      BFTNode author, Object hashable, ECDSASignature signature, Object what) {
+      BFTNode author, Object hashable, ECDSASecp256k1Signature signature, Object what) {
     return verifyHashSignature(author, this.hasher.hashDsonEncoded(hashable), signature, what);
   }
 }

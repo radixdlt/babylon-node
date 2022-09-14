@@ -66,7 +66,7 @@ package com.radixdlt.sanitytestsuite.scenario.keysign;
 
 import static org.junit.Assert.assertEquals;
 
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.utils.Bytes;
@@ -95,7 +95,7 @@ public final class KeySignTestScenarioRunner extends SanityTestScenarioRunner<Ke
 
     byte[] unhashedEncodedMessage = testVector.input.messageToSign.getBytes(StandardCharsets.UTF_8);
     byte[] hashedMessageToSign = sha256Hash(unhashedEncodedMessage);
-    ECDSASignature signature = keyPair.sign(hashedMessageToSign, true, true);
+    ECDSASecp256k1Signature signature = keyPair.sign(hashedMessageToSign, true, true);
     assertEquals(testVector.expected.signature.r, signature.getR().toString(16));
     assertEquals(testVector.expected.signature.s, signature.getS().toString(16));
   }

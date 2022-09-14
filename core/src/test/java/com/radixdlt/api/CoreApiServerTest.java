@@ -69,10 +69,7 @@ import static org.junit.Assert.assertThrows;
 
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.statemanager.CoreApiServerConfig;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.statemanager.*;
 import com.radixdlt.utils.FreePortFinder;
 import com.radixdlt.utils.UInt32;
 import java.net.ConnectException;
@@ -91,7 +88,10 @@ public final class CoreApiServerTest {
     try (final var stateManager =
         StateManager.createAndInitialize(
             new StateManagerConfig(
-                NetworkDefinition.INT_TEST_NET, Option.none(), REv2DatabaseConfig.none()))) {
+                NetworkDefinition.INT_TEST_NET,
+                Option.none(),
+                REv2DatabaseConfig.none(),
+                LoggingConfig.getDefault()))) {
       final var server = CoreApiServer.create(stateManager, config);
 
       try {

@@ -67,9 +67,9 @@ package com.radixdlt.application.validators.state;
 import static com.radixdlt.substate.REFieldSerialization.requireValidUrl;
 import static java.util.Objects.requireNonNull;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 
-public record ValidatorMetaData(ECPublicKey validatorKey, String name, String url)
+public record ValidatorMetaData(ECDSASecp256k1PublicKey validatorKey, String name, String url)
     implements ValidatorData {
   public ValidatorMetaData {
     requireNonNull(validatorKey);
@@ -77,7 +77,7 @@ public record ValidatorMetaData(ECPublicKey validatorKey, String name, String ur
     requireValidUrl(url);
   }
 
-  public static ValidatorMetaData createVirtual(ECPublicKey validatorKey) {
+  public static ValidatorMetaData createVirtual(ECDSASecp256k1PublicKey validatorKey) {
     return new ValidatorMetaData(validatorKey, "", "");
   }
 }

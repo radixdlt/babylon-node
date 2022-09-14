@@ -65,7 +65,7 @@
 package com.radixdlt.utils;
 
 import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import java.util.Comparator;
 
 public final class KeyComparator {
@@ -73,8 +73,8 @@ public final class KeyComparator {
     throw new IllegalStateException("Cannot instantiate.");
   }
 
-  public static Comparator<ECPublicKey> instance() {
+  public static Comparator<ECDSASecp256k1PublicKey> instance() {
     return Comparator.comparing(
-        ECPublicKey::getCompressedBytes, UnsignedBytes.lexicographicalComparator());
+        ECDSASecp256k1PublicKey::getCompressedBytes, UnsignedBytes.lexicographicalComparator());
   }
 }

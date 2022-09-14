@@ -86,6 +86,14 @@ public record NetworkDefinition(byte id, String logical_name, String hrp_suffix)
         network.getByteId(), network.getLogicalName(), network.getHrpSuffix());
   }
 
+  public Network toNetwork() {
+    return Network.ofIdOrThrow(getIntId());
+  }
+
+  public int getIntId() {
+    return Byte.toUnsignedInt(id);
+  }
+
   public static NetworkDefinition LOCAL_SIMULATOR = NetworkDefinition.from(Network.LOCALSIMULATOR);
   public static NetworkDefinition INT_TEST_NET = NetworkDefinition.from(Network.INTEGRATIONTESTNET);
   public static NetworkDefinition LOCALNET = NetworkDefinition.from(Network.LOCALNET);

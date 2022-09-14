@@ -65,10 +65,10 @@
 package com.radixdlt.logger;
 
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import java.util.function.Function;
 
-public record EventLoggerConfig(Function<ECPublicKey, String> nodeToString) {
+public record EventLoggerConfig(Function<ECDSASecp256k1PublicKey, String> nodeToString) {
   public static EventLoggerConfig addressed(Addressing addressing) {
     return new EventLoggerConfig(
         k -> {

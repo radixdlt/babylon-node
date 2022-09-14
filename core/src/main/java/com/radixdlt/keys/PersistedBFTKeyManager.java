@@ -65,7 +65,7 @@
 package com.radixdlt.keys;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.CryptoException;
 import com.radixdlt.utils.Bytes;
@@ -109,7 +109,7 @@ public final class PersistedBFTKeyManager {
             });
   }
 
-  public ECDSASignature sign(byte[] hash) {
+  public ECDSASecp256k1Signature sign(byte[] hash) {
     return ecKeyPair.sign(hash);
   }
 

@@ -67,14 +67,15 @@ package com.radixdlt.application.tokens.state;
 import static java.util.Objects.requireNonNull;
 
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.util.Optional;
 
 /** Substate representing a fixed supply token definition */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public record TokenResource(REAddr addr, UInt256 granularity, boolean isMutable, ECPublicKey owner)
+public record TokenResource(
+    REAddr addr, UInt256 granularity, boolean isMutable, ECDSASecp256k1PublicKey owner)
     implements ResourceData {
   public TokenResource {
     if (!isMutable && owner != null) {
@@ -87,23 +88,26 @@ public record TokenResource(REAddr addr, UInt256 granularity, boolean isMutable,
     return new TokenResource(addr, UInt256.ONE, false, null);
   }
 
-  public static TokenResource createMutableSupplyResource(REAddr addr, ECPublicKey owner) {
+  public static TokenResource createMutableSupplyResource(
+      REAddr addr, ECDSASecp256k1PublicKey owner) {
     return new TokenResource(addr, UInt256.ONE, true, owner);
   }
 
-  public void verifyMintAuthorization(Optional<ECPublicKey> key) throws AuthorizationException {
+  public void verifyMintAuthorization(Optional<ECDSASecp256k1PublicKey> key)
+      throws AuthorizationException {
     if (!key.flatMap(p -> optionalOwner().map(p::equals)).orElse(false)) {
       throw new AuthorizationException("Key not authorized: " + key);
     }
   }
 
-  public void verifyBurnAuthorization(Optional<ECPublicKey> key) throws AuthorizationException {
+  public void verifyBurnAuthorization(Optional<ECDSASecp256k1PublicKey> key)
+      throws AuthorizationException {
     if (!key.flatMap(p -> optionalOwner().map(p::equals)).orElse(false)) {
       throw new AuthorizationException("Key not authorized: " + key);
     }
   }
 
-  public Optional<ECPublicKey> optionalOwner() {
+  public Optional<ECDSASecp256k1PublicKey> optionalOwner() {
     return Optional.ofNullable(owner);
   }
 }

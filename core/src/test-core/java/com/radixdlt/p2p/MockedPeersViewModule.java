@@ -70,7 +70,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import java.util.List;
 import java.util.Objects;
@@ -78,7 +78,7 @@ import java.util.Optional;
 import java.util.Set;
 
 class MockedPeersViewModule extends AbstractModule {
-  private ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNode;
+  private ImmutableMap<ECDSASecp256k1PublicKey, ImmutableList<ECDSASecp256k1PublicKey>> peersByNode;
   private List<BFTNode> allNodes;
 
   /**
@@ -86,7 +86,8 @@ class MockedPeersViewModule extends AbstractModule {
    *     node as a peer.
    */
   public MockedPeersViewModule(
-      ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNodeOrNull) {
+      ImmutableMap<ECDSASecp256k1PublicKey, ImmutableList<ECDSASecp256k1PublicKey>>
+          peersByNodeOrNull) {
     this.peersByNode = Objects.requireNonNull(peersByNodeOrNull);
   }
 

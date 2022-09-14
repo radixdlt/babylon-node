@@ -102,7 +102,7 @@ public final class Checkers {
     }
   }
 
-  /** Verifies that all nodes have synced to atleast some given stateVersion */
+  /** Verifies that all nodes have synced at an exact stateVersion */
   public static void assertNodesSyncedToExactVersion(
       List<Injector> nodeInjectors, long stateVersion) {
     nodeInjectors.forEach(

@@ -62,8 +62,7 @@
  * permissions under this License.
  */
 
-use sbor::{Decode, Encode, TypeId};
-use scrypto::crypto::EcdsaPublicKey;
+use scrypto::prelude::*;
 use std::collections::HashMap;
 use std::fmt;
 use transaction::model::{PreviewFlags, TransactionManifest};
@@ -91,7 +90,7 @@ pub struct PreviewRequest {
     pub cost_unit_limit: u32,
     pub tip_percentage: u32,
     pub nonce: u64,
-    pub signer_public_keys: Vec<EcdsaPublicKey>,
+    pub signer_public_keys: Vec<PublicKey>,
     pub flags: PreviewFlags,
 }
 

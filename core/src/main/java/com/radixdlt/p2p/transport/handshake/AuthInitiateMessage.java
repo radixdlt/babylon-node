@@ -67,7 +67,7 @@ package com.radixdlt.p2p.transport.handshake;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -85,7 +85,7 @@ public final class AuthInitiateMessage extends BaseHandshakeMessage {
 
   @JsonProperty("signature")
   @DsonOutput(DsonOutput.Output.ALL)
-  private final ECDSASignature signature;
+  private final ECDSASecp256k1Signature signature;
 
   @JsonProperty("publicKey")
   @DsonOutput(DsonOutput.Output.ALL)
@@ -101,7 +101,7 @@ public final class AuthInitiateMessage extends BaseHandshakeMessage {
 
   @JsonCreator
   public static AuthInitiateMessage deserialize(
-      @JsonProperty(value = "signature", required = true) ECDSASignature signature,
+      @JsonProperty(value = "signature", required = true) ECDSASecp256k1Signature signature,
       @JsonProperty(value = "publicKey", required = true) HashCode publicKey,
       @JsonProperty(value = "nonce", required = true) HashCode nonce,
       @JsonProperty("networkId") int networkId,
@@ -112,7 +112,7 @@ public final class AuthInitiateMessage extends BaseHandshakeMessage {
   }
 
   public AuthInitiateMessage(
-      ECDSASignature signature,
+      ECDSASecp256k1Signature signature,
       HashCode publicKey,
       HashCode nonce,
       int networkId,
@@ -125,7 +125,7 @@ public final class AuthInitiateMessage extends BaseHandshakeMessage {
     this.networkId = networkId;
   }
 
-  public ECDSASignature getSignature() {
+  public ECDSASecp256k1Signature getSignature() {
     return signature;
   }
 
