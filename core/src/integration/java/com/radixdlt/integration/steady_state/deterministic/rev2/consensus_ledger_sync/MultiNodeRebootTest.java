@@ -65,12 +65,13 @@
 package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledger_sync;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.randomSelector;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicConsensusMonitors.*;
+import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.google.inject.Module;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.harness.invariants.LedgerLivenessChecker;
+import com.radixdlt.harness.deterministic.NodesReader;
+import com.radixdlt.harness.predicates.NodesPredicate;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
@@ -78,6 +79,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.REV2TransactionGenerator;
+import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.*;
@@ -95,69 +97,56 @@ import org.junit.runners.Parameterized;
 public final class MultiNodeRebootTest {
   @Parameterized.Parameters
   public static Collection<Object[]> numNodes() {
-    return List.of(new Object[][] {{4}, {10}});
+    return List.of(new Object[][] {{4, 500}, {10, 200}});
   }
 
   private static final Logger logger = LogManager.getLogger();
 
-  private final Random random = new Random(12345);
-  private final int numValidators;
-
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  public MultiNodeRebootTest(int numValidators) {
+  private final Random random = new Random(12345);
+  private final int numValidators;
+  private final int numTestRounds;
+
+  public MultiNodeRebootTest(int numValidators, int numTestRounds) {
     this.numValidators = numValidators;
+    this.numTestRounds = numTestRounds;
   }
 
-  private DeterministicTest createTest(SafetyRecoveryConfig safetyRecoveryConfig) {
+  private DeterministicTest createTest(
+      SafetyRecoveryConfig safetyRecoveryConfig, Module overrideModule) {
     var databaseConfig = REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath());
-    return DeterministicTest.builder()
-        .numNodes(numValidators, 0)
-        .messageSelector(randomSelector(random))
-        .addMonitors(byzantineBehaviorNotDetected())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                safetyRecoveryConfig,
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        databaseConfig,
-                        StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                            new REV2TransactionGenerator(), 1)),
-                    SyncRelayConfig.of(5000, 10, 5000L))));
+    var builder =
+        DeterministicTest.builder()
+            .numNodes(numValidators, 0)
+            .messageSelector(randomSelector(random))
+            .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety());
+
+    if (overrideModule != null) {
+      builder.overrideWithIncorrectModule(overrideModule);
+    }
+
+    return builder.functionalNodeModule(
+        new FunctionalRadixNodeModule(
+            false,
+            safetyRecoveryConfig,
+            ConsensusConfig.of(1000),
+            LedgerConfig.stateComputerWithSyncRelay(
+                StateComputerConfig.rev2(
+                    Network.INTEGRATIONTESTNET.getId(),
+                    databaseConfig,
+                    StateComputerConfig.REV2ProposerConfig.transactionGenerator(
+                        new REV2TransactionGenerator(), 1)),
+                SyncRelayConfig.of(5000, 10, 5000L))));
   }
 
-  private void checkSafetyAndLiveness(
-      DeterministicTest test,
-      Map<Integer, Boolean> nodeLiveStatus,
-      LedgerLivenessChecker livenessChecker)
-      throws Exception {
-    // Bring up down nodes temporarily for checking
-    for (var e : nodeLiveStatus.entrySet()) {
-      if (!e.getValue()) {
-        test.startNode(e.getKey());
-      }
-    }
-
-    // TODO: Add back once liveness recovery is implemented
-    // livenessChecker.progressCheck(test.getNodeInjectors());
-
-    Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
-
-    // Shutdown nodes which were initially down
-    for (var e : nodeLiveStatus.entrySet()) {
-      if (!e.getValue()) {
-        test.shutdownNode(e.getKey());
-      }
-    }
+  private void runTest(int numDownValidators, SafetyRecoveryConfig safetyRecoveryConfig) {
+    runTest(numDownValidators, safetyRecoveryConfig, null);
   }
 
   private void runTest(
-      int numRounds, int numDownValidators, SafetyRecoveryConfig safetyRecoveryConfig)
-      throws Exception {
-    try (var test = createTest(safetyRecoveryConfig)) {
+      int numDownValidators, SafetyRecoveryConfig safetyRecoveryConfig, Module overrideModule) {
+    try (var test = createTest(safetyRecoveryConfig, overrideModule)) {
       test.startAllNodes();
 
       var nodeLiveStatus =
@@ -172,18 +161,18 @@ public final class MultiNodeRebootTest {
         }
       }
 
-      var livenessChecker = new LedgerLivenessChecker();
-
-      for (int testRound = 0; testRound < numRounds; testRound++) {
-        if (test.getNodeInjectors().stream().anyMatch(Objects::nonNull)) {
-          test.runForCount(random.nextInt(numValidators * 50, numValidators * 100));
+      for (int testRound = 0; testRound < numTestRounds; testRound++) {
+        var numNodesLive = test.numNodesLive();
+        if (numNodesLive > numValidators * 2 / 3) {
+          // Network has a quorum of nodes so should still be able to maintain ledger liveness
+          long stateVersion = NodesReader.getHighestStateVersion(test.getNodeInjectors());
+          test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(stateVersion + 5), 200000);
+        } else if (numNodesLive > 0) {
+          // Network has less than the required quorum of nodes so liveness not guaranteed
+          test.runForCount(random.nextInt(numNodesLive * 50, numNodesLive * 100));
         }
 
-        if (testRound % 200 == 0) {
-          checkSafetyAndLiveness(test, nodeLiveStatus, livenessChecker);
-        }
-
-        // Reverse the status (by shutting down or starting up a node) of a random number of
+        // Toggle the status (by shutting down or starting up a node) of a random number of
         // validators
         var nodes =
             IntStream.range(numDownValidators, numValidators).boxed().collect(Collectors.toList());
@@ -203,43 +192,39 @@ public final class MultiNodeRebootTest {
         logger.info(
             "Test_round={}/{}, updated_nodes={}, nodes={}",
             testRound + 1,
-            numRounds,
+            numTestRounds,
             nodesToUpdate,
             nodeLiveStatus);
       }
-
-      // Post-run assertions
-      test.startAllNodes();
-      var aliveNodes = test.getNodeInjectors().stream().skip(numDownValidators).toList();
-      Checkers.assertLedgerTransactionsSafety(aliveNodes);
     }
   }
 
   @Test
-  public void restart_all_nodes_intermittently() throws Exception {
-    var numRounds = 2000 / numValidators;
-    var numDownValidators = 0;
-    runTest(
-        numRounds,
-        numDownValidators,
-        SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()));
+  public void restart_all_nodes_intermittently() {
+    runTest(0, SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()));
   }
 
   @Test
-  public void restart_all_nodes_intermittently_with_bad_recovery_should_fail() {
-    var numRounds = 2000 / numValidators;
-    var numDownValidators = 0;
-    assertThatThrownBy(() -> runTest(numRounds, numDownValidators, SafetyRecoveryConfig.mocked()))
+  public void restart_all_nodes_intermittently_with_bad_safety_recovery_should_fail() {
+    assertThatThrownBy(() -> runTest(0, SafetyRecoveryConfig.mocked()))
         .hasRootCauseExactlyInstanceOf(ByzantineBehaviorDetected.class);
   }
 
   @Test
-  public void restart_all_nodes_intermittently_while_f_nodes_down() throws Exception {
-    var numRounds = 2000 / numValidators;
-    var numDownValidators = (numValidators - 1) / 3;
+  public void restart_all_nodes_intermittently_with_bad_liveness_recovery_should_fail() {
+    assertThatThrownBy(
+            () ->
+                runTest(
+                    0,
+                    SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                    new MockedLivenessStoreModule()))
+        .isInstanceOf(DeterministicTest.NeverReachedStateException.class);
+  }
+
+  @Test
+  public void restart_all_nodes_intermittently_while_f_nodes_down() {
     runTest(
-        numRounds,
-        numDownValidators,
+        (numValidators - 1) / 3,
         SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()));
   }
 }

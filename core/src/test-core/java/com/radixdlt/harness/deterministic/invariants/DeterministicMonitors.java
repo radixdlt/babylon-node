@@ -69,10 +69,11 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.DoubleVote;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.harness.invariants.Checkers;
 import java.util.function.Function;
 
-public final class DeterministicConsensusMonitors {
-  private DeterministicConsensusMonitors() {
+public final class DeterministicMonitors {
+  private DeterministicMonitors() {
     throw new IllegalStateException("Cannot instantiate");
   }
 
@@ -92,6 +93,15 @@ public final class DeterministicConsensusMonitors {
             throw new ByzantineBehaviorDetected(nodeName, doubleVote);
           }
         };
+      }
+    };
+  }
+
+  public static Module ledgerTransactionSafety() {
+    return new AbstractModule() {
+      @ProvidesIntoSet
+      private StateMonitor ledgerTransactionSafety() {
+        return Checkers::assertLedgerTransactionsSafety;
       }
     };
   }

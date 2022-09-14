@@ -68,17 +68,20 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
+import com.radixdlt.harness.deterministic.invariants.StateMonitor;
 import com.radixdlt.utils.Pair;
+import java.util.Set;
 import java.util.function.Function;
 
-public class DeterministicCheckerModule extends AbstractModule {
+public class DeterministicMonitorsModule extends AbstractModule {
   private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
 
-  public DeterministicCheckerModule(ImmutableList<BFTNode> nodes) {
+  public DeterministicMonitorsModule(ImmutableList<BFTNode> nodes) {
     this.nodeLookup =
         Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
             .collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
@@ -89,5 +92,16 @@ public class DeterministicCheckerModule extends AbstractModule {
     bind(new TypeLiteral<Function<BFTNode, String>>() {})
         .toInstance(n -> "Node" + nodeLookup.get(n));
     Multibinder.newSetBinder(binder(), MessageMonitor.class);
+    Multibinder.newSetBinder(binder(), StateMonitor.class);
+  }
+
+  @Provides
+  MessageMonitor messageMonitor(Set<MessageMonitor> messageMonitors) {
+    return m -> messageMonitors.forEach(c -> c.next(m));
+  }
+
+  @Provides
+  StateMonitor stateMonitor(Set<StateMonitor> stateMonitors) {
+    return s -> stateMonitors.forEach(c -> c.next(s));
   }
 }

@@ -62,65 +62,28 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.deterministic.rev2.consensus_ledger_sync;
+package com.radixdlt.harness.deterministic;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitors.*;
+import com.google.inject.Injector;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.sync.TransactionsAndProofReader;
+import java.util.List;
+import java.util.Objects;
 
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.invariants.Checkers;
-import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
-import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.REv2SimpleFuzzerTransactionGenerator;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.sync.SyncRelayConfig;
-import java.util.Random;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-public final class SimpleFuzzerTransactionsTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-  private final TransactionGenerator transactionGenerator =
-      new REv2SimpleFuzzerTransactionGenerator(new Random(12345));
-
-  private DeterministicTest createTest() {
-    return DeterministicTest.builder()
-        .numNodes(10, 10)
-        .messageSelector(firstSelector())
-        .addMonitors(byzantineBehaviorNotDetected(), ledgerTransactionSafety())
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                false,
-                SafetyRecoveryConfig.mocked(),
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.LOCALSIMULATOR.getId(),
-                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.transactionGenerator(transactionGenerator, 10)),
-                    SyncRelayConfig.of(5000, 10, 3000L))));
+public final class NodesReader {
+  private NodesReader() {
+    throw new IllegalStateException("Not allowed to instantiate.");
   }
 
-  @Test
-  public void simple_fuzzer_transaction_generator_should_not_cause_unexpected_errors()
-      throws Exception {
-    // Arrange
-    try (var test = createTest()) {
-
-      // Run
-      test.startAllNodes();
-      test.runForCount(10000);
-
-      // Post-run assertions
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 100);
-      Checkers.assertNoInvalidSyncResponses(test.getNodeInjectors());
-    }
+  public static long getHighestStateVersion(List<Injector> nodes) {
+    return nodes.stream()
+        .filter(Objects::nonNull)
+        .mapToLong(
+            injector -> {
+              var reader = injector.getInstance(TransactionsAndProofReader.class);
+              return reader.getLastProof().map(LedgerProof::getStateVersion).orElse(0L);
+            })
+        .max()
+        .orElse(0);
   }
 }

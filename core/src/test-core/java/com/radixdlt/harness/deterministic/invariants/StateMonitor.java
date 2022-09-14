@@ -62,32 +62,11 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.invariants;
-
-import static org.assertj.core.api.Assertions.assertThat;
+package com.radixdlt.harness.deterministic.invariants;
 
 import com.google.inject.Injector;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.List;
 
-public final class LedgerLivenessChecker {
-  private long lastStateVersion = 0;
-
-  public LedgerLivenessChecker() {}
-
-  public void progressCheck(List<Injector> nodeInjectors) {
-    var highestStateVersion =
-        nodeInjectors.stream()
-            .mapToLong(
-                injector -> {
-                  var reader = injector.getInstance(TransactionsAndProofReader.class);
-                  return reader.getLastProof().map(LedgerProof::getStateVersion).orElse(0L);
-                })
-            .max()
-            .orElse(0);
-    assertThat(highestStateVersion).isGreaterThan(lastStateVersion);
-
-    this.lastStateVersion = highestStateVersion;
-  }
+public interface StateMonitor {
+  void next(List<Injector> nodes);
 }

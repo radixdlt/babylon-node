@@ -87,7 +87,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.PeersView;
 import com.radixdlt.rev1.modules.REv1PersistenceModule;
 import com.radixdlt.rev1.modules.RadixEngineStoreModule;
-import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
@@ -137,7 +136,6 @@ public final class SingleNodeAndPeersDeterministicNetworkModule extends Abstract
           .toInstance(
               BFTValidatorSet.from(
                   List.of(BFTValidator.from(BFTNode.create(self.getPublicKey()), UInt256.ONE))));
-      install(new MockedLivenessStoreModule());
     }
     if (radixNodeModule.supportsREv1()) {
 

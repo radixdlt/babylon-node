@@ -83,6 +83,7 @@ import com.radixdlt.monitoring.SystemCountersImpl;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -138,6 +139,10 @@ public final class DeterministicNodes implements AutoCloseable {
 
   public int numNodes() {
     return this.nodeInstances.size();
+  }
+
+  public int numNodesLive() {
+    return (int) this.nodeInstances.stream().filter(Objects::nonNull).count();
   }
 
   public void startAllNodes() {

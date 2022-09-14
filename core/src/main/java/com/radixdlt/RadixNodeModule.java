@@ -92,7 +92,6 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.BerkeleySafetyStoreModule;
-import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.CoreApiServerConfig;
@@ -198,7 +197,6 @@ public final class RadixNodeModule extends AbstractModule {
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
     install(REv2StateManagerModule.create(networkId, databaseConfig, Option.some(mempoolConfig)));
-    install(new MockedLivenessStoreModule());
     install(new REv2LedgerRecoveryModule());
 
     // Core API server

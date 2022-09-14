@@ -83,6 +83,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
+import com.radixdlt.harness.deterministic.invariants.StateMonitor;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
@@ -94,7 +95,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.TestP2PModule;
 import com.radixdlt.rev1.EpochMaxRound;
-import com.radixdlt.rev2.modules.MockedLivenessStoreModule;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.KeyComparator;
@@ -105,7 +105,6 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
@@ -118,16 +117,21 @@ import java.util.stream.Stream;
 public final class DeterministicTest implements AutoCloseable {
   private final DeterministicNodes nodes;
   private final DeterministicNetwork network;
+  private final StateMonitor stateMonitor;
+
+  private int numMessagesProcessed = 0;
 
   private DeterministicTest(
       ImmutableList<BFTNode> nodes,
       MessageSelector messageSelector,
       MessageMutator messageMutator,
       MessageMonitor messageMonitor,
+      StateMonitor stateMonitor,
       Module baseModule,
       Module overrideModule) {
     this.network = new DeterministicNetwork(nodes, messageSelector, messageMutator, messageMonitor);
     this.nodes = new DeterministicNodes(nodes, this.network, baseModule, overrideModule);
+    this.stateMonitor = stateMonitor;
   }
 
   @Override
@@ -240,8 +244,10 @@ public final class DeterministicTest implements AutoCloseable {
       return this.messageMutator(combinedMutator);
     }
 
-    public Builder addMonitors(Module module) {
-      this.testModules.add(module);
+    public Builder addMonitors(Module... modules) {
+      for (var module : modules) {
+        this.testModules.add(module);
+      }
       return this;
     }
 
@@ -288,21 +294,22 @@ public final class DeterministicTest implements AutoCloseable {
           });
       modules.add(new MockedKeyModule());
       modules.add(new MockedCryptoModule());
-      modules.add(new MockedLivenessStoreModule());
       modules.add(new TestP2PModule.Builder().withAllNodes(nodes).build());
       modules.add(new TestMessagingModule.Builder().build());
 
-      var messageMonitors =
+      // Retrieve monitors
+      var monitorInjector =
           Guice.createInjector(
-                  new DeterministicCheckerModule(nodes), Modules.combine(testModules.build()))
-              .getInstance(Key.get(new TypeLiteral<Set<MessageMonitor>>() {}));
-      MessageMonitor messageMonitor = m -> messageMonitors.forEach(c -> c.next(m));
+              new DeterministicMonitorsModule(nodes), Modules.combine(testModules.build()));
+      var messageMonitor = monitorInjector.getInstance(MessageMonitor.class);
+      var stateMonitor = monitorInjector.getInstance(StateMonitor.class);
 
       return new DeterministicTest(
           this.nodes,
           this.messageSelector,
           this.messageMutator,
           messageMonitor,
+          stateMonitor,
           Modules.combine(modules.build()),
           overrideModule);
     }
@@ -333,8 +340,25 @@ public final class DeterministicTest implements AutoCloseable {
     return this.nodes;
   }
 
+  public int numNodesLive() {
+    return this.nodes.numNodesLive();
+  }
+
   public List<Injector> getNodeInjectors() {
     return this.nodes.getNodeInjectors();
+  }
+
+  private void handleMessage(Timed<ControlledMessage> nextMessage) {
+    this.nodes.handleMessage(nextMessage);
+
+    // Execute state monitor checks after some arbitrary number of messages
+    // so we don't kill our CPUs
+    // TODO: Clean this up
+    if (this.numMessagesProcessed % 17 == 0) {
+      this.stateMonitor.next(nodes.getNodeInjectors());
+    }
+
+    this.numMessagesProcessed++;
   }
 
   public interface DeterministicManualExecutor {
@@ -359,7 +383,7 @@ public final class DeterministicTest implements AutoCloseable {
                         && msg.channelId().receiverIndex() == receiverIndex
                         && eventClass.isInstance(msg.message()));
 
-        nodes.handleMessage(nextMsg);
+        handleMessage(nextMsg);
       }
     };
   }
@@ -368,7 +392,7 @@ public final class DeterministicTest implements AutoCloseable {
     this.nodes.startAllNodes();
   }
 
-  public void shutdownNode(int nodeIndex) throws Exception {
+  public void shutdownNode(int nodeIndex) {
     // Drop local messages
     this.network.dropMessages(
         m ->
@@ -380,9 +404,15 @@ public final class DeterministicTest implements AutoCloseable {
     this.nodes.startNode(nodeIndex);
   }
 
-  public void restartNode(int nodeIndex) throws Exception {
+  public void restartNode(int nodeIndex) {
     this.shutdownNode(nodeIndex);
     this.startNode(nodeIndex);
+  }
+
+  public static class NeverReachedStateException extends IllegalStateException {
+    private NeverReachedStateException(int max) {
+      super("Never reached state after " + max + " messages");
+    }
   }
 
   public DeterministicTest runUntilState(
@@ -393,10 +423,10 @@ public final class DeterministicTest implements AutoCloseable {
 
     while (!nodeStatePredicate.test(getNodeInjectors())) {
       if (count == max) {
-        throw new RuntimeException("Max messages reached: " + max);
+        throw new NeverReachedStateException(max);
       }
       Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
-      this.nodes.handleMessage(nextMsg);
+      handleMessage(nextMsg);
       count++;
     }
 
@@ -423,7 +453,7 @@ public final class DeterministicTest implements AutoCloseable {
         break;
       }
 
-      this.nodes.handleMessage(nextMsg);
+      handleMessage(nextMsg);
     }
 
     return this;
@@ -432,7 +462,7 @@ public final class DeterministicTest implements AutoCloseable {
   public DeterministicTest runForCount(int count) {
     for (int i = 0; i < count; i++) {
       Timed<ControlledMessage> nextMsg = this.network.nextMessage();
-      this.nodes.handleMessage(nextMsg);
+      handleMessage(nextMsg);
     }
 
     return this;
@@ -440,13 +470,13 @@ public final class DeterministicTest implements AutoCloseable {
 
   public void runNext(Predicate<ControlledMessage> predicate) {
     Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
-    this.nodes.handleMessage(nextMsg);
+    handleMessage(nextMsg);
   }
 
   public void runForCount(int count, Predicate<ControlledMessage> predicate) {
     for (int i = 0; i < count; i++) {
       Timed<ControlledMessage> nextMsg = this.network.nextMessage(predicate);
-      this.nodes.handleMessage(nextMsg);
+      handleMessage(nextMsg);
     }
   }
 
