@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NotarizedTransaction {
-    /// The hex-encoded double-SHA256 hash of the notarized transaction payload
+    /// The hex-encoded double-SHA256 hash of the notarized transaction payload. Also known as the payload_hash or the notarized_transaction_hash.
     #[serde(rename = "hash")]
     pub hash: String,
     /// The hex-encoded full notarized transaction payload

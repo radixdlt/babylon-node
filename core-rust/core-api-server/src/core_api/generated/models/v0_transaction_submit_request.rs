@@ -12,7 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct TransactionSubmitRequest {
+pub struct V0TransactionSubmitRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
@@ -21,9 +21,9 @@ pub struct TransactionSubmitRequest {
     pub notarized_transaction: String,
 }
 
-impl TransactionSubmitRequest {
-    pub fn new(network: String, notarized_transaction: String) -> TransactionSubmitRequest {
-        TransactionSubmitRequest {
+impl V0TransactionSubmitRequest {
+    pub fn new(network: String, notarized_transaction: String) -> V0TransactionSubmitRequest {
+        V0TransactionSubmitRequest {
             network,
             notarized_transaction,
         }
