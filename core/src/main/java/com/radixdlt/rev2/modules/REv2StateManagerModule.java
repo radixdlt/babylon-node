@@ -187,7 +187,7 @@ public final class REv2StateManagerModule extends AbstractModule {
             }
 
             @Provides
-            private PersistentVertexStore stateReader(
+            private PersistentVertexStore vertexStore(
                 RustStateComputer stateComputer,
                 SystemCounters systemCounters,
                 Serialization serialization) {
@@ -201,14 +201,14 @@ public final class REv2StateManagerModule extends AbstractModule {
 
             @ProvidesIntoSet
             @ProcessOnDispatch
-            public EventProcessor<BFTHighQCUpdate> persistQC(
+            public EventProcessor<BFTHighQCUpdate> onQCUpdatePersistVertexStore(
                 PersistentVertexStore persistentVertexStore) {
               return update -> persistentVertexStore.save(update.getVertexStoreState());
             }
 
             @ProvidesIntoSet
             @ProcessOnDispatch
-            public EventProcessor<BFTInsertUpdate> persistUpdates(
+            public EventProcessor<BFTInsertUpdate> onInsertUpdatePersistVertexStore(
                 PersistentVertexStore persistentVertexStore) {
               return update -> persistentVertexStore.save(update.getVertexStoreState());
             }
