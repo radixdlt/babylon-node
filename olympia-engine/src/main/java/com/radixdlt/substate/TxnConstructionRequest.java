@@ -67,7 +67,7 @@ package com.radixdlt.substate;
 import static com.radixdlt.substate.TxAction.*;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
@@ -125,27 +125,27 @@ public class TxnConstructionRequest {
     return this;
   }
 
-  public TxnConstructionRequest registerAsValidator(ECPublicKey validatorKey) {
+  public TxnConstructionRequest registerAsValidator(ECDSASecp256k1PublicKey validatorKey) {
     var action = new RegisterValidator(validatorKey);
     actions.add(action);
     return this;
   }
 
   public TxnConstructionRequest updateValidatorMetadata(
-      ECPublicKey validatorKey, String name, String uri) {
+      ECDSASecp256k1PublicKey validatorKey, String name, String uri) {
     var action = new UpdateValidatorMetadata(validatorKey, name, uri);
     actions.add(action);
     return this;
   }
 
   public TxnConstructionRequest updateValidatorSystemMetadata(
-      ECPublicKey validatorKey, HashCode bytes) {
+      ECDSASecp256k1PublicKey validatorKey, HashCode bytes) {
     final var action = new UpdateValidatorSystemMetadata(validatorKey, bytes.asBytes());
     actions.add(action);
     return this;
   }
 
-  public TxnConstructionRequest unregisterAsValidator(ECPublicKey validatorKey) {
+  public TxnConstructionRequest unregisterAsValidator(ECDSASecp256k1PublicKey validatorKey) {
     var action = new UnregisterValidator(validatorKey);
     actions.add(action);
     return this;

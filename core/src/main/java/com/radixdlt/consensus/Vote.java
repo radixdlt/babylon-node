@@ -73,7 +73,7 @@ import com.google.common.hash.HashCode;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
@@ -109,9 +109,9 @@ public final class Vote implements ConsensusEvent {
 
   @JsonProperty("signature")
   @DsonOutput(Output.ALL)
-  private final ECDSASignature signature;
+  private final ECDSASecp256k1Signature signature;
 
-  private final Optional<ECDSASignature> timeoutSignature;
+  private final Optional<ECDSASecp256k1Signature> timeoutSignature;
 
   @JsonCreator
   @VisibleForTesting
@@ -119,9 +119,9 @@ public final class Vote implements ConsensusEvent {
       @JsonProperty(value = "author", required = true) byte[] author,
       @JsonProperty(value = "vote_data", required = true) VoteData voteData,
       @JsonProperty("ts") long timestamp,
-      @JsonProperty(value = "signature", required = true) ECDSASignature signature,
+      @JsonProperty(value = "signature", required = true) ECDSASecp256k1Signature signature,
       @JsonProperty(value = "high_qc", required = true) HighQC highQC,
-      @JsonProperty("timeout_signature") ECDSASignature timeoutSignature)
+      @JsonProperty("timeout_signature") ECDSASecp256k1Signature timeoutSignature)
       throws PublicKeyException {
     this(
         BFTNode.fromPublicKeyBytes(requireNonNull(author)),
@@ -136,9 +136,9 @@ public final class Vote implements ConsensusEvent {
       BFTNode author,
       VoteData voteData,
       long timestamp,
-      ECDSASignature signature,
+      ECDSASecp256k1Signature signature,
       HighQC highQC,
-      Optional<ECDSASignature> timeoutSignature) {
+      Optional<ECDSASecp256k1Signature> timeoutSignature) {
     if (timestamp <= 0) {
       throw new IllegalArgumentException("Timestamp before epoch:" + timestamp);
     }
@@ -189,15 +189,15 @@ public final class Vote implements ConsensusEvent {
     return timestamp;
   }
 
-  public ECDSASignature getSignature() {
+  public ECDSASecp256k1Signature getSignature() {
     return this.signature;
   }
 
-  public Optional<ECDSASignature> getTimeoutSignature() {
+  public Optional<ECDSASecp256k1Signature> getTimeoutSignature() {
     return timeoutSignature;
   }
 
-  public Vote withTimeoutSignature(ECDSASignature timeoutSignature) {
+  public Vote withTimeoutSignature(ECDSASecp256k1Signature timeoutSignature) {
     return new Vote(
         this.author,
         this.voteData,
@@ -219,7 +219,7 @@ public final class Vote implements ConsensusEvent {
 
   @JsonProperty("timeout_signature")
   @DsonOutput(Output.ALL)
-  private ECDSASignature getSerializerTimeoutSignature() {
+  private ECDSASecp256k1Signature getSerializerTimeoutSignature() {
     return this.timeoutSignature.orElse(null);
   }
 

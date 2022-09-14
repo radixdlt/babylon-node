@@ -77,8 +77,8 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.constraintmachine.REProcessedTxn;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.identifiers.REAddr;
@@ -128,7 +128,7 @@ public class UnstakingLockedTokensTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   @Inject @LocalSigner private HashSigner hashSigner;
-  @Inject @Self private ECPublicKey self;
+  @Inject @Self private ECDSASecp256k1PublicKey self;
   @Inject private SingleNodeDeterministicRunner runner;
   @Inject private RadixEngine<LedgerAndBFTProof> radixEngine;
   @Inject private RadixEngineStateComputer radixEngineStateComputer;

@@ -70,7 +70,7 @@ import com.google.common.hash.Hashing;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.serialization.DefaultSerialization;
@@ -141,7 +141,7 @@ public class MockedCryptoModule extends AbstractModule {
         };
 
     // Make sure classes etc loaded, as first use seems to take some time
-    Object dummyObject = ECDSASignature.zeroSignature(); // Arbitrary serializable class
+    Object dummyObject = ECDSASecp256k1Signature.zeroSignature(); // Arbitrary serializable class
     hasher.hashDsonEncoded(dummyObject);
     running.set(true);
 

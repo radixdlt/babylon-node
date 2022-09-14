@@ -71,7 +71,7 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
 import java.util.LinkedHashSet;
 import java.util.Objects;
@@ -163,7 +163,7 @@ public final class SafetyRules {
 
     this.state = safetyStateBuilder.build();
 
-    final ECDSASignature signature = this.signer.sign(proposedVertex.getHash());
+    final ECDSASecp256k1Signature signature = this.signer.sign(proposedVertex.getHash());
     return Optional.of(
         new Proposal(proposedVertex.toSerializable(), highestCommittedQC, signature, highestTC));
   }
@@ -225,7 +225,7 @@ public final class SafetyRules {
     final VoteTimeout voteTimeout = VoteTimeout.of(vote);
     final HashCode voteTimeoutHash = hasher.hashDsonEncoded(voteTimeout);
 
-    final ECDSASignature timeoutSignature = this.signer.sign(voteTimeoutHash);
+    final ECDSASecp256k1Signature timeoutSignature = this.signer.sign(voteTimeoutHash);
     final Vote timeoutVote = vote.withTimeoutSignature(timeoutSignature);
 
     this.state = this.state.toBuilder().lastVote(timeoutVote).build();
@@ -240,7 +240,7 @@ public final class SafetyRules {
     final var voteHash = Vote.getHashOfData(hasher, voteData, timestamp);
 
     // TODO make signing more robust by including author in signed hash
-    final ECDSASignature signature = this.signer.sign(voteHash);
+    final ECDSASecp256k1Signature signature = this.signer.sign(voteHash);
     return new Vote(this.self, voteData, timestamp, signature, highQC, Optional.empty());
   }
 

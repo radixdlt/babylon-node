@@ -68,7 +68,7 @@ import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.exceptions.AuthorizationException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import java.util.Objects;
 
@@ -109,7 +109,7 @@ public final class AccountBucket implements Bucket {
   }
 
   @Override
-  public ECPublicKey getValidatorKey() {
+  public ECDSASecp256k1PublicKey getValidatorKey() {
     return null;
   }
 

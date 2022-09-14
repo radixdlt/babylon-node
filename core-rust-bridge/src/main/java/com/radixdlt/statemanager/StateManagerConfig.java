@@ -74,7 +74,8 @@ import com.radixdlt.sbor.codec.StructCodec;
 public record StateManagerConfig(
     NetworkDefinition networkDefinition,
     Option<RustMempoolConfig> mempoolConfigOpt,
-    REv2DatabaseConfig databaseConfig) {
+    REv2DatabaseConfig databaseConfig,
+    LoggingConfig loggingConfig) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateManagerConfig.class,
@@ -84,7 +85,12 @@ public record StateManagerConfig(
                 codecs.of(NetworkDefinition.class),
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
                 (s, encoder) ->
-                    encoder.encode(s.networkDefinition, s.mempoolConfigOpt, s.databaseConfig)));
+                    encoder.encode(
+                        s.networkDefinition,
+                        s.mempoolConfigOpt,
+                        s.databaseConfig,
+                        s.loggingConfig)));
   }
 }

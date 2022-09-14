@@ -6,7 +6,7 @@ import urllib.request, logging, subprocess, os, shutil
 logger = logging.getLogger()
 logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', level=logging.INFO)
 
-SYSTEM_API_SPEC_LOCATION = '../system/system-api-spec.yaml'
+SYSTEM_API_SPEC_LOCATION = '../system/system-api-schema.yaml'
 SYSTEM_API_GENERATED_DESTINATION = '../system/generated/'
 
 COMMON_API_PACKAGE = 'com.radixdlt.api.common'
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     os.makedirs(OPENAPI_TEMP_GENERATION_FOLDER)
 
     # download & fix the spec files
-    system_api_spec_temp_filename = os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, 'system_api_spec.yaml')
+    system_api_spec_temp_filename = os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, 'system_api_schema.yaml')
     copy_file(SYSTEM_API_SPEC_LOCATION, system_api_spec_temp_filename)
     replace_in_file(system_api_spec_temp_filename, 'openapi: 3.1.0', 'openapi: 3.0.0')
     logging.info('Loaded System API Spec from {}'.format(os.path.abspath(SYSTEM_API_SPEC_LOCATION)))

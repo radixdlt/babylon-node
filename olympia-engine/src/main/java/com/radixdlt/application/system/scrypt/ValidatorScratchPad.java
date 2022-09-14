@@ -67,13 +67,13 @@ package com.radixdlt.application.system.scrypt;
 import com.radixdlt.application.system.state.StakeOwnership;
 import com.radixdlt.application.system.state.ValidatorStakeData;
 import com.radixdlt.application.tokens.state.ExitingStake;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
 public final class ValidatorScratchPad {
-  private final ECPublicKey validatorKey;
+  private final ECDSASecp256k1PublicKey validatorKey;
   private UInt384 totalStake;
   private UInt384 totalOwnership;
   private int rakePercentage;
@@ -89,7 +89,7 @@ public final class ValidatorScratchPad {
     this.validatorKey = validatorStakeData.validatorKey();
   }
 
-  public ECPublicKey getValidatorKey() {
+  public ECDSASecp256k1PublicKey getValidatorKey() {
     return validatorKey;
   }
 

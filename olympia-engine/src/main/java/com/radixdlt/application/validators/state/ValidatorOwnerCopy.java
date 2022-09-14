@@ -64,14 +64,15 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import java.util.OptionalLong;
 
-public record ValidatorOwnerCopy(OptionalLong epochUpdate, ECPublicKey validatorKey, REAddr owner)
+public record ValidatorOwnerCopy(
+    OptionalLong epochUpdate, ECDSASecp256k1PublicKey validatorKey, REAddr owner)
     implements ValidatorUpdatingData {
 
-  public static ValidatorOwnerCopy createVirtual(ECPublicKey validatorKey) {
+  public static ValidatorOwnerCopy createVirtual(ECDSASecp256k1PublicKey validatorKey) {
     return new ValidatorOwnerCopy(
         OptionalLong.empty(), validatorKey, REAddr.ofPubKeyAccount(validatorKey));
   }

@@ -74,8 +74,8 @@ import com.radixdlt.application.tokens.state.TokenResource;
 import com.radixdlt.application.tokens.state.TokensInAccount;
 import com.radixdlt.constraintmachine.*;
 import com.radixdlt.constraintmachine.RawSubstate;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.transactions.RawTransaction;
@@ -533,7 +533,7 @@ public final class TxBuilder {
 
   public <T extends ResourceInBucket, X extends Exception> void putFeeReserve(
       REAddr feePayer, UInt256 amount, Function<UInt256, X> exceptionSupplier) throws X {
-    var buf = ByteBuffer.allocate(2 + 1 + ECPublicKey.COMPRESSED_BYTES);
+    var buf = ByteBuffer.allocate(2 + 1 + ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
     buf.put(SubstateTypeId.TOKENS.id());
     buf.put((byte) 0);
     buf.put(feePayer.getBytes());
@@ -560,7 +560,7 @@ public final class TxBuilder {
     this.feeReserveTake = this.feeReserveTake.add(amount);
   }
 
-  public TxBuilder mutex(ECPublicKey key, String id) {
+  public TxBuilder mutex(ECDSASecp256k1PublicKey key, String id) {
     final var addr = REAddr.ofHashedKey(key, id);
 
     lowLevelBuilder.syscall(Syscall.READDR_CLAIM, id.getBytes(StandardCharsets.UTF_8));
@@ -575,7 +575,7 @@ public final class TxBuilder {
     return this;
   }
 
-  public RawTransaction signAndBuild(Function<HashCode, ECDSASignature> signer) {
+  public RawTransaction signAndBuild(Function<HashCode, ECDSASecp256k1Signature> signer) {
     var hashToSign = lowLevelBuilder.hashToSign();
     return lowLevelBuilder.sig(signer.apply(hashToSign)).build();
   }

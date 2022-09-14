@@ -99,7 +99,7 @@ final class BouncyCastleKeyHandler implements KeyHandler {
   }
 
   @Override
-  public ECDSASignature sign(
+  public ECDSASecp256k1Signature sign(
       byte[] hash,
       byte[] privateKey,
       byte[] publicKey,
@@ -121,11 +121,11 @@ final class BouncyCastleKeyHandler implements KeyHandler {
       s = s.compareTo(this.halfCurveOrder) <= 0 ? s : curveOrder.subtract(s);
     }
 
-    return ECDSASignature.create(r, s, ECKeyUtils.calculateV(r, s, publicKey, hash));
+    return ECDSASecp256k1Signature.create(r, s, ECKeyUtils.calculateV(r, s, publicKey, hash));
   }
 
   @Override
-  public boolean verify(byte[] hash, ECDSASignature signature, ECPoint publicKeyPoint) {
+  public boolean verify(byte[] hash, ECDSASecp256k1Signature signature, ECPoint publicKeyPoint) {
     var verifier = new ECDSASigner();
 
     verifier.init(false, new ECPublicKeyParameters(publicKeyPoint, domain));

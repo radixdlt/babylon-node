@@ -69,7 +69,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.HashUtils;
 import java.util.Optional;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -79,14 +79,14 @@ import org.junit.Test;
 public class ProposalTest {
   private Proposal proposal;
   private Vertex vertex;
-  private ECDSASignature signature;
+  private ECDSASecp256k1Signature signature;
   private QuorumCertificate qc;
   private QuorumCertificate commitQc;
 
   @Before
   public void setUp() {
     this.vertex = mock(Vertex.class);
-    this.signature = mock(ECDSASignature.class);
+    this.signature = mock(ECDSASecp256k1Signature.class);
     this.commitQc = mock(QuorumCertificate.class);
     this.qc = mock(QuorumCertificate.class);
 
@@ -125,14 +125,17 @@ public class ProposalTest {
     new Proposal(
         null,
         mock(QuorumCertificate.class),
-        mock(ECDSASignature.class),
+        mock(ECDSASecp256k1Signature.class),
         mock(TimeoutCertificate.class));
   }
 
   @Test(expected = NullPointerException.class)
   public void deserializeWithNullThrowsException2() {
     new Proposal(
-        mock(Vertex.class), null, mock(ECDSASignature.class), mock(TimeoutCertificate.class));
+        mock(Vertex.class),
+        null,
+        mock(ECDSASecp256k1Signature.class),
+        mock(TimeoutCertificate.class));
   }
 
   @Test(expected = NullPointerException.class)

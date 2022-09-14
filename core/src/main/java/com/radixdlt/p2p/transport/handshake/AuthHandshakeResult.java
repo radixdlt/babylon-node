@@ -64,7 +64,7 @@
 
 package com.radixdlt.p2p.transport.handshake;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
 import java.util.Optional;
@@ -73,7 +73,7 @@ import java.util.Set;
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public sealed interface AuthHandshakeResult {
   static AuthHandshakeSuccess success(
-      ECPublicKey remotePubKey,
+      ECDSASecp256k1PublicKey remotePubKey,
       Secrets secrets,
       Optional<String> newestForkName,
       Set<RemotePeerCapability> remotePeerCapabilities) {

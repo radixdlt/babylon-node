@@ -85,8 +85,8 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.harness.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.harness.simulation.application.BFTValidatorSetNodeSelector;
@@ -158,13 +158,13 @@ public final class SimulationTest {
   private final SimulationNetwork simulationNetwork;
   private final Module testModule;
   private final Module baseNodeModule;
-  private final ImmutableMultimap<ECPublicKey, Module> overrideModules;
+  private final ImmutableMultimap<ECDSASecp256k1PublicKey, Module> overrideModules;
 
   private SimulationTest(
       ImmutableList<ECKeyPair> initialNodes,
       SimulationNetwork simulationNetwork,
       Module baseNodeModule,
-      ImmutableMultimap<ECPublicKey, Module> overrideModules,
+      ImmutableMultimap<ECDSASecp256k1PublicKey, Module> overrideModules,
       Module testModule) {
     this.initialNodes = initialNodes;
     this.simulationNetwork = simulationNetwork;
@@ -181,10 +181,11 @@ public final class SimulationTest {
     private Module initialNodesModule;
     private final ImmutableList.Builder<Module> testModules = ImmutableList.builder();
     private final ImmutableList.Builder<Module> modules = ImmutableList.builder();
-    private final ImmutableMultimap.Builder<ECPublicKey, Module> overrideModules =
+    private final ImmutableMultimap.Builder<ECDSASecp256k1PublicKey, Module> overrideModules =
         ImmutableMultimap.builder();
     private Module networkModule;
-    private ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> addressBookNodes;
+    private ImmutableMap<ECDSASecp256k1PublicKey, ImmutableList<ECDSASecp256k1PublicKey>>
+        addressBookNodes;
 
     private List<BFTNode> bftNodes;
     private Function<Long, IntStream> epochToNodeIndexMapper;
@@ -192,7 +193,7 @@ public final class SimulationTest {
     private Builder() {}
 
     public Builder addOverrideModuleToInitialNodes(
-        Function<ImmutableList<ECKeyPair>, ImmutableList<ECPublicKey>> nodesSelector,
+        Function<ImmutableList<ECKeyPair>, ImmutableList<ECDSASecp256k1PublicKey>> nodesSelector,
         Function<List<BFTNode>, Module> overrideModule) {
       final var nodes = nodesSelector.apply(this.initialNodes);
       nodes.forEach(node -> overrideModules.put(node, overrideModule.apply(this.bftNodes)));
@@ -222,7 +223,9 @@ public final class SimulationTest {
      * address book for that node contains all other nodes.
      */
     public Builder addressBook(
-        Function<ImmutableList<ECKeyPair>, ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>>>
+        Function<
+                ImmutableList<ECKeyPair>,
+                ImmutableMap<ECDSASecp256k1PublicKey, ImmutableList<ECDSASecp256k1PublicKey>>>
             addressBookNodesFn) {
       this.addressBookNodes = addressBookNodesFn.apply(this.initialNodes);
       return this;

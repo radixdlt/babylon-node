@@ -94,7 +94,7 @@ import com.radixdlt.constraintmachine.SubstateIndex;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.constraintmachine.exceptions.VirtualParentStateDoesNotExist;
 import com.radixdlt.constraintmachine.exceptions.VirtualSubstateAlreadyDownException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.identifiers.TID;
@@ -643,7 +643,7 @@ public final class BerkeleyLedgerEntryStore
                               // 0: Type Byte
                               // 1: Reserved Byte
                               // 2-37: Account Address
-                              prefixIndexSize = 2 + (1 + ECPublicKey.COMPRESSED_BYTES);
+                              prefixIndexSize = 2 + (1 + ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
                             } else if (substateTypeId == SubstateTypeId.STAKE_OWNERSHIP.id()) {
                               // Indexing not necessary for verification at the moment but useful
                               // for construction
@@ -662,8 +662,8 @@ public final class BerkeleyLedgerEntryStore
                               // 37-69: Account Address
                               prefixIndexSize =
                                   2
-                                      + ECPublicKey.COMPRESSED_BYTES
-                                      + (1 + ECPublicKey.COMPRESSED_BYTES);
+                                      + ECDSASecp256k1PublicKey.COMPRESSED_BYTES
+                                      + (1 + ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
                             } else if (substateTypeId == SubstateTypeId.EXITING_STAKE.id()) {
                               // 0: Type Byte
                               // 1: Reserved Byte
@@ -673,8 +673,8 @@ public final class BerkeleyLedgerEntryStore
                               prefixIndexSize =
                                   2
                                       + Long.BYTES
-                                      + ECPublicKey.COMPRESSED_BYTES
-                                      + (1 + ECPublicKey.COMPRESSED_BYTES);
+                                      + ECDSASecp256k1PublicKey.COMPRESSED_BYTES
+                                      + (1 + ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
                             } else if (substateTypeId == SubstateTypeId.PREPARED_STAKE.id()) {
                               // 0: Type Byte
                               // 1: Reserved Byte
@@ -682,8 +682,8 @@ public final class BerkeleyLedgerEntryStore
                               // 37-69: Account Address
                               prefixIndexSize =
                                   2
-                                      + ECPublicKey.COMPRESSED_BYTES
-                                      + (1 + ECPublicKey.COMPRESSED_BYTES);
+                                      + ECDSASecp256k1PublicKey.COMPRESSED_BYTES
+                                      + (1 + ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
                             } else if (substateTypeId == SubstateTypeId.PREPARED_UNSTAKE.id()) {
                               // 0: Type Byte
                               // 1: Reserved Byte
@@ -691,15 +691,16 @@ public final class BerkeleyLedgerEntryStore
                               // 37-69: Account Address
                               prefixIndexSize =
                                   2
-                                      + ECPublicKey.COMPRESSED_BYTES
-                                      + (1 + ECPublicKey.COMPRESSED_BYTES);
+                                      + ECDSASecp256k1PublicKey.COMPRESSED_BYTES
+                                      + (1 + ECDSASecp256k1PublicKey.COMPRESSED_BYTES);
                             } else if (substateTypeId == SubstateTypeId.VALIDATOR_OWNER_COPY.id()) {
                               // 0: Type Byte
                               // 1: Reserved Byte
                               // 2: Optional flag
                               // 3-6: Epoch
                               // 7-41: Validator Key
-                              prefixIndexSize = 3 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES;
+                              prefixIndexSize =
+                                  3 + Long.BYTES + ECDSASecp256k1PublicKey.COMPRESSED_BYTES;
                             } else if (substateTypeId
                                 == SubstateTypeId.VALIDATOR_REGISTERED_FLAG_COPY.id()) {
                               // 0: Type Byte
@@ -707,21 +708,24 @@ public final class BerkeleyLedgerEntryStore
                               // 2: Optional flag
                               // 3-6: Epoch
                               // 7-41: Validator Key
-                              prefixIndexSize = 3 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES;
+                              prefixIndexSize =
+                                  3 + Long.BYTES + ECDSASecp256k1PublicKey.COMPRESSED_BYTES;
                             } else if (substateTypeId == SubstateTypeId.VALIDATOR_RAKE_COPY.id()) {
                               // 0: Type Byte
                               // 1: Reserved Byte
                               // 2: Optional flag
                               // 3-6: Epoch
                               // 7-41: Validator Key
-                              prefixIndexSize = 3 + Long.BYTES + ECPublicKey.COMPRESSED_BYTES;
+                              prefixIndexSize =
+                                  3 + Long.BYTES + ECDSASecp256k1PublicKey.COMPRESSED_BYTES;
                             } else if (substateTypeId == SubstateTypeId.VALIDATOR_STAKE_DATA.id()) {
                               // 0: Type Byte
                               // 1: Reserved Byte
                               // 2: Registered Byte
                               // 3-34: Stake amount
                               // 35-67: Validator key
-                              prefixIndexSize = 3 + UInt256.BYTES + ECPublicKey.COMPRESSED_BYTES;
+                              prefixIndexSize =
+                                  3 + UInt256.BYTES + ECDSASecp256k1PublicKey.COMPRESSED_BYTES;
                             } else {
                               // 0: Type Byte
                               prefixIndexSize = 1;

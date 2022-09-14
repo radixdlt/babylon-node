@@ -81,8 +81,8 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -103,7 +103,7 @@ public class MessageCentralValidatorSyncTest {
   @Before
   public void setUp() {
     this.self = mock(BFTNode.class);
-    ECPublicKey pubKey = mock(ECPublicKey.class);
+    ECDSASecp256k1PublicKey pubKey = mock(ECDSASecp256k1PublicKey.class);
     when(self.getKey()).thenReturn(pubKey);
     this.messageCentral = MessageCentralMockProvider.get();
     this.hasher = new RandomHasher();
@@ -117,7 +117,7 @@ public class MessageCentralValidatorSyncTest {
     ImmutableList<VertexWithHash> vertices = ImmutableList.of(vertex);
 
     BFTNode node = mock(BFTNode.class);
-    ECPublicKey ecPublicKey = mock(ECPublicKey.class);
+    ECDSASecp256k1PublicKey ecPublicKey = mock(ECDSASecp256k1PublicKey.class);
     when(node.getKey()).thenReturn(ecPublicKey);
 
     sync.verticesResponseDispatcher().dispatch(node, new GetVerticesResponse(vertices));
@@ -131,7 +131,7 @@ public class MessageCentralValidatorSyncTest {
     when(highQC.highestQC()).thenReturn(qc);
     when(highQC.highestCommittedQC()).thenReturn(qc);
     BFTNode node = mock(BFTNode.class);
-    ECPublicKey ecPublicKey = mock(ECPublicKey.class);
+    ECDSASecp256k1PublicKey ecPublicKey = mock(ECDSASecp256k1PublicKey.class);
     when(node.getKey()).thenReturn(ecPublicKey);
     final var request = new GetVerticesRequest(HashUtils.random256(), 3);
 
