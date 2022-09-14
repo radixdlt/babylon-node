@@ -1,6 +1,7 @@
 use crate::core_api::models::*;
 use crate::core_api::*;
 
+use radix_engine::types::hash;
 use scrypto::address::Bech32Encoder;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::NetworkDefinition;
@@ -9,6 +10,7 @@ use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::{QueryableProofStore, QueryableTransactionStore};
 use state_manager::LedgerTransactionReceipt;
 use std::cmp;
+use std::collections::HashMap;
 use transaction::manifest;
 use transaction::model::NotarizedTransaction as EngineNotarizedTransaction;
 
@@ -137,6 +139,12 @@ fn to_api_notarized_transaction(
                 }),
                 manifest: manifest::decompile(&intent.manifest, network)
                     .expect("Failed to decompile a transaction manifest"),
+                blobs: intent
+                    .manifest
+                    .blobs
+                    .into_iter()
+                    .map(|blob| (to_hex(hash(&blob)), to_hex(blob)))
+                    .collect::<HashMap<String, String>>(),
             }),
             intent_signatures: signed_intent
                 .intent_signatures

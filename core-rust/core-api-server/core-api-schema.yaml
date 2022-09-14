@@ -268,6 +268,7 @@ components:
         - hash
         - header
         - manifest
+        - blobs
       properties:
         hash:
           type: string
@@ -278,7 +279,13 @@ components:
           $ref: "#/components/schemas/TransactionHeader"
         manifest:
           type: string
-          description: The hex-encoded, SBOR-encoded transaction manifest.
+          description: The decompiled transaction manifest
+        blobs:
+          type: object
+          description: A map of the hex-encoded blob hash, to hex-encoded blob content
+          additionalProperties:
+            type: string
+            description: The hex-encoded blob content
     TransactionHeader:
       type: object
       required:
