@@ -105,7 +105,6 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ needs.build_deb.outputs.tags }}
           labels: ${{ needs.build_deb.outputs.labels }}
-
   trigger-ephemeral-deploy-and-test:
     name: Trigger ephemeral deploy and test
     needs:
@@ -116,7 +115,7 @@ jobs:
       - name: Get docker image tag
         run: |
           TAGS="${{ needs.build_deb.outputs.tags }}"
-          DOCKER_TAG=$(echo $TAGS |  awk 'NR==1{print $1}')
+          DOCKER_TAG=$(echo $TAGS |  awk 'NR==1{print $1}' |  cut -d':' -f2)
           echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
       - name: Deploy and test on ephemeral network
         uses: toptal/jenkins-job-trigger-action@master
@@ -127,6 +126,6 @@ jobs:
           job_name: "ephemeral-deployment-test/job/testing-ephemeral-deploy-test-destroy"
           job_params: |
             {
-              "nodeDockerTag": ${{ env.DOCKER_TAG }} 
+              "nodeDockerTag": "${{ env.DOCKER_TAG }}"
             }
           job_timeout: "3600"
