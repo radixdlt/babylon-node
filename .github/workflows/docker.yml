@@ -114,8 +114,9 @@ jobs:
     steps:
       - name: Get docker image tag
         run: |
+          #There can be multiple tag entries. Get the first and only take the tag (i.e. not the image repo and name)
           TAGS="${{ needs.build_deb.outputs.tags }}"
-          DOCKER_TAG=$(echo $TAGS |  awk 'NR==1{print $1}' |  cut -d':' -f2)
+          DOCKER_TAG=$(echo $TAGS | awk 'NR==1{print $1}' | cut -d':' -f2)
           echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
       - name: Deploy and test on ephemeral network
         uses: toptal/jenkins-job-trigger-action@master
