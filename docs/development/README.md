@@ -1,17 +1,17 @@
 ## Development Environment Setup
 
-- Java 17 SDK installed. If you have several versions installed, it is preferred to have Java 17 set as default version. 
-- more or less recent Linux or MacOS (Windows WSL2 may work, but not tested)
+- Java 17.0.4+ SDK installed and configured. It's very important to have at least 17.0.4, else you will hit Java Compiler bugs.
+- More or less recent Linux or MacOS (Windows WSL2 may work, but not tested)
 - git 2.27+
 - docker version 20.10+
 - docker-compose version 1.25+
 
-Two last prerequisites are necessary only if you plan to launch local network. 
+Two last prerequisites are necessary only if you plan to launch a local network through Docker.
 
 ### Getting code
 
-* If you intend to contribute, fork the main repository https://github.com/radixdlt/radixdlt into your account and then clone it locally.
-* Otherwise, just clone the main repo at https://github.com/radixdlt/radixdlt
+* If you intend to contribute, fork the main repository https://github.com/radixdlt/babylon-node into your account and then clone it locally.
+* Otherwise, just clone the main repo at https://github.com/radixdlt/babylon-node
 
 ### Building code
 Use following command to build binaries and run unit tests:
