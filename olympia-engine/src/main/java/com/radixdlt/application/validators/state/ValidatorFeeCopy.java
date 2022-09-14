@@ -66,18 +66,18 @@ package com.radixdlt.application.validators.state;
 
 import static com.radixdlt.application.validators.scrypt.ValidatorUpdateRakeConstraintScrypt.RAKE_MAX;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import java.util.Objects;
 import java.util.OptionalLong;
 
 public record ValidatorFeeCopy(
-    OptionalLong epochUpdate, ECPublicKey validatorKey, int curRakePercentage)
+    OptionalLong epochUpdate, ECDSASecp256k1PublicKey validatorKey, int curRakePercentage)
     implements ValidatorUpdatingData {
   public ValidatorFeeCopy {
     Objects.requireNonNull(validatorKey);
   }
 
-  public static ValidatorFeeCopy createVirtual(ECPublicKey validatorKey) {
+  public static ValidatorFeeCopy createVirtual(ECDSASecp256k1PublicKey validatorKey) {
     return new ValidatorFeeCopy(OptionalLong.empty(), validatorKey, RAKE_MAX);
   }
 }

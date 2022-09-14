@@ -65,7 +65,7 @@
 package com.radixdlt.application.tokens;
 
 import com.radixdlt.constraintmachine.Authorization;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 
 // TODO: these methods are really here for client api,
@@ -77,7 +77,7 @@ public interface Bucket {
 
   REAddr getOwner();
 
-  ECPublicKey getValidatorKey();
+  ECDSASecp256k1PublicKey getValidatorKey();
 
   Long getEpochUnlock();
 }

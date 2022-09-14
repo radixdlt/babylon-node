@@ -67,15 +67,15 @@ package com.radixdlt.application.tokens.state;
 import com.radixdlt.application.tokens.Bucket;
 import com.radixdlt.constraintmachine.Authorization;
 import com.radixdlt.constraintmachine.PermissionLevel;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import java.util.Objects;
 
 public final class PreparedStakeBucket implements Bucket {
   private final REAddr owner;
-  private final ECPublicKey delegateKey;
+  private final ECDSASecp256k1PublicKey delegateKey;
 
-  public PreparedStakeBucket(REAddr owner, ECPublicKey delegateKey) {
+  public PreparedStakeBucket(REAddr owner, ECDSASecp256k1PublicKey delegateKey) {
     this.owner = owner;
     this.delegateKey = delegateKey;
   }
@@ -96,7 +96,7 @@ public final class PreparedStakeBucket implements Bucket {
   }
 
   @Override
-  public ECPublicKey getValidatorKey() {
+  public ECDSASecp256k1PublicKey getValidatorKey() {
     return delegateKey;
   }
 

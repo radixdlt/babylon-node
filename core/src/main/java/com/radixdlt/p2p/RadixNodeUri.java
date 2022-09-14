@@ -69,7 +69,7 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DeserializeException;
 import java.net.URI;
@@ -90,7 +90,7 @@ public final class RadixNodeUri {
   }
 
   public static RadixNodeUri fromPubKeyAndAddress(
-      int networkId, ECPublicKey publicKey, String host, int port) {
+      int networkId, ECDSASecp256k1PublicKey publicKey, String host, int port) {
     var hrp = Network.ofIdOrThrow(networkId).getNodeHrp();
     return new RadixNodeUri(host, port, hrp, NodeId.fromPublicKey(publicKey));
   }

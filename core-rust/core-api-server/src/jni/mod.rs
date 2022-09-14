@@ -62,8 +62,7 @@
  * permissions under this License.
  */
 
-use crate::core_api::server;
-use crate::core_api::server::CoreApiServerConfig;
+use crate::core_api::{create_server, CoreApiServerConfig};
 use futures::channel::oneshot;
 use futures::channel::oneshot::Sender;
 use futures::FutureExt;
@@ -136,7 +135,7 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
 
     let bind_addr = format!("{}:{}", config.bind_interface, config.port);
     tokio_runtime.spawn(async move {
-        server::create(
+        create_server(
             &bind_addr,
             shutdown_signal_receiver.map(|_| ()),
             state_manager,

@@ -71,7 +71,7 @@ import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.constraintmachine.REOp;
 import com.radixdlt.constraintmachine.SubstateDeserialization;
 import com.radixdlt.constraintmachine.exceptions.CallDataAccessException;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
@@ -179,7 +179,7 @@ public final class REParser {
 
   public ParsedTxn parse(RawTransaction transaction) throws TxnParseException {
     UInt256 feePaid = null;
-    ECDSASignature sig = null;
+    ECDSASecp256k1Signature sig = null;
     int sigPosition = 0;
     var parserState = new ParserState(transaction);
 

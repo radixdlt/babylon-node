@@ -64,12 +64,12 @@
 
 package com.radixdlt.application.validators.state;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 
-public record AllowDelegationFlag(ECPublicKey validatorKey, boolean allowsDelegation)
+public record AllowDelegationFlag(ECDSASecp256k1PublicKey validatorKey, boolean allowsDelegation)
     implements ValidatorData {
 
-  public static AllowDelegationFlag createVirtual(ECPublicKey validatorKey) {
+  public static AllowDelegationFlag createVirtual(ECDSASecp256k1PublicKey validatorKey) {
     return new AllowDelegationFlag(validatorKey, false);
   }
 }

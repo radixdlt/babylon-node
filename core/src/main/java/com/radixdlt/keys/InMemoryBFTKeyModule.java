@@ -69,8 +69,8 @@ import com.google.inject.Provides;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -94,7 +94,7 @@ public final class InMemoryBFTKeyModule extends AbstractModule {
 
   @Provides
   @Self
-  ECPublicKey publicKey() {
+  ECDSASecp256k1PublicKey publicKey() {
     return keyPair.getPublicKey();
   }
 
@@ -106,7 +106,7 @@ public final class InMemoryBFTKeyModule extends AbstractModule {
 
   @Provides
   @Self
-  String name(Function<ECPublicKey, String> nodeToString) {
+  String name(Function<ECDSASecp256k1PublicKey, String> nodeToString) {
     return nodeToString.apply(keyPair.getPublicKey());
   }
 }

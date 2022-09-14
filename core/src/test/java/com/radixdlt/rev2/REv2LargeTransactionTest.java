@@ -116,9 +116,10 @@ public final class REv2LargeTransactionTest {
                         REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))));
   }
 
-  private static RawTransaction create1MBTransaction() {
+  private static RawTransaction create100KBTransaction() {
     var intentBytes =
-        TransactionBuilder.build1MBIntent(NETWORK_DEFINITION, TEST_KEY.getPublicKey());
+        TransactionBuilder.build100KBIntent(
+            NETWORK_DEFINITION, TEST_KEY.getPublicKey().toPublicKey());
     return REv2TestTransactions.constructTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
   }
 
@@ -126,7 +127,7 @@ public final class REv2LargeTransactionTest {
   public void large_transaction_should_be_committable() throws Exception {
     try (var test = createTest()) {
       // Arrange: Start single node network
-      var newAccountTransaction = create1MBTransaction();
+      var newAccountTransaction = create100KBTransaction();
 
       // Act: Submit transaction to mempool and run consensus
       test.startAllNodes();

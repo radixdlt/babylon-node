@@ -72,10 +72,11 @@ use crate::store::{InMemoryStore, QueryableProofStore, QueryableTransactionStore
 
 use std::collections::HashMap;
 use std::path::PathBuf;
+use radix_engine::constants::GENESIS_CREATION_CREDIT;
 
 use crate::types::{TId, Transaction};
 use radix_engine::engine::{Substate, Track};
-use radix_engine::fee::UnlimitedLoanFeeReserve;
+use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::{
     execute_genesis, OutputValue, QueryableSubstateStore, ReadableSubstateStore,
     WriteableSubstateStore,
@@ -130,7 +131,9 @@ impl StateManagerDatabase {
             && state_manager_db.max_state_version() == 0
         {
             let mut db_txn = state_manager_db.create_db_transaction();
-            let track = Track::new(&db_txn, UnlimitedLoanFeeReserve::default());
+            let mut fee_reserve = SystemLoanFeeReserve::default();
+            fee_reserve.credit(GENESIS_CREATION_CREDIT);
+            let track = Track::new(&db_txn, fee_reserve, FeeTable::new());
             let track_receipt = execute_genesis(track);
             let commit_result = match track_receipt.result {
                 TransactionResult::Commit(result) => result,

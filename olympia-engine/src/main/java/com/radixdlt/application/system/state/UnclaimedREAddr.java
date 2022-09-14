@@ -68,13 +68,14 @@ import static com.radixdlt.identifiers.REAddr.HASHED_KEY_BYTES;
 
 import com.radixdlt.constraintmachine.RawSubstate;
 import com.radixdlt.constraintmachine.exceptions.InvalidHashedKeyException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import java.util.Arrays;
 
 public record UnclaimedREAddr(REAddr addr) implements RawSubstate {
 
-  public void verifyHashedKey(ECPublicKey publicKey, byte[] arg) throws InvalidHashedKeyException {
+  public void verifyHashedKey(ECDSASecp256k1PublicKey publicKey, byte[] arg)
+      throws InvalidHashedKeyException {
     if (addr.getType() != REAddr.REAddrType.HASHED_KEY) {
       throw new InvalidHashedKeyException(
           "Expected address to be " + REAddr.REAddrType.HASHED_KEY + " but was " + addr.getType());

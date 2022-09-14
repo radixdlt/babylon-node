@@ -1,7 +1,6 @@
 # Radix Babylon Node - Java
 
-This is the monorepo for consensus, execution, and networking for the [Radix DLT](https://www.radixdlt.com)
-Distributed Ledger.
+This is the monorepo for consensus, execution, and networking for the [Radix DLT](https://www.radixdlt.com) Distributed Ledger.
 
 It includes a variant implementation of the [HotStuff](https://arxiv.org/abs/1803.05069) BFT-style consensus.
 

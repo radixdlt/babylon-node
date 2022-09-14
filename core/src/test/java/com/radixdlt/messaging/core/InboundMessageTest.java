@@ -67,8 +67,8 @@ package com.radixdlt.messaging.core;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.p2p.NodeId;
 import org.junit.Before;
 import org.junit.Test;
@@ -96,7 +96,7 @@ public class InboundMessageTest {
 
   @Test
   public void equalsMethodWorksCorrectly() {
-    ECPublicKey publicKey = ECKeyPair.generateNew().getPublicKey();
+    ECDSASecp256k1PublicKey publicKey = ECKeyPair.generateNew().getPublicKey();
     var inboundMessage1 =
         new InboundMessage(1L, NodeId.fromPublicKey(publicKey), new byte[] {1, 2, 3});
 
@@ -108,7 +108,7 @@ public class InboundMessageTest {
 
   @Test
   public void hashcodeMethodWorksCorrectly() {
-    ECPublicKey publicKey = ECKeyPair.generateNew().getPublicKey();
+    ECDSASecp256k1PublicKey publicKey = ECKeyPair.generateNew().getPublicKey();
     var inboundMessage1 =
         new InboundMessage(1L, NodeId.fromPublicKey(publicKey), new byte[] {1, 2, 3});
 

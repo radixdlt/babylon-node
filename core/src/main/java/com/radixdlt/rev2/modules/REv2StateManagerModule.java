@@ -85,6 +85,7 @@ import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
+import com.radixdlt.statemanager.LoggingConfig;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.statemanager.StateManagerConfig;
@@ -97,26 +98,32 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final REv2DatabaseConfig databaseConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean testing;
+  private final boolean debugLogging;
 
   private REv2StateManagerModule(
       int networkId,
       boolean prefixDatabase,
       REv2DatabaseConfig databaseConfig,
-      Option<RustMempoolConfig> mempoolConfig) {
+      Option<RustMempoolConfig> mempoolConfig,
+      boolean debugLogging) {
     this.networkId = networkId;
     this.testing = prefixDatabase;
     this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
+    this.debugLogging = debugLogging;
   }
 
   public static REv2StateManagerModule create(
       int networkId, REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig) {
-    return new REv2StateManagerModule(networkId, false, databaseConfig, mempoolConfig);
+    return new REv2StateManagerModule(networkId, false, databaseConfig, mempoolConfig, false);
   }
 
   public static REv2StateManagerModule createForTesting(
-      int networkId, REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig) {
-    return new REv2StateManagerModule(networkId, true, databaseConfig, mempoolConfig);
+      int networkId,
+      REv2DatabaseConfig databaseConfig,
+      Option<RustMempoolConfig> mempoolConfig,
+      boolean debugLogging) {
+    return new REv2StateManagerModule(networkId, true, databaseConfig, mempoolConfig, debugLogging);
   }
 
   @Override
@@ -133,7 +140,10 @@ public final class REv2StateManagerModule extends AbstractModule {
               databaseConfigToUse = REv2DatabaseConfig.rocksDB(databasePath);
               return StateManager.createAndInitialize(
                   new StateManagerConfig(
-                      NetworkDefinition.from(network), mempoolConfig, databaseConfigToUse));
+                      NetworkDefinition.from(network),
+                      mempoolConfig,
+                      databaseConfigToUse,
+                      getLoggingConfig()));
             }
           });
     } else {
@@ -145,7 +155,10 @@ public final class REv2StateManagerModule extends AbstractModule {
               var network = Network.ofId(networkId).orElseThrow();
               return StateManager.createAndInitialize(
                   new StateManagerConfig(
-                      NetworkDefinition.from(network), mempoolConfig, databaseConfig));
+                      NetworkDefinition.from(network),
+                      mempoolConfig,
+                      databaseConfig,
+                      getLoggingConfig()));
             }
           });
     }
@@ -174,7 +187,7 @@ public final class REv2StateManagerModule extends AbstractModule {
             }
 
             @Provides
-            private PersistentVertexStore stateReader(
+            private PersistentVertexStore vertexStore(
                 RustStateComputer stateComputer,
                 SystemCounters systemCounters,
                 Serialization serialization) {
@@ -188,14 +201,14 @@ public final class REv2StateManagerModule extends AbstractModule {
 
             @ProvidesIntoSet
             @ProcessOnDispatch
-            public EventProcessor<BFTHighQCUpdate> persistQC(
+            public EventProcessor<BFTHighQCUpdate> onQCUpdatePersistVertexStore(
                 PersistentVertexStore persistentVertexStore) {
               return update -> persistentVertexStore.save(update.getVertexStoreState());
             }
 
             @ProvidesIntoSet
             @ProcessOnDispatch
-            public EventProcessor<BFTInsertUpdate> persistUpdates(
+            public EventProcessor<BFTInsertUpdate> onInsertUpdatePersistVertexStore(
                 PersistentVertexStore persistentVertexStore) {
               return update -> persistentVertexStore.save(update.getVertexStoreState());
             }
@@ -222,6 +235,10 @@ public final class REv2StateManagerModule extends AbstractModule {
   @ProvidesIntoSet
   NodeAutoCloseable closeable(StateManager stateManager) {
     return stateManager::shutdown;
+  }
+
+  public LoggingConfig getLoggingConfig() {
+    return debugLogging ? LoggingConfig.getDebug() : LoggingConfig.getDefault();
   }
 
   @Provides

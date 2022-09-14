@@ -64,8 +64,8 @@
 
 package com.radixdlt.substate;
 
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
@@ -88,7 +88,7 @@ public final class REFieldSerialization {
     throw new IllegalStateException("Cannot instantiate.");
   }
 
-  public static byte[] serializeSignature(ECDSASignature signature) {
+  public static byte[] serializeSignature(ECDSASecp256k1Signature signature) {
     var buf = ByteBuffer.allocate(32 * 2 + 1);
     buf.put(signature.getV());
     var rArray = signature.getR().toByteArray();
@@ -101,7 +101,8 @@ public final class REFieldSerialization {
     return buf.array();
   }
 
-  public static ECDSASignature deserializeSignature(ByteBuffer buf) throws DeserializeException {
+  public static ECDSASecp256k1Signature deserializeSignature(ByteBuffer buf)
+      throws DeserializeException {
     var v = buf.get();
     if (v < 0 || v > 3) {
       throw new DeserializeException("Invalid V byte " + v);
@@ -110,7 +111,7 @@ public final class REFieldSerialization {
     buf.get(rArray);
     var sArray = new byte[32];
     buf.get(sArray);
-    return ECDSASignature.deserialize(rArray, sArray, v);
+    return ECDSASecp256k1Signature.deserialize(rArray, sArray, v);
   }
 
   public static void serializeBoolean(ByteBuffer buf, boolean bool) {
@@ -125,7 +126,7 @@ public final class REFieldSerialization {
     return flag == 1;
   }
 
-  public static void serializeOptionalKey(ByteBuffer buf, Optional<ECPublicKey> addr) {
+  public static void serializeOptionalKey(ByteBuffer buf, Optional<ECDSASecp256k1PublicKey> addr) {
     addr.ifPresentOrElse(
         o -> {
           buf.put((byte) 0x1);
@@ -133,15 +134,15 @@ public final class REFieldSerialization {
         },
         () -> {
           buf.put((byte) 0x0);
-          buf.put(new byte[ECPublicKey.COMPRESSED_BYTES]);
+          buf.put(new byte[ECDSASecp256k1PublicKey.COMPRESSED_BYTES]);
         });
   }
 
-  public static Optional<ECPublicKey> deserializeOptionalKey(ByteBuffer buf)
+  public static Optional<ECDSASecp256k1PublicKey> deserializeOptionalKey(ByteBuffer buf)
       throws DeserializeException {
     var type = buf.get();
     if (type == 0) {
-      for (int i = 0; i < ECPublicKey.COMPRESSED_BYTES; i++) {
+      for (int i = 0; i < ECDSASecp256k1PublicKey.COMPRESSED_BYTES; i++) {
         if (buf.get() != 0) {
           throw new DeserializeException("Empty key must have 0 value.");
         }
@@ -268,15 +269,15 @@ public final class REFieldSerialization {
     return uint256;
   }
 
-  public static void serializeKey(ByteBuffer buf, ECPublicKey key) {
+  public static void serializeKey(ByteBuffer buf, ECDSASecp256k1PublicKey key) {
     buf.put(key.getCompressedBytes()); // address
   }
 
-  public static ECPublicKey deserializeKey(ByteBuffer buf) throws DeserializeException {
+  public static ECDSASecp256k1PublicKey deserializeKey(ByteBuffer buf) throws DeserializeException {
     try {
       var keyBytes = new byte[33];
       buf.get(keyBytes);
-      return ECPublicKey.fromBytes(keyBytes);
+      return ECDSASecp256k1PublicKey.fromBytes(keyBytes);
     } catch (PublicKeyException | IllegalArgumentException e) {
       throw new DeserializeException("Could not deserialize key");
     }

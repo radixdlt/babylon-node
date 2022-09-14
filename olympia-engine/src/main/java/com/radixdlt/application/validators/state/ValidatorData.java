@@ -65,8 +65,8 @@
 package com.radixdlt.application.validators.state;
 
 import com.radixdlt.constraintmachine.RawSubstate;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 
 public interface ValidatorData extends RawSubstate {
-  ECPublicKey validatorKey();
+  ECDSASecp256k1PublicKey validatorKey();
 }

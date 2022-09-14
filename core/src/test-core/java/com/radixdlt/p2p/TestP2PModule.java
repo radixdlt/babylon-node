@@ -71,7 +71,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
 import java.util.List;
 
@@ -106,7 +106,8 @@ public class TestP2PModule extends AbstractModule {
   }
 
   public static class Builder {
-    private ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNode;
+    private ImmutableMap<ECDSASecp256k1PublicKey, ImmutableList<ECDSASecp256k1PublicKey>>
+        peersByNode;
     private List<BFTNode> allNodes;
     private PeerControl peerControl;
 
@@ -115,7 +116,7 @@ public class TestP2PModule extends AbstractModule {
     }
 
     public Builder withPeersByNode(
-        ImmutableMap<ECPublicKey, ImmutableList<ECPublicKey>> peersByNode) {
+        ImmutableMap<ECDSASecp256k1PublicKey, ImmutableList<ECDSASecp256k1PublicKey>> peersByNode) {
       this.peersByNode = peersByNode;
       return this;
     }

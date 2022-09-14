@@ -64,12 +64,15 @@
 
 package com.radixdlt.addressing;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.exceptions.Bech32DecodeException;
 import com.radixdlt.identifiers.Bech32mCoder;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.PackageAddress;
+import com.radixdlt.rev2.ResourceAddress;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.utils.Pair;
 
@@ -85,8 +88,30 @@ public final class Addressing {
     return new Addressing(network);
   }
 
+  public static Addressing ofNetwork(NetworkDefinition networkDefinition) {
+    return new Addressing(networkDefinition.toNetwork());
+  }
+
   public static Addressing ofNetworkId(int networkId) {
     return ofNetwork(Network.ofIdOrThrow(networkId));
+  }
+
+  public String encodePackageAddress(PackageAddress packageAddress) {
+    return Bech32mCoder.encode(network.getPackageHrp(), packageAddress.value());
+  }
+
+  public PackageAddress decodePackageAddress(String address) {
+    return PackageAddress.create(
+        Bech32mCoder.decodeWithExpectedHrp(network.getPackageHrp(), address));
+  }
+
+  public String encodeResourceAddress(ResourceAddress resourceAddress) {
+    return Bech32mCoder.encode(network.getResourceHrp(), resourceAddress.value());
+  }
+
+  public ResourceAddress decodeResourceAddress(String address) {
+    return ResourceAddress.create(
+        Bech32mCoder.decodeWithExpectedHrp(network.getResourceHrp(), address));
   }
 
   public String encodeNormalComponentAddress(ComponentAddress componentAddress) {
@@ -122,28 +147,29 @@ public final class Addressing {
         Bech32mCoder.decodeWithExpectedHrp(network.getSystemComponentHrp(), address));
   }
 
-  public String encodeNodeAddress(ECPublicKey publicKey) {
+  public String encodeNodeAddress(ECDSASecp256k1PublicKey publicKey) {
     return Bech32mCoder.encode(network.getNodeHrp(), publicKey.getCompressedBytes());
   }
 
-  public ECPublicKey decodeNodeAddress(String address) throws DeserializeException {
+  public ECDSASecp256k1PublicKey decodeNodeAddress(String address) throws DeserializeException {
     try {
       var pubKeyBytes = Bech32mCoder.decodeWithExpectedHrp(network.getNodeHrp(), address);
-      return ECPublicKey.fromBytes(pubKeyBytes);
+      return ECDSASecp256k1PublicKey.fromBytes(pubKeyBytes);
     } catch (Bech32DecodeException | PublicKeyException e) {
       throw new DeserializeException("Invalid address", e);
     }
   }
 
-  public static String encodeNodeAddressWithHrp(String hrp, ECPublicKey publicKey) {
+  public static String encodeNodeAddressWithHrp(String hrp, ECDSASecp256k1PublicKey publicKey) {
     return Bech32mCoder.encode(hrp, publicKey.getCompressedBytes());
   }
 
-  public static Pair<String, ECPublicKey> decodeNodeAddressUnknownHrp(String address)
+  public static Pair<String, ECDSASecp256k1PublicKey> decodeNodeAddressUnknownHrp(String address)
       throws DeserializeException {
     try {
       var hrpAndPubKeyBytes = Bech32mCoder.decode(address);
-      return Pair.of(hrpAndPubKeyBytes.first(), ECPublicKey.fromBytes(hrpAndPubKeyBytes.last()));
+      return Pair.of(
+          hrpAndPubKeyBytes.first(), ECDSASecp256k1PublicKey.fromBytes(hrpAndPubKeyBytes.last()));
     } catch (Bech32DecodeException | PublicKeyException e) {
       throw new DeserializeException("Invalid address", e);
     }

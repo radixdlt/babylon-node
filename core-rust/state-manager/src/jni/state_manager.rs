@@ -66,7 +66,7 @@ use crate::jni::dtos::*;
 use crate::jni::utils::*;
 use crate::mempool::simple::SimpleMempool;
 use crate::mempool::MempoolConfig;
-use crate::state_manager::StateManager;
+use crate::state_manager::{LoggingConfig, StateManager};
 use crate::store::{DatabaseConfig, StateManagerDatabase};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
@@ -102,6 +102,7 @@ pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,
     pub mempool_config: Option<MempoolConfig>,
     pub db_config: DatabaseConfig,
+    pub logging_config: LoggingConfig,
 }
 
 pub type ActualStateManager = StateManager<SimpleMempool, StateManagerDatabase>;
@@ -134,6 +135,7 @@ impl JNIStateManager {
             config.network_definition,
             mempool,
             store,
+            config.logging_config,
         )));
 
         let jni_state_manager = JNIStateManager { state_manager };

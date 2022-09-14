@@ -79,7 +79,7 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -143,7 +143,7 @@ public class DifferentTimestampsCauseTimeoutTest {
                   @Override
                   protected void configure() {
                     bind(HashVerifier.class).toInstance((pubKey, hash, sig) -> true);
-                    bind(HashSigner.class).toInstance(h -> ECDSASignature.zeroSignature());
+                    bind(HashSigner.class).toInstance(h -> ECDSASecp256k1Signature.zeroSignature());
                   }
                 })
             .numNodes(numValidatorNodes, 0)
@@ -228,7 +228,7 @@ public class DifferentTimestampsCauseTimeoutTest {
   private Proposal mutateProposal(Proposal p, int destination) {
     QuorumCertificate committedQC = p.highQC().highestCommittedQC();
     Vertex vertex = p.getVertex();
-    ECDSASignature signature = p.getSignature();
+    ECDSASecp256k1Signature signature = p.getSignature();
 
     return new Proposal(
         mutateVertex(vertex, destination), committedQC, signature, Optional.empty());
@@ -262,7 +262,7 @@ public class DifferentTimestampsCauseTimeoutTest {
   private TimestampedECDSASignature mutateTimestampedSignature(
       TimestampedECDSASignature signature, int destination) {
     long timestamp = signature.timestamp();
-    ECDSASignature sig = signature.signature();
+    ECDSASecp256k1Signature sig = signature.signature();
 
     return TimestampedECDSASignature.from(timestamp + destination, sig);
   }

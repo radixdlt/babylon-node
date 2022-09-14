@@ -75,7 +75,7 @@ import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.VoteProcessingResult;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected.VoteRejectedReason;
 import com.radixdlt.consensus.liveness.VoteTimeout;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import java.util.Map;
@@ -154,7 +154,7 @@ public final class PendingVotes {
       return Optional.empty(); // TC can't be formed if vote is not timed out
     }
 
-    final ECDSASignature timeoutSignature = vote.getTimeoutSignature().orElseThrow();
+    final ECDSASecp256k1Signature timeoutSignature = vote.getTimeoutSignature().orElseThrow();
 
     final VoteTimeout voteTimeout = VoteTimeout.of(vote);
     final HashCode voteTimeoutHash = this.hasher.hashDsonEncoded(voteTimeout);

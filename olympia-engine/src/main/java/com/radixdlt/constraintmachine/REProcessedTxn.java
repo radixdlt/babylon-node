@@ -66,7 +66,7 @@ package com.radixdlt.constraintmachine;
 
 import com.radixdlt.application.system.state.EpochData;
 import com.radixdlt.application.system.state.RoundData;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.substate.SubstateId;
 import com.radixdlt.transactions.RawTransaction;
@@ -80,12 +80,12 @@ import java.util.stream.Stream;
 public final class REProcessedTxn {
   private final List<List<REStateUpdate>> stateUpdates;
   private final ParsedTxn parsedTxn;
-  private final ECPublicKey signedByKey;
+  private final ECDSASecp256k1PublicKey signedByKey;
   private final List<REEvent> events;
 
   public REProcessedTxn(
       ParsedTxn parsedTxn,
-      ECPublicKey signedByKey,
+      ECDSASecp256k1PublicKey signedByKey,
       List<List<REStateUpdate>> stateUpdates,
       List<REEvent> events) {
     this.parsedTxn = parsedTxn;
@@ -110,7 +110,7 @@ public final class REProcessedTxn {
     return parsedTxn.getMsg();
   }
 
-  public Optional<ECPublicKey> getSignedBy() {
+  public Optional<ECDSASecp256k1PublicKey> getSignedBy() {
     return Optional.ofNullable(signedByKey);
   }
 

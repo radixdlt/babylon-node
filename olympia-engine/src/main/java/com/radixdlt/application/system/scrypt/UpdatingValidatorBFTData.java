@@ -69,16 +69,18 @@ import com.radixdlt.constraintmachine.ExecutionContext;
 import com.radixdlt.constraintmachine.REEvent;
 import com.radixdlt.constraintmachine.ReducerState;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import java.util.TreeMap;
 
 public class UpdatingValidatorBFTData implements ReducerState {
   private final long maxRounds;
-  private final TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate;
+  private final TreeMap<ECDSASecp256k1PublicKey, ValidatorBFTData> validatorsToUpdate;
   private long expectedNextRound;
 
   UpdatingValidatorBFTData(
-      long maxRounds, long round, TreeMap<ECPublicKey, ValidatorBFTData> validatorsToUpdate) {
+      long maxRounds,
+      long round,
+      TreeMap<ECDSASecp256k1PublicKey, ValidatorBFTData> validatorsToUpdate) {
     this.maxRounds = maxRounds;
     this.expectedNextRound = round;
     this.validatorsToUpdate = validatorsToUpdate;

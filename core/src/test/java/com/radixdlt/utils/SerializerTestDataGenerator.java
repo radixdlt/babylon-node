@@ -82,7 +82,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.transactions.RawTransaction;
@@ -118,7 +118,7 @@ public class SerializerTestDataGenerator {
     var txn = RawTransaction.create(new byte[] {0, 1, 2, 3});
     var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
     var vertex = Vertex.create(qc, randomRound(), List.of(txn), author);
-    return new Proposal(vertex, qc, ECDSASignature.zeroSignature(), Optional.empty());
+    return new Proposal(vertex, qc, ECDSASecp256k1Signature.zeroSignature(), Optional.empty());
   }
 
   public static VoteData randomVoteData() {
@@ -152,8 +152,8 @@ public class SerializerTestDataGenerator {
     return TimestampedECDSASignature.from(Math.abs(random.nextLong()), randomECDSASignature());
   }
 
-  public static ECDSASignature randomECDSASignature() {
-    return ECDSASignature.create(
+  public static ECDSASecp256k1Signature randomECDSASignature() {
+    return ECDSASecp256k1Signature.create(
         BigInteger.valueOf(Math.abs(random.nextLong())),
         BigInteger.valueOf(Math.abs(random.nextLong())),
         (random.nextInt() & 1));

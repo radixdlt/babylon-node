@@ -66,7 +66,7 @@ package com.radixdlt.rev1;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.utils.UInt256;
 import java.util.Map;
 import java.util.Objects;
@@ -74,9 +74,9 @@ import java.util.stream.Stream;
 
 /** Wrapper class for amount staked per node */
 public final class Rewards {
-  private final ImmutableMap<ECPublicKey, UInt256> stakedAmounts;
+  private final ImmutableMap<ECDSASecp256k1PublicKey, UInt256> stakedAmounts;
 
-  private Rewards(ImmutableMap<ECPublicKey, UInt256> stakedAmounts) {
+  private Rewards(ImmutableMap<ECDSASecp256k1PublicKey, UInt256> stakedAmounts) {
     this.stakedAmounts = stakedAmounts;
   }
 
@@ -84,11 +84,11 @@ public final class Rewards {
     return new Rewards(ImmutableMap.of());
   }
 
-  public ImmutableMap<ECPublicKey, UInt256> toMap() {
+  public ImmutableMap<ECDSASecp256k1PublicKey, UInt256> toMap() {
     return stakedAmounts;
   }
 
-  public Rewards add(ECPublicKey delegatedKey, UInt256 amount) {
+  public Rewards add(ECDSASecp256k1PublicKey delegatedKey, UInt256 amount) {
     if (amount.isZero()) {
       return this;
     }
@@ -104,7 +104,7 @@ public final class Rewards {
     return new Rewards(nextStakedAmounts);
   }
 
-  public Rewards remove(ECPublicKey delegatedKey, UInt256 amount) {
+  public Rewards remove(ECDSASecp256k1PublicKey delegatedKey, UInt256 amount) {
     if (!this.stakedAmounts.containsKey(delegatedKey)) {
       throw new IllegalStateException("Removing stake which doesn't exist.");
     }

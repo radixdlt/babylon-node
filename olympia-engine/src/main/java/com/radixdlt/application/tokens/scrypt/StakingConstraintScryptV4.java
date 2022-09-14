@@ -87,7 +87,7 @@ import com.radixdlt.constraintmachine.exceptions.MinimumStakeException;
 import com.radixdlt.constraintmachine.exceptions.MismatchException;
 import com.radixdlt.constraintmachine.exceptions.NotEnoughResourcesException;
 import com.radixdlt.constraintmachine.exceptions.ProcedureException;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.substate.REFieldSerialization;
 import com.radixdlt.substate.SubstateTypeId;
@@ -164,12 +164,12 @@ public final class StakingConstraintScryptV4 implements ConstraintScrypt {
 
   private final class StakePrepare implements ReducerState {
     private final TokenHoldingBucket tokenHoldingBucket;
-    private final ECPublicKey validatorKey;
+    private final ECDSASecp256k1PublicKey validatorKey;
     private final Predicate<REAddr> delegateAllowed;
 
     StakePrepare(
         TokenHoldingBucket tokenHoldingBucket,
-        ECPublicKey validatorKey,
+        ECDSASecp256k1PublicKey validatorKey,
         Predicate<REAddr> delegateAllowed) {
       this.tokenHoldingBucket = tokenHoldingBucket;
       this.validatorKey = validatorKey;

@@ -64,25 +64,25 @@
 
 package com.radixdlt.rev1.checkpoint;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 
 /** An initial issuance of tokens to the specified key. */
 public final class TokenIssuance {
-  private final ECPublicKey receiver;
+  private final ECDSASecp256k1PublicKey receiver;
   private final UInt256 amount;
 
-  private TokenIssuance(ECPublicKey receiver, UInt256 amount) {
+  private TokenIssuance(ECDSASecp256k1PublicKey receiver, UInt256 amount) {
     this.receiver = Objects.requireNonNull(receiver);
     this.amount = Objects.requireNonNull(amount);
   }
 
-  public static TokenIssuance of(ECPublicKey receiver, UInt256 amount) {
+  public static TokenIssuance of(ECDSASecp256k1PublicKey receiver, UInt256 amount) {
     return new TokenIssuance(receiver, amount);
   }
 
-  public ECPublicKey receiver() {
+  public ECDSASecp256k1PublicKey receiver() {
     return this.receiver;
   }
 
