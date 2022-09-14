@@ -105,6 +105,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ needs.build_deb.outputs.tags }}
           labels: ${{ needs.build_deb.outputs.labels }}
+
   trigger-ephemeral-deploy-and-test:
     name: Trigger ephemeral deploy and test
     needs:
@@ -129,4 +130,3 @@ jobs:
               "nodeDockerTag": ${{ env.DOCKER_TAG }} 
             }
           job_timeout: "3600"
-
