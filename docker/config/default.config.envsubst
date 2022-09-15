@@ -19,5 +19,8 @@ api.core.bind_address=$RADIXDLT_CORE_API_BIND_ADDRESS
 api.system.port=$RADIXDLT_SYSTEM_API_PORT
 api.system.bind_address=$RADIXDLT_SYSTEM_API_BIND_ADDRESS
 
+api.prometheus.port=$RADIXDLT_PROMETHEUS_API_PORT
+api.prometheus.bind_address=$RADIXDLT_PROMETHEUS_API_BIND_ADDRESS
+
 testing_forks.enable=$RADIXDLT_TESTING_FORKS_ENABLE
 testing_forks.fork_config_name=$RADIXDLT_TESTING_FORK_CONFIG_NAME

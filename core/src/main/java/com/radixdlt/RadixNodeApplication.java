@@ -70,6 +70,8 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.api.CoreApiServer;
+import com.radixdlt.api.prometheus.PrometheusApi;
+import com.radixdlt.api.system.SystemApi;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
@@ -81,7 +83,6 @@ import com.radixdlt.store.BerkeleyAddressBookStore;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import io.undertow.Undertow;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -223,8 +224,12 @@ public final class RadixNodeApplication {
     }
 
     // Start the system API server
-    final var undertow = injector.getInstance(Undertow.class);
-    undertow.start();
+    final var systemApi = injector.getInstance(SystemApi.class);
+    systemApi.start();
+
+    // Start the prometheus API server
+    final var prometheusApi = injector.getInstance(PrometheusApi.class);
+    prometheusApi.start();
 
     // Start the core API server
     final var coreApiServer = injector.getInstance(CoreApiServer.class);

@@ -64,65 +64,18 @@
 
 package com.radixdlt.api.system;
 
-import static java.lang.annotation.ElementType.*;
-
-import com.google.inject.*;
-import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.api.common.ApiBase;
 import com.radixdlt.api.common.HandlerRoute;
-import com.radixdlt.api.system.health.HealthInfoService;
-import com.radixdlt.api.system.health.ScheduledStatsCollecting;
-import com.radixdlt.api.system.routes.*;
-import com.radixdlt.environment.EventProcessorOnRunner;
-import com.radixdlt.environment.LocalEvents;
-import com.radixdlt.environment.Runners;
 import io.undertow.server.HttpHandler;
 import java.util.Map;
 
-public class SystemApiModule extends AbstractModule {
-  private static final int MAXIMUM_CONCURRENT_REQUESTS =
-      Runtime.getRuntime().availableProcessors() * 8; // same as workerThreads = ioThreads * 8
-  private static final int QUEUE_SIZE = 2000;
-  private final String bindAddress;
-  private final int port;
-
-  public SystemApiModule(String bindAddress, int port) {
-    this.bindAddress = bindAddress;
-    this.port = port;
-  }
-
-  @Override
-  protected void configure() {
-    var eventBinder =
-        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
-            .permitDuplicates();
-    eventBinder.addBinding().toInstance(ScheduledStatsCollecting.class);
-    bind(HealthInfoService.class).in(Scopes.SINGLETON);
-
-    var binder =
-        MapBinder.newMapBinder(
-            binder(), HandlerRoute.class, HttpHandler.class, SystemApiEndpoints.class);
-    binder.addBinding(HandlerRoute.get("/system/configuration")).to(ConfigurationHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/metrics")).to(MetricsHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/health")).to(HealthHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/version")).to(VersionHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/peers")).to(PeersHandler.class);
-    binder.addBinding(HandlerRoute.get("/system/addressbook")).to(AddressBookHandler.class);
-    binder
-        .addBinding(HandlerRoute.get("/system/network-sync-status"))
-        .to(NetworkSyncStatusHandler.class);
-  }
-
-  @ProvidesIntoSet
-  public EventProcessorOnRunner<?> healthInfoService(HealthInfoService healthInfoService) {
-    return new EventProcessorOnRunner<>(
-        Runners.SYSTEM_INFO, ScheduledStatsCollecting.class, healthInfoService.updateStats());
-  }
-
-  @Provides
-  @Singleton
-  public SystemApi systemApi(@SystemApiEndpoints Map<HandlerRoute, HttpHandler> handlers) {
-    return new SystemApi(bindAddress, port, handlers, MAXIMUM_CONCURRENT_REQUESTS, QUEUE_SIZE);
+public class SystemApi extends ApiBase {
+  public SystemApi(
+      String apiBindAddress,
+      int apiPort,
+      Map<HandlerRoute, HttpHandler> handlers,
+      int maximumConcurrentRequests,
+      int maxQueueSize) {
+    super(apiBindAddress, apiPort, handlers, maximumConcurrentRequests, maxQueueSize);
   }
 }
