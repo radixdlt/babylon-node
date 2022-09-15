@@ -68,8 +68,9 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Streams;
 import com.google.inject.AbstractModule;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.ApiModule;
 import com.radixdlt.api.CoreApiServerModule;
+import com.radixdlt.api.prometheus.PrometheusApiModule;
+import com.radixdlt.api.system.SystemApiModule;
 import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
@@ -114,8 +115,12 @@ import org.json.JSONObject;
 public final class RadixNodeModule extends AbstractModule {
   private static final int DEFAULT_CORE_API_PORT = 3333;
   private static final int DEFAULT_SYSTEM_API_PORT = 3334;
-  private static final String DEFAULT_CORE_API_BIND_ADDRESS = "0.0.0.0";
+  private static final int DEFAULT_PROMETHEUS_API_PORT = 3335;
+
+  // APIs are only exposed on localhost by default
+  private static final String DEFAULT_CORE_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_SYSTEM_API_BIND_ADDRESS = "127.0.0.1";
+  private static final String DEFAULT_PROMETHEUS_API_BIND_ADDRESS = "127.0.0.1";
 
   private static final Logger log = LogManager.getLogger();
 
@@ -257,7 +262,12 @@ public final class RadixNodeModule extends AbstractModule {
     final var systemApiBindAddress =
         properties.get("api.system.bind_address", DEFAULT_SYSTEM_API_BIND_ADDRESS);
     final var systemApiPort = properties.get("api.system.port", DEFAULT_SYSTEM_API_PORT);
-    install(new ApiModule(systemApiBindAddress, systemApiPort));
+    install(new SystemApiModule(systemApiBindAddress, systemApiPort));
+
+    final var metricsApiBindAddress =
+        properties.get("api.prometheus.bind_address", DEFAULT_PROMETHEUS_API_BIND_ADDRESS);
+    final var metricsApiPort = properties.get("api.prometheus.port", DEFAULT_PROMETHEUS_API_PORT);
+    install(new PrometheusApiModule(metricsApiBindAddress, metricsApiPort));
 
     // Capabilities
     var capabilitiesLedgerSyncEnabled =
