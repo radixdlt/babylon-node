@@ -127,6 +127,8 @@ impl StateManagerDatabase {
         if !matches!(state_manager_db, StateManagerDatabase::None)
             && state_manager_db.max_state_version() == 0
         {
+            println!("Running genesis on the engine...");
+
             let mut db_txn = state_manager_db.create_db_transaction();
             let mut fee_reserve = SystemLoanFeeReserve::default();
             fee_reserve.credit(GENESIS_CREATION_CREDIT);
@@ -151,11 +153,12 @@ impl StateManagerDatabase {
                     payload: vec![],
                     id: GENESIS_TID,
                 };
-
                 db_txn.insert_transactions(vec![(&mock_genesis, ledger_receipt)]);
+                db_txn.insert_tids_without_proof(1, vec![GENESIS_TID]);
             }
 
             db_txn.commit();
+            println!("Genesis committed");
         }
 
         state_manager_db
@@ -232,6 +235,18 @@ impl<'db> WriteableProofStore for StateManagerCommitTransaction<'db> {
             } => transactions_and_proofs.insert_tids_and_proof(state_version, ids, proof_bytes),
             StateManagerCommitTransaction::RocksDB(db_txn) => {
                 db_txn.insert_tids_and_proof(state_version, ids, proof_bytes)
+            }
+        }
+    }
+
+    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<TId>) {
+        match self {
+            StateManagerCommitTransaction::InMemory {
+                transactions_and_proofs,
+                ..
+            } => transactions_and_proofs.insert_tids_without_proof(state_version, ids),
+            StateManagerCommitTransaction::RocksDB(db_txn) => {
+                db_txn.insert_tids_without_proof(state_version, ids)
             }
         }
     }

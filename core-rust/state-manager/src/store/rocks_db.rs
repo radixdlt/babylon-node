@@ -191,6 +191,13 @@ impl<'db> WriteableTransactionStore for RocksDBCommitTransaction<'db> {
 
 impl<'db> WriteableProofStore for RocksDBCommitTransaction<'db> {
     fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
+        self.insert_tids_without_proof(state_version, ids);
+
+        let proof_version_key = db_key!(Proofs, &state_version.to_be_bytes());
+        self.db_txn.put(proof_version_key, proof_bytes).unwrap();
+    }
+
+    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<TId>) {
         if !ids.is_empty() {
             let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
             for (index, id) in ids.into_iter().enumerate() {
@@ -199,9 +206,6 @@ impl<'db> WriteableProofStore for RocksDBCommitTransaction<'db> {
                 self.db_txn.put(version_key, id.bytes).unwrap();
             }
         }
-
-        let proof_version_key = db_key!(Proofs, &state_version.to_be_bytes());
-        self.db_txn.put(proof_version_key, proof_bytes).unwrap();
     }
 }
 

@@ -11,7 +11,7 @@ use state_manager::LedgerTransactionReceipt;
 use std::cmp;
 use std::collections::HashMap;
 use transaction::manifest;
-use transaction::model::NotarizedTransaction as EngineNotarizedTransaction;
+use transaction::model::NotarizedTransaction;
 
 pub(crate) async fn handle_transaction_stream(
     state: Extension<CoreApiState>,
@@ -62,11 +62,18 @@ fn handle_transaction_stream_internal(
     let api_txns = txns
         .into_iter()
         .map(|((tx, receipt), state_version)| {
-            let notarized_tx = scrypto_decode::<EngineNotarizedTransaction>(&tx).map_err(|_| {
-                server_error("Internal server error: invalid committed transaction payload")
-            })?;
+            let notarized_tx = if !tx.is_empty() {
+                Some(scrypto_decode::<NotarizedTransaction>(&tx).map_err(|_| {
+                    server_error("Internal server error: invalid committed transaction payload")
+                })?)
+            } else {
+                // Temporary workaround for Genesis - fix later
+                None
+            };
+
             let api_tx =
                 to_api_committed_transaction(&network, notarized_tx, receipt, state_version)?;
+
             Ok(api_tx)
         })
         .collect::<Result<Vec<models::CommittedTransaction>, RequestHandlingError>>()?;
@@ -87,22 +94,26 @@ fn handle_transaction_stream_internal(
 
 fn to_api_committed_transaction(
     network: &NetworkDefinition,
-    tx: EngineNotarizedTransaction,
+    tx: Option<NotarizedTransaction>,
     receipt: LedgerTransactionReceipt,
     state_version: u64,
 ) -> Result<models::CommittedTransaction, MappingError> {
     let bech32_encoder = Bech32Encoder::new(network);
     let receipt = to_api_receipt(&bech32_encoder, receipt)?;
+    let api_notarized_transaction = match tx {
+        Some(tx) => Some(Box::new(to_api_notarized_transaction(tx, network)?)),
+        None => None,
+    };
 
     Ok(models::CommittedTransaction {
         state_version: to_api_state_version(state_version)?,
-        notarized_transaction: Box::new(to_api_notarized_transaction(tx, network)?),
+        notarized_transaction: api_notarized_transaction,
         receipt: Box::new(receipt),
     })
 }
 
 fn to_api_notarized_transaction(
-    tx: EngineNotarizedTransaction,
+    tx: NotarizedTransaction,
     network: &NetworkDefinition,
 ) -> Result<models::NotarizedTransaction, MappingError> {
     let payload = tx.to_bytes();

@@ -110,6 +110,8 @@ pub mod proofs {
             ids: Vec<TId>,
             proof_bytes: Vec<u8>,
         );
+
+        fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<TId>);
     }
 
     pub trait QueryableProofStore {

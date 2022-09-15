@@ -99,7 +99,7 @@ impl Default for InMemoryVertexStore {
 
 #[derive(Debug)]
 pub struct InMemoryStore {
-    transactions: HashMap<TId, (Vec<u8>, Vec<u8>)>,
+    transactions: HashMap<TId, Vec<u8>>,
     proofs: BTreeMap<u64, Vec<u8>>,
     txids: BTreeMap<u64, TId>,
 }
@@ -116,7 +116,7 @@ impl InMemoryStore {
     fn insert_transaction(&mut self, transaction: &Transaction, receipt: LedgerTransactionReceipt) {
         self.transactions.insert(
             transaction.id.clone(),
-            (transaction.payload.clone(), scrypto_encode(&receipt)),
+            scrypto_encode(&(transaction.payload.clone(), receipt)),
         );
     }
 }
@@ -137,22 +137,21 @@ impl WriteableTransactionStore for InMemoryStore {
 
 impl QueryableTransactionStore for InMemoryStore {
     fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt) {
-        let (transaction_bytes, ledger_receipt_bytes) = self
-            .transactions
-            .get(tid)
-            .cloned()
-            .expect("Transaction missing");
+        let saved = self.transactions.get(tid).expect("Transaction missing");
 
-        (
-            transaction_bytes,
-            scrypto_decode(&ledger_receipt_bytes)
-                .unwrap_or_else(|_| panic!("Failed to decode a stored transaction {}", tid)),
-        )
+        scrypto_decode(saved)
+            .unwrap_or_else(|_| panic!("Failed to decode a stored transaction {}", tid))
     }
 }
 
 impl WriteableProofStore for InMemoryStore {
     fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
+        self.insert_tids_without_proof(state_version, ids);
+
+        self.proofs.insert(state_version, proof_bytes);
+    }
+
+    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<TId>) {
         if !ids.is_empty() {
             let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
             for (index, id) in ids.into_iter().enumerate() {
@@ -160,8 +159,6 @@ impl WriteableProofStore for InMemoryStore {
                 self.txids.insert(txn_state_version, id);
             }
         }
-
-        self.proofs.insert(state_version, proof_bytes);
     }
 }
 
