@@ -134,11 +134,11 @@ public final class REv2ConsensusTransferTest {
       var mempoolInserter =
           test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
       mempoolInserter.addTransaction(newAccountTransaction);
-      test.runUntilState(allAtExactlyStateVersion(1), onlyConsensusEvents());
+      test.runUntilState(allAtExactlyStateVersion(2), onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
       var executedTransaction =
-          test.getInstance(0, REv2TransactionAndProofStore.class).getTransactionAtStateVersion(1);
+          test.getInstance(0, REv2TransactionAndProofStore.class).getTransactionAtStateVersion(2);
       var componentAddress = executedTransaction.newComponentAddresses().get(0);
       var stateReader = test.getInstance(0, REv2StateReader.class);
       var accountAmount = stateReader.getComponentXrdAmount(componentAddress);
