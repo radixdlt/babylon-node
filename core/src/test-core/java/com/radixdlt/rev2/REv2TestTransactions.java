@@ -176,7 +176,7 @@ public final class REv2TestTransactions {
             .map(
                 ecKeyPair ->
                     (SignatureWithPublicKey)
-                        new SignatureWithPublicKey.Ecdsa(ecKeyPair.sign(hashedIntent)))
+                        new SignatureWithPublicKey.EcdsaSecp256k1(ecKeyPair.sign(hashedIntent)))
             .toList();
     var signedIntentBytes =
         TransactionBuilder.createSignedIntentBytes(intentBytes, intentSignatures);

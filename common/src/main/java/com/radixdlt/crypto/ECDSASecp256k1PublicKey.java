@@ -170,7 +170,7 @@ public final class ECDSASecp256k1PublicKey {
   }
 
   public PublicKey toPublicKey() {
-    return new PublicKey.Ecdsa(this);
+    return new PublicKey.EcdsaSecp256k1(this);
   }
 
   @Override

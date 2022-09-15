@@ -85,7 +85,7 @@ use transaction::errors::TransactionValidationError;
 use transaction::model::{
     PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent, ValidatedTransaction,
 };
-use transaction::signing::EcdsaPrivateKey;
+use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
 struct OwnedValidationConfig {
@@ -179,7 +179,7 @@ where
         preview_request: PreviewRequest,
     ) -> Result<PreviewResult, PreviewError> {
         // not really used for preview
-        let notary_private_key = EcdsaPrivateKey::from_u64(2).unwrap();
+        let notary_private_key = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
 
         let preview_intent = PreviewIntent {
             intent: TransactionIntent {
@@ -189,7 +189,7 @@ where
                     start_epoch_inclusive: 0,
                     end_epoch_exclusive: 100,
                     nonce: preview_request.nonce,
-                    notary_public_key: PublicKey::Ecdsa(notary_private_key.public_key()),
+                    notary_public_key: PublicKey::EcdsaSecp256k1(notary_private_key.public_key()),
                     notary_as_signatory: false,
                     cost_unit_limit: preview_request.cost_unit_limit,
                     tip_percentage: preview_request.tip_percentage,
