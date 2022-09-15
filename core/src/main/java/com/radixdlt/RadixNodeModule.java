@@ -103,13 +103,12 @@ import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.json.JSONObject;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
 
 /** Module which manages everything in a single node */
 public final class RadixNodeModule extends AbstractModule {
