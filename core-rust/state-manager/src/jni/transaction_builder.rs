@@ -62,8 +62,6 @@
  * permissions under this License.
  */
 
-use std::collections::HashMap;
-
 use crate::jni::dtos::JavaStructure;
 use crate::result::StateManagerResult;
 use crate::transaction_builder::{
@@ -89,9 +87,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_compileManif
     jni_static_sbor_call(env, request_payload, do_compile_manifest)
 }
 
-fn do_compile_manifest(
-    args: (NetworkDefinition, String, HashMap<String, Vec<u8>>),
-) -> Result<Vec<u8>, String> {
+fn do_compile_manifest(args: (NetworkDefinition, String, Vec<Vec<u8>>)) -> Result<Vec<u8>, String> {
     let (network, manifest_str, blobs) = args;
 
     create_manifest(&network, &manifest_str, blobs)
@@ -159,7 +155,7 @@ fn do_create_intent_bytes(
         NetworkDefinition,
         TransactionHeaderJava,
         String,
-        HashMap<String, Vec<u8>>,
+        Vec<Vec<u8>>,
     ),
 ) -> Result<Vec<u8>, String> {
     let (network_definition, header, manifest, blobs) = args;

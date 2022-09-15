@@ -74,7 +74,6 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.NativeCalls;
-import java.util.HashMap;
 import java.util.List;
 
 public final class TransactionBuilder {
@@ -95,7 +94,7 @@ public final class TransactionBuilder {
   private static native byte[] build100KBIntent(byte[] requestPayload);
 
   public static byte[] compileManifest(
-      NetworkDefinition network, String manifest, HashMap<String, byte[]> blobs) {
+      NetworkDefinition network, String manifest, List<byte[]> blobs) {
     return compileManifestFunc
         .call(tuple(network, manifest, blobs))
         .unwrap(ManifestCompilationException::new);
@@ -106,10 +105,7 @@ public final class TransactionBuilder {
   }
 
   public static byte[] createIntent(
-      NetworkDefinition network,
-      TransactionHeader header,
-      String manifest,
-      HashMap<String, byte[]> blobs) {
+      NetworkDefinition network, TransactionHeader header, String manifest, List<byte[]> blobs) {
     return createIntentFunc
         .call(tuple(network, header, manifest, blobs))
         .unwrap(ManifestCompilationException::new);
@@ -125,7 +121,7 @@ public final class TransactionBuilder {
   }
 
   private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple3<NetworkDefinition, String, HashMap<String, byte[]>>, Result<byte[], String>>
+          Tuple.Tuple3<NetworkDefinition, String, List<byte[]>>, Result<byte[], String>>
       compileManifestFunc =
           NativeCalls.StaticFunc1.with(
               new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::compileManifest);
@@ -140,7 +136,7 @@ public final class TransactionBuilder {
   private static native byte[] newAccountIntent(byte[] requestPayload);
 
   private static final NativeCalls.StaticFunc1<
-          Tuple.Tuple4<NetworkDefinition, TransactionHeader, String, HashMap<String, byte[]>>,
+          Tuple.Tuple4<NetworkDefinition, TransactionHeader, String, List<byte[]>>,
           Result<byte[], String>>
       createIntentFunc =
           NativeCalls.StaticFunc1.with(

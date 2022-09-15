@@ -72,7 +72,6 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
-import java.util.HashMap;
 import java.util.List;
 
 public final class REv2TestTransactions {
@@ -147,7 +146,7 @@ public final class REv2TestTransactions {
         TransactionHeader.defaults(
             networkDefinition, nonce, notary.getPublicKey().toPublicKey(), notaryIsSignatory);
     var intentBytes =
-        TransactionBuilder.createIntent(networkDefinition, header, manifest, new HashMap<>());
+        TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
 
     // Sign intent
     return constructTransaction(intentBytes, notary, signatories);
@@ -161,7 +160,7 @@ public final class REv2TestTransactions {
       List<ECKeyPair> signatories) {
     // Build intent
     var intentBytes =
-        TransactionBuilder.createIntent(networkDefinition, header, manifest, new HashMap<>());
+        TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
 
     // Sign intent
     return constructTransaction(intentBytes, notary, signatories);

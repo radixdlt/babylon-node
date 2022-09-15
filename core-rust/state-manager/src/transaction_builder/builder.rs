@@ -149,7 +149,7 @@ pub fn create_intent_bytes(
     network_definition: &NetworkDefinition,
     header: TransactionHeader,
     manifest_str: String,
-    blobs: HashMap<String, Vec<u8>>,
+    blobs: Vec<Vec<u8>>,
 ) -> Result<Vec<u8>, CompileError> {
     let manifest = create_manifest(network_definition, &manifest_str, blobs)?;
 
@@ -161,10 +161,8 @@ pub fn create_intent_bytes(
 pub fn create_manifest(
     network_definition: &NetworkDefinition,
     manifest_str: &str,
-    blobs: HashMap<String, Vec<u8>>,
+    blobs: Vec<Vec<u8>>,
 ) -> Result<TransactionManifest, CompileError> {
-    let blobs = blobs.into_values().collect();
-
     compile(manifest_str, network_definition, blobs)
 }
 

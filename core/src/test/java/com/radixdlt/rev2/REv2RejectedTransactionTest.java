@@ -85,7 +85,6 @@ import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
-import java.util.HashMap;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
@@ -124,8 +123,7 @@ public final class REv2RejectedTransactionTest {
         TransactionHeader.defaults(
             NETWORK_DEFINITION, 1, TEST_KEY.getPublicKey().toPublicKey(), false);
     var intentBytes =
-        TransactionBuilder.createIntent(
-            NETWORK_DEFINITION, header, rejectableManifest, new HashMap<>());
+        TransactionBuilder.createIntent(NETWORK_DEFINITION, header, rejectableManifest, List.of());
     return REv2TestTransactions.constructTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
   }
 
