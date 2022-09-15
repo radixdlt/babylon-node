@@ -70,9 +70,9 @@ use crate::state_manager::{
 };
 use crate::store::{InMemoryStore, QueryableProofStore, QueryableTransactionStore, RocksDBStore};
 
+use radix_engine::constants::GENESIS_CREATION_CREDIT;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use radix_engine::constants::GENESIS_CREATION_CREDIT;
 
 use crate::types::{TId, Transaction};
 use radix_engine::engine::{Substate, Track};

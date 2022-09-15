@@ -71,7 +71,6 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServerModule;
 import com.radixdlt.api.prometheus.PrometheusApiModule;
 import com.radixdlt.api.system.SystemApiModule;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -95,14 +94,14 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.BerkeleySafetyStoreModule;
+import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
-import com.radixdlt.statemanager.CoreApiServerConfig;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.IOUtils;
-import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -172,11 +171,6 @@ public final class RadixNodeModule extends AbstractModule {
     install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
     install(new DispatcherModule());
 
-    var databasePath = properties.get("db.location", ".//RADIXDB");
-
-    // Recovery
-    install(new BerkeleySafetyStoreModule(databasePath));
-
     // Consensus
     install(new PersistedBFTKeyModule());
     install(new CryptoModule());
@@ -190,7 +184,7 @@ public final class RadixNodeModule extends AbstractModule {
     install(new MempoolRelayConfig(5, 60000, 60000, 100).asModule());
     install(new MempoolRelayerModule());
 
-    // Sync
+    // Ledger Sync
     final long syncPatience = properties.get("sync.patience", 5000L);
     install(new SyncServiceModule(SyncRelayConfig.of(syncPatience, 10, 3000L)));
 
@@ -200,28 +194,18 @@ public final class RadixNodeModule extends AbstractModule {
     install(new EpochsSyncModule());
 
     // State Computer
+    var databasePath = properties.get("db.location", ".//RADIXDB");
     var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
     install(REv2StateManagerModule.create(networkId, databaseConfig, Option.some(mempoolConfig)));
+
+    // Recovery
+    install(new BerkeleySafetyStoreModule(databasePath));
     // Start at stateVersion 1 for now due to lack serialized genesis transaction
     var initialAccumulatorState = new AccumulatorState(1, HashUtils.zero256());
     install(new REv2LedgerRecoveryModule(initialAccumulatorState));
-
-    // Core API server
-    final var coreApiBindAddress =
-        properties.get("api.core.bind_address", DEFAULT_CORE_API_BIND_ADDRESS);
-    final var coreApiPort = properties.get("api.core.port", DEFAULT_CORE_API_PORT);
-    final var coreApiServerConfig =
-        new CoreApiServerConfig(coreApiBindAddress, UInt32.fromNonNegativeInt(coreApiPort));
-    install(new CoreApiServerModule(coreApiServerConfig));
-
-    // Storage
-    // install(new DatabasePropertiesModule());
-    // install(new PersistenceModule());
-    // install(new ConsensusRecoveryModule());
-    // install(new LedgerRecoveryModule());
-
+    install(new REv2ConsensusRecoveryModule());
     String genesisTxn;
     final var genesisFileProp = properties.get("network.genesis_file");
     if (genesisFileProp != null && !genesisFileProp.isBlank()) {
@@ -231,9 +215,7 @@ public final class RadixNodeModule extends AbstractModule {
       log.info("Loading genesis from genesis_txn property");
       genesisTxn = properties.get("network.genesis_txn");
     }
-
     log.info("Using genesis txn: {}", genesisTxn);
-
     final var initialVset =
         Streams.stream(
                 Splitter.fixedLength(ECDSASecp256k1PublicKey.COMPRESSED_BYTES * 2)
@@ -248,8 +230,9 @@ public final class RadixNodeModule extends AbstractModule {
                   }
                 })
             .toList();
-
-    install(new MockedConsensusRecoveryModule.Builder().withNodes(initialVset).build());
+    var validatorSet =
+        BFTValidatorSet.from(initialVset.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
+    bind(BFTValidatorSet.class).toInstance(validatorSet);
 
     // System Info
     install(new SystemInfoModule());
@@ -258,7 +241,12 @@ public final class RadixNodeModule extends AbstractModule {
 
     install(new P2PModule(properties));
 
-    // API
+    // APIs
+    final var coreApiBindAddress =
+        properties.get("api.core.bind_address", DEFAULT_CORE_API_BIND_ADDRESS);
+    final var coreApiPort = properties.get("api.core.port", DEFAULT_CORE_API_PORT);
+    install(new CoreApiServerModule(coreApiBindAddress, coreApiPort));
+
     final var systemApiBindAddress =
         properties.get("api.system.bind_address", DEFAULT_SYSTEM_API_BIND_ADDRESS);
     final var systemApiPort = properties.get("api.system.port", DEFAULT_SYSTEM_API_PORT);

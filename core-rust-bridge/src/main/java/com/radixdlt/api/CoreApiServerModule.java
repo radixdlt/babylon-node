@@ -69,14 +69,16 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.statemanager.CoreApiServerConfig;
 import com.radixdlt.statemanager.StateManager;
+import com.radixdlt.utils.UInt32;
+
 import java.util.Objects;
 
 public final class CoreApiServerModule extends AbstractModule {
 
   private final CoreApiServerConfig config;
 
-  public CoreApiServerModule(CoreApiServerConfig config) {
-    this.config = Objects.requireNonNull(config);
+  public CoreApiServerModule(String apiBindAddress, int apiPort) {
+    this.config = new CoreApiServerConfig(apiBindAddress, UInt32.fromNonNegativeInt(apiPort));
   }
 
   @Provides
