@@ -134,11 +134,11 @@ public final class REv2LargeTransactionTest {
       var mempoolInserter =
           test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
       mempoolInserter.addTransaction(newAccountTransaction);
-      test.runUntilState(allAtExactlyStateVersion(1), onlyConsensusEvents());
+      test.runUntilState(allAtExactlyStateVersion(2), onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
       var receipt =
-          test.getInstance(0, REv2TransactionAndProofStore.class).getTransactionAtStateVersion(1);
+          test.getInstance(0, REv2TransactionAndProofStore.class).getTransactionAtStateVersion(2);
       var receiptTransaction = RawTransaction.create(receipt.transactionBytes());
       assertThat(newAccountTransaction).isEqualTo(receiptTransaction);
     }

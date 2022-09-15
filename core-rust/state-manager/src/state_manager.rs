@@ -81,6 +81,7 @@ use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
 use std::collections::HashMap;
+use tracing::info;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
     PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent, ValidatedTransaction,
@@ -275,7 +276,7 @@ where
                         TransactionResult::Reject(reject_result) => {
                             rejected_txns.insert(proposed, format!("{:?}", reject_result));
                             if self.logging_config.log_on_transaction_rejection {
-                                println!("TXN REJECTED: {:?}", reject_result);
+                                info!("TXN REJECTED: {:?}", reject_result);
                             }
                         }
                     }
@@ -283,7 +284,7 @@ where
                 Err(validation_error) => {
                     rejected_txns.insert(proposed, format!("{:?}", validation_error));
                     if self.logging_config.log_on_transaction_rejection {
-                        println!("TXN INVALID: {:?}", validation_error);
+                        info!("TXN INVALID: {:?}", validation_error);
                     }
                 }
             }

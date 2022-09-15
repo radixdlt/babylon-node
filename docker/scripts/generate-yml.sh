@@ -21,6 +21,9 @@ function help() {
 # Fail on error
 set -e
 
+echo "Sadly this script is outdated - please make changes manually, or fix the script..."
+exit 1
+
 # Where we are run from
 scriptdir=$(dirname "$0")
 

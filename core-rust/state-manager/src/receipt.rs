@@ -3,8 +3,8 @@ use radix_engine::fee::FeeSummary;
 use radix_engine::ledger::OutputId;
 use radix_engine::state_manager::StateDiff;
 use radix_engine::transaction::{
-    EntityChanges, TransactionOutcome, TransactionReceipt as EngineTransactionReceipt,
-    TransactionResult,
+    CommitResult, EntityChanges, TransactionOutcome,
+    TransactionReceipt as EngineTransactionReceipt, TransactionResult,
 };
 use sbor::{Decode, Encode, TypeId};
 use scrypto::buffer::scrypto_encode;
@@ -32,24 +32,40 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
 
     fn try_from(engine_receipt: EngineTransactionReceipt) -> Result<Self, Self::Error> {
         match engine_receipt.result {
-            TransactionResult::Commit(commit_result) => Ok(LedgerTransactionReceipt {
-                status: match commit_result.outcome {
-                    TransactionOutcome::Success(output) => {
-                        CommittedTransactionStatus::Success(output)
-                    }
-                    TransactionOutcome::Failure(error) => {
-                        CommittedTransactionStatus::Failure(format!("{:?}", error))
-                    }
-                },
-                fee_summary: engine_receipt.execution.fee_summary,
-                application_logs: engine_receipt.execution.application_logs,
-                state_updates: filter_state_updates(commit_result.state_updates),
-                entity_changes: commit_result.entity_changes,
-                resource_changes: commit_result.resource_changes,
-            }),
+            TransactionResult::Commit(commit_result) => Ok((
+                commit_result,
+                engine_receipt.execution.fee_summary,
+                engine_receipt.execution.application_logs,
+            )
+                .into()),
             TransactionResult::Reject(_) => {
                 Err("Can't create a ledger receipt for rejected txn".to_string())
             }
+        }
+    }
+}
+
+/// For Genesis Transaction
+impl From<(CommitResult, FeeSummary, Vec<(Level, String)>)> for LedgerTransactionReceipt {
+    fn from(
+        (commit_result, fee_summary, application_logs): (
+            CommitResult,
+            FeeSummary,
+            Vec<(Level, String)>,
+        ),
+    ) -> Self {
+        LedgerTransactionReceipt {
+            status: match commit_result.outcome {
+                TransactionOutcome::Success(output) => CommittedTransactionStatus::Success(output),
+                TransactionOutcome::Failure(error) => {
+                    CommittedTransactionStatus::Failure(format!("{:?}", error))
+                }
+            },
+            fee_summary,
+            application_logs,
+            state_updates: filter_state_updates(commit_result.state_updates),
+            entity_changes: commit_result.entity_changes,
+            resource_changes: commit_result.resource_changes,
         }
     }
 }

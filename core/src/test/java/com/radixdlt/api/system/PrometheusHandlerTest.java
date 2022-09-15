@@ -68,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Inject;
 import com.radixdlt.api.ApiTest;
-import com.radixdlt.api.system.prometheus.PrometheusHandler;
+import com.radixdlt.api.prometheus.PrometheusHandler;
 import org.junit.Test;
 
 public class PrometheusHandlerTest extends ApiTest {
