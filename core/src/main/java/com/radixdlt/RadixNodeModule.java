@@ -168,11 +168,6 @@ public final class RadixNodeModule extends AbstractModule {
     install(new EventLoggerModule(EventLoggerConfig.addressed(addressing)));
     install(new DispatcherModule());
 
-    var databasePath = properties.get("db.location", ".//RADIXDB");
-
-    // Recovery
-    install(new BerkeleySafetyStoreModule(databasePath));
-
     // Consensus
     install(new PersistedBFTKeyModule());
     install(new CryptoModule());
@@ -196,25 +191,18 @@ public final class RadixNodeModule extends AbstractModule {
     install(new EpochsSyncModule());
 
     // State Computer
+    var databasePath = properties.get("db.location", ".//RADIXDB");
     var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
     install(REv2StateManagerModule.create(networkId, databaseConfig, Option.some(mempoolConfig)));
 
-    // Core API server
-    final var coreApiBindAddress =
-        properties.get("api.core.bind_address", DEFAULT_CORE_API_BIND_ADDRESS);
-    final var coreApiPort = properties.get("api.core.port", DEFAULT_CORE_API_PORT);
-    final var coreApiServerConfig =
-        new CoreApiServerConfig(coreApiBindAddress, UInt32.fromNonNegativeInt(coreApiPort));
-    install(new CoreApiServerModule(coreApiServerConfig));
-
     // Recovery
+    install(new BerkeleySafetyStoreModule(databasePath));
     // Start at stateVersion 1 for now due to lack serialized genesis transaction
     var initialAccumulatorState = new AccumulatorState(1, HashUtils.zero256());
     install(new REv2LedgerRecoveryModule(initialAccumulatorState));
     install(new REv2ConsensusRecoveryModule());
-
     String genesisTxn;
     final var genesisFileProp = properties.get("network.genesis_file");
     if (genesisFileProp != null && !genesisFileProp.isBlank()) {
@@ -249,6 +237,14 @@ public final class RadixNodeModule extends AbstractModule {
     install(new MessagingModule(properties));
 
     install(new P2PModule(properties));
+
+    // Core API server
+    final var coreApiBindAddress =
+        properties.get("api.core.bind_address", DEFAULT_CORE_API_BIND_ADDRESS);
+    final var coreApiPort = properties.get("api.core.port", DEFAULT_CORE_API_PORT);
+    final var coreApiServerConfig =
+        new CoreApiServerConfig(coreApiBindAddress, UInt32.fromNonNegativeInt(coreApiPort));
+    install(new CoreApiServerModule(coreApiServerConfig));
 
     // API
     final var systemApiBindAddress =
