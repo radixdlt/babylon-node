@@ -71,8 +71,6 @@ import com.radixdlt.statemanager.CoreApiServerConfig;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.utils.UInt32;
 
-import java.util.Objects;
-
 public final class CoreApiServerModule extends AbstractModule {
 
   private final CoreApiServerConfig config;
