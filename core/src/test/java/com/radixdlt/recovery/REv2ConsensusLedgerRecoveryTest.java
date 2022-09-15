@@ -109,7 +109,7 @@ public final class REv2ConsensusLedgerRecoveryTest {
   }
 
   @Test
-  public void recovery_should_work_when_consensus_is_behind_ledger() throws Exception {
+  public void recovery_should_work_when_consensus_is_behind_ledger() {
 
     try (var test = createTest()) {
       test.startAllNodes();

@@ -105,18 +105,18 @@ public class REv2SyncTest {
   }
 
   @Test
-  public void single_transaction_sync_should_work() throws Exception {
+  public void single_transaction_sync_should_work() {
     try (var test = buildTest()) {
       // Arrange: Single transaction committed
       test.startAllNodes();
-      test.runUntilState(nodeAt(0, atExactlyStateVersion(1)), onlyConsensusEvents());
+      test.runUntilState(nodeAt(0, atExactlyStateVersion(2)), onlyConsensusEvents());
 
       // Act: Sync
-      test.runUntilState(nodeAt(1, atExactlyStateVersion(1)), onlyLedgerSyncEvents());
+      test.runUntilState(nodeAt(1, atExactlyStateVersion(2)), onlyLedgerSyncEvents());
 
       // Assert
       Checkers.assertLedgerTransactionsSafety(test.getNodeInjectors());
-      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 1);
+      Checkers.assertNodesSyncedToVersionAtleast(test.getNodeInjectors(), 2);
     }
   }
 }

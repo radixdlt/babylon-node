@@ -70,14 +70,18 @@ use crate::state_manager::{
 };
 use crate::store::{InMemoryStore, QueryableProofStore, QueryableTransactionStore, RocksDBStore};
 
+use radix_engine::constants::GENESIS_CREATION_CREDIT;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 use crate::types::{TId, Transaction};
-use radix_engine::engine::Substate;
+use radix_engine::engine::{Substate, Track};
+use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::{
-    bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
+    execute_genesis, OutputValue, QueryableSubstateStore, ReadableSubstateStore,
+    WriteableSubstateStore,
 };
+use radix_engine::transaction::TransactionResult;
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 
 use crate::store::in_memory::InMemoryVertexStore;
@@ -85,6 +89,10 @@ use crate::store::query::RecoverableVertexStore;
 use crate::store::rocks_db::RocksDBCommitTransaction;
 use crate::LedgerTransactionReceipt;
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
+
+// TODO: Remove this when serialized genesis intent is implemented
+pub const GENESIS_TID: TId = TId { bytes: vec![] };
+pub const GENESIS_STATE_VERSION: u64 = 1;
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
@@ -105,18 +113,55 @@ pub enum StateManagerDatabase {
 
 impl StateManagerDatabase {
     pub fn from_config(config: DatabaseConfig) -> Self {
-        match config {
+        let mut state_manager_db = match config {
             DatabaseConfig::InMemory => StateManagerDatabase::InMemory {
                 transactions_and_proofs: InMemoryStore::new(),
-                substates: SerializedInMemorySubstateStore::with_bootstrap(),
+                substates: SerializedInMemorySubstateStore::new(),
                 vertices: InMemoryVertexStore::new(),
             },
             DatabaseConfig::RocksDB(path) => {
                 let db = RocksDBStore::new(PathBuf::from(path));
-                StateManagerDatabase::RocksDB(bootstrap(db))
+                StateManagerDatabase::RocksDB(db)
             }
             DatabaseConfig::None => StateManagerDatabase::None,
+        };
+
+        // Bootstrap genesis
+        if !matches!(state_manager_db, StateManagerDatabase::None)
+            && state_manager_db.max_state_version() == 0
+        {
+            let mut db_txn = state_manager_db.create_db_transaction();
+            let mut fee_reserve = SystemLoanFeeReserve::default();
+            fee_reserve.credit(GENESIS_CREATION_CREDIT);
+            let track = Track::new(&db_txn, fee_reserve, FeeTable::new());
+            let track_receipt = execute_genesis(track);
+            let commit_result = match track_receipt.result {
+                TransactionResult::Commit(result) => result,
+                _ => panic!("Genesis execution failed"),
+            };
+            commit_result.state_updates.commit(&mut db_txn);
+
+            // TODO: Remove this when serialized genesis intent is implemented
+            {
+                let ledger_receipt: LedgerTransactionReceipt = (
+                    commit_result,
+                    track_receipt.fee_summary,
+                    track_receipt.application_logs,
+                )
+                    .into();
+
+                let mock_genesis = Transaction {
+                    payload: vec![],
+                    id: GENESIS_TID,
+                };
+
+                db_txn.insert_transactions(vec![(&mock_genesis, ledger_receipt)]);
+            }
+
+            db_txn.commit();
         }
+
+        state_manager_db
     }
 }
 
@@ -288,6 +333,11 @@ impl QueryableProofStore for StateManagerDatabase {
     }
 
     fn get_tid(&self, state_version: u64) -> Option<TId> {
+        // TODO: Remove this when serialized genesis intent is implemented
+        if state_version == GENESIS_STATE_VERSION {
+            return Some(GENESIS_TID);
+        }
+
         match self {
             StateManagerDatabase::InMemory {
                 transactions_and_proofs,

@@ -71,7 +71,6 @@ import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.VertexStoreState;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.recovery.VertexStoreRecovery;
@@ -83,6 +82,12 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 import java.util.Optional;
 
 public final class REv2LedgerRecoveryModule extends AbstractModule {
+  private final AccumulatorState initialAccumulatorState;
+
+  public REv2LedgerRecoveryModule(AccumulatorState initialAccumulatorState) {
+    this.initialAccumulatorState = initialAccumulatorState;
+  }
+
   @Provides
   @LastProof
   private LedgerProof lastProof(
@@ -91,16 +96,14 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
         .getLastProof()
         .orElseGet(
             () -> {
-              var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-              return LedgerProof.genesis(accumulatorState, validatorSet, 0L);
+              return LedgerProof.genesis(initialAccumulatorState, validatorSet, 0L);
             });
   }
 
   @Provides
   @LastEpochProof
   public LedgerProof lastEpochProof(BFTValidatorSet validatorSet) {
-    var accumulatorState = new AccumulatorState(0, HashUtils.zero256());
-    return LedgerProof.genesis(accumulatorState, validatorSet, 0L);
+    return LedgerProof.genesis(initialAccumulatorState, validatorSet, 0L);
   }
 
   private static VertexStoreState genesisEpochProofToGenesisVertexStore(
