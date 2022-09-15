@@ -68,7 +68,6 @@ import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -131,7 +130,7 @@ public final class REv2SimpleFuzzerTransactionGenerator implements TransactionGe
             false);
     var intentBytes =
         TransactionBuilder.createIntent(
-            NetworkDefinition.LOCAL_SIMULATOR, header, manifestBuilder.toString(), new HashMap<>());
+            NetworkDefinition.LOCAL_SIMULATOR, header, manifestBuilder.toString(), List.of());
     return REv2TestTransactions.constructTransaction(intentBytes, keyPair, List.of(keyPair));
   }
 }

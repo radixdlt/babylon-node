@@ -75,18 +75,18 @@ public sealed interface Signature {
         (codecs) ->
             EnumCodec.fromEntries(
                 EnumEntry.with(
-                    Ecdsa.class,
-                    Ecdsa::new,
+                    EcdsaSecp256k1.class,
+                    EcdsaSecp256k1::new,
                     codecs.of(ECDSASecp256k1Signature.class),
                     (t, encoder) -> encoder.encode(t.sig)),
                 EnumEntry.with(
-                    Ed25519.class,
-                    Ed25519::new,
+                    EddsaEd25519.class,
+                    EddsaEd25519::new,
                     codecs.of(EdDSAEd25519Signature.class),
                     (t, encoder) -> encoder.encode(t.sig))));
   }
 
-  record Ecdsa(ECDSASecp256k1Signature sig) implements Signature {}
+  record EcdsaSecp256k1(ECDSASecp256k1Signature sig) implements Signature {}
 
-  record Ed25519(EdDSAEd25519Signature sig) implements Signature {}
+  record EddsaEd25519(EdDSAEd25519Signature sig) implements Signature {}
 }

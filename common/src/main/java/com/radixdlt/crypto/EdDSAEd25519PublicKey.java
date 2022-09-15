@@ -106,7 +106,7 @@ public final class EdDSAEd25519PublicKey {
   }
 
   public PublicKey toPublicKey() {
-    return new PublicKey.Ed25519(this);
+    return new PublicKey.EddsaEd25519(this);
   }
 
   @Override
