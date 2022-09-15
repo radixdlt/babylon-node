@@ -70,7 +70,6 @@ import com.google.inject.AbstractModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.ApiModule;
 import com.radixdlt.api.CoreApiServerModule;
-import com.radixdlt.consensus.MockedConsensusRecoveryModule;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -92,6 +91,7 @@ import com.radixdlt.networks.NetworkId;
 import com.radixdlt.p2p.P2PModule;
 import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.rev2.modules.BerkeleySafetyStoreModule;
+import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.CoreApiServerConfig;
@@ -99,6 +99,7 @@ import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.IOUtils;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
@@ -197,7 +198,6 @@ public final class RadixNodeModule extends AbstractModule {
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
     install(REv2StateManagerModule.create(networkId, databaseConfig, Option.some(mempoolConfig)));
-    install(new REv2LedgerRecoveryModule());
 
     // Core API server
     final var coreApiBindAddress =
@@ -207,11 +207,9 @@ public final class RadixNodeModule extends AbstractModule {
         new CoreApiServerConfig(coreApiBindAddress, UInt32.fromNonNegativeInt(coreApiPort));
     install(new CoreApiServerModule(coreApiServerConfig));
 
-    // Storage
-    // install(new DatabasePropertiesModule());
-    // install(new PersistenceModule());
-    // install(new ConsensusRecoveryModule());
-    // install(new LedgerRecoveryModule());
+    // Recovery
+    install(new REv2LedgerRecoveryModule());
+    install(new REv2ConsensusRecoveryModule());
 
     String genesisTxn;
     final var genesisFileProp = properties.get("network.genesis_file");
@@ -222,9 +220,7 @@ public final class RadixNodeModule extends AbstractModule {
       log.info("Loading genesis from genesis_txn property");
       genesisTxn = properties.get("network.genesis_txn");
     }
-
     log.info("Using genesis txn: {}", genesisTxn);
-
     final var initialVset =
         Streams.stream(
                 Splitter.fixedLength(ECDSASecp256k1PublicKey.COMPRESSED_BYTES * 2)
@@ -239,8 +235,9 @@ public final class RadixNodeModule extends AbstractModule {
                   }
                 })
             .toList();
-
-    install(new MockedConsensusRecoveryModule.Builder().withNodes(initialVset).build());
+    var validatorSet =
+        BFTValidatorSet.from(initialVset.stream().map(n -> BFTValidator.from(n, UInt256.ONE)));
+    bind(BFTValidatorSet.class).toInstance(validatorSet);
 
     // System Info
     install(new SystemInfoModule());
