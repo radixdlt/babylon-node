@@ -14,16 +14,16 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct V0TransactionStatusResponse {
     /// The status of the transaction intent
-    #[serde(rename = "intent_status", skip_serializing_if = "Option::is_none")]
-    pub intent_status: Option<IntentStatus>,
+    #[serde(rename = "intent_status")]
+    pub intent_status: IntentStatus,
     #[serde(rename = "known_payloads")]
     pub known_payloads: Vec<crate::core_api::generated::models::V0TransactionPayloadStatus>,
 }
 
 impl V0TransactionStatusResponse {
-    pub fn new(known_payloads: Vec<crate::core_api::generated::models::V0TransactionPayloadStatus>) -> V0TransactionStatusResponse {
+    pub fn new(intent_status: IntentStatus, known_payloads: Vec<crate::core_api::generated::models::V0TransactionPayloadStatus>) -> V0TransactionStatusResponse {
         V0TransactionStatusResponse {
-            intent_status: None,
+            intent_status,
             known_payloads,
         }
     }

@@ -64,14 +64,12 @@
 
 use crate::mempool::Mempool;
 use crate::query::ResourceAccounter;
-use crate::types::{
-    CommitRequest, PrepareRequest, PrepareResult, PreviewRequest, TId, Transaction,
-};
+use crate::store::traits::*;
+use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest, Transaction};
 use crate::LedgerTransactionReceipt;
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     ExecutionConfig, FeeReserveConfig, PreviewError, PreviewExecutor, PreviewResult,
@@ -294,34 +292,6 @@ where
             rejected_txns,
         }
     }
-}
-
-pub trait CommitStoreTransaction<'db>:
-    WriteableTransactionStore
-    + WriteableProofStore
-    + WriteableVertexStore
-    + WriteableSubstateStore
-    + ReadableSubstateStore
-{
-    fn commit(self);
-}
-
-pub trait CommitStore<'db> {
-    type DBTransaction: CommitStoreTransaction<'db>;
-
-    fn create_db_transaction(&'db mut self) -> Self::DBTransaction;
-}
-
-pub trait WriteableTransactionStore {
-    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, LedgerTransactionReceipt)>);
-}
-
-pub trait WriteableProofStore {
-    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>);
-}
-
-pub trait WriteableVertexStore {
-    fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>);
 }
 
 impl<'db, M, S> StateManager<M, S>

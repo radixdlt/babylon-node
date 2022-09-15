@@ -10,8 +10,12 @@ pub(crate) async fn handle_v0_transaction_status(
 }
 
 fn handle_v0_transaction_status_internal(
-    state_manager: &mut ActualStateManager,
-    request: V0TransactionStatusRequest,
+    _state_manager: &mut ActualStateManager,
+    _request: V0TransactionStatusRequest,
 ) -> Result<V0TransactionStatusResponse, RequestHandlingError> {
-    todo!()
+    // Need to implement properly!
+    Ok(V0TransactionStatusResponse {
+        intent_status: v0_transaction_status_response::IntentStatus::Unknown,
+        known_payloads: vec![],
+    })
 }

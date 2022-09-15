@@ -1,5 +1,7 @@
 use sbor::DecodeError;
 
+use crate::core_api::{client_error, server_error, RequestHandlingError};
+
 /// Should be used when there's an error mapping to an API response
 #[derive(Debug, Clone)]
 pub enum MappingError {
@@ -30,6 +32,14 @@ pub enum MappingError {
     },
 }
 
+impl From<MappingError> for RequestHandlingError {
+    fn from(mapping_error: MappingError) -> Self {
+        // TODO - replace with warn when we have logging
+        println!("Error mapping on Core API: {:?}", mapping_error);
+        server_error("Server error mapping response")
+    }
+}
+
 /// Should be used when extracting values from a client request
 #[derive(Debug, Clone)]
 #[allow(clippy::enum_variant_names)]
@@ -38,4 +48,13 @@ pub enum ExtractionError {
     InvalidHex,
     InvalidSignature,
     InvalidPublicKey,
+}
+
+impl ExtractionError {
+    pub(crate) fn into_response_error(self, field_name: &str) -> RequestHandlingError {
+        client_error(&format!(
+            "Error extracting {} from request: {:?}",
+            field_name, self
+        ))
+    }
 }

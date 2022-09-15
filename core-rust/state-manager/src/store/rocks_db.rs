@@ -62,18 +62,13 @@
  * permissions under this License.
  */
 
-use crate::store::query::{QueryableTransactionStore, RecoverableVertexStore};
 use crate::types::{TId, Transaction};
 use std::collections::HashMap;
 
-use crate::state_manager::{
-    CommitStore, CommitStoreTransaction, WriteableProofStore, WriteableTransactionStore,
-    WriteableVertexStore,
-};
 use crate::store::rocks_db::RocksDBTable::{
     Proofs, RootSubstates, StateVersions, Substates, Transactions, VertexStore,
 };
-use crate::store::QueryableProofStore;
+use crate::store::traits::*;
 use crate::LedgerTransactionReceipt;
 use radix_engine::engine::Substate;
 use radix_engine::ledger::{

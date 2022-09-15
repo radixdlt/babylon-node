@@ -4,12 +4,13 @@ use axum::{
     extract::{rejection::JsonRejection, FromRequest, RequestParts},
     response::IntoResponse,
 };
+use hyper::StatusCode;
 use serde::Serialize;
 
-use super::{generated::models::ErrorResponse, ErrorResponseWithCode};
+use super::{generated::models::ErrorResponse, RequestHandlingError};
 
 // We define our own `Json` extractor that customizes the error from `axum::Json`
-pub struct Json<T>(pub T);
+pub(crate) struct Json<T>(pub T);
 pub use axum::Extension; // Re-export Extension so that it can be used easily
 
 #[async_trait]
@@ -18,12 +19,15 @@ where
     axum::Json<T>: FromRequest<B, Rejection = JsonRejection>,
     B: HttpBody + Send,
 {
-    type Rejection = ErrorResponseWithCode;
+    type Rejection = RequestHandlingError;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         match axum::Json::<T>::from_request(req).await {
             Ok(value) => Ok(Self(value.0)),
-            Err(rejection) => Err(ErrorResponse::new(400, format!("{:?}", rejection)).into()),
+            Err(rejection) => Err(RequestHandlingError(
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(400, format!("{:?}", rejection)),
+            )),
         }
     }
 }

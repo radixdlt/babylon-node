@@ -62,20 +62,80 @@
  * permissions under this License.
  */
 
-use crate::types::TId;
-use crate::LedgerTransactionReceipt;
+pub use commit::*;
+pub use proofs::*;
+pub use substate::*;
+pub use substate::*;
+pub use transactions::*;
+pub use vertex::*;
 
-pub trait QueryableTransactionStore {
-    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt);
+pub mod vertex {
+    pub trait RecoverableVertexStore {
+        fn get_vertex_store(&self) -> Option<Vec<u8>>;
+    }
+
+    pub trait WriteableVertexStore {
+        fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>);
+    }
 }
 
-pub trait QueryableProofStore {
-    fn max_state_version(&self) -> u64;
-    fn get_tid(&self, state_version: u64) -> Option<TId>;
-    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)>;
-    fn get_last_proof(&self) -> Option<Vec<u8>>;
+pub mod substate {
+    pub use radix_engine::ledger::{
+        QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
+    };
 }
 
-pub trait RecoverableVertexStore {
-    fn get_vertex_store(&self) -> Option<Vec<u8>>;
+pub mod transactions {
+    use crate::{types::TId, LedgerTransactionReceipt, Transaction};
+
+    pub trait WriteableTransactionStore {
+        fn insert_transactions(
+            &mut self,
+            transactions: Vec<(&Transaction, LedgerTransactionReceipt)>,
+        );
+    }
+
+    pub trait QueryableTransactionStore {
+        fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt);
+    }
+}
+
+pub mod proofs {
+    use crate::types::TId;
+
+    pub trait WriteableProofStore {
+        fn insert_tids_and_proof(
+            &mut self,
+            state_version: u64,
+            ids: Vec<TId>,
+            proof_bytes: Vec<u8>,
+        );
+    }
+
+    pub trait QueryableProofStore {
+        fn max_state_version(&self) -> u64;
+        fn get_tid(&self, state_version: u64) -> Option<TId>;
+        fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)>;
+        fn get_last_proof(&self) -> Option<Vec<u8>>;
+    }
+}
+
+pub mod commit {
+    use super::*;
+
+    pub trait CommitStore<'db> {
+        type DBTransaction: CommitStoreTransaction<'db>;
+
+        fn create_db_transaction(&'db mut self) -> Self::DBTransaction;
+    }
+
+    pub trait CommitStoreTransaction<'db>:
+        WriteableTransactionStore
+        + WriteableProofStore
+        + WriteableVertexStore
+        + WriteableSubstateStore
+        + ReadableSubstateStore
+    {
+        fn commit(self);
+    }
 }

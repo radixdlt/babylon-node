@@ -97,7 +97,10 @@ pub async fn create_server<F>(
         .route("/transaction/stream", post(handle_transaction_stream))
         .route("/v0/transaction/submit", post(handle_v0_transaction_submit))
         .route("/v0/transaction/status", post(handle_v0_transaction_status))
-        .route("/v0/transaction/receipt", post(handle_v0_transaction_receipt))
+        .route(
+            "/v0/transaction/receipt",
+            post(handle_v0_transaction_receipt),
+        )
         .route("/v0/state/epoch", post(handle_v0_state_epoch))
         .layer(Extension(core_api_state));
 

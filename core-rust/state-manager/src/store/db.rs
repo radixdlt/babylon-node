@@ -64,11 +64,8 @@
 
 use crate::jni::dtos::*;
 
-use crate::state_manager::{
-    CommitStore, CommitStoreTransaction, WriteableProofStore, WriteableTransactionStore,
-    WriteableVertexStore,
-};
-use crate::store::{InMemoryStore, QueryableProofStore, QueryableTransactionStore, RocksDBStore};
+use crate::store::traits::*;
+use crate::store::{InMemoryStore, RocksDBStore};
 
 use radix_engine::constants::GENESIS_CREATION_CREDIT;
 use std::collections::HashMap;
@@ -85,8 +82,8 @@ use radix_engine::transaction::TransactionResult;
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 
 use crate::store::in_memory::InMemoryVertexStore;
-use crate::store::query::RecoverableVertexStore;
 use crate::store::rocks_db::RocksDBCommitTransaction;
+use crate::store::traits::RecoverableVertexStore;
 use crate::LedgerTransactionReceipt;
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
 

@@ -17,10 +17,8 @@ fn handle_v0_transaction_submit_internal(
     state_manager: &mut ActualStateManager,
     request: V0TransactionSubmitRequest,
 ) -> Result<V0TransactionSubmitResponse, RequestHandlingError> {
-    assert_matching_network(&request.network, &state_manager.network)?;
-
-    let transaction_bytes = hex::decode(request.notarized_transaction)
-        .map_err(|_| errors::invalid_transaction())?;
+    let transaction_bytes = from_hex(request.notarized_transaction)
+        .map_err(|err| err.into_response_error("notarized_transaction"))?;
 
     let tid = sha256_twice(transaction_bytes.clone());
 
@@ -39,28 +37,10 @@ fn handle_v0_transaction_submit_internal(
         Err(MempoolError::Full {
             current_size: _,
             max_size: _,
-        }) => Err(errors::mempool_is_full()),
-        Err(MempoolError::TransactionValidationError(err)) => {
-            Err(errors::transaction_validation_error(err))
-        }
-    }
-}
-
-mod errors {
-    use crate::core_api::errors::{client_error, RequestHandlingError};
-    use transaction::errors::TransactionValidationError;
-
-    pub(crate) fn invalid_transaction() -> RequestHandlingError {
-        client_error(400, "Invalid transaction payload")
-    }
-
-    pub(crate) fn mempool_is_full() -> RequestHandlingError {
-        client_error(400, "Mempool is full")
-    }
-
-    pub(crate) fn transaction_validation_error(
-        err: TransactionValidationError,
-    ) -> RequestHandlingError {
-        client_error(400, &format!("Transaction validation error: {:?}", err))
+        }) => Err(client_error("Mempool is full")),
+        Err(MempoolError::TransactionValidationError(err)) => Err(client_error(&format!(
+            "Transaction validation error: {:?}",
+            err
+        ))),
     }
 }

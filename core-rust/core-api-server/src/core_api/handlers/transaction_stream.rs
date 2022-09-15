@@ -1,4 +1,3 @@
-use crate::core_api::models::*;
 use crate::core_api::*;
 
 use radix_engine::types::hash;
@@ -7,7 +6,7 @@ use scrypto::buffer::scrypto_decode;
 use scrypto::core::NetworkDefinition;
 
 use state_manager::jni::state_manager::ActualStateManager;
-use state_manager::store::{QueryableProofStore, QueryableTransactionStore};
+use state_manager::store::traits::*;
 use state_manager::LedgerTransactionReceipt;
 use std::cmp;
 use std::collections::HashMap;
@@ -16,29 +15,29 @@ use transaction::model::NotarizedTransaction as EngineNotarizedTransaction;
 
 pub(crate) async fn handle_transaction_stream(
     state: Extension<CoreApiState>,
-    request: Json<CommittedTransactionsRequest>,
-) -> Result<Json<CommittedTransactionsResponse>, RequestHandlingError> {
+    request: Json<models::CommittedTransactionsRequest>,
+) -> Result<Json<models::CommittedTransactionsResponse>, RequestHandlingError> {
     core_api_handler(state, request, handle_transaction_stream_internal)
 }
 
 fn handle_transaction_stream_internal(
     state_manager: &mut ActualStateManager,
-    request: CommittedTransactionsRequest,
-) -> Result<CommittedTransactionsResponse, RequestHandlingError> {
+    request: models::CommittedTransactionsRequest,
+) -> Result<models::CommittedTransactionsResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
     let from_state_version: u64 = extract_api_state_version(request.from_state_version)
-        .map_err(|_| transaction_errors::invalid_start_state_version())?;
+        .map_err(|err| err.into_response_error("from_state_version"))?;
 
     let limit: u64 = request
         .limit
         .try_into()
-        .map_err(|_| transaction_errors::invalid_int_field("limit"))?;
+        .map_err(|_| client_error("limit cannot be negative"))?;
 
     let state_version_at_limit: u64 = from_state_version
         .checked_add(limit)
         .and_then(|v| v.checked_sub(1))
-        .ok_or_else(|| transaction_errors::invalid_int_field("start_state_version + limit - 1"))?;
+        .ok_or_else(|| client_error("start_state_version + limit - 1 out of u64 bounds"))?;
 
     let max_state_version = state_manager.store.max_state_version();
 
@@ -48,7 +47,10 @@ fn handle_transaction_stream_internal(
     let mut state_version = from_state_version;
     while state_version <= up_to_state_version_inclusive {
         let next_tid = state_manager.store.get_tid(state_version).ok_or_else(|| {
-            transaction_errors::missing_transaction_at_state_version(state_version)
+            server_error(&format!(
+                "A transaction is missing at state version {}",
+                state_version
+            ))
         })?;
         let next_tx = state_manager.store.get_transaction(&next_tid);
         txns.push((next_tx, state_version));
@@ -60,13 +62,11 @@ fn handle_transaction_stream_internal(
     let api_txns = txns
         .into_iter()
         .map(|((tx, receipt), state_version)| {
-            let notarized_tx = scrypto_decode::<EngineNotarizedTransaction>(&tx)
-                .map_err(|_| transaction_errors::invalid_committed_txn())?;
+            let notarized_tx = scrypto_decode::<EngineNotarizedTransaction>(&tx).map_err(|_| {
+                server_error("Internal server error: invalid committed transaction payload")
+            })?;
             let api_tx =
-                to_api_committed_transaction(&network, notarized_tx, receipt, state_version)
-                    .map_err(|err| {
-                        common_server_errors::mapping_error(err, "Unable to map receipt")
-                    })?;
+                to_api_committed_transaction(&network, notarized_tx, receipt, state_version)?;
             Ok(api_tx)
         })
         .collect::<Result<Vec<models::CommittedTransaction>, RequestHandlingError>>()?;
@@ -77,16 +77,10 @@ fn handle_transaction_stream_internal(
         from_state_version
     };
 
-    Ok(CommittedTransactionsResponse {
-        from_state_version: to_api_state_version(start_state_version).map_err(|err| {
-            common_server_errors::mapping_error(err, "Unable to map from_state_version in response")
-        })?,
-        to_state_version: to_api_state_version(up_to_state_version_inclusive).map_err(|err| {
-            common_server_errors::mapping_error(err, "Unable to map to_state_version in response")
-        })?,
-        max_state_version: to_api_state_version(max_state_version).map_err(|err| {
-            common_server_errors::mapping_error(err, "Unable to map max_state_version in response")
-        })?,
+    Ok(models::CommittedTransactionsResponse {
+        from_state_version: to_api_state_version(start_state_version)?,
+        to_state_version: to_api_state_version(up_to_state_version_inclusive)?,
+        max_state_version: to_api_state_version(max_state_version)?,
         transactions: api_txns,
     })
 }
@@ -154,36 +148,4 @@ fn to_api_notarized_transaction(
         }),
         notary_signature: Some(to_api_signature(tx.notary_signature)),
     })
-}
-
-mod transaction_errors {
-    use crate::core_api::errors::{client_error, server_error, RequestHandlingError};
-
-    pub(crate) fn invalid_int_field(field: &str) -> RequestHandlingError {
-        client_error(400, &format!("Invalid integer: {}", field))
-    }
-
-    pub(crate) fn invalid_start_state_version() -> RequestHandlingError {
-        client_error(
-            400,
-            "start_state_version is invalid (minimum state version is 1)",
-        )
-    }
-
-    pub(crate) fn invalid_committed_txn() -> RequestHandlingError {
-        server_error(
-            500,
-            "Internal server error: invalid committed transaction payload",
-        )
-    }
-
-    pub(crate) fn missing_transaction_at_state_version(state_version: u64) -> RequestHandlingError {
-        server_error(
-            500,
-            &format!(
-                "A transaction is missing at state version {}",
-                state_version
-            ),
-        )
-    }
 }

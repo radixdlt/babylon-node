@@ -1316,11 +1316,8 @@ components:
     V0TransactionSubmitRequest:
       type: object
       required:
-        - network
         - notarized_transaction
       properties:
-        network:
-          $ref: "#/components/schemas/NetworkIdentifier"
         notarized_transaction:
           description: A hex-encoded, compiled notarized transaction.
           type: string
@@ -1348,7 +1345,7 @@ components:
     V0TransactionStatusResponse:
       type: object
       required:
-        - status
+        - intent_status
         - known_payloads
       properties:
         intent_status:

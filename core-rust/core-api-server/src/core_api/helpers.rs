@@ -12,7 +12,7 @@ pub(crate) fn core_api_handler_empty_request<Response>(
     let state_manager_arc = state.0.state_manager;
     let mut state_manager = state_manager_arc
         .lock()
-        .map_err(|_| common_server_errors::state_manager_lock_error())?;
+        .map_err(|_| server_error("Internal server error: Could not take state manager lock"))?;
 
     let response = method(state_manager.deref_mut())?;
     Ok(Json(response))
@@ -26,7 +26,7 @@ pub(crate) fn core_api_handler<Request, Response>(
     let state_manager_arc = state.0.state_manager;
     let mut state_manager = state_manager_arc
         .lock()
-        .map_err(|_| common_server_errors::state_manager_lock_error())?;
+        .map_err(|_| server_error("Internal server error: Could not take state manager lock"))?;
 
     let response = method(state_manager.deref_mut(), request_body)?;
     Ok(Json(response))

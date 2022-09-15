@@ -62,9 +62,7 @@
  * permissions under this License.
  */
 
-use crate::state_manager::{WriteableProofStore, WriteableTransactionStore, WriteableVertexStore};
-use crate::store::query::{QueryableTransactionStore, RecoverableVertexStore};
-use crate::store::QueryableProofStore;
+use crate::store::traits::*;
 use crate::types::{TId, Transaction};
 use crate::LedgerTransactionReceipt;
 use scrypto::prelude::{scrypto_decode, scrypto_encode};
