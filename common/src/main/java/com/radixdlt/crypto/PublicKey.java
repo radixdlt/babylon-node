@@ -75,18 +75,18 @@ public sealed interface PublicKey {
         (codecs) ->
             EnumCodec.fromEntries(
                 EnumEntry.with(
-                    Ecdsa.class,
-                    Ecdsa::new,
+                    EcdsaSecp256k1.class,
+                    EcdsaSecp256k1::new,
                     codecs.of(ECDSASecp256k1PublicKey.class),
                     (t, encoder) -> encoder.encode(t.key)),
                 EnumEntry.with(
-                    Ed25519.class,
-                    Ed25519::new,
+                    EddsaEd25519.class,
+                    EddsaEd25519::new,
                     codecs.of(EdDSAEd25519PublicKey.class),
                     (t, encoder) -> encoder.encode(t.key))));
   }
 
-  record Ecdsa(ECDSASecp256k1PublicKey key) implements PublicKey {}
+  record EcdsaSecp256k1(ECDSASecp256k1PublicKey key) implements PublicKey {}
 
-  record Ed25519(EdDSAEd25519PublicKey key) implements PublicKey {}
+  record EddsaEd25519(EdDSAEd25519PublicKey key) implements PublicKey {}
 }

@@ -70,6 +70,7 @@ use crate::store::{InMemoryStore, RocksDBStore};
 use radix_engine::constants::GENESIS_CREATION_CREDIT;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use tracing::debug;
 
 use crate::types::{PayloadHash, StoredTransaction};
 use radix_engine::engine::{Substate, Track};
@@ -123,8 +124,7 @@ impl StateManagerDatabase {
         if !matches!(state_manager_db, StateManagerDatabase::None)
             && state_manager_db.max_state_version() == 0
         {
-            // TODO - replace with info log when we have logging
-            // println!("Running genesis on the engine...");
+            debug!("Running genesis on the engine...");
 
             let mut db_txn = state_manager_db.create_db_transaction();
             let mut fee_reserve = SystemLoanFeeReserve::default();
@@ -154,8 +154,7 @@ impl StateManagerDatabase {
 
             db_txn.commit();
 
-            // TODO - replace with info log when we have logging
-            // println!("Genesis committed");
+            debug!("Genesis committed");
         }
 
         state_manager_db

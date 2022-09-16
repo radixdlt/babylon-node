@@ -1,16 +1,13 @@
-use scrypto::crypto::{
-    EcdsaPublicKey, EcdsaSignature, Ed25519PublicKey, Ed25519Signature, PublicKey, Signature,
-    SignatureWithPublicKey,
-};
+use scrypto::crypto::*;
 
 use crate::core_api::*;
 
 pub fn to_api_public_key(public_key: PublicKey) -> models::PublicKey {
     match public_key {
-        PublicKey::Ecdsa(key) => models::PublicKey::EcdsaSecp256k1PublicKey {
+        PublicKey::EcdsaSecp256k1(key) => models::PublicKey::EcdsaSecp256k1PublicKey {
             key_bytes: to_hex(key.to_vec()),
         },
-        PublicKey::Ed25519(key) => models::PublicKey::EddsaEd25519PublicKey {
+        PublicKey::EddsaEd25519(key) => models::PublicKey::EddsaEd25519PublicKey {
             key_bytes: to_hex(key.to_vec()),
         },
     }
@@ -18,10 +15,10 @@ pub fn to_api_public_key(public_key: PublicKey) -> models::PublicKey {
 
 pub fn to_api_signature(signature: Signature) -> models::Signature {
     match signature {
-        Signature::Ecdsa(sig) => models::Signature::EcdsaSecp256k1Signature {
+        Signature::EcdsaSecp256k1(sig) => models::Signature::EcdsaSecp256k1Signature {
             signature_bytes: to_hex(sig.to_vec()),
         },
-        Signature::Ed25519(sig) => models::Signature::EddsaEd25519Signature {
+        Signature::EddsaEd25519(sig) => models::Signature::EddsaEd25519Signature {
             signature_bytes: to_hex(sig.to_vec()),
         },
     }
@@ -31,7 +28,7 @@ pub fn to_api_signature_with_public_key(
     sig_with_public_key: SignatureWithPublicKey,
 ) -> models::SignatureWithPublicKey {
     match sig_with_public_key {
-        SignatureWithPublicKey::Ecdsa(sig) => {
+        SignatureWithPublicKey::EcdsaSecp256k1(sig) => {
             models::SignatureWithPublicKey::EcdsaSecp256k1SignatureWithPublicKey {
                 recoverable_signature: Box::new(models::EcdsaSecp256k1Signature {
                     key_type: models::PublicKeyType::EcdsaSecp256k1,
@@ -39,7 +36,7 @@ pub fn to_api_signature_with_public_key(
                 }),
             }
         }
-        SignatureWithPublicKey::Ed25519(pub_key, sig) => {
+        SignatureWithPublicKey::EddsaEd25519(pub_key, sig) => {
             models::SignatureWithPublicKey::EddsaEd25519SignatureWithPublicKey {
                 signature: Box::new(models::EddsaEd25519Signature {
                     key_type: models::PublicKeyType::EddsaEd25519,
@@ -57,12 +54,14 @@ pub fn to_api_signature_with_public_key(
 #[allow(dead_code)]
 pub fn extract_api_signature(signature: models::Signature) -> Result<Signature, ExtractionError> {
     Ok(match signature {
-        models::Signature::EcdsaSecp256k1Signature { signature_bytes } => Signature::Ecdsa(
-            EcdsaSignature::try_from(from_hex(signature_bytes)?.as_ref())
-                .map_err(|_| ExtractionError::InvalidSignature)?,
-        ),
-        models::Signature::EddsaEd25519Signature { signature_bytes } => Signature::Ed25519(
-            Ed25519Signature::try_from(from_hex(signature_bytes)?.as_ref())
+        models::Signature::EcdsaSecp256k1Signature { signature_bytes } => {
+            Signature::EcdsaSecp256k1(
+                EcdsaSecp256k1Signature::try_from(from_hex(signature_bytes)?.as_ref())
+                    .map_err(|_| ExtractionError::InvalidSignature)?,
+            )
+        }
+        models::Signature::EddsaEd25519Signature { signature_bytes } => Signature::EddsaEd25519(
+            EddsaEd25519Signature::try_from(from_hex(signature_bytes)?.as_ref())
                 .map_err(|_| ExtractionError::InvalidSignature)?,
         ),
     })
@@ -70,12 +69,12 @@ pub fn extract_api_signature(signature: models::Signature) -> Result<Signature, 
 
 pub fn extract_api_public_key(public_key: models::PublicKey) -> Result<PublicKey, ExtractionError> {
     Ok(match public_key {
-        models::PublicKey::EcdsaSecp256k1PublicKey { key_bytes } => PublicKey::Ecdsa(
-            EcdsaPublicKey::try_from(from_hex(key_bytes)?.as_ref())
+        models::PublicKey::EcdsaSecp256k1PublicKey { key_bytes } => PublicKey::EcdsaSecp256k1(
+            EcdsaSecp256k1PublicKey::try_from(from_hex(key_bytes)?.as_ref())
                 .map_err(|_| ExtractionError::InvalidPublicKey)?,
         ),
-        models::PublicKey::EddsaEd25519PublicKey { key_bytes } => PublicKey::Ed25519(
-            Ed25519PublicKey::try_from(from_hex(key_bytes)?.as_ref())
+        models::PublicKey::EddsaEd25519PublicKey { key_bytes } => PublicKey::EddsaEd25519(
+            EddsaEd25519PublicKey::try_from(from_hex(key_bytes)?.as_ref())
                 .map_err(|_| ExtractionError::InvalidPublicKey)?,
         ),
     })

@@ -66,7 +66,7 @@ use scrypto::prelude::*;
 use scrypto::resource::ResourceType;
 use std::collections::HashMap;
 use transaction::builder::ManifestBuilder;
-use transaction::manifest::{compile, CompileError, InMemoryBlobLoader};
+use transaction::manifest::{compile, CompileError};
 use transaction::model::{
     NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
     TransactionManifest,
@@ -149,7 +149,7 @@ pub fn create_intent_bytes(
     network_definition: &NetworkDefinition,
     header: TransactionHeader,
     manifest_str: String,
-    blobs: HashMap<String, Vec<u8>>,
+    blobs: Vec<Vec<u8>>,
 ) -> Result<Vec<u8>, CompileError> {
     let manifest = create_manifest(network_definition, &manifest_str, blobs)?;
 
@@ -161,14 +161,9 @@ pub fn create_intent_bytes(
 pub fn create_manifest(
     network_definition: &NetworkDefinition,
     manifest_str: &str,
-    blobs: HashMap<String, Vec<u8>>,
+    blobs: Vec<Vec<u8>>,
 ) -> Result<TransactionManifest, CompileError> {
-    let mut blob_loader = InMemoryBlobLoader::default();
-    blobs
-        .into_iter()
-        .for_each(|(name, blob)| blob_loader.insert(name, blob));
-
-    compile(manifest_str, network_definition, &blob_loader)
+    compile(manifest_str, network_definition, blobs)
 }
 
 pub fn create_signed_intent_bytes(

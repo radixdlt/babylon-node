@@ -108,7 +108,7 @@ public final class EdDSAEd25519Signature {
   }
 
   public Signature toSignature() {
-    return new Signature.Ed25519(this);
+    return new Signature.EddsaEd25519(this);
   }
 
   @Override

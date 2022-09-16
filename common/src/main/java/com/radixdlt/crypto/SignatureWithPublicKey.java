@@ -75,20 +75,20 @@ public sealed interface SignatureWithPublicKey {
         (codecs) ->
             EnumCodec.fromEntries(
                 EnumEntry.with(
-                    Ecdsa.class,
-                    Ecdsa::new,
+                    EcdsaSecp256k1.class,
+                    EcdsaSecp256k1::new,
                     codecs.of(ECDSASecp256k1Signature.class),
                     (t, encoder) -> encoder.encode(t.sig)),
                 EnumEntry.with(
-                    Ed25519.class,
-                    Ed25519::new,
+                    EddsaEd25519.class,
+                    EddsaEd25519::new,
                     codecs.of(EdDSAEd25519PublicKey.class),
                     codecs.of(EdDSAEd25519Signature.class),
                     (t, encoder) -> encoder.encode(t.publicKey, t.sig))));
   }
 
-  record Ecdsa(ECDSASecp256k1Signature sig) implements SignatureWithPublicKey {}
+  record EcdsaSecp256k1(ECDSASecp256k1Signature sig) implements SignatureWithPublicKey {}
 
-  record Ed25519(EdDSAEd25519PublicKey publicKey, EdDSAEd25519Signature sig)
+  record EddsaEd25519(EdDSAEd25519PublicKey publicKey, EdDSAEd25519Signature sig)
       implements SignatureWithPublicKey {}
 }

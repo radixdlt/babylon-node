@@ -194,11 +194,11 @@ public final class ECDSASecp256k1Signature {
   }
 
   public Signature toSignature() {
-    return new Signature.Ecdsa(this);
+    return new Signature.EcdsaSecp256k1(this);
   }
 
   public SignatureWithPublicKey toSignatureWithPublicKey() {
-    return new SignatureWithPublicKey.Ecdsa(this);
+    return new SignatureWithPublicKey.EcdsaSecp256k1(this);
   }
 
   @Override

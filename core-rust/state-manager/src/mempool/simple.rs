@@ -199,7 +199,9 @@ impl Mempool for SimpleMempool {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine::types::{EcdsaPublicKey, EcdsaSignature, PublicKey, Signature};
+    use radix_engine::types::{
+        EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, PublicKey, Signature,
+    };
     use transaction::model::{
         NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
         TransactionManifest,
@@ -209,11 +211,15 @@ mod tests {
     use crate::types::*;
 
     fn create_fake_pub_key() -> PublicKey {
-        PublicKey::Ecdsa(EcdsaPublicKey([0; EcdsaPublicKey::LENGTH]))
+        PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
+            [0; EcdsaSecp256k1PublicKey::LENGTH],
+        ))
     }
 
     fn create_fake_signature() -> Signature {
-        Signature::Ecdsa(EcdsaSignature([0; EcdsaSignature::LENGTH]))
+        Signature::EcdsaSecp256k1(EcdsaSecp256k1Signature(
+            [0; EcdsaSecp256k1Signature::LENGTH],
+        ))
     }
 
     fn create_fake_notarized_transaction(nonce: u64) -> NotarizedTransaction {
