@@ -86,38 +86,44 @@ pub mod substate {
 }
 
 pub mod transactions {
-    use crate::{types::TId, LedgerTransactionReceipt, Transaction};
+    use crate::{
+        types::{PayloadHash, StoredTransaction},
+        LedgerTransactionReceipt,
+    };
 
     pub trait WriteableTransactionStore {
         fn insert_transactions(
             &mut self,
-            transactions: Vec<(&Transaction, LedgerTransactionReceipt)>,
+            transactions: Vec<(StoredTransaction, LedgerTransactionReceipt)>,
         );
     }
 
     pub trait QueryableTransactionStore {
-        fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt);
+        fn get_transaction(
+            &self,
+            tid: &PayloadHash,
+        ) -> Option<(StoredTransaction, LedgerTransactionReceipt)>;
     }
 }
 
 pub mod proofs {
-    use crate::types::TId;
+    use crate::types::PayloadHash;
 
     pub trait WriteableProofStore {
         fn insert_tids_and_proof(
             &mut self,
             state_version: u64,
-            ids: Vec<TId>,
+            ids: Vec<PayloadHash>,
             proof_bytes: Vec<u8>,
         );
 
-        fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<TId>);
+        fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<PayloadHash>);
     }
 
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> u64;
-        fn get_tid(&self, state_version: u64) -> Option<TId>;
-        fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)>;
+        fn get_payload_hash(&self, state_version: u64) -> Option<PayloadHash>;
+        fn get_next_proof(&self, state_version: u64) -> Option<(Vec<PayloadHash>, Vec<u8>)>;
         fn get_last_proof(&self) -> Option<Vec<u8>>;
     }
 }

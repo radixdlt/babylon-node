@@ -62,18 +62,19 @@
  * permissions under this License.
  */
 
+use std::collections::HashSet;
+
 use crate::jni::state_manager::ActualStateManager;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use radix_engine::types::scrypto_encode;
 use sbor::{Decode, Encode, TypeId};
+use transaction::errors::TransactionValidationError;
 
 use crate::jni::utils::*;
-use crate::mempool::*;
-use crate::result::{
-    ResultStateManagerMaps, StateManagerError, StateManagerResult, ERRCODE_INTERFACE_CASTS,
-};
-use crate::types::Transaction;
+use crate::types::PendingTransaction;
+use crate::{mempool::*, PayloadHash};
 
 //
 // JNI Interface
@@ -86,27 +87,22 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call_flatten_result(env, j_state_manager, request_payload, do_add)
+    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_add)
 }
 
 fn do_add(
     state_manager: &mut ActualStateManager,
-    args: Transaction,
-) -> StateManagerResult<Result<Transaction, MempoolErrorJava>> {
+    args: JavaRawTransaction,
+) -> Result<JavaPayloadHash, MempoolAddErrorJava> {
     let transaction = args;
 
-    // TODO: Move decoding of transaction to a separate "zone"
-    // TODO: Use notarized transaction in mempool
-    let decode_result = state_manager.decode_transaction(&transaction);
-
-    if let Err(error) = decode_result {
-        return Err(MempoolError::TransactionValidationError(error)).map_err_sm(|err| err.into());
-    }
+    let (notarized_transaction, _) = state_manager.parse_and_validate(&transaction.payload)?;
 
     state_manager
         .mempool
-        .add_transaction(transaction)
-        .map_err_sm(|err| err.into())
+        .add_transaction(notarized_transaction.into())
+        .map(|_| transaction.payload_hash)
+        .map_err(|err| err.into())
 }
 
 #[no_mangle]
@@ -116,7 +112,7 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call_flatten_result(
+    jni_state_manager_sbor_call(
         env,
         j_state_manager,
         request_payload,
@@ -126,13 +122,21 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
 
 fn do_get_transactions_for_proposal(
     state_manager: &mut ActualStateManager,
-    args: (u32, Vec<Transaction>),
-) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
+    args: (u32, Vec<JavaPayloadHash>),
+) -> Vec<JavaRawTransaction> {
     let (count, prepared_transactions) = args;
+
+    let prepared_ids: HashSet<PayloadHash> = prepared_transactions
+        .into_iter()
+        .map(|id| PayloadHash(id.0.try_into().expect("transaction id the wrong length")))
+        .collect();
+
     state_manager
         .mempool
-        .get_proposal_transactions(count.into(), &prepared_transactions)
-        .map_err_sm(|err| err.into())
+        .get_proposal_transactions(count.into(), &prepared_ids)
+        .into_iter()
+        .map(|t| t.into())
+        .collect()
 }
 
 #[no_mangle]
@@ -156,7 +160,7 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call_flatten_result(
+    jni_state_manager_sbor_call(
         env,
         j_state_manager,
         request_payload,
@@ -167,51 +171,71 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
 fn do_get_transactions_to_relay(
     state_manager: &mut ActualStateManager,
     args: (u64, u64),
-) -> StateManagerResult<Result<Vec<Transaction>, MempoolErrorJava>> {
+) -> Vec<JavaRawTransaction> {
     let (initial_delay_millis, repeat_delay_millis) = args;
 
     state_manager
         .mempool
         .get_relay_transactions(initial_delay_millis, repeat_delay_millis)
-        .map_err_sm(|err| err.into())
+        .into_iter()
+        .map(|t| t.into())
+        .collect()
 }
 
 //
 // DTO Models + Mapping
 //
 
-#[derive(Debug, PartialEq, TypeId, Encode, Decode)]
-enum MempoolErrorJava {
-    Full { current_size: i64, max_size: i64 },
+/// Corresponds to the payload_hash
+#[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
+pub struct JavaPayloadHash(Vec<u8>);
+
+impl From<PayloadHash> for JavaPayloadHash {
+    fn from(payload_hash: PayloadHash) -> Self {
+        JavaPayloadHash(payload_hash.0.to_vec())
+    }
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct JavaRawTransaction {
+    pub payload: Vec<u8>,
+    pub payload_hash: JavaPayloadHash,
+}
+
+impl From<PendingTransaction> for JavaRawTransaction {
+    fn from(transaction: PendingTransaction) -> Self {
+        JavaRawTransaction {
+            payload: scrypto_encode(&transaction.payload),
+            payload_hash: JavaPayloadHash(transaction.payload_hash.0.to_vec()),
+        }
+    }
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+enum MempoolAddErrorJava {
+    Full { current_size: u64, max_size: u64 },
     Duplicate,
     TransactionValidationError(String),
 }
 
-impl From<MempoolError> for StateManagerResult<MempoolErrorJava> {
-    fn from(err: MempoolError) -> Self {
+impl From<MempoolAddError> for MempoolAddErrorJava {
+    fn from(err: MempoolAddError) -> Self {
         match err {
-            MempoolError::Full {
+            MempoolAddError::Full {
                 current_size,
                 max_size,
-            } => Ok(MempoolErrorJava::Full {
-                current_size: current_size.try_into().or_else(|_| {
-                    StateManagerError::create_result(
-                        ERRCODE_INTERFACE_CASTS,
-                        "Failed to cast current_size".to_string(),
-                    )
-                })?,
-                max_size: max_size.try_into().or_else(|_| {
-                    StateManagerError::create_result(
-                        ERRCODE_INTERFACE_CASTS,
-                        "Failed to cast max_size".to_string(),
-                    )
-                })?,
-            }),
-            MempoolError::Duplicate => Ok(MempoolErrorJava::Duplicate),
-            MempoolError::TransactionValidationError(error) => Ok(
-                MempoolErrorJava::TransactionValidationError(format!("{:?}", error)),
-            ),
+            } => MempoolAddErrorJava::Full {
+                current_size,
+                max_size,
+            },
+            MempoolAddError::Duplicate => MempoolAddErrorJava::Duplicate,
         }
+    }
+}
+
+impl From<TransactionValidationError> for MempoolAddErrorJava {
+    fn from(error: TransactionValidationError) -> Self {
+        MempoolAddErrorJava::TransactionValidationError(format!("{:?}", error))
     }
 }
 

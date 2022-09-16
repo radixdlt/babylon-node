@@ -107,7 +107,7 @@ public final class REv2GenesisTest {
       var stateReader = test.getInstance(0, REv2StateReader.class);
 
       var transactionStore = test.getInstance(0, REv2TransactionAndProofStore.class);
-      var genesis = transactionStore.getTransactionAtStateVersion(1);
+      var genesis = transactionStore.getTransactionAtStateVersion(1).unwrap();
       assertThat(genesis.newComponentAddresses())
           .contains(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
 

@@ -71,7 +71,7 @@ use radix_engine::constants::GENESIS_CREATION_CREDIT;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::types::{TId, Transaction};
+use crate::types::{PayloadHash, StoredTransaction};
 use radix_engine::engine::{Substate, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::{
@@ -86,10 +86,6 @@ use crate::store::rocks_db::RocksDBCommitTransaction;
 use crate::store::traits::RecoverableVertexStore;
 use crate::LedgerTransactionReceipt;
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
-
-// TODO: Remove this when serialized genesis intent is implemented
-pub const GENESIS_TID: TId = TId { bytes: vec![] };
-pub const GENESIS_STATE_VERSION: u64 = 1;
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
@@ -127,7 +123,8 @@ impl StateManagerDatabase {
         if !matches!(state_manager_db, StateManagerDatabase::None)
             && state_manager_db.max_state_version() == 0
         {
-            println!("Running genesis on the engine...");
+            // TODO - replace with info log when we have logging
+            // println!("Running genesis on the engine...");
 
             let mut db_txn = state_manager_db.create_db_transaction();
             let mut fee_reserve = SystemLoanFeeReserve::default();
@@ -149,16 +146,16 @@ impl StateManagerDatabase {
                 )
                     .into();
 
-                let mock_genesis = Transaction {
-                    payload: vec![],
-                    id: GENESIS_TID,
-                };
-                db_txn.insert_transactions(vec![(&mock_genesis, ledger_receipt)]);
-                db_txn.insert_tids_without_proof(1, vec![GENESIS_TID]);
+                let mock_genesis = StoredTransaction::System(vec![]);
+                let payload_hash = mock_genesis.get_hash();
+                db_txn.insert_transactions(vec![(mock_genesis, ledger_receipt)]);
+                db_txn.insert_tids_without_proof(1, vec![payload_hash]);
             }
 
             db_txn.commit();
-            println!("Genesis committed");
+
+            // TODO - replace with info log when we have logging
+            // println!("Genesis committed");
         }
 
         state_manager_db
@@ -213,7 +210,10 @@ impl<'db> ReadableSubstateStore for StateManagerCommitTransaction<'db> {
 }
 
 impl<'db> WriteableTransactionStore for StateManagerCommitTransaction<'db> {
-    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, LedgerTransactionReceipt)>) {
+    fn insert_transactions(
+        &mut self,
+        transactions: Vec<(StoredTransaction, LedgerTransactionReceipt)>,
+    ) {
         match self {
             StateManagerCommitTransaction::InMemory {
                 transactions_and_proofs,
@@ -227,7 +227,12 @@ impl<'db> WriteableTransactionStore for StateManagerCommitTransaction<'db> {
 }
 
 impl<'db> WriteableProofStore for StateManagerCommitTransaction<'db> {
-    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
+    fn insert_tids_and_proof(
+        &mut self,
+        state_version: u64,
+        ids: Vec<PayloadHash>,
+        proof_bytes: Vec<u8>,
+    ) {
         match self {
             StateManagerCommitTransaction::InMemory {
                 transactions_and_proofs,
@@ -239,7 +244,7 @@ impl<'db> WriteableProofStore for StateManagerCommitTransaction<'db> {
         }
     }
 
-    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<TId>) {
+    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<PayloadHash>) {
         match self {
             StateManagerCommitTransaction::InMemory {
                 transactions_and_proofs,
@@ -320,13 +325,16 @@ impl<'db> CommitStore<'db> for StateManagerDatabase {
 }
 
 impl QueryableTransactionStore for StateManagerDatabase {
-    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt) {
+    fn get_transaction(
+        &self,
+        payload_hash: &PayloadHash,
+    ) -> Option<(StoredTransaction, LedgerTransactionReceipt)> {
         match self {
             StateManagerDatabase::InMemory {
                 transactions_and_proofs,
                 ..
-            } => transactions_and_proofs.get_transaction(tid),
-            StateManagerDatabase::RocksDB(store) => store.get_transaction(tid),
+            } => transactions_and_proofs.get_transaction(payload_hash),
+            StateManagerDatabase::RocksDB(store) => store.get_transaction(payload_hash),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
@@ -344,23 +352,18 @@ impl QueryableProofStore for StateManagerDatabase {
         }
     }
 
-    fn get_tid(&self, state_version: u64) -> Option<TId> {
-        // TODO: Remove this when serialized genesis intent is implemented
-        if state_version == GENESIS_STATE_VERSION {
-            return Some(GENESIS_TID);
-        }
-
+    fn get_payload_hash(&self, state_version: u64) -> Option<PayloadHash> {
         match self {
             StateManagerDatabase::InMemory {
                 transactions_and_proofs,
                 ..
-            } => transactions_and_proofs.get_tid(state_version),
-            StateManagerDatabase::RocksDB(store) => store.get_tid(state_version),
+            } => transactions_and_proofs.get_payload_hash(state_version),
+            StateManagerDatabase::RocksDB(store) => store.get_payload_hash(state_version),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
 
-    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<PayloadHash>, Vec<u8>)> {
         match self {
             StateManagerDatabase::InMemory {
                 transactions_and_proofs,

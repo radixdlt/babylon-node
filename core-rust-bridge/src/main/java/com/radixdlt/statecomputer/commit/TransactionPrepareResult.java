@@ -62,92 +62,29 @@
  * permissions under this License.
  */
 
-use crate::jni::state_manager::ActualStateManager;
-use crate::store::traits::*;
+package com.radixdlt.statecomputer.commit;
 
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use sbor::{Decode, Encode, TypeId};
-use scrypto::buffer::scrypto_encode;
-use scrypto::prelude::ComponentAddress;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.EnumEntry;
 
-use super::mempool::JavaPayloadHash;
-use super::utils::jni_state_manager_sbor_call;
+public sealed interface TransactionPrepareResult {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        TransactionPrepareResult.class,
+        (codecs) ->
+            EnumCodec.fromEntries(
+                EnumEntry.noFields(
+                    TransactionPrepareResult.CanCommit.class,
+                    TransactionPrepareResult.CanCommit::new),
+                EnumEntry.with(
+                    TransactionPrepareResult.Reject.class,
+                    TransactionPrepareResult.Reject::new,
+                    codecs.of(String.class),
+                    (t, encoder) -> encoder.encode(t.reason))));
+  }
 
-#[derive(Encode, Decode, TypeId)]
-struct ExecutedTransaction {
-    ledger_receipt_bytes: Vec<u8>,
-    transaction_bytes: Vec<u8>,
-    /// Used by some Java tests, consider removing at some point as it doesn't really fit here
-    new_component_addresses: Vec<ComponentAddress>,
+  record CanCommit() implements TransactionPrepareResult {}
+
+  record Reject(String reason) implements TransactionPrepareResult {}
 }
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getTransactionAtStateVersion(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_call(
-        env,
-        j_state_manager,
-        request_payload,
-        do_get_transaction_at_state_version,
-    )
-}
-
-fn do_get_transaction_at_state_version(
-    state_manager: &mut ActualStateManager,
-    state_version: u64,
-) -> Option<ExecutedTransaction> {
-    let payload_hash = state_manager.store.get_payload_hash(state_version)?;
-
-    let (stored_transaction, ledger_receipt) =
-        state_manager.store.get_transaction(&payload_hash)?;
-    let ledger_receipt_bytes = scrypto_encode(&ledger_receipt);
-
-    Some(ExecutedTransaction {
-        ledger_receipt_bytes,
-        transaction_bytes: stored_transaction.into_payload(),
-        new_component_addresses: ledger_receipt.entity_changes.new_component_addresses,
-    })
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getNextProof(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_get_next_proof)
-}
-
-fn do_get_next_proof(
-    state_manager: &mut ActualStateManager,
-    state_version: u64,
-) -> Option<(Vec<JavaPayloadHash>, Vec<u8>)> {
-    let (payload_hashes, proof) = state_manager.store.get_next_proof(state_version)?;
-
-    let payload_hashes = payload_hashes.into_iter().map(|hash| hash.into()).collect();
-
-    Some((payload_hashes, proof))
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLastProof(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_get_last_proof)
-}
-
-fn do_get_last_proof(state_manager: &mut ActualStateManager, _args: ()) -> Option<Vec<u8>> {
-    state_manager.store.get_last_proof()
-}
-
-pub fn export_extern_functions() {}

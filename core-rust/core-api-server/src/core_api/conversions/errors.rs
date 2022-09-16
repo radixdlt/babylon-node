@@ -1,4 +1,5 @@
 use sbor::DecodeError;
+use transaction::errors::TransactionValidationError;
 
 use crate::core_api::{client_error, server_error, RequestHandlingError};
 
@@ -33,9 +34,9 @@ pub enum MappingError {
 }
 
 impl From<MappingError> for RequestHandlingError {
-    fn from(mapping_error: MappingError) -> Self {
+    fn from(_: MappingError) -> Self {
         // TODO - replace with warn when we have logging
-        println!("Error mapping on Core API: {:?}", mapping_error);
+        // println!("Error mapping response on Core API: {:?}", mapping_error);
         server_error("Server error mapping response")
     }
 }
@@ -48,6 +49,7 @@ pub enum ExtractionError {
     InvalidHex,
     InvalidSignature,
     InvalidPublicKey,
+    InvalidTransaction(TransactionValidationError),
 }
 
 impl ExtractionError {
@@ -56,5 +58,11 @@ impl ExtractionError {
             "Error extracting {} from request: {:?}",
             field_name, self
         ))
+    }
+}
+
+impl From<TransactionValidationError> for ExtractionError {
+    fn from(err: TransactionValidationError) -> Self {
+        ExtractionError::InvalidTransaction(err)
     }
 }

@@ -140,7 +140,12 @@ public final class Checkers {
                 for (long txnStateVersion = 1;
                     txnStateVersion <= proof.getStateVersion();
                     txnStateVersion++) {
-                  var executedTxn = store.getTransactionAtStateVersion(txnStateVersion);
+                  var executedTxnOption = store.getTransactionAtStateVersion(txnStateVersion);
+                  assertThat(executedTxnOption.isPresent())
+                      .as("Each proved transaction should be in the store")
+                      .isTrue();
+
+                  var executedTxn = executedTxnOption.unwrap();
                   var maybeExistingExecutedTxn = executedTxns.get(txnStateVersion);
                   if (maybeExistingExecutedTxn != null) {
                     // TODO (SCRY-248): this should compare executedTxn to maybeExistingExecutedTxn

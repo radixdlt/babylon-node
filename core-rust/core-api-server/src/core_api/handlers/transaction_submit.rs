@@ -1,9 +1,9 @@
 use crate::core_api::*;
-use scrypto::crypto::sha256_twice;
 
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::mempool::Mempool;
-use state_manager::{MempoolError, TId, Transaction};
+use state_manager::MempoolAddError;
+use transaction::model::NotarizedTransaction;
 
 pub(crate) async fn handle_transaction_submit(
     state: Extension<CoreApiState>,
@@ -18,30 +18,29 @@ fn handle_transaction_submit_internal(
 ) -> Result<models::TransactionSubmitResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
-    let transaction_bytes = from_hex(request.notarized_transaction)
-        .map_err(|err| err.into_response_error("notarized_transaction"))?;
+    let notarized_transaction =
+        extract_notarized_transaction(state_manager, &request.notarized_transaction)
+            .map_err(|err| err.into_response_error("notarized_transaction"))?;
 
-    let tid = sha256_twice(transaction_bytes.clone());
-
-    let transaction = Transaction {
-        payload: transaction_bytes,
-        id: TId {
-            bytes: tid.to_vec(),
-        },
-    };
-
-    let result = state_manager.mempool.add_transaction(transaction);
+    let result = state_manager
+        .mempool
+        .add_transaction(notarized_transaction.into());
 
     match result {
         Ok(_) => Ok(models::TransactionSubmitResponse::new(false)),
-        Err(MempoolError::Duplicate) => Ok(models::TransactionSubmitResponse::new(true)),
-        Err(MempoolError::Full {
+        Err(MempoolAddError::Duplicate) => Ok(models::TransactionSubmitResponse::new(true)),
+        Err(MempoolAddError::Full {
             current_size: _,
             max_size: _,
         }) => Err(client_error("Mempool is full")),
-        Err(MempoolError::TransactionValidationError(err)) => Err(client_error(&format!(
-            "Transaction validation error: {:?}",
-            err
-        ))),
     }
+}
+
+pub fn extract_notarized_transaction(
+    state_manager: &mut ActualStateManager,
+    payload: &str,
+) -> Result<NotarizedTransaction, ExtractionError> {
+    let transaction_bytes = from_hex(payload)?;
+    let (notarized_transaction, _) = state_manager.parse_and_validate(&transaction_bytes)?;
+    Ok(notarized_transaction)
 }

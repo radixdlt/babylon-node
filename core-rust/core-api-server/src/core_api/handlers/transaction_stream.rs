@@ -1,13 +1,12 @@
 use crate::core_api::*;
 
-use radix_engine::types::hash;
 use scrypto::address::Bech32Encoder;
-use scrypto::buffer::scrypto_decode;
 use scrypto::core::NetworkDefinition;
 
+use scrypto::prelude::sha256_twice;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
-use state_manager::LedgerTransactionReceipt;
+use state_manager::{LedgerTransactionReceipt, StoredTransaction};
 use std::cmp;
 use std::collections::HashMap;
 use transaction::manifest;
@@ -46,13 +45,24 @@ fn handle_transaction_stream_internal(
     let mut txns = vec![];
     let mut state_version = from_state_version;
     while state_version <= up_to_state_version_inclusive {
-        let next_tid = state_manager.store.get_tid(state_version).ok_or_else(|| {
-            server_error(&format!(
-                "A transaction is missing at state version {}",
-                state_version
-            ))
-        })?;
-        let next_tx = state_manager.store.get_transaction(&next_tid);
+        let next_tid = state_manager
+            .store
+            .get_payload_hash(state_version)
+            .ok_or_else(|| {
+                server_error(&format!(
+                    "A transaction id is missing at state version {}",
+                    state_version
+                ))
+            })?;
+        let next_tx = state_manager
+            .store
+            .get_transaction(&next_tid)
+            .ok_or_else(|| {
+                server_error(&format!(
+                    "A transaction is missing at state version {}",
+                    state_version
+                ))
+            })?;
         txns.push((next_tx, state_version));
         state_version += 1;
     }
@@ -62,13 +72,9 @@ fn handle_transaction_stream_internal(
     let api_txns = txns
         .into_iter()
         .map(|((tx, receipt), state_version)| {
-            let notarized_tx = if !tx.is_empty() {
-                Some(scrypto_decode::<NotarizedTransaction>(&tx).map_err(|_| {
-                    server_error("Internal server error: invalid committed transaction payload")
-                })?)
-            } else {
-                // Temporary workaround for Genesis - fix later
-                None
+            let notarized_tx = match tx {
+                StoredTransaction::User(notarized) => Some(notarized),
+                StoredTransaction::System(_) => None,
             };
 
             let api_tx =
@@ -148,7 +154,7 @@ fn to_api_notarized_transaction(
                     .manifest
                     .blobs
                     .into_iter()
-                    .map(|blob| (to_hex(hash(&blob)), to_hex(blob)))
+                    .map(|blob| (to_hex(sha256_twice(&blob)), to_hex(blob)))
                     .collect::<HashMap<String, String>>(),
             }),
             intent_signatures: signed_intent

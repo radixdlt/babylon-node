@@ -138,7 +138,9 @@ public final class REv2ConsensusTransferTest {
 
       // Assert: Check transaction and post submission state
       var executedTransaction =
-          test.getInstance(0, REv2TransactionAndProofStore.class).getTransactionAtStateVersion(2);
+          test.getInstance(0, REv2TransactionAndProofStore.class)
+              .getTransactionAtStateVersion(2)
+              .unwrap();
       var componentAddress = executedTransaction.newComponentAddresses().get(0);
       var stateReader = test.getInstance(0, REv2StateReader.class);
       var accountAmount = stateReader.getComponentXrdAmount(componentAddress);

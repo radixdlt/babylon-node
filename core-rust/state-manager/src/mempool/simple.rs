@@ -63,19 +63,19 @@
  */
 
 use crate::mempool::*;
-use crate::types::{TId, Transaction};
+use crate::types::{PayloadHash, PendingTransaction};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
 struct MempoolData {
-    transaction: Transaction,
+    transaction: PendingTransaction,
     inserted: Instant,
     relayed: Option<Instant>,
 }
 
 impl MempoolData {
-    fn create(transaction: Transaction) -> MempoolData {
+    fn create(transaction: PendingTransaction) -> MempoolData {
         MempoolData {
             transaction,
             inserted: Instant::now(),
@@ -103,7 +103,7 @@ impl MempoolData {
 
 pub struct SimpleMempool {
     max_size: u64,
-    data: HashMap<TId, MempoolData>,
+    data: HashMap<PayloadHash, MempoolData>,
 }
 
 impl SimpleMempool {
@@ -116,41 +116,41 @@ impl SimpleMempool {
 }
 
 impl Mempool for SimpleMempool {
-    fn add_transaction(&mut self, transaction: Transaction) -> Result<Transaction, MempoolError> {
+    fn add_transaction(&mut self, transaction: PendingTransaction) -> Result<(), MempoolAddError> {
         let len: u64 = self.data.len().try_into().unwrap();
 
         if len >= self.max_size {
-            return Err(MempoolError::Full {
+            return Err(MempoolAddError::Full {
                 current_size: len,
                 max_size: self.max_size,
             });
         }
 
-        let tid = transaction.id.clone();
+        let tid = transaction.payload_hash.clone();
 
         match self.data.entry(tid) {
-            Entry::Occupied(_) => Err(MempoolError::Duplicate),
+            Entry::Occupied(_) => Err(MempoolAddError::Duplicate),
 
             Entry::Vacant(e) => {
-                // Insert Transaction into mempool.
+                // Insert Transaction into vacant entry in the mempool.
+                e.insert(MempoolData::create(transaction));
 
-                let data = MempoolData::create(transaction.clone());
-                e.insert(data);
-
-                // Return same transaction for now.
-                Ok(transaction)
+                Ok(())
             }
         }
     }
 
-    fn handle_committed_transactions(&mut self, transactions: &[Transaction]) -> Vec<Transaction> {
-        let mut removed = Vec::new();
-        for t in transactions {
-            if self.data.remove(&t.id).is_some() {
-                removed.push(t.clone())
+    fn handle_committed_transactions(
+        &mut self,
+        payload_hashes: &[PayloadHash],
+    ) -> Vec<PendingTransaction> {
+        let mut removed_transactions = Vec::new();
+        for hash in payload_hashes {
+            if let Some(removed) = self.data.remove(hash) {
+                removed_transactions.push(removed.transaction)
             };
         }
-        removed
+        removed_transactions
     }
 
     fn get_count(&self) -> u64 {
@@ -160,10 +160,8 @@ impl Mempool for SimpleMempool {
     fn get_proposal_transactions(
         &self,
         count: u64,
-        prepared: &[Transaction],
-    ) -> Result<Vec<Transaction>, MempoolError> {
-        let prepared_ids: HashSet<TId> = prepared.iter().map(|t| t.id.clone()).collect();
-
+        prepared_ids: &HashSet<PayloadHash>,
+    ) -> Vec<PendingTransaction> {
         let transactions = self
             .data
             .iter()
@@ -172,14 +170,14 @@ impl Mempool for SimpleMempool {
             .map(|(_, data)| data.transaction.clone())
             .collect();
 
-        Ok(transactions)
+        transactions
     }
 
     fn get_relay_transactions(
         &mut self,
         initial_delay_millis: u64,
         repeat_delay_millis: u64,
-    ) -> Result<Vec<Transaction>, MempoolError> {
+    ) -> Vec<PendingTransaction> {
         let nowish = Instant::now();
         let initial_delay = Duration::from_millis(initial_delay_millis);
         let repeat_delay = Duration::from_millis(repeat_delay_millis);
@@ -195,137 +193,180 @@ impl Mempool for SimpleMempool {
             to_relay.push(data.transaction.clone());
         }
 
-        Ok(to_relay)
+        to_relay
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use radix_engine::types::{EcdsaPublicKey, EcdsaSignature, PublicKey, Signature};
+    use transaction::model::{
+        NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
+        TransactionManifest,
+    };
+
     use crate::mempool::simple::*;
     use crate::types::*;
 
+    fn create_fake_pub_key() -> PublicKey {
+        PublicKey::Ecdsa(EcdsaPublicKey([0; EcdsaPublicKey::LENGTH]))
+    }
+
+    fn create_fake_signature() -> Signature {
+        Signature::Ecdsa(EcdsaSignature([0; EcdsaSignature::LENGTH]))
+    }
+
+    fn create_fake_notarized_transaction(nonce: u64) -> NotarizedTransaction {
+        NotarizedTransaction {
+            signed_intent: SignedTransactionIntent {
+                intent: TransactionIntent {
+                    header: TransactionHeader {
+                        version: 1,
+                        network_id: 1,
+                        start_epoch_inclusive: 1,
+                        end_epoch_exclusive: 2,
+                        nonce,
+                        notary_public_key: create_fake_pub_key(),
+                        notary_as_signatory: false,
+                        cost_unit_limit: 100,
+                        tip_percentage: 0,
+                    },
+                    manifest: TransactionManifest {
+                        instructions: vec![],
+                        blobs: vec![],
+                    },
+                },
+                intent_signatures: vec![],
+            },
+            notary_signature: create_fake_signature(),
+        }
+    }
+
+    fn create_fake_pending_transaction(nonce: u64) -> PendingTransaction {
+        let notarized_transaction = create_fake_notarized_transaction(nonce);
+        let payload_hash: PayloadHash = (&notarized_transaction).into();
+        let intent_hash: IntentHash = (&notarized_transaction).into();
+        PendingTransaction {
+            payload: notarized_transaction,
+            payload_hash,
+            intent_hash,
+        }
+    }
+
     #[test]
     fn add_and_get_test() {
-        let pl1 = vec![1u8; 32];
-        let pl2 = vec![2u8; 32];
-        let pl3 = vec![3u8; 32];
-
-        let tv1 = Transaction {
-            payload: pl1.clone(),
-            id: TId { bytes: pl1 },
-        };
-        let tv2 = Transaction {
-            payload: pl2.clone(),
-            id: TId { bytes: pl2 },
-        };
-        let tv3 = Transaction {
-            payload: pl3.clone(),
-            id: TId { bytes: pl3 },
-        };
+        let tv1 = create_fake_pending_transaction(1);
+        let tv2 = create_fake_pending_transaction(2);
+        let tv3 = create_fake_pending_transaction(3);
 
         let mut mp = SimpleMempool::new(MempoolConfig { max_size: 2 });
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 0);
-        let rc = mp.get_proposal_transactions(3, &Vec::new());
-        assert!(rc.is_ok());
-        let get = rc.unwrap();
+        let rc = mp.get_proposal_transactions(3, &HashSet::new());
+        let get = rc;
         assert!(get.is_empty());
 
         let rc = mp.add_transaction(tv1.clone());
         assert!(rc.is_ok());
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 1);
-        assert!(mp.data.contains_key(&tv1.id));
-        let rc = mp.get_proposal_transactions(3, &Vec::new());
-        assert!(rc.is_ok());
-        let get = rc.unwrap();
+        assert!(mp.data.contains_key(&tv1.payload_hash));
+        let rc = mp.get_proposal_transactions(3, &HashSet::new());
+        let get = rc;
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
-        let rc = mp.get_proposal_transactions(3, &[tv1.clone(), tv2.clone(), tv3.clone()]);
-        assert!(rc.is_ok());
-        let get = rc.unwrap();
+        let rc = mp.get_proposal_transactions(
+            3,
+            &HashSet::from([
+                tv1.payload_hash.clone(),
+                tv2.payload_hash.clone(),
+                tv3.payload_hash.clone(),
+            ]),
+        );
+        let get = rc;
         assert!(get.is_empty());
 
-        let rc = mp.get_proposal_transactions(3, &[tv2.clone(), tv3.clone()]);
-        assert!(rc.is_ok());
-        let get = rc.unwrap();
+        let rc = mp.get_proposal_transactions(
+            3,
+            &HashSet::from([tv2.payload_hash.clone(), tv3.payload_hash.clone()]),
+        );
+        let get = rc;
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
         let rc = mp.add_transaction(tv1.clone());
         assert!(rc.is_err());
-        assert_eq!(rc, Err(MempoolError::Duplicate));
+        assert_eq!(rc, Err(MempoolAddError::Duplicate));
 
         let rc = mp.add_transaction(tv2.clone());
         assert!(rc.is_ok());
         assert_eq!(mp.max_size, 2);
         assert_eq!(mp.get_count(), 2);
-        assert!(mp.data.contains_key(&tv1.id));
-        assert!(mp.data.contains_key(&tv2.id));
+        assert!(mp.data.contains_key(&tv1.payload_hash));
+        assert!(mp.data.contains_key(&tv2.payload_hash));
 
-        let rc = mp.get_proposal_transactions(3, &Vec::new());
-        assert!(rc.is_ok());
-        let get = rc.unwrap();
+        let rc = mp.get_proposal_transactions(3, &HashSet::new());
+        let get = rc;
         assert_eq!(get.len(), 2);
         assert!(get.contains(&tv1));
         assert!(get.contains(&tv2));
 
-        let rc =
-            mp.get_proposal_transactions(3, &Vec::from([tv1.clone(), tv2.clone(), tv3.clone()]));
-        assert!(rc.is_ok());
-        let get = rc.unwrap();
+        let rc = mp.get_proposal_transactions(
+            3,
+            &HashSet::from([
+                tv1.payload_hash.clone(),
+                tv2.payload_hash.clone(),
+                tv3.payload_hash.clone(),
+            ]),
+        );
+        let get = rc;
         assert!(get.is_empty());
 
-        let rc = mp.get_proposal_transactions(3, &Vec::from([tv2.clone(), tv3.clone()]));
-        assert!(rc.is_ok());
-        let get = rc.unwrap();
+        let rc = mp.get_proposal_transactions(
+            3,
+            &HashSet::from([tv2.payload_hash.clone(), tv3.payload_hash.clone()]),
+        );
+        let get = rc;
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
-        let rc = mp.get_proposal_transactions(3, &Vec::from([tv1.clone(), tv3.clone()]));
-        assert!(rc.is_ok());
-        let get = rc.unwrap();
+        let rc = mp.get_proposal_transactions(
+            3,
+            &HashSet::from([tv1.payload_hash.clone(), tv3.payload_hash.clone()]),
+        );
+        let get = rc;
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv2));
 
-        let rem = mp.handle_committed_transactions(&Vec::from([tv1.clone()]));
+        let rem = mp.handle_committed_transactions(&Vec::from([tv1.payload_hash.clone()]));
         assert!(rem.contains(&tv1));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 1);
-        assert!(mp.data.contains_key(&tv2.id));
-        assert!(!mp.data.contains_key(&tv1.id));
+        assert!(mp.data.contains_key(&tv2.payload_hash));
+        assert!(!mp.data.contains_key(&tv1.payload_hash));
 
-        let rem = mp.handle_committed_transactions(&Vec::from([tv2.clone()]));
+        let rem = mp.handle_committed_transactions(&Vec::from([tv2.payload_hash.clone()]));
         assert!(rem.contains(&tv2));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 0);
-        assert!(!mp.data.contains_key(&tv2.id));
-        assert!(!mp.data.contains_key(&tv1.id));
+        assert!(!mp.data.contains_key(&tv2.payload_hash));
+        assert!(!mp.data.contains_key(&tv1.payload_hash));
 
         // mempool is empty. Should return no transactions.
-        let rem = mp.handle_committed_transactions(&Vec::from([tv3, tv2, tv1]));
+        let rem = mp.handle_committed_transactions(&Vec::from([
+            tv3.payload_hash,
+            tv2.payload_hash,
+            tv1.payload_hash,
+        ]));
         assert!(rem.is_empty());
     }
 
     #[test]
     fn test_relay_delays() {
-        let pl1 = vec![1u8; 32];
-        let pl2 = vec![2u8; 32];
-        let pl3 = vec![3u8; 32];
-
-        let tv1 = Transaction {
-            payload: pl1.clone(),
-            id: TId { bytes: pl1 },
-        };
-        let tv2 = Transaction {
-            payload: pl2.clone(),
-            id: TId { bytes: pl2 },
-        };
-        let tv3 = Transaction {
-            payload: pl3.clone(),
-            id: TId { bytes: pl3 },
-        };
+        let tv1 = create_fake_pending_transaction(1);
+        let tv2 = create_fake_pending_transaction(2);
+        let tv3 = create_fake_pending_transaction(3);
 
         // TODO: Add faketime or similar library not to be time
         // dependent.
@@ -345,15 +386,13 @@ mod tests {
 
         // High initial delay. Check nothing gets returned.
         let rc = mp.get_relay_transactions(delay, 0);
-        assert!(rc.is_ok());
-        let rel = rc.unwrap();
+        let rel = rc;
         assert!(rel.is_empty());
 
         // Now sleep for the initial and check that they are all returned.
         std::thread::sleep(Duration::from_millis(delay));
         let rc = mp.get_relay_transactions(delay, 0);
-        assert!(rc.is_ok());
-        let rel = rc.unwrap();
+        let rel = rc;
         assert!(rel.contains(&tv1));
         assert!(rel.contains(&tv2));
         assert!(rel.contains(&tv3));
@@ -361,8 +400,7 @@ mod tests {
 
         // With no relay delay, they should be returned again immediately.
         let rc = mp.get_relay_transactions(delay, 0);
-        assert!(rc.is_ok());
-        let rel = rc.unwrap();
+        let rel = rc;
         assert!(rel.contains(&tv1));
         assert!(rel.contains(&tv2));
         assert!(rel.contains(&tv3));
@@ -370,15 +408,13 @@ mod tests {
 
         // With a relay delay, nothing should be returned now.
         let rc = mp.get_relay_transactions(0, delay);
-        assert!(rc.is_ok());
-        let rel = rc.unwrap();
+        let rel = rc;
         assert!(rel.is_empty());
 
         // Sleep for the relay delay, and check that it is returned.
         std::thread::sleep(Duration::from_millis(delay));
         let rc = mp.get_relay_transactions(0, delay);
-        assert!(rc.is_ok());
-        let rel = rc.unwrap();
+        let rel = rc;
         assert!(rel.contains(&tv1));
         assert!(rel.contains(&tv2));
         assert!(rel.contains(&tv3));

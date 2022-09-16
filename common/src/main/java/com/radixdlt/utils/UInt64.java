@@ -66,6 +66,7 @@ package com.radixdlt.utils;
 
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
+import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.constants.TypeId;
@@ -107,6 +108,10 @@ public class UInt64 implements Comparable<UInt64>, Serializable {
     }
 
     return new UInt64(l);
+  }
+
+  public Option<Long> toNonNegativeLong() {
+    return underlyingValue < 0 ? Option.none() : Option.some(underlyingValue);
   }
 
   private UInt64(Long underlyingValue) {

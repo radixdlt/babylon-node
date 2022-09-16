@@ -99,7 +99,7 @@ public final class REv2TransactionAndProofStore {
             REv2TransactionAndProofStore::getLastProof);
   }
 
-  public ExecutedTransaction getTransactionAtStateVersion(long stateVersion) {
+  public Option<ExecutedTransaction> getTransactionAtStateVersion(long stateVersion) {
     return this.getTransactionAtStateVersionFunc.call(UInt64.fromNonNegativeLong(stateVersion));
   }
 
@@ -111,7 +111,7 @@ public final class REv2TransactionAndProofStore {
     return this.getLastProofFunc.call(Unit.unit()).toOptional();
   }
 
-  private final NativeCalls.Func1<StateManager, UInt64, ExecutedTransaction>
+  private final NativeCalls.Func1<StateManager, UInt64, Option<ExecutedTransaction>>
       getTransactionAtStateVersionFunc;
 
   private static native byte[] getTransactionAtStateVersion(

@@ -67,7 +67,6 @@ use sbor::{Decode, Encode, TypeId};
 // System Errors.
 pub const ERRCODE_JNI: i16 = 0;
 pub const ERRCODE_SBOR: i16 = 1;
-pub const ERRCODE_INTERFACE_CASTS: i16 = 2;
 
 #[derive(TypeId, Encode, Decode, Debug)]
 pub struct StateManagerError {
