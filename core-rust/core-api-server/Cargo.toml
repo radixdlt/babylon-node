@@ -35,7 +35,7 @@ futures = "0.3"
 
 ### TYPES FOR THE SERVER
 # Axum - see https://docs.rs/axum/latest/axum/#required-dependencies
-axum = { version = "0.5.15", features = ["http1", "json"] } 
+axum = { version = "0.5.15", features = ["http1", "json"] }
 # Hyper - see https://docs.rs/axum/latest/axum/#required-dependencies
 hyper = { version = "0.14.20", features = ["server", "http1"] }
 # Tokio - see https://docs.rs/tokio/latest/tokio/
