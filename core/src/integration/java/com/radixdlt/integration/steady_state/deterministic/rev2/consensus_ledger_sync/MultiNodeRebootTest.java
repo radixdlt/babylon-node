@@ -166,7 +166,7 @@ public final class MultiNodeRebootTest {
         if (numNodesLive > numValidators * 2 / 3) {
           // Network has a quorum of nodes so should still be able to maintain ledger liveness
           long stateVersion = NodesReader.getHighestStateVersion(test.getNodeInjectors());
-          test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(stateVersion + 5), 500000);
+          test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(stateVersion + 5), 50000);
         } else if (numNodesLive > 0) {
           // Network has less than the required quorum of nodes so liveness not guaranteed
           test.runForCount(random.nextInt(numNodesLive * 50, numNodesLive * 100));
