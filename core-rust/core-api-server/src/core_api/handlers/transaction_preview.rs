@@ -4,7 +4,8 @@ use scrypto::address::Bech32Encoder;
 use scrypto::prelude::*;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{LedgerTransactionReceipt, PreviewRequest};
-use transaction::model::{PreviewFlags, TransactionManifest};
+use transaction::manifest;
+use transaction::model::PreviewFlags;
 
 pub(crate) async fn handle_transaction_preview(
     state: Extension<CoreApiState>,
@@ -19,7 +20,7 @@ fn handle_preview_internal(
 ) -> Result<models::TransactionPreviewResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
-    let preview_request = parse_preview_request(request)?;
+    let preview_request = parse_preview_request(&state_manager.network, request)?;
 
     let result = state_manager
         .preview(preview_request)
@@ -35,13 +36,19 @@ fn handle_preview_internal(
 }
 
 fn parse_preview_request(
+    network: &NetworkDefinition,
     request: models::TransactionPreviewRequest,
 ) -> Result<PreviewRequest, RequestHandlingError> {
-    let manifest_bytes =
-        from_hex(request.manifest).map_err(|err| err.into_response_error("manifest"))?;
+    let manifest_blobs = request
+        .blobs
+        .unwrap_or_default()
+        .into_iter()
+        .map(from_hex)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|err| err.into_response_error("blobs"))?;
 
-    let manifest = scrypto_decode::<TransactionManifest>(&manifest_bytes)
-        .map_err(|_| client_error("Invalid manifest - could not SBOR decode"))?;
+    let manifest = manifest::compile(&request.manifest, network, manifest_blobs)
+        .map_err(|err| client_error(&format!("Invalid manifest - {:?}", err)))?;
 
     let signer_public_keys = request
         .signer_public_keys

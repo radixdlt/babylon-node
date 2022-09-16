@@ -1183,8 +1183,13 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         manifest:
-          description: A hex-encoded, SBOR-encoded transaction manifest
+          description: A text-representation of a transaction manifest
           type: string
+        blobs:
+          description: An array of hex-encoded blob data (optional)
+          type: array
+          items:
+            type: string
         cost_unit_limit:
           type: integer
           format: int64
