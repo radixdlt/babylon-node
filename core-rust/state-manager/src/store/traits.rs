@@ -65,7 +65,6 @@
 pub use commit::*;
 pub use proofs::*;
 pub use substate::*;
-pub use substate::*;
 pub use transactions::*;
 pub use vertex::*;
 
