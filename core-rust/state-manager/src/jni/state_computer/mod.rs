@@ -63,6 +63,7 @@
  */
 
 use crate::jni::dtos::JavaStructure;
+use crate::TransactionPrepareResult;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -71,7 +72,9 @@ use scrypto::prelude::*;
 use crate::jni::state_manager::JNIStateManager;
 use crate::jni::utils::*;
 use crate::result::StateManagerResult;
-use crate::types::{CommitRequest, PrepareRequest, PrepareResult, Transaction};
+use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
+
+use super::mempool::{JavaPayloadHash, JavaRawTransaction};
 
 //
 // JNI Interface
@@ -95,11 +98,14 @@ fn do_verify(
 ) -> StateManagerResult<Result<(), String>> {
     let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
-    let transaction = Transaction::from_java(&request_payload)?;
-    let result = state_manager
+    let transaction = JavaRawTransaction::from_java(&request_payload)?;
+
+    let state_manager = state_manager
         .lock()
-        .expect("Can't acquire a state manager mutex lock")
-        .decode_transaction(&transaction);
+        .expect("Can't acquire a state manager mutex lock");
+
+    let result = state_manager.validate_transaction_slice(&transaction.payload);
+
     let ret = match result {
         Ok(..) => Ok(()),
         Err(err) => Err(format!("{:?}", err)),
@@ -149,16 +155,16 @@ fn do_prepare(
     env: &JNIEnv,
     j_state_manager: JObject,
     request_payload: jbyteArray,
-) -> StateManagerResult<PrepareResult> {
+) -> StateManagerResult<JavaPrepareResult> {
     let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
-    let prepare_request = PrepareRequest::from_java(&request_payload)?;
+    let prepare_request = JavaPrepareRequest::from_java(&request_payload)?;
 
-    let rtn = state_manager
+    let result = state_manager
         .lock()
         .expect("Can't acquire a state manager mutex lock")
-        .prepare(prepare_request);
-    Ok(rtn)
+        .prepare(prepare_request.into());
+    Ok(result.into())
 }
 
 #[no_mangle]
@@ -179,12 +185,12 @@ fn do_commit(
 ) -> StateManagerResult<()> {
     let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
     let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
-    let commit_request = CommitRequest::from_java(&request_payload)?;
+    let commit_request = JavaCommitRequest::from_java(&request_payload)?;
 
     state_manager
         .lock()
         .expect("Can't acquire a state manager mutex lock")
-        .commit(commit_request);
+        .commit(commit_request.into());
     Ok(())
 }
 
@@ -218,3 +224,66 @@ fn get_component_xrd(
 }
 
 pub fn export_extern_functions() {}
+
+#[derive(Debug, Decode, Encode, TypeId)]
+pub struct JavaCommitRequest {
+    pub transactions: Vec<JavaRawTransaction>,
+    pub state_version: u64,
+    pub proof: Vec<u8>,
+    pub vertex_store: Option<Vec<u8>>,
+}
+
+impl From<JavaCommitRequest> for CommitRequest {
+    fn from(commit_request: JavaCommitRequest) -> Self {
+        CommitRequest {
+            transaction_payloads: commit_request
+                .transactions
+                .into_iter()
+                .map(|t| t.payload)
+                .collect(),
+            state_version: commit_request.state_version,
+            proof: commit_request.proof,
+            vertex_store: commit_request.vertex_store,
+        }
+    }
+}
+
+#[derive(Debug, Decode, Encode, TypeId)]
+pub struct JavaPrepareRequest {
+    pub already_prepared: Vec<JavaRawTransaction>,
+    pub proposed: Vec<JavaRawTransaction>,
+}
+
+impl From<JavaPrepareRequest> for PrepareRequest {
+    fn from(prepare_request: JavaPrepareRequest) -> Self {
+        PrepareRequest {
+            already_prepared_payloads: prepare_request
+                .already_prepared
+                .into_iter()
+                .map(|t| t.payload)
+                .collect(),
+            proposed_payloads: prepare_request
+                .proposed
+                .into_iter()
+                .map(|t| t.payload)
+                .collect(),
+        }
+    }
+}
+
+#[derive(Debug, Decode, Encode, TypeId)]
+pub struct JavaPrepareResult {
+    pub transaction_results: Vec<(JavaPayloadHash, TransactionPrepareResult)>,
+}
+
+impl From<PrepareResult> for JavaPrepareResult {
+    fn from(prepare_results: PrepareResult) -> Self {
+        JavaPrepareResult {
+            transaction_results: prepare_results
+                .transaction_results
+                .into_iter()
+                .map(|r| (r.0.into(), r.1))
+                .collect(),
+        }
+    }
+}

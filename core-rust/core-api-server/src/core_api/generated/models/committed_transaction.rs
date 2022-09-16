@@ -16,17 +16,17 @@ pub struct CommittedTransaction {
     /// An integer between 1 and 10^13, giving the resultant state version after the transaction has been committed
     #[serde(rename = "state_version")]
     pub state_version: i64,
-    #[serde(rename = "notarized_transaction")]
-    pub notarized_transaction: Box<crate::core_api::generated::models::NotarizedTransaction>,
+    #[serde(rename = "notarized_transaction", skip_serializing_if = "Option::is_none")]
+    pub notarized_transaction: Option<Box<crate::core_api::generated::models::NotarizedTransaction>>,
     #[serde(rename = "receipt")]
     pub receipt: Box<crate::core_api::generated::models::TransactionReceipt>,
 }
 
 impl CommittedTransaction {
-    pub fn new(state_version: i64, notarized_transaction: crate::core_api::generated::models::NotarizedTransaction, receipt: crate::core_api::generated::models::TransactionReceipt) -> CommittedTransaction {
+    pub fn new(state_version: i64, receipt: crate::core_api::generated::models::TransactionReceipt) -> CommittedTransaction {
         CommittedTransaction {
             state_version,
-            notarized_transaction: Box::new(notarized_transaction),
+            notarized_transaction: None,
             receipt: Box::new(receipt),
         }
     }

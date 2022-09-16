@@ -16,9 +16,12 @@ pub struct TransactionPreviewRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
-    /// A hex-encoded, SBOR-encoded transaction manifest
+    /// A text-representation of a transaction manifest
     #[serde(rename = "manifest")]
     pub manifest: String,
+    /// An array of hex-encoded blob data (optional)
+    #[serde(rename = "blobs", skip_serializing_if = "Option::is_none")]
+    pub blobs: Option<Vec<String>>,
     /// An integer between 0 and 2^32 - 1, giving the maximum number of cost units available for transaction execution
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: i64,
@@ -40,6 +43,7 @@ impl TransactionPreviewRequest {
         TransactionPreviewRequest {
             network,
             manifest,
+            blobs: None,
             cost_unit_limit,
             tip_percentage,
             nonce,

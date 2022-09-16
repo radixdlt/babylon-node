@@ -62,92 +62,87 @@
  * permissions under this License.
  */
 
-use crate::jni::state_manager::ActualStateManager;
-use crate::store::traits::*;
+pub use commit::*;
+pub use proofs::*;
+pub use substate::*;
+pub use transactions::*;
+pub use vertex::*;
 
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use sbor::{Decode, Encode, TypeId};
-use scrypto::buffer::scrypto_encode;
-use scrypto::prelude::ComponentAddress;
+pub mod vertex {
+    pub trait RecoverableVertexStore {
+        fn get_vertex_store(&self) -> Option<Vec<u8>>;
+    }
 
-use super::mempool::JavaPayloadHash;
-use super::utils::jni_state_manager_sbor_call;
-
-#[derive(Encode, Decode, TypeId)]
-struct ExecutedTransaction {
-    ledger_receipt_bytes: Vec<u8>,
-    transaction_bytes: Vec<u8>,
-    /// Used by some Java tests, consider removing at some point as it doesn't really fit here
-    new_component_addresses: Vec<ComponentAddress>,
+    pub trait WriteableVertexStore {
+        fn save_vertex_store(&mut self, vertex_store_bytes: Vec<u8>);
+    }
 }
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getTransactionAtStateVersion(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_call(
-        env,
-        j_state_manager,
-        request_payload,
-        do_get_transaction_at_state_version,
-    )
+pub mod substate {
+    pub use radix_engine::ledger::{
+        QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
+    };
 }
 
-fn do_get_transaction_at_state_version(
-    state_manager: &mut ActualStateManager,
-    state_version: u64,
-) -> Option<ExecutedTransaction> {
-    let payload_hash = state_manager.store.get_payload_hash(state_version)?;
+pub mod transactions {
+    use crate::{
+        types::{PayloadHash, StoredTransaction},
+        LedgerTransactionReceipt,
+    };
 
-    let (stored_transaction, ledger_receipt) =
-        state_manager.store.get_transaction(&payload_hash)?;
-    let ledger_receipt_bytes = scrypto_encode(&ledger_receipt);
+    pub trait WriteableTransactionStore {
+        fn insert_transactions(
+            &mut self,
+            transactions: Vec<(StoredTransaction, LedgerTransactionReceipt)>,
+        );
+    }
 
-    Some(ExecutedTransaction {
-        ledger_receipt_bytes,
-        transaction_bytes: stored_transaction.into_payload(),
-        new_component_addresses: ledger_receipt.entity_changes.new_component_addresses,
-    })
+    pub trait QueryableTransactionStore {
+        fn get_transaction(
+            &self,
+            tid: &PayloadHash,
+        ) -> Option<(StoredTransaction, LedgerTransactionReceipt)>;
+    }
 }
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getNextProof(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_get_next_proof)
+pub mod proofs {
+    use crate::types::PayloadHash;
+
+    pub trait WriteableProofStore {
+        fn insert_tids_and_proof(
+            &mut self,
+            state_version: u64,
+            ids: Vec<PayloadHash>,
+            proof_bytes: Vec<u8>,
+        );
+
+        fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<PayloadHash>);
+    }
+
+    pub trait QueryableProofStore {
+        fn max_state_version(&self) -> u64;
+        fn get_payload_hash(&self, state_version: u64) -> Option<PayloadHash>;
+        fn get_next_proof(&self, state_version: u64) -> Option<(Vec<PayloadHash>, Vec<u8>)>;
+        fn get_last_proof(&self) -> Option<Vec<u8>>;
+    }
 }
 
-fn do_get_next_proof(
-    state_manager: &mut ActualStateManager,
-    state_version: u64,
-) -> Option<(Vec<JavaPayloadHash>, Vec<u8>)> {
-    let (payload_hashes, proof) = state_manager.store.get_next_proof(state_version)?;
+pub mod commit {
+    use super::*;
 
-    let payload_hashes = payload_hashes.into_iter().map(|hash| hash.into()).collect();
+    pub trait CommitStore<'db> {
+        type DBTransaction: CommitStoreTransaction<'db>;
 
-    Some((payload_hashes, proof))
+        fn create_db_transaction(&'db mut self) -> Self::DBTransaction;
+    }
+
+    pub trait CommitStoreTransaction<'db>:
+        WriteableTransactionStore
+        + WriteableProofStore
+        + WriteableVertexStore
+        + WriteableSubstateStore
+        + ReadableSubstateStore
+    {
+        fn commit(self);
+    }
 }
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_getLastProof(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_get_last_proof)
-}
-
-fn do_get_last_proof(state_manager: &mut ActualStateManager, _args: ()) -> Option<Vec<u8>> {
-    state_manager.store.get_last_proof()
-}
-
-pub fn export_extern_functions() {}

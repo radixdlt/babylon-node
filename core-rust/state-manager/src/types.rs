@@ -63,28 +63,112 @@
  */
 
 use scrypto::prelude::*;
-use std::collections::HashMap;
 use std::fmt;
-use transaction::model::{PreviewFlags, TransactionManifest};
+use transaction::model::{
+    NotarizedTransaction, PreviewFlags, TransactionIntent, TransactionManifest,
+};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord, Decode, Encode, TypeId)]
-pub struct TId {
-    pub bytes: Vec<u8>,
+pub struct PayloadHash(pub [u8; Self::LENGTH]);
+
+impl PayloadHash {
+    pub const LENGTH: usize = 32;
 }
 
-impl fmt::Display for TId {
+impl fmt::Display for PayloadHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(&self.bytes))
+        write!(f, "{}", hex::encode(&self.0))
+    }
+}
+
+impl From<Hash> for PayloadHash {
+    fn from(hash: Hash) -> Self {
+        PayloadHash(hash.0)
+    }
+}
+
+impl From<&NotarizedTransaction> for PayloadHash {
+    fn from(transaction: &NotarizedTransaction) -> Self {
+        PayloadHash(sha256_twice(scrypto_encode(transaction)).0)
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord, Decode, Encode, TypeId)]
-pub struct Transaction {
-    pub payload: Vec<u8>,
-    pub id: TId,
+pub struct IntentHash(pub [u8; Self::LENGTH]);
+
+impl IntentHash {
+    pub const LENGTH: usize = 32;
 }
 
+impl fmt::Display for IntentHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(&self.0))
+    }
+}
+
+impl From<Hash> for IntentHash {
+    fn from(hash: Hash) -> Self {
+        IntentHash(hash.0)
+    }
+}
+
+impl From<&TransactionIntent> for IntentHash {
+    fn from(intent: &TransactionIntent) -> Self {
+        IntentHash(sha256_twice(&scrypto_encode(intent)).0)
+    }
+}
+
+impl From<&NotarizedTransaction> for IntentHash {
+    fn from(transaction: &NotarizedTransaction) -> Self {
+        let intent = &transaction.signed_intent.intent;
+        intent.into()
+    }
+}
+
+/// An uncommitted user transaction, in eg the mempool
 #[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
+pub struct PendingTransaction {
+    pub payload: NotarizedTransaction,
+    pub payload_hash: PayloadHash,
+    pub intent_hash: IntentHash,
+}
+
+impl From<NotarizedTransaction> for PendingTransaction {
+    fn from(transaction: NotarizedTransaction) -> Self {
+        let payload_hash: PayloadHash = (&transaction).into();
+        let intent_hash: IntentHash = (&transaction).into();
+        PendingTransaction {
+            payload: transaction,
+            payload_hash,
+            intent_hash,
+        }
+    }
+}
+
+/// A transaction for persisting - eg in the Database or in a block
+#[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
+pub enum StoredTransaction {
+    User(NotarizedTransaction),
+    System(Vec<u8>), // Just a payload for now. Todo - something better soon?
+}
+
+impl StoredTransaction {
+    pub fn get_hash(&self) -> PayloadHash {
+        match self {
+            StoredTransaction::User(notarized) => notarized.into(),
+            StoredTransaction::System(payload) => PayloadHash(sha256_twice(&payload).0),
+        }
+    }
+
+    pub fn into_payload(self) -> Vec<u8> {
+        match self {
+            StoredTransaction::User(notarized) => scrypto_encode(&notarized),
+            StoredTransaction::System(payload) => payload,
+        }
+    }
+}
+
+#[derive(Debug, Decode, Encode, TypeId)]
 pub struct PreviewRequest {
     pub manifest: TransactionManifest,
     pub cost_unit_limit: u32,
@@ -94,22 +178,27 @@ pub struct PreviewRequest {
     pub flags: PreviewFlags,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, TypeId)]
 pub struct CommitRequest {
-    pub transactions: Vec<Transaction>,
+    pub transaction_payloads: Vec<Vec<u8>>,
     pub state_version: u64,
     pub proof: Vec<u8>,
     pub vertex_store: Option<Vec<u8>>,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, TypeId)]
 pub struct PrepareRequest {
-    pub prepared: Vec<Transaction>,
-    pub proposed: Vec<Transaction>,
+    pub already_prepared_payloads: Vec<Vec<u8>>,
+    pub proposed_payloads: Vec<Vec<u8>>,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
+#[derive(Debug, Decode, Encode, TypeId)]
+pub enum TransactionPrepareResult {
+    CanCommit,
+    Reject { reason: String },
+}
+
+#[derive(Debug, Decode, Encode, TypeId)]
 pub struct PrepareResult {
-    pub non_rejected_txns: Vec<Transaction>,
-    pub rejected_txns: HashMap<Transaction, String>,
+    pub transaction_results: Vec<(PayloadHash, TransactionPrepareResult)>,
 }

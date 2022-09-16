@@ -62,18 +62,13 @@
  * permissions under this License.
  */
 
-use crate::store::query::{QueryableTransactionStore, RecoverableVertexStore};
-use crate::types::{TId, Transaction};
+use crate::types::{PayloadHash, StoredTransaction};
 use std::collections::HashMap;
 
-use crate::state_manager::{
-    CommitStore, CommitStoreTransaction, WriteableProofStore, WriteableTransactionStore,
-    WriteableVertexStore,
-};
 use crate::store::rocks_db::RocksDBTable::{
     Proofs, RootSubstates, StateVersions, Substates, Transactions, VertexStore,
 };
-use crate::store::QueryableProofStore;
+use crate::store::traits::*;
 use crate::LedgerTransactionReceipt;
 use radix_engine::engine::Substate;
 use radix_engine::ledger::{
@@ -119,6 +114,10 @@ pub struct RocksDBStore {
     db: TransactionDB<SingleThreaded>,
 }
 
+fn get_transaction_key(payload_hash: &PayloadHash) -> Vec<u8> {
+    db_key!(Transactions, &payload_hash.0)
+}
+
 impl RocksDBStore {
     pub fn new(root: PathBuf) -> RocksDBStore {
         let db = TransactionDB::open_default(root.as_path()).unwrap();
@@ -160,11 +159,16 @@ pub struct RocksDBCommitTransaction<'db> {
 }
 
 impl<'db> RocksDBCommitTransaction<'db> {
-    fn insert_transaction(&mut self, transaction: &Transaction, receipt: LedgerTransactionReceipt) {
-        let value = (transaction.payload.clone(), receipt);
-        let transaction_key = db_key!(Transactions, &transaction.id.bytes);
+    fn insert_transaction(
+        &mut self,
+        transaction: StoredTransaction,
+        receipt: LedgerTransactionReceipt,
+    ) {
         self.db_txn
-            .put(transaction_key, scrypto_encode(&value))
+            .put(
+                get_transaction_key(&transaction.get_hash()),
+                scrypto_encode(&(transaction, receipt)),
+            )
             .unwrap();
     }
 }
@@ -187,7 +191,10 @@ impl<'db> ReadableSubstateStore for RocksDBCommitTransaction<'db> {
 }
 
 impl<'db> WriteableTransactionStore for RocksDBCommitTransaction<'db> {
-    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, LedgerTransactionReceipt)>) {
+    fn insert_transactions(
+        &mut self,
+        transactions: Vec<(StoredTransaction, LedgerTransactionReceipt)>,
+    ) {
         for (txn, receipt) in transactions {
             self.insert_transaction(txn, receipt);
         }
@@ -195,18 +202,27 @@ impl<'db> WriteableTransactionStore for RocksDBCommitTransaction<'db> {
 }
 
 impl<'db> WriteableProofStore for RocksDBCommitTransaction<'db> {
-    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
-        if !ids.is_empty() {
-            let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
-            for (index, id) in ids.into_iter().enumerate() {
-                let txn_state_version = first_state_version + index as u64;
-                let version_key = db_key!(StateVersions, &txn_state_version.to_be_bytes());
-                self.db_txn.put(version_key, id.bytes).unwrap();
-            }
-        }
+    fn insert_tids_and_proof(
+        &mut self,
+        state_version: u64,
+        ids: Vec<PayloadHash>,
+        proof_bytes: Vec<u8>,
+    ) {
+        self.insert_tids_without_proof(state_version, ids);
 
         let proof_version_key = db_key!(Proofs, &state_version.to_be_bytes());
         self.db_txn.put(proof_version_key, proof_bytes).unwrap();
+    }
+
+    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<PayloadHash>) {
+        if !ids.is_empty() {
+            let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
+            for (index, payload_hash) in ids.into_iter().enumerate() {
+                let txn_state_version = first_state_version + index as u64;
+                let version_key = db_key!(StateVersions, &txn_state_version.to_be_bytes());
+                self.db_txn.put(version_key, payload_hash.0).unwrap();
+            }
+        }
     }
 }
 
@@ -264,10 +280,12 @@ impl ReadableSubstateStore for RocksDBStore {
 }
 
 impl QueryableTransactionStore for RocksDBStore {
-    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt) {
-        let transaction_key = db_key!(Transactions, &tid.bytes);
-        let bytes = self.db.get(&transaction_key).unwrap().unwrap();
-        scrypto_decode(&bytes).unwrap()
+    fn get_transaction(
+        &self,
+        payload_hash: &PayloadHash,
+    ) -> Option<(StoredTransaction, LedgerTransactionReceipt)> {
+        let entry = self.db.get(get_transaction_key(payload_hash)).unwrap();
+        entry.map(|bytes| scrypto_decode(&bytes).unwrap())
     }
 }
 
@@ -288,15 +306,15 @@ impl QueryableProofStore for RocksDBStore {
             .unwrap_or(0)
     }
 
-    fn get_tid(&self, state_version: u64) -> Option<TId> {
+    fn get_payload_hash(&self, state_version: u64) -> Option<PayloadHash> {
         let txn_version_key = db_key!(StateVersions, &state_version.to_be_bytes());
         self.db
             .get(&txn_version_key)
             .unwrap()
-            .map(|bytes| TId { bytes })
+            .map(|bytes| PayloadHash(bytes.try_into().expect("Payload hash is the wrong length")))
     }
 
-    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<PayloadHash>, Vec<u8>)> {
         let first_state_version = state_version + 1;
         let proof_version_key = db_key!(Proofs, &first_state_version.to_be_bytes());
         let (next_state_version, proof) = self
@@ -316,7 +334,9 @@ impl QueryableProofStore for RocksDBStore {
         for v in first_state_version..=next_state_version {
             let txn_version_key = db_key!(StateVersions, &v.to_be_bytes());
             let bytes = self.db.get(txn_version_key).unwrap().unwrap();
-            tids.push(TId { bytes });
+            tids.push(PayloadHash(
+                bytes.try_into().expect("Payload hash is the wrong length"),
+            ));
         }
         Some((tids, proof))
     }

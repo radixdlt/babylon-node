@@ -62,20 +62,29 @@
  * permissions under this License.
  */
 
-use crate::types::TId;
-use crate::LedgerTransactionReceipt;
+package com.radixdlt.statecomputer.commit;
 
-pub trait QueryableTransactionStore {
-    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt);
-}
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.EnumEntry;
 
-pub trait QueryableProofStore {
-    fn max_state_version(&self) -> u64;
-    fn get_tid(&self, state_version: u64) -> Option<TId>;
-    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)>;
-    fn get_last_proof(&self) -> Option<Vec<u8>>;
-}
+public sealed interface TransactionPrepareResult {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        TransactionPrepareResult.class,
+        (codecs) ->
+            EnumCodec.fromEntries(
+                EnumEntry.noFields(
+                    TransactionPrepareResult.CanCommit.class,
+                    TransactionPrepareResult.CanCommit::new),
+                EnumEntry.with(
+                    TransactionPrepareResult.Reject.class,
+                    TransactionPrepareResult.Reject::new,
+                    codecs.of(String.class),
+                    (t, encoder) -> encoder.encode(t.reason))));
+  }
 
-pub trait RecoverableVertexStore {
-    fn get_vertex_store(&self) -> Option<Vec<u8>>;
+  record CanCommit() implements TransactionPrepareResult {}
+
+  record Reject(String reason) implements TransactionPrepareResult {}
 }

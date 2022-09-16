@@ -73,19 +73,19 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.CommittedTransactionsWithProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.mempool.*;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
+import com.radixdlt.statecomputer.commit.TransactionPrepareResult;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt64;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -146,17 +146,26 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     var result = stateComputer.prepare(prepareRequest);
 
-    var nonRejectedTransactions =
-        result.nonRejectedTransactions().stream()
-            .map(REv2ExecutedTransaction::new)
-            .collect(Collectors.<StateComputerLedger.ExecutedTransaction>toList());
-    Map<RawTransaction, Exception> invalidTransactions =
-        result.rejectedTransactions().entrySet().stream()
-            .collect(
-                Collectors.toMap(Map.Entry::getKey, e -> new InvalidREv2Transaction(e.getValue())));
+    // Zip prepared transactions and results together
+    var committableTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
+    var rejectedTransactions = new HashMap<RawTransaction, Exception>();
+    for (var i = 0; i < proposedTransactions.size(); i++) {
+      var transaction = proposedTransactions.get(i);
+      var transactionResult = result.transactionResults().get(i);
+      if (!transaction.getPayloadHash().equals(transactionResult.first())) {
+        throw new IllegalStateException(
+            "Prepared transaction hash did not match proposed transaction");
+      }
+      switch (transactionResult.last()) {
+        case TransactionPrepareResult.CanCommit ignored -> committableTransactions.add(
+            new REv2ExecutedTransaction(transaction));
+        case TransactionPrepareResult.Reject rejection -> rejectedTransactions.put(
+            transaction, new InvalidREv2Transaction(rejection.reason()));
+      }
+    }
 
     return new StateComputerLedger.StateComputerResult(
-        nonRejectedTransactions, invalidTransactions);
+        committableTransactions, rejectedTransactions);
   }
 
   @Override

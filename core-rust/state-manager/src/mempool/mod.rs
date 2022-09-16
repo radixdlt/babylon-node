@@ -62,48 +62,55 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::*;
 pub use crate::result::ToStateManagerError;
-use crate::types::Transaction;
-use std::string::ToString;
-use transaction::errors::TransactionValidationError;
+use crate::types::PendingTransaction;
+use crate::{jni::dtos::*, PayloadHash};
+use std::{collections::HashSet, string::ToString};
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum MempoolError {
+pub enum MempoolAddError {
     Full { current_size: u64, max_size: u64 },
     Duplicate,
-    TransactionValidationError(TransactionValidationError), // TODO: Move outside of mempool error
 }
 
-impl ToString for MempoolError {
+impl ToString for MempoolAddError {
     fn to_string(&self) -> String {
         match self {
-            MempoolError::Full {
+            MempoolAddError::Full {
                 current_size,
                 max_size,
             } => format!("Mempool Full [{} - {}]", current_size, max_size),
-            MempoolError::Duplicate => "Duplicate Entry".to_string(),
-            MempoolError::TransactionValidationError(error) => {
-                format!("Transaction Error ({:?})", error)
-            }
+            MempoolAddError::Duplicate => "Duplicate Entry".to_string(),
         }
     }
 }
 
 pub trait Mempool {
-    fn add_transaction(&mut self, transaction: Transaction) -> Result<Transaction, MempoolError>;
-    fn handle_committed_transactions(&mut self, transactions: &[Transaction]) -> Vec<Transaction>;
+    /// Adds a transaction
+    fn add_transaction(&mut self, transaction: PendingTransaction) -> Result<(), MempoolAddError>;
+
+    /// Returns removed transactions
+    fn handle_committed_transactions(
+        &mut self,
+        transactions: &[PayloadHash],
+    ) -> Vec<PendingTransaction>;
+
+    /// Returns the number of transactions in the mempool
     fn get_count(&self) -> u64;
+
+    /// Gets transactions for a proposal, given a list of already-prepared transactions to ignore
     fn get_proposal_transactions(
         &self,
         count: u64,
-        prepared_transactions: &[Transaction],
-    ) -> Result<Vec<Transaction>, MempoolError>;
+        prepared_transactions: &HashSet<PayloadHash>,
+    ) -> Vec<PendingTransaction>;
+
+    /// Gets transactions for relay to other nodes
     fn get_relay_transactions(
         &mut self,
         initial_delay_millis: u64,
         repeat_delay_millis: u64,
-    ) -> Result<Vec<Transaction>, MempoolError>;
+    ) -> Vec<PendingTransaction>;
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]

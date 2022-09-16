@@ -58,7 +58,7 @@ pub fn to_api_u64_as_string(input: u64) -> String {
 pub fn extract_api_state_version(state_version: i64) -> Result<u64, ExtractionError> {
     if state_version < 1 {
         return Err(ExtractionError::InvalidInteger {
-            message: "Substate version too low".to_owned(),
+            message: "State version too low".to_owned(),
         });
     }
     let state_version: u64 = state_version
@@ -72,23 +72,23 @@ pub fn extract_api_state_version(state_version: i64) -> Result<u64, ExtractionEr
     Ok(state_version)
 }
 
-pub fn extract_api_u64_as_string(field_name: &str, input: String) -> Result<u64, ExtractionError> {
+pub fn extract_api_u64_as_string(input: String) -> Result<u64, ExtractionError> {
     input
         .parse::<u64>()
         .map_err(|_| ExtractionError::InvalidInteger {
-            message: format!("{} not valid u64 string", field_name),
+            message: "Is not valid u64 string".to_owned(),
         })
 }
 
-pub fn extract_api_u32_as_i64(field_name: &str, input: i64) -> Result<u32, ExtractionError> {
+pub fn extract_api_u32_as_i64(input: i64) -> Result<u32, ExtractionError> {
     if input < 0 {
         return Err(ExtractionError::InvalidInteger {
-            message: format!("{} is negative", field_name),
+            message: "Is negative".to_owned(),
         });
     }
     if input > (u32::MAX as i64) {
         return Err(ExtractionError::InvalidInteger {
-            message: format!("{} is larger than the max value allowed", field_name),
+            message: "Is larger than the max value allowed".to_owned(),
         });
     }
     Ok(input.try_into().expect("Number invalid somehow"))

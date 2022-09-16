@@ -66,6 +66,7 @@ package com.radixdlt.mempool;
 
 import static com.radixdlt.lang.Tuple.tuple;
 
+import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
@@ -109,7 +110,8 @@ public class RustMempool implements MempoolReader {
     if (result.isError()) {
       switch (result.unwrapError()) {
         case MempoolError.Full fullStatus -> throw new MempoolFullException(
-            fullStatus.currentSize(), fullStatus.maxSize());
+            fullStatus.currentSize().toNonNegativeLong().unwrap(),
+            fullStatus.maxSize().toNonNegativeLong().unwrap());
         case MempoolError.Duplicate ignored -> throw new MempoolDuplicateException(
             String.format("Mempool already has transaction %s", transaction.getPayloadHash()));
         case MempoolError.TransactionValidationError e -> throw new MempoolRejectedException(
@@ -117,8 +119,7 @@ public class RustMempool implements MempoolReader {
       }
     }
 
-    // No error is possible for this call at present, so unwrap should be safe
-    return result.unwrap();
+    return transaction;
   }
 
   public List<RawTransaction> getTransactionsForProposal(
@@ -127,25 +128,18 @@ public class RustMempool implements MempoolReader {
       throw new IllegalArgumentException("State Manager Mempool: count must be > 0: " + count);
     }
 
-    final var result =
-        getTransactionsForProposalFunc.call(
-            tuple(UInt32.fromNonNegativeInt(count), preparedTransactions));
+    final var hashes = preparedTransactions.stream().map(RawTransaction::getPayloadHash).toList();
 
-    // No error is possible for this call at present, so unwrap should be safe
-    return result.unwrap();
+    return getTransactionsForProposalFunc.call(tuple(UInt32.fromNonNegativeInt(count), hashes));
   }
 
   @Override
   public List<RawTransaction> getTransactionsToRelay(
       long initialDelayMillis, long repeatDelayMillis) {
-    var result =
-        getTransactionsToRelayFunc.call(
-            tuple(
-                UInt64.fromNonNegativeLong(initialDelayMillis),
-                UInt64.fromNonNegativeLong(repeatDelayMillis)));
-
-    // No error is possible for this call at present, so unwrap should be safe
-    return result.unwrap();
+    return getTransactionsToRelayFunc.call(
+        tuple(
+            UInt64.fromNonNegativeLong(initialDelayMillis),
+            UInt64.fromNonNegativeLong(repeatDelayMillis)));
   }
 
   @Override
@@ -155,23 +149,19 @@ public class RustMempool implements MempoolReader {
 
   private static native byte[] add(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<
-          StateManager, RawTransaction, Result<RawTransaction, MempoolError>>
+  private final NativeCalls.Func1<StateManager, RawTransaction, Result<HashCode, MempoolError>>
       addFunc;
 
   private static native byte[] getTransactionsForProposal(
       StateManager stateManager, byte[] payload);
 
   private final NativeCalls.Func1<
-          StateManager,
-          Tuple.Tuple2<UInt32, List<RawTransaction>>,
-          Result<List<RawTransaction>, MempoolError>>
+          StateManager, Tuple.Tuple2<UInt32, List<HashCode>>, List<RawTransaction>>
       getTransactionsForProposalFunc;
 
   private static native byte[] getTransactionsToRelay(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<
-          StateManager, Tuple.Tuple2<UInt64, UInt64>, Result<List<RawTransaction>, MempoolError>>
+  private final NativeCalls.Func1<StateManager, Tuple.Tuple2<UInt64, UInt64>, List<RawTransaction>>
       getTransactionsToRelayFunc;
 
   private static native byte[] getCount(Object stateManager, byte[] payload);

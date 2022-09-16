@@ -5,9 +5,9 @@ use radix_engine::{
     fee::FeeSummary as EngineFeeSummary,
     ledger::{OutputId, OutputValue},
     state_manager::VirtualSubstateId,
-    types::{hash, scrypto_encode, SubstateId},
+    types::{scrypto_encode, SubstateId},
 };
-use scrypto::address::Bech32Encoder;
+use scrypto::{address::Bech32Encoder, prelude::sha256_twice};
 use state_manager::{CommittedTransactionStatus, LedgerTransactionReceipt};
 
 pub fn to_api_receipt(
@@ -85,7 +85,7 @@ pub fn to_api_up_substate(
     (substate_id, output_value): (SubstateId, OutputValue),
 ) -> Result<UpSubstate, MappingError> {
     let substate_bytes = scrypto_encode(&output_value.substate);
-    let hash = to_hex(hash(&substate_bytes));
+    let hash = to_hex(sha256_twice(&substate_bytes));
 
     let api_substate_data = Option::Some(to_api_substate(
         &substate_id,

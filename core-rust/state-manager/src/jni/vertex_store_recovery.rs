@@ -63,7 +63,7 @@
  */
 
 use crate::jni::state_manager::ActualStateManager;
-use crate::store::query::RecoverableVertexStore;
+use crate::store::traits::RecoverableVertexStore;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;

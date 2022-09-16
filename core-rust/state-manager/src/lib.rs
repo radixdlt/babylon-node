@@ -72,7 +72,7 @@ pub mod store;
 mod transaction_builder;
 mod types;
 
-pub use mempool::MempoolError;
+pub use mempool::MempoolAddError;
 pub use receipt::{CommittedTransactionStatus, LedgerTransactionReceipt};
 pub use state_manager::StateManager;
-pub use types::{CommitRequest, PreviewRequest, TId, Transaction};
+pub use types::*;

@@ -8,8 +8,7 @@ use radix_engine::transaction::{
 };
 use sbor::{Decode, Encode, TypeId};
 use scrypto::buffer::scrypto_encode;
-use scrypto::crypto::hash;
-use scrypto::prelude::Level;
+use scrypto::prelude::{sha256_twice, Level};
 
 #[derive(Debug, Decode, Encode, TypeId)]
 pub enum CommittedTransactionStatus {
@@ -84,7 +83,8 @@ fn filter_state_updates(state_updates: StateDiff) -> StateDiff {
     for down_substate_output_id in state_updates.down_substates {
         match possible_up_substates.get(&down_substate_output_id.substate_id) {
             Some(up_substate_output_value) => {
-                let up_substate_hash = hash(&scrypto_encode(&up_substate_output_value.substate));
+                let up_substate_hash =
+                    sha256_twice(&scrypto_encode(&up_substate_output_value.substate));
                 if up_substate_hash == down_substate_output_id.substate_hash {
                     possible_up_substates.remove(&down_substate_output_id.substate_id);
                 } else {

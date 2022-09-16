@@ -194,6 +194,134 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+####################
+# v0 API Responses #
+####################
+  "/v0/transaction/submit":
+    post:
+      summary: Transaction Submit
+      tags:
+        - Transaction
+        - V0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/V0TransactionSubmitRequest"
+      responses:
+        '200':
+          description: Transaction submit response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V0TransactionSubmitResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/v0/transaction/status":
+    post:
+      summary: Read Transaction Status
+      tags:
+        - Transaction
+        - V0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/V0TransactionStatusRequest"
+      responses:
+        '200':
+          description: Transaction status response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V0TransactionStatusResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/v0/transaction/receipt":
+    post:
+      summary: Read Committed Transaction
+      tags:
+        - Transaction
+        - V0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/V0CommittedTransactionRequest"
+      responses:
+        '200':
+          description: Committed transaction found response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V0CommittedTransactionResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: Committed transaction not found response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/v0/state/epoch":
+    post:
+      summary: Read Current Epoch
+      tags:
+        - State
+        - V0
+      responses:
+        '200':
+          description: Current state response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V0StateEpochResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+#############################################################################################
 components:
   schemas:
 ###########################
@@ -238,7 +366,7 @@ components:
       properties:
         hash:
           type: string
-          description: The hex-encoded double-SHA256 hash of the notarized transaction payload
+          description: The hex-encoded double-SHA256 hash of the notarized transaction payload. Also known as the payload_hash or the notarized_transaction_hash.
         payload:
           type: string
           description: The hex-encoded full notarized transaction payload
@@ -255,7 +383,7 @@ components:
       properties:
         hash:
           type: string
-          description: The hex-encoded double-SHA256 hash of the signed transaction intent.
+          description: The hex-encoded double-SHA256 hash of the signed transaction intent. Also known as the signatures hash.
         intent:
           $ref: "#/components/schemas/TransactionIntent"
         intent_signatures:
@@ -268,6 +396,7 @@ components:
         - hash
         - header
         - manifest
+        - blobs
       properties:
         hash:
           type: string
@@ -278,7 +407,13 @@ components:
           $ref: "#/components/schemas/TransactionHeader"
         manifest:
           type: string
-          description: The hex-encoded, SBOR-encoded transaction manifest.
+          description: The decompiled transaction manifest
+        blobs:
+          type: object
+          description: A map of the hex-encoded blob hash, to hex-encoded blob content
+          additionalProperties:
+            type: string
+            description: The hex-encoded blob content
     TransactionHeader:
       type: object
       required:
@@ -348,6 +483,28 @@ components:
           minimum: 0
           maximum: 100000000000000
           description: An integer between 0 and 10^13, representing the state version. The state version increments with each transaction, starting at 0 pre-genesis.
+    TransactionIdentifiers:
+      type: object
+      required:
+        - intent_hash
+        - signatures_hash
+        - payload_hash
+      properties:
+        intent_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+        signatures_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: The hex-encoded signed transaction hash. This is the hash which is signed as part of notarization. This hash is SHA256(SHA256(compiled_signed_transaction))
+        payload_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
     ErrorResponse:
       type: object
       required:
@@ -999,7 +1156,7 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         notarized_transaction:
-          description: A notarized transaction encoded in the Radix transaction format, and then hex encoded.
+          description: A hex-encoded, compiled notarized transaction.
           type: string
     TransactionSubmitResponse:
       type: object
@@ -1026,8 +1183,13 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         manifest:
-          description: A hex-encoded, SBOR-encoded transaction manifest
+          description: A text-representation of a transaction manifest
           type: string
+        blobs:
+          description: An array of hex-encoded blob data (optional)
+          type: array
+          items:
+            type: string
         cost_unit_limit:
           type: integer
           format: int64
@@ -1080,9 +1242,9 @@ components:
                 type: string
               message:
                 type: string
-##########################
-# REQUEST: /transactions #
-##########################
+#################################
+# REQUEST: /transactions/stream #
+#################################
     CommittedTransactionsRequest:
       description: |
         A request to retrieve a sublist of committed transactions from the ledger.
@@ -1138,7 +1300,8 @@ components:
       type: object
       required:
         - state_version
-        - notarized_transaction
+        # Not required for EG genesis - need to change this for when we have genesis transactions
+        # - notarized_transaction
         - receipt
       properties:
         state_version:
@@ -1151,3 +1314,107 @@ components:
           $ref: "#/components/schemas/NotarizedTransaction"
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
+############################################################################################################
+# V0
+###################################
+# REQUEST: /v0/transaction/submit #
+################################### 
+    V0TransactionSubmitRequest:
+      type: object
+      required:
+        - notarized_transaction
+      properties:
+        notarized_transaction:
+          description: A hex-encoded, compiled notarized transaction.
+          type: string
+    V0TransactionSubmitResponse:
+      type: object
+      required:
+        - duplicate
+      properties:
+        duplicate:
+          description: Is true if the transaction is a duplicate of an existing transaction in the mempool.
+          type: boolean
+###################################
+# REQUEST: /v0/transaction/status #
+###################################
+    V0TransactionStatusRequest:
+      type: object
+      required:
+        - intent_hash
+      properties:
+        intent_hash:
+          description: A hex-encoded transaction intent hash. SHA256(SHA256(compiled_transaction_intent))
+          minLength: 66
+          maxLength: 66
+          type: string
+    V0TransactionStatusResponse:
+      type: object
+      required:
+        - intent_status
+        - known_payloads
+      properties:
+        intent_status:
+          type: string
+          description: The status of the transaction intent
+          enum:
+            - CommittedSuccess
+            - CommittedFailure
+            - InMempool
+            - Rejected
+            - Unknown
+        known_payloads:
+          type: array
+          items:
+            $ref: "#/components/schemas/V0TransactionPayloadStatus"
+    V0TransactionPayloadStatus:
+      type: object
+      required:
+        - payload_hash
+        - status
+      properties:
+        payload_hash:
+          type: string
+        status:
+          type: string
+          description: The status of the transaction payload, as per this node
+          enum:
+            - CommittedSuccess
+            - CommittedFailure
+            - InMempool
+            - Rejected
+####################################
+# REQUEST: /v0/transaction/receipt #
+####################################
+    V0CommittedTransactionRequest:
+      type: object
+      required:
+        - intent_hash
+      properties:
+        intent_hash:
+          description: A hex-encoded transaction intent hash. SHA256(SHA256(compiled_transaction_intent))
+          minLength: 66
+          maxLength: 66
+          type: string
+    V0CommittedTransactionResponse:
+      type: object
+      required:
+        - committed
+      properties:
+        committed:
+          $ref: "#/components/schemas/CommittedTransaction"
+############################
+# REQUEST: /v0/state/epoch #
+############################
+    # No request body required
+    V0StateEpochResponse:
+      type: object
+      required:
+        - epoch
+      properties:
+        epoch:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: An integer between 0 and 10^10, marking the current epoch

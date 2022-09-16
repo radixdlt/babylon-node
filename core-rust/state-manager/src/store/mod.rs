@@ -64,10 +64,9 @@
 
 mod db;
 mod in_memory;
-pub(crate) mod query;
 mod rocks_db;
+pub mod traits;
 
 pub use db::{DatabaseConfig, StateManagerDatabase};
 pub use in_memory::InMemoryStore;
-pub use query::{QueryableProofStore, QueryableTransactionStore};
 pub use rocks_db::RocksDBStore;

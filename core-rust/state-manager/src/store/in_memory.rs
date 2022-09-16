@@ -62,10 +62,8 @@
  * permissions under this License.
  */
 
-use crate::state_manager::{WriteableProofStore, WriteableTransactionStore, WriteableVertexStore};
-use crate::store::query::{QueryableTransactionStore, RecoverableVertexStore};
-use crate::store::QueryableProofStore;
-use crate::types::{TId, Transaction};
+use crate::store::traits::*;
+use crate::types::{PayloadHash, StoredTransaction};
 use crate::LedgerTransactionReceipt;
 use scrypto::prelude::{scrypto_decode, scrypto_encode};
 use std::collections::{BTreeMap, HashMap};
@@ -101,9 +99,9 @@ impl Default for InMemoryVertexStore {
 
 #[derive(Debug)]
 pub struct InMemoryStore {
-    transactions: HashMap<TId, (Vec<u8>, Vec<u8>)>,
+    transactions: HashMap<PayloadHash, Vec<u8>>,
     proofs: BTreeMap<u64, Vec<u8>>,
-    txids: BTreeMap<u64, TId>,
+    txids: BTreeMap<u64, PayloadHash>,
 }
 
 impl InMemoryStore {
@@ -115,10 +113,14 @@ impl InMemoryStore {
         }
     }
 
-    fn insert_transaction(&mut self, transaction: &Transaction, receipt: LedgerTransactionReceipt) {
+    fn insert_transaction(
+        &mut self,
+        transaction: StoredTransaction,
+        receipt: LedgerTransactionReceipt,
+    ) {
         self.transactions.insert(
-            transaction.id.clone(),
-            (transaction.payload.clone(), scrypto_encode(&receipt)),
+            transaction.get_hash(),
+            scrypto_encode(&(transaction, receipt)),
         );
     }
 }
@@ -130,7 +132,10 @@ impl Default for InMemoryStore {
 }
 
 impl WriteableTransactionStore for InMemoryStore {
-    fn insert_transactions(&mut self, transactions: Vec<(&Transaction, LedgerTransactionReceipt)>) {
+    fn insert_transactions(
+        &mut self,
+        transactions: Vec<(StoredTransaction, LedgerTransactionReceipt)>,
+    ) {
         for (txn, receipt) in transactions {
             self.insert_transaction(txn, receipt);
         }
@@ -138,23 +143,32 @@ impl WriteableTransactionStore for InMemoryStore {
 }
 
 impl QueryableTransactionStore for InMemoryStore {
-    fn get_transaction(&self, tid: &TId) -> (Vec<u8>, LedgerTransactionReceipt) {
-        let (transaction_bytes, ledger_receipt_bytes) = self
-            .transactions
-            .get(tid)
-            .cloned()
-            .expect("Transaction missing");
+    fn get_transaction(
+        &self,
+        payload_hash: &PayloadHash,
+    ) -> Option<(StoredTransaction, LedgerTransactionReceipt)> {
+        let saved = self.transactions.get(payload_hash)?;
 
-        (
-            transaction_bytes,
-            scrypto_decode(&ledger_receipt_bytes)
-                .unwrap_or_else(|_| panic!("Failed to decode a stored transaction {}", tid)),
-        )
+        let decoded = scrypto_decode(saved)
+            .unwrap_or_else(|_| panic!("Failed to decode a stored transaction {}", payload_hash));
+
+        Some(decoded)
     }
 }
 
 impl WriteableProofStore for InMemoryStore {
-    fn insert_tids_and_proof(&mut self, state_version: u64, ids: Vec<TId>, proof_bytes: Vec<u8>) {
+    fn insert_tids_and_proof(
+        &mut self,
+        state_version: u64,
+        ids: Vec<PayloadHash>,
+        proof_bytes: Vec<u8>,
+    ) {
+        self.insert_tids_without_proof(state_version, ids);
+
+        self.proofs.insert(state_version, proof_bytes);
+    }
+
+    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<PayloadHash>) {
         if !ids.is_empty() {
             let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
             for (index, id) in ids.into_iter().enumerate() {
@@ -162,8 +176,6 @@ impl WriteableProofStore for InMemoryStore {
                 self.txids.insert(txn_state_version, id);
             }
         }
-
-        self.proofs.insert(state_version, proof_bytes);
     }
 }
 
@@ -176,12 +188,12 @@ impl QueryableProofStore for InMemoryStore {
             .unwrap_or_default()
     }
 
-    fn get_tid(&self, state_version: u64) -> Option<TId> {
+    fn get_payload_hash(&self, state_version: u64) -> Option<PayloadHash> {
         self.txids.get(&state_version).cloned()
     }
 
     /// Returns the next proof from a state version (excluded)
-    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TId>, Vec<u8>)> {
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<PayloadHash>, Vec<u8>)> {
         let next_state_version = state_version + 1;
         self.proofs
             .range(next_state_version..)

@@ -138,7 +138,9 @@ public final class REv2LargeTransactionTest {
 
       // Assert: Check transaction and post submission state
       var receipt =
-          test.getInstance(0, REv2TransactionAndProofStore.class).getTransactionAtStateVersion(2);
+          test.getInstance(0, REv2TransactionAndProofStore.class)
+              .getTransactionAtStateVersion(2)
+              .unwrap();
       var receiptTransaction = RawTransaction.create(receipt.transactionBytes());
       assertThat(newAccountTransaction).isEqualTo(receiptTransaction);
     }

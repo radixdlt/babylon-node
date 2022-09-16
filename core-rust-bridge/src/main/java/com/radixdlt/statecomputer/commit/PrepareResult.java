@@ -64,16 +64,15 @@
 
 package com.radixdlt.statecomputer.commit;
 
+import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.RawTransaction;
-import java.util.HashMap;
 import java.util.List;
 
 public record PrepareResult(
-    List<RawTransaction> nonRejectedTransactions,
-    HashMap<RawTransaction, String> rejectedTransactions) {
+    List<Tuple.Tuple2<HashCode, TransactionPrepareResult>> transactionResults) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareResult.class,
@@ -81,7 +80,6 @@ public record PrepareResult(
             StructCodec.with(
                 PrepareResult::new,
                 codecs.of(new TypeToken<>() {}),
-                codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.nonRejectedTransactions, t.rejectedTransactions)));
+                (t, encoder) -> encoder.encode(t.transactionResults)));
   }
 }

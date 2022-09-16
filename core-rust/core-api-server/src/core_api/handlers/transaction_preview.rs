@@ -1,10 +1,11 @@
 use crate::core_api::*;
-use radix_engine::transaction::{PreviewResult, TransactionResult};
+use radix_engine::transaction::{PreviewError, PreviewResult, TransactionResult};
 use scrypto::address::Bech32Encoder;
 use scrypto::prelude::*;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{LedgerTransactionReceipt, PreviewRequest};
-use transaction::model::{PreviewFlags, TransactionManifest};
+use transaction::manifest;
+use transaction::model::PreviewFlags;
 
 pub(crate) async fn handle_transaction_preview(
     state: Extension<CoreApiState>,
@@ -19,11 +20,15 @@ fn handle_preview_internal(
 ) -> Result<models::TransactionPreviewResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
-    let preview_request = parse_preview_request(request)?;
+    let preview_request = parse_preview_request(&state_manager.network, request)?;
 
     let result = state_manager
         .preview(preview_request)
-        .map_err(preview_errors::preview_error)?;
+        .map_err(|err| match err {
+            PreviewError::TransactionValidationError(err) => {
+                server_error(&format!("Transaction validation error: {:?}", err))
+            }
+        })?;
 
     let bech32_encoder = Bech32Encoder::new(&state_manager.network);
 
@@ -31,29 +36,36 @@ fn handle_preview_internal(
 }
 
 fn parse_preview_request(
+    network: &NetworkDefinition,
     request: models::TransactionPreviewRequest,
 ) -> Result<PreviewRequest, RequestHandlingError> {
-    let manifest = hex::decode(request.manifest)
-        .map(|manifest_bytes| {
-            scrypto_decode::<TransactionManifest>(&manifest_bytes)
-                .map_err(|_| preview_errors::invalid_manifest())
-        })
-        .map_err(|_| preview_errors::invalid_manifest())??;
+    let manifest_blobs = request
+        .blobs
+        .unwrap_or_default()
+        .into_iter()
+        .map(from_hex)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|err| err.into_response_error("blobs"))?;
+
+    let manifest = manifest::compile(&request.manifest, network, manifest_blobs)
+        .map_err(|err| client_error(&format!("Invalid manifest - {:?}", err)))?;
 
     let signer_public_keys = request
         .signer_public_keys
         .into_iter()
-        .map(|pk| extract_api_public_key(pk).map_err(|_| preview_errors::invalid_signer_pub_key()))
+        .map(|pk| {
+            extract_api_public_key(pk).map_err(|err| err.into_response_error("signer_public_keys"))
+        })
         .collect::<Result<Vec<PublicKey>, RequestHandlingError>>()?;
 
     Ok(PreviewRequest {
         manifest,
-        cost_unit_limit: extract_api_u32_as_i64("cost_unit_limit", request.cost_unit_limit)
-            .map_err(|_| preview_errors::invalid_request("Invalid cost_unit_limit"))?,
-        tip_percentage: extract_api_u32_as_i64("tip_percentage", request.tip_percentage)
-            .map_err(|_| preview_errors::invalid_request("Invalid tip_percentage"))?,
-        nonce: extract_api_u64_as_string("nonce", request.nonce)
-            .map_err(|_| preview_errors::invalid_request("Invalid nonce"))?,
+        cost_unit_limit: extract_api_u32_as_i64(request.cost_unit_limit)
+            .map_err(|err| err.into_response_error("cost_unit_limit"))?,
+        tip_percentage: extract_api_u32_as_i64(request.tip_percentage)
+            .map_err(|err| err.into_response_error("tip_percentage"))?,
+        nonce: extract_api_u64_as_string(request.nonce)
+            .map_err(|err| err.into_response_error("nonce"))?,
         signer_public_keys,
         flags: PreviewFlags {
             unlimited_loan: request.flags.unlimited_loan,
@@ -93,14 +105,12 @@ fn to_api_response(
                 })
                 .collect();
 
-            let ledger_receipt: LedgerTransactionReceipt = receipt.try_into().map_err(|_| {
-                common_server_errors::unexpected_state("can't create a ledger receipt")
-            })?;
+            let ledger_receipt: LedgerTransactionReceipt = receipt
+                .try_into()
+                .map_err(|_| server_error("Can't create a ledger receipt"))?;
 
             models::TransactionPreviewResponse {
-                receipt: Box::new(to_api_receipt(bech32_encoder, ledger_receipt).map_err(
-                    |err| common_server_errors::mapping_error(err, "Unable to map receipt"),
-                )?),
+                receipt: Box::new(to_api_receipt(bech32_encoder, ledger_receipt)?),
                 resource_changes: api_resource_changes,
                 logs,
             }
@@ -124,29 +134,4 @@ fn to_api_response(
     };
 
     Ok(response)
-}
-
-mod preview_errors {
-    use crate::core_api::errors::{client_error, server_error, RequestHandlingError};
-    use radix_engine::transaction::PreviewError;
-
-    pub(crate) fn preview_error(err: PreviewError) -> RequestHandlingError {
-        match err {
-            PreviewError::TransactionValidationError(err) => {
-                server_error(500, &format!("Transaction validation error: {:?}", err))
-            }
-        }
-    }
-
-    pub(crate) fn invalid_manifest() -> RequestHandlingError {
-        client_error(400, "Invalid manifest")
-    }
-
-    pub(crate) fn invalid_signer_pub_key() -> RequestHandlingError {
-        client_error(400, "Invalid signer public key")
-    }
-
-    pub(crate) fn invalid_request(message: &str) -> RequestHandlingError {
-        client_error(400, message)
-    }
 }

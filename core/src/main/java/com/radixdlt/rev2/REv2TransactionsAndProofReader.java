@@ -106,7 +106,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
                   LongStream.rangeClosed(stateVersion + 1, proof.getStateVersion())
                       .mapToObj(
                           i -> {
-                            var receipt = transactionStore.getTransactionAtStateVersion(i);
+                            var receipt = transactionStore.getTransactionAtStateVersion(i).unwrap();
                             return RawTransaction.create(receipt.transactionBytes());
                           })
                       .collect(Collectors.toList());
