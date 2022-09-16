@@ -1,4 +1,4 @@
-FROM rust:1.62.1-slim as base
+FROM rust:1.63.0-slim as base
 WORKDIR /app
 
 RUN apt update; apt upgrade -y && \
