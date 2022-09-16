@@ -148,7 +148,7 @@ fn to_api_notarized_transaction(
                     cost_unit_limit: to_api_u32_as_i64(header.cost_unit_limit),
                     tip_percentage: to_api_u32_as_i64(header.tip_percentage),
                 }),
-                manifest: manifest::decompile(&intent.manifest, network)
+                manifest: manifest::decompile(&intent.manifest.instructions, network)
                     .expect("Failed to decompile a transaction manifest"),
                 blobs: intent
                     .manifest

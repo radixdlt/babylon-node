@@ -192,7 +192,7 @@ impl<M: Mempool, S> StateManager<M, S> {
         transaction: NotarizedTransaction,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
         let validation_config = ValidationConfig {
-            network: &self.network,
+            network_id: self.network.id,
             current_epoch: self.validation_config.current_epoch,
             max_cost_unit_limit: self.validation_config.max_cost_unit_limit,
             min_tip_percentage: self.validation_config.min_tip_percentage,
