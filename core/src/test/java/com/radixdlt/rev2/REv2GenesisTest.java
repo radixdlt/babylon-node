@@ -77,7 +77,7 @@ import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import org.junit.Test;
 
 public final class REv2GenesisTest {
-  private static final Decimal GENESIS_AMOUNT = Decimal.of(24_000_000_000L);
+  public static final Decimal GENESIS_AMOUNT = Decimal.of(1000_000_000_000L);
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()

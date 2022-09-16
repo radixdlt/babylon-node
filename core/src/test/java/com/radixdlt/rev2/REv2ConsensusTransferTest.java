@@ -94,7 +94,6 @@ import org.junit.rules.TemporaryFolder;
 public final class REv2ConsensusTransferTest {
 
   private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-  private static final Decimal GENESIS_AMOUNT = Decimal.of(24_000_000_000L);
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private DeterministicTest createTest() {
@@ -144,10 +143,10 @@ public final class REv2ConsensusTransferTest {
       var componentAddress = executedTransaction.newComponentAddresses().get(0);
       var stateReader = test.getInstance(0, REv2StateReader.class);
       var accountAmount = stateReader.getComponentXrdAmount(componentAddress);
-      assertThat(accountAmount).isEqualTo(Decimal.of(1_000_000L));
+      assertThat(accountAmount).isEqualTo(Decimal.of(1_000L));
       var systemAmount =
           stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
-      assertThat(systemAmount).isLessThan(GENESIS_AMOUNT);
+      assertThat(systemAmount).isLessThan(REv2GenesisTest.GENESIS_AMOUNT);
     }
   }
 }
