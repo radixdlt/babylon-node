@@ -65,11 +65,8 @@
 use crate::types::{PayloadHash, StoredTransaction};
 use std::collections::HashMap;
 
-use crate::store::rocks_db::RocksDBTable::{
-    Proofs, RootSubstates, StateVersions, Substates, Transactions, VertexStore,
-};
 use crate::store::traits::*;
-use crate::LedgerTransactionReceipt;
+use crate::{CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt};
 use radix_engine::engine::Substate;
 use radix_engine::ledger::{
     OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
@@ -95,7 +92,9 @@ enum RocksDBTable {
     Substates,
     RootSubstates,
     VertexStore,
+    TransactionIntentLookup,
 }
+use RocksDBTable::*;
 
 impl RocksDBTable {
     fn prefix(&self) -> u8 {
@@ -106,6 +105,7 @@ impl RocksDBTable {
             Substates => 3u8,
             RootSubstates => 4u8,
             VertexStore => 5u8,
+            TransactionIntentLookup => 6u8,
         }
     }
 }
@@ -116,6 +116,10 @@ pub struct RocksDBStore {
 
 fn get_transaction_key(payload_hash: &PayloadHash) -> Vec<u8> {
     db_key!(Transactions, &payload_hash.0)
+}
+
+fn get_transaction_intent_key(intent_hash: &IntentHash) -> Vec<u8> {
+    db_key!(TransactionIntentLookup, &intent_hash.0)
 }
 
 impl RocksDBStore {
@@ -163,11 +167,32 @@ impl<'db> RocksDBCommitTransaction<'db> {
         &mut self,
         transaction: StoredTransaction,
         receipt: LedgerTransactionReceipt,
+        identifiers: CommittedTransactionIdentifiers,
     ) {
+        // TEMPORARY until this is handled in the engine: we store both an intent lookup and the transaction itself
+        if let StoredTransaction::User(notarized_transaction) = &transaction {
+            let key = get_transaction_intent_key(&(notarized_transaction).into());
+            let key_already_exists = self
+                .db_txn
+                .get_for_update(key, true)
+                .expect("RocksDB: failure to read intent hash");
+            if let Some(existing_payload_hash) = key_already_exists {
+                panic!(
+                    "Attempted to save intent hash which already exists: {:?}",
+                    PayloadHash(existing_payload_hash.try_into().unwrap())
+                );
+            }
+            self.db_txn
+                .put(
+                    get_transaction_intent_key(&(notarized_transaction).into()),
+                    transaction.get_hash().0,
+                )
+                .expect("RocksDB: failuere to put intent hash");
+        }
         self.db_txn
             .put(
                 get_transaction_key(&transaction.get_hash()),
-                scrypto_encode(&(transaction, receipt)),
+                scrypto_encode(&(transaction, receipt, identifiers)),
             )
             .unwrap();
     }
@@ -191,12 +216,16 @@ impl<'db> ReadableSubstateStore for RocksDBCommitTransaction<'db> {
 }
 
 impl<'db> WriteableTransactionStore for RocksDBCommitTransaction<'db> {
-    fn insert_transactions(
+    fn insert_committed_transactions(
         &mut self,
-        transactions: Vec<(StoredTransaction, LedgerTransactionReceipt)>,
+        transactions: Vec<(
+            StoredTransaction,
+            LedgerTransactionReceipt,
+            CommittedTransactionIdentifiers,
+        )>,
     ) {
-        for (txn, receipt) in transactions {
-            self.insert_transaction(txn, receipt);
+        for (txn, receipt, identifiers) in transactions {
+            self.insert_transaction(txn, receipt, identifiers);
         }
     }
 }
@@ -233,7 +262,7 @@ impl<'db> WriteableSubstateStore for RocksDBCommitTransaction<'db> {
                 db_key!(Substates, &scrypto_encode(&substate_id)),
                 scrypto_encode(&substate),
             )
-            .expect("RockDB: put_substate unexpected error");
+            .expect("RocksDB: put_substate unexpected error");
     }
 
     fn set_root(&mut self, substate_id: SubstateId) {
@@ -242,7 +271,7 @@ impl<'db> WriteableSubstateStore for RocksDBCommitTransaction<'db> {
                 db_key!(RootSubstates, &scrypto_encode(&substate_id)),
                 vec![],
             )
-            .expect("RockDB: set_root unexpected error");
+            .expect("RocksDB: set_root unexpected error");
     }
 }
 
@@ -280,12 +309,43 @@ impl ReadableSubstateStore for RocksDBStore {
 }
 
 impl QueryableTransactionStore for RocksDBStore {
-    fn get_transaction(
+    fn get_committed_transaction(
         &self,
         payload_hash: &PayloadHash,
-    ) -> Option<(StoredTransaction, LedgerTransactionReceipt)> {
-        let entry = self.db.get(get_transaction_key(payload_hash)).unwrap();
-        entry.map(|bytes| scrypto_decode(&bytes).unwrap())
+    ) -> Option<(
+        StoredTransaction,
+        LedgerTransactionReceipt,
+        CommittedTransactionIdentifiers,
+    )> {
+        let entry = self
+            .db
+            .get(get_transaction_key(payload_hash))
+            .expect("DB error loading transaction")?;
+        let decoded = scrypto_decode(&entry).expect("Transaction wasn't encoded as expected");
+        Some(decoded)
+    }
+
+    fn get_committed_transaction_by_intent(
+        &self,
+        intent_hash: &IntentHash,
+    ) -> Option<(
+        StoredTransaction,
+        LedgerTransactionReceipt,
+        CommittedTransactionIdentifiers,
+    )> {
+        let payload_hash_entry = self
+            .db
+            .get(get_transaction_intent_key(intent_hash))
+            .expect("DB error loading payload hash")?;
+        let payload_hash = PayloadHash(
+            payload_hash_entry
+                .try_into()
+                .expect("Saved payload hash is wrong length"),
+        );
+        let transaction_data = self
+            .get_committed_transaction(&payload_hash)
+            .expect("Transaction wasn't present but its intent hash was");
+        Some(transaction_data)
     }
 }
 

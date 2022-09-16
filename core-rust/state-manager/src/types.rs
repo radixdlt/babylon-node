@@ -68,16 +68,30 @@ use transaction::model::{
     NotarizedTransaction, PreviewFlags, TransactionIntent, TransactionManifest,
 };
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord, Decode, Encode, TypeId)]
+#[derive(PartialEq, Eq, Hash, Clone, PartialOrd, Ord, Decode, Encode, TypeId)]
 pub struct PayloadHash(pub [u8; Self::LENGTH]);
 
 impl PayloadHash {
     pub const LENGTH: usize = 32;
 }
 
+impl PayloadHash {
+    pub fn for_payload(payload_bytes: &[u8]) -> Self {
+        sha256_twice(payload_bytes).into()
+    }
+}
+
 impl fmt::Display for PayloadHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(&self.0))
+    }
+}
+
+impl fmt::Debug for PayloadHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("PayloadHash")
+            .field(&hex::encode(self.0))
+            .finish()
     }
 }
 
@@ -89,20 +103,34 @@ impl From<Hash> for PayloadHash {
 
 impl From<&NotarizedTransaction> for PayloadHash {
     fn from(transaction: &NotarizedTransaction) -> Self {
-        PayloadHash(sha256_twice(scrypto_encode(transaction)).0)
+        Self::for_payload(&scrypto_encode(transaction))
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord, Decode, Encode, TypeId)]
+#[derive(PartialEq, Eq, Hash, Clone, PartialOrd, Ord, Decode, Encode, TypeId)]
 pub struct IntentHash(pub [u8; Self::LENGTH]);
 
 impl IntentHash {
     pub const LENGTH: usize = 32;
 }
 
+impl IntentHash {
+    pub fn for_intent_bytes(intent_bytes: &[u8]) -> Self {
+        sha256_twice(intent_bytes).into()
+    }
+}
+
 impl fmt::Display for IntentHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(&self.0))
+    }
+}
+
+impl fmt::Debug for IntentHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("IntentHash")
+            .field(&hex::encode(self.0))
+            .finish()
     }
 }
 
@@ -114,7 +142,7 @@ impl From<Hash> for IntentHash {
 
 impl From<&TransactionIntent> for IntentHash {
     fn from(intent: &TransactionIntent) -> Self {
-        IntentHash(sha256_twice(&scrypto_encode(intent)).0)
+        Self::for_intent_bytes(&scrypto_encode(intent))
     }
 }
 
@@ -156,7 +184,7 @@ impl StoredTransaction {
     pub fn get_hash(&self) -> PayloadHash {
         match self {
             StoredTransaction::User(notarized) => notarized.into(),
-            StoredTransaction::System(payload) => PayloadHash(sha256_twice(&payload).0),
+            StoredTransaction::System(payload) => PayloadHash::for_payload(payload),
         }
     }
 

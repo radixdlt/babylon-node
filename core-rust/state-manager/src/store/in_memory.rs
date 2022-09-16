@@ -64,7 +64,7 @@
 
 use crate::store::traits::*;
 use crate::types::{PayloadHash, StoredTransaction};
-use crate::LedgerTransactionReceipt;
+use crate::{CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt};
 use scrypto::prelude::{scrypto_decode, scrypto_encode};
 use std::collections::{BTreeMap, HashMap};
 
@@ -100,6 +100,7 @@ impl Default for InMemoryVertexStore {
 #[derive(Debug)]
 pub struct InMemoryStore {
     transactions: HashMap<PayloadHash, Vec<u8>>,
+    transaction_intent_lookup: HashMap<IntentHash, PayloadHash>,
     proofs: BTreeMap<u64, Vec<u8>>,
     txids: BTreeMap<u64, PayloadHash>,
 }
@@ -108,6 +109,7 @@ impl InMemoryStore {
     pub fn new() -> InMemoryStore {
         InMemoryStore {
             transactions: HashMap::new(),
+            transaction_intent_lookup: HashMap::new(),
             proofs: BTreeMap::new(),
             txids: BTreeMap::new(),
         }
@@ -117,10 +119,24 @@ impl InMemoryStore {
         &mut self,
         transaction: StoredTransaction,
         receipt: LedgerTransactionReceipt,
+        identifiers: CommittedTransactionIdentifiers,
     ) {
+        let payload_hash = transaction.get_hash();
+        if let StoredTransaction::User(notarized_transaction) = &transaction {
+            let intent_hash: IntentHash = notarized_transaction.into();
+            let key_already_exists = self.transaction_intent_lookup.get(&intent_hash);
+            if let Some(existing_payload_hash) = key_already_exists {
+                panic!(
+                    "Attempted to save intent hash which already exists: {:?}",
+                    existing_payload_hash
+                );
+            }
+            self.transaction_intent_lookup
+                .insert(intent_hash, payload_hash.clone());
+        }
         self.transactions.insert(
-            transaction.get_hash(),
-            scrypto_encode(&(transaction, receipt)),
+            payload_hash,
+            scrypto_encode(&(transaction, receipt, identifiers)),
         );
     }
 }
@@ -132,27 +148,52 @@ impl Default for InMemoryStore {
 }
 
 impl WriteableTransactionStore for InMemoryStore {
-    fn insert_transactions(
+    fn insert_committed_transactions(
         &mut self,
-        transactions: Vec<(StoredTransaction, LedgerTransactionReceipt)>,
+        transactions: Vec<(
+            StoredTransaction,
+            LedgerTransactionReceipt,
+            CommittedTransactionIdentifiers,
+        )>,
     ) {
-        for (txn, receipt) in transactions {
-            self.insert_transaction(txn, receipt);
+        for (txn, receipt, identifiers) in transactions {
+            self.insert_transaction(txn, receipt, identifiers);
         }
     }
 }
 
 impl QueryableTransactionStore for InMemoryStore {
-    fn get_transaction(
+    fn get_committed_transaction(
         &self,
         payload_hash: &PayloadHash,
-    ) -> Option<(StoredTransaction, LedgerTransactionReceipt)> {
+    ) -> Option<(
+        StoredTransaction,
+        LedgerTransactionReceipt,
+        CommittedTransactionIdentifiers,
+    )> {
         let saved = self.transactions.get(payload_hash)?;
 
         let decoded = scrypto_decode(saved)
             .unwrap_or_else(|_| panic!("Failed to decode a stored transaction {}", payload_hash));
 
         Some(decoded)
+    }
+
+    fn get_committed_transaction_by_intent(
+        &self,
+        intent_hash: &IntentHash,
+    ) -> Option<(
+        StoredTransaction,
+        LedgerTransactionReceipt,
+        CommittedTransactionIdentifiers,
+    )> {
+        let payload_hash = self.transaction_intent_lookup.get(intent_hash)?;
+
+        let transaction_data = self.get_committed_transaction(payload_hash).expect(
+            "Transaction payload hash was found for transaction, but payload couldn't be found",
+        );
+
+        Some(transaction_data)
     }
 }
 

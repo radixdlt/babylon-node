@@ -93,8 +93,8 @@ public final class RustMempoolTest {
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
       var transaction1 = REv2TestTransactions.VALID_TXN_0;
-      var transaction2 = REv2TestTransactions.VALID_TXN_1;
-      var transaction3 = REv2TestTransactions.VALID_TXN_2;
+      var transaction2 = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_1;
+      var transaction3 = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_2;
 
       Assert.assertEquals(0, rustMempool.getCount());
 
@@ -152,8 +152,8 @@ public final class RustMempoolTest {
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
       var transaction1 = REv2TestTransactions.VALID_TXN_0;
-      var transaction2 = REv2TestTransactions.VALID_TXN_1;
-      var transaction3 = REv2TestTransactions.VALID_TXN_2;
+      var transaction2 = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_1;
+      var transaction3 = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_2;
 
       // Add Transactions
       rustMempool.addTransaction(transaction1);
@@ -249,8 +249,8 @@ public final class RustMempoolTest {
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
       var transaction1 = REv2TestTransactions.VALID_TXN_0;
-      var transaction2 = REv2TestTransactions.VALID_TXN_1;
-      var transaction3 = REv2TestTransactions.VALID_TXN_2;
+      var transaction2 = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_1;
+      var transaction3 = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_2;
 
       rustMempool.addTransaction(transaction1);
       rustMempool.addTransaction(transaction2);

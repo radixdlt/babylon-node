@@ -67,6 +67,7 @@ package com.radixdlt.rev2;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.PublicKey;
 import com.radixdlt.crypto.SignatureWithPublicKey;
 import com.radixdlt.networks.Network;
 import com.radixdlt.transaction.TransactionBuilder;
@@ -80,6 +81,7 @@ public final class REv2TestTransactions {
 
   public static final RawTransaction VALID_TXN_0 =
       constructTransaction(
+          NetworkDefinition.INT_TEST_NET,
           String.format(
               """
         CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("10");
@@ -89,16 +91,35 @@ public final class REv2TestTransactions {
                   .encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS)),
           0,
           List.of());
-  public static final RawTransaction VALID_TXN_1 =
-      constructTransaction("CLEAR_AUTH_ZONE;", 0, List.of(generateKeyPair(10)));
-  public static final RawTransaction VALID_TXN_2 =
+  public static final RawTransaction STATICALLY_VALID_BUT_REJECT_TXN_1 =
       constructTransaction(
+          NetworkDefinition.INT_TEST_NET, "CLEAR_AUTH_ZONE;", 0, List.of(generateKeyPair(10)));
+  public static final RawTransaction STATICALLY_VALID_BUT_REJECT_TXN_2 =
+      constructTransaction(
+          NetworkDefinition.INT_TEST_NET,
           "CLEAR_AUTH_ZONE; CLEAR_AUTH_ZONE;",
           0,
           List.of(generateKeyPair(21), generateKeyPair(22)));
 
   private static ECKeyPair generateKeyPair(int keySource) {
     return PrivateKeys.numeric(keySource).findFirst().orElseThrow();
+  }
+
+  public static byte[] constractValidIntentBytes(
+      NetworkDefinition network, long nonce, PublicKey notary) {
+    final var addressing = Addressing.ofNetwork(network);
+    final var faucetAddress =
+        addressing.encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
+
+    var manifest =
+        String.format(
+            """
+        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("10");
+        CLEAR_AUTH_ZONE;
+    """,
+            faucetAddress);
+    var header = TransactionHeader.defaults(network, nonce, notary, false);
+    return TransactionBuilder.createIntent(network, header, manifest, List.of());
   }
 
   public static String constructNewAccountManifest(NetworkDefinition networkDefinition) {
@@ -119,6 +140,13 @@ public final class REv2TestTransactions {
         faucetAddress, faucetAddress, xrdAddress, accountPackageAddress);
   }
 
+  public static byte[] constructNewAccountIntent(
+      NetworkDefinition networkDefinition, long nonce, PublicKey notary) {
+    final var manifest = constructNewAccountManifest(networkDefinition);
+    final var header = TransactionHeader.defaults(networkDefinition, nonce, notary, false);
+    return TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
+  }
+
   public static RawTransaction constructNewAccountTransaction(
       NetworkDefinition networkDefinition, long nonce) {
     var manifest = constructNewAccountManifest(networkDefinition);
@@ -129,9 +157,12 @@ public final class REv2TestTransactions {
   }
 
   public static RawTransaction constructTransaction(
-      String manifest, long nonce, List<ECKeyPair> signatories) {
+      NetworkDefinition networkDefinition,
+      String manifest,
+      long nonce,
+      List<ECKeyPair> signatories) {
     return constructTransaction(
-        NetworkDefinition.INT_TEST_NET, nonce, manifest, DEFAULT_NOTARY, false, signatories);
+        networkDefinition, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
   public static RawTransaction constructTransaction(

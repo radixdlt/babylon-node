@@ -36,18 +36,19 @@ pub fn to_api_signature_with_public_key(
                 }),
             }
         }
-        SignatureWithPublicKey::EddsaEd25519 { public_key, signature } => {
-            models::SignatureWithPublicKey::EddsaEd25519SignatureWithPublicKey {
-                signature: Box::new(models::EddsaEd25519Signature {
-                    key_type: models::PublicKeyType::EddsaEd25519,
-                    signature_bytes: to_hex(signature.to_vec()),
-                }),
-                public_key: Box::new(models::EddsaEd25519PublicKey {
-                    key_type: models::PublicKeyType::EddsaEd25519,
-                    key_bytes: to_hex(public_key.to_vec()),
-                }),
-            }
-        }
+        SignatureWithPublicKey::EddsaEd25519 {
+            public_key,
+            signature,
+        } => models::SignatureWithPublicKey::EddsaEd25519SignatureWithPublicKey {
+            signature: Box::new(models::EddsaEd25519Signature {
+                key_type: models::PublicKeyType::EddsaEd25519,
+                signature_bytes: to_hex(signature.to_vec()),
+            }),
+            public_key: Box::new(models::EddsaEd25519PublicKey {
+                key_type: models::PublicKeyType::EddsaEd25519,
+                key_bytes: to_hex(public_key.to_vec()),
+            }),
+        },
     }
 }
 

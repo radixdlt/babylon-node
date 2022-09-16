@@ -73,6 +73,8 @@ mod transaction_builder;
 mod types;
 
 pub use mempool::MempoolAddError;
-pub use receipt::{CommittedTransactionStatus, LedgerTransactionReceipt};
+pub use receipt::{
+    CommittedTransactionIdentifiers, CommittedTransactionStatus, LedgerTransactionReceipt,
+};
 pub use state_manager::StateManager;
 pub use types::*;
