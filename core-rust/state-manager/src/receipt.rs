@@ -13,7 +13,6 @@ use scrypto::prelude::Level;
 
 #[derive(Debug, Decode, Encode, TypeId)]
 pub struct CommittedTransactionIdentifiers {
-    // TODO - add accumulator here
     pub state_version: u64,
 }
 

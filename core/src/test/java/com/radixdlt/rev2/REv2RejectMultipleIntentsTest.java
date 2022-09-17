@@ -114,12 +114,12 @@ public final class REv2RejectMultipleIntentsTest {
                         REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
   }
 
-  private static byte[] createIntentBytes(long nonce) {
+  private static byte[] createValidIntentBytes(long nonce) {
     return REv2TestTransactions.constractValidIntentBytes(
         NETWORK_DEFINITION, nonce, NOTARY.getPublicKey().toPublicKey());
   }
 
-  private static RawTransaction createTransactionWithSigs(byte[] intentBytes, int sigsCount) {
+  private static RawTransaction createValidTransactionWithSigs(byte[] intentBytes, int sigsCount) {
     var keys = IntStream.rangeClosed(1, sigsCount).mapToObj(i -> PrivateKeys.ofNumeric(1)).toList();
     return REv2TestTransactions.constructTransaction(intentBytes, NOTARY, keys);
   }
@@ -141,31 +141,31 @@ public final class REv2RejectMultipleIntentsTest {
   }
 
   @Test
-  public void rejected_transaction_in_proposal_should_not_be_committed() {
+  public void duplicate_intents_are_not_committed() {
     var proposalGenerator = new ControlledProposerGenerator();
 
     try (var test = createTest(proposalGenerator)) {
-      var fixedIntent1 = createIntentBytes(1);
-      var fixedIntent2 = createIntentBytes(2);
-      var fixedIntent3 = createIntentBytes(3);
+      var fixedIntent1 = createValidIntentBytes(1);
+      var fixedIntent2 = createValidIntentBytes(2);
+      var fixedIntent3 = createValidIntentBytes(3);
 
-      // All fixed intent 1 - only one of these should be committed
+      // Different payloads all with fixed intent 1 - only one of these should be committed
       var transactionsForFirstProposal =
           List.of(
-              createTransactionWithSigs(fixedIntent1, 0),
-              createTransactionWithSigs(fixedIntent1, 1),
-              createTransactionWithSigs(fixedIntent1, 2),
-              createTransactionWithSigs(fixedIntent1, 3),
-              createTransactionWithSigs(fixedIntent1, 4));
+              createValidTransactionWithSigs(fixedIntent1, 0),
+              createValidTransactionWithSigs(fixedIntent1, 1),
+              createValidTransactionWithSigs(fixedIntent1, 2),
+              createValidTransactionWithSigs(fixedIntent1, 3),
+              createValidTransactionWithSigs(fixedIntent1, 4));
 
-      // Mix of fixed intent 1, 2 and 3 - fixed intent 2 and 3 should be committed
+      // Mix of payloads with fixed intent 1, 2 and 3 - fixed intent 2 and 3 should be committed
       var transactionsForSecondProposal =
           List.of(
-              createTransactionWithSigs(fixedIntent2, 3),
-              createTransactionWithSigs(fixedIntent1, 0), // Exact repeat
-              createTransactionWithSigs(fixedIntent1, 5),
-              createTransactionWithSigs(fixedIntent3, 0),
-              createTransactionWithSigs(fixedIntent2, 0));
+              createValidTransactionWithSigs(fixedIntent2, 3),
+              createValidTransactionWithSigs(fixedIntent1, 0), // Exact payload repeat
+              createValidTransactionWithSigs(fixedIntent1, 5),
+              createValidTransactionWithSigs(fixedIntent3, 0),
+              createValidTransactionWithSigs(fixedIntent2, 0));
 
       // Prepare - let's start the test
       test.startAllNodes();
@@ -177,7 +177,7 @@ public final class REv2RejectMultipleIntentsTest {
 
       // Assert: Check transaction and post submission state
       assertThat(proposalGenerator.nextTransactions).isNull();
-      // Verify that transaction was committed once (Genesis + intent1)
+      // Verify that exactly one transaction was committed (Genesis + intent1)
       assertNodesSyncedToExactVersion(test.getNodeInjectors(), 2);
 
       // Act 2: Submit proposal 2 transactions in a proposal and run consensus
@@ -187,7 +187,8 @@ public final class REv2RejectMultipleIntentsTest {
 
       // Assert: Check transaction and post submission state
       assertThat(proposalGenerator.nextTransactions).isNull();
-      // Verify that transaction was committed once (Genesis + intent1 + intent2 + intent3)
+      // Verify that exactly two more transactions were committed (Genesis + intent1 + intent2 +
+      // intent3)
       assertNodesSyncedToExactVersion(test.getNodeInjectors(), 4);
     }
   }

@@ -66,7 +66,7 @@ use crate::types::{PayloadHash, StoredTransaction};
 use std::collections::HashMap;
 
 use crate::store::traits::*;
-use crate::{CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt};
+use crate::{CommittedTransactionIdentifiers, HasIntentHash, IntentHash, LedgerTransactionReceipt};
 use radix_engine::engine::Substate;
 use radix_engine::ledger::{
     OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
@@ -171,12 +171,12 @@ impl<'db> RocksDBCommitTransaction<'db> {
     ) {
         // TEMPORARY until this is handled in the engine: we store both an intent lookup and the transaction itself
         if let StoredTransaction::User(notarized_transaction) = &transaction {
-            let key = get_transaction_intent_key(&(notarized_transaction).into());
-            let key_already_exists = self
+            let key = get_transaction_intent_key(&notarized_transaction.intent_hash());
+            let existing_intent_option = self
                 .db_txn
                 .get_for_update(key, true)
                 .expect("RocksDB: failure to read intent hash");
-            if let Some(existing_payload_hash) = key_already_exists {
+            if let Some(existing_payload_hash) = existing_intent_option {
                 panic!(
                     "Attempted to save intent hash which already exists: {:?}",
                     PayloadHash(existing_payload_hash.try_into().unwrap())
@@ -184,17 +184,17 @@ impl<'db> RocksDBCommitTransaction<'db> {
             }
             self.db_txn
                 .put(
-                    get_transaction_intent_key(&(notarized_transaction).into()),
+                    get_transaction_intent_key(&notarized_transaction.intent_hash()),
                     transaction.get_hash().0,
                 )
-                .expect("RocksDB: failuere to put intent hash");
+                .expect("RocksDB: failure to put intent hash");
         }
         self.db_txn
             .put(
                 get_transaction_key(&transaction.get_hash()),
                 scrypto_encode(&(transaction, receipt, identifiers)),
             )
-            .unwrap();
+            .expect("RocksDB: failure to put transaction");
     }
 }
 

@@ -146,7 +146,7 @@ public final class REv2ConsensusTransferTest {
       assertThat(accountAmount).isEqualTo(Decimal.of(1_000L));
       var systemAmount =
           stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
-      assertThat(systemAmount).isLessThan(REv2GenesisTest.GENESIS_AMOUNT);
+      assertThat(systemAmount).isLessThan(REv2Constants.GENESIS_AMOUNT);
     }
   }
 }

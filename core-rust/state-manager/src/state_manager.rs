@@ -69,7 +69,10 @@ use crate::types::{
     CommitRequest, PrepareRequest, PrepareResult, PreviewRequest, StoredTransaction,
     TransactionPrepareResult,
 };
-use crate::{CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt, PayloadHash};
+use crate::{
+    CommittedTransactionIdentifiers, HasIntentHash, HasPayloadHash, IntentHash,
+    LedgerTransactionReceipt, PayloadHash,
+};
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
@@ -263,8 +266,7 @@ where
                 .validate_transaction_slice(&prepared)
                 .expect("Already prepared transactions should be decodeable");
 
-            already_committed_or_prepared_intent_hashes
-                .insert((&validated_transaction.transaction).into());
+            already_committed_or_prepared_intent_hashes.insert(validated_transaction.intent_hash());
             validated_prepared.push(validated_transaction);
         }
 
@@ -274,7 +276,7 @@ where
             let validation_result = self.validate_transaction_slice(&proposed_payload);
 
             if let Ok(validated_transaction) = &validation_result {
-                let intent_hash: IntentHash = (&validated_transaction.transaction).into();
+                let intent_hash = validated_transaction.intent_hash();
                 if self
                     .store
                     .get_committed_transaction_by_intent(&intent_hash)
@@ -315,7 +317,7 @@ where
                         &mut self.wasm_instrumenter,
                     );
 
-                    let intent_hash: IntentHash = (&validated_transaction.transaction).into();
+                    let intent_hash = validated_transaction.intent_hash();
                     if already_committed_or_prepared_intent_hashes.contains(&intent_hash) {
                         transaction_results.push((
                             payload_hash,
@@ -424,7 +426,7 @@ where
                     )
                 });
 
-            let payload_hash: PayloadHash = (&notarized_txn).into();
+            let payload_hash = notarized_txn.payload_hash();
 
             let identifiers = CommittedTransactionIdentifiers {
                 state_version: current_state_version,

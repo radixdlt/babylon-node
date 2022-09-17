@@ -66,6 +66,7 @@ use scrypto::prelude::*;
 use std::fmt;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, TransactionIntent, TransactionManifest,
+    ValidatedTransaction,
 };
 
 #[derive(PartialEq, Eq, Hash, Clone, PartialOrd, Ord, Decode, Encode, TypeId)]
@@ -73,9 +74,7 @@ pub struct PayloadHash(pub [u8; Self::LENGTH]);
 
 impl PayloadHash {
     pub const LENGTH: usize = 32;
-}
 
-impl PayloadHash {
     pub fn for_payload(payload_bytes: &[u8]) -> Self {
         sha256_twice(payload_bytes).into()
     }
@@ -101,9 +100,19 @@ impl From<Hash> for PayloadHash {
     }
 }
 
-impl From<&NotarizedTransaction> for PayloadHash {
-    fn from(transaction: &NotarizedTransaction) -> Self {
-        Self::for_payload(&scrypto_encode(transaction))
+pub trait HasPayloadHash {
+    fn payload_hash(&self) -> PayloadHash;
+}
+
+impl HasPayloadHash for NotarizedTransaction {
+    fn payload_hash(&self) -> PayloadHash {
+        PayloadHash::for_payload(&scrypto_encode(self))
+    }
+}
+
+impl HasPayloadHash for ValidatedTransaction {
+    fn payload_hash(&self) -> PayloadHash {
+        self.transaction.payload_hash()
     }
 }
 
@@ -140,16 +149,25 @@ impl From<Hash> for IntentHash {
     }
 }
 
-impl From<&TransactionIntent> for IntentHash {
-    fn from(intent: &TransactionIntent) -> Self {
-        Self::for_intent_bytes(&scrypto_encode(intent))
+pub trait HasIntentHash {
+    fn intent_hash(&self) -> IntentHash;
+}
+
+impl HasIntentHash for TransactionIntent {
+    fn intent_hash(&self) -> IntentHash {
+        IntentHash::for_intent_bytes(&scrypto_encode(self))
     }
 }
 
-impl From<&NotarizedTransaction> for IntentHash {
-    fn from(transaction: &NotarizedTransaction) -> Self {
-        let intent = &transaction.signed_intent.intent;
-        intent.into()
+impl HasIntentHash for NotarizedTransaction {
+    fn intent_hash(&self) -> IntentHash {
+        self.signed_intent.intent.intent_hash()
+    }
+}
+
+impl HasIntentHash for ValidatedTransaction {
+    fn intent_hash(&self) -> IntentHash {
+        self.transaction.intent_hash()
     }
 }
 
@@ -163,12 +181,12 @@ pub struct PendingTransaction {
 
 impl From<NotarizedTransaction> for PendingTransaction {
     fn from(transaction: NotarizedTransaction) -> Self {
-        let payload_hash: PayloadHash = (&transaction).into();
-        let intent_hash: IntentHash = (&transaction).into();
+        let _payload_hash = transaction.payload_hash();
+        let intent_hash = transaction.intent_hash();
         PendingTransaction {
-            payload: transaction,
-            payload_hash,
+            payload_hash: transaction.payload_hash(),
             intent_hash,
+            payload: transaction,
         }
     }
 }
@@ -183,7 +201,7 @@ pub enum StoredTransaction {
 impl StoredTransaction {
     pub fn get_hash(&self) -> PayloadHash {
         match self {
-            StoredTransaction::User(notarized) => notarized.into(),
+            StoredTransaction::User(notarized) => notarized.payload_hash(),
             StoredTransaction::System(payload) => PayloadHash::for_payload(payload),
         }
     }
