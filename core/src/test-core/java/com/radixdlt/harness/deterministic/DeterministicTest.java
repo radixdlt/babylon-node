@@ -538,4 +538,12 @@ public final class DeterministicTest implements AutoCloseable {
   public int numNodes() {
     return this.nodes.numNodes();
   }
+
+  public int[] getNodeIndices() {
+    return this.nodes.getNodeIndices();
+  }
+
+  public int[] getLiveNodeIndices() {
+    return this.nodes.getLiveNodeIndices();
+  }
 }
