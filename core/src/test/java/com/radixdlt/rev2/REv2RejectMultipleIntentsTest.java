@@ -120,7 +120,7 @@ public final class REv2RejectMultipleIntentsTest {
   }
 
   private static RawTransaction createValidTransactionWithSigs(byte[] intentBytes, int sigsCount) {
-    var keys = IntStream.rangeClosed(1, sigsCount).mapToObj(i -> PrivateKeys.ofNumeric(1)).toList();
+    var keys = IntStream.rangeClosed(1, sigsCount).mapToObj(PrivateKeys::ofNumeric).toList();
     return REv2TestTransactions.constructTransaction(intentBytes, NOTARY, keys);
   }
 

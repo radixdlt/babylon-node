@@ -388,6 +388,7 @@ where
     pub fn commit(&'db mut self, commit_request: CommitRequest) {
         let mut to_store = Vec::new();
         let mut payload_hashes = Vec::new();
+        let mut intent_hashes = Vec::new();
 
         let transactions_to_commit = commit_request
             .transaction_payloads
@@ -427,6 +428,7 @@ where
                 });
 
             let payload_hash = notarized_txn.payload_hash();
+            let intent_hash = notarized_txn.intent_hash();
 
             let identifiers = CommittedTransactionIdentifiers {
                 state_version: current_state_version,
@@ -437,13 +439,14 @@ where
                 identifiers,
             ));
             payload_hashes.push(payload_hash);
+            intent_hashes.push(intent_hash);
             current_state_version += 1;
         }
 
         db_transaction.insert_committed_transactions(to_store);
         db_transaction.insert_tids_and_proof(
             commit_request.state_version,
-            payload_hashes.clone(),
+            payload_hashes,
             commit_request.proof,
         );
         if let Some(vertex_store) = commit_request.vertex_store {
@@ -452,7 +455,7 @@ where
 
         db_transaction.commit();
 
-        self.mempool.handle_committed_transactions(&payload_hashes);
+        self.mempool.handle_committed_transactions(&intent_hashes);
     }
 }
 

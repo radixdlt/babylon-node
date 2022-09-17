@@ -70,8 +70,10 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt32;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
@@ -84,14 +86,44 @@ public class REv2TransactionCreationTest {
 
   @Test
   public void can_create_some_test_transactions() {
-    // This test is mostly used to create signed transactions for testing the Core API
+    // This test is mostly used to create signed transactions in various varieties for manually
+    // testing the Core API
     var network = NetworkDefinition.LOCALNET;
 
-    logTransaction("New Account Transaction Rust", constructNewAccountTransactionRust(network));
+    logTransaction(
+        "Small valid transaction (Intent 1, Payload 1)",
+        constructSmallValidTransaction(network, 1, 0));
+    logTransaction(
+        "Small valid transaction (Intent 1, Payload 2)",
+        constructSmallValidTransaction(network, 1, 0));
+    logTransaction(
+        "Small valid transaction (Intent 2, Payload 1)",
+        constructSmallValidTransaction(network, 2, 0));
 
-    logTransaction("New Account Transaction Java", constructNewAccountTransactionJava(network));
+    logTransaction(
+        "New Account Transaction Rust (Intent 1, Payload 1)",
+        constructNewAccountTransactionRust(network, 0));
 
-    logTransaction("Not enough cost units Transaction", constructInvalidTransaction(network, 1));
+    logTransaction(
+        "New Account Transaction Java (Intent 1, Payload 1)",
+        constructNewAccountTransactionJava(network, 1, 0));
+    logTransaction(
+        "New Account Transaction Java (Intent 1, Payload 2)",
+        constructNewAccountTransactionJava(network, 1, 1));
+
+    logTransaction(
+        "Statically-invalid Transaction (Intent 1, Payload 1)",
+        constructStaticallyInvalidTransaction(network, 1));
+
+    logTransaction(
+        "Execution-invalid Transaction (Intent 1, Payload 1)",
+        constructExecutionInvalidTransaction(network, 1, 0));
+    logTransaction(
+        "Execution-invalid Transaction (Intent 1, Payload 2)",
+        constructExecutionInvalidTransaction(network, 1, 1));
+    logTransaction(
+        "Execution-invalid Transaction (Intent 1, Payload 3)",
+        constructExecutionInvalidTransaction(network, 1, 2));
   }
 
   private static void logTransaction(String description, TransactionInfo transactionInfo) {
@@ -113,29 +145,56 @@ public class REv2TransactionCreationTest {
     return new TransactionInfo(transaction, intentHash);
   }
 
+  public static TransactionInfo constructSmallValidTransaction(
+      NetworkDefinition networkDefinition, long nonce, int numSigs) {
+
+    final var intentBytes =
+        REv2TestTransactions.constractValidIntentBytes(
+            networkDefinition, nonce, NOTARY.getPublicKey().toPublicKey());
+
+    return createTransaction(intentBytes, createSignatories(numSigs));
+  }
+
   public static TransactionInfo constructNewAccountTransactionRust(
-      NetworkDefinition networkDefinition) {
+      NetworkDefinition networkDefinition, int numSigs) {
 
     final var intentBytes =
         TransactionBuilder.buildNewAccountIntent(
             networkDefinition, NOTARY.getPublicKey().toPublicKey());
 
-    return createTransaction(intentBytes, List.of());
+    return createTransaction(intentBytes, createSignatories(numSigs));
   }
 
   public static TransactionInfo constructNewAccountTransactionJava(
-      NetworkDefinition networkDefinition) {
+      NetworkDefinition networkDefinition, long nonce, int numSigs) {
     final var intentBytes =
         REv2TestTransactions.constructNewAccountIntent(
-            networkDefinition, 1, NOTARY.getPublicKey().toPublicKey());
-    return createTransaction(intentBytes, List.of());
+            networkDefinition, nonce, NOTARY.getPublicKey().toPublicKey());
+    return createTransaction(intentBytes, createSignatories(numSigs));
   }
 
-  public static TransactionInfo constructInvalidTransaction(
+  /*
+   * By using too low a cost unit cap to cover the loan
+   */
+  public static TransactionInfo constructStaticallyInvalidTransaction(
       NetworkDefinition networkDefinition, long nonce) {
 
+    final var intentBytes =
+        REv2TestTransactions.constractValidIntentBytes(
+            networkDefinition, nonce, NOTARY.getPublicKey().toPublicKey());
+
+    final var duplicateSignatories = List.of(PrivateKeys.ofNumeric(1), PrivateKeys.ofNumeric(1));
+
+    return createTransaction(intentBytes, duplicateSignatories);
+  }
+
+  /*
+   * By using too low a cost unit cap to cover the loan
+   */
+  public static TransactionInfo constructExecutionInvalidTransaction(
+      NetworkDefinition networkDefinition, long nonce, int numSigs) {
+
     final var manifest = REv2TestTransactions.constructNewAccountManifest(networkDefinition);
-    final var signatories = List.<ECKeyPair>of();
 
     final var insufficientLimit = UInt32.fromNonNegativeInt(1000);
 
@@ -146,10 +205,10 @@ public class REv2TransactionCreationTest {
     var intentBytes =
         TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
 
-    final var intentHash = HashUtils.sha256Twice(intentBytes);
+    return createTransaction(intentBytes, createSignatories(numSigs));
+  }
 
-    var payload = REv2TestTransactions.constructTransaction(intentBytes, NOTARY, signatories);
-
-    return new TransactionInfo(payload, intentHash);
+  public static List<ECKeyPair> createSignatories(int num) {
+    return IntStream.rangeClosed(1, num).mapToObj(PrivateKeys::ofNumeric).toList();
   }
 }
