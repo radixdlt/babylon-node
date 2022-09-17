@@ -77,8 +77,6 @@ import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import org.junit.Test;
 
 public final class REv2GenesisTest {
-  private static final Decimal GENESIS_AMOUNT = Decimal.of(24_000_000_000L);
-
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
         .numNodes(1, 0)
@@ -113,7 +111,7 @@ public final class REv2GenesisTest {
 
       var systemAmount =
           stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
-      assertThat(systemAmount).isEqualTo(GENESIS_AMOUNT);
+      assertThat(systemAmount).isEqualTo(REv2Constants.GENESIS_AMOUNT);
 
       var emptyAccountAmount =
           stateReader.getComponentXrdAmount(ComponentAddress.NON_EXISTENT_COMPONENT_ADDRESS);

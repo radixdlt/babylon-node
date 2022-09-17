@@ -49,6 +49,7 @@ pub enum ExtractionError {
     InvalidHex,
     InvalidSignature,
     InvalidPublicKey,
+    InvalidHash,
     InvalidTransaction(TransactionValidationError),
 }
 

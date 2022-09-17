@@ -86,22 +86,39 @@ pub mod substate {
 
 pub mod transactions {
     use crate::{
-        types::{PayloadHash, StoredTransaction},
-        LedgerTransactionReceipt,
+        CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt, PayloadHash,
+        StoredTransaction,
     };
 
     pub trait WriteableTransactionStore {
-        fn insert_transactions(
+        fn insert_committed_transactions(
             &mut self,
-            transactions: Vec<(StoredTransaction, LedgerTransactionReceipt)>,
+            transactions: Vec<(
+                StoredTransaction,
+                LedgerTransactionReceipt,
+                CommittedTransactionIdentifiers,
+            )>,
         );
     }
 
     pub trait QueryableTransactionStore {
-        fn get_transaction(
+        fn get_committed_transaction(
             &self,
-            tid: &PayloadHash,
-        ) -> Option<(StoredTransaction, LedgerTransactionReceipt)>;
+            payload_hash: &PayloadHash,
+        ) -> Option<(
+            StoredTransaction,
+            LedgerTransactionReceipt,
+            CommittedTransactionIdentifiers,
+        )>;
+
+        fn get_committed_transaction_by_intent(
+            &self,
+            intent_hash: &IntentHash,
+        ) -> Option<(
+            StoredTransaction,
+            LedgerTransactionReceipt,
+            CommittedTransactionIdentifiers,
+        )>;
     }
 }
 
@@ -112,7 +129,7 @@ pub mod proofs {
         fn insert_tids_and_proof(
             &mut self,
             state_version: u64,
-            ids: Vec<PayloadHash>,
+            payload_hashes: Vec<PayloadHash>,
             proof_bytes: Vec<u8>,
         );
 

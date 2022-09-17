@@ -65,38 +65,39 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.invariants.Checkers.assertNodesSyncedToExactVersion;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
-import static com.radixdlt.harness.predicates.NodesPredicate.allAtExactlyStateVersion;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.inject.*;
+import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.mempool.MempoolInserter;
-import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public final class REv2ConsensusTransferTest {
+public final class REv2RejectMultipleIntentsTest {
+  private static final ECKeyPair NOTARY = PrivateKeys.ofNumeric(1);
+  private static final NetworkDefinition NETWORK_DEFINITION = NetworkDefinition.INT_TEST_NET;
 
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private DeterministicTest createTest() {
+  private DeterministicTest createTest(ProposalGenerator proposalGenerator) {
     return DeterministicTest.builder()
         .numNodes(1, 0)
         .messageSelector(firstSelector())
@@ -110,43 +111,85 @@ public final class REv2ConsensusTransferTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            1, MempoolRelayConfig.of())))));
+                        REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
   }
 
-  private static RawTransaction createNewAccountTransaction() {
-    var notary = TEST_KEY;
-    var intentBytes =
-        TransactionBuilder.buildNewAccountIntent(
-            NetworkDefinition.INT_TEST_NET, notary.getPublicKey().toPublicKey());
-    return REv2TestTransactions.constructTransaction(intentBytes, notary, List.of(TEST_KEY));
+  private static byte[] createValidIntentBytes(long nonce) {
+    return REv2TestTransactions.constractValidIntentBytes(
+        NETWORK_DEFINITION, nonce, NOTARY.getPublicKey().toPublicKey());
+  }
+
+  private static RawTransaction createValidTransactionWithSigs(byte[] intentBytes, int sigsCount) {
+    var keys = IntStream.rangeClosed(1, sigsCount).mapToObj(i -> PrivateKeys.ofNumeric(1)).toList();
+    return REv2TestTransactions.constructTransaction(intentBytes, NOTARY, keys);
+  }
+
+  private static class ControlledProposerGenerator implements ProposalGenerator {
+    private List<RawTransaction> nextTransactions = null;
+
+    @Override
+    public List<RawTransaction> getTransactionsForProposal(
+        Round round, List<ExecutedVertex> prepared) {
+      if (nextTransactions == null) {
+        return List.of();
+      } else {
+        var txns = nextTransactions;
+        this.nextTransactions = null;
+        return txns;
+      }
+    }
   }
 
   @Test
-  public void new_account_creates_transfer_of_xrd_to_account() throws Exception {
-    try (var test = createTest()) {
-      // Arrange: Start single node network
-      test.startAllNodes();
-      var newAccountTransaction = createNewAccountTransaction();
+  public void duplicate_intents_are_not_committed() {
+    var proposalGenerator = new ControlledProposerGenerator();
 
-      // Act: Submit transaction to mempool and run consensus
-      var mempoolInserter =
-          test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
-      mempoolInserter.addTransaction(newAccountTransaction);
-      test.runUntilState(allAtExactlyStateVersion(2), onlyConsensusEvents());
+    try (var test = createTest(proposalGenerator)) {
+      var fixedIntent1 = createValidIntentBytes(1);
+      var fixedIntent2 = createValidIntentBytes(2);
+      var fixedIntent3 = createValidIntentBytes(3);
+
+      // Different payloads all with fixed intent 1 - only one of these should be committed
+      var transactionsForFirstProposal =
+          List.of(
+              createValidTransactionWithSigs(fixedIntent1, 0),
+              createValidTransactionWithSigs(fixedIntent1, 1),
+              createValidTransactionWithSigs(fixedIntent1, 2),
+              createValidTransactionWithSigs(fixedIntent1, 3),
+              createValidTransactionWithSigs(fixedIntent1, 4));
+
+      // Mix of payloads with fixed intent 1, 2 and 3 - fixed intent 2 and 3 should be committed
+      var transactionsForSecondProposal =
+          List.of(
+              createValidTransactionWithSigs(fixedIntent2, 3),
+              createValidTransactionWithSigs(fixedIntent1, 0), // Exact payload repeat
+              createValidTransactionWithSigs(fixedIntent1, 5),
+              createValidTransactionWithSigs(fixedIntent3, 0),
+              createValidTransactionWithSigs(fixedIntent2, 0));
+
+      // Prepare - let's start the test
+      test.startAllNodes();
+
+      // Act: Submit proposal 1 transactions in a proposal and run consensus
+      proposalGenerator.nextTransactions = transactionsForFirstProposal;
+      test.runUntilState(ignored -> proposalGenerator.nextTransactions == null);
+      test.runForCount(100, onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
-      var executedTransaction =
-          test.getInstance(0, REv2TransactionAndProofStore.class)
-              .getTransactionAtStateVersion(2)
-              .unwrap();
-      var componentAddress = executedTransaction.newComponentAddresses().get(0);
-      var stateReader = test.getInstance(0, REv2StateReader.class);
-      var accountAmount = stateReader.getComponentXrdAmount(componentAddress);
-      assertThat(accountAmount).isEqualTo(Decimal.of(1_000L));
-      var systemAmount =
-          stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
-      assertThat(systemAmount).isLessThan(REv2Constants.GENESIS_AMOUNT);
+      assertThat(proposalGenerator.nextTransactions).isNull();
+      // Verify that exactly one transaction was committed (Genesis + intent1)
+      assertNodesSyncedToExactVersion(test.getNodeInjectors(), 2);
+
+      // Act 2: Submit proposal 2 transactions in a proposal and run consensus
+      proposalGenerator.nextTransactions = transactionsForSecondProposal;
+      test.runUntilState(ignored -> proposalGenerator.nextTransactions == null);
+      test.runForCount(100, onlyConsensusEvents());
+
+      // Assert: Check transaction and post submission state
+      assertThat(proposalGenerator.nextTransactions).isNull();
+      // Verify that exactly two more transactions were committed (Genesis + intent1 + intent2 +
+      // intent3)
+      assertNodesSyncedToExactVersion(test.getNodeInjectors(), 4);
     }
   }
 }

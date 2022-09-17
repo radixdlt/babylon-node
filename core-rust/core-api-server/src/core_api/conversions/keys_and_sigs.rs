@@ -28,26 +28,27 @@ pub fn to_api_signature_with_public_key(
     sig_with_public_key: SignatureWithPublicKey,
 ) -> models::SignatureWithPublicKey {
     match sig_with_public_key {
-        SignatureWithPublicKey::EcdsaSecp256k1(sig) => {
+        SignatureWithPublicKey::EcdsaSecp256k1 { signature } => {
             models::SignatureWithPublicKey::EcdsaSecp256k1SignatureWithPublicKey {
                 recoverable_signature: Box::new(models::EcdsaSecp256k1Signature {
                     key_type: models::PublicKeyType::EcdsaSecp256k1,
-                    signature_bytes: to_hex(sig.to_vec()),
+                    signature_bytes: to_hex(signature.to_vec()),
                 }),
             }
         }
-        SignatureWithPublicKey::EddsaEd25519(pub_key, sig) => {
-            models::SignatureWithPublicKey::EddsaEd25519SignatureWithPublicKey {
-                signature: Box::new(models::EddsaEd25519Signature {
-                    key_type: models::PublicKeyType::EddsaEd25519,
-                    signature_bytes: to_hex(sig.to_vec()),
-                }),
-                public_key: Box::new(models::EddsaEd25519PublicKey {
-                    key_type: models::PublicKeyType::EddsaEd25519,
-                    key_bytes: to_hex(pub_key.to_vec()),
-                }),
-            }
-        }
+        SignatureWithPublicKey::EddsaEd25519 {
+            public_key,
+            signature,
+        } => models::SignatureWithPublicKey::EddsaEd25519SignatureWithPublicKey {
+            signature: Box::new(models::EddsaEd25519Signature {
+                key_type: models::PublicKeyType::EddsaEd25519,
+                signature_bytes: to_hex(signature.to_vec()),
+            }),
+            public_key: Box::new(models::EddsaEd25519PublicKey {
+                key_type: models::PublicKeyType::EddsaEd25519,
+                key_bytes: to_hex(public_key.to_vec()),
+            }),
+        },
     }
 }
 

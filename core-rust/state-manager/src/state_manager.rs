@@ -69,7 +69,10 @@ use crate::types::{
     CommitRequest, PrepareRequest, PrepareResult, PreviewRequest, StoredTransaction,
     TransactionPrepareResult,
 };
-use crate::{LedgerTransactionReceipt, PayloadHash};
+use crate::{
+    CommittedTransactionIdentifiers, HasIntentHash, HasPayloadHash, IntentHash,
+    LedgerTransactionReceipt, PayloadHash,
+};
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
@@ -82,6 +85,7 @@ use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use tracing::info;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
@@ -192,7 +196,7 @@ impl<M: Mempool, S> StateManager<M, S> {
         transaction: NotarizedTransaction,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
         let validation_config = ValidationConfig {
-            network: &self.network,
+            network_id: self.network.id,
             current_epoch: self.validation_config.current_epoch,
             max_cost_unit_limit: self.validation_config.max_cost_unit_limit,
             min_tip_percentage: self.validation_config.min_tip_percentage,
@@ -249,20 +253,39 @@ impl<M, S> StateManager<M, S>
 where
     M: Mempool,
     S: ReadableSubstateStore,
+    S: QueryableTransactionStore,
 {
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
         let mut validated_prepared = Vec::new();
+
+        // This intent hash check should eventually live in the executor
+        let mut already_committed_or_prepared_intent_hashes: HashSet<IntentHash> = HashSet::new();
+
         for prepared in prepare_request.already_prepared_payloads {
             let validated_transaction = self
                 .validate_transaction_slice(&prepared)
                 .expect("Already prepared transactions should be decodeable");
+
+            already_committed_or_prepared_intent_hashes.insert(validated_transaction.intent_hash());
             validated_prepared.push(validated_transaction);
         }
 
         let mut validated_proposed_transactions = Vec::new();
         for proposed_payload in prepare_request.proposed_payloads {
-            let payload_hash: PayloadHash = sha256_twice(&proposed_payload).into();
+            let payload_hash: PayloadHash = PayloadHash::for_payload(&proposed_payload);
             let validation_result = self.validate_transaction_slice(&proposed_payload);
+
+            if let Ok(validated_transaction) = &validation_result {
+                let intent_hash = validated_transaction.intent_hash();
+                if self
+                    .store
+                    .get_committed_transaction_by_intent(&intent_hash)
+                    .is_some()
+                {
+                    already_committed_or_prepared_intent_hashes.insert(intent_hash);
+                }
+            }
+
             validated_proposed_transactions.push((payload_hash, validation_result));
         }
 
@@ -293,23 +316,40 @@ where
                         &mut self.wasm_engine,
                         &mut self.wasm_instrumenter,
                     );
-                    let receipt = transaction_executor.execute_and_commit(
-                        &validated_transaction,
-                        &self.fee_reserve_config,
-                        &self.execution_config,
-                    );
-                    match receipt.result {
-                        TransactionResult::Commit(..) => transaction_results
-                            .push((payload_hash, TransactionPrepareResult::CanCommit)),
-                        TransactionResult::Reject(reject_result) => {
-                            transaction_results.push((
-                                payload_hash,
-                                TransactionPrepareResult::Reject {
-                                    reason: format!("{:?}", reject_result),
-                                },
-                            ));
-                            if self.logging_config.log_on_transaction_rejection {
-                                info!("TXN REJECTED: {:?}", reject_result);
+
+                    let intent_hash = validated_transaction.intent_hash();
+                    if already_committed_or_prepared_intent_hashes.contains(&intent_hash) {
+                        transaction_results.push((
+                            payload_hash,
+                            TransactionPrepareResult::Reject {
+                                reason: "Transaction rejected - duplicate intent hash".to_string(),
+                            },
+                        ));
+                        if self.logging_config.log_on_transaction_rejection {
+                            info!("TXN REJECTED: duplicate intent hash");
+                        }
+                    } else {
+                        let receipt = transaction_executor.execute_and_commit(
+                            &validated_transaction,
+                            &self.fee_reserve_config,
+                            &self.execution_config,
+                        );
+                        match receipt.result {
+                            TransactionResult::Commit(..) => {
+                                transaction_results
+                                    .push((payload_hash, TransactionPrepareResult::CanCommit));
+                                already_committed_or_prepared_intent_hashes.insert(intent_hash);
+                            }
+                            TransactionResult::Reject(reject_result) => {
+                                transaction_results.push((
+                                    payload_hash,
+                                    TransactionPrepareResult::Reject {
+                                        reason: format!("{:?}", reject_result),
+                                    },
+                                ));
+                                if self.logging_config.log_on_transaction_rejection {
+                                    info!("TXN REJECTED: {:?}", reject_result);
+                                }
                             }
                         }
                     }
@@ -347,7 +387,7 @@ where
 
     pub fn commit(&'db mut self, commit_request: CommitRequest) {
         let mut to_store = Vec::new();
-        let mut ids = Vec::new();
+        let mut payload_hashes = Vec::new();
 
         let transactions_to_commit = commit_request
             .transaction_payloads
@@ -359,6 +399,11 @@ where
             .collect::<Vec<_>>();
 
         let mut db_transaction = self.store.create_db_transaction();
+        let ids_count: u64 = payload_hashes
+            .len()
+            .try_into()
+            .expect("Can't map usize to u64");
+        let mut current_state_version = commit_request.state_version - ids_count;
 
         for (notarized_txn, validated_txn) in transactions_to_commit {
             let mut transaction_executor = TransactionExecutor::new(
@@ -381,16 +426,24 @@ where
                     )
                 });
 
-            let payload_hash: PayloadHash = (&notarized_txn).into();
+            let payload_hash = notarized_txn.payload_hash();
 
-            to_store.push((StoredTransaction::User(notarized_txn), ledger_receipt));
-            ids.push(payload_hash);
+            let identifiers = CommittedTransactionIdentifiers {
+                state_version: current_state_version,
+            };
+            to_store.push((
+                StoredTransaction::User(notarized_txn),
+                ledger_receipt,
+                identifiers,
+            ));
+            payload_hashes.push(payload_hash);
+            current_state_version += 1;
         }
 
-        db_transaction.insert_transactions(to_store);
+        db_transaction.insert_committed_transactions(to_store);
         db_transaction.insert_tids_and_proof(
             commit_request.state_version,
-            ids.clone(),
+            payload_hashes.clone(),
             commit_request.proof,
         );
         if let Some(vertex_store) = commit_request.vertex_store {
@@ -399,7 +452,7 @@ where
 
         db_transaction.commit();
 
-        self.mempool.handle_committed_transactions(&ids);
+        self.mempool.handle_committed_transactions(&payload_hashes);
     }
 }
 

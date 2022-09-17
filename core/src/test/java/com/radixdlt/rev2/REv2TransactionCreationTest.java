@@ -64,7 +64,9 @@
 
 package com.radixdlt.rev2;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Bytes;
@@ -76,45 +78,62 @@ import org.junit.Test;
 
 public class REv2TransactionCreationTest {
   private static final Logger log = LogManager.getLogger();
+  private static final ECKeyPair NOTARY = REv2TestTransactions.DEFAULT_NOTARY;
+
+  public record TransactionInfo(RawTransaction transaction, HashCode intentHash) {}
 
   @Test
   public void can_create_some_test_transactions() {
     // This test is mostly used to create signed transactions for testing the Core API
     var network = NetworkDefinition.LOCALNET;
 
-    var transaction0 = constructNewAccountTransactionRust(network);
-    log.info(
-        String.format(
-            "New Account Transaction Rust: %s", Bytes.toHexString(transaction0.getPayload())));
+    logTransaction("New Account Transaction Rust", constructNewAccountTransactionRust(network));
 
-    var transaction1 = REv2TestTransactions.constructNewAccountTransaction(network, 1);
-    log.info(
-        String.format(
-            "New Account Transaction Java: %s", Bytes.toHexString(transaction1.getPayload())));
+    logTransaction("New Account Transaction Java", constructNewAccountTransactionJava(network));
 
-    var invalidTransaction = constructInvalidTransaction(network, 1);
-    log.info(
-        String.format(
-            "Not enough cost units Transaction: %s",
-            Bytes.toHexString(invalidTransaction.getPayload())));
+    logTransaction("Not enough cost units Transaction", constructInvalidTransaction(network, 1));
   }
 
-  public static RawTransaction constructNewAccountTransactionRust(
-      NetworkDefinition networkDefinition) {
+  private static void logTransaction(String description, TransactionInfo transactionInfo) {
 
-    final var notary = REv2TestTransactions.DEFAULT_NOTARY;
+    log.info(description + ":");
+    log.info("Intent Hash: " + Bytes.toHexString(transactionInfo.intentHash.asBytes()));
+    log.info(
+        "Payload Hash: "
+            + Bytes.toHexString(transactionInfo.transaction.getPayloadHash().asBytes()));
+    log.info("Payload: " + Bytes.toHexString(transactionInfo.transaction.getPayload()));
+    log.info("=============================");
+  }
+
+  public static TransactionInfo createTransaction(byte[] intentBytes, List<ECKeyPair> signatories) {
+    final var intentHash = HashUtils.sha256Twice(intentBytes);
+    final var transaction =
+        REv2TestTransactions.constructTransaction(intentBytes, NOTARY, signatories);
+
+    return new TransactionInfo(transaction, intentHash);
+  }
+
+  public static TransactionInfo constructNewAccountTransactionRust(
+      NetworkDefinition networkDefinition) {
 
     final var intentBytes =
         TransactionBuilder.buildNewAccountIntent(
-            networkDefinition, notary.getPublicKey().toPublicKey());
+            networkDefinition, NOTARY.getPublicKey().toPublicKey());
 
-    return REv2TestTransactions.constructTransaction(intentBytes, notary, List.of());
+    return createTransaction(intentBytes, List.of());
   }
 
-  public static RawTransaction constructInvalidTransaction(
+  public static TransactionInfo constructNewAccountTransactionJava(
+      NetworkDefinition networkDefinition) {
+    final var intentBytes =
+        REv2TestTransactions.constructNewAccountIntent(
+            networkDefinition, 1, NOTARY.getPublicKey().toPublicKey());
+    return createTransaction(intentBytes, List.of());
+  }
+
+  public static TransactionInfo constructInvalidTransaction(
       NetworkDefinition networkDefinition, long nonce) {
 
-    final var notary = REv2TestTransactions.DEFAULT_NOTARY;
     final var manifest = REv2TestTransactions.constructNewAccountManifest(networkDefinition);
     final var signatories = List.<ECKeyPair>of();
 
@@ -122,9 +141,15 @@ public class REv2TransactionCreationTest {
 
     final var header =
         TransactionHeader.defaults(
-            networkDefinition, nonce, notary.getPublicKey().toPublicKey(), insufficientLimit, true);
+            networkDefinition, nonce, NOTARY.getPublicKey().toPublicKey(), insufficientLimit, true);
 
-    return REv2TestTransactions.constructTransaction(
-        networkDefinition, header, manifest, REv2TestTransactions.DEFAULT_NOTARY, signatories);
+    var intentBytes =
+        TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
+
+    final var intentHash = HashUtils.sha256Twice(intentBytes);
+
+    var payload = REv2TestTransactions.constructTransaction(intentBytes, NOTARY, signatories);
+
+    return new TransactionInfo(payload, intentHash);
   }
 }

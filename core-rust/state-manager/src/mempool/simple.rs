@@ -63,7 +63,7 @@
  */
 
 use crate::mempool::*;
-use crate::types::{PayloadHash, PendingTransaction};
+use crate::types::*;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
@@ -208,7 +208,6 @@ mod tests {
     };
 
     use crate::mempool::simple::*;
-    use crate::types::*;
 
     fn create_fake_pub_key() -> PublicKey {
         PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
@@ -250,8 +249,8 @@ mod tests {
 
     fn create_fake_pending_transaction(nonce: u64) -> PendingTransaction {
         let notarized_transaction = create_fake_notarized_transaction(nonce);
-        let payload_hash: PayloadHash = (&notarized_transaction).into();
-        let intent_hash: IntentHash = (&notarized_transaction).into();
+        let payload_hash = notarized_transaction.payload_hash();
+        let intent_hash = notarized_transaction.intent_hash();
         PendingTransaction {
             payload: notarized_transaction,
             payload_hash,

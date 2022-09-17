@@ -85,7 +85,7 @@ use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use crate::store::in_memory::InMemoryVertexStore;
 use crate::store::rocks_db::RocksDBCommitTransaction;
 use crate::store::traits::RecoverableVertexStore;
-use crate::LedgerTransactionReceipt;
+use crate::{CommittedTransactionIdentifiers, LedgerTransactionReceipt};
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
@@ -148,7 +148,12 @@ impl StateManagerDatabase {
 
                 let mock_genesis = StoredTransaction::System(vec![]);
                 let payload_hash = mock_genesis.get_hash();
-                db_txn.insert_transactions(vec![(mock_genesis, ledger_receipt)]);
+                let identifiers = CommittedTransactionIdentifiers { state_version: 1 };
+                db_txn.insert_committed_transactions(vec![(
+                    mock_genesis,
+                    ledger_receipt,
+                    identifiers,
+                )]);
                 db_txn.insert_tids_without_proof(1, vec![payload_hash]);
             }
 
@@ -209,17 +214,21 @@ impl<'db> ReadableSubstateStore for StateManagerCommitTransaction<'db> {
 }
 
 impl<'db> WriteableTransactionStore for StateManagerCommitTransaction<'db> {
-    fn insert_transactions(
+    fn insert_committed_transactions(
         &mut self,
-        transactions: Vec<(StoredTransaction, LedgerTransactionReceipt)>,
+        transactions: Vec<(
+            StoredTransaction,
+            LedgerTransactionReceipt,
+            CommittedTransactionIdentifiers,
+        )>,
     ) {
         match self {
             StateManagerCommitTransaction::InMemory {
                 transactions_and_proofs,
                 ..
-            } => transactions_and_proofs.insert_transactions(transactions),
+            } => transactions_and_proofs.insert_committed_transactions(transactions),
             StateManagerCommitTransaction::RocksDB(db_txn) => {
-                db_txn.insert_transactions(transactions)
+                db_txn.insert_committed_transactions(transactions)
             }
         }
     }
@@ -324,16 +333,40 @@ impl<'db> CommitStore<'db> for StateManagerDatabase {
 }
 
 impl QueryableTransactionStore for StateManagerDatabase {
-    fn get_transaction(
+    fn get_committed_transaction(
         &self,
         payload_hash: &PayloadHash,
-    ) -> Option<(StoredTransaction, LedgerTransactionReceipt)> {
+    ) -> Option<(
+        StoredTransaction,
+        LedgerTransactionReceipt,
+        CommittedTransactionIdentifiers,
+    )> {
         match self {
             StateManagerDatabase::InMemory {
                 transactions_and_proofs,
                 ..
-            } => transactions_and_proofs.get_transaction(payload_hash),
-            StateManagerDatabase::RocksDB(store) => store.get_transaction(payload_hash),
+            } => transactions_and_proofs.get_committed_transaction(payload_hash),
+            StateManagerDatabase::RocksDB(store) => store.get_committed_transaction(payload_hash),
+            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
+        }
+    }
+
+    fn get_committed_transaction_by_intent(
+        &self,
+        intent_hash: &crate::IntentHash,
+    ) -> Option<(
+        StoredTransaction,
+        LedgerTransactionReceipt,
+        CommittedTransactionIdentifiers,
+    )> {
+        match self {
+            StateManagerDatabase::InMemory {
+                transactions_and_proofs,
+                ..
+            } => transactions_and_proofs.get_committed_transaction_by_intent(intent_hash),
+            StateManagerDatabase::RocksDB(store) => {
+                store.get_committed_transaction_by_intent(intent_hash)
+            }
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
