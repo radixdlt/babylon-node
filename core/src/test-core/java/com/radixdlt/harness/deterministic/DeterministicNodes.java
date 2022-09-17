@@ -238,12 +238,12 @@ public final class DeterministicNodes implements AutoCloseable {
     return this.nodeInstances.get(nodeIndex) != null;
   }
 
-  public int[] getNodeIndices() {
-    return IntStream.range(0, this.numNodes()).toArray();
+  public List<Integer> getNodeIndices() {
+    return IntStream.range(0, this.numNodes()).boxed().toList();
   }
 
-  public int[] getLiveNodeIndices() {
-    return IntStream.range(0, this.numNodes()).filter(this::isNodeLive).toArray();
+  public List<Integer> getLiveNodeIndices() {
+    return IntStream.range(0, this.numNodes()).filter(this::isNodeLive).boxed().toList();
   }
 
   public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {

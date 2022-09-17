@@ -99,7 +99,7 @@ public final class MultiNodeRebootTest {
   }
 
   private interface NodeLivenessController {
-    void updateNodes(DeterministicTest test, int round);
+    void updateNodes(DeterministicTest test);
   }
 
   private record MixedLivenessEachRound(Random random, int numAlwaysDownValidators)
@@ -112,11 +112,11 @@ public final class MultiNodeRebootTest {
       AllDown
     }
 
-    public NodeLiveness nextLiveness(int round) {
-      round += 31;
-      if (round % 11 == 0 || round % 12 == 0) return NodeLiveness.AllDown;
-      if (round % 19 == 0) return NodeLiveness.AllUp;
-      return (round % 2 == 0)
+    public NodeLiveness nextLiveness() {
+      var rand = random.nextInt(100);
+      if (rand % 11 == 0 || rand % 12 == 0) return NodeLiveness.AllDown;
+      if (rand % 19 == 0) return NodeLiveness.AllUp;
+      return (rand % 2 == 0)
           ? NodeLiveness.Each30PercentProbabilityUp
           : NodeLiveness.Each50PercentProbabilityUp;
     }
@@ -142,8 +142,8 @@ public final class MultiNodeRebootTest {
     }
 
     @Override
-    public void updateNodes(DeterministicTest test, int round) {
-      var nodeLiveness = this.nextLiveness(round);
+    public void updateNodes(DeterministicTest test) {
+      var nodeLiveness = this.nextLiveness();
       for (var nodeIndex : test.getNodeIndices()) {
         var nodeIsCurrentlyLive = test.getNodes().isNodeLive(nodeIndex);
         if (shouldBeLive(nodeIndex, numAlwaysDownValidators, nodeLiveness)) {
@@ -222,7 +222,7 @@ public final class MultiNodeRebootTest {
           test.runForCount(random.nextInt(numNodesLive * 50, numNodesLive * 100));
         }
         // Else all nodes down, network can't do anything - so advance
-        nodeLivenessController.updateNodes(test, testRound);
+        nodeLivenessController.updateNodes(test);
 
         logger.info(
             "Test_round={}/{}, live_nodes={}",
