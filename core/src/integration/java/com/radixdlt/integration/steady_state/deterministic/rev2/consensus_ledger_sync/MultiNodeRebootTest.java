@@ -83,7 +83,6 @@ import com.radixdlt.rev2.modules.MockedVertexStoreModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.util.*;
-import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Rule;
@@ -99,15 +98,66 @@ public final class MultiNodeRebootTest {
     return List.of(new Object[][] {{4, 500}, {10, 200}});
   }
 
-  public static Function<Integer, NodeLiveness> MIXED_LIVENESS_EACH_ROUND =
-      (round) -> {
-        round += 31;
-        if (round % 11 == 0 || round % 12 == 0) return NodeLiveness.AllDown;
-        if (round % 19 == 0) return NodeLiveness.AllUp;
-        return (round % 2 == 0)
-            ? NodeLiveness.Each30PercentProbabilityUp
-            : NodeLiveness.Each50PercentProbabilityUp;
-      };
+  private interface NodeLivenessController {
+    void updateNodes(DeterministicTest test, int round);
+  }
+
+  private record MixedLivenessEachRound(Random random, int numAlwaysDownValidators)
+      implements NodeLivenessController {
+
+    private enum NodeLiveness {
+      AllUp,
+      Each30PercentProbabilityUp,
+      Each50PercentProbabilityUp,
+      AllDown
+    }
+
+    public NodeLiveness nextLiveness(int round) {
+      round += 31;
+      if (round % 11 == 0 || round % 12 == 0) return NodeLiveness.AllDown;
+      if (round % 19 == 0) return NodeLiveness.AllUp;
+      return (round % 2 == 0)
+          ? NodeLiveness.Each30PercentProbabilityUp
+          : NodeLiveness.Each50PercentProbabilityUp;
+    }
+
+    private boolean shouldBeLive(
+        int nodeIndex, int numAlwaysDownValidators, NodeLiveness nodeLiveness) {
+      if (nodeIndex < numAlwaysDownValidators) return false;
+      switch (nodeLiveness) {
+        case AllUp -> {
+          return true;
+        }
+        case Each30PercentProbabilityUp -> {
+          return random.nextInt(100) < 30;
+        }
+        case Each50PercentProbabilityUp -> {
+          return random.nextInt(100) < 50;
+        }
+        case AllDown -> {
+          return false;
+        }
+      }
+      throw new IllegalStateException("Shouldn't be able to get here");
+    }
+
+    @Override
+    public void updateNodes(DeterministicTest test, int round) {
+      var nodeLiveness = this.nextLiveness(round);
+      for (var nodeIndex : test.getNodeIndices()) {
+        var nodeIsCurrentlyLive = test.getNodes().isNodeLive(nodeIndex);
+        if (shouldBeLive(nodeIndex, numAlwaysDownValidators, nodeLiveness)) {
+          if (!nodeIsCurrentlyLive) {
+            test.startNode(nodeIndex);
+          }
+        } else {
+          if (nodeIsCurrentlyLive) {
+            test.shutdownNode(nodeIndex);
+          }
+        }
+      }
+    }
+  }
 
   private static final Logger logger = LogManager.getLogger();
 
@@ -150,21 +200,16 @@ public final class MultiNodeRebootTest {
   }
 
   private void runTest(
-      int numDownValidators,
-      Function<Integer, NodeLiveness> livenessStrategy,
-      SafetyRecoveryConfig safetyRecoveryConfig) {
-    runTest(numDownValidators, livenessStrategy, safetyRecoveryConfig, null);
+      NodeLivenessController nodeLivenessController, SafetyRecoveryConfig safetyRecoveryConfig) {
+    runTest(nodeLivenessController, safetyRecoveryConfig, null);
   }
 
   private void runTest(
-      int numValidatorsAlwaysDown,
-      Function<Integer, NodeLiveness> livenessStrategy,
+      NodeLivenessController nodeLivenessController,
       SafetyRecoveryConfig safetyRecoveryConfig,
       Module overrideModule) {
     try (var test = createTest(safetyRecoveryConfig, overrideModule)) {
       test.startAllNodes();
-
-      startOrShutdownNodes(test, numValidatorsAlwaysDown, NodeLiveness.AllUp);
 
       for (int testRound = 0; testRound < numTestRounds; testRound++) {
         var numNodesLive = test.numNodesLive();
@@ -177,78 +222,28 @@ public final class MultiNodeRebootTest {
           test.runForCount(random.nextInt(numNodesLive * 50, numNodesLive * 100));
         }
         // Else all nodes down, network can't do anything - so advance
-
-        var updatedNodeCount =
-            startOrShutdownNodes(test, numValidatorsAlwaysDown, livenessStrategy.apply(testRound));
+        nodeLivenessController.updateNodes(test, testRound);
 
         logger.info(
-            "Test_round={}/{}, updated_nodes={}, live_nodes={}",
+            "Test_round={}/{}, live_nodes={}",
             testRound + 1,
             numTestRounds,
-            updatedNodeCount,
             test.getLiveNodeIndices());
       }
     }
   }
 
-  public enum NodeLiveness {
-    AllUp,
-    Each30PercentProbabilityUp,
-    Each50PercentProbabilityUp,
-    AllDown
-  }
-
-  private int startOrShutdownNodes(
-      DeterministicTest test, int numAlwaysDownValidators, NodeLiveness nodeLiveness) {
-    int updatedNodeCount = 0;
-    for (var nodeIndex : test.getNodeIndices()) {
-      var nodeIsCurrentlyLive = test.getNodes().isNodeLive(nodeIndex);
-      if (shouldBeLive(nodeIndex, numAlwaysDownValidators, nodeLiveness)) {
-        if (!nodeIsCurrentlyLive) {
-          updatedNodeCount += 1;
-          test.startNode(nodeIndex);
-        }
-      } else {
-        if (nodeIsCurrentlyLive) {
-          updatedNodeCount += 1;
-          test.shutdownNode(nodeIndex);
-        }
-      }
-    }
-    return updatedNodeCount;
-  }
-
-  private boolean shouldBeLive(
-      int nodeIndex, int numAlwaysDownValidators, NodeLiveness nodeLiveness) {
-    if (nodeIndex < numAlwaysDownValidators) return false;
-    switch (nodeLiveness) {
-      case AllUp -> {
-        return true;
-      }
-      case Each30PercentProbabilityUp -> {
-        return random.nextInt(100) < 30;
-      }
-      case Each50PercentProbabilityUp -> {
-        return random.nextInt(100) < 50;
-      }
-      case AllDown -> {
-        return false;
-      }
-    }
-    throw new IllegalStateException("Shouldn't be able to get here");
-  }
-
   @Test
   public void restart_all_nodes_intermittently() {
     runTest(
-        0,
-        MIXED_LIVENESS_EACH_ROUND,
+        new MixedLivenessEachRound(random, 0),
         SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()));
   }
 
   @Test
   public void restart_all_nodes_intermittently_with_bad_safety_recovery_should_fail() {
-    assertThatThrownBy(() -> runTest(0, MIXED_LIVENESS_EACH_ROUND, SafetyRecoveryConfig.mocked()))
+    assertThatThrownBy(
+            () -> runTest(new MixedLivenessEachRound(random, 0), SafetyRecoveryConfig.mocked()))
         .hasRootCauseExactlyInstanceOf(ByzantineBehaviorDetected.class);
   }
 
@@ -257,8 +252,7 @@ public final class MultiNodeRebootTest {
     assertThatThrownBy(
             () ->
                 runTest(
-                    0,
-                    MIXED_LIVENESS_EACH_ROUND,
+                    new MixedLivenessEachRound(random, 0),
                     SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
                     new MockedVertexStoreModule()))
         .isInstanceOf(DeterministicTest.NeverReachedStateException.class);
@@ -267,8 +261,7 @@ public final class MultiNodeRebootTest {
   @Test
   public void restart_all_nodes_intermittently_while_f_nodes_down() {
     runTest(
-        (numValidators - 1) / 3,
-        MIXED_LIVENESS_EACH_ROUND,
+        new MixedLivenessEachRound(random, (numValidators - 1) / 3),
         SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()));
   }
 }
