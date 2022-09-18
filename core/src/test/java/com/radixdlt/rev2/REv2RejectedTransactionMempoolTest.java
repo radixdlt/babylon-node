@@ -65,32 +65,32 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.invariants.Checkers.*;
-import static com.radixdlt.harness.predicates.EventPredicate.*;
+import static com.radixdlt.harness.invariants.Checkers.assertNodesSyncedToExactVersion;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.bft.*;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolReader;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule.*;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transactions.RawTransaction;
-import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public final class REv2RejectedTransactionTest {
+public class REv2RejectedTransactionMempoolTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private DeterministicTest createTest(ProposalGenerator proposalGenerator) {
+  private DeterministicTest createTest() {
     return DeterministicTest.builder()
         .numNodes(1, 0)
         .messageSelector(firstSelector())
@@ -104,40 +104,31 @@ public final class REv2RejectedTransactionTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
-  }
-
-  private static class ControlledProposerGenerator implements ProposalGenerator {
-    private RawTransaction nextTransaction = null;
-
-    @Override
-    public List<RawTransaction> getTransactionsForProposal(
-        Round round, List<ExecutedVertex> prepared) {
-      if (nextTransaction == null) {
-        return List.of();
-      } else {
-        var txns = List.of(nextTransaction);
-        this.nextTransaction = null;
-        return txns;
-      }
-    }
+                        StateComputerConfig.REV2ProposerConfig.mempool(
+                            1, MempoolRelayConfig.of())))));
   }
 
   @Test
-  public void rejected_transaction_in_proposal_should_not_be_committed() {
-    var proposalGenerator = new ControlledProposerGenerator();
-
-    try (var test = createTest(proposalGenerator)) {
+  public void rejected_transaction_should_not_linger_in_mempool() throws Exception {
+    try (var test = createTest()) {
       var rejectableTransaction = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_1;
 
-      // Act: Submit transaction to mempool and run consensus
+      // Arrange
       test.startAllNodes();
-      proposalGenerator.nextTransaction = rejectableTransaction;
-      test.runUntilState(ignored -> proposalGenerator.nextTransaction == null);
+      var mempoolInserter =
+          test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+      try {
+        mempoolInserter.addTransaction(rejectableTransaction);
+      } catch (MempoolRejectedException ignored) {
+      }
       test.runForCount(100, onlyConsensusEvents());
 
-      // Assert: Check transaction and post submission state
-      assertThat(proposalGenerator.nextTransaction).isNull();
+      // Act: Submit valid transaction to mempool
+      mempoolInserter.addTransaction(REv2TestTransactions.VALID_TXN_0);
+
+      // Assert
+      var mempoolReader = test.getInstance(0, MempoolReader.class);
+      assertThat(mempoolReader.getCount()).isEqualTo(1);
       // Verify that transaction was not committed
       assertNodesSyncedToExactVersion(test.getNodeInjectors(), 1);
     }
