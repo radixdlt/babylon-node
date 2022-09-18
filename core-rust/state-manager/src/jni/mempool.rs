@@ -99,8 +99,7 @@ fn do_add(
     let (notarized_transaction, _) = state_manager.parse_and_validate(&transaction.payload)?;
 
     state_manager
-        .mempool
-        .add_transaction(notarized_transaction.into())
+        .add_to_mempool(notarized_transaction.into())
         .map(|_| transaction.payload_hash)
         .map_err(|err| err.into())
 }
@@ -216,6 +215,7 @@ enum MempoolAddErrorJava {
     Full { current_size: u64, max_size: u64 },
     Duplicate,
     TransactionValidationError(String),
+    Rejected(String),
 }
 
 impl From<MempoolAddError> for MempoolAddErrorJava {
@@ -229,6 +229,7 @@ impl From<MempoolAddError> for MempoolAddErrorJava {
                 max_size,
             },
             MempoolAddError::Duplicate => MempoolAddErrorJava::Duplicate,
+            MempoolAddError::Rejected { reason } => MempoolAddErrorJava::Rejected(reason),
         }
     }
 }

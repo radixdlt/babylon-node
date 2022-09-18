@@ -79,27 +79,23 @@ public final class REv2TestTransactions {
   // These have to come first for static ordering issues
   public static final ECKeyPair DEFAULT_NOTARY = generateKeyPair(1);
 
-  public static final RawTransaction VALID_TXN_0 =
-      constructTransaction(
-          NetworkDefinition.INT_TEST_NET,
-          String.format(
-              """
-        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("10");
-        CLEAR_AUTH_ZONE;
-        """,
-              Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                  .encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS)),
-          0,
-          List.of());
+  public static RawTransaction validTransaction(long nonce) {
+    return constructTransaction(
+        NetworkDefinition.INT_TEST_NET,
+        String.format(
+            """
+              CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("10");
+              CLEAR_AUTH_ZONE;
+              """,
+            Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
+                .encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS)),
+        nonce,
+        List.of());
+  }
+
   public static final RawTransaction STATICALLY_VALID_BUT_REJECT_TXN_1 =
       constructTransaction(
           NetworkDefinition.INT_TEST_NET, "CLEAR_AUTH_ZONE;", 0, List.of(generateKeyPair(10)));
-  public static final RawTransaction STATICALLY_VALID_BUT_REJECT_TXN_2 =
-      constructTransaction(
-          NetworkDefinition.INT_TEST_NET,
-          "CLEAR_AUTH_ZONE; CLEAR_AUTH_ZONE;",
-          0,
-          List.of(generateKeyPair(21), generateKeyPair(22)));
 
   private static ECKeyPair generateKeyPair(int keySource) {
     return PrivateKeys.numeric(keySource).findFirst().orElseThrow();

@@ -116,6 +116,8 @@ public class RustMempool implements MempoolReader {
             String.format("Mempool already has transaction %s", transaction.getPayloadHash()));
         case MempoolError.TransactionValidationError e -> throw new MempoolRejectedException(
             e.errorDescription());
+        case MempoolError.Rejected rejected -> throw new MempoolRejectedException(
+            rejected.reason());
       }
     }
 

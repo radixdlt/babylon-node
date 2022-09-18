@@ -71,7 +71,7 @@ use crate::types::{
 };
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasPayloadHash, IntentHash,
-    LedgerTransactionReceipt, PayloadHash,
+    LedgerTransactionReceipt, MempoolAddError, PayloadHash, PendingTransaction,
 };
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
@@ -255,6 +255,25 @@ where
     S: ReadableSubstateStore,
     S: QueryableTransactionStore,
 {
+    pub fn add_to_mempool(
+        &mut self,
+        transaction: PendingTransaction,
+    ) -> Result<(), MempoolAddError> {
+        let prepare_request = PrepareRequest {
+            already_prepared_payloads: vec![],
+            proposed_payloads: vec![scrypto_encode(&transaction.payload)],
+        };
+
+        let result = self.prepare(prepare_request);
+        let result = &result.transaction_results[0].1;
+        match result {
+            TransactionPrepareResult::Reject { reason } => Err(MempoolAddError::Rejected {
+                reason: reason.to_string(),
+            }),
+            TransactionPrepareResult::CanCommit => self.mempool.add_transaction(transaction),
+        }
+    }
+
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
         let mut validated_prepared = Vec::new();
 
