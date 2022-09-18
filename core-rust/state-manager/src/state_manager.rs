@@ -259,18 +259,43 @@ where
         &mut self,
         transaction: PendingTransaction,
     ) -> Result<(), MempoolAddError> {
-        let prepare_request = PrepareRequest {
-            already_prepared_payloads: vec![],
-            proposed_payloads: vec![scrypto_encode(&transaction.payload)],
-        };
+        if self
+            .store
+            .get_committed_transaction_by_intent(&transaction.intent_hash)
+            .is_some()
+        {
+            return Err(MempoolAddError::Rejected {
+                reason: "Transaction rejected - duplicate intent hash".to_string(),
+            });
+        }
 
-        let result = self.prepare(prepare_request);
-        let result = &result.transaction_results[0].1;
-        match result {
-            TransactionPrepareResult::Reject { reason } => Err(MempoolAddError::Rejected {
-                reason: reason.to_string(),
+        let notarized_transaction = transaction.payload.clone();
+        let validated_transaction =
+            self.validate_transaction(notarized_transaction)
+                .map_err(|e| MempoolAddError::Rejected {
+                    reason: format!("{:?}", e),
+                })?;
+
+        let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
+        let staged_node = staged_store_manager.new_child_node(0);
+        let mut staged_store = staged_store_manager.get_output_store(staged_node);
+
+        let mut transaction_executor = TransactionExecutor::new(
+            &mut staged_store,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
+        );
+        let receipt = transaction_executor.execute_and_commit(
+            &validated_transaction,
+            &self.fee_reserve_config,
+            &self.execution_config,
+        );
+
+        match receipt.result {
+            TransactionResult::Reject(result) => Err(MempoolAddError::Rejected {
+                reason: format!("{:?}", result),
             }),
-            TransactionPrepareResult::CanCommit => self.mempool.add_transaction(transaction),
+            TransactionResult::Commit(..) => self.mempool.add_transaction(transaction),
         }
     }
 
