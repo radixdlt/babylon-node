@@ -66,38 +66,14 @@ use crate::mempool::*;
 use crate::types::*;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
-use std::time::{Duration, Instant};
 
 struct MempoolData {
     transaction: PendingTransaction,
-    inserted: Instant,
-    relayed: Option<Instant>,
 }
 
 impl MempoolData {
     fn create(transaction: PendingTransaction) -> MempoolData {
-        MempoolData {
-            transaction,
-            inserted: Instant::now(),
-            relayed: None,
-        }
-    }
-
-    fn set_relayed_time(&mut self, relayed: Instant) {
-        self.relayed = Some(relayed);
-    }
-
-    fn should_relay(&self, time: Instant, initial_delay: Duration, relay_delay: Duration) -> bool {
-        match self.relayed {
-            None => {
-                // Never been relayed. Wait for initial delay.
-                time >= self.inserted + initial_delay
-            }
-            Some(relayed) => {
-                // Repeat every relay_delay
-                time >= relayed + relay_delay
-            }
-        }
+        MempoolData { transaction }
     }
 }
 
@@ -193,23 +169,11 @@ impl Mempool for SimpleMempool {
         transactions
     }
 
-    fn get_relay_transactions(
-        &mut self,
-        initial_delay_millis: u64,
-        repeat_delay_millis: u64,
-    ) -> Vec<PendingTransaction> {
-        let nowish = Instant::now();
-        let initial_delay = Duration::from_millis(initial_delay_millis);
-        let repeat_delay = Duration::from_millis(repeat_delay_millis);
-
+    fn get_relay_transactions(&mut self) -> Vec<PendingTransaction> {
         let mut to_relay = Vec::new();
-        let relay_iter = self
-            .data
-            .values_mut()
-            .filter(|d| d.should_relay(nowish, initial_delay, repeat_delay));
+        let relay_iter = self.data.values_mut();
 
         for data in relay_iter {
-            data.set_relayed_time(nowish);
             to_relay.push(data.transaction.clone());
         }
 
@@ -411,65 +375,6 @@ mod tests {
             tv1.intent_hash,
         ]));
         assert!(rem.is_empty());
-    }
-
-    #[test]
-    fn test_relay_delays() {
-        let tv1 = create_fake_pending_transaction(1, 0);
-        let tv2 = create_fake_pending_transaction(2, 0);
-        let tv3 = create_fake_pending_transaction(3, 0);
-
-        // TODO: Add faketime or similar library not to be time
-        // dependent.
-        //
-        // 'delay' is high enough that should always (sigh) be
-        // possible to always be able to test before 'delay' time
-        // passes, short enough that tests don't take too much time.
-        let delay = 200; // 1/5 second
-
-        let mut mp = SimpleMempool::new(MempoolConfig { max_size: 3 });
-        let rc = mp.add_transaction(tv1.clone());
-        assert!(rc.is_ok());
-        let rc = mp.add_transaction(tv2.clone());
-        assert!(rc.is_ok());
-        let rc = mp.add_transaction(tv3.clone());
-        assert!(rc.is_ok());
-
-        // High initial delay. Check nothing gets returned.
-        let rc = mp.get_relay_transactions(delay, 0);
-        let rel = rc;
-        assert!(rel.is_empty());
-
-        // Now sleep for the initial and check that they are all returned.
-        std::thread::sleep(Duration::from_millis(delay));
-        let rc = mp.get_relay_transactions(delay, 0);
-        let rel = rc;
-        assert!(rel.contains(&tv1));
-        assert!(rel.contains(&tv2));
-        assert!(rel.contains(&tv3));
-        assert_eq!(rel.len(), 3);
-
-        // With no relay delay, they should be returned again immediately.
-        let rc = mp.get_relay_transactions(delay, 0);
-        let rel = rc;
-        assert!(rel.contains(&tv1));
-        assert!(rel.contains(&tv2));
-        assert!(rel.contains(&tv3));
-        assert_eq!(rel.len(), 3);
-
-        // With a relay delay, nothing should be returned now.
-        let rc = mp.get_relay_transactions(0, delay);
-        let rel = rc;
-        assert!(rel.is_empty());
-
-        // Sleep for the relay delay, and check that it is returned.
-        std::thread::sleep(Duration::from_millis(delay));
-        let rc = mp.get_relay_transactions(0, delay);
-        let rel = rc;
-        assert!(rel.contains(&tv1));
-        assert!(rel.contains(&tv2));
-        assert!(rel.contains(&tv3));
-        assert_eq!(rel.len(), 3);
     }
 
     #[test]

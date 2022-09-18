@@ -110,11 +110,7 @@ pub trait Mempool {
     ) -> Vec<PendingTransaction>;
 
     /// Gets transactions for relay to other nodes
-    fn get_relay_transactions(
-        &mut self,
-        initial_delay_millis: u64,
-        repeat_delay_millis: u64,
-    ) -> Vec<PendingTransaction>;
+    fn get_relay_transactions(&mut self) -> Vec<PendingTransaction>;
 
     /// Gets all payload hashes of transactions currently in the mempool with that intent hash
     fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<PayloadHash>;

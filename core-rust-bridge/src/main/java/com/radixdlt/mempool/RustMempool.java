@@ -75,7 +75,6 @@ import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.Objects;
 
@@ -136,12 +135,8 @@ public class RustMempool implements MempoolReader {
   }
 
   @Override
-  public List<RawTransaction> getTransactionsToRelay(
-      long initialDelayMillis, long repeatDelayMillis) {
-    return getTransactionsToRelayFunc.call(
-        tuple(
-            UInt64.fromNonNegativeLong(initialDelayMillis),
-            UInt64.fromNonNegativeLong(repeatDelayMillis)));
+  public List<RawTransaction> getTransactionsToRelay() {
+    return getTransactionsToRelayFunc.call(Unit.unit());
   }
 
   @Override
@@ -163,7 +158,7 @@ public class RustMempool implements MempoolReader {
 
   private static native byte[] getTransactionsToRelay(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, Tuple.Tuple2<UInt64, UInt64>, List<RawTransaction>>
+  private final NativeCalls.Func1<StateManager, Unit, List<RawTransaction>>
       getTransactionsToRelayFunc;
 
   private static native byte[] getCount(Object stateManager, byte[] payload);

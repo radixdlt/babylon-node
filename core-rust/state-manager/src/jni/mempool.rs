@@ -169,13 +169,11 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
 
 fn do_get_transactions_to_relay(
     state_manager: &mut ActualStateManager,
-    args: (u64, u64),
+    _args: (),
 ) -> Vec<JavaRawTransaction> {
-    let (initial_delay_millis, repeat_delay_millis) = args;
-
     state_manager
         .mempool
-        .get_relay_transactions(initial_delay_millis, repeat_delay_millis)
+        .get_relay_transactions()
         .into_iter()
         .map(|t| t.into())
         .collect()

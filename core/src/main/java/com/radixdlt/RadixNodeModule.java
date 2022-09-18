@@ -181,8 +181,8 @@ public final class RadixNodeModule extends AbstractModule {
     install(new MempoolReceiverModule());
 
     // Mempool Relay
-    install(new MempoolRelayConfig(5, 60000, 60000, 100).asModule());
-    install(new MempoolRelayerModule());
+    install(new MempoolRelayConfig(5, 100).asModule());
+    install(new MempoolRelayerModule(10000));
 
     // Ledger Sync
     final long syncPatience = properties.get("sync.patience", 5000L);

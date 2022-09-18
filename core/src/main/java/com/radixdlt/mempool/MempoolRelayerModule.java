@@ -71,6 +71,12 @@ import com.radixdlt.environment.*;
 
 /** Module responsible for sending mempool messages to other nodes. */
 public final class MempoolRelayerModule extends AbstractModule {
+  private final long mempoolRelayIntervalMs;
+
+  public MempoolRelayerModule(long mempoolRelayIntervalMs) {
+    this.mempoolRelayIntervalMs = mempoolRelayIntervalMs;
+  }
+
   @Override
   public void configure() {
     bind(MempoolRelayer.class).in(Scopes.SINGLETON);
@@ -85,7 +91,7 @@ public final class MempoolRelayerModule extends AbstractModule {
   @Singleton
   private EventProducer<MempoolRelayTrigger> eventProducer(
       ScheduledEventDispatcher<MempoolRelayTrigger> dispatcher) {
-    return new EventProducer<>(MempoolRelayTrigger::create, dispatcher, 10000);
+    return new EventProducer<>(MempoolRelayTrigger::create, dispatcher, mempoolRelayIntervalMs);
   }
 
   @ProvidesIntoSet

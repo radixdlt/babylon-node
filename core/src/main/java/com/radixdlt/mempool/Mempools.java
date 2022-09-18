@@ -97,8 +97,7 @@ public class Mempools {
       }
 
       @Override
-      public List<RawTransaction> getTransactionsToRelay(
-          long initialDelayMillis, long repeatDelayMillis) {
+      public List<RawTransaction> getTransactionsToRelay() {
         return List.of();
       }
     };

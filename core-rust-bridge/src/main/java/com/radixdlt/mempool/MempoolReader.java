@@ -68,7 +68,7 @@ import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 
 public interface MempoolReader {
-  List<RawTransaction> getTransactionsToRelay(long initialDelayMillis, long repeatDelayMillis);
+  List<RawTransaction> getTransactionsToRelay();
 
   int getCount();
 }
