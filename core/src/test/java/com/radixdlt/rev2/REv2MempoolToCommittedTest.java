@@ -62,70 +62,56 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.targeted.rev2.mempool;
+package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.predicates.NodesPredicate.*;
+import static com.radixdlt.harness.predicates.NodesPredicate.allAtExactlyStateVersion;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.simulation.application.TransactionGenerator;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
 import org.junit.Test;
 
-public final class REv2MempoolRelayerTest {
-  private final int MEMPOOL_SIZE = 1000;
-  private final TransactionGenerator transactionGenerator =
-      new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
+public class REv2MempoolToCommittedTest {
 
   private DeterministicTest createTest() {
     return DeterministicTest.builder()
-        .numNodes(1, 20)
+        .numNodes(1, 1)
         .messageSelector(firstSelector())
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
-                SafetyRecoveryConfig.mocked(),
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerWithSyncRelay(
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            MEMPOOL_SIZE, new MempoolRelayConfig(0, 100))),
+                            1, new MempoolRelayConfig(0, 100))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
   @Test
-  public void relayer_fills_mempool_of_all_nodes() throws Exception {
+  public void transaction_in_full_node_mempool_gets_committed() throws Exception {
     try (var test = createTest()) {
       test.startAllNodes();
 
-      // Arrange: Fill node1 mempool
+      // Arrange: Add node1 mempool
       var mempoolInserter =
           test.getInstance(1, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
-      for (int i = 0; i < MEMPOOL_SIZE; i++) {
-        mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
-      }
+      mempoolInserter.addTransaction(REv2TestTransactions.validTransaction(0));
 
-      // Run all nodes except validator node0
-      test.runUntilState(
-          n -> allHaveExactMempoolCount(MEMPOOL_SIZE).test(n.subList(1, n.size())),
-          10000,
-          m -> m.channelId().senderIndex() != 0 && m.channelId().receiverIndex() != 0);
+      // Act/Assert
+      test.runUntilState(allAtExactlyStateVersion(2), 100000);
     }
   }
 }

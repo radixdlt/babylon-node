@@ -85,6 +85,7 @@ import org.apache.logging.log4j.Logger;
 public final class DeterministicNetwork {
   private static final Logger log = LogManager.getLogger();
   private static final long DEFAULT_LATENCY = 50L; // virtual milliseconds
+  private static final long DEFAULT_LOCAL_LATENCY = 5L; // virtual milliseconds
   private final MessageQueue messageQueue = new MessageQueue();
   private final MessageSelector messageSelector;
   private final MessageMutator messageMutator;
@@ -185,8 +186,8 @@ public final class DeterministicNetwork {
   }
 
   long delayForChannel(ChannelId channelId) {
-    if (channelId.receiverIndex() == channelId.senderIndex()) {
-      return 0L;
+    if (channelId.isLocal()) {
+      return DEFAULT_LOCAL_LATENCY;
     }
     return DEFAULT_LATENCY;
   }

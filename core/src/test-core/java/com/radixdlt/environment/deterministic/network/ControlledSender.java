@@ -85,6 +85,15 @@ public final class ControlledSender implements Environment {
     this.localChannel = ChannelId.of(this.senderIndex, this.senderIndex);
   }
 
+  private static long addTimeNoOverflow(long a, long b) {
+    var sum = a + b;
+    if (sum < 0) {
+      return Long.MAX_VALUE;
+    }
+
+    return sum;
+  }
+
   @Override
   public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
     return e ->
@@ -96,9 +105,8 @@ public final class ControlledSender implements Environment {
   @Override
   public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
     return (t, milliseconds) -> {
-      var msg =
-          new ControlledMessage(
-              self, this.localChannel, t, null, arrivalTime(this.localChannel) + milliseconds);
+      long arrivalTime = addTimeNoOverflow(arrivalTime(this.localChannel), milliseconds);
+      var msg = new ControlledMessage(self, this.localChannel, t, null, arrivalTime);
       handleMessage(msg);
     };
   }
@@ -112,7 +120,7 @@ public final class ControlledSender implements Environment {
               this.localChannel,
               t,
               typeLiteral,
-              arrivalTime(this.localChannel) + milliseconds);
+              addTimeNoOverflow(arrivalTime(this.localChannel), milliseconds));
       handleMessage(msg);
     };
   }
@@ -131,6 +139,6 @@ public final class ControlledSender implements Environment {
 
   private long arrivalTime(ChannelId channelId) {
     long delay = this.network.delayForChannel(channelId);
-    return this.network.currentTime() + delay;
+    return addTimeNoOverflow(this.network.currentTime(), delay);
   }
 }
