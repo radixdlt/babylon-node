@@ -62,9 +62,11 @@
  * permissions under this License.
  */
 
+use sbor::*;
+
 pub use crate::result::ToStateManagerError;
 use crate::types::PendingTransaction;
-use crate::{jni::dtos::*, PayloadHash};
+use crate::{IntentHash, PayloadHash};
 use std::{collections::HashSet, string::ToString};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -92,7 +94,7 @@ pub trait Mempool {
     /// Returns removed transactions
     fn handle_committed_transactions(
         &mut self,
-        transactions: &[PayloadHash],
+        intent_hashes: &[IntentHash],
     ) -> Vec<PendingTransaction>;
 
     /// Returns the number of transactions in the mempool
@@ -111,6 +113,15 @@ pub trait Mempool {
         initial_delay_millis: u64,
         repeat_delay_millis: u64,
     ) -> Vec<PendingTransaction>;
+
+    /// Gets all payload hashes of transactions currently in the mempool with that intent hash
+    fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<PayloadHash>;
+
+    /// Gets a list of all payload hashes
+    fn get_all_payload_hashes(&self) -> Vec<PayloadHash>;
+
+    /// Gets a payload for that hash, if it exists in the mempool
+    fn get_payload(&self, payload_hash: &PayloadHash) -> Option<&PendingTransaction>;
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]

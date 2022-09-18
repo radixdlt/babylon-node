@@ -1,5 +1,6 @@
 use crate::core_api::*;
 use state_manager::jni::state_manager::ActualStateManager;
+use state_manager::mempool::*;
 use state_manager::store::traits::*;
 
 pub(crate) async fn handle_v0_transaction_status(
@@ -23,6 +24,8 @@ fn handle_v0_transaction_status_internal(
         .store
         .get_committed_transaction_by_intent(&intent_hash);
 
+    // TODO - if we have some kind of rejection cache, we should add in the rejected status, and any known rejected payloads.
+
     if let Some((stored_transaction, receipt, _)) = committed_option {
         let intent_status = match &receipt.status {
             state_manager::CommittedTransactionStatus::Success(_) => IntentStatus::CommittedSuccess,
@@ -43,15 +46,32 @@ fn handle_v0_transaction_status_internal(
             status: payload_status,
         };
 
-        Ok(models::V0TransactionStatusResponse {
+        return Ok(models::V0TransactionStatusResponse {
             intent_status,
             known_payloads: vec![committed_payload],
-        })
-    } else {
-        // Need to implement properly!
-        Ok(models::V0TransactionStatusResponse {
-            intent_status: models::v0_transaction_status_response::IntentStatus::Unknown,
-            known_payloads: vec![],
-        })
+        });
     }
+
+    let mempool_payloads_hashes = state_manager
+        .mempool
+        .get_payload_hashes_for_intent(&intent_hash);
+
+    if !mempool_payloads_hashes.is_empty() {
+        let known_payloads = mempool_payloads_hashes
+            .into_iter()
+            .map(|payload_hash| models::V0TransactionPayloadStatus {
+                payload_hash: to_api_payload_hash(&payload_hash),
+                status: PayloadStatus::InMempool,
+            })
+            .collect();
+        return Ok(models::V0TransactionStatusResponse {
+            intent_status: models::v0_transaction_status_response::IntentStatus::InMempool,
+            known_payloads,
+        });
+    }
+
+    Ok(models::V0TransactionStatusResponse {
+        intent_status: models::v0_transaction_status_response::IntentStatus::Unknown,
+        known_payloads: vec![],
+    })
 }
