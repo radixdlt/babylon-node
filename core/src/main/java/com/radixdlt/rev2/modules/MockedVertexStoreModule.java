@@ -68,7 +68,7 @@ import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VertexStoreState;
 
-public final class MockedLivenessStoreModule extends AbstractModule {
+public final class MockedVertexStoreModule extends AbstractModule {
 
   @Override
   public void configure() {

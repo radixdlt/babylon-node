@@ -118,9 +118,11 @@ public final class SafetyRules {
     // ensure vertex does not violate earlier votes
     if (proposedVertex.getRound().lte(this.state.getLastVotedRound())) {
       logger.warn(
-          "Safety warning: Vertex {} violates earlier vote at round {}",
-          proposedVertex,
-          this.state.getLastVotedRound());
+          "Safety warning: Cannot vote for vertex at round {} as already voted at round {} (vertex"
+              + " = {})",
+          proposedVertex.getRound(),
+          this.state.getLastVotedRound(),
+          proposedVertex);
 
       return false;
     } else {
@@ -131,7 +133,7 @@ public final class SafetyRules {
   private boolean checkLocked(VertexWithHash proposedVertex, Builder nextStateBuilder) {
     if (proposedVertex.getParentHeader().getRound().lt(this.state.getLockedRound())) {
       logger.warn(
-          "Safety warning: Vertex {} does not respect locked round {}",
+          "Safety warning: Cannot vote for vertex {} as it does not respect locked round {}",
           proposedVertex,
           this.state.getLockedRound());
       return false;

@@ -87,6 +87,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -152,7 +153,7 @@ public final class DeterministicNodes implements AutoCloseable {
   }
 
   public void shutdownNode(int nodeIndex) {
-    if (this.nodeInstances.get(nodeIndex) == null) {
+    if (!isNodeLive(nodeIndex)) {
       return;
     }
 
@@ -168,7 +169,7 @@ public final class DeterministicNodes implements AutoCloseable {
   }
 
   public void startNode(int nodeIndex) {
-    if (this.nodeInstances.get(nodeIndex) != null) {
+    if (isNodeLive(nodeIndex)) {
       return;
     }
 
@@ -231,6 +232,18 @@ public final class DeterministicNodes implements AutoCloseable {
         .findFirst()
         .orElseThrow()
         .intValue();
+  }
+
+  public boolean isNodeLive(int nodeIndex) {
+    return this.nodeInstances.get(nodeIndex) != null;
+  }
+
+  public List<Integer> getNodeIndices() {
+    return IntStream.range(0, this.numNodes()).boxed().toList();
+  }
+
+  public List<Integer> getLiveNodeIndices() {
+    return IntStream.range(0, this.numNodes()).filter(this::isNodeLive).boxed().toList();
   }
 
   public <T> T getInstance(int nodeIndex, Class<T> instanceClass) {
