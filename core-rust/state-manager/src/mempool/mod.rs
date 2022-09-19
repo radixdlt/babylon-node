@@ -65,14 +65,14 @@
 use sbor::*;
 
 pub use crate::result::ToStateManagerError;
-use crate::types::PendingTransaction;
-use crate::{IntentHash, PayloadHash};
-use std::{collections::HashSet, string::ToString};
+
+use std::string::ToString;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum MempoolAddError {
     Full { current_size: u64, max_size: u64 },
     Duplicate,
+    Rejected { reason: String },
 }
 
 impl ToString for MempoolAddError {
@@ -83,45 +83,9 @@ impl ToString for MempoolAddError {
                 max_size,
             } => format!("Mempool Full [{} - {}]", current_size, max_size),
             MempoolAddError::Duplicate => "Duplicate Entry".to_string(),
+            MempoolAddError::Rejected { reason } => format!("Rejected reason({})", reason),
         }
     }
-}
-
-pub trait Mempool {
-    /// Adds a transaction
-    fn add_transaction(&mut self, transaction: PendingTransaction) -> Result<(), MempoolAddError>;
-
-    /// Returns removed transactions
-    fn handle_committed_transactions(
-        &mut self,
-        intent_hashes: &[IntentHash],
-    ) -> Vec<PendingTransaction>;
-
-    /// Returns the number of transactions in the mempool
-    fn get_count(&self) -> u64;
-
-    /// Gets transactions for a proposal, given a list of already-prepared transactions to ignore
-    fn get_proposal_transactions(
-        &self,
-        count: u64,
-        prepared_transactions: &HashSet<PayloadHash>,
-    ) -> Vec<PendingTransaction>;
-
-    /// Gets transactions for relay to other nodes
-    fn get_relay_transactions(
-        &mut self,
-        initial_delay_millis: u64,
-        repeat_delay_millis: u64,
-    ) -> Vec<PendingTransaction>;
-
-    /// Gets all payload hashes of transactions currently in the mempool with that intent hash
-    fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<PayloadHash>;
-
-    /// Gets a list of all payload hashes
-    fn get_all_payload_hashes(&self) -> Vec<PayloadHash>;
-
-    /// Gets a payload for that hash, if it exists in the mempool
-    fn get_payload(&self, payload_hash: &PayloadHash) -> Option<&PendingTransaction>;
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]

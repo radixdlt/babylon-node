@@ -88,8 +88,7 @@ public final class MempoolRelayer {
   private final SystemCounters counters;
 
   private final MempoolReader mempoolRelayReader;
-  private final long initialDelayMillis;
-  private final long repeatDelayMillis;
+
   private final int maxPeers;
 
   @Inject
@@ -97,15 +96,11 @@ public final class MempoolRelayer {
       MempoolReader mempoolRelayReader,
       RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
       PeersView peersView,
-      @MempoolRelayInitialDelayMs long initialDelayMillis,
-      @MempoolRelayRepeatDelayMs long repeatDelayMillis,
       @MempoolRelayMaxPeers int maxPeers,
       SystemCounters counters) {
     this.mempoolRelayReader = mempoolRelayReader;
     this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
     this.peersView = Objects.requireNonNull(peersView);
-    this.initialDelayMillis = initialDelayMillis;
-    this.repeatDelayMillis = repeatDelayMillis;
     this.maxPeers = maxPeers;
     this.counters = Objects.requireNonNull(counters);
   }
@@ -120,8 +115,7 @@ public final class MempoolRelayer {
 
   public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
     return ev -> {
-      final var transactions =
-          this.mempoolRelayReader.getTransactionsToRelay(initialDelayMillis, repeatDelayMillis);
+      final var transactions = this.mempoolRelayReader.getTransactionsToRelay();
       if (!transactions.isEmpty()) {
         relayTransactions(transactions, ImmutableList.of());
       }

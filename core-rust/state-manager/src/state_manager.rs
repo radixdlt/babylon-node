@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::mempool::Mempool;
+use crate::mempool::simple::SimpleMempool;
 use crate::query::ResourceAccounter;
 use crate::store::traits::*;
 use crate::types::{
@@ -71,7 +71,7 @@ use crate::types::{
 };
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasPayloadHash, IntentHash,
-    LedgerTransactionReceipt, PayloadHash,
+    LedgerTransactionReceipt, MempoolAddError, PayloadHash, PendingTransaction,
 };
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
@@ -79,7 +79,7 @@ use radix_engine::constants::{
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     ExecutionConfig, FeeReserveConfig, PreviewError, PreviewExecutor, PreviewResult,
-    TransactionExecutor, TransactionResult,
+    TransactionExecutor, TransactionReceipt, TransactionResult,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::engine::types::RENodeId;
@@ -113,8 +113,8 @@ pub struct StateManagerLoggingConfig {
     pub log_on_transaction_rejection: bool,
 }
 
-pub struct StateManager<M: Mempool, S> {
-    pub mempool: M,
+pub struct StateManager<S> {
+    pub mempool: SimpleMempool,
     pub network: NetworkDefinition,
     pub store: S,
     wasm_engine: DefaultWasmEngine,
@@ -126,13 +126,13 @@ pub struct StateManager<M: Mempool, S> {
     logging_config: StateManagerLoggingConfig,
 }
 
-impl<M: Mempool, S> StateManager<M, S> {
+impl<S> StateManager<S> {
     pub fn new(
         network: NetworkDefinition,
-        mempool: M,
+        mempool: SimpleMempool,
         store: S,
         logging_config: LoggingConfig,
-    ) -> StateManager<M, S> {
+    ) -> StateManager<S> {
         StateManager {
             network,
             mempool,
@@ -205,9 +205,8 @@ impl<M: Mempool, S> StateManager<M, S> {
     }
 }
 
-impl<M, S> StateManager<M, S>
+impl<S> StateManager<S>
 where
-    M: Mempool,
     S: ReadableSubstateStore,
 {
     pub fn preview(
@@ -249,12 +248,92 @@ where
     }
 }
 
-impl<M, S> StateManager<M, S>
+impl<S> StateManager<S>
 where
-    M: Mempool,
     S: ReadableSubstateStore,
     S: QueryableTransactionStore,
 {
+    fn test_transaction(
+        &mut self,
+        transaction: &PendingTransaction,
+    ) -> Result<TransactionReceipt, TransactionValidationError> {
+        let notarized_transaction = transaction.payload.clone();
+        let validated_transaction = self.validate_transaction(notarized_transaction)?;
+
+        let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
+        let staged_node = staged_store_manager.new_child_node(0);
+        let mut staged_store = staged_store_manager.get_output_store(staged_node);
+
+        let mut transaction_executor = TransactionExecutor::new(
+            &mut staged_store,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
+        );
+        let receipt = transaction_executor.execute_and_commit(
+            &validated_transaction,
+            &self.fee_reserve_config,
+            &self.execution_config,
+        );
+        Ok(receipt)
+    }
+
+    pub fn add_to_mempool(
+        &mut self,
+        transaction: PendingTransaction,
+    ) -> Result<(), MempoolAddError> {
+        if self
+            .store
+            .get_committed_transaction_by_intent(&transaction.intent_hash)
+            .is_some()
+        {
+            return Err(MempoolAddError::Rejected {
+                reason: "Transaction rejected - duplicate intent hash".to_string(),
+            });
+        }
+
+        let receipt =
+            self.test_transaction(&transaction)
+                .map_err(|e| MempoolAddError::Rejected {
+                    reason: format!("{:?}", e),
+                })?;
+
+        match receipt.result {
+            TransactionResult::Reject(result) => Err(MempoolAddError::Rejected {
+                reason: format!("{:?}", result),
+            }),
+            TransactionResult::Commit(..) => self.mempool.add_transaction(transaction),
+        }
+    }
+
+    pub fn get_relay_transactions(&mut self) -> Vec<PendingTransaction> {
+        let mut mempool_txns = self.mempool.get_transactions();
+
+        let mut txns_to_remove = Vec::new();
+        for (hash, data) in &mempool_txns {
+            let result = self.test_transaction(&data.transaction);
+            match result {
+                Err(..)
+                | Ok(TransactionReceipt {
+                    result: TransactionResult::Reject(..),
+                    ..
+                }) => {
+                    txns_to_remove.push(hash.clone());
+                }
+                _ => {}
+            }
+        }
+
+        for txn_to_remove in txns_to_remove {
+            mempool_txns.remove(&txn_to_remove);
+            self.mempool.remove_transaction(&txn_to_remove);
+        }
+
+        mempool_txns
+            .into_values()
+            .map(|data| data.transaction)
+            .collect()
+    }
+
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
         let mut validated_prepared = Vec::new();
 
@@ -374,9 +453,8 @@ where
     }
 }
 
-impl<'db, M, S> StateManager<M, S>
+impl<'db, S> StateManager<S>
 where
-    M: Mempool,
     S: CommitStore<'db>,
 {
     pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
@@ -459,7 +537,7 @@ where
     }
 }
 
-impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager<M, S> {
+impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
     pub fn get_component_resources(
         &self,
         component_address: ComponentAddress,

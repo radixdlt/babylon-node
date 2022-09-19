@@ -87,7 +87,12 @@ public sealed interface MempoolError {
                     TransactionValidationError.class,
                     TransactionValidationError::new,
                     codecs.of(String.class),
-                    (t, encoder) -> encoder.encode(t.errorDescription))));
+                    (t, encoder) -> encoder.encode(t.errorDescription)),
+                EnumEntry.with(
+                    Rejected.class,
+                    Rejected::new,
+                    codecs.of(String.class),
+                    (t, encode) -> encode.encode(t.reason))));
   }
 
   record Full(UInt64 currentSize, UInt64 maxSize) implements MempoolError {}
@@ -95,4 +100,6 @@ public sealed interface MempoolError {
   record Duplicate() implements MempoolError {}
 
   record TransactionValidationError(String errorDescription) implements MempoolError {}
+
+  record Rejected(String reason) implements MempoolError {}
 }

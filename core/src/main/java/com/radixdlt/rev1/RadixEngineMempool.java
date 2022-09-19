@@ -87,9 +87,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -225,27 +223,8 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
     return new HashSet<>(substateIndex.keySet());
   }
 
-  public List<RawTransaction> getTransactionsToRelay(
-      long initialDelayMillis, long repeatDelayMillis) {
-    final var now = System.currentTimeMillis();
-    final var recentlyAddedCutoff = now - initialDelayMillis;
-    final var lastRelayedCutoff = now - repeatDelayMillis;
-    return scanUpdateAndGet(
-        m ->
-            // Don't relay recently added
-            m.getInsertedTimestampMs() <= recentlyAddedCutoff
-                // Don't relay recently relayed
-                && m.getLastRelayedTimestampMs().orElse(0L) <= lastRelayedCutoff,
-        m -> m.setLastRelayedTimestampMs(now));
-  }
-
-  private List<RawTransaction> scanUpdateAndGet(
-      Predicate<MempoolMetadata> predicate, Consumer<MempoolMetadata> operator) {
-    return this.data.values().stream()
-        .filter(e -> predicate.test(e.getSecond()))
-        .peek(e -> operator.accept(e.getSecond()))
-        .map(e -> e.getFirst().getTxn())
-        .toList();
+  public List<RawTransaction> getTransactionsToRelay() {
+    return this.data.values().stream().map(t -> t.getFirst().getTxn()).collect(Collectors.toList());
   }
 
   public int getCount() {

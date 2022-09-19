@@ -104,7 +104,7 @@ public class SanityTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.mempool(100, MempoolRelayConfig.of())))))
+                        REV2ProposerConfig.mempool(10, 100, MempoolRelayConfig.of())))))
         .addTestModules(
             ConsensusMonitors.safety(),
             ConsensusMonitors.liveness(10, TimeUnit.SECONDS),

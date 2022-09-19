@@ -181,8 +181,8 @@ public final class RadixNodeModule extends AbstractModule {
     install(new MempoolReceiverModule());
 
     // Mempool Relay
-    install(new MempoolRelayConfig(5, 60000, 60000, 100).asModule());
-    install(new MempoolRelayerModule());
+    install(new MempoolRelayConfig(5, 100).asModule());
+    install(new MempoolRelayerModule(10000));
 
     // Ledger Sync
     final long syncPatience = properties.get("sync.patience", 5000L);
@@ -195,10 +195,13 @@ public final class RadixNodeModule extends AbstractModule {
 
     // State Computer
     var databasePath = properties.get("db.location", ".//RADIXDB");
-    var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
+    var mempoolMaxSize = properties.get("mempool.maxSize", 50);
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
-    install(REv2StateManagerModule.create(networkId, databaseConfig, Option.some(mempoolConfig)));
+    var transactionsPerProposalCount = 10;
+    install(
+        REv2StateManagerModule.create(
+            networkId, transactionsPerProposalCount, databaseConfig, Option.some(mempoolConfig)));
 
     // Recovery
     install(new BerkeleySafetyStoreModule(databasePath));

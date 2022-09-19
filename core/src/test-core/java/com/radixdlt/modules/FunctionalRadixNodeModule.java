@@ -330,14 +330,14 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
               }
               case MockedMempoolConfig.Relayed relayed -> {
                 install(new MempoolReceiverModule());
-                install(new MempoolRelayerModule());
+                install(new MempoolRelayerModule(10000));
                 install(new MockedMempoolStateComputerModule(relayed.mempoolSize()));
               }
             }
           }
           case REv1StateComputerConfig config -> {
             install(new MempoolReceiverModule());
-            install(new MempoolRelayerModule());
+            install(new MempoolRelayerModule(10000));
             install(new RadixEngineStateComputerModule(config.mempoolSize()));
             install(new RadixEngineModule());
             install(new ReV1DispatcherModule());
@@ -399,17 +399,19 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(
                     REv2StateManagerModule.createForTesting(
                         rev2Config.networkId(),
+                        0,
                         rev2Config.databaseConfig(),
                         Option.none(),
                         rev2Config.debugLogging()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
-                install(new MempoolRelayerModule());
+                install(new MempoolRelayerModule(10000));
                 install(new MempoolReceiverModule());
                 install(mempool.relayConfig().asModule());
                 install(
                     REv2StateManagerModule.createForTesting(
                         rev2Config.networkId(),
+                        mempool.transactionsPerProposal(),
                         rev2Config.databaseConfig(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.debugLogging()));

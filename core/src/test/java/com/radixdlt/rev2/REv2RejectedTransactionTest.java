@@ -71,7 +71,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -82,18 +81,13 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
-import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class REv2RejectedTransactionTest {
-  private static final ECKeyPair TEST_KEY = PrivateKeys.ofNumeric(1);
-  private static final NetworkDefinition NETWORK_DEFINITION = NetworkDefinition.LOCAL_SIMULATOR;
-
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private DeterministicTest createTest(ProposalGenerator proposalGenerator) {
@@ -108,23 +102,9 @@ public final class REv2RejectedTransactionTest {
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
-                        Network.LOCALSIMULATOR.getId(),
+                        Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
-  }
-
-  private static RawTransaction createRejectableTransaction() {
-    var rejectableManifest =
-        "CALL_METHOD"
-            + " ComponentAddress(\"account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064\")"
-            + " \"withdraw_by_amount\" Decimal(\"5.0\")"
-            + " ResourceAddress(\"resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag\");";
-    var header =
-        TransactionHeader.defaults(
-            NETWORK_DEFINITION, 1, TEST_KEY.getPublicKey().toPublicKey(), false);
-    var intentBytes =
-        TransactionBuilder.createIntent(NETWORK_DEFINITION, header, rejectableManifest, List.of());
-    return REv2TestTransactions.constructTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
   }
 
   private static class ControlledProposerGenerator implements ProposalGenerator {
@@ -148,11 +128,11 @@ public final class REv2RejectedTransactionTest {
     var proposalGenerator = new ControlledProposerGenerator();
 
     try (var test = createTest(proposalGenerator)) {
-      var newAccountTransaction = createRejectableTransaction();
+      var rejectableTransaction = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_1;
 
       // Act: Submit transaction to mempool and run consensus
       test.startAllNodes();
-      proposalGenerator.nextTransaction = newAccountTransaction;
+      proposalGenerator.nextTransaction = rejectableTransaction;
       test.runUntilState(ignored -> proposalGenerator.nextTransaction == null);
       test.runForCount(100, onlyConsensusEvents());
 

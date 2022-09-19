@@ -111,7 +111,7 @@ public final class REv2ConsensusTransferTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            1, MempoolRelayConfig.of())))));
+                            10, 1, MempoolRelayConfig.of())))));
   }
 
   private static RawTransaction createNewAccountTransaction() {

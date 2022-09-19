@@ -64,6 +64,8 @@
 
 package com.radixdlt.rev2;
 
+import static com.radixdlt.rev2.REv2TestTransactions.validTransaction;
+
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
@@ -92,9 +94,9 @@ public final class RustMempoolTest {
             LoggingConfig.getDefault());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
-      var transaction1 = REv2TestTransactions.VALID_TXN_0;
-      var transaction2 = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_1;
-      var transaction3 = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_2;
+      var transaction1 = validTransaction(0);
+      var transaction2 = validTransaction(1);
+      var transaction3 = validTransaction(2);
 
       Assert.assertEquals(0, rustMempool.getCount());
 
@@ -151,9 +153,9 @@ public final class RustMempoolTest {
             LoggingConfig.getDefault());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
-      var transaction1 = REv2TestTransactions.VALID_TXN_0;
-      var transaction2 = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_1;
-      var transaction3 = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_2;
+      var transaction1 = validTransaction(0);
+      var transaction2 = validTransaction(1);
+      var transaction3 = validTransaction(2);
 
       // Add Transactions
       rustMempool.addTransaction(transaction1);
@@ -248,20 +250,16 @@ public final class RustMempoolTest {
             LoggingConfig.getDefault());
     try (var stateManager = StateManager.createAndInitialize(config)) {
       var rustMempool = new RustMempool(stateManager);
-      var transaction1 = REv2TestTransactions.VALID_TXN_0;
-      var transaction2 = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_1;
-      var transaction3 = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_2;
+      var transaction1 = validTransaction(0);
+      var transaction2 = validTransaction(1);
+      var transaction3 = validTransaction(2);
 
       rustMempool.addTransaction(transaction1);
       rustMempool.addTransaction(transaction2);
       rustMempool.addTransaction(transaction3);
       Assert.assertEquals(3, rustMempool.getCount());
 
-      var returnedList = rustMempool.getTransactionsToRelay(100, 200);
-      Assert.assertEquals(0, returnedList.size());
-      Assert.assertEquals(List.of(), returnedList);
-
-      returnedList = rustMempool.getTransactionsToRelay(0, 200);
+      var returnedList = rustMempool.getTransactionsToRelay();
       Assert.assertEquals(3, returnedList.size());
       Assert.assertTrue(
           List.of(transaction1, transaction2, transaction3).containsAll(returnedList));

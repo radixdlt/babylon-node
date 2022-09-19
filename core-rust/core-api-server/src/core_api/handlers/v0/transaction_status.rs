@@ -1,6 +1,6 @@
 use crate::core_api::*;
 use state_manager::jni::state_manager::ActualStateManager;
-use state_manager::mempool::*;
+
 use state_manager::store::traits::*;
 
 pub(crate) async fn handle_v0_transaction_status(

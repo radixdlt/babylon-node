@@ -79,27 +79,23 @@ public final class REv2TestTransactions {
   // These have to come first for static ordering issues
   public static final ECKeyPair DEFAULT_NOTARY = generateKeyPair(1);
 
-  public static final RawTransaction VALID_TXN_0 =
-      constructTransaction(
-          NetworkDefinition.INT_TEST_NET,
-          String.format(
-              """
-        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("10");
-        CLEAR_AUTH_ZONE;
-        """,
-              Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                  .encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS)),
-          0,
-          List.of());
+  public static RawTransaction validTransaction(long nonce) {
+    return constructTransaction(
+        NetworkDefinition.INT_TEST_NET,
+        String.format(
+            """
+              CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("10");
+              CLEAR_AUTH_ZONE;
+              """,
+            Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
+                .encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS)),
+        nonce,
+        List.of());
+  }
+
   public static final RawTransaction STATICALLY_VALID_BUT_REJECT_TXN_1 =
       constructTransaction(
           NetworkDefinition.INT_TEST_NET, "CLEAR_AUTH_ZONE;", 0, List.of(generateKeyPair(10)));
-  public static final RawTransaction STATICALLY_VALID_BUT_REJECT_TXN_2 =
-      constructTransaction(
-          NetworkDefinition.INT_TEST_NET,
-          "CLEAR_AUTH_ZONE; CLEAR_AUTH_ZONE;",
-          0,
-          List.of(generateKeyPair(21), generateKeyPair(22)));
 
   private static ECKeyPair generateKeyPair(int keySource) {
     return PrivateKeys.numeric(keySource).findFirst().orElseThrow();
@@ -138,6 +134,33 @@ public final class REv2TestTransactions {
                     CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("xrd");
                     """,
         faucetAddress, faucetAddress, xrdAddress, accountPackageAddress);
+  }
+
+  public static String constructNewAccountFromAccountManifest(
+      NetworkDefinition networkDefinition, ComponentAddress from) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var fromAddress = addressing.encodeAccountAddress(from);
+    final var xrdAddress = addressing.encodeResourceAddress(ResourceAddress.XRD_ADDRESS);
+    final var accountPackageAddress =
+        addressing.encodePackageAddress(PackageAddress.ACCOUNT_PACKAGE_ADDRESS);
+
+    return String.format(
+        """
+                        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("500");
+                        CALL_METHOD ComponentAddress("%s") "withdraw_by_amount" Decimal("500") ResourceAddress("%s");
+                        TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
+                        CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("xrd");
+                        """,
+        fromAddress, fromAddress, xrdAddress, xrdAddress, accountPackageAddress);
+  }
+
+  public static RawTransaction constructNewAccountFromAccountTransaction(
+      NetworkDefinition networkDefinition, ComponentAddress from, long nonce) {
+    var manifest = constructNewAccountFromAccountManifest(networkDefinition, from);
+    var signatories = List.<ECKeyPair>of();
+
+    return constructTransaction(
+        networkDefinition, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
   public static byte[] constructNewAccountIntent(

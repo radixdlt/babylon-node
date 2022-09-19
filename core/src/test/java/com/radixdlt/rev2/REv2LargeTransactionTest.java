@@ -113,7 +113,7 @@ public final class REv2LargeTransactionTest {
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.mempool(1, MempoolRelayConfig.of())))));
+                        REV2ProposerConfig.mempool(10, 1, MempoolRelayConfig.of())))));
   }
 
   private static RawTransaction create100KBTransaction() {

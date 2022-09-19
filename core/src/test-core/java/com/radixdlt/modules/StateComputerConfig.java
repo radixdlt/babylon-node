@@ -138,13 +138,17 @@ public sealed interface StateComputerConfig {
       return new Generated(proposalGenerator);
     }
 
-    static REV2ProposerConfig mempool(int mempoolMaxSize, MempoolRelayConfig config) {
-      return new Mempool(new RustMempoolConfig(mempoolMaxSize), config);
+    static REV2ProposerConfig mempool(
+        int transactionsPerProposal, int mempoolMaxSize, MempoolRelayConfig config) {
+      return new Mempool(transactionsPerProposal, new RustMempoolConfig(mempoolMaxSize), config);
     }
 
     record Generated(ProposalGenerator generator) implements REV2ProposerConfig {}
 
-    record Mempool(RustMempoolConfig mempoolConfig, MempoolRelayConfig relayConfig)
+    record Mempool(
+        int transactionsPerProposal,
+        RustMempoolConfig mempoolConfig,
+        MempoolRelayConfig relayConfig)
         implements REV2ProposerConfig {}
   }
 }

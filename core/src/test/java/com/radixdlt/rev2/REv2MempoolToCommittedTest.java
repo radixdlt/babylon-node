@@ -62,17 +62,56 @@
  * permissions under this License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.rev2;
 
-import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.NodesPredicate.allAtExactlyStateVersion;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.mempool.MempoolInserter;
+import com.radixdlt.mempool.MempoolRelayConfig;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transactions.RawTransaction;
+import org.junit.Test;
 
-/** Specifies how often a txn is re-relayed once its eligible for relay */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface MempoolRelayRepeatDelayMs {}
+public class REv2MempoolToCommittedTest {
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(1, 1)
+        .messageSelector(firstSelector())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.mocked(),
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        REv2DatabaseConfig.inMemory(),
+                        StateComputerConfig.REV2ProposerConfig.mempool(
+                            1, 1, new MempoolRelayConfig(0, 100))),
+                    SyncRelayConfig.of(5000, 10, 3000L))));
+  }
+
+  @Test
+  public void transaction_in_full_node_mempool_gets_committed() throws Exception {
+    try (var test = createTest()) {
+      test.startAllNodes();
+
+      // Arrange: Add node1 mempool
+      var mempoolInserter =
+          test.getInstance(1, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+      mempoolInserter.addTransaction(REv2TestTransactions.validTransaction(0));
+
+      // Act/Assert
+      test.runUntilState(allAtExactlyStateVersion(2), 100000);
+    }
+  }
+}
