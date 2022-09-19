@@ -195,7 +195,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     // State Computer
     var databasePath = properties.get("db.location", ".//RADIXDB");
-    var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
+    var mempoolMaxSize = properties.get("mempool.maxSize", 50);
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
     var transactionsPerProposalCount = 10;
