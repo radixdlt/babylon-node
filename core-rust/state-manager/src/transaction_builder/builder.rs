@@ -114,16 +114,11 @@ pub fn create_100kb_txn_intent(
 
     let manifest = ManifestBuilder::new(&network_definition)
         .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
-            SYS_UTILS_PACKAGE,
-            "SysUtils",
-            "new_resource",
-            args!(
-                ResourceType::NonFungible,
-                metadata,
-                access_rules,
-                initial_supply
-            ),
+        .create_resource(
+            ResourceType::NonFungible,
+            metadata,
+            access_rules,
+            initial_supply
         )
         .build();
 

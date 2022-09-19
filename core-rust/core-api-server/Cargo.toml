@@ -22,11 +22,11 @@ state-manager = { path = "../state-manager" }
 # 
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-a64622ae1" }
-scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-a64622ae1" }
-transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-a64622ae1" }
-radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-a64622ae1" }
-radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-a64622ae1" }
+sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="native-method-0861f4" }
+scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="native-method-0861f4" }
+transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="native-method-0861f4" }
+radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="native-method-0861f4" }
+radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="native-method-0861f4" }
 
 jni = "0.19.0"
 
