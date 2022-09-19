@@ -156,7 +156,7 @@ public final class REv2MempoolFillAndEmptyTest {
                 StateComputerConfig.rev2(
                     Network.INTEGRATIONTESTNET.getId(),
                     REv2DatabaseConfig.inMemory(),
-                    StateComputerConfig.REV2ProposerConfig.mempool(1000, MempoolRelayConfig.of())),
+                    StateComputerConfig.REV2ProposerConfig.mempool(10, 1000, MempoolRelayConfig.of())),
                 SyncRelayConfig.of(5000, 10, 3000L))),
         new TestP2PModule.Builder().build(),
         new InMemoryBFTKeyModule(TEST_KEY),

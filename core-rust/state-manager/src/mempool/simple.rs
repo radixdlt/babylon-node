@@ -67,8 +67,9 @@ use crate::types::*;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 
-struct MempoolData {
-    transaction: PendingTransaction,
+#[derive(Clone)]
+pub struct MempoolData {
+    pub transaction: PendingTransaction,
 }
 
 impl MempoolData {
@@ -172,15 +173,12 @@ impl SimpleMempool {
         transactions
     }
 
-    pub fn get_relay_transactions(&mut self) -> Vec<PendingTransaction> {
-        let mut to_relay = Vec::new();
-        let relay_iter = self.data.values_mut();
+    pub fn get_transactions(&self) -> HashMap<PayloadHash, MempoolData> {
+        self.data.clone()
+    }
 
-        for data in relay_iter {
-            to_relay.push(data.transaction.clone());
-        }
-
-        to_relay
+    pub fn remove_transaction(&mut self, hash: &PayloadHash) {
+        self.data.remove(hash);
     }
 
     pub fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<PayloadHash> {

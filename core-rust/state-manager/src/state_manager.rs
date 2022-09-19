@@ -79,7 +79,7 @@ use radix_engine::constants::{
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     ExecutionConfig, FeeReserveConfig, PreviewError, PreviewExecutor, PreviewResult,
-    TransactionExecutor, TransactionResult,
+    TransactionExecutor, TransactionReceipt, TransactionResult,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::engine::types::RENodeId;
@@ -253,26 +253,12 @@ where
     S: ReadableSubstateStore,
     S: QueryableTransactionStore,
 {
-    pub fn add_to_mempool(
+    fn test_transaction(
         &mut self,
-        transaction: PendingTransaction,
-    ) -> Result<(), MempoolAddError> {
-        if self
-            .store
-            .get_committed_transaction_by_intent(&transaction.intent_hash)
-            .is_some()
-        {
-            return Err(MempoolAddError::Rejected {
-                reason: "Transaction rejected - duplicate intent hash".to_string(),
-            });
-        }
-
+        transaction: &PendingTransaction,
+    ) -> Result<TransactionReceipt, TransactionValidationError> {
         let notarized_transaction = transaction.payload.clone();
-        let validated_transaction =
-            self.validate_transaction(notarized_transaction)
-                .map_err(|e| MempoolAddError::Rejected {
-                    reason: format!("{:?}", e),
-                })?;
+        let validated_transaction = self.validate_transaction(notarized_transaction)?;
 
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
@@ -288,6 +274,28 @@ where
             &self.fee_reserve_config,
             &self.execution_config,
         );
+        Ok(receipt)
+    }
+
+    pub fn add_to_mempool(
+        &mut self,
+        transaction: PendingTransaction,
+    ) -> Result<(), MempoolAddError> {
+        if self
+            .store
+            .get_committed_transaction_by_intent(&transaction.intent_hash)
+            .is_some()
+        {
+            return Err(MempoolAddError::Rejected {
+                reason: "Transaction rejected - duplicate intent hash".to_string(),
+            });
+        }
+
+        let receipt =
+            self.test_transaction(&transaction)
+                .map_err(|e| MempoolAddError::Rejected {
+                    reason: format!("{:?}", e),
+                })?;
 
         match receipt.result {
             TransactionResult::Reject(result) => Err(MempoolAddError::Rejected {
@@ -298,7 +306,32 @@ where
     }
 
     pub fn get_relay_transactions(&mut self) -> Vec<PendingTransaction> {
-        self.mempool.get_relay_transactions()
+        let mut mempool_txns = self.mempool.get_transactions();
+
+        let mut txns_to_remove = Vec::new();
+        for (hash, data) in &mempool_txns {
+            let result = self.test_transaction(&data.transaction);
+            match result {
+                Err(..)
+                | Ok(TransactionReceipt {
+                    result: TransactionResult::Reject(..),
+                    ..
+                }) => {
+                    txns_to_remove.push(hash.clone());
+                }
+                _ => {}
+            }
+        }
+
+        for txn_to_remove in txns_to_remove {
+            mempool_txns.remove(&txn_to_remove);
+            self.mempool.remove_transaction(&txn_to_remove);
+        }
+
+        mempool_txns
+            .into_values()
+            .map(|data| data.transaction)
+            .collect()
     }
 
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {

@@ -175,8 +175,8 @@ public class REv2RejectedTransactionMempoolTest {
       // Act
       var currentStateVersion = NodesReader.getHighestStateVersion(test.getNodeInjectors());
       var nextStateVersion = currentStateVersion + 1;
-      test.runUntilState(allAtExactlyStateVersion(currentStateVersion + 1), onlyConsensusEvents());
-      test.runUntilState(allHaveExactMempoolCount(0));
+      test.runUntilState(allAtExactlyStateVersion(nextStateVersion), onlyConsensusEvents());
+      test.runUntilState(allHaveExactMempoolCount(0), 10000);
 
       // Assert
       var mempoolReader = test.getInstance(0, MempoolReader.class);
