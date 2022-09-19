@@ -139,6 +139,8 @@ public final class REv2TestTransactions {
   public static String constructNewAccountFromAccountManifest(
       NetworkDefinition networkDefinition, ComponentAddress from) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var faucetAddress =
+            addressing.encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
     final var fromAddress = addressing.encodeAccountAddress(from);
     final var xrdAddress = addressing.encodeResourceAddress(ResourceAddress.XRD_ADDRESS);
     final var accountPackageAddress =
@@ -147,11 +149,11 @@ public final class REv2TestTransactions {
     return String.format(
         """
                         CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("1000");
-                        CALL_METHOD ComponentAddress("%s") "withdraw" ResourceAddress("%s");
+                        CALL_METHOD ComponentAddress("%s") "withdraw_by_amount" Decimal("1000") ResourceAddress("%s");
                         TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
                         CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("xrd");
                         """,
-        fromAddress, fromAddress, xrdAddress, xrdAddress, accountPackageAddress);
+        faucetAddress, fromAddress, xrdAddress, xrdAddress, accountPackageAddress);
   }
 
   public static RawTransaction constructNewAccountFromAccountTransaction(

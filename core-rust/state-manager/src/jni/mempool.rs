@@ -172,7 +172,6 @@ fn do_get_transactions_to_relay(
     _args: (),
 ) -> Vec<JavaRawTransaction> {
     state_manager
-        .mempool
         .get_relay_transactions()
         .into_iter()
         .map(|t| t.into())

@@ -105,7 +105,7 @@ pub struct StateManagerConfig {
     pub logging_config: LoggingConfig,
 }
 
-pub type ActualStateManager = StateManager<SimpleMempool, StateManagerDatabase>;
+pub type ActualStateManager = StateManager<StateManagerDatabase>;
 
 pub struct JNIStateManager {
     pub state_manager: Arc<Mutex<ActualStateManager>>,

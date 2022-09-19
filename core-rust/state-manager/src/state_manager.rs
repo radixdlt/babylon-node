@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::mempool::Mempool;
+use crate::mempool::simple::SimpleMempool;
 use crate::query::ResourceAccounter;
 use crate::store::traits::*;
 use crate::types::{
@@ -113,8 +113,8 @@ pub struct StateManagerLoggingConfig {
     pub log_on_transaction_rejection: bool,
 }
 
-pub struct StateManager<M: Mempool, S> {
-    pub mempool: M,
+pub struct StateManager<S> {
+    pub mempool: SimpleMempool,
     pub network: NetworkDefinition,
     pub store: S,
     wasm_engine: DefaultWasmEngine,
@@ -126,13 +126,13 @@ pub struct StateManager<M: Mempool, S> {
     logging_config: StateManagerLoggingConfig,
 }
 
-impl<M: Mempool, S> StateManager<M, S> {
+impl<S> StateManager<S> {
     pub fn new(
         network: NetworkDefinition,
-        mempool: M,
+        mempool: SimpleMempool,
         store: S,
         logging_config: LoggingConfig,
-    ) -> StateManager<M, S> {
+    ) -> StateManager<S> {
         StateManager {
             network,
             mempool,
@@ -205,9 +205,8 @@ impl<M: Mempool, S> StateManager<M, S> {
     }
 }
 
-impl<M, S> StateManager<M, S>
+impl<S> StateManager<S>
 where
-    M: Mempool,
     S: ReadableSubstateStore,
 {
     pub fn preview(
@@ -249,9 +248,8 @@ where
     }
 }
 
-impl<M, S> StateManager<M, S>
+impl<S> StateManager<S>
 where
-    M: Mempool,
     S: ReadableSubstateStore,
     S: QueryableTransactionStore,
 {
@@ -297,6 +295,10 @@ where
             }),
             TransactionResult::Commit(..) => self.mempool.add_transaction(transaction),
         }
+    }
+
+    pub fn get_relay_transactions(&mut self) -> Vec<PendingTransaction> {
+        self.mempool.get_relay_transactions()
     }
 
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
@@ -418,9 +420,8 @@ where
     }
 }
 
-impl<'db, M, S> StateManager<M, S>
+impl<'db, S> StateManager<S>
 where
-    M: Mempool,
     S: CommitStore<'db>,
 {
     pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
@@ -503,7 +504,7 @@ where
     }
 }
 
-impl<M: Mempool, S: ReadableSubstateStore + QueryableSubstateStore> StateManager<M, S> {
+impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
     pub fn get_component_resources(
         &self,
         component_address: ComponentAddress,

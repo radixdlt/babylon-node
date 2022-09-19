@@ -93,8 +93,11 @@ impl SimpleMempool {
     }
 }
 
-impl Mempool for SimpleMempool {
-    fn add_transaction(&mut self, transaction: PendingTransaction) -> Result<(), MempoolAddError> {
+impl SimpleMempool {
+    pub fn add_transaction(
+        &mut self,
+        transaction: PendingTransaction,
+    ) -> Result<(), MempoolAddError> {
         let len: u64 = self.data.len().try_into().unwrap();
 
         if len >= self.max_size {
@@ -129,7 +132,7 @@ impl Mempool for SimpleMempool {
         }
     }
 
-    fn handle_committed_transactions(
+    pub fn handle_committed_transactions(
         &mut self,
         intent_hashes: &[IntentHash],
     ) -> Vec<PendingTransaction> {
@@ -149,11 +152,11 @@ impl Mempool for SimpleMempool {
         removed_transactions
     }
 
-    fn get_count(&self) -> u64 {
+    pub fn get_count(&self) -> u64 {
         self.data.len().try_into().unwrap()
     }
 
-    fn get_proposal_transactions(
+    pub fn get_proposal_transactions(
         &self,
         count: u64,
         prepared_ids: &HashSet<PayloadHash>,
@@ -169,7 +172,7 @@ impl Mempool for SimpleMempool {
         transactions
     }
 
-    fn get_relay_transactions(&mut self) -> Vec<PendingTransaction> {
+    pub fn get_relay_transactions(&mut self) -> Vec<PendingTransaction> {
         let mut to_relay = Vec::new();
         let relay_iter = self.data.values_mut();
 
@@ -180,7 +183,7 @@ impl Mempool for SimpleMempool {
         to_relay
     }
 
-    fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<PayloadHash> {
+    pub fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<PayloadHash> {
         let payload_hashes = self.intent_lookup.get(intent_hash);
         if payload_hashes.is_none() {
             return vec![];
@@ -188,11 +191,11 @@ impl Mempool for SimpleMempool {
         payload_hashes.unwrap().iter().cloned().collect()
     }
 
-    fn get_all_payload_hashes(&self) -> Vec<PayloadHash> {
+    pub fn get_all_payload_hashes(&self) -> Vec<PayloadHash> {
         self.data.keys().cloned().collect()
     }
 
-    fn get_payload(&self, payload_hash: &PayloadHash) -> Option<&PendingTransaction> {
+    pub fn get_payload(&self, payload_hash: &PayloadHash) -> Option<&PendingTransaction> {
         Some(&self.data.get(payload_hash)?.transaction)
     }
 }
