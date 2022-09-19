@@ -136,6 +136,33 @@ public final class REv2TestTransactions {
         faucetAddress, faucetAddress, xrdAddress, accountPackageAddress);
   }
 
+  public static String constructNewAccountFromAccountManifest(
+      NetworkDefinition networkDefinition, ComponentAddress from) {
+    final var addressing = Addressing.ofNetwork(networkDefinition);
+    final var fromAddress = addressing.encodeAccountAddress(from);
+    final var xrdAddress = addressing.encodeResourceAddress(ResourceAddress.XRD_ADDRESS);
+    final var accountPackageAddress =
+        addressing.encodePackageAddress(PackageAddress.ACCOUNT_PACKAGE_ADDRESS);
+
+    return String.format(
+        """
+                        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("1000");
+                        CALL_METHOD ComponentAddress("%s") "withdraw" ResourceAddress("%s");
+                        TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
+                        CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("xrd");
+                        """,
+        fromAddress, fromAddress, xrdAddress, xrdAddress, accountPackageAddress);
+  }
+
+  public static RawTransaction constructNewAccountFromAccountTransaction(
+      NetworkDefinition networkDefinition, ComponentAddress from, long nonce) {
+    var manifest = constructNewAccountFromAccountManifest(networkDefinition, from);
+    var signatories = List.<ECKeyPair>of();
+
+    return constructTransaction(
+        networkDefinition, nonce, manifest, DEFAULT_NOTARY, false, signatories);
+  }
+
   public static byte[] constructNewAccountIntent(
       NetworkDefinition networkDefinition, long nonce, PublicKey notary) {
     final var manifest = constructNewAccountManifest(networkDefinition);
