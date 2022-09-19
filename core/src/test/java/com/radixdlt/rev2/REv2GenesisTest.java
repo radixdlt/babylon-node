@@ -92,7 +92,7 @@ public final class REv2GenesisTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            0, MempoolRelayConfig.of())))));
+                            0, 0, MempoolRelayConfig.of())))));
   }
 
   @Test

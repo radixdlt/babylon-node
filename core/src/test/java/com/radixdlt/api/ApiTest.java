@@ -121,7 +121,7 @@ public abstract class ApiTest {
                             Network.INTEGRATIONTESTNET.getId(),
                             REv2DatabaseConfig.inMemory(),
                             StateComputerConfig.REV2ProposerConfig.mempool(
-                                10, MempoolRelayConfig.of())),
+                                10, 10, MempoolRelayConfig.of())),
                         new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),
             new TestP2PModule.Builder().build(),
             new TestMessagingModule.Builder().build(),

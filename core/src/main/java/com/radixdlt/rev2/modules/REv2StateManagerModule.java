@@ -67,10 +67,12 @@ package com.radixdlt.rev2.modules;
 import com.google.inject.*;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.lang.Option;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolReader;
@@ -95,6 +97,7 @@ import com.radixdlt.transactions.RawTransaction;
 
 public final class REv2StateManagerModule extends AbstractModule {
   private final int networkId;
+  private final int transactionsPerProposalCount;
   private final REv2DatabaseConfig databaseConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean testing;
@@ -102,11 +105,13 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   private REv2StateManagerModule(
       int networkId,
+      int transactionsPerProposalCount,
       boolean prefixDatabase,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
     this.networkId = networkId;
+    this.transactionsPerProposalCount = transactionsPerProposalCount;
     this.testing = prefixDatabase;
     this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
@@ -114,16 +119,22 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   public static REv2StateManagerModule create(
-      int networkId, REv2DatabaseConfig databaseConfig, Option<RustMempoolConfig> mempoolConfig) {
-    return new REv2StateManagerModule(networkId, false, databaseConfig, mempoolConfig, false);
+      int networkId,
+      int transactionsPerProposalCount,
+      REv2DatabaseConfig databaseConfig,
+      Option<RustMempoolConfig> mempoolConfig) {
+    return new REv2StateManagerModule(
+        networkId, transactionsPerProposalCount, false, databaseConfig, mempoolConfig, false);
   }
 
   public static REv2StateManagerModule createForTesting(
       int networkId,
+      int transactionsPerProposalCount,
       REv2DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging) {
-    return new REv2StateManagerModule(networkId, true, databaseConfig, mempoolConfig, debugLogging);
+    return new REv2StateManagerModule(
+        networkId, transactionsPerProposalCount, true, databaseConfig, mempoolConfig, debugLogging);
   }
 
   @Override
@@ -164,30 +175,41 @@ public final class REv2StateManagerModule extends AbstractModule {
     }
 
     if (!REv2DatabaseConfig.isNone(this.databaseConfig)) {
-      bind(REv2StateComputer.class).in(Scopes.SINGLETON);
       bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
       bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
       bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
       install(
           new AbstractModule() {
             @Provides
-            private REv2TransactionAndProofStore transactionAndProofStore(
-                RustStateComputer stateComputer) {
+            @Singleton
+            REv2StateComputer rEv2StateComputer(
+                RustStateComputer stateComputer,
+                EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
+                Serialization serialization) {
+              return new REv2StateComputer(
+                  stateComputer,
+                  transactionsPerProposalCount,
+                  ledgerUpdateEventDispatcher,
+                  serialization);
+            }
+
+            @Provides
+            REv2TransactionAndProofStore transactionAndProofStore(RustStateComputer stateComputer) {
               return stateComputer.getTransactionAndProofStore();
             }
 
             @Provides
-            private VertexStoreRecovery rEv2VertexStoreRecovery(RustStateComputer stateComputer) {
+            VertexStoreRecovery rEv2VertexStoreRecovery(RustStateComputer stateComputer) {
               return stateComputer.getVertexStoreRecovery();
             }
 
             @Provides
-            private REv2StateReader stateReader(RustStateComputer stateComputer) {
+            REv2StateReader stateReader(RustStateComputer stateComputer) {
               return stateComputer::getComponentXrdAmount;
             }
 
             @Provides
-            private PersistentVertexStore vertexStore(
+            PersistentVertexStore vertexStore(
                 RustStateComputer stateComputer,
                 SystemCounters systemCounters,
                 Serialization serialization) {
@@ -201,14 +223,14 @@ public final class REv2StateManagerModule extends AbstractModule {
 
             @ProvidesIntoSet
             @ProcessOnDispatch
-            public EventProcessor<BFTHighQCUpdate> onQCUpdatePersistVertexStore(
+            EventProcessor<BFTHighQCUpdate> onQCUpdatePersistVertexStore(
                 PersistentVertexStore persistentVertexStore) {
               return update -> persistentVertexStore.save(update.getVertexStoreState());
             }
 
             @ProvidesIntoSet
             @ProcessOnDispatch
-            public EventProcessor<BFTInsertUpdate> onInsertUpdatePersistVertexStore(
+            EventProcessor<BFTInsertUpdate> onInsertUpdatePersistVertexStore(
                 PersistentVertexStore persistentVertexStore) {
               return update -> persistentVertexStore.save(update.getVertexStoreState());
             }

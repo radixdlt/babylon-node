@@ -91,7 +91,7 @@ public class REv2StateComputerTest {
     return Guice.createInjector(
         new CryptoModule(),
         REv2StateManagerModule.create(
-            Network.INTEGRATIONTESTNET.getId(), REv2DatabaseConfig.inMemory(), Option.none()),
+            Network.INTEGRATIONTESTNET.getId(), 10, REv2DatabaseConfig.inMemory(), Option.none()),
         new AbstractModule() {
           @Override
           protected void configure() {

@@ -65,7 +65,6 @@
 package com.radixdlt.rev2;
 
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.environment.EventDispatcher;
@@ -95,15 +94,17 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   private static final Logger log = LogManager.getLogger();
 
   private final RustStateComputer stateComputer;
+  private final int transactionsPerProposalCount;
   private final EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher;
   private final Serialization serialization;
 
-  @Inject
   public REv2StateComputer(
       RustStateComputer stateComputer,
+      int transactionsPerProposalCount,
       EventDispatcher<LedgerUpdate> ledgerUpdateEventDispatcher,
       Serialization serialization) {
     this.stateComputer = stateComputer;
+    this.transactionsPerProposalCount = transactionsPerProposalCount;
     this.ledgerUpdateEventDispatcher = ledgerUpdateEventDispatcher;
     this.serialization = serialization;
   }
@@ -126,11 +127,16 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   @Override
   public List<RawTransaction> getTransactionsForProposal(
       List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
+    if (transactionsPerProposalCount == 0) {
+      return List.of();
+    }
+
     var transactionsNotToInclude =
         executedTransactions.stream()
             .map(StateComputerLedger.ExecutedTransaction::transaction)
             .toList();
-    return stateComputer.getTransactionsForProposal(10, transactionsNotToInclude);
+    return stateComputer.getTransactionsForProposal(
+        transactionsPerProposalCount, transactionsNotToInclude);
   }
 
   @Override

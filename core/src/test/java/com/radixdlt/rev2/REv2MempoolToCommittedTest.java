@@ -96,7 +96,7 @@ public class REv2MempoolToCommittedTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            1, new MempoolRelayConfig(0, 100))),
+                            1, 1, new MempoolRelayConfig(0, 100))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

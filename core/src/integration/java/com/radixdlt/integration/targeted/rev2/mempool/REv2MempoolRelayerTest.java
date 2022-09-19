@@ -105,7 +105,7 @@ public final class REv2MempoolRelayerTest {
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
-                            MEMPOOL_SIZE, new MempoolRelayConfig(0, 100))),
+                            0, MEMPOOL_SIZE, new MempoolRelayConfig(0, 100))),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 

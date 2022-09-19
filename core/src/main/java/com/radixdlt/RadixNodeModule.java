@@ -198,7 +198,10 @@ public final class RadixNodeModule extends AbstractModule {
     var mempoolMaxSize = properties.get("mempool.maxSize", 10000);
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
-    install(REv2StateManagerModule.create(networkId, databaseConfig, Option.some(mempoolConfig)));
+    var transactionsPerProposalCount = 10;
+    install(
+        REv2StateManagerModule.create(
+            networkId, transactionsPerProposalCount, databaseConfig, Option.some(mempoolConfig)));
 
     // Recovery
     install(new BerkeleySafetyStoreModule(databasePath));
