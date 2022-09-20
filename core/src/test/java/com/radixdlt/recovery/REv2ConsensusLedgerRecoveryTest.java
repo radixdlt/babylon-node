@@ -116,9 +116,9 @@ public final class REv2ConsensusLedgerRecoveryTest {
 
       // Arrange: Situation where behindNode has consensus behind ledger
       test.runUntilState(allAtExactlyStateVersion(INITIAL_VERSION), onlyConsensusEvents());
-      test.runUntilState(anyAtExactlyStateVersion(INITIAL_VERSION + 1), onlyConsensusEvents());
+      test.runUntilState(anyAtOrOverStateVersion(INITIAL_VERSION + 1), onlyConsensusEvents());
       var behindNodeIndex = test.getNodes().getNode(atExactlyStateVersion(INITIAL_VERSION));
-      test.runUntilState(allAtExactlyStateVersion(INITIAL_VERSION + 1), onlyLedgerSyncEvents());
+      test.runUntilState(allAtOrOverStateVersion(INITIAL_VERSION + 1), onlyLedgerSyncEvents());
 
       // Act: Reboot node
       test.restartNode(behindNodeIndex);

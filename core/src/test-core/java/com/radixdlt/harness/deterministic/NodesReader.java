@@ -67,12 +67,39 @@ package com.radixdlt.harness.deterministic;
 import com.google.inject.Injector;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.ExecutedTransaction;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
 
 public final class NodesReader {
   private NodesReader() {
     throw new IllegalStateException("Not allowed to instantiate.");
+  }
+
+  public static ExecutedTransaction getCommittedTransaction(
+      List<Injector> nodes, RawTransaction transaction) {
+    for (var injector : nodes) {
+      if (injector == null) {
+        continue;
+      }
+
+      var store = injector.getInstance(REv2TransactionAndProofStore.class);
+      for (long version = 1; true; version++) {
+        var maybeTxn = store.getTransactionAtStateVersion(version);
+        if (maybeTxn.isEmpty()) {
+          continue;
+        } else {
+          var txn = maybeTxn.unwrap();
+          if (txn.rawTransaction().equals(transaction)) {
+            return txn;
+          }
+        }
+      }
+    }
+
+    throw new IllegalStateException("Committed Transaction Not Found " + transaction);
   }
 
   public static long getHighestStateVersion(List<Injector> nodes) {

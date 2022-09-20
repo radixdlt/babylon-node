@@ -114,11 +114,10 @@ public final class TransactionDBSizeStressTest {
   }
 
   @Test
-  public void committing_large_transactions_should_work() throws Exception {
+  public void committing_large_transactions_should_work() {
     try (var test = buildTest()) {
       test.startAllNodes();
-
-      test.runUntilState(NodesPredicate.anyAtExactlyStateVersion(10));
+      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(20));
     }
   }
 }

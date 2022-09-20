@@ -139,7 +139,7 @@ public final class REv2RejectedTransactionTest {
       // Assert: Check transaction and post submission state
       assertThat(proposalGenerator.nextTransaction).isNull();
       // Verify that transaction was not committed
-      assertNodesSyncedToExactVersion(test.getNodeInjectors(), 1);
+      assertTransactionNotCommitted(test.getNodeInjectors(), rejectableTransaction);
     }
   }
 }

@@ -65,8 +65,9 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.invariants.Checkers.assertNodesSyncedToExactVersion;
+import static com.radixdlt.harness.invariants.Checkers.assertOneTransactionCommittedOutOf;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
+import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.bft.ExecutedVertex;
@@ -149,23 +150,32 @@ public final class REv2RejectMultipleIntentsTest {
       var fixedIntent2 = createValidIntentBytes(2);
       var fixedIntent3 = createValidIntentBytes(3);
 
-      // Different payloads all with fixed intent 1 - only one of these should be committed
-      var transactionsForFirstProposal =
+      // Signatures aren't deterministic so create signed transactions up front
+      var fixedIntent1Transactions =
           List.of(
               createValidTransactionWithSigs(fixedIntent1, 0),
               createValidTransactionWithSigs(fixedIntent1, 1),
               createValidTransactionWithSigs(fixedIntent1, 2),
               createValidTransactionWithSigs(fixedIntent1, 3),
-              createValidTransactionWithSigs(fixedIntent1, 4));
+              createValidTransactionWithSigs(fixedIntent1, 4),
+              createValidTransactionWithSigs(fixedIntent1, 5));
+      var fixedIntent2Transactions =
+          List.of(
+              createValidTransactionWithSigs(fixedIntent2, 0),
+              createValidTransactionWithSigs(fixedIntent2, 3));
+      var fixedIntent3Transactions = List.of(createValidTransactionWithSigs(fixedIntent3, 0));
+
+      // Different payloads all with fixed intent 1 - only one of these should be committed
+      var transactionsForFirstProposal = fixedIntent1Transactions.stream().limit(4).toList();
 
       // Mix of payloads with fixed intent 1, 2 and 3 - fixed intent 2 and 3 should be committed
       var transactionsForSecondProposal =
           List.of(
-              createValidTransactionWithSigs(fixedIntent2, 3),
-              createValidTransactionWithSigs(fixedIntent1, 0), // Exact payload repeat
-              createValidTransactionWithSigs(fixedIntent1, 5),
-              createValidTransactionWithSigs(fixedIntent3, 0),
-              createValidTransactionWithSigs(fixedIntent2, 0));
+              fixedIntent2Transactions.get(1),
+              fixedIntent1Transactions.get(0), // Exact payload repeat
+              fixedIntent1Transactions.get(5),
+              fixedIntent3Transactions.get(0),
+              fixedIntent2Transactions.get(0));
 
       // Prepare - let's start the test
       test.startAllNodes();
@@ -173,23 +183,24 @@ public final class REv2RejectMultipleIntentsTest {
       // Act: Submit proposal 1 transactions in a proposal and run consensus
       proposalGenerator.nextTransactions = transactionsForFirstProposal;
       test.runUntilState(ignored -> proposalGenerator.nextTransactions == null);
-      test.runForCount(100, onlyConsensusEvents());
+      test.runUntilState(
+          allCommittedTransaction(transactionsForFirstProposal.get(0)), onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
       assertThat(proposalGenerator.nextTransactions).isNull();
-      // Verify that exactly one transaction was committed (Genesis + intent1)
-      assertNodesSyncedToExactVersion(test.getNodeInjectors(), 2);
 
       // Act 2: Submit proposal 2 transactions in a proposal and run consensus
       proposalGenerator.nextTransactions = transactionsForSecondProposal;
       test.runUntilState(ignored -> proposalGenerator.nextTransactions == null);
-      test.runForCount(100, onlyConsensusEvents());
+      test.runUntilState(
+          allCommittedTransaction(transactionsForSecondProposal.get(0)), onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
       assertThat(proposalGenerator.nextTransactions).isNull();
-      // Verify that exactly two more transactions were committed (Genesis + intent1 + intent2 +
-      // intent3)
-      assertNodesSyncedToExactVersion(test.getNodeInjectors(), 4);
+      // Verify that only one transaction of some intent was committed
+      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent1Transactions);
+      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent2Transactions);
+      assertOneTransactionCommittedOutOf(test.getNodeInjectors(), fixedIntent3Transactions);
     }
   }
 }

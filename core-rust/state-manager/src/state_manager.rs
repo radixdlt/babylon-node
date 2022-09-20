@@ -87,11 +87,12 @@ use scrypto::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use tracing::info;
+use transaction::builder::ManifestBuilder;
 
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
-    NotarizedTransaction, PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent,
-    ValidatedTransaction,
+    NotarizedTransaction, PreviewFlags, PreviewIntent, SignedTransactionIntent, TransactionHeader,
+    TransactionIntent, ValidatedTransaction,
 };
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
@@ -397,15 +398,49 @@ where
 
         let mut transaction_results: Vec<(Vec<u8>, TransactionPrepareResult)> = Vec::new();
 
-        /*
+        let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
+        let public_key = private_key.public_key();
         let manifest = ManifestBuilder::new(&self.network)
+            .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
             .call_native_method(
                 Receiver::Ref(RENodeId::System),
                 NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch),
-                args!(prepare_request.round_number)
+                args!(prepare_request.round_number),
             )
             .build();
-         */
+        let intent = TransactionIntent {
+            header: TransactionHeader {
+                version: 1,
+                network_id: self.network.id,
+                start_epoch_inclusive: 0,
+                end_epoch_exclusive: 100,
+                nonce: 5,
+                notary_public_key: PublicKey::EcdsaSecp256k1(public_key),
+                notary_as_signatory: false,
+                cost_unit_limit: 10_000_000,
+                tip_percentage: 5,
+            },
+            manifest,
+        };
+
+        let signed_intent = SignedTransactionIntent {
+            intent,
+            intent_signatures: vec![],
+        };
+        let signed_intent_payload = scrypto_encode(&signed_intent);
+        let notary_signature = private_key.sign(&signed_intent_payload).into();
+
+        let notarized = NotarizedTransaction {
+            signed_intent,
+            notary_signature,
+        };
+
+        let notarized_bytes = scrypto_encode(&notarized);
+        let validated_epoch_update = self
+            .validation
+            .validate_transaction_slice(&notarized_bytes)
+            .unwrap();
+        validated_proposed_transactions.insert(0, (notarized_bytes, Ok(validated_epoch_update)));
 
         for (raw_transaction, validation_result) in validated_proposed_transactions {
             match validation_result {

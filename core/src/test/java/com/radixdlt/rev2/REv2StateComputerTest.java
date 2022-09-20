@@ -113,7 +113,9 @@ public class REv2StateComputerTest {
         stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
 
     // Assert
-    assertThat(result.getSuccessfullyExecutedTransactions()).hasSize(1);
+    assertThat(result.getSuccessfullyExecutedTransactions())
+        .extracting(StateComputerLedger.ExecutedTransaction::transaction)
+        .contains(validTransaction);
     assertThat(result.getFailedTransactions()).isEmpty();
   }
 
@@ -122,14 +124,16 @@ public class REv2StateComputerTest {
     // Arrange
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var validTransaction = RawTransaction.create(new byte[1]);
+    var invalidTransaction = RawTransaction.create(new byte[1]);
 
     // Act
     var result =
-        stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
+        stateComputer.prepare(List.of(), List.of(invalidTransaction), mock(RoundDetails.class));
 
     // Assert
-    assertThat(result.getSuccessfullyExecutedTransactions()).isEmpty();
+    assertThat(result.getSuccessfullyExecutedTransactions())
+        .extracting(StateComputerLedger.ExecutedTransaction::transaction)
+        .doesNotContain(invalidTransaction);
     assertThat(result.getFailedTransactions()).hasSize(1);
   }
 }

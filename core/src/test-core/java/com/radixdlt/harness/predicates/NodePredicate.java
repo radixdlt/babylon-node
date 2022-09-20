@@ -66,11 +66,32 @@ package com.radixdlt.harness.predicates;
 
 import com.google.inject.Injector;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.function.Predicate;
 
 public class NodePredicate {
   private NodePredicate() {
     throw new IllegalStateException("Cannot instanitate.");
+  }
+
+  public static Predicate<Injector> committedTransaction(RawTransaction transaction) {
+    return i -> {
+      var store = i.getInstance(REv2TransactionAndProofStore.class);
+      for (long version = 1; true; version++) {
+        var maybeTxn = store.getTransactionAtStateVersion(version);
+        if (maybeTxn.isEmpty()) {
+          break;
+        } else {
+          var txn = maybeTxn.unwrap();
+          if (txn.rawTransaction().equals(transaction)) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    };
   }
 
   public static Predicate<Injector> atExactlyStateVersion(long stateVersion) {
