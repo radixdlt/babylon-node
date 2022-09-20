@@ -96,7 +96,9 @@ fn do_add(
 ) -> Result<JavaPayloadHash, MempoolAddErrorJava> {
     let transaction = args;
 
-    let (notarized_transaction, _) = state_manager.parse_and_validate(&transaction.payload)?;
+    let (notarized_transaction, _) = state_manager
+        .validation
+        .parse_and_validate(&transaction.payload)?;
 
     state_manager
         .add_to_mempool(notarized_transaction.into())

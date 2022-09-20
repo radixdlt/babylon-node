@@ -96,12 +96,6 @@ use transaction::model::{
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
 
-struct OwnedValidationConfig {
-    pub current_epoch: u64,
-    pub max_cost_unit_limit: u32,
-    pub min_tip_percentage: u32,
-}
-
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct LoggingConfig {
     pub engine_trace: bool,
@@ -114,71 +108,12 @@ pub struct StateManagerLoggingConfig {
     pub log_on_transaction_rejection: bool,
 }
 
-pub struct StateManager<S> {
-    pub mempool: SimpleMempool,
-    pub network: NetworkDefinition,
-    pub store: S,
-    wasm_engine: DefaultWasmEngine,
-    wasm_instrumenter: WasmInstrumenter,
-    validation_config: OwnedValidationConfig,
-    execution_config: ExecutionConfig,
-    fee_reserve_config: FeeReserveConfig,
+pub struct TransactionValidation {
+    validation_config: ValidationConfig,
     intent_hash_manager: TestIntentHashManager,
-    logging_config: StateManagerLoggingConfig,
 }
 
-impl<S> StateManager<S> {
-    pub fn new(
-        network: NetworkDefinition,
-        mempool: SimpleMempool,
-        store: S,
-        logging_config: LoggingConfig,
-    ) -> StateManager<S> {
-        StateManager {
-            network,
-            mempool,
-            store,
-            wasm_engine: DefaultWasmEngine::new(),
-            wasm_instrumenter: WasmInstrumenter::new(),
-            validation_config: OwnedValidationConfig {
-                current_epoch: 1,
-                max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-                min_tip_percentage: 0,
-            },
-            execution_config: ExecutionConfig {
-                max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                is_system: false,
-                trace: logging_config.engine_trace,
-            },
-            fee_reserve_config: FeeReserveConfig {
-                cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-                system_loan: DEFAULT_SYSTEM_LOAN,
-            },
-            intent_hash_manager: TestIntentHashManager::new(),
-            logging_config: logging_config.state_manager_config,
-        }
-    }
-
-    pub fn parse_and_validate(
-        &self,
-        transaction_payload: &[u8],
-    ) -> Result<(NotarizedTransaction, ValidatedTransaction), TransactionValidationError> {
-        let notarized_transaction = Self::parse_from_slice(transaction_payload)?;
-
-        let validated_transaction = self.validate_transaction(notarized_transaction.clone())?;
-
-        Ok((notarized_transaction, validated_transaction))
-    }
-
-    pub fn validate_transaction_slice(
-        &self,
-        transaction_payload: &[u8],
-    ) -> Result<ValidatedTransaction, TransactionValidationError> {
-        let notarized_transaction = Self::parse_from_slice(transaction_payload)?;
-
-        self.validate_transaction(notarized_transaction)
-    }
-
+impl TransactionValidation {
     fn parse_from_slice(
         transaction_payload: &[u8],
     ) -> Result<NotarizedTransaction, TransactionValidationError> {
@@ -192,17 +127,87 @@ impl<S> StateManager<S> {
         Ok(transaction)
     }
 
-    pub fn validate_transaction(
+    pub fn validate_transaction_slice(
+        &self,
+        transaction_payload: &[u8],
+    ) -> Result<ValidatedTransaction, TransactionValidationError> {
+        let notarized_transaction = Self::parse_from_slice(transaction_payload)?;
+
+        self.validate(notarized_transaction)
+    }
+
+    fn validate(
         &self,
         transaction: NotarizedTransaction,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
-        let validation_config = ValidationConfig {
-            network_id: self.network.id,
-            current_epoch: self.validation_config.current_epoch,
-            max_cost_unit_limit: self.validation_config.max_cost_unit_limit,
-            min_tip_percentage: self.validation_config.min_tip_percentage,
+        TransactionValidator::validate(
+            transaction,
+            &self.intent_hash_manager,
+            &self.validation_config,
+        )
+    }
+
+    pub fn parse_and_validate(
+        &self,
+        transaction_payload: &[u8],
+    ) -> Result<(NotarizedTransaction, ValidatedTransaction), TransactionValidationError> {
+        let notarized_transaction = Self::parse_from_slice(transaction_payload)?;
+
+        let validated_transaction = self.validate(notarized_transaction.clone())?;
+
+        Ok((notarized_transaction, validated_transaction))
+    }
+}
+
+pub struct StateManager<S> {
+    pub mempool: SimpleMempool,
+    pub network: NetworkDefinition,
+    pub store: S,
+    pub validation: TransactionValidation,
+    wasm_engine: DefaultWasmEngine,
+    wasm_instrumenter: WasmInstrumenter,
+    execution_config: ExecutionConfig,
+    fee_reserve_config: FeeReserveConfig,
+    intent_hash_manager: TestIntentHashManager,
+    logging_config: StateManagerLoggingConfig,
+}
+
+impl<S> StateManager<S> {
+    pub fn new(
+        network: NetworkDefinition,
+        mempool: SimpleMempool,
+        store: S,
+        logging_config: LoggingConfig,
+    ) -> StateManager<S> {
+        let validation = TransactionValidation {
+            validation_config: ValidationConfig {
+                network_id: network.id,
+                current_epoch: 1,
+                max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+                min_tip_percentage: 0,
+            },
+            intent_hash_manager: TestIntentHashManager::new(),
         };
-        TransactionValidator::validate(transaction, &self.intent_hash_manager, &validation_config)
+
+        StateManager {
+            network,
+            mempool,
+            store,
+            wasm_engine: DefaultWasmEngine::new(),
+            wasm_instrumenter: WasmInstrumenter::new(),
+            validation,
+            execution_config: ExecutionConfig {
+                max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+                is_system: false,
+                trace: logging_config.engine_trace,
+            },
+            fee_reserve_config: FeeReserveConfig {
+                cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
+                system_loan: DEFAULT_SYSTEM_LOAN,
+            },
+            intent_hash_manager: TestIntentHashManager::new(),
+            logging_config: logging_config.state_manager_config,
+        }
     }
 }
 
@@ -259,7 +264,8 @@ where
         transaction: &PendingTransaction,
     ) -> Result<TransactionReceipt, TransactionValidationError> {
         let notarized_transaction = transaction.payload.clone();
-        let validated_transaction = self.validate_transaction(notarized_transaction)?;
+
+        let validated_transaction = self.validation.validate(notarized_transaction)?;
 
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
@@ -343,6 +349,7 @@ where
 
         for prepared in prepare_request.already_prepared_payloads {
             let validated_transaction = self
+                .validation
                 .validate_transaction_slice(&prepared)
                 .expect("Already prepared transactions should be decodeable");
 
@@ -353,7 +360,9 @@ where
         let mut validated_proposed_transactions = Vec::new();
 
         for proposed_payload in prepare_request.proposed_payloads {
-            let validation_result = self.validate_transaction_slice(&proposed_payload);
+            let validation_result = self
+                .validation
+                .validate_transaction_slice(&proposed_payload);
 
             if let Ok(validated_transaction) = &validation_result {
                 let intent_hash = validated_transaction.intent_hash();
@@ -477,7 +486,8 @@ where
             .transaction_payloads
             .into_iter()
             .map(|t| {
-                self.parse_and_validate(&t)
+                self.validation
+                    .parse_and_validate(&t)
                     .expect("Error on Byzantine quorum")
             })
             .collect::<Vec<_>>();

@@ -42,6 +42,8 @@ pub fn extract_notarized_transaction(
     payload: &str,
 ) -> Result<NotarizedTransaction, ExtractionError> {
     let transaction_bytes = from_hex(payload)?;
-    let (notarized_transaction, _) = state_manager.parse_and_validate(&transaction_bytes)?;
+    let (notarized_transaction, _) = state_manager
+        .validation
+        .parse_and_validate(&transaction_bytes)?;
     Ok(notarized_transaction)
 }
