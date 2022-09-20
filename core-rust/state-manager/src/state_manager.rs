@@ -370,14 +370,14 @@ where
 
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
-
         let mut staged_store = staged_store_manager.get_output_store(staged_node);
+        let mut transaction_executor = TransactionExecutor::new(
+            &mut staged_store,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
+        );
+
         for prepared in validated_prepared {
-            let mut transaction_executor = TransactionExecutor::new(
-                &mut staged_store,
-                &mut self.wasm_engine,
-                &mut self.wasm_instrumenter,
-            );
             transaction_executor.execute_and_commit(
                 &prepared,
                 &self.fee_reserve_config,
@@ -390,12 +390,6 @@ where
         for (payload_hash, validation_result) in validated_proposed_transactions {
             match validation_result {
                 Ok(validated_transaction) => {
-                    let mut transaction_executor = TransactionExecutor::new(
-                        &mut staged_store,
-                        &mut self.wasm_engine,
-                        &mut self.wasm_instrumenter,
-                    );
-
                     let intent_hash = validated_transaction.intent_hash();
                     if already_committed_or_prepared_intent_hashes.contains(&intent_hash) {
                         transaction_results.push((
