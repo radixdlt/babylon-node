@@ -71,7 +71,7 @@ use crate::types::{
 };
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasPayloadHash, IntentHash,
-    LedgerTransactionReceipt, MempoolAddError, PayloadHash, PendingTransaction,
+    LedgerTransactionReceipt, MempoolAddError, PendingTransaction,
 };
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
@@ -87,6 +87,7 @@ use scrypto::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use tracing::info;
+
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent,
@@ -350,8 +351,8 @@ where
         }
 
         let mut validated_proposed_transactions = Vec::new();
+
         for proposed_payload in prepare_request.proposed_payloads {
-            let payload_hash: PayloadHash = PayloadHash::for_payload(&proposed_payload);
             let validation_result = self.validate_transaction_slice(&proposed_payload);
 
             if let Ok(validated_transaction) = &validation_result {
@@ -365,7 +366,7 @@ where
                 }
             }
 
-            validated_proposed_transactions.push((payload_hash, validation_result));
+            validated_proposed_transactions.push((proposed_payload, validation_result));
         }
 
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
@@ -385,15 +386,25 @@ where
             );
         }
 
-        let mut transaction_results: Vec<(PayloadHash, TransactionPrepareResult)> = Vec::new();
+        let mut transaction_results: Vec<(Vec<u8>, TransactionPrepareResult)> = Vec::new();
 
-        for (payload_hash, validation_result) in validated_proposed_transactions {
+        /*
+        let manifest = ManifestBuilder::new(&self.network)
+            .call_native_method(
+                Receiver::Ref(RENodeId::System),
+                NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch),
+                args!(prepare_request.round_number)
+            )
+            .build();
+         */
+
+        for (raw_transaction, validation_result) in validated_proposed_transactions {
             match validation_result {
                 Ok(validated_transaction) => {
                     let intent_hash = validated_transaction.intent_hash();
                     if already_committed_or_prepared_intent_hashes.contains(&intent_hash) {
                         transaction_results.push((
-                            payload_hash,
+                            raw_transaction,
                             TransactionPrepareResult::Reject {
                                 reason: "Transaction rejected - duplicate intent hash".to_string(),
                             },
@@ -410,12 +421,12 @@ where
                         match receipt.result {
                             TransactionResult::Commit(..) => {
                                 transaction_results
-                                    .push((payload_hash, TransactionPrepareResult::CanCommit));
+                                    .push((raw_transaction, TransactionPrepareResult::CanCommit));
                                 already_committed_or_prepared_intent_hashes.insert(intent_hash);
                             }
                             TransactionResult::Reject(reject_result) => {
                                 transaction_results.push((
-                                    payload_hash,
+                                    raw_transaction,
                                     TransactionPrepareResult::Reject {
                                         reason: format!("{:?}", reject_result),
                                     },
@@ -429,7 +440,7 @@ where
                 }
                 Err(validation_error) => {
                     transaction_results.push((
-                        payload_hash,
+                        raw_transaction,
                         TransactionPrepareResult::Reject {
                             reason: format!("{:?}", validation_error),
                         },

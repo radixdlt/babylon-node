@@ -236,6 +236,7 @@ pub struct CommitRequest {
 pub struct PrepareRequest {
     pub already_prepared_payloads: Vec<Vec<u8>>,
     pub proposed_payloads: Vec<Vec<u8>>,
+    pub round_number: u64,
 }
 
 #[derive(Debug, Decode, Encode, TypeId)]
@@ -246,5 +247,5 @@ pub enum TransactionPrepareResult {
 
 #[derive(Debug, Decode, Encode, TypeId)]
 pub struct PrepareResult {
-    pub transaction_results: Vec<(PayloadHash, TransactionPrepareResult)>,
+    pub transaction_results: Vec<(Vec<u8>, TransactionPrepareResult)>,
 }

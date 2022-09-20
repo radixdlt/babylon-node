@@ -148,27 +148,29 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         previous.stream()
             .map(StateComputerLedger.ExecutedTransaction::transaction)
             .collect(Collectors.toList());
-    var prepareRequest = new PrepareRequest(previousTransactions, proposedTransactions);
+    var prepareRequest =
+        new PrepareRequest(
+            previousTransactions,
+            proposedTransactions,
+            UInt64.fromNonNegativeLong(roundDetails.roundNumber()));
 
     var result = stateComputer.prepare(prepareRequest);
 
-    // Zip prepared transactions and results together
     var committableTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
     var rejectedTransactions = new HashMap<RawTransaction, Exception>();
-    for (var i = 0; i < proposedTransactions.size(); i++) {
-      var transaction = proposedTransactions.get(i);
-      var transactionResult = result.transactionResults().get(i);
-      if (!transaction.getPayloadHash().equals(transactionResult.first())) {
-        throw new IllegalStateException(
-            "Prepared transaction hash did not match proposed transaction");
-      }
-      switch (transactionResult.last()) {
-        case TransactionPrepareResult.CanCommit ignored -> committableTransactions.add(
-            new REv2ExecutedTransaction(transaction));
-        case TransactionPrepareResult.Reject rejection -> rejectedTransactions.put(
-            transaction, new InvalidREv2Transaction(rejection.reason()));
-      }
-    }
+
+    result
+        .transactionResults()
+        .forEach(
+            transactionResult -> {
+              var rawTransaction = RawTransaction.create(transactionResult.first());
+              switch (transactionResult.last()) {
+                case TransactionPrepareResult.CanCommit ignored -> committableTransactions.add(
+                    new REv2ExecutedTransaction(rawTransaction));
+                case TransactionPrepareResult.Reject rejection -> rejectedTransactions.put(
+                    rawTransaction, new InvalidREv2Transaction(rejection.reason()));
+              }
+            });
 
     return new StateComputerLedger.StateComputerResult(
         committableTransactions, rejectedTransactions);

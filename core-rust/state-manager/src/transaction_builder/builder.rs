@@ -118,7 +118,7 @@ pub fn create_100kb_txn_intent(
             ResourceType::NonFungible,
             metadata,
             access_rules,
-            initial_supply
+            initial_supply,
         )
         .build();
 

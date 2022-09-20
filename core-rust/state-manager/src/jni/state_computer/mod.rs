@@ -74,7 +74,7 @@ use crate::jni::utils::*;
 use crate::result::StateManagerResult;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 
-use super::mempool::{JavaPayloadHash, JavaRawTransaction};
+use super::mempool::JavaRawTransaction;
 
 //
 // JNI Interface
@@ -252,6 +252,7 @@ impl From<JavaCommitRequest> for CommitRequest {
 pub struct JavaPrepareRequest {
     pub already_prepared: Vec<JavaRawTransaction>,
     pub proposed: Vec<JavaRawTransaction>,
+    pub round_number: u64,
 }
 
 impl From<JavaPrepareRequest> for PrepareRequest {
@@ -267,13 +268,14 @@ impl From<JavaPrepareRequest> for PrepareRequest {
                 .into_iter()
                 .map(|t| t.payload)
                 .collect(),
+            round_number: prepare_request.round_number,
         }
     }
 }
 
 #[derive(Debug, Decode, Encode, TypeId)]
 pub struct JavaPrepareResult {
-    pub transaction_results: Vec<(JavaPayloadHash, TransactionPrepareResult)>,
+    pub transaction_results: Vec<(Vec<u8>, TransactionPrepareResult)>,
 }
 
 impl From<PrepareResult> for JavaPrepareResult {
@@ -282,7 +284,7 @@ impl From<PrepareResult> for JavaPrepareResult {
             transaction_results: prepare_results
                 .transaction_results
                 .into_iter()
-                .map(|r| (r.0.into(), r.1))
+                .map(|r| (r.0, r.1))
                 .collect(),
         }
     }

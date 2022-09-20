@@ -64,7 +64,6 @@
 
 package com.radixdlt.statecomputer.commit;
 
-import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.sbor.codec.CodecMap;
@@ -72,7 +71,7 @@ import com.radixdlt.sbor.codec.StructCodec;
 import java.util.List;
 
 public record PrepareResult(
-    List<Tuple.Tuple2<HashCode, TransactionPrepareResult>> transactionResults) {
+    List<Tuple.Tuple2<byte[], TransactionPrepareResult>> transactionResults) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareResult.class,
