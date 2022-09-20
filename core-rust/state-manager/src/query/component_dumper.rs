@@ -62,9 +62,44 @@
  * permissions under this License.
  */
 
-mod component_dumper;
-mod resource_accounter;
-mod state_tree_visitor;
+use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
+use radix_engine::model::Vault;
+use radix_engine::types::SubstateId;
+use scrypto::engine::types::RENodeId;
+use scrypto::prelude::*;
 
-pub use component_dumper::*;
-pub use resource_accounter::ResourceAccounter;
+use super::state_tree_visitor::{StateTreeTraversor, StateTreeVisitor, StateTreeVisitorError};
+
+pub struct ComponentDump {
+    pub vaults: Vec<Vault>,
+    pub descendents: Vec<(Option<SubstateId>, RENodeId, u32)>,
+}
+
+impl StateTreeVisitor for ComponentDump {
+    fn visit_vault(&mut self, _parent_id: Option<&SubstateId>, vault: &Vault) {
+        self.vaults.push(vault.clone());
+    }
+
+    fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, node_id: &RENodeId, depth: u32) {
+        self.descendents
+            .push((_parent_id.cloned(), *node_id, depth));
+    }
+}
+
+pub fn dump_component<S>(
+    substate_store: &S,
+    component: ComponentAddress,
+) -> Result<ComponentDump, StateTreeVisitorError>
+where
+    S: ReadableSubstateStore + QueryableSubstateStore,
+{
+    let node_id = RENodeId::Component(component);
+    let mut component_dump = ComponentDump {
+        vaults: Vec::new(),
+        descendents: Vec::new(),
+    };
+    let mut state_tree_visitor = StateTreeTraversor::new(substate_store, &mut component_dump, 100);
+    state_tree_visitor.traverse_all_descendents(None, node_id)?;
+
+    Ok(component_dump)
+}

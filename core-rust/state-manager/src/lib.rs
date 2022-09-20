@@ -64,7 +64,7 @@
 
 pub mod jni;
 pub mod mempool;
-mod query;
+pub mod query;
 mod receipt;
 mod result;
 mod state_manager;

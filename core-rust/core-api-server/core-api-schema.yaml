@@ -321,6 +321,154 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  "/v0/state/component":
+    post:
+      summary: Read component data
+      tags:
+        - State
+        - V0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/V0StateComponentRequest"
+      responses:
+        '200':
+          description: Current state response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V0StateComponentResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/v0/state/resource":
+    post:
+      summary: Read resource data
+      tags:
+        - State
+        - V0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/V0StateResourceRequest"
+      responses:
+        '200':
+          description: Current state response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V0StateResourceResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/v0/state/non-fungible":
+    post:
+      summary: Read non-fungible data
+      tags:
+        - State
+        - V0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/V0StateNonFungibleRequest"
+      responses:
+        '200':
+          description: Current state response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V0StateNonFungibleResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/v0/state/package":
+    post:
+      summary: Read package data
+      tags:
+        - State
+        - V0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/V0StatePackageRequest"
+      responses:
+        '200':
+          description: Current state response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V0StatePackageResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 #############################################################################################
 components:
   schemas:
@@ -1418,3 +1566,111 @@ components:
           minimum: 0
           maximum: 10000000000
           description: An integer between 0 and 10^10, marking the current epoch
+################################
+# REQUEST: /v0/state/component #
+################################
+    V0StateComponentRequest:
+      type: object
+      required:
+        - component_address
+      properties:
+        component_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the component's global address
+    V0StateComponentResponse:
+      type: object
+      required:
+        - info
+        - state
+        - owned_vaults
+        - descendent_ids
+      properties:
+        info:
+          $ref: "#/components/schemas/Substate"
+        state:
+          $ref: "#/components/schemas/Substate"
+        owned_vaults:
+          type: array
+          description: Any vaults owned directly or indirectly by the component
+          items:
+            $ref: "#/components/schemas/Substate"
+        descendent_ids:
+          type: array
+          description: Any descendent nodes owned directly or indirectly by the component
+          items:
+            $ref: "#/components/schemas/V0StateComponentDescendentId"
+    V0StateComponentDescendentId:
+      type: object
+      required:
+        - parent
+        - entity_id
+        - depth
+      properties:
+        parent:
+          $ref: "#/components/schemas/SubstateId"
+        entity_id:
+          $ref: "#/components/schemas/EntityId"
+        depth:
+          description: Depth under component
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+###############################
+# REQUEST: /v0/state/resource #
+###############################
+    V0StateResourceRequest:
+      type: object
+      required:
+        - resource_address
+      properties:
+        resource_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the resource's global address
+    V0StateResourceResponse:
+      type: object
+      required:
+        - manager
+      properties:
+        manager:
+          $ref: "#/components/schemas/Substate"
+###################################
+# REQUEST: /v0/state/non-fungible #
+###################################
+    V0StateNonFungibleRequest:
+      type: object
+      required:
+        - resource_address
+        - non_fungible_id
+      properties:
+        resource_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the resource's global address
+        non_fungible_id:
+          type: string
+          description: The hex-encoded non-fungible id
+    V0StateNonFungibleResponse:
+      type: object
+      required:
+        - non_fungible
+      properties:
+        non_fungible:
+          $ref: "#/components/schemas/Substate"
+##############################
+# REQUEST: /v0/state/package #
+##############################
+    V0StatePackageRequest:
+      type: object
+      required:
+        - package_address
+      properties:
+        package_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the package's global address
+    V0StatePackageResponse:
+      type: object
+      required:
+        - package
+      properties:
+        package:
+          $ref: "#/components/schemas/Substate"

@@ -62,9 +62,66 @@
  * permissions under this License.
  */
 
-mod component_dumper;
-mod resource_accounter;
-mod state_tree_visitor;
+use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
+use radix_engine::model::Vault;
+use radix_engine::types::SubstateId;
+use scrypto::engine::types::RENodeId;
+use scrypto::prelude::*;
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 
-pub use component_dumper::*;
-pub use resource_accounter::ResourceAccounter;
+use super::state_tree_visitor::{StateTreeTraversor, StateTreeVisitor, StateTreeVisitorError};
+
+pub struct ResourceAccounter<'s, S: ReadableSubstateStore + QueryableSubstateStore> {
+    substate_store: &'s S,
+    accounting: Accounting,
+}
+
+impl<'s, S: ReadableSubstateStore + QueryableSubstateStore> ResourceAccounter<'s, S> {
+    pub fn new(substate_store: &'s S) -> Self {
+        ResourceAccounter {
+            substate_store,
+            accounting: Accounting::new(),
+        }
+    }
+
+    pub fn add_resources(&mut self, node_id: RENodeId) -> Result<(), StateTreeVisitorError> {
+        let mut state_tree_visitor =
+            StateTreeTraversor::new(self.substate_store, &mut self.accounting, 100);
+        state_tree_visitor.traverse_all_descendents(None, node_id)
+    }
+
+    pub fn into_map(self) -> HashMap<ResourceAddress, Decimal> {
+        self.accounting.balances
+    }
+}
+
+struct Accounting {
+    balances: HashMap<ResourceAddress, Decimal>,
+}
+
+impl Accounting {
+    pub fn new() -> Self {
+        Accounting {
+            balances: HashMap::new(),
+        }
+    }
+
+    pub fn add_vault(&mut self, vault: &Vault) {
+        match self.balances.entry(vault.resource_address()) {
+            Entry::Occupied(mut e) => {
+                let new_amount = vault.total_amount() + *e.get();
+                e.insert(new_amount);
+            }
+            Entry::Vacant(e) => {
+                e.insert(vault.total_amount());
+            }
+        }
+    }
+}
+
+impl StateTreeVisitor for Accounting {
+    fn visit_vault(&mut self, _parent_id: Option<&SubstateId>, vault: &Vault) {
+        self.add_vault(vault);
+    }
+}

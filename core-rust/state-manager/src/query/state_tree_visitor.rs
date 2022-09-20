@@ -65,88 +65,105 @@
 use radix_engine::engine::Substate;
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
 use radix_engine::model::{ComponentState, KeyValueStoreEntryWrapper, Vault};
+
 use scrypto::engine::types::{RENodeId, SubstateId};
-use scrypto::prelude::*;
 use scrypto::values::ScryptoValue;
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
 
 #[derive(Debug)]
-pub enum ResourceAccounterError {
+pub enum StateTreeVisitorError {
     RENodeNotFound(RENodeId),
+    MaxDepthExceeded,
 }
 
-pub struct ResourceAccounter<'s, S: ReadableSubstateStore + QueryableSubstateStore> {
+pub struct StateTreeTraversor<
+    's,
+    'v,
+    S: ReadableSubstateStore + QueryableSubstateStore,
+    V: StateTreeVisitor,
+> {
     substate_store: &'s S,
-    accounting: HashMap<ResourceAddress, Decimal>,
+    visitor: &'v mut V,
+    max_depth: u32,
 }
 
-impl<'s, S: ReadableSubstateStore + QueryableSubstateStore> ResourceAccounter<'s, S> {
-    pub fn new(substate_store: &'s S) -> Self {
-        ResourceAccounter {
+pub trait StateTreeVisitor {
+    fn visit_vault(&mut self, _parent_id: Option<&SubstateId>, _vault: &Vault) {}
+    fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, _node_id: &RENodeId, _depth: u32) {
+    }
+}
+
+impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisitor>
+    StateTreeTraversor<'s, 'v, S, V>
+{
+    pub fn new(substate_store: &'s S, visitor: &'v mut V, max_depth: u32) -> Self {
+        StateTreeTraversor {
             substate_store,
-            accounting: HashMap::new(),
+            visitor,
+            max_depth,
         }
     }
 
-    pub fn add_resources(&mut self, node_id: RENodeId) -> Result<(), ResourceAccounterError> {
+    pub fn traverse_all_descendents(
+        &mut self,
+        parent_node_id: Option<&SubstateId>,
+        node_id: RENodeId,
+    ) -> Result<(), StateTreeVisitorError> {
+        self.traverse_recursive(parent_node_id, node_id, 0)
+    }
+
+    fn traverse_recursive(
+        &mut self,
+        parent: Option<&SubstateId>,
+        node_id: RENodeId,
+        depth: u32,
+    ) -> Result<(), StateTreeVisitorError> {
+        if depth > self.max_depth {
+            return Err(StateTreeVisitorError::MaxDepthExceeded);
+        }
+        self.visitor.visit_node_id(parent, &node_id, depth);
         match node_id {
             RENodeId::Vault(vault_id) => {
-                if let Some(output_value) = self
-                    .substate_store
-                    .get_substate(&SubstateId::Vault(vault_id))
-                {
+                let substate_id = SubstateId::Vault(vault_id);
+                if let Some(output_value) = self.substate_store.get_substate(&substate_id) {
                     let vault: Vault = output_value.substate.into();
-                    match self.accounting.entry(vault.resource_address()) {
-                        Entry::Occupied(mut e) => {
-                            let new_amount = vault.total_amount() + *e.get();
-                            e.insert(new_amount);
-                        }
-                        Entry::Vacant(e) => {
-                            e.insert(vault.total_amount());
-                        }
-                    }
+
+                    self.visitor.visit_vault(Some(&substate_id), &vault);
                 } else {
-                    return Err(ResourceAccounterError::RENodeNotFound(node_id));
+                    return Err(StateTreeVisitorError::RENodeNotFound(node_id));
                 }
             }
             RENodeId::KeyValueStore(kv_store_id) => {
                 let map = self.substate_store.get_kv_store_entries(&kv_store_id);
-                for (_, v) in map.iter() {
+                for (key, v) in map.iter() {
+                    let substate_id = SubstateId::KeyValueStoreEntry(kv_store_id, key.clone());
                     if let Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(Some(entry))) = v
                     {
                         let value = ScryptoValue::from_slice(entry)
                             .expect("Key Value Store Entry should be parseable.");
                         for child_node_id in value.stored_node_ids() {
-                            self.add_resources(child_node_id)
+                            self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
                                 .expect("Broken Node Store");
                         }
                     }
                 }
             }
             RENodeId::Component(component_address) => {
-                if let Some(output_value) = self
-                    .substate_store
-                    .get_substate(&SubstateId::ComponentState(component_address))
-                {
+                let substate_id = SubstateId::ComponentState(component_address);
+                if let Some(output_value) = self.substate_store.get_substate(&substate_id) {
                     let component_state: ComponentState = output_value.substate.into();
                     let value = ScryptoValue::from_slice(component_state.state())
-                        .expect("Component should be parseable.");
+                        .expect("Component state should be parseable.");
                     for child_node_id in value.stored_node_ids() {
-                        self.add_resources(child_node_id)
+                        self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
                             .expect("Broken Node Store");
                     }
                 } else {
-                    return Err(ResourceAccounterError::RENodeNotFound(node_id));
+                    return Err(StateTreeVisitorError::RENodeNotFound(node_id));
                 }
             }
             _ => {}
         };
 
         Ok(())
-    }
-
-    pub fn into_map(self) -> HashMap<ResourceAddress, Decimal> {
-        self.accounting
     }
 }
