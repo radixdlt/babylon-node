@@ -1136,8 +1136,7 @@ components:
           type: string
           description: The hex-encoded, raw SBOR-encoded data
         data_json:
-          type: string
-          description: A JSON string representing the encoded SBOR
+          description: An untyped JSON body representing the content of the SBOR data
     PackageSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'

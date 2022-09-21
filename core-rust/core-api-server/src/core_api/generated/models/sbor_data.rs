@@ -16,13 +16,13 @@ pub struct SborData {
     /// The hex-encoded, raw SBOR-encoded data
     #[serde(rename = "data_hex")]
     pub data_hex: String,
-    /// A JSON string representing the encoded SBOR
+    /// An untyped JSON body representing the content of the SBOR data
     #[serde(rename = "data_json")]
-    pub data_json: String,
+    pub data_json: Option<serde_json::Value>,
 }
 
 impl SborData {
-    pub fn new(data_hex: String, data_json: String) -> SborData {
+    pub fn new(data_hex: String, data_json: Option<serde_json::Value>) -> SborData {
         SborData {
             data_hex,
             data_json,

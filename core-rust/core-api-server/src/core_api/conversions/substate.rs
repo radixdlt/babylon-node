@@ -100,7 +100,9 @@ fn scrypto_value_to_api_data_struct(
     Ok(models::DataStruct {
         struct_data: Box::new(models::SborData {
             data_hex: to_hex(scrypto_value.raw),
-            data_json: serde_json::to_string(&scrypto_value.dom).expect("JSON serialize error"),
+            data_json: Some(
+                serde_json::to_value(&scrypto_value.dom).expect("JSON serialize error"),
+            ),
         }),
         owned_entities: entities.owned_entities,
         referenced_entities: entities.referenced_entities,
