@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::*;
+use crate::jni::java_structure::*;
 
 use crate::store::traits::*;
 use crate::store::{InMemoryStore, RocksDBStore};

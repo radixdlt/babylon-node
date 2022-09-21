@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::JavaStructure;
+use crate::jni::java_structure::JavaStructure;
 use crate::result::StateManagerResult;
 use crate::transaction_builder::{
     create_100kb_txn_intent, create_intent_bytes, create_manifest, create_new_account_intent_bytes,

@@ -70,7 +70,7 @@ use crate::jni::state_manager::ActualStateManager;
 use crate::result::{StateManagerError, StateManagerResult, ERRCODE_JNI};
 use sbor::{Decode, Encode, TypeId};
 
-use super::{dtos::JavaStructure, state_manager::JNIStateManager};
+use super::{java_structure::JavaStructure, state_manager::JNIStateManager};
 
 pub fn jni_jbytearray_to_vector(
     env: &JNIEnv,

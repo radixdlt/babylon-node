@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::JavaStructure;
+use crate::jni::java_structure::JavaStructure;
 use crate::TransactionPrepareResult;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;

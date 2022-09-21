@@ -232,7 +232,7 @@ mod tests {
         TransactionManifest,
     };
 
-    use crate::mempool::mempool::*;
+    use crate::mempool::simple_mempool::*;
 
     fn create_fake_pub_key() -> PublicKey {
         PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PublicKey(
