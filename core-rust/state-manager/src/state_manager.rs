@@ -67,7 +67,6 @@ use crate::query::ResourceAccounter;
 use crate::store::traits::*;
 use crate::types::{
     CommitRequest, PrepareRequest, PrepareResult, PreviewRequest, StoredTransaction,
-    TransactionPrepareResult,
 };
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasPayloadHash, IntentHash,
@@ -396,8 +395,6 @@ where
             );
         }
 
-        let mut transaction_results: Vec<(Vec<u8>, TransactionPrepareResult)> = Vec::new();
-
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
         let public_key = private_key.public_key();
         let intent = create_set_epoch_intent(
@@ -422,20 +419,18 @@ where
             .unwrap();
         validated_proposed_transactions.insert(0, (notarized_bytes, Ok(validated_epoch_update)));
 
+        let mut rejected = Vec::new();
+        let mut committed = Vec::new();
+
         for (raw_transaction, validation_result) in validated_proposed_transactions {
             match validation_result {
                 Ok(validated_transaction) => {
                     let intent_hash = validated_transaction.intent_hash();
                     if already_committed_or_prepared_intent_hashes.contains(&intent_hash) {
-                        transaction_results.push((
+                        rejected.push((
                             raw_transaction,
-                            TransactionPrepareResult::Reject {
-                                reason: "Transaction rejected - duplicate intent hash".to_string(),
-                            },
+                            "Transaction rejected - duplicate intent hash".to_string(),
                         ));
-                        if self.logging_config.log_on_transaction_rejection {
-                            info!("TXN REJECTED: duplicate intent hash");
-                        }
                     } else {
                         let receipt = transaction_executor.execute_and_commit(
                             &validated_transaction,
@@ -444,17 +439,11 @@ where
                         );
                         match receipt.result {
                             TransactionResult::Commit(..) => {
-                                transaction_results
-                                    .push((raw_transaction, TransactionPrepareResult::CanCommit));
+                                committed.push(raw_transaction);
                                 already_committed_or_prepared_intent_hashes.insert(intent_hash);
                             }
                             TransactionResult::Reject(reject_result) => {
-                                transaction_results.push((
-                                    raw_transaction,
-                                    TransactionPrepareResult::Reject {
-                                        reason: format!("{:?}", reject_result),
-                                    },
-                                ));
+                                rejected.push((raw_transaction, format!("{:?}", reject_result)));
                                 if self.logging_config.log_on_transaction_rejection {
                                     info!("TXN REJECTED: {:?}", reject_result);
                                 }
@@ -463,12 +452,7 @@ where
                     }
                 }
                 Err(validation_error) => {
-                    transaction_results.push((
-                        raw_transaction,
-                        TransactionPrepareResult::Reject {
-                            reason: format!("{:?}", validation_error),
-                        },
-                    ));
+                    rejected.push((raw_transaction, format!("{:?}", validation_error)));
                     if self.logging_config.log_on_transaction_rejection {
                         info!("TXN INVALID: {:?}", validation_error);
                     }
@@ -477,7 +461,8 @@ where
         }
 
         PrepareResult {
-            transaction_results,
+            rejected,
+            committed,
         }
     }
 }

@@ -70,8 +70,7 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import java.util.List;
 
-public record PrepareResult(
-    List<Tuple.Tuple2<byte[], TransactionPrepareResult>> transactionResults) {
+public record PrepareResult(List<byte[]> committed, List<Tuple.Tuple2<byte[], String>> rejected) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareResult.class,
@@ -79,6 +78,7 @@ public record PrepareResult(
             StructCodec.with(
                 PrepareResult::new,
                 codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.transactionResults)));
+                codecs.of(new TypeToken<>() {}),
+                (t, encoder) -> encoder.encode(t.committed, t.rejected)));
   }
 }

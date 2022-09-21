@@ -63,7 +63,6 @@
  */
 
 use crate::jni::dtos::JavaStructure;
-use crate::TransactionPrepareResult;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -291,17 +290,15 @@ impl From<JavaPrepareRequest> for PrepareRequest {
 
 #[derive(Debug, Decode, Encode, TypeId)]
 pub struct JavaPrepareResult {
-    pub transaction_results: Vec<(Vec<u8>, TransactionPrepareResult)>,
+    pub committed: Vec<Vec<u8>>,
+    pub rejected: Vec<(Vec<u8>, String)>,
 }
 
 impl From<PrepareResult> for JavaPrepareResult {
     fn from(prepare_results: PrepareResult) -> Self {
         JavaPrepareResult {
-            transaction_results: prepare_results
-                .transaction_results
-                .into_iter()
-                .map(|r| (r.0, r.1))
-                .collect(),
+            committed: prepare_results.committed,
+            rejected: prepare_results.rejected,
         }
     }
 }

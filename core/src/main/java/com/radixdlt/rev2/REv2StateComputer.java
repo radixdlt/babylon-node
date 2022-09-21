@@ -79,11 +79,8 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
-import com.radixdlt.statecomputer.commit.TransactionPrepareResult;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt64;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -155,22 +152,18 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
             UInt64.fromNonNegativeLong(roundDetails.roundNumber()));
 
     var result = stateComputer.prepare(prepareRequest);
-
-    var committableTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-    var rejectedTransactions = new HashMap<RawTransaction, Exception>();
-
-    result
-        .transactionResults()
-        .forEach(
-            transactionResult -> {
-              var rawTransaction = RawTransaction.create(transactionResult.first());
-              switch (transactionResult.last()) {
-                case TransactionPrepareResult.CanCommit ignored -> committableTransactions.add(
-                    new REv2ExecutedTransaction(rawTransaction));
-                case TransactionPrepareResult.Reject rejection -> rejectedTransactions.put(
-                    rawTransaction, new InvalidREv2Transaction(rejection.reason()));
-              }
-            });
+    var committableTransactions =
+        result.committed().stream()
+            .map(RawTransaction::create)
+            .map(REv2ExecutedTransaction::new)
+            .map(StateComputerLedger.ExecutedTransaction.class::cast)
+            .collect(Collectors.toList());
+    var rejectedTransactions =
+        result.rejected().stream()
+            .collect(
+                Collectors.toMap(
+                    r -> RawTransaction.create(r.first()),
+                    r -> (Exception) new InvalidREv2Transaction(r.last())));
 
     return new StateComputerLedger.StateComputerResult(
         committableTransactions, rejectedTransactions);

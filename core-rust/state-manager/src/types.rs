@@ -240,12 +240,7 @@ pub struct PrepareRequest {
 }
 
 #[derive(Debug, Decode, Encode, TypeId)]
-pub enum TransactionPrepareResult {
-    CanCommit,
-    Reject { reason: String },
-}
-
-#[derive(Debug, Decode, Encode, TypeId)]
 pub struct PrepareResult {
-    pub transaction_results: Vec<(Vec<u8>, TransactionPrepareResult)>,
+    pub committed: Vec<Vec<u8>>,
+    pub rejected: Vec<(Vec<u8>, String)>,
 }

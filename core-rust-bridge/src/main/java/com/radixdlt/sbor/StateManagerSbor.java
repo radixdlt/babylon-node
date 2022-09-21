@@ -78,7 +78,6 @@ import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
 import com.radixdlt.statecomputer.commit.PrepareResult;
-import com.radixdlt.statecomputer.commit.TransactionPrepareResult;
 import com.radixdlt.statemanager.*;
 import com.radixdlt.transaction.CommittedTransactionStatus;
 import com.radixdlt.transaction.ExecutedTransaction;
@@ -137,7 +136,6 @@ public final class StateManagerSbor {
     EdDSAEd25519Signature.registerCodec(codecMap);
     SignatureWithPublicKey.registerCodec(codecMap);
     PrepareRequest.registerCodec(codecMap);
-    TransactionPrepareResult.registerCodec(codecMap);
     PrepareResult.registerCodec(codecMap);
     CommitRequest.registerCodec(codecMap);
     REv2DatabaseConfig.registerCodec(codecMap);
