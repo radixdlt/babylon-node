@@ -68,11 +68,13 @@ pub use crate::result::ToStateManagerError;
 
 use std::string::ToString;
 
-#[derive(Debug, PartialEq, Eq)]
+use self::transaction_rejection_cache::RejectionReason;
+
+#[derive(Debug)]
 pub enum MempoolAddError {
     Full { current_size: u64, max_size: u64 },
     Duplicate,
-    Rejected { reason: String },
+    Rejected(RejectionReason),
 }
 
 impl ToString for MempoolAddError {
@@ -83,7 +85,7 @@ impl ToString for MempoolAddError {
                 max_size,
             } => format!("Mempool Full [{} - {}]", current_size, max_size),
             MempoolAddError::Duplicate => "Duplicate Entry".to_string(),
-            MempoolAddError::Rejected { reason } => format!("Rejected reason({})", reason),
+            MempoolAddError::Rejected(reason) => reason.to_string(),
         }
     }
 }
@@ -94,3 +96,4 @@ pub struct MempoolConfig {
 }
 
 pub mod simple;
+pub mod transaction_rejection_cache;

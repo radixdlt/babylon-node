@@ -74,7 +74,7 @@ use transaction::errors::TransactionValidationError;
 
 use crate::jni::utils::*;
 use crate::types::PendingTransaction;
-use crate::{mempool::*, PayloadHash};
+use crate::{mempool::*, parse_unvalidated_transaction_from_slice, PayloadHash};
 
 //
 // JNI Interface
@@ -96,10 +96,10 @@ fn do_add(
 ) -> Result<JavaPayloadHash, MempoolAddErrorJava> {
     let transaction = args;
 
-    let (notarized_transaction, _) = state_manager.parse_and_validate(&transaction.payload)?;
+    let unvalidated_transaction = parse_unvalidated_transaction_from_slice(&transaction.payload)?;
 
     state_manager
-        .add_to_mempool(notarized_transaction.into())
+        .exec_validate_and_add_to_mempool(unvalidated_transaction)
         .map(|_| transaction.payload_hash)
         .map_err(|err| err.into())
 }
@@ -226,7 +226,7 @@ impl From<MempoolAddError> for MempoolAddErrorJava {
                 max_size,
             },
             MempoolAddError::Duplicate => MempoolAddErrorJava::Duplicate,
-            MempoolAddError::Rejected { reason } => MempoolAddErrorJava::Rejected(reason),
+            MempoolAddError::Rejected(reason) => MempoolAddErrorJava::Rejected(reason.to_string()),
         }
     }
 }

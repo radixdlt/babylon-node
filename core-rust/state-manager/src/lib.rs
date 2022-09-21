@@ -76,5 +76,5 @@ pub use mempool::MempoolAddError;
 pub use receipt::{
     CommittedTransactionIdentifiers, CommittedTransactionStatus, LedgerTransactionReceipt,
 };
-pub use state_manager::StateManager;
+pub use state_manager::*;
 pub use types::*;

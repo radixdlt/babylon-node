@@ -99,19 +99,12 @@ impl SimpleMempool {
         &mut self,
         transaction: PendingTransaction,
     ) -> Result<(), MempoolAddError> {
-        let len: u64 = self.data.len().try_into().unwrap();
+        self.check_if_mempool_full()?;
 
-        if len >= self.max_size {
-            return Err(MempoolAddError::Full {
-                current_size: len,
-                max_size: self.max_size,
-            });
-        }
+        let payload_hash = transaction.payload_hash;
+        let intent_hash = transaction.intent_hash;
 
-        let payload_hash = transaction.payload_hash.clone();
-        let intent_hash = transaction.intent_hash.clone();
-
-        match self.data.entry(payload_hash.clone()) {
+        match self.data.entry(payload_hash) {
             Entry::Occupied(_) => Err(MempoolAddError::Duplicate),
 
             Entry::Vacant(e) => {
@@ -131,6 +124,30 @@ impl SimpleMempool {
                 Ok(())
             }
         }
+    }
+
+    pub fn check_add_would_be_possible(
+        &mut self,
+        payload_hash: &PayloadHash,
+    ) -> Result<(), MempoolAddError> {
+        if self.contains_payload(payload_hash) {
+            return Err(MempoolAddError::Duplicate);
+        }
+        self.check_if_mempool_full()?;
+        Ok(())
+    }
+
+    fn check_if_mempool_full(&self) -> Result<(), MempoolAddError> {
+        let len: u64 = self.data.len().try_into().unwrap();
+
+        if len >= self.max_size {
+            return Err(MempoolAddError::Full {
+                current_size: len,
+                max_size: self.max_size,
+            });
+        }
+
+        Ok(())
     }
 
     pub fn handle_committed_transactions(
@@ -196,10 +213,16 @@ impl SimpleMempool {
     pub fn get_payload(&self, payload_hash: &PayloadHash) -> Option<&PendingTransaction> {
         Some(&self.data.get(payload_hash)?.transaction)
     }
+
+    pub fn contains_payload(&self, payload_hash: &PayloadHash) -> bool {
+        self.data.contains_key(payload_hash)
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::matches;
+
     use radix_engine::types::{
         EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, PublicKey, Signature,
     };
@@ -294,26 +317,20 @@ mod tests {
 
         let rc = mp.get_proposal_transactions(
             3,
-            &HashSet::from([
-                tv1.payload_hash.clone(),
-                tv2.payload_hash.clone(),
-                tv3.payload_hash.clone(),
-            ]),
+            &HashSet::from([tv1.payload_hash, tv2.payload_hash, tv3.payload_hash]),
         );
         let get = rc;
         assert!(get.is_empty());
 
-        let rc = mp.get_proposal_transactions(
-            3,
-            &HashSet::from([tv2.payload_hash.clone(), tv3.payload_hash.clone()]),
-        );
+        let rc =
+            mp.get_proposal_transactions(3, &HashSet::from([tv2.payload_hash, tv3.payload_hash]));
         let get = rc;
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
         let rc = mp.add_transaction(tv1.clone());
         assert!(rc.is_err());
-        assert_eq!(rc, Err(MempoolAddError::Duplicate));
+        assert!(matches!(rc, Err(MempoolAddError::Duplicate)));
 
         let rc = mp.add_transaction(tv2.clone());
         assert!(rc.is_ok());
@@ -330,39 +347,31 @@ mod tests {
 
         let rc = mp.get_proposal_transactions(
             3,
-            &HashSet::from([
-                tv1.payload_hash.clone(),
-                tv2.payload_hash.clone(),
-                tv3.payload_hash.clone(),
-            ]),
+            &HashSet::from([tv1.payload_hash, tv2.payload_hash, tv3.payload_hash]),
         );
         let get = rc;
         assert!(get.is_empty());
 
-        let rc = mp.get_proposal_transactions(
-            3,
-            &HashSet::from([tv2.payload_hash.clone(), tv3.payload_hash.clone()]),
-        );
+        let rc =
+            mp.get_proposal_transactions(3, &HashSet::from([tv2.payload_hash, tv3.payload_hash]));
         let get = rc;
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv1));
 
-        let rc = mp.get_proposal_transactions(
-            3,
-            &HashSet::from([tv1.payload_hash.clone(), tv3.payload_hash.clone()]),
-        );
+        let rc =
+            mp.get_proposal_transactions(3, &HashSet::from([tv1.payload_hash, tv3.payload_hash]));
         let get = rc;
         assert_eq!(get.len(), 1);
         assert!(get.contains(&tv2));
 
-        let rem = mp.handle_committed_transactions(&Vec::from([tv1.intent_hash.clone()]));
+        let rem = mp.handle_committed_transactions(&Vec::from([tv1.intent_hash]));
         assert!(rem.contains(&tv1));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 1);
         assert!(mp.data.contains_key(&tv2.payload_hash));
         assert!(!mp.data.contains_key(&tv1.payload_hash));
 
-        let rem = mp.handle_committed_transactions(&Vec::from([tv2.intent_hash.clone()]));
+        let rem = mp.handle_committed_transactions(&Vec::from([tv2.intent_hash]));
         assert!(rem.contains(&tv2));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 0);

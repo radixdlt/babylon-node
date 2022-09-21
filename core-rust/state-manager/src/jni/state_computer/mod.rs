@@ -104,7 +104,8 @@ fn do_verify(
         .lock()
         .expect("Can't acquire a state manager mutex lock");
 
-    let result = state_manager.validate_transaction_slice(&transaction.payload);
+    let result =
+        state_manager.parse_and_statically_validate_transaction_slice(&transaction.payload);
 
     let ret = match result {
         Ok(..) => Ok(()),

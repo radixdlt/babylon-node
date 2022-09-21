@@ -132,7 +132,7 @@ impl InMemoryStore {
                 );
             }
             self.transaction_intent_lookup
-                .insert(intent_hash, payload_hash.clone());
+                .insert(intent_hash, payload_hash);
         }
         self.transactions.insert(
             payload_hash,
@@ -242,7 +242,7 @@ impl QueryableProofStore for InMemoryStore {
             .map(|(v, proof)| {
                 let mut ids = Vec::new();
                 for (_, id) in self.txids.range(next_state_version..=*v) {
-                    ids.push(id.clone());
+                    ids.push(*id);
                 }
                 (ids, proof.clone())
             })

@@ -1531,6 +1531,9 @@ components:
             - CommittedFailure
             - InMempool
             - Rejected
+        error_message:
+          description: An explanation for the error, if failed or rejected
+          type: string
 ####################################
 # REQUEST: /v0/transaction/receipt #
 ####################################
