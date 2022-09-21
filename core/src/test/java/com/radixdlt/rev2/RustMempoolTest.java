@@ -121,6 +121,8 @@ public final class RustMempoolTest {
       try {
         // Mempool is full - adding a new transaction should fail
         rustMempool.addTransaction(transaction3);
+        // Because we want to assert properties of the exception, we have to use this weird
+        // try/catch approach, instead of assertThrows
         Assert.fail();
       } catch (MempoolFullException ex) {
         Assert.assertEquals(2, ex.getMaxSize());
@@ -128,16 +130,14 @@ public final class RustMempoolTest {
       }
       Assert.assertEquals(2, rustMempool.getCount());
 
-      // NB - the following is an implementation detail, not mandated behaviour.
-      // Feel free to change in future
-      try {
-        // With a full mempool, a duplicate transaction return MempoolFull, not Duplicate
-        rustMempool.addTransaction(transaction1);
-        Assert.fail();
-      } catch (MempoolFullException ex) {
-        Assert.assertEquals(2, ex.getMaxSize());
-        Assert.assertEquals(2, ex.getCurrentSize());
-      }
+      // With a full mempool, a duplicate transaction returns Duplicate, not MempoolFull
+      // This is an implementation detail, not mandated behaviour, feel free to change it in future
+      Assert.assertThrows(
+          MempoolDuplicateException.class,
+          () -> {
+            // Duplicate transaction - this should fail
+            rustMempool.addTransaction(transaction1);
+          });
       Assert.assertEquals(2, rustMempool.getCount());
     }
   }
