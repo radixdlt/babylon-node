@@ -83,6 +83,13 @@ import org.apache.logging.log4j.Logger;
 public final class Checkers {
   private static final Logger logger = LogManager.getLogger();
 
+  public static void assertAllCommittedFailedTransaction(
+      List<Injector> nodeInjectors, RawTransaction transaction) {
+    assertThat(
+            nodeInjectors.stream().allMatch(NodePredicate.committedFailedTransaction(transaction)))
+        .isTrue();
+  }
+
   public static void assertTransactionNotCommitted(
       List<Injector> nodeInjectors, RawTransaction transaction) {
     assertTransactionsCommitted(nodeInjectors, t -> assertThat(t).isNotEqualTo(transaction));

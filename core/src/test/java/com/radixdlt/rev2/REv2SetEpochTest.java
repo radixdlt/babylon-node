@@ -64,76 +64,81 @@
 
 package com.radixdlt.rev2;
 
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.invariants.Checkers.assertAllCommittedFailedTransaction;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.lang.Option;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.modules.CryptoModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
+import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public class REv2StateComputerTest {
-  private Injector createInjector() {
-    return Guice.createInjector(
-        new CryptoModule(),
-        REv2StateManagerModule.create(
-            Network.INTEGRATIONTESTNET.getId(), 10, REv2DatabaseConfig.inMemory(), Option.none()),
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {}).toInstance(e -> {});
-            bind(SystemCounters.class).toInstance(new SystemCountersImpl());
-          }
-        });
+public class REv2SetEpochTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  private DeterministicTest createTest(ProposalGenerator proposalGenerator) {
+    return DeterministicTest.builder()
+        .numNodes(1, 0)
+        .messageSelector(firstSelector())
+        .messageMutator(MessageMutator.dropTimeouts())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(
+                    folder.getRoot().getAbsolutePath()),
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        StateComputerConfig.REV2ProposerConfig.transactionGenerator(
+                            proposalGenerator)))));
+  }
+
+  private static class ControlledProposerGenerator implements ProposalGenerator {
+    private RawTransaction nextTransaction = null;
+
+    @Override
+    public List<RawTransaction> getTransactionsForProposal(
+        Round round, List<ExecutedVertex> prepared) {
+      if (nextTransaction == null) {
+        return List.of();
+      } else {
+        var txns = List.of(nextTransaction);
+        this.nextTransaction = null;
+        return txns;
+      }
+    }
   }
 
   @Test
-  public void test_valid_rev2_transaction_passes() {
-    // Arrange
-    var injector = createInjector();
-    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var validTransaction = REv2TestTransactions.constructValidTransaction(0);
+  public void user_should_not_be_able_set_epoch() {
+    var proposalGenerator = new ControlledProposerGenerator();
 
-    // Act
-    var result =
-        stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
+    try (var test = createTest(proposalGenerator)) {
+      var setEpochTransaction = REv2TestTransactions.constructSetEpochTransaction(1000L);
 
-    // Assert
-    assertThat(result.getSuccessfullyExecutedTransactions())
-        .extracting(StateComputerLedger.ExecutedTransaction::transaction)
-        .contains(validTransaction);
-    assertThat(result.getFailedTransactions()).isEmpty();
-  }
+      // Act: Submit transaction to mempool and run consensus
+      test.startAllNodes();
+      proposalGenerator.nextTransaction = setEpochTransaction;
+      test.runUntilState(ignored -> proposalGenerator.nextTransaction == null);
+      test.runForCount(100, onlyConsensusEvents());
 
-  @Test
-  public void test_invalid_rev2_transaction_fails() {
-    // Arrange
-    var injector = createInjector();
-    var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var invalidTransaction = RawTransaction.create(new byte[1]);
-
-    // Act
-    var result =
-        stateComputer.prepare(List.of(), List.of(invalidTransaction), mock(RoundDetails.class));
-
-    // Assert
-    assertThat(result.getSuccessfullyExecutedTransactions())
-        .extracting(StateComputerLedger.ExecutedTransaction::transaction)
-        .doesNotContain(invalidTransaction);
-    assertThat(result.getFailedTransactions()).hasSize(1);
+      // Assert: Check transaction and post submission state
+      assertThat(proposalGenerator.nextTransaction).isNull();
+      // Verify that transaction was not committed
+      assertAllCommittedFailedTransaction(test.getNodeInjectors(), setEpochTransaction);
+    }
   }
 }

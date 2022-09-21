@@ -66,7 +66,7 @@ use crate::jni::dtos::JavaStructure;
 use crate::result::StateManagerResult;
 use crate::transaction_builder::{
     create_100kb_txn_intent, create_intent_bytes, create_manifest, create_new_account_intent_bytes,
-    create_notarized_bytes, create_signed_intent_bytes,
+    create_notarized_bytes, create_set_epoch_intent, create_signed_intent_bytes,
 };
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
@@ -108,6 +108,21 @@ fn do_create_new_account_intent(args: (NetworkDefinition, PublicKey)) -> Vec<u8>
     let (network_definition, public_key) = args;
 
     create_new_account_intent_bytes(&network_definition, public_key)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_setEpochIntent(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, do_set_epoch)
+}
+
+fn do_set_epoch(args: (NetworkDefinition, PublicKey, u64)) -> Vec<u8> {
+    let (network_definition, public_key, epoch) = args;
+
+    create_set_epoch_intent(&network_definition, public_key, epoch).to_bytes()
 }
 
 #[no_mangle]

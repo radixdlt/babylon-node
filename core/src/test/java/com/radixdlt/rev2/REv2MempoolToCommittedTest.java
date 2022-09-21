@@ -108,7 +108,7 @@ public class REv2MempoolToCommittedTest {
       // Arrange: Add node1 mempool
       var mempoolInserter =
           test.getInstance(1, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
-      var transaction = REv2TestTransactions.validTransaction(0);
+      var transaction = REv2TestTransactions.constructValidTransaction(0);
       mempoolInserter.addTransaction(transaction);
 
       // Act/Assert

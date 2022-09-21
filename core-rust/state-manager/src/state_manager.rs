@@ -87,8 +87,8 @@ use scrypto::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use tracing::info;
-use transaction::builder::ManifestBuilder;
 
+use crate::transaction_builder::create_set_epoch_intent;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
     NotarizedTransaction, PreviewFlags, PreviewIntent, SignedTransactionIntent, TransactionHeader,
@@ -199,7 +199,7 @@ impl<S> StateManager<S> {
             validation,
             execution_config: ExecutionConfig {
                 max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                is_system: false,
+                is_system: true,
                 trace: logging_config.engine_trace,
             },
             fee_reserve_config: FeeReserveConfig {
@@ -400,41 +400,21 @@ where
 
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
         let public_key = private_key.public_key();
-        let manifest = ManifestBuilder::new(&self.network)
-            .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
-            .call_native_method(
-                Receiver::Ref(RENodeId::System),
-                NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch),
-                args!(prepare_request.round_number),
-            )
-            .build();
-        let intent = TransactionIntent {
-            header: TransactionHeader {
-                version: 1,
-                network_id: self.network.id,
-                start_epoch_inclusive: 0,
-                end_epoch_exclusive: 100,
-                nonce: 5,
-                notary_public_key: PublicKey::EcdsaSecp256k1(public_key),
-                notary_as_signatory: false,
-                cost_unit_limit: 10_000_000,
-                tip_percentage: 5,
-            },
-            manifest,
-        };
-
+        let intent = create_set_epoch_intent(
+            &self.network,
+            PublicKey::EcdsaSecp256k1(public_key),
+            prepare_request.round_number,
+        );
         let signed_intent = SignedTransactionIntent {
             intent,
             intent_signatures: vec![],
         };
         let signed_intent_payload = scrypto_encode(&signed_intent);
         let notary_signature = private_key.sign(&signed_intent_payload).into();
-
         let notarized = NotarizedTransaction {
             signed_intent,
             notary_signature,
         };
-
         let notarized_bytes = scrypto_encode(&notarized);
         let validated_epoch_update = self
             .validation

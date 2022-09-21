@@ -103,13 +103,6 @@ public final class REv2TestTransactions {
     return TransactionBuilder.createIntent(network, header, manifest, List.of());
   }
 
-  public static RawTransaction validTransaction(long nonce) {
-    var intentBytes =
-        constructValidIntentBytes(
-            NetworkDefinition.INT_TEST_NET, nonce, DEFAULT_NOTARY.getPublicKey().toPublicKey());
-    return REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of());
-  }
-
   public static String constructNewAccountManifest(NetworkDefinition networkDefinition) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
@@ -160,6 +153,20 @@ public final class REv2TestTransactions {
     final var manifest = constructNewAccountManifest(networkDefinition);
     final var header = TransactionHeader.defaults(networkDefinition, nonce, notary, false);
     return TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
+  }
+
+  public static RawTransaction constructSetEpochTransaction(long epoch) {
+    var intentBytes =
+        TransactionBuilder.buildSetEpochIntent(
+            NetworkDefinition.INT_TEST_NET, DEFAULT_NOTARY.getPublicKey().toPublicKey(), epoch);
+    return REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of());
+  }
+
+  public static RawTransaction constructValidTransaction(long nonce) {
+    var intentBytes =
+        constructValidIntentBytes(
+            NetworkDefinition.INT_TEST_NET, nonce, DEFAULT_NOTARY.getPublicKey().toPublicKey());
+    return REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of());
   }
 
   public static RawTransaction constructNewAccountTransaction(

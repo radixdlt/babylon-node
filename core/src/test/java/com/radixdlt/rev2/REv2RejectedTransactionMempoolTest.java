@@ -127,7 +127,7 @@ public class REv2RejectedTransactionMempoolTest {
       test.runForCount(100, onlyConsensusEvents());
 
       // Act: Submit valid transaction to mempool
-      mempoolInserter.addTransaction(REv2TestTransactions.validTransaction(0));
+      mempoolInserter.addTransaction(REv2TestTransactions.constructValidTransaction(0));
 
       // Assert
       var mempoolReader = test.getInstance(0, MempoolReader.class);
