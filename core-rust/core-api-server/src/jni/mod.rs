@@ -77,6 +77,9 @@ use std::str;
 use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::runtime::Runtime as TokioRuntime;
 
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+
 const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";
 
 pub struct RunningServer {
@@ -135,6 +138,22 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
 
     let bind_addr = format!("{}:{}", config.bind_interface, config.port);
     tokio_runtime.spawn(async move {
+        // TODO The jaeger agent_endpoint is hardwired here, make sure jaeger can be reached from the container!
+        // This can mean the jaeger should be launched in a different docker network
+        let tracer = opentelemetry_jaeger::new_pipeline()
+            .with_agent_endpoint("172.21.0.2:6831")
+            .with_service_name("app_changeme")
+            .install_batch(opentelemetry::runtime::Tokio)
+            .unwrap();
+        let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+
+        // Trying to initialize a global logger here, and carry on if this fails.
+        let _ = tracing_subscriber::registry()
+            .with(tracing_subscriber::filter::LevelFilter::DEBUG)
+            .with(opentelemetry)
+            .with(tracing_subscriber::fmt::layer())
+            .try_init();
+
         create_server(
             &bind_addr,
             shutdown_signal_receiver.map(|_| ()),

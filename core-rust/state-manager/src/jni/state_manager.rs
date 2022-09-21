@@ -119,9 +119,6 @@ pub struct JNIStateManager {
 
 impl JNIStateManager {
     pub fn init(env: &JNIEnv, j_state_manager: JObject, j_config: jbyteArray) {
-        // Trying to initialize a global logger here, and carry on if this fails.
-        let _ = tracing_subscriber::fmt::try_init();
-
         let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
         let config = StateManagerConfig::from_java(&config_bytes).unwrap();
 
