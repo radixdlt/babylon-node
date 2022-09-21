@@ -3,6 +3,7 @@ use crate::core_api::*;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 
+#[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_v0_transaction_receipt(
     state: Extension<CoreApiState>,
     request: Json<models::V0CommittedTransactionRequest>,

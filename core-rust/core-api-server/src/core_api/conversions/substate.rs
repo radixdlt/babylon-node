@@ -16,6 +16,7 @@ use scrypto::prelude::ResourceType;
 
 use super::MappingError;
 
+#[tracing::instrument(skip_all)]
 pub fn to_api_substate(
     substate_id: &SubstateId,
     substate: &Substate,

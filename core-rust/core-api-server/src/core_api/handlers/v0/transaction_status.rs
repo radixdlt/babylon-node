@@ -7,6 +7,7 @@ use state_manager::{HasUserPayloadHash, UserPayloadHash};
 use state_manager::mempool::transaction_rejection_cache::RejectionRecord;
 use state_manager::store::traits::*;
 
+#[tracing::instrument(err(Debug), skip(state))]
 pub(crate) async fn handle_v0_transaction_status(
     state: Extension<CoreApiState>,
     request: Json<models::V0TransactionStatusRequest>,

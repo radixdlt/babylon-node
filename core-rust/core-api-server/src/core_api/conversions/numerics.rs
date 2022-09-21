@@ -20,6 +20,7 @@ pub fn to_api_epoch(epoch: u64) -> Result<i64, MappingError> {
     Ok(epoch.try_into().expect("Epoch too large somehow"))
 }
 
+#[tracing::instrument(skip_all)]
 pub fn to_api_state_version(state_version: u64) -> Result<i64, MappingError> {
     if state_version > MAX_API_STATE_VERSION {
         return Err(MappingError::IntegerError {
@@ -31,6 +32,7 @@ pub fn to_api_state_version(state_version: u64) -> Result<i64, MappingError> {
         .expect("State version too large somehow"))
 }
 
+#[tracing::instrument(skip_all)]
 pub fn to_api_substate_version(substate_version: u32) -> Result<i64, MappingError> {
     let substate_version: u64 = substate_version.into();
     if substate_version > MAX_API_SUBSTATE_VERSION {

@@ -1,6 +1,7 @@
 use crate::core_api::*;
 use state_manager::jni::state_manager::ActualStateManager;
 
+#[tracing::instrument(err(Debug), skip(state))]
 pub(crate) async fn handle_network_configuration(
     state: Extension<CoreApiState>,
 ) -> Result<Json<models::NetworkConfigurationResponse>, RequestHandlingError> {

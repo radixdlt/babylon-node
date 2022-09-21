@@ -4,6 +4,7 @@ use radix_engine::types::SubstateId;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 
+#[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_v0_state_epoch(
     state: Extension<CoreApiState>,
 ) -> Result<Json<models::V0StateEpochResponse>, RequestHandlingError> {

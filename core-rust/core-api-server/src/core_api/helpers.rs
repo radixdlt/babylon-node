@@ -18,6 +18,7 @@ pub(crate) fn core_api_handler_empty_request<Response>(
     Ok(Json(response))
 }
 
+#[tracing::instrument(skip_all)]
 pub(crate) fn core_api_handler<Request, Response>(
     state: Extension<CoreApiState>,
     Json(request_body): Json<Request>,

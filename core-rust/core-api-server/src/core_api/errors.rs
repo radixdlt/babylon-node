@@ -16,6 +16,7 @@ impl IntoResponse for RequestHandlingError {
     }
 }
 
+#[tracing::instrument(err(Debug))]
 pub(crate) fn assert_matching_network(
     request_network: &str,
     network_definition: &NetworkDefinition,
