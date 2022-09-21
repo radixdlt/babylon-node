@@ -138,21 +138,31 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
 
     let bind_addr = format!("{}:{}", config.bind_interface, config.port);
     tokio_runtime.spawn(async move {
-        // TODO The jaeger agent_endpoint is hardwired here, make sure jaeger can be reached from the container!
-        // This can mean the jaeger should be launched in a different docker network
-        let tracer = opentelemetry_jaeger::new_pipeline()
-            .with_agent_endpoint("172.21.0.2:6831")
-            .with_service_name("app_changeme")
-            .install_batch(opentelemetry::runtime::Tokio)
-            .unwrap();
-        let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+        match std::env::var("JAEGER_AGENT_ENDPOINT") {
+            Ok(jaeger_agent_endpoint) => {
+                let tracer = opentelemetry_jaeger::new_agent_pipeline()
+                    .with_endpoint(jaeger_agent_endpoint)
+                    .with_auto_split_batch(true)
+                    .with_service_name("core_api")
+                    .install_batch(opentelemetry::runtime::Tokio)
+                    .unwrap();
 
-        // Trying to initialize a global logger here, and carry on if this fails.
-        let _ = tracing_subscriber::registry()
-            .with(tracing_subscriber::filter::LevelFilter::DEBUG)
-            .with(opentelemetry)
-            .with(tracing_subscriber::fmt::layer())
-            .try_init();
+                let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+
+                // Trying to initialize a global logger here, and carry on if this fails.
+                let _ = tracing_subscriber::registry()
+                    .with(tracing_subscriber::filter::LevelFilter::DEBUG)
+                    .with(opentelemetry)
+                    .with(tracing_subscriber::fmt::layer())
+                    .try_init();
+            }
+            Err(_) => {
+                let _ = tracing_subscriber::registry()
+                    .with(tracing_subscriber::filter::LevelFilter::DEBUG)
+                    .with(tracing_subscriber::fmt::layer())
+                    .try_init();
+            }
+        }
 
         create_server(
             &bind_addr,
