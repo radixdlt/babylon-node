@@ -69,7 +69,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.PublicKey;
 import com.radixdlt.crypto.SignatureWithPublicKey;
-import com.radixdlt.networks.Network;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -79,20 +78,6 @@ public final class REv2TestTransactions {
   // These have to come first for static ordering issues
   public static final ECKeyPair DEFAULT_NOTARY = generateKeyPair(1);
 
-  public static RawTransaction validTransaction(long nonce) {
-    return constructTransaction(
-        NetworkDefinition.INT_TEST_NET,
-        String.format(
-            """
-              CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("10");
-              CLEAR_AUTH_ZONE;
-              """,
-            Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                .encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS)),
-        nonce,
-        List.of());
-  }
-
   public static final RawTransaction STATICALLY_VALID_BUT_REJECT_TXN_1 =
       constructTransaction(
           NetworkDefinition.INT_TEST_NET, "CLEAR_AUTH_ZONE;", 0, List.of(generateKeyPair(10)));
@@ -101,7 +86,7 @@ public final class REv2TestTransactions {
     return PrivateKeys.numeric(keySource).findFirst().orElseThrow();
   }
 
-  public static byte[] constractValidIntentBytes(
+  public static byte[] constructValidIntentBytes(
       NetworkDefinition network, long nonce, PublicKey notary) {
     final var addressing = Addressing.ofNetwork(network);
     final var faucetAddress =
@@ -116,6 +101,13 @@ public final class REv2TestTransactions {
             faucetAddress);
     var header = TransactionHeader.defaults(network, nonce, notary, false);
     return TransactionBuilder.createIntent(network, header, manifest, List.of());
+  }
+
+  public static RawTransaction validTransaction(long nonce) {
+    var intentBytes =
+        constructValidIntentBytes(
+            NetworkDefinition.INT_TEST_NET, nonce, DEFAULT_NOTARY.getPublicKey().toPublicKey());
+    return REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of());
   }
 
   public static String constructNewAccountManifest(NetworkDefinition networkDefinition) {

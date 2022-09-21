@@ -116,7 +116,7 @@ public final class REv2RejectMultipleIntentsTest {
   }
 
   private static byte[] createValidIntentBytes(long nonce) {
-    return REv2TestTransactions.constractValidIntentBytes(
+    return REv2TestTransactions.constructValidIntentBytes(
         NETWORK_DEFINITION, nonce, NOTARY.getPublicKey().toPublicKey());
   }
 

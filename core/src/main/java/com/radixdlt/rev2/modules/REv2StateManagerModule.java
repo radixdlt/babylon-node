@@ -80,10 +80,7 @@ import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.networks.Network;
 import com.radixdlt.recovery.VertexStoreRecovery;
-import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.rev2.REv2StateComputer;
-import com.radixdlt.rev2.REv2StateReader;
-import com.radixdlt.rev2.REv2TransactionsAndProofReader;
+import com.radixdlt.rev2.*;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
@@ -205,7 +202,20 @@ public final class REv2StateManagerModule extends AbstractModule {
 
             @Provides
             REv2StateReader stateReader(RustStateComputer stateComputer) {
-              return stateComputer::getComponentXrdAmount;
+              return new REv2StateReader() {
+                @Override
+                public Decimal getComponentXrdAmount(ComponentAddress componentAddress) {
+                  return stateComputer.getComponentXrdAmount(componentAddress);
+                }
+
+                @Override
+                public long getEpoch() {
+                  return stateComputer
+                      .getEpoch()
+                      .toNonNegativeLong()
+                      .unwrap(() -> new IllegalStateException("Epoch is not non-negative"));
+                }
+              };
             }
 
             @Provides

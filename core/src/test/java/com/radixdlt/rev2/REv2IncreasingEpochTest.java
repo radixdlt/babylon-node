@@ -62,66 +62,53 @@
  * permissions under this License.
  */
 
-package com.radixdlt.harness.predicates;
+package com.radixdlt.rev2;
 
-import com.google.inject.Injector;
-import com.radixdlt.mempool.MempoolReader;
-import com.radixdlt.transactions.RawTransaction;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Predicate;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
+import static com.radixdlt.harness.predicates.NodesPredicate.anyAtOrOverStateEpoch;
 
-public final class NodesPredicate {
-  private NodesPredicate() {
-    throw new IllegalStateException("Cannot instanitate.");
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+public class REv2IncreasingEpochTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(1, 0)
+        .messageSelector(firstSelector())
+        .messageMutator(MessageMutator.dropTimeouts())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(
+                    folder.getRoot().getAbsolutePath()),
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        StateComputerConfig.REV2ProposerConfig.noUserTransactions()))));
   }
 
-  public static Predicate<List<Injector>> nodeAt(
-      int nodeIndex, Predicate<Injector> injectorPredicate) {
-    return n -> injectorPredicate.test(n.get(nodeIndex));
-  }
+  @Test
+  public void epoch_should_increase() {
+    try (var test = createTest()) {
+      // Arrange: Start single node network
+      test.startAllNodes();
+      var stateReader = test.getInstance(0, REv2StateReader.class);
+      var epoch0 = stateReader.getEpoch();
 
-  public static Predicate<List<Injector>> allAtExactlyStateVersion(long stateVersion) {
-    return n -> n.stream().allMatch(NodePredicate.atExactlyStateVersion(stateVersion));
-  }
-
-  public static Predicate<List<Injector>> allCommittedTransaction(RawTransaction transaction) {
-    return n -> n.stream().allMatch(NodePredicate.committedTransaction(transaction));
-  }
-
-  public static Predicate<List<Injector>> anyCommittedTransaction(RawTransaction transaction) {
-    return n -> n.stream().anyMatch(NodePredicate.committedTransaction(transaction));
-  }
-
-  public static Predicate<List<Injector>> anyAtExactlyStateVersion(long stateVersion) {
-    return n ->
-        n.stream()
-            .filter(Objects::nonNull)
-            .anyMatch(NodePredicate.atExactlyStateVersion(stateVersion));
-  }
-
-  public static Predicate<List<Injector>> allAtOrOverStateVersion(long stateVersion) {
-    return n -> n.stream().allMatch(NodePredicate.atOrOverStateVersion(stateVersion));
-  }
-
-  public static Predicate<List<Injector>> anyAtOrOverStateVersion(long stateVersion) {
-    return n ->
-        n.stream()
-            .filter(Objects::nonNull)
-            .anyMatch(NodePredicate.atOrOverStateVersion(stateVersion));
-  }
-
-  public static Predicate<List<Injector>> anyAtOrOverStateEpoch(long epoch) {
-    return n -> n.stream().filter(Objects::nonNull).anyMatch(NodePredicate.atOrOverEpoch(epoch));
-  }
-
-  public static Predicate<List<Injector>> allHaveExactMempoolCount(int count) {
-    return n ->
-        n.stream()
-            .allMatch(
-                i -> {
-                  var reader = i.getInstance(MempoolReader.class);
-                  return reader.getCount() == count;
-                });
+      // Act/Assert: Run until next epoch is reached
+      test.runUntilState(anyAtOrOverStateEpoch(epoch0 + 1), onlyConsensusEvents());
+    }
   }
 }

@@ -67,4 +67,6 @@ package com.radixdlt.rev2;
 /** Reads REv2 state */
 public interface REv2StateReader {
   Decimal getComponentXrdAmount(ComponentAddress componentAddress);
+
+  long getEpoch();
 }

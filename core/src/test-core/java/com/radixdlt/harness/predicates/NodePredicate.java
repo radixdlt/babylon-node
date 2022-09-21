@@ -65,6 +65,7 @@
 package com.radixdlt.harness.predicates;
 
 import com.google.inject.Injector;
+import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
@@ -108,5 +109,9 @@ public class NodePredicate {
             .getLastProof()
             .map(p -> p.getStateVersion() >= stateVersion)
             .orElse(false);
+  }
+
+  public static Predicate<Injector> atOrOverEpoch(long epoch) {
+    return i -> i.getInstance(REv2StateReader.class).getEpoch() >= epoch;
   }
 }
