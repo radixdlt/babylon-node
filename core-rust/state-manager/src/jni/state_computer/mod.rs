@@ -69,7 +69,7 @@ use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use scrypto::prelude::*;
 
-use crate::jni::state_manager::JNIStateManager;
+use crate::jni::state_manager::{ActualStateManager, JNIStateManager};
 use crate::jni::utils::*;
 use crate::result::StateManagerResult;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
@@ -223,6 +223,20 @@ fn get_component_xrd(
         .map(|r| r.get(&RADIX_TOKEN).cloned().unwrap_or_else(Decimal::zero))
         .unwrap_or_else(Decimal::zero);
     Ok(amount)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_epoch(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_get_epoch)
+}
+
+fn do_get_epoch(state_manager: &mut ActualStateManager, _args: ()) -> u64 {
+    state_manager.get_epoch()
 }
 
 pub fn export_extern_functions() {}

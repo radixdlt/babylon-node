@@ -82,7 +82,7 @@ use radix_engine::transaction::{
     TransactionExecutor, TransactionReceipt, TransactionResult,
 };
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
-use scrypto::engine::types::RENodeId;
+use scrypto::engine::types::{RENodeId, SubstateId};
 use scrypto::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -596,5 +596,14 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
         resource_accounter
             .add_resources(RENodeId::Component(component_address))
             .map_or(Option::None, |()| Some(resource_accounter.into_map()))
+    }
+
+    pub fn get_epoch(&self) -> u64 {
+        self.store
+            .get_substate(&SubstateId::System)
+            .unwrap()
+            .substate
+            .system()
+            .epoch
     }
 }
