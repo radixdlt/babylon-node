@@ -75,6 +75,7 @@ import java.util.Objects;
 
 /** A wrapper for a transaction and its ledger receipt */
 public record ExecutedTransaction(
+    CommittedTransactionStatus status,
     byte[] ledgerReceiptBytes,
     byte[] transactionBytes,
     List<ComponentAddress> newComponentAddresses) {
@@ -87,9 +88,13 @@ public record ExecutedTransaction(
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
                 (t, encoder) ->
                     encoder.encode(
-                        t.ledgerReceiptBytes, t.transactionBytes, t.newComponentAddresses)));
+                        t.status,
+                        t.ledgerReceiptBytes,
+                        t.transactionBytes,
+                        t.newComponentAddresses)));
   }
 
   public RawTransaction rawTransaction() {

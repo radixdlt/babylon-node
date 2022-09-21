@@ -65,6 +65,7 @@
 use crate::jni::state_manager::ActualStateManager;
 use crate::store::traits::*;
 
+use crate::CommittedTransactionStatus;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -77,6 +78,7 @@ use super::utils::jni_state_manager_sbor_call;
 
 #[derive(Encode, Decode, TypeId)]
 struct ExecutedTransaction {
+    status: CommittedTransactionStatus,
     ledger_receipt_bytes: Vec<u8>,
     transaction_bytes: Vec<u8>,
     /// Used by some Java tests, consider removing at some point as it doesn't really fit here
@@ -110,6 +112,7 @@ fn do_get_transaction_at_state_version(
     let ledger_receipt_bytes = scrypto_encode(&ledger_receipt);
 
     Some(ExecutedTransaction {
+        status: ledger_receipt.status,
         ledger_receipt_bytes,
         transaction_bytes: stored_transaction.into_payload(),
         new_component_addresses: ledger_receipt.entity_changes.new_component_addresses,
