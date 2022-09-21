@@ -14,14 +14,14 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PackageSubstateAllOf {
     /// The hex-encoded package code
-    #[serde(rename = "code")]
-    pub code: String,
+    #[serde(rename = "code_hex")]
+    pub code_hex: String,
 }
 
 impl PackageSubstateAllOf {
-    pub fn new(code: String) -> PackageSubstateAllOf {
+    pub fn new(code_hex: String) -> PackageSubstateAllOf {
         PackageSubstateAllOf {
-            code,
+            code_hex,
         }
     }
 }

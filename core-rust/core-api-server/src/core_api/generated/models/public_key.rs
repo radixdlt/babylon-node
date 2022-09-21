@@ -16,14 +16,14 @@ pub enum PublicKey {
     #[serde(rename="EcdsaSecp256k1")]
     EcdsaSecp256k1PublicKey {
         /// The hex-encoded compressed ECDSA Secp256k1 public key (33 bytes)
-        #[serde(rename = "key_bytes")]
-        key_bytes: String,
+        #[serde(rename = "key_hex")]
+        key_hex: String,
     },
     #[serde(rename="EddsaEd25519")]
     EddsaEd25519PublicKey {
         /// The hex-encoded compressed EdDSA Ed25519 public key (32 bytes)
-        #[serde(rename = "key_bytes")]
-        key_bytes: String,
+        #[serde(rename = "key_hex")]
+        key_hex: String,
     },
 }
 

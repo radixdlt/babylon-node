@@ -14,8 +14,8 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct KeyValueStoreEntrySubstateAllOf {
     /// The hex-encoded bytes of its key
-    #[serde(rename = "key")]
-    pub key: String,
+    #[serde(rename = "key_hex")]
+    pub key_hex: String,
     #[serde(rename = "is_deleted")]
     pub is_deleted: bool,
     #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
@@ -23,9 +23,9 @@ pub struct KeyValueStoreEntrySubstateAllOf {
 }
 
 impl KeyValueStoreEntrySubstateAllOf {
-    pub fn new(key: String, is_deleted: bool) -> KeyValueStoreEntrySubstateAllOf {
+    pub fn new(key_hex: String, is_deleted: bool) -> KeyValueStoreEntrySubstateAllOf {
         KeyValueStoreEntrySubstateAllOf {
-            key,
+            key_hex,
             is_deleted,
             data_struct: None,
         }

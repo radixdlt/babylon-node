@@ -20,7 +20,7 @@ fn handle_transaction_submit_internal(
 ) -> Result<models::TransactionSubmitResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
-    let notarized_transaction = extract_unvalidated_transaction(&request.notarized_transaction)
+    let notarized_transaction = extract_unvalidated_transaction(&request.notarized_transaction_hex)
         .map_err(|err| err.into_response_error("notarized_transaction"))?;
 
     let result = state_manager.exec_validate_and_add_to_mempool(notarized_transaction);

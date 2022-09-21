@@ -17,15 +17,15 @@ pub struct V0StateNonFungibleRequest {
     #[serde(rename = "resource_address")]
     pub resource_address: String,
     /// The hex-encoded non-fungible id
-    #[serde(rename = "non_fungible_id")]
-    pub non_fungible_id: String,
+    #[serde(rename = "non_fungible_id_hex")]
+    pub non_fungible_id_hex: String,
 }
 
 impl V0StateNonFungibleRequest {
-    pub fn new(resource_address: String, non_fungible_id: String) -> V0StateNonFungibleRequest {
+    pub fn new(resource_address: String, non_fungible_id_hex: String) -> V0StateNonFungibleRequest {
         V0StateNonFungibleRequest {
             resource_address,
-            non_fungible_id,
+            non_fungible_id_hex,
         }
     }
 }

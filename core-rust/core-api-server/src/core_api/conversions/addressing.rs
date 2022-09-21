@@ -29,7 +29,7 @@ pub fn to_api_global_entity_id(
     let address_bytes = entity_id.entity_address;
     let address_bytes_hex = to_hex(&address_bytes);
 
-    let global_address_str = match entity_type {
+    let global_address_bech32m = match entity_type {
         entity_type::EntityType::System => bech32_encoder.encode_component_address(
             &ComponentAddress::try_from(address_bytes.as_slice()).unwrap(),
         ),
@@ -54,9 +54,9 @@ pub fn to_api_global_entity_id(
 
     Ok(models::GlobalEntityId {
         entity_type,
-        entity_address: address_bytes_hex.clone(),
-        global_address_bytes: address_bytes_hex,
-        global_address_str,
+        entity_address_hex: address_bytes_hex.clone(),
+        global_address_hex: address_bytes_hex,
+        global_address: global_address_bech32m,
     })
 }
 
@@ -71,9 +71,9 @@ pub fn to_api_substate_id(substate_id: SubstateId) -> Result<models::SubstateId,
 
     Ok(models::SubstateId {
         entity_type: mapped.0,
-        entity_address: to_hex(mapped.1),
+        entity_address_hex: to_hex(mapped.1),
         substate_type: mapped.2,
-        substate_key: to_hex(mapped.3),
+        substate_key_hex: to_hex(mapped.3),
     })
 }
 
@@ -105,7 +105,7 @@ impl From<MappedEntityId> for models::EntityId {
     fn from(mapped_entity_id: MappedEntityId) -> Self {
         models::EntityId {
             entity_type: mapped_entity_id.entity_type,
-            entity_address: to_hex(mapped_entity_id.entity_address),
+            entity_address_hex: to_hex(mapped_entity_id.entity_address),
         }
     }
 }
@@ -148,9 +148,9 @@ impl From<MappedSubstateId> for models::SubstateId {
     fn from(mapped_substate_id: MappedSubstateId) -> Self {
         models::SubstateId {
             entity_type: mapped_substate_id.0,
-            entity_address: to_hex(mapped_substate_id.1),
+            entity_address_hex: to_hex(mapped_substate_id.1),
             substate_type: mapped_substate_id.2,
-            substate_key: to_hex(mapped_substate_id.3),
+            substate_key_hex: to_hex(mapped_substate_id.3),
         }
     }
 }
@@ -168,7 +168,7 @@ impl From<MappedSubstateId> for models::EntityId {
     fn from(mapped_substate_id: MappedSubstateId) -> Self {
         models::EntityId {
             entity_type: mapped_substate_id.0,
-            entity_address: to_hex(mapped_substate_id.1),
+            entity_address_hex: to_hex(mapped_substate_id.1),
         }
     }
 }
@@ -290,9 +290,9 @@ pub fn to_api_virtual_substate_id(
     };
     Ok(models::SubstateId {
         entity_type: sub_id.0,
-        entity_address: to_hex(sub_id.1),
+        entity_address_hex: to_hex(sub_id.1),
         substate_type: sub_id.2,
-        substate_key: to_hex(sub_id.3),
+        substate_key_hex: to_hex(sub_id.3),
     })
 }
 

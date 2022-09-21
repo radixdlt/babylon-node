@@ -16,15 +16,15 @@ pub struct EntityId {
     #[serde(rename = "entity_type")]
     pub entity_type: crate::core_api::generated::models::EntityType,
     /// The hex-encoded bytes of the entity address
-    #[serde(rename = "entity_address")]
-    pub entity_address: String,
+    #[serde(rename = "entity_address_hex")]
+    pub entity_address_hex: String,
 }
 
 impl EntityId {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, entity_address: String) -> EntityId {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, entity_address_hex: String) -> EntityId {
         EntityId {
             entity_type,
-            entity_address,
+            entity_address_hex,
         }
     }
 }

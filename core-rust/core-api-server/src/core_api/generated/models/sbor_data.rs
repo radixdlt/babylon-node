@@ -14,17 +14,17 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SborData {
     /// The hex-encoded, raw SBOR-encoded data
-    #[serde(rename = "data_bytes")]
-    pub data_bytes: String,
+    #[serde(rename = "data_hex")]
+    pub data_hex: String,
     /// A JSON string representing the encoded SBOR
     #[serde(rename = "data_json")]
     pub data_json: String,
 }
 
 impl SborData {
-    pub fn new(data_bytes: String, data_json: String) -> SborData {
+    pub fn new(data_hex: String, data_json: String) -> SborData {
         SborData {
-            data_bytes,
+            data_hex,
             data_json,
         }
     }

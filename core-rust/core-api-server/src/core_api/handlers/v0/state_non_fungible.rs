@@ -20,7 +20,7 @@ fn handle_v0_state_non_fungible_internal(
     let resource_address = extract_resource_address(&bech32_decoder, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
-    let non_fungible_id = extract_non_fungible_id(&request.non_fungible_id)
+    let non_fungible_id = extract_non_fungible_id(&request.non_fungible_id_hex)
         .map_err(|err| err.into_response_error("non_fungible_id"))?;
 
     let substate_id = SubstateId::NonFungible(resource_address, non_fungible_id);

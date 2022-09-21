@@ -99,7 +99,7 @@ fn scrypto_value_to_api_data_struct(
     let entities = extract_entities(&scrypto_value)?;
     Ok(models::DataStruct {
         struct_data: Box::new(models::SborData {
-            data_bytes: to_hex(scrypto_value.raw),
+            data_hex: to_hex(scrypto_value.raw),
             data_json: serde_json::to_string(&scrypto_value.dom).expect("JSON serialize error"),
         }),
         owned_entities: entities.owned_entities,
@@ -168,7 +168,7 @@ pub fn to_api_package_substate(package: &Package) -> models::Substate {
     // TODO: map blueprint_abis
     models::Substate::PackageSubstate {
         entity_type: EntityType::Package,
-        code: hex::encode(package.code()),
+        code_hex: to_hex(package.code()),
     }
 }
 
@@ -213,7 +213,7 @@ fn to_api_fungible_resource_amount(
     let resource_entity =
         to_api_global_entity_id(bech32_encoder, to_resource_entity_id(resource_address))?;
     Ok(models::ResourceAmount::FungibleResourceAmount {
-        resource_address: resource_entity.global_address_str,
+        resource_address: resource_entity.global_address,
         amount_attos: to_api_decimal_attos(amount),
     })
 }
@@ -225,10 +225,10 @@ fn to_api_non_fungible_resource_amount(
 ) -> Result<models::ResourceAmount, MappingError> {
     let resource_entity =
         to_api_global_entity_id(bech32_encoder, to_resource_entity_id(resource_address))?;
-    let nf_ids = ids.iter().map(|nf_id| to_hex(&nf_id.0)).collect::<Vec<_>>();
+    let nf_ids_hex = ids.iter().map(|nf_id| to_hex(&nf_id.0)).collect::<Vec<_>>();
     Ok(models::ResourceAmount::NonFungibleResourceAmount {
-        resource_address: resource_entity.global_address_str,
-        nf_ids,
+        resource_address: resource_entity.global_address,
+        nf_ids_hex,
     })
 }
 
@@ -249,13 +249,13 @@ pub fn to_api_non_fungible_substate(
     Ok(match &non_fungible.0 {
         Some(non_fungible) => models::Substate::NonFungibleSubstate {
             entity_type: EntityType::KeyValueStore,
-            nf_id: to_hex(nf_id_bytes),
+            nf_id_hex: to_hex(nf_id_bytes),
             is_deleted: false,
             non_fungible_data: Option::Some(Box::new(to_api_non_fungible_data(non_fungible)?)),
         },
         None => models::Substate::NonFungibleSubstate {
             entity_type: EntityType::KeyValueStore,
-            nf_id: to_hex(nf_id_bytes),
+            nf_id_hex: to_hex(nf_id_bytes),
             is_deleted: true,
             non_fungible_data: Option::None,
         },
@@ -288,13 +288,13 @@ fn to_api_key_value_story_entry_substate(
     Ok(match &key_value_store_entry.0 {
         Some(data) => models::Substate::KeyValueStoreEntrySubstate {
             entity_type: EntityType::KeyValueStore,
-            key: to_hex(key),
+            key_hex: to_hex(key),
             is_deleted: false,
             data_struct: Option::Some(Box::new(to_api_data_struct(data)?)),
         },
         None => models::Substate::KeyValueStoreEntrySubstate {
             entity_type: EntityType::KeyValueStore,
-            key: to_hex(key),
+            key_hex: to_hex(key),
             is_deleted: true,
             data_struct: Option::None,
         },

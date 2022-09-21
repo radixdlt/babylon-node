@@ -18,16 +18,16 @@ pub struct PackageSubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
     /// The hex-encoded package code
-    #[serde(rename = "code")]
-    pub code: String,
+    #[serde(rename = "code_hex")]
+    pub code_hex: String,
 }
 
 impl PackageSubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, code: String) -> PackageSubstate {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, code_hex: String) -> PackageSubstate {
         PackageSubstate {
             entity_type,
             substate_type,
-            code,
+            code_hex,
         }
     }
 }

@@ -95,7 +95,7 @@ pub fn to_api_up_substate(
     Ok(UpSubstate {
         substate_id: Box::new(to_api_substate_id(substate_id)?),
         version: to_api_substate_version(output_value.version)?,
-        substate_bytes: to_hex(substate_bytes),
+        substate_hex: to_hex(substate_bytes),
         substate_data_hash: hash,
         substate_data: api_substate_data,
     })

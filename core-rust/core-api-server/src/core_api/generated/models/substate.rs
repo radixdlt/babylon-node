@@ -35,8 +35,8 @@ pub enum Substate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
         /// The hex-encoded bytes of its key
-        #[serde(rename = "key")]
-        key: String,
+        #[serde(rename = "key_hex")]
+        key_hex: String,
         #[serde(rename = "is_deleted")]
         is_deleted: bool,
         #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
@@ -47,8 +47,8 @@ pub enum Substate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
         /// The hex-encoded bytes of its non-fungible id
-        #[serde(rename = "nf_id")]
-        nf_id: String,
+        #[serde(rename = "nf_id_hex")]
+        nf_id_hex: String,
         #[serde(rename = "is_deleted")]
         is_deleted: bool,
         #[serde(rename = "non_fungible_data", skip_serializing_if = "Option::is_none")]
@@ -59,8 +59,8 @@ pub enum Substate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
         /// The hex-encoded package code
-        #[serde(rename = "code")]
-        code: String,
+        #[serde(rename = "code_hex")]
+        code_hex: String,
     },
     #[serde(rename="ResourceManager")]
     ResourceManagerSubstate {
