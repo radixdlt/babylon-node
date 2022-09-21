@@ -64,7 +64,7 @@
 
 use crate::jni::dtos::*;
 use crate::jni::utils::*;
-use crate::mempool::simple::SimpleMempool;
+use crate::mempool::mempool::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{LoggingConfig, StateManager};
 use crate::store::{DatabaseConfig, StateManagerDatabase};

@@ -95,5 +95,5 @@ pub struct MempoolConfig {
     pub max_size: u32,
 }
 
-pub mod simple;
+pub mod mempool;
 pub mod transaction_rejection_cache;

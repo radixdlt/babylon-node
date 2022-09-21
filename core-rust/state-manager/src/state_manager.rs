@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::mempool::simple::SimpleMempool;
+use crate::mempool::mempool::SimpleMempool;
 use crate::mempool::transaction_rejection_cache::{RejectionCache, RejectionReason};
 use crate::query::ResourceAccounter;
 use crate::store::traits::*;
