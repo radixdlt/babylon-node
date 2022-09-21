@@ -32,7 +32,7 @@ fn handle_transaction_submit_internal(
             max_size: _,
         }) => Err(client_error("Mempool is full")),
         Err(MempoolAddError::Rejected(reason)) => {
-            Err(client_error(&format!("Rejected: {}", reason)))
+            Err(client_error(format!("Rejected: {}", reason)))
         }
     }
 }

@@ -48,7 +48,7 @@ fn parse_preview_request(
         .map_err(|err| err.into_response_error("blobs"))?;
 
     let manifest = manifest::compile(&request.manifest, network, manifest_blobs)
-        .map_err(|err| client_error(&format!("Invalid manifest - {:?}", err)))?;
+        .map_err(|err| client_error(format!("Invalid manifest - {:?}", err)))?;
 
     let signer_public_keys = request
         .signer_public_keys
