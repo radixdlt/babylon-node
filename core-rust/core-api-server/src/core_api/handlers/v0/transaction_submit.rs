@@ -16,7 +16,7 @@ fn handle_v0_transaction_submit_internal(
     state_manager: &mut ActualStateManager,
     request: models::V0TransactionSubmitRequest,
 ) -> Result<models::V0TransactionSubmitResponse, RequestHandlingError> {
-    let transaction = extract_unvalidated_transaction(&request.notarized_transaction)
+    let transaction = extract_unvalidated_transaction(&request.notarized_transaction_hex)
         .map_err(|err| err.into_response_error("notarized_transaction"))?;
 
     let result = state_manager.check_for_rejection_and_add_to_mempool(transaction);

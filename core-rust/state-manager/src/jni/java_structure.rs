@@ -62,6 +62,60 @@
  * permissions under this License.
  */
 
-mod java_structure;
+use crate::result::{StateManagerError, StateManagerResult, ERRCODE_SBOR};
+use sbor::{decode_with_static_info, encode_with_static_info};
 
-pub use java_structure::*;
+pub use sbor::{Decode, Encode, TypeId};
+
+pub trait JavaStructure {
+    fn from_java(data: &[u8]) -> StateManagerResult<Self>
+    where
+        Self: Sized;
+
+    fn to_java(&self) -> Vec<u8>;
+}
+
+impl<T: Encode + Decode + TypeId> JavaStructure for T {
+    fn from_java(data: &[u8]) -> StateManagerResult<Self> {
+        decode_with_static_info(data).map_err(|e| {
+            StateManagerError::create(ERRCODE_SBOR, format!("SBOR Decode Failed: {:?}", e))
+        })
+    }
+
+    fn to_java(&self) -> Vec<u8> {
+        encode_with_static_info(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sbor::{Decode, Encode, TypeId};
+
+    #[derive(Debug, TypeId, Encode, Decode, PartialEq, Eq)]
+    pub struct TypeA {
+        bytes_a: Vec<u8>,
+    }
+
+    #[derive(Debug, TypeId, Encode, Decode, PartialEq, Eq)]
+    pub struct TypeB {
+        bytes_b: Vec<u8>,
+        a: TypeA,
+    }
+
+    #[test]
+    fn local_sbor_test_transaction() {
+        let a0 = TypeA {
+            bytes_a: vec![1u8; 32],
+        };
+        let b0 = TypeB {
+            bytes_b: vec![2u8; 64],
+            a: a0,
+        };
+        let sbor0 = b0.to_java();
+        let r = TypeB::from_java(&sbor0);
+        assert!(r.is_ok());
+        let b1 = r.unwrap();
+        assert_eq!(b0, b1);
+    }
+}

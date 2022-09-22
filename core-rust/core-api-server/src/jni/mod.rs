@@ -70,7 +70,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
-use state_manager::jni::dtos::JavaStructure;
+use state_manager::jni::java_structure::JavaStructure;
 use state_manager::jni::state_manager::{ActualStateManager, JNIStateManager};
 use state_manager::jni::utils::*;
 use std::str;

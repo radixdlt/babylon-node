@@ -16,15 +16,15 @@ pub struct EcdsaSecp256k1Signature {
     #[serde(rename = "key_type")]
     pub key_type: crate::core_api::generated::models::PublicKeyType,
     /// A hex-encoded recoverable ECDSA Secp256k1 signature (65 bytes). The first byte is the recovery id, the remaining 64 bytes are the compact signature, ie CONCAT(R, s) where R and s are each 32-bytes in padded big-endian format.
-    #[serde(rename = "signature_bytes")]
-    pub signature_bytes: String,
+    #[serde(rename = "signature_hex")]
+    pub signature_hex: String,
 }
 
 impl EcdsaSecp256k1Signature {
-    pub fn new(key_type: crate::core_api::generated::models::PublicKeyType, signature_bytes: String) -> EcdsaSecp256k1Signature {
+    pub fn new(key_type: crate::core_api::generated::models::PublicKeyType, signature_hex: String) -> EcdsaSecp256k1Signature {
         EcdsaSecp256k1Signature {
             key_type,
-            signature_bytes,
+            signature_hex,
         }
     }
 }

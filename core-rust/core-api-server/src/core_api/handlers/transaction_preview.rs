@@ -40,7 +40,7 @@ fn parse_preview_request(
     request: models::TransactionPreviewRequest,
 ) -> Result<PreviewRequest, RequestHandlingError> {
     let manifest_blobs = request
-        .blobs
+        .blobs_hex
         .unwrap_or_default()
         .into_iter()
         .map(from_hex)

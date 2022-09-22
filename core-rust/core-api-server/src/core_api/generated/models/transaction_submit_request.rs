@@ -17,15 +17,15 @@ pub struct TransactionSubmitRequest {
     #[serde(rename = "network")]
     pub network: String,
     /// A hex-encoded, compiled notarized transaction.
-    #[serde(rename = "notarized_transaction")]
-    pub notarized_transaction: String,
+    #[serde(rename = "notarized_transaction_hex")]
+    pub notarized_transaction_hex: String,
 }
 
 impl TransactionSubmitRequest {
-    pub fn new(network: String, notarized_transaction: String) -> TransactionSubmitRequest {
+    pub fn new(network: String, notarized_transaction_hex: String) -> TransactionSubmitRequest {
         TransactionSubmitRequest {
             network,
-            notarized_transaction,
+            notarized_transaction_hex,
         }
     }
 }

@@ -62,9 +62,9 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::*;
+use crate::jni::java_structure::*;
 use crate::jni::utils::*;
-use crate::mempool::simple::SimpleMempool;
+use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::MempoolConfig;
 use crate::state_manager::{LoggingConfig, StateManager};
 use crate::store::{DatabaseConfig, StateManagerDatabase};

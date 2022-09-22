@@ -63,7 +63,7 @@
  */
 
 pub mod addressing;
-pub mod dtos;
+pub mod java_structure;
 pub mod mempool;
 pub mod state_computer;
 pub mod state_manager;

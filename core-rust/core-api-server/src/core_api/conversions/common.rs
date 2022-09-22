@@ -18,7 +18,7 @@ pub fn scrypto_bytes_to_api_sbor_data(
         bytes: scrypto_bytes.to_vec(),
     })?;
     Ok(models::SborData {
-        data_bytes: to_hex(scrypto_bytes),
-        data_json: serde_json::to_string(&scrypto_value).expect("JSON serialize error"),
+        data_hex: to_hex(scrypto_bytes),
+        data_json: Some(serde_json::to_value(&scrypto_value).expect("JSON serialize error")),
     })
 }

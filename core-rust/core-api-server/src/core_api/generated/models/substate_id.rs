@@ -16,22 +16,22 @@ pub struct SubstateId {
     #[serde(rename = "entity_type")]
     pub entity_type: crate::core_api::generated::models::EntityType,
     /// The hex-encoded bytes of the entity address
-    #[serde(rename = "entity_address")]
-    pub entity_address: String,
+    #[serde(rename = "entity_address_hex")]
+    pub entity_address_hex: String,
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
     /// The hex-encoded bytes of the substate key, under the entity
-    #[serde(rename = "substate_key")]
-    pub substate_key: String,
+    #[serde(rename = "substate_key_hex")]
+    pub substate_key_hex: String,
 }
 
 impl SubstateId {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, entity_address: String, substate_type: crate::core_api::generated::models::SubstateType, substate_key: String) -> SubstateId {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, entity_address_hex: String, substate_type: crate::core_api::generated::models::SubstateType, substate_key_hex: String) -> SubstateId {
         SubstateId {
             entity_type,
-            entity_address,
+            entity_address_hex,
             substate_type,
-            substate_key,
+            substate_key_hex,
         }
     }
 }

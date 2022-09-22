@@ -19,9 +19,9 @@ pub struct UpSubstate {
     #[serde(rename = "version")]
     pub version: i64,
     /// The hex-encoded, SBOR-encoded substate data bytes
-    #[serde(rename = "substate_bytes")]
-    pub substate_bytes: String,
-    /// The hex-encoded double-SHA256 hash of the substate data bytes
+    #[serde(rename = "substate_hex")]
+    pub substate_hex: String,
+    /// The hex-encoded single-SHA256 hash of the substate data bytes
     #[serde(rename = "substate_data_hash")]
     pub substate_data_hash: String,
     #[serde(rename = "substate_data")]
@@ -29,11 +29,11 @@ pub struct UpSubstate {
 }
 
 impl UpSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, version: i64, substate_bytes: String, substate_data_hash: String, substate_data: crate::core_api::generated::models::Substate) -> UpSubstate {
+    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, version: i64, substate_hex: String, substate_data_hash: String, substate_data: crate::core_api::generated::models::Substate) -> UpSubstate {
         UpSubstate {
             substate_id: Box::new(substate_id),
             version,
-            substate_bytes,
+            substate_hex,
             substate_data_hash,
             substate_data: Option::Some(substate_data),
         }

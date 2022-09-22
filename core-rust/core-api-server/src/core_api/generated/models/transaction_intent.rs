@@ -22,17 +22,17 @@ pub struct TransactionIntent {
     #[serde(rename = "manifest")]
     pub manifest: String,
     /// A map of the hex-encoded blob hash, to hex-encoded blob content
-    #[serde(rename = "blobs")]
-    pub blobs: ::std::collections::HashMap<String, String>,
+    #[serde(rename = "blobs_hex")]
+    pub blobs_hex: ::std::collections::HashMap<String, String>,
 }
 
 impl TransactionIntent {
-    pub fn new(hash: String, header: crate::core_api::generated::models::TransactionHeader, manifest: String, blobs: ::std::collections::HashMap<String, String>) -> TransactionIntent {
+    pub fn new(hash: String, header: crate::core_api::generated::models::TransactionHeader, manifest: String, blobs_hex: ::std::collections::HashMap<String, String>) -> TransactionIntent {
         TransactionIntent {
             hash,
             header: Box::new(header),
             manifest,
-            blobs,
+            blobs_hex,
         }
     }
 }
