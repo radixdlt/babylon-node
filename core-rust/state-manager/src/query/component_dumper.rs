@@ -68,7 +68,7 @@ use radix_engine::types::SubstateId;
 use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
 
-use super::state_tree_visitor::{StateTreeTraversor, StateTreeVisitor, StateTreeVisitorError};
+use super::state_tree_traverser::*;
 
 pub struct ComponentDump {
     pub vaults: Vec<Vault>,
@@ -89,7 +89,7 @@ impl StateTreeVisitor for ComponentDump {
 pub fn dump_component<S>(
     substate_store: &S,
     component: ComponentAddress,
-) -> Result<ComponentDump, StateTreeVisitorError>
+) -> Result<ComponentDump, StateTreeTraverserError>
 where
     S: ReadableSubstateStore + QueryableSubstateStore,
 {
@@ -98,7 +98,7 @@ where
         vaults: Vec::new(),
         descendents: Vec::new(),
     };
-    let mut state_tree_visitor = StateTreeTraversor::new(substate_store, &mut component_dump, 100);
+    let mut state_tree_visitor = StateTreeTraverser::new(substate_store, &mut component_dump, 100);
     state_tree_visitor.traverse_all_descendents(None, node_id)?;
 
     Ok(component_dump)

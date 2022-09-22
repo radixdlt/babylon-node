@@ -64,7 +64,8 @@
 
 mod component_dumper;
 mod resource_accounter;
-mod state_tree_visitor;
+mod state_tree_traverser;
 
 pub use component_dumper::*;
-pub use resource_accounter::ResourceAccounter;
+pub use resource_accounter::*;
+pub use state_tree_traverser::StateTreeTraverserError;

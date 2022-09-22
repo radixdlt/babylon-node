@@ -70,7 +70,7 @@ use scrypto::prelude::*;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
-use super::state_tree_visitor::{StateTreeTraversor, StateTreeVisitor, StateTreeVisitorError};
+use super::state_tree_traverser::*;
 
 pub struct ResourceAccounter<'s, S: ReadableSubstateStore + QueryableSubstateStore> {
     substate_store: &'s S,
@@ -85,9 +85,9 @@ impl<'s, S: ReadableSubstateStore + QueryableSubstateStore> ResourceAccounter<'s
         }
     }
 
-    pub fn add_resources(&mut self, node_id: RENodeId) -> Result<(), StateTreeVisitorError> {
+    pub fn add_resources(&mut self, node_id: RENodeId) -> Result<(), StateTreeTraverserError> {
         let mut state_tree_visitor =
-            StateTreeTraversor::new(self.substate_store, &mut self.accounting, 100);
+            StateTreeTraverser::new(self.substate_store, &mut self.accounting, 100);
         state_tree_visitor.traverse_all_descendents(None, node_id)
     }
 

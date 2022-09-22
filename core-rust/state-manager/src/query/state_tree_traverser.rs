@@ -70,12 +70,12 @@ use scrypto::engine::types::{RENodeId, SubstateId};
 use scrypto::values::ScryptoValue;
 
 #[derive(Debug)]
-pub enum StateTreeVisitorError {
+pub enum StateTreeTraverserError {
     RENodeNotFound(RENodeId),
     MaxDepthExceeded,
 }
 
-pub struct StateTreeTraversor<
+pub struct StateTreeTraverser<
     's,
     'v,
     S: ReadableSubstateStore + QueryableSubstateStore,
@@ -93,10 +93,10 @@ pub trait StateTreeVisitor {
 }
 
 impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisitor>
-    StateTreeTraversor<'s, 'v, S, V>
+    StateTreeTraverser<'s, 'v, S, V>
 {
     pub fn new(substate_store: &'s S, visitor: &'v mut V, max_depth: u32) -> Self {
-        StateTreeTraversor {
+        StateTreeTraverser {
             substate_store,
             visitor,
             max_depth,
@@ -107,7 +107,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
         &mut self,
         parent_node_id: Option<&SubstateId>,
         node_id: RENodeId,
-    ) -> Result<(), StateTreeVisitorError> {
+    ) -> Result<(), StateTreeTraverserError> {
         self.traverse_recursive(parent_node_id, node_id, 0)
     }
 
@@ -116,9 +116,9 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
         parent: Option<&SubstateId>,
         node_id: RENodeId,
         depth: u32,
-    ) -> Result<(), StateTreeVisitorError> {
+    ) -> Result<(), StateTreeTraverserError> {
         if depth > self.max_depth {
-            return Err(StateTreeVisitorError::MaxDepthExceeded);
+            return Err(StateTreeTraverserError::MaxDepthExceeded);
         }
         self.visitor.visit_node_id(parent, &node_id, depth);
         match node_id {
@@ -129,7 +129,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
 
                     self.visitor.visit_vault(Some(&substate_id), &vault);
                 } else {
-                    return Err(StateTreeVisitorError::RENodeNotFound(node_id));
+                    return Err(StateTreeTraverserError::RENodeNotFound(node_id));
                 }
             }
             RENodeId::KeyValueStore(kv_store_id) => {
@@ -158,7 +158,7 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                             .expect("Broken Node Store");
                     }
                 } else {
-                    return Err(StateTreeVisitorError::RENodeNotFound(node_id));
+                    return Err(StateTreeTraverserError::RENodeNotFound(node_id));
                 }
             }
             _ => {}
