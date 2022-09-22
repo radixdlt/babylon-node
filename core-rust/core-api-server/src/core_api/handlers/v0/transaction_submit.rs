@@ -19,7 +19,7 @@ fn handle_v0_transaction_submit_internal(
     let transaction = extract_unvalidated_transaction(&request.notarized_transaction)
         .map_err(|err| err.into_response_error("notarized_transaction"))?;
 
-    let result = state_manager.exec_validate_and_add_to_mempool(transaction);
+    let result = state_manager.check_for_rejection_and_add_to_mempool(transaction);
 
     match result {
         Ok(_) => Ok(models::V0TransactionSubmitResponse::new(false)),
