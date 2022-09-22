@@ -1,6 +1,6 @@
 use crate::core_api::*;
 
-use state_manager::jni::state_manager::ActualStateManager;
+use state_manager::{jni::state_manager::ActualStateManager, TransactionValidation};
 
 use state_manager::MempoolAddError;
 use transaction::model::NotarizedTransaction;
@@ -18,11 +18,10 @@ fn handle_transaction_submit_internal(
 ) -> Result<models::TransactionSubmitResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;
 
-    let notarized_transaction =
-        extract_notarized_transaction(state_manager, &request.notarized_transaction)
-            .map_err(|err| err.into_response_error("notarized_transaction"))?;
+    let notarized_transaction = extract_unvalidated_transaction(&request.notarized_transaction_hex)
+        .map_err(|err| err.into_response_error("notarized_transaction"))?;
 
-    let result = state_manager.add_to_mempool(notarized_transaction.into());
+    let result = state_manager.check_for_rejection_and_add_to_mempool(notarized_transaction);
 
     match result {
         Ok(_) => Ok(models::TransactionSubmitResponse::new(false)),
@@ -31,19 +30,16 @@ fn handle_transaction_submit_internal(
             current_size: _,
             max_size: _,
         }) => Err(client_error("Mempool is full")),
-        Err(MempoolAddError::Rejected { reason }) => {
-            Err(client_error(&format!("Rejected reason({})", reason)))
+        Err(MempoolAddError::Rejected(reason)) => {
+            Err(client_error(&format!("Rejected: {}", reason)))
         }
     }
 }
 
-pub fn extract_notarized_transaction(
-    state_manager: &mut ActualStateManager,
+pub fn extract_unvalidated_transaction(
     payload: &str,
 ) -> Result<NotarizedTransaction, ExtractionError> {
     let transaction_bytes = from_hex(payload)?;
-    let (notarized_transaction, _) = state_manager
-        .validation
-        .parse_and_validate(&transaction_bytes)?;
+    let notarized_transaction = TransactionValidation::parse_unvalidated_transaction_from_slice(&transaction_bytes)?;
     Ok(notarized_transaction)
 }

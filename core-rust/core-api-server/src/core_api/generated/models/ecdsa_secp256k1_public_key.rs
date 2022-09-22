@@ -16,15 +16,15 @@ pub struct EcdsaSecp256k1PublicKey {
     #[serde(rename = "key_type")]
     pub key_type: crate::core_api::generated::models::PublicKeyType,
     /// The hex-encoded compressed ECDSA Secp256k1 public key (33 bytes)
-    #[serde(rename = "key_bytes")]
-    pub key_bytes: String,
+    #[serde(rename = "key_hex")]
+    pub key_hex: String,
 }
 
 impl EcdsaSecp256k1PublicKey {
-    pub fn new(key_type: crate::core_api::generated::models::PublicKeyType, key_bytes: String) -> EcdsaSecp256k1PublicKey {
+    pub fn new(key_type: crate::core_api::generated::models::PublicKeyType, key_hex: String) -> EcdsaSecp256k1PublicKey {
         EcdsaSecp256k1PublicKey {
             key_type,
-            key_bytes,
+            key_hex,
         }
     }
 }

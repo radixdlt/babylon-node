@@ -30,6 +30,8 @@ transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="native-
 radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="native-method-0861f4" }
 radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="native-method-0861f4" }
 
+# Non-Radix Engine Dependencies:
 rocksdb = { version = "0.19.0" }
 hex = { version = "0.4.3", default-features = false }
 bech32 = { version = "0.9.0", default-features = false }
+lru = { version = "0.8.0", default-features = false } # https://docs.rs/lru/latest/lru/

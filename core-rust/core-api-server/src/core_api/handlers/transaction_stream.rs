@@ -132,7 +132,7 @@ fn to_api_notarized_transaction(
 
     Ok(models::NotarizedTransaction {
         hash: to_hex(payload_hash),
-        payload: to_hex(payload),
+        payload_hex: to_hex(payload),
         signed_intent: Box::new(models::SignedTransactionIntent {
             hash: to_hex(signed_intent_hash),
             intent: Box::new(models::TransactionIntent {
@@ -150,7 +150,7 @@ fn to_api_notarized_transaction(
                 }),
                 manifest: manifest::decompile(&intent.manifest.instructions, network)
                     .expect("Failed to decompile a transaction manifest"),
-                blobs: intent
+                blobs_hex: intent
                     .manifest
                     .blobs
                     .into_iter()

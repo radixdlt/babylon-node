@@ -62,6 +62,10 @@
  * permissions under this License.
  */
 
-mod query_db;
+mod component_dumper;
+mod resource_accounter;
+mod state_tree_traverser;
 
-pub use query_db::ResourceAccounter;
+pub use component_dumper::*;
+pub use resource_accounter::*;
+pub use state_tree_traverser::StateTreeTraverserError;

@@ -16,14 +16,14 @@ pub enum Signature {
     #[serde(rename="EcdsaSecp256k1")]
     EcdsaSecp256k1Signature {
         /// A hex-encoded recoverable ECDSA Secp256k1 signature (65 bytes). The first byte is the recovery id, the remaining 64 bytes are the compact signature, ie CONCAT(R, s) where R and s are each 32-bytes in padded big-endian format.
-        #[serde(rename = "signature_bytes")]
-        signature_bytes: String,
+        #[serde(rename = "signature_hex")]
+        signature_hex: String,
     },
     #[serde(rename="EddsaEd25519")]
     EddsaEd25519Signature {
         /// A hex-encoded EdDSA Ed25519 signature (64 bytes). This is CONCAT(R, s) where R and s are each 32-bytes in padded big-endian format.
-        #[serde(rename = "signature_bytes")]
-        signature_bytes: String,
+        #[serde(rename = "signature_hex")]
+        signature_hex: String,
     },
 }
 

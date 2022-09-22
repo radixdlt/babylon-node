@@ -102,6 +102,10 @@ pub async fn create_server<F>(
             post(handle_v0_transaction_receipt),
         )
         .route("/v0/state/epoch", post(handle_v0_state_epoch))
+        .route("/v0/state/component", post(handle_v0_state_component))
+        .route("/v0/state/resource", post(handle_v0_state_resource))
+        .route("/v0/state/non-fungible", post(handle_v0_state_non_fungible))
+        .route("/v0/state/package", post(handle_v0_state_package))
         .layer(Extension(core_api_state));
 
     let prefixed_router = Router::new().nest("/core", router);

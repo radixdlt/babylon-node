@@ -62,115 +62,108 @@
  * permissions under this License.
  */
 
-use crate::jni::java_structure::*;
-use crate::jni::utils::*;
-use crate::mempool::simple_mempool::SimpleMempool;
-use crate::mempool::MempoolConfig;
-use crate::state_manager::{LoggingConfig, StateManager};
-use crate::store::{DatabaseConfig, StateManagerDatabase};
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
+use radix_engine::engine::Substate;
+use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
+use radix_engine::model::{ComponentState, KeyValueStoreEntryWrapper, Vault};
 
-use scrypto::core::NetworkDefinition;
+use scrypto::engine::types::{RENodeId, SubstateId};
+use scrypto::values::ScryptoValue;
 
-use std::sync::{Arc, Mutex, MutexGuard};
-
-const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statemanager_StateManager_init(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-    j_config: jbyteArray,
-) {
-    JNIStateManager::init(&env, j_state_manager, j_config);
+#[derive(Debug)]
+pub enum StateTreeTraverserError {
+    RENodeNotFound(RENodeId),
+    MaxDepthExceeded,
 }
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
-    env: JNIEnv,
-    _class: JClass,
-    j_state_manager: JObject,
-) {
-    JNIStateManager::cleanup(&env, j_state_manager);
+pub struct StateTreeTraverser<
+    's,
+    'v,
+    S: ReadableSubstateStore + QueryableSubstateStore,
+    V: StateTreeVisitor,
+> {
+    substate_store: &'s S,
+    visitor: &'v mut V,
+    max_depth: u32,
 }
 
-#[derive(Debug, TypeId, Encode, Decode, Clone)]
-pub struct StateManagerConfig {
-    pub network_definition: NetworkDefinition,
-    pub mempool_config: Option<MempoolConfig>,
-    pub db_config: DatabaseConfig,
-    pub logging_config: LoggingConfig,
+pub trait StateTreeVisitor {
+    fn visit_vault(&mut self, _parent_id: Option<&SubstateId>, _vault: &Vault) {}
+    fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, _node_id: &RENodeId, _depth: u32) {
+    }
 }
 
-pub type ActualStateManager = StateManager<StateManagerDatabase>;
+impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisitor>
+    StateTreeTraverser<'s, 'v, S, V>
+{
+    pub fn new(substate_store: &'s S, visitor: &'v mut V, max_depth: u32) -> Self {
+        StateTreeTraverser {
+            substate_store,
+            visitor,
+            max_depth,
+        }
+    }
 
-pub struct JNIStateManager {
-    pub state_manager: Arc<Mutex<ActualStateManager>>,
-}
+    pub fn traverse_all_descendents(
+        &mut self,
+        parent_node_id: Option<&SubstateId>,
+        node_id: RENodeId,
+    ) -> Result<(), StateTreeTraverserError> {
+        self.traverse_recursive(parent_node_id, node_id, 0)
+    }
 
-impl JNIStateManager {
-    pub fn init(env: &JNIEnv, j_state_manager: JObject, j_config: jbyteArray) {
-        // Trying to initialize a global logger here, and carry on if this fails.
-        let _ = tracing_subscriber::fmt::try_init();
+    fn traverse_recursive(
+        &mut self,
+        parent: Option<&SubstateId>,
+        node_id: RENodeId,
+        depth: u32,
+    ) -> Result<(), StateTreeTraverserError> {
+        if depth > self.max_depth {
+            return Err(StateTreeTraverserError::MaxDepthExceeded);
+        }
+        self.visitor.visit_node_id(parent, &node_id, depth);
+        match node_id {
+            RENodeId::Vault(vault_id) => {
+                let substate_id = SubstateId::Vault(vault_id);
+                if let Some(output_value) = self.substate_store.get_substate(&substate_id) {
+                    let vault: Vault = output_value.substate.into();
 
-        let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
-        let config = StateManagerConfig::from_java(&config_bytes).unwrap();
-
-        // Build the basic subcomponents.
-        let mempool_config = match config.mempool_config {
-            Some(mempool_config) => mempool_config,
-            None =>
-            // in general, missing mempool config should mean that mempool isn't needed
-            // but for now just using a default
-            {
-                MempoolConfig { max_size: 10 }
+                    self.visitor.visit_vault(Some(&substate_id), &vault);
+                } else {
+                    return Err(StateTreeTraverserError::RENodeNotFound(node_id));
+                }
             }
+            RENodeId::KeyValueStore(kv_store_id) => {
+                let map = self.substate_store.get_kv_store_entries(&kv_store_id);
+                for (key, v) in map.iter() {
+                    let substate_id = SubstateId::KeyValueStoreEntry(kv_store_id, key.clone());
+                    if let Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(Some(entry))) = v
+                    {
+                        let value = ScryptoValue::from_slice(entry)
+                            .expect("Key Value Store Entry should be parseable.");
+                        for child_node_id in value.stored_node_ids() {
+                            self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
+                                .expect("Broken Node Store");
+                        }
+                    }
+                }
+            }
+            RENodeId::Component(component_address) => {
+                let substate_id = SubstateId::ComponentState(component_address);
+                if let Some(output_value) = self.substate_store.get_substate(&substate_id) {
+                    let component_state: ComponentState = output_value.substate.into();
+                    let value = ScryptoValue::from_slice(component_state.state())
+                        .expect("Component state should be parseable.");
+                    for child_node_id in value.stored_node_ids() {
+                        self.traverse_recursive(Some(&substate_id), child_node_id, depth + 1)
+                            .expect("Broken Node Store");
+                    }
+                } else {
+                    return Err(StateTreeTraverserError::RENodeNotFound(node_id));
+                }
+            }
+            _ => {}
         };
 
-        let store = StateManagerDatabase::from_config(config.db_config);
-        let mempool = SimpleMempool::new(mempool_config);
-
-        // Build the state manager.
-        let state_manager = Arc::new(Mutex::new(StateManager::new(
-            config.network_definition,
-            mempool,
-            store,
-            config.logging_config,
-        )));
-
-        let jni_state_manager = JNIStateManager { state_manager };
-
-        env.set_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME, jni_state_manager)
-            .unwrap();
-    }
-
-    pub fn cleanup(env: &JNIEnv, j_state_manager: JObject) {
-        let jni_state_manager: JNIStateManager = env
-            .take_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
-            .unwrap();
-
-        drop(jni_state_manager);
-    }
-
-    pub fn get_state_manager(
-        env: &JNIEnv,
-        j_state_manager: JObject,
-    ) -> Arc<Mutex<ActualStateManager>> {
-        let state_manager = {
-            let jni_state_manager: MutexGuard<JNIStateManager> = env
-                .get_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
-                .unwrap();
-            let state_manager = jni_state_manager.state_manager.clone();
-            // Ensure the JNI mutex lock is released
-            drop(jni_state_manager);
-            state_manager
-        };
-
-        state_manager
+        Ok(())
     }
 }
-
-pub fn export_extern_functions() {}

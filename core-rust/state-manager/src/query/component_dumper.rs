@@ -62,67 +62,44 @@
  * permissions under this License.
  */
 
-use crate::result::{StateManagerError, StateManagerResult, ERRCODE_SBOR};
-use sbor::{decode_with_static_info, encode_with_static_info};
+use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
+use radix_engine::model::Vault;
+use radix_engine::types::SubstateId;
+use scrypto::engine::types::RENodeId;
+use scrypto::prelude::*;
 
-pub use sbor::{Decode, Encode, TypeId};
+use super::state_tree_traverser::*;
 
-/**
- * This is a tagging interface.
- *
- * We explicitly tag structures as "JavaStructure" if they are on the interface with Java.
- * In general, some structs - such as eg "Transaction" are okay to be shared with Java.
- * But errors should be explicitly mapped to a corresponding Java error, for unmapping on the Java side.
- */
-pub trait JavaStructure {
-    fn from_java(data: &[u8]) -> StateManagerResult<Self>
-    where
-        Self: Sized;
-
-    fn to_java(&self) -> Vec<u8>;
+pub struct ComponentDump {
+    pub vaults: Vec<Vault>,
+    pub descendents: Vec<(Option<SubstateId>, RENodeId, u32)>,
 }
 
-impl<T: Encode + Decode + TypeId> JavaStructure for T {
-    fn from_java(data: &[u8]) -> StateManagerResult<Self> {
-        decode_with_static_info(data).map_err(|e| {
-            StateManagerError::create(ERRCODE_SBOR, format!("SBOR Decode Failed: {:?}", e))
-        })
+impl StateTreeVisitor for ComponentDump {
+    fn visit_vault(&mut self, _parent_id: Option<&SubstateId>, vault: &Vault) {
+        self.vaults.push(vault.clone());
     }
 
-    fn to_java(&self) -> Vec<u8> {
-        encode_with_static_info(self)
+    fn visit_node_id(&mut self, _parent_id: Option<&SubstateId>, node_id: &RENodeId, depth: u32) {
+        self.descendents
+            .push((_parent_id.cloned(), *node_id, depth));
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use sbor::{Decode, Encode, TypeId};
+pub fn dump_component<S>(
+    substate_store: &S,
+    component: ComponentAddress,
+) -> Result<ComponentDump, StateTreeTraverserError>
+where
+    S: ReadableSubstateStore + QueryableSubstateStore,
+{
+    let node_id = RENodeId::Component(component);
+    let mut component_dump = ComponentDump {
+        vaults: Vec::new(),
+        descendents: Vec::new(),
+    };
+    let mut state_tree_visitor = StateTreeTraverser::new(substate_store, &mut component_dump, 100);
+    state_tree_visitor.traverse_all_descendents(None, node_id)?;
 
-    #[derive(Debug, TypeId, Encode, Decode, PartialEq, Eq)]
-    pub struct TypeA {
-        bytes_a: Vec<u8>,
-    }
-
-    #[derive(Debug, TypeId, Encode, Decode, PartialEq, Eq)]
-    pub struct TypeB {
-        bytes_b: Vec<u8>,
-        a: TypeA,
-    }
-
-    #[test]
-    fn local_sbor_test_transaction() {
-        let a0 = TypeA {
-            bytes_a: vec![1u8; 32],
-        };
-        let b0 = TypeB {
-            bytes_b: vec![2u8; 64],
-            a: a0,
-        };
-        let sbor0 = b0.to_java();
-        let r = TypeB::from_java(&sbor0);
-        assert!(r.is_ok());
-        let b1 = r.unwrap();
-        assert_eq!(b0, b1);
-    }
+    Ok(component_dump)
 }

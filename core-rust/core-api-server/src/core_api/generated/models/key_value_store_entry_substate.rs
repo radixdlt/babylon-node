@@ -18,8 +18,8 @@ pub struct KeyValueStoreEntrySubstate {
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
     /// The hex-encoded bytes of its key
-    #[serde(rename = "key")]
-    pub key: String,
+    #[serde(rename = "key_hex")]
+    pub key_hex: String,
     #[serde(rename = "is_deleted")]
     pub is_deleted: bool,
     #[serde(rename = "data_struct", skip_serializing_if = "Option::is_none")]
@@ -27,11 +27,11 @@ pub struct KeyValueStoreEntrySubstate {
 }
 
 impl KeyValueStoreEntrySubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, key: String, is_deleted: bool) -> KeyValueStoreEntrySubstate {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, key_hex: String, is_deleted: bool) -> KeyValueStoreEntrySubstate {
         KeyValueStoreEntrySubstate {
             entity_type,
             substate_type,
-            key,
+            key_hex,
             is_deleted,
             data_struct: None,
         }

@@ -12,16 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct PackageSubstateAllOf {
-    /// The hex-encoded package code
-    #[serde(rename = "code_hex")]
-    pub code_hex: String,
+pub struct V0StatePackageRequest {
+    /// The Bech32m-encoded human readable version of the package's global address
+    #[serde(rename = "package_address")]
+    pub package_address: String,
 }
 
-impl PackageSubstateAllOf {
-    pub fn new(code_hex: String) -> PackageSubstateAllOf {
-        PackageSubstateAllOf {
-            code_hex,
+impl V0StatePackageRequest {
+    pub fn new(package_address: String) -> V0StatePackageRequest {
+        V0StatePackageRequest {
+            package_address,
         }
     }
 }

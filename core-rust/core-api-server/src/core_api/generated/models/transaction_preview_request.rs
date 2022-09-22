@@ -20,8 +20,8 @@ pub struct TransactionPreviewRequest {
     #[serde(rename = "manifest")]
     pub manifest: String,
     /// An array of hex-encoded blob data (optional)
-    #[serde(rename = "blobs", skip_serializing_if = "Option::is_none")]
-    pub blobs: Option<Vec<String>>,
+    #[serde(rename = "blobs_hex", skip_serializing_if = "Option::is_none")]
+    pub blobs_hex: Option<Vec<String>>,
     /// An integer between 0 and 2^32 - 1, giving the maximum number of cost units available for transaction execution
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: i64,
@@ -43,7 +43,7 @@ impl TransactionPreviewRequest {
         TransactionPreviewRequest {
             network,
             manifest,
-            blobs: None,
+            blobs_hex: None,
             cost_unit_limit,
             tip_percentage,
             nonce,

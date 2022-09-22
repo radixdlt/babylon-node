@@ -65,8 +65,10 @@
 package com.radixdlt.rev2;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.networks.Network;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Bytes;
@@ -88,7 +90,17 @@ public class REv2TransactionCreationTest {
   public void can_create_some_test_transactions() {
     // This test is mostly used to create signed transactions in various varieties for manually
     // testing the Core API
-    var network = NetworkDefinition.LOCALNET;
+    var network = NetworkDefinition.from(Network.LOCALNET);
+
+    var addressing = Addressing.ofNetwork(network);
+    log.info(
+        String.format(
+            "XRD Address: %s", addressing.encodeResourceAddress(ResourceAddress.XRD_ADDRESS)));
+    log.info(
+        String.format(
+            "Account Package Address: %s",
+            addressing.encodePackageAddress(PackageAddress.ACCOUNT_PACKAGE_ADDRESS)));
+    log.info("===================================");
 
     logTransaction(
         "Small valid transaction (Intent 1, Payload 1)",

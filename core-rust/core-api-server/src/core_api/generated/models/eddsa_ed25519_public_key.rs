@@ -16,15 +16,15 @@ pub struct EddsaEd25519PublicKey {
     #[serde(rename = "key_type")]
     pub key_type: crate::core_api::generated::models::PublicKeyType,
     /// The hex-encoded compressed EdDSA Ed25519 public key (32 bytes)
-    #[serde(rename = "key_bytes")]
-    pub key_bytes: String,
+    #[serde(rename = "key_hex")]
+    pub key_hex: String,
 }
 
 impl EddsaEd25519PublicKey {
-    pub fn new(key_type: crate::core_api::generated::models::PublicKeyType, key_bytes: String) -> EddsaEd25519PublicKey {
+    pub fn new(key_type: crate::core_api::generated::models::PublicKeyType, key_hex: String) -> EddsaEd25519PublicKey {
         EddsaEd25519PublicKey {
             key_type,
-            key_bytes,
+            key_hex,
         }
     }
 }

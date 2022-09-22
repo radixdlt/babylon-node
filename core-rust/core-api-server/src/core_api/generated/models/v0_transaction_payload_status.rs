@@ -18,6 +18,9 @@ pub struct V0TransactionPayloadStatus {
     /// The status of the transaction payload, as per this node
     #[serde(rename = "status")]
     pub status: Status,
+    /// An explanation for the error, if failed or rejected
+    #[serde(rename = "error_message", skip_serializing_if = "Option::is_none")]
+    pub error_message: Option<String>,
 }
 
 impl V0TransactionPayloadStatus {
@@ -25,6 +28,7 @@ impl V0TransactionPayloadStatus {
         V0TransactionPayloadStatus {
             payload_hash,
             status,
+            error_message: None,
         }
     }
 }

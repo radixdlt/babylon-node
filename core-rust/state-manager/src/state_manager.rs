@@ -62,7 +62,8 @@
  * permissions under this License.
  */
 
-use crate::mempool::simple::SimpleMempool;
+use crate::mempool::simple_mempool::SimpleMempool;
+use crate::mempool::transaction_rejection_cache::{RejectionCache, RejectionReason};
 use crate::query::ResourceAccounter;
 use crate::store::traits::*;
 use crate::types::{
@@ -85,6 +86,7 @@ use scrypto::engine::types::{RENodeId, SubstateId};
 use scrypto::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
+use std::time::Duration;
 use tracing::info;
 
 use crate::transaction_builder::create_set_epoch_intent;
@@ -114,7 +116,8 @@ pub struct TransactionValidation {
 }
 
 impl TransactionValidation {
-    fn parse_from_slice(
+    /// Checks the Payload max size, and SBOR decodes to a NotarizedTransaction if the size is okay
+    pub fn parse_unvalidated_transaction_from_slice(
         transaction_payload: &[u8],
     ) -> Result<NotarizedTransaction, TransactionValidationError> {
         if transaction_payload.len() > TransactionValidator::MAX_PAYLOAD_SIZE {
@@ -131,31 +134,27 @@ impl TransactionValidation {
         &self,
         transaction_payload: &[u8],
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
-        let notarized_transaction = Self::parse_from_slice(transaction_payload)?;
+        let notarized_transaction = Self::parse_unvalidated_transaction_from_slice(transaction_payload)?;
 
-        self.validate(notarized_transaction)
+        self.validate_transaction(notarized_transaction)
     }
 
-    fn validate(
+    /// Performs static validation only
+    pub fn parse_and_validate_transaction_slice(
+        &self,
+        transaction_payload: &[u8],
+    ) -> Result<ValidatedTransaction, TransactionValidationError> {
+        let notarized_transaction = Self::parse_unvalidated_transaction_from_slice(transaction_payload)?;
+
+        self.validate_transaction(notarized_transaction)
+    }
+
+    /// Performs static validation only
+    fn validate_transaction(
         &self,
         transaction: NotarizedTransaction,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
-        TransactionValidator::validate(
-            transaction,
-            &self.intent_hash_manager,
-            &self.validation_config,
-        )
-    }
-
-    pub fn parse_and_validate(
-        &self,
-        transaction_payload: &[u8],
-    ) -> Result<(NotarizedTransaction, ValidatedTransaction), TransactionValidationError> {
-        let notarized_transaction = Self::parse_from_slice(transaction_payload)?;
-
-        let validated_transaction = self.validate(notarized_transaction.clone())?;
-
-        Ok((notarized_transaction, validated_transaction))
+        TransactionValidator::validate(transaction, &self.intent_hash_manager, &self.validation_config)
     }
 }
 
@@ -164,6 +163,7 @@ pub struct StateManager<S> {
     pub network: NetworkDefinition,
     pub store: S,
     pub validation: TransactionValidation,
+    pub rejection_cache: RejectionCache,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
     execution_config: ExecutionConfig,
@@ -207,9 +207,12 @@ impl<S> StateManager<S> {
             },
             intent_hash_manager: TestIntentHashManager::new(),
             logging_config: logging_config.state_manager_config,
+            rejection_cache: RejectionCache::new(10000, 10000, Duration::from_secs(10)),
         }
     }
+
 }
+
 
 impl<S> StateManager<S>
 where
@@ -259,13 +262,13 @@ where
     S: ReadableSubstateStore,
     S: QueryableTransactionStore,
 {
-    fn test_transaction(
+    /// Performs static-validation, and then executes the transaction.
+    /// By checking the TransactionReceipt, you can see if the transaction is presently commitable.
+    fn validate_and_test_execute_transaction(
         &mut self,
-        transaction: &PendingTransaction,
+        transaction: &NotarizedTransaction,
     ) -> Result<TransactionReceipt, TransactionValidationError> {
-        let notarized_transaction = transaction.payload.clone();
-
-        let validated_transaction = self.validation.validate(notarized_transaction)?;
+        let validated_transaction = self.validation.validate_transaction(transaction.clone())?;
 
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
@@ -276,7 +279,7 @@ where
             &mut self.wasm_engine,
             &mut self.wasm_instrumenter,
         );
-        let receipt = transaction_executor.execute_and_commit(
+        let receipt = transaction_executor.execute(
             &validated_transaction,
             &self.fee_reserve_config,
             &self.execution_config,
@@ -284,31 +287,85 @@ where
         Ok(receipt)
     }
 
-    pub fn add_to_mempool(
+    /// Checking if the transaction should be rejected requires full validation, ie:
+    /// * Static Validation
+    /// * Executing the transaction (up to loan replatment)
+    ///
+    /// We look for cached rejections first, to avoid this heavy lifting where we can
+    pub fn check_for_rejection_and_add_to_mempool(
         &mut self,
-        transaction: PendingTransaction,
+        unvalidated_transaction: NotarizedTransaction,
     ) -> Result<(), MempoolAddError> {
-        if self
-            .store
-            .get_committed_transaction_by_intent(&transaction.intent_hash)
-            .is_some()
-        {
-            return Err(MempoolAddError::Rejected {
-                reason: "Transaction rejected - duplicate intent hash".to_string(),
-            });
+        // Quick check to avoid transaction validation if it couldn't be added to the mempool anyway
+        self.mempool
+            .check_add_would_be_possible(&unvalidated_transaction.payload_hash())?;
+
+        let rejection_check = self.check_for_rejection_with_caching(&unvalidated_transaction);
+
+        match rejection_check {
+            // Note - we purposefully don't save a validated transaction in the mempool:
+            // * Currently (Nov 2022) static validation isn't sufficiently static, as it includes EG epoch validation
+            // * Moreover, the engine expects the validated transaction to be presently valid, else panics
+            // * Once epoch validation is moved to the executor, we can persist validated transactions in the mempool
+            Ok(_) => self.mempool.add_transaction(unvalidated_transaction.into()),
+            Err(reason) => Err(MempoolAddError::Rejected(reason)),
+        }
+    }
+
+    /// Reads the transaction rejection status from the cache, else calculates it fresh, by
+    /// statically validating the transaction and then attempting to run it.
+    ///
+    /// If the transaction is freshly rejected, it is removed from the mempool and added
+    /// to the rejection cache.
+    fn check_for_rejection_with_caching(
+        &mut self,
+        transaction: &NotarizedTransaction,
+    ) -> Result<(), RejectionReason> {
+        let cached_status = self
+            .rejection_cache
+            .get_rejection_status(&transaction.intent_hash(), &transaction.payload_hash());
+
+        if let Some(rejection_reason) = cached_status {
+            return Err(rejection_reason.clone());
         }
 
-        let receipt =
-            self.test_transaction(&transaction)
-                .map_err(|e| MempoolAddError::Rejected {
-                    reason: format!("{:?}", e),
-                })?;
+        let new_status = self.check_for_rejection_uncached(transaction);
+
+        if let Err(rejection_reason) = new_status {
+            let payload_hash = transaction.payload_hash();
+            // Let's also remove it from the mempool, if it's present
+            self.mempool.remove_transaction(&payload_hash);
+            self.rejection_cache.track_rejection(
+                transaction.intent_hash(),
+                transaction.payload_hash(),
+                rejection_reason.clone(),
+            );
+            return Err(rejection_reason);
+        }
+
+        Ok(())
+    }
+
+    fn check_for_rejection_uncached(
+        &mut self,
+        transaction: &NotarizedTransaction,
+    ) -> Result<(), RejectionReason> {
+        if self
+            .store
+            .get_committed_transaction_by_intent(&transaction.intent_hash())
+            .is_some()
+        {
+            return Err(RejectionReason::IntentHashCommitted);
+        }
+
+        // TODO: Only run transaction up to the loan
+        let receipt = self
+            .validate_and_test_execute_transaction(transaction)
+            .map_err(RejectionReason::ValidationError)?;
 
         match receipt.result {
-            TransactionResult::Reject(result) => Err(MempoolAddError::Rejected {
-                reason: format!("{:?}", result),
-            }),
-            TransactionResult::Commit(..) => self.mempool.add_transaction(transaction),
+            TransactionResult::Reject(result) => Err(RejectionReason::FromExecution(result.error)),
+            TransactionResult::Commit(..) => Ok(()),
         }
     }
 
@@ -317,16 +374,9 @@ where
 
         let mut txns_to_remove = Vec::new();
         for (hash, data) in &mempool_txns {
-            let result = self.test_transaction(&data.transaction);
-            match result {
-                Err(..)
-                | Ok(TransactionReceipt {
-                    result: TransactionResult::Reject(..),
-                    ..
-                }) => {
-                    txns_to_remove.push(hash.clone());
-                }
-                _ => {}
+            let result = self.check_for_rejection_with_caching(&data.transaction.payload);
+            if result.is_err() {
+                txns_to_remove.push(*hash);
             }
         }
 
@@ -350,7 +400,7 @@ where
         for prepared in prepare_request.already_prepared_payloads {
             let validated_transaction = self
                 .validation
-                .validate_transaction_slice(&prepared)
+                .parse_and_validate_transaction_slice(&prepared)
                 .expect("Already prepared transactions should be decodeable");
 
             already_committed_or_prepared_intent_hashes.insert(validated_transaction.intent_hash());
@@ -362,7 +412,7 @@ where
         for proposed_payload in prepare_request.proposed_payloads {
             let validation_result = self
                 .validation
-                .validate_transaction_slice(&proposed_payload);
+                .parse_and_validate_transaction_slice(&proposed_payload);
 
             if let Ok(validated_transaction) = &validation_result {
                 let intent_hash = validated_transaction.intent_hash();
@@ -487,7 +537,7 @@ where
             .into_iter()
             .map(|t| {
                 self.validation
-                    .parse_and_validate(&t)
+                    .parse_and_validate_transaction_slice(&t)
                     .expect("Error on Byzantine quorum")
             })
             .collect::<Vec<_>>();
@@ -499,7 +549,7 @@ where
             .expect("Can't map usize to u64");
         let mut current_state_version = commit_request.state_version - ids_count;
 
-        for (notarized_txn, validated_txn) in transactions_to_commit {
+        for validated_txn in transactions_to_commit {
             let mut transaction_executor = TransactionExecutor::new(
                 &mut db_transaction,
                 &mut self.wasm_engine,
@@ -520,14 +570,14 @@ where
                     )
                 });
 
-            let payload_hash = notarized_txn.payload_hash();
-            let intent_hash = notarized_txn.intent_hash();
+            let payload_hash = validated_txn.transaction.payload_hash();
+            let intent_hash = validated_txn.transaction.intent_hash();
 
             let identifiers = CommittedTransactionIdentifiers {
                 state_version: current_state_version,
             };
             to_store.push((
-                StoredTransaction::User(notarized_txn),
+                StoredTransaction::User(validated_txn.transaction),
                 ledger_receipt,
                 identifiers,
             ));
@@ -547,8 +597,9 @@ where
         }
 
         db_transaction.commit();
-
         self.mempool.handle_committed_transactions(&intent_hashes);
+        self.rejection_cache
+            .track_committed_transactions(intent_hashes);
     }
 }
 

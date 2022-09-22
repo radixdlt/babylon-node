@@ -62,18 +62,16 @@
  * permissions under this License.
  */
 
-use crate::jni::dtos::JavaStructure;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use scrypto::prelude::*;
+use crate::jni::mempool::JavaRawTransaction;
 
-use crate::jni::state_manager::{ActualStateManager, JNIStateManager};
 use crate::jni::utils::*;
-use crate::result::StateManagerResult;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 
-use super::mempool::JavaRawTransaction;
+use super::state_manager::ActualStateManager;
 
 //
 // JNI Interface
@@ -86,32 +84,20 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_verify(&env, j_state_manager, request_payload).to_java();
-    jni_slice_to_jbytearray(&env, &ret)
+    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_verify)
 }
 
 fn do_verify(
-    env: &JNIEnv,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> StateManagerResult<Result<(), String>> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
-    let transaction = JavaRawTransaction::from_java(&request_payload)?;
+    state_manager: &mut ActualStateManager,
+    args: JavaRawTransaction,
+) -> Result<(), String> {
+    let transaction = args;
 
-    let state_manager = state_manager
-        .lock()
-        .expect("Can't acquire a state manager mutex lock");
+    let result = state_manager.validation.parse_and_validate_transaction_slice(&transaction.payload);
 
-    let result = state_manager
-        .validation
-        .validate_transaction_slice(&transaction.payload);
+    result.map_err(|err| format!("{:?}", err))?;
 
-    let ret = match result {
-        Ok(..) => Ok(()),
-        Err(err) => Err(format!("{:?}", err)),
-    };
-    Ok(ret)
+    Ok(())
 }
 
 #[no_mangle]
@@ -121,24 +107,12 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_saveVertexS
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_save_vertex_store(&env, j_state_manager, request_payload).to_java();
-    jni_slice_to_jbytearray(&env, &ret)
+    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_save_vertex_store)
 }
 
-fn do_save_vertex_store(
-    env: &JNIEnv,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> StateManagerResult<()> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
-    let vertex_store: Vec<u8> = Vec::from_java(&request_payload)?;
-
-    state_manager
-        .lock()
-        .expect("Can't acquire a state manager mutex lock")
-        .save_vertex_store(vertex_store);
-    Ok(())
+fn do_save_vertex_store(state_manager: &mut ActualStateManager, args: Vec<u8>) {
+    let vertex_store_bytes: Vec<u8> = args;
+    state_manager.save_vertex_store(vertex_store_bytes);
 }
 
 #[no_mangle]
@@ -148,24 +122,18 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_prepare(&env, j_state_manager, request_payload).to_java();
-    jni_slice_to_jbytearray(&env, &ret)
+    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_prepare)
 }
 
 fn do_prepare(
-    env: &JNIEnv,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> StateManagerResult<JavaPrepareResult> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
-    let prepare_request = JavaPrepareRequest::from_java(&request_payload)?;
+    state_manager: &mut ActualStateManager,
+    args: JavaPrepareRequest,
+) -> JavaPrepareResult {
+    let prepare_request = args;
 
-    let result = state_manager
-        .lock()
-        .expect("Can't acquire a state manager mutex lock")
-        .prepare(prepare_request.into());
-    Ok(result.into())
+    let result = state_manager.prepare(prepare_request.into());
+
+    result.into()
 }
 
 #[no_mangle]
@@ -175,24 +143,12 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = do_commit(&env, j_state_manager, request_payload).to_java();
-    jni_slice_to_jbytearray(&env, &ret)
+    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_commit)
 }
 
-fn do_commit(
-    env: &JNIEnv,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> StateManagerResult<()> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
-    let request_payload: Vec<u8> = jni_jbytearray_to_vector(env, request_payload)?;
-    let commit_request = JavaCommitRequest::from_java(&request_payload)?;
-
-    state_manager
-        .lock()
-        .expect("Can't acquire a state manager mutex lock")
-        .commit(commit_request.into());
-    Ok(())
+fn do_commit(state_manager: &mut ActualStateManager, args: JavaCommitRequest) {
+    let commit_request = args;
+    state_manager.commit(commit_request.into());
 }
 
 #[no_mangle]
@@ -202,26 +158,16 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXr
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    let ret = get_component_xrd(&env, j_state_manager, request_payload).to_java();
-    jni_slice_to_jbytearray(&env, &ret)
+    jni_state_manager_sbor_call(env, j_state_manager, request_payload, get_component_xrd)
 }
 
-fn get_component_xrd(
-    env: &JNIEnv,
-    j_state_manager: JObject,
-    request_payload: jbyteArray,
-) -> StateManagerResult<Decimal> {
-    let state_manager = JNIStateManager::get_state_manager(env, j_state_manager);
-    let request_payload = jni_jbytearray_to_vector(env, request_payload)?;
-    let component_address = ComponentAddress::from_java(&request_payload)?;
-    let resources = state_manager
-        .lock()
-        .expect("Can't acquire a state manager mutex lock")
-        .get_component_resources(component_address);
-    let amount = resources
+fn get_component_xrd(state_manager: &mut ActualStateManager, args: ComponentAddress) -> Decimal {
+    let component_address = args;
+    let resources = state_manager.get_component_resources(component_address);
+
+    resources
         .map(|r| r.get(&RADIX_TOKEN).cloned().unwrap_or_else(Decimal::zero))
-        .unwrap_or_else(Decimal::zero);
-    Ok(amount)
+        .unwrap_or_else(Decimal::zero)
 }
 
 #[no_mangle]

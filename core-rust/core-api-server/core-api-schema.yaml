@@ -30,6 +30,10 @@ openapi: 3.1.0
 #    EG 'The hex-encoded, SBOR-encoded data' or 'The hex-encoded double-SHA256 hash of the banana payload'
 # => Don't end in a full-stop, unless it is more than 1 sentence, then all sentences should end in a full stop
 # => It's not technically valid to have both $ref and description, but it works in ReDocly, so feel free to do it
+#
+# Naming guidance:
+# => Hex-encoded hashes should end _hash
+# => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
   version: '0.1.0'
   title: 'Babylon Core API'
@@ -321,6 +325,154 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  "/v0/state/component":
+    post:
+      summary: Read component data
+      tags:
+        - State
+        - V0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/V0StateComponentRequest"
+      responses:
+        '200':
+          description: Current state response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V0StateComponentResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/v0/state/resource":
+    post:
+      summary: Read resource data
+      tags:
+        - State
+        - V0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/V0StateResourceRequest"
+      responses:
+        '200':
+          description: Current state response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V0StateResourceResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/v0/state/non-fungible":
+    post:
+      summary: Read non-fungible data
+      tags:
+        - State
+        - V0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/V0StateNonFungibleRequest"
+      responses:
+        '200':
+          description: Current state response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V0StateNonFungibleResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/v0/state/package":
+    post:
+      summary: Read package data
+      tags:
+        - State
+        - V0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/V0StatePackageRequest"
+      responses:
+        '200':
+          description: Current state response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V0StatePackageResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 #############################################################################################
 components:
   schemas:
@@ -360,14 +512,14 @@ components:
       type: object
       required:
         - hash
-        - payload
+        - payload_hex
         - signed_intent
         - notary_signature
       properties:
         hash:
           type: string
           description: The hex-encoded double-SHA256 hash of the notarized transaction payload. Also known as the payload_hash or the notarized_transaction_hash.
-        payload:
+        payload_hex:
           type: string
           description: The hex-encoded full notarized transaction payload
         signed_intent:
@@ -396,7 +548,7 @@ components:
         - hash
         - header
         - manifest
-        - blobs
+        - blobs_hex
       properties:
         hash:
           type: string
@@ -408,7 +560,7 @@ components:
         manifest:
           type: string
           description: The decompiled transaction manifest
-        blobs:
+        blobs_hex:
           type: object
           description: A map of the hex-encoded blob hash, to hex-encoded blob content
           additionalProperties:
@@ -601,7 +753,7 @@ components:
       required:
         - substate_id
         - version
-        - substate_bytes
+        - substate_hex
         - substate_data_hash
         - substate_data
       properties:
@@ -613,12 +765,12 @@ components:
           minimum: 0
           maximum: 100000000000000
           description: An integer between 0 and 10^13, counting the number of times the substate was updated
-        substate_bytes:
+        substate_hex:
           type: string
           description: The hex-encoded, SBOR-encoded substate data bytes
         substate_data_hash:
           type: string
-          description: The hex-encoded double-SHA256 hash of the substate data bytes
+          description: The hex-encoded single-SHA256 hash of the substate data bytes
         substate_data:
           $ref: "#/components/schemas/Substate"
     DownSubstate:
@@ -632,7 +784,7 @@ components:
           $ref: "#/components/schemas/SubstateId"
         substate_data_hash:
           type: string
-          description: The hex-encoded double-SHA256 hash of the substate data bytes
+          description: The hex-encoded single-SHA256 hash of the substate data bytes
         version:
           type: integer
           format: int64
@@ -643,48 +795,48 @@ components:
       type: object
       required:
         - entity_type
-        - entity_address
-        - global_address_bytes
-        - global_address_str
+        - entity_address_hex
+        - global_address_hex
+        - global_address
       properties:
         entity_type:
           $ref: "#/components/schemas/EntityType"
-        entity_address:
+        entity_address_hex:
           type: string
           description: The hex-encoded bytes of the entity address
-        global_address_bytes:
+        global_address_hex:
           type: string
           description: The hex-encoded bytes of the entity's global address. This is currently the same as entity_address, but may change in future.
-        global_address_str:
+        global_address:
           type: string
           description: The Bech32m-encoded human readable version of the entity's global address
     EntityId:
       type: object
       required:
         - entity_type
-        - entity_address
+        - entity_address_hex
       properties:
         entity_type:
           $ref: "#/components/schemas/EntityType"
-        entity_address:
+        entity_address_hex:
           type: string
           description: The hex-encoded bytes of the entity address
     SubstateId:
       type: object
       required:
         - entity_type
-        - entity_address
+        - entity_address_hex
         - substate_type
-        - substate_key
+        - substate_key_hex
       properties:
         entity_type:
           $ref: "#/components/schemas/EntityType"
-        entity_address:
+        entity_address_hex:
           type: string
           description: The hex-encoded bytes of the entity address
         substate_type:
           $ref: "#/components/schemas/SubstateType"
-        substate_key:
+        substate_key_hex:
           type: string
           description: The hex-encoded bytes of the substate key, under the entity
     ResourceAddress:
@@ -737,11 +889,11 @@ components:
       type: object
       required:
         - key_type
-        - key_bytes
+        - key_hex
       properties:
         key_type:
           $ref: '#/components/schemas/PublicKeyType'
-        key_bytes:
+        key_hex:
           type: string
           minLength: 66
           maxLength: 66
@@ -750,11 +902,11 @@ components:
       type: object
       required:
         - key_type
-        - key_bytes
+        - key_hex
       properties:
         key_type:
           $ref: '#/components/schemas/PublicKeyType'
-        key_bytes:
+        key_hex:
           type: string
           minLength: 64
           maxLength: 64
@@ -773,11 +925,11 @@ components:
       type: object
       required:
         - key_type
-        - signature_bytes
+        - signature_hex
       properties:
         key_type:
           $ref: '#/components/schemas/PublicKeyType'
-        signature_bytes:
+        signature_hex:
           type: string
           minLength: 130
           maxLength: 130
@@ -786,11 +938,11 @@ components:
       type: object
       required:
         - key_type
-        - signature_bytes
+        - signature_hex
       properties:
         key_type:
           $ref: '#/components/schemas/PublicKeyType'
-        signature_bytes:
+        signature_hex:
           type: string
           minLength: 128
           maxLength: 128
@@ -977,23 +1129,22 @@ components:
     SborData:
       type: object
       required:
-        - data_bytes
+        - data_hex
         - data_json
       properties:
-        data_bytes:
+        data_hex:
           type: string
           description: The hex-encoded, raw SBOR-encoded data
         data_json:
-          type: string
-          description: A JSON string representing the encoded SBOR
+          description: An untyped JSON body representing the content of the SBOR data
     PackageSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - code
+            - code_hex
           properties:
-            code:
+            code_hex:
               type: string
               description: The hex-encoded package code
     VaultSubstate:
@@ -1042,9 +1193,9 @@ components:
         - $ref: '#/components/schemas/ResourceAmountBase'
         - type: object
           required:
-            - nf_ids
+            - nf_ids_hex
           properties:
-            nf_ids:
+            nf_ids_hex:
               type: array
               items:
                 type: string
@@ -1054,10 +1205,10 @@ components:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - nf_id
+            - nf_id_hex
             - is_deleted
           properties:
-            nf_id:
+            nf_id_hex:
               type: string
               description: The hex-encoded bytes of its non-fungible id
             is_deleted:
@@ -1080,10 +1231,10 @@ components:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - key
+            - key_hex
             - is_deleted
           properties:
-            key:
+            key_hex:
               type: string
               description: The hex-encoded bytes of its key
             is_deleted:
@@ -1151,11 +1302,11 @@ components:
       type: object
       required:
         - network
-        - notarized_transaction
+        - notarized_transaction_hex
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
-        notarized_transaction:
+        notarized_transaction_hex:
           description: A hex-encoded, compiled notarized transaction.
           type: string
     TransactionSubmitResponse:
@@ -1185,7 +1336,7 @@ components:
         manifest:
           description: A text-representation of a transaction manifest
           type: string
-        blobs:
+        blobs_hex:
           description: An array of hex-encoded blob data (optional)
           type: array
           items:
@@ -1322,9 +1473,9 @@ components:
     V0TransactionSubmitRequest:
       type: object
       required:
-        - notarized_transaction
+        - notarized_transaction_hex
       properties:
-        notarized_transaction:
+        notarized_transaction_hex:
           description: A hex-encoded, compiled notarized transaction.
           type: string
     V0TransactionSubmitResponse:
@@ -1383,6 +1534,9 @@ components:
             - CommittedFailure
             - InMempool
             - Rejected
+        error_message:
+          description: An explanation for the error, if failed or rejected
+          type: string
 ####################################
 # REQUEST: /v0/transaction/receipt #
 ####################################
@@ -1418,3 +1572,111 @@ components:
           minimum: 0
           maximum: 10000000000
           description: An integer between 0 and 10^10, marking the current epoch
+################################
+# REQUEST: /v0/state/component #
+################################
+    V0StateComponentRequest:
+      type: object
+      required:
+        - component_address
+      properties:
+        component_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the component's global address
+    V0StateComponentResponse:
+      type: object
+      required:
+        - info
+        - state
+        - owned_vaults
+        - descendent_ids
+      properties:
+        info:
+          $ref: "#/components/schemas/Substate"
+        state:
+          $ref: "#/components/schemas/Substate"
+        owned_vaults:
+          type: array
+          description: Any vaults owned directly or indirectly by the component
+          items:
+            $ref: "#/components/schemas/Substate"
+        descendent_ids:
+          type: array
+          description: Any descendent nodes owned directly or indirectly by the component
+          items:
+            $ref: "#/components/schemas/V0StateComponentDescendentId"
+    V0StateComponentDescendentId:
+      type: object
+      required:
+        - parent
+        - entity_id
+        - depth
+      properties:
+        parent:
+          $ref: "#/components/schemas/SubstateId"
+        entity_id:
+          $ref: "#/components/schemas/EntityId"
+        depth:
+          description: Depth under component
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+###############################
+# REQUEST: /v0/state/resource #
+###############################
+    V0StateResourceRequest:
+      type: object
+      required:
+        - resource_address
+      properties:
+        resource_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the resource's global address
+    V0StateResourceResponse:
+      type: object
+      required:
+        - manager
+      properties:
+        manager:
+          $ref: "#/components/schemas/Substate"
+###################################
+# REQUEST: /v0/state/non-fungible #
+###################################
+    V0StateNonFungibleRequest:
+      type: object
+      required:
+        - resource_address
+        - non_fungible_id_hex
+      properties:
+        resource_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the resource's global address
+        non_fungible_id_hex:
+          type: string
+          description: The hex-encoded non-fungible id
+    V0StateNonFungibleResponse:
+      type: object
+      required:
+        - non_fungible
+      properties:
+        non_fungible:
+          $ref: "#/components/schemas/Substate"
+##############################
+# REQUEST: /v0/state/package #
+##############################
+    V0StatePackageRequest:
+      type: object
+      required:
+        - package_address
+      properties:
+        package_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the package's global address
+    V0StatePackageResponse:
+      type: object
+      required:
+        - package
+      properties:
+        package:
+          $ref: "#/components/schemas/Substate"
