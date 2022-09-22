@@ -278,7 +278,7 @@ where
     /// Checking if the transaction should be rejected requires full validation, ie:
     /// * Static Validation
     /// * Executing the transaction (up to loan replatment)
-    /// 
+    ///
     /// We look for cached rejections first, to avoid this heavy lifting where we can
     pub fn check_for_rejection_and_add_to_mempool(
         &mut self,
@@ -288,8 +288,7 @@ where
         self.mempool
             .check_add_would_be_possible(&unvalidated_transaction.payload_hash())?;
 
-        let rejection_check =
-            self.check_for_rejection_with_caching(&unvalidated_transaction);
+        let rejection_check = self.check_for_rejection_with_caching(&unvalidated_transaction);
 
         match rejection_check {
             // Note - we purposefully don't save a validated transaction in the mempool:
@@ -398,8 +397,7 @@ where
         let mut validated_proposed_transactions = Vec::new();
         for proposed_payload in prepare_request.proposed_payloads {
             let payload_hash: PayloadHash = PayloadHash::for_payload(&proposed_payload);
-            let validation_result =
-                self.parse_and_validate_transaction_slice(&proposed_payload);
+            let validation_result = self.parse_and_validate_transaction_slice(&proposed_payload);
 
             if let Ok(validated_transaction) = &validation_result {
                 let intent_hash = validated_transaction.intent_hash();
