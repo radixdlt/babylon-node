@@ -64,7 +64,7 @@
 
 pub mod jni;
 pub mod mempool;
-mod query;
+pub mod query;
 mod receipt;
 mod result;
 mod state_manager;
@@ -76,5 +76,5 @@ pub use mempool::MempoolAddError;
 pub use receipt::{
     CommittedTransactionIdentifiers, CommittedTransactionStatus, LedgerTransactionReceipt,
 };
-pub use state_manager::StateManager;
+pub use state_manager::*;
 pub use types::*;

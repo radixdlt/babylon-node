@@ -41,7 +41,7 @@ pub(crate) fn client_error(message: &str) -> RequestHandlingError {
 pub(crate) fn not_found_error(message: &str) -> RequestHandlingError {
     RequestHandlingError(
         StatusCode::NOT_FOUND,
-        models::ErrorResponse::new(400, message.to_string()),
+        models::ErrorResponse::new(404, message.to_string()),
     )
 }
 

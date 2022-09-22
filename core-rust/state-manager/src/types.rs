@@ -69,7 +69,7 @@ use transaction::model::{
     ValidatedTransaction,
 };
 
-#[derive(PartialEq, Eq, Hash, Clone, PartialOrd, Ord, Decode, Encode, TypeId)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
 pub struct PayloadHash(pub [u8; Self::LENGTH]);
 
 impl PayloadHash {
@@ -116,7 +116,7 @@ impl HasPayloadHash for ValidatedTransaction {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, PartialOrd, Ord, Decode, Encode, TypeId)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
 pub struct IntentHash(pub [u8; Self::LENGTH]);
 
 impl IntentHash {

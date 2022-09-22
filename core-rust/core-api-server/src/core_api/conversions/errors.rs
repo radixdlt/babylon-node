@@ -1,3 +1,4 @@
+use radix_engine::types::AddressError;
 use sbor::DecodeError;
 use transaction::errors::TransactionValidationError;
 
@@ -51,6 +52,7 @@ pub enum ExtractionError {
     InvalidPublicKey,
     InvalidHash,
     InvalidTransaction(TransactionValidationError),
+    InvalidAddress(AddressError),
 }
 
 impl ExtractionError {

@@ -30,7 +30,7 @@ pub fn to_api_substate(
         Substate::ComponentState(component_state) => {
             to_api_component_state_substate(component_state)?
         }
-        Substate::Package(validated_package) => to_api_package_substate(validated_package),
+        Substate::Package(package) => to_api_package_substate(package),
         Substate::Vault(vault) => to_api_vault_substate(bech32_encoder, vault)?,
         Substate::NonFungible(non_fungible_wrapper) => {
             to_api_non_fungible_substate(substate_id, non_fungible_wrapper)?
@@ -48,7 +48,7 @@ fn to_api_system_substate(system: &System) -> Result<models::Substate, MappingEr
     })
 }
 
-fn to_api_resource_substate(resource_manager: &ResourceManager) -> models::Substate {
+pub fn to_api_resource_substate(resource_manager: &ResourceManager) -> models::Substate {
     let (resource_type, fungible_divisibility) = match resource_manager.resource_type() {
         ResourceType::Fungible { divisibility } => {
             (models::ResourceType::Fungible, Some(divisibility as i32))
@@ -72,7 +72,7 @@ fn to_api_resource_substate(resource_manager: &ResourceManager) -> models::Subst
     }
 }
 
-fn to_api_component_info_substate(
+pub fn to_api_component_info_substate(
     component_info: &ComponentInfo,
     bech32_encoder: &Bech32Encoder,
 ) -> models::Substate {
@@ -84,7 +84,7 @@ fn to_api_component_info_substate(
     }
 }
 
-fn to_api_component_state_substate(
+pub fn to_api_component_state_substate(
     component_state: &ComponentState,
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::ComponentStateSubstate {
@@ -164,7 +164,7 @@ fn extract_entities(struct_scrypto_value: &ScryptoValue) -> Result<Entities, Map
     })
 }
 
-fn to_api_package_substate(package: &Package) -> models::Substate {
+pub fn to_api_package_substate(package: &Package) -> models::Substate {
     // TODO: map blueprint_abis
     models::Substate::PackageSubstate {
         entity_type: EntityType::Package,
@@ -172,7 +172,7 @@ fn to_api_package_substate(package: &Package) -> models::Substate {
     }
 }
 
-fn to_api_vault_substate(
+pub fn to_api_vault_substate(
     bech32_encoder: &Bech32Encoder,
     vault: &Vault,
 ) -> Result<models::Substate, MappingError> {
@@ -232,7 +232,7 @@ fn to_api_non_fungible_resource_amount(
     })
 }
 
-fn to_api_non_fungible_substate(
+pub fn to_api_non_fungible_substate(
     substate_id: &SubstateId,
     non_fungible: &NonFungibleWrapper,
 ) -> Result<models::Substate, MappingError> {
