@@ -162,16 +162,18 @@ impl<S> StateManager<S> {
         }
     }
 
-    pub fn parse_and_statically_validate_transaction_slice(
+    /// Performs static validation only
+    pub fn parse_and_validate_transaction_slice(
         &self,
         transaction_payload: &[u8],
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
         let notarized_transaction = parse_unvalidated_transaction_from_slice(transaction_payload)?;
 
-        self.statically_validate_transaction(notarized_transaction)
+        self.validate_transaction(notarized_transaction)
     }
 
-    pub fn statically_validate_transaction(
+    /// Performs static validation only
+    fn validate_transaction(
         &self,
         transaction: NotarizedTransaction,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
@@ -185,6 +187,7 @@ impl<S> StateManager<S> {
     }
 }
 
+/// Checks the Payload max size, and SBOR decodes to a NotarizedTransaction if the size is okay
 pub fn parse_unvalidated_transaction_from_slice(
     transaction_payload: &[u8],
 ) -> Result<NotarizedTransaction, TransactionValidationError> {
@@ -247,13 +250,13 @@ where
     S: QueryableTransactionStore,
 {
     /// Performs static-validation, and then executes the transaction.
-    /// By checking the TransactionReceipt, you can see if the transaction is presently commitable
-    fn statically_validate_and_test_execute_transaction(
+    /// By checking the TransactionReceipt, you can see if the transaction is presently commitable.
+    fn validate_and_test_execute_transaction(
         &mut self,
         transaction: &NotarizedTransaction,
     ) -> Result<TransactionReceipt, TransactionValidationError> {
         let notarized_transaction = transaction.clone();
-        let validated_transaction = self.statically_validate_transaction(notarized_transaction)?;
+        let validated_transaction = self.validate_transaction(notarized_transaction)?;
 
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
@@ -272,7 +275,12 @@ where
         Ok(receipt)
     }
 
-    pub fn exec_validate_and_add_to_mempool(
+    /// Checking if the transaction should be rejected requires full validation, ie:
+    /// * Static Validation
+    /// * Executing the transaction (up to loan replatment)
+    /// 
+    /// We look for cached rejections first, to avoid this heavy lifting where we can
+    pub fn check_for_rejection_and_add_to_mempool(
         &mut self,
         unvalidated_transaction: NotarizedTransaction,
     ) -> Result<(), MempoolAddError> {
@@ -281,7 +289,7 @@ where
             .check_add_would_be_possible(&unvalidated_transaction.payload_hash())?;
 
         let rejection_check =
-            self.transaction_rejection_check_with_caching(&unvalidated_transaction);
+            self.check_for_rejection_with_caching(&unvalidated_transaction);
 
         match rejection_check {
             // Note - we purposefully don't save a validated transaction in the mempool:
@@ -298,7 +306,7 @@ where
     ///
     /// If the transaction is freshly rejected, it is removed from the mempool and added
     /// to the rejection cache.
-    fn transaction_rejection_check_with_caching(
+    fn check_for_rejection_with_caching(
         &mut self,
         transaction: &NotarizedTransaction,
     ) -> Result<(), RejectionReason> {
@@ -310,7 +318,7 @@ where
             return Err(rejection_reason.clone());
         }
 
-        let new_status = self.transaction_rejection_check_uncached(transaction);
+        let new_status = self.check_for_rejection_uncached(transaction);
 
         if let Err(rejection_reason) = new_status {
             let payload_hash = transaction.payload_hash();
@@ -327,7 +335,7 @@ where
         Ok(())
     }
 
-    fn transaction_rejection_check_uncached(
+    fn check_for_rejection_uncached(
         &mut self,
         transaction: &NotarizedTransaction,
     ) -> Result<(), RejectionReason> {
@@ -341,7 +349,7 @@ where
 
         // TODO: Only run transaction up to the loan
         let receipt = self
-            .statically_validate_and_test_execute_transaction(transaction)
+            .validate_and_test_execute_transaction(transaction)
             .map_err(RejectionReason::ValidationError)?;
 
         match receipt.result {
@@ -355,7 +363,7 @@ where
 
         let mut txns_to_remove = Vec::new();
         for (hash, data) in &mempool_txns {
-            let result = self.transaction_rejection_check_with_caching(&data.transaction.payload);
+            let result = self.check_for_rejection_with_caching(&data.transaction.payload);
             if result.is_err() {
                 txns_to_remove.push(*hash);
             }
@@ -380,7 +388,7 @@ where
 
         for prepared in prepare_request.already_prepared_payloads {
             let validated_transaction = self
-                .parse_and_statically_validate_transaction_slice(&prepared)
+                .parse_and_validate_transaction_slice(&prepared)
                 .expect("Already prepared transactions should be decodeable");
 
             already_committed_or_prepared_intent_hashes.insert(validated_transaction.intent_hash());
@@ -391,7 +399,7 @@ where
         for proposed_payload in prepare_request.proposed_payloads {
             let payload_hash: PayloadHash = PayloadHash::for_payload(&proposed_payload);
             let validation_result =
-                self.parse_and_statically_validate_transaction_slice(&proposed_payload);
+                self.parse_and_validate_transaction_slice(&proposed_payload);
 
             if let Ok(validated_transaction) = &validation_result {
                 let intent_hash = validated_transaction.intent_hash();
@@ -511,7 +519,7 @@ where
             .transaction_payloads
             .into_iter()
             .map(|t| {
-                self.parse_and_statically_validate_transaction_slice(&t)
+                self.parse_and_validate_transaction_slice(&t)
                     .expect("Error on Byzantine quorum")
             })
             .collect::<Vec<_>>();

@@ -99,7 +99,7 @@ fn do_add(
     let unvalidated_transaction = parse_unvalidated_transaction_from_slice(&transaction.payload)?;
 
     state_manager
-        .exec_validate_and_add_to_mempool(unvalidated_transaction)
+        .check_for_rejection_and_add_to_mempool(unvalidated_transaction)
         .map(|_| transaction.payload_hash)
         .map_err(|err| err.into())
 }
