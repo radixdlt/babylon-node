@@ -76,6 +76,7 @@ use crate::{
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
+use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     ExecutionConfig, FeeReserveConfig, PreviewError, PreviewExecutor, PreviewResult,
@@ -87,14 +88,21 @@ use scrypto::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::time::Duration;
-use radix_engine::fee::SystemLoanFeeReserve;
 use tracing::info;
 
 use transaction::errors::TransactionValidationError;
-use transaction::model::{NotarizedTransaction, PreviewFlags, PreviewIntent, Transaction, TransactionHeader, TransactionIntent, Validated};
+use transaction::model::{
+    NotarizedTransaction, PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent,
+    Validated,
+};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
-use transaction::validation::{NetworkTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig};
-use transaction::validation::MAX_PAYLOAD_SIZE;
+use transaction::validation::{
+    NotarizedTransactionValidator, TestIntentHashManager, ValidationConfig,
+};
+
+use crate::transaction::{
+    CommittedTransactionValidator, Transaction, UserTransactionValidator, ValidatorTransaction,
+};
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -108,70 +116,12 @@ pub struct StateManagerLoggingConfig {
     pub log_on_transaction_rejection: bool,
 }
 
-pub struct TransactionValidation {
-    validator: NetworkTransactionValidator,
-    intent_hash_manager: TestIntentHashManager,
-}
-
-impl TransactionValidation {
-    /// Checks the Payload max size, and SBOR decodes to a NotarizedTransaction if the size is okay
-    pub fn parse_unvalidated_user_transaction_from_slice(
-        transaction_payload: &[u8],
-    ) -> Result<NotarizedTransaction, TransactionValidationError> {
-        if transaction_payload.len() > MAX_PAYLOAD_SIZE {
-            return Err(TransactionValidationError::TransactionTooLarge);
-        }
-
-        let transaction: NotarizedTransaction = scrypto_decode(transaction_payload)
-            .map_err(TransactionValidationError::DeserializationError)?;
-
-        Ok(transaction)
-    }
-
-    /// Performs static validation only
-    pub fn parse_and_validate_user_transaction_slice(
-        &self,
-        transaction_payload: &[u8],
-    ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
-        let notarized_transaction = Self::parse_unvalidated_user_transaction_from_slice(transaction_payload)?;
-        self.validate_user_transaction(notarized_transaction)
-    }
-
-    /// Performs static validation only
-    fn validate_user_transaction(
-        &self,
-        transaction: NotarizedTransaction,
-    ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
-        self.validator.validate(transaction, &self.intent_hash_manager)
-    }
-
-    pub fn parse_unvalidated_transaction_from_slice(
-        transaction_payload: &[u8],
-    ) -> Result<Transaction, TransactionValidationError> {
-        let transaction: Transaction = scrypto_decode(transaction_payload)
-            .map_err(TransactionValidationError::DeserializationError)?;
-
-        Ok(transaction)
-    }
-
-    pub fn parse_and_validate_transaction_slice(
-        &self,
-        transaction_payload: &[u8],
-    ) -> Result<Validated<Transaction>, TransactionValidationError> {
-        let transaction = Self::parse_unvalidated_transaction_from_slice(transaction_payload)?;
-        self.validate_transaction(transaction)
-    }
-
-    fn validate_transaction(&self, transaction: Transaction) -> Result<Validated<Transaction>, TransactionValidationError> {
-        self.validator.validate(transaction, &self.intent_hash_manager)
-    }
-}
-
 pub struct StateManager<S> {
     pub mempool: SimpleMempool,
     pub network: NetworkDefinition,
     pub store: S,
-    pub validation: TransactionValidation,
+    pub user_transaction_validator: UserTransactionValidator,
+    pub committed_transaction_validator: CommittedTransactionValidator,
     pub rejection_cache: RejectionCache,
     wasm_engine: DefaultWasmEngine,
     wasm_instrumenter: WasmInstrumenter,
@@ -188,8 +138,18 @@ impl<S> StateManager<S> {
         store: S,
         logging_config: LoggingConfig,
     ) -> StateManager<S> {
-        let validation = TransactionValidation {
-            validator: NetworkTransactionValidator::new(ValidationConfig {
+        let user_transaction_validator = UserTransactionValidator {
+            validator: NotarizedTransactionValidator::new(ValidationConfig {
+                network_id: network.id,
+                current_epoch: 1,
+                max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+                min_tip_percentage: 0,
+            }),
+            intent_hash_manager: TestIntentHashManager::new(),
+        };
+
+        let committed_transaction_validator = CommittedTransactionValidator {
+            validator: NotarizedTransactionValidator::new(ValidationConfig {
                 network_id: network.id,
                 current_epoch: 1,
                 max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
@@ -204,7 +164,8 @@ impl<S> StateManager<S> {
             store,
             wasm_engine: DefaultWasmEngine::new(),
             wasm_instrumenter: WasmInstrumenter::new(),
-            validation,
+            user_transaction_validator,
+            committed_transaction_validator,
             execution_config: ExecutionConfig {
                 max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                 trace: logging_config.engine_trace,
@@ -218,9 +179,7 @@ impl<S> StateManager<S> {
             rejection_cache: RejectionCache::new(10000, 10000, Duration::from_secs(10)),
         }
     }
-
 }
-
 
 impl<S> StateManager<S>
 where
@@ -272,8 +231,8 @@ enum ValidationResult {
     },
     Err {
         error: TransactionValidationError,
-        payload: Vec<u8>
-    }
+        payload: Vec<u8>,
+    },
 }
 
 impl<S> StateManager<S>
@@ -287,7 +246,9 @@ where
         &mut self,
         transaction: &NotarizedTransaction,
     ) -> Result<TransactionReceipt, TransactionValidationError> {
-        let validated_transaction = self.validation.validate_user_transaction(transaction.clone())?;
+        let validated_transaction = self
+            .user_transaction_validator
+            .validate_user_transaction(transaction.clone())?;
 
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
@@ -418,21 +379,22 @@ where
 
         for prepared in prepare_request.already_prepared_payloads {
             let validated_transaction = self
-                .validation
+                .committed_transaction_validator
                 .parse_and_validate_transaction_slice(&prepared)
                 .expect("Already prepared transactions should be decodeable");
 
             if let Transaction::User(notarized_transaction) = validated_transaction.transaction() {
-                already_committed_or_prepared_intent_hashes.insert(notarized_transaction.intent_hash());
+                already_committed_or_prepared_intent_hashes
+                    .insert(notarized_transaction.intent_hash());
             }
             validated_prepared.push(validated_transaction);
         }
 
-        let mut validated_proposed_transactions : Vec<ValidationResult> = Vec::new();
+        let mut validated_proposed_transactions: Vec<ValidationResult> = Vec::new();
 
         for proposed_payload in prepare_request.proposed_payloads {
             let validation_result = self
-                .validation
+                .user_transaction_validator
                 .parse_and_validate_user_transaction_slice(&proposed_payload);
 
             if let Ok(validated_transaction) = &validation_result {
@@ -446,9 +408,15 @@ where
                 }
             }
 
-            let validation_result = validation_result.map(|validated| {
-                ValidationResult::Ok { validated, payload: proposed_payload.clone() }
-            }).unwrap_or_else(|error| ValidationResult::Err { error, payload: proposed_payload.clone() });
+            let validation_result = validation_result
+                .map(|validated| ValidationResult::Ok {
+                    validated,
+                    payload: proposed_payload.clone(),
+                })
+                .unwrap_or_else(|error| ValidationResult::Err {
+                    error,
+                    payload: proposed_payload.clone(),
+                });
 
             validated_proposed_transactions.push(validation_result);
         }
@@ -471,15 +439,20 @@ where
         }
 
         let mut committed = Vec::new();
-        let epoch_update_txn = Transaction::EpochUpdate(prepare_request.round_number);
-        let validated_epoch_update_txn = self.validation.validate_transaction(epoch_update_txn).unwrap();
+        let epoch_update_txn: Validated<ValidatorTransaction> =
+            ValidatorTransaction::EpochUpdate(prepare_request.round_number).into();
         let mut fee_reserve = SystemLoanFeeReserve::default();
         // TODO: Clean up fee reserve
         fee_reserve.credit(10_000_000);
-        let receipt = transaction_executor.execute_with_fee_reserve(&validated_epoch_update_txn, &self.execution_config, fee_reserve);
+        let receipt = transaction_executor.execute_with_fee_reserve(
+            &epoch_update_txn,
+            &self.execution_config,
+            fee_reserve,
+        );
         match receipt.result {
             TransactionResult::Commit(..) => {
-                let serialized_validated_txn = scrypto_encode(validated_epoch_update_txn.transaction());
+                let serialized_validated_txn =
+                    scrypto_encode(&Transaction::Validator(epoch_update_txn.into_transaction()));
                 committed.push(serialized_validated_txn);
             }
             TransactionResult::Reject(reject_result) => {
@@ -509,8 +482,10 @@ where
 
                     match receipt.result {
                         TransactionResult::Commit(..) => {
-                            already_committed_or_prepared_intent_hashes.insert(validated.intent_hash());
-                            let serialized_validated_txn = scrypto_encode(&Transaction::User(validated.into_transaction()));
+                            already_committed_or_prepared_intent_hashes
+                                .insert(validated.intent_hash());
+                            let serialized_validated_txn =
+                                scrypto_encode(&Transaction::User(validated.into_transaction()));
                             committed.push(serialized_validated_txn);
                         }
                         TransactionResult::Reject(reject_result) => {
@@ -557,7 +532,7 @@ where
             .transaction_payloads
             .into_iter()
             .map(|t| {
-                self.validation
+                self.committed_transaction_validator
                     .parse_and_validate_transaction_slice(&t)
                     .expect("Error on Byzantine quorum")
             })
@@ -584,8 +559,7 @@ where
             );
 
             let ledger_receipt: LedgerTransactionReceipt =
-                engine_receipt.try_into()
-                    .unwrap_or_else(|error| {
+                engine_receipt.try_into().unwrap_or_else(|error| {
                     panic!(
                         "Failed to commit a txn at state version {}: {}",
                         commit_request.state_version, error
@@ -598,18 +572,18 @@ where
 
             // TODO: Remove
             let stored_transaction = match transaction {
-                Transaction::User(notarized_transaction) => StoredTransaction::User(notarized_transaction),
-                Transaction::EpochUpdate(epoch) => StoredTransaction::System(scrypto_encode(&epoch)),
+                Transaction::User(notarized_transaction) => {
+                    StoredTransaction::User(notarized_transaction)
+                }
+                Transaction::Validator(validator_transaction) => {
+                    StoredTransaction::System(scrypto_encode(&validator_transaction))
+                }
             };
 
             let identifiers = CommittedTransactionIdentifiers {
                 state_version: current_state_version,
             };
-            to_store.push((
-                stored_transaction,
-                ledger_receipt,
-                identifiers,
-            ));
+            to_store.push((stored_transaction, ledger_receipt, identifiers));
             payload_hashes.push(payload_hash);
             intent_hashes.push(intent_hash);
             current_state_version += 1;

@@ -63,5 +63,11 @@
  */
 
 mod builder;
+mod types;
+mod validation;
+mod validator;
 
+pub use self::types::*;
 pub use builder::*;
+pub use validation::*;
+pub use validator::*;

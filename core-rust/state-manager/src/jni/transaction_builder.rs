@@ -64,7 +64,7 @@
 
 use crate::jni::java_structure::JavaStructure;
 use crate::result::StateManagerResult;
-use crate::transaction_builder::{
+use crate::transaction::{
     create_100kb_txn_intent, create_intent_bytes, create_manifest, create_new_account_intent_bytes,
     create_notarized_bytes, create_set_epoch_intent, create_signed_intent_bytes,
 };

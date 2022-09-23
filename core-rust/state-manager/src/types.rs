@@ -62,9 +62,12 @@
  * permissions under this License.
  */
 
+use crate::transaction::Transaction;
 use scrypto::prelude::*;
 use std::fmt;
-use transaction::model::{NotarizedTransaction, PreviewFlags, Transaction, TransactionIntent, TransactionManifest, Validated};
+use transaction::model::{
+    NotarizedTransaction, PreviewFlags, TransactionIntent, TransactionManifest, Validated,
+};
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
 pub struct PayloadHash(pub [u8; Self::LENGTH]);
@@ -177,11 +180,9 @@ impl HasIntentHash for Validated<NotarizedTransaction> {
 impl HasIntentHash for Transaction {
     fn intent_hash(&self) -> IntentHash {
         match self {
-            Transaction::User(notarized_transaction) => {
-                notarized_transaction.intent_hash()
-            }
-            Transaction::EpochUpdate(epoch) => {
-                IntentHash::for_intent_bytes(&scrypto_encode(epoch))
+            Transaction::User(notarized_transaction) => notarized_transaction.intent_hash(),
+            Transaction::Validator(validator_transaction) => {
+                IntentHash::for_intent_bytes(&scrypto_encode(validator_transaction))
             }
         }
     }

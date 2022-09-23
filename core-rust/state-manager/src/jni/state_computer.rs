@@ -62,11 +62,11 @@
  * permissions under this License.
  */
 
+use crate::jni::mempool::JavaRawTransaction;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use scrypto::prelude::*;
-use crate::jni::mempool::JavaRawTransaction;
 
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
@@ -93,7 +93,9 @@ fn do_verify(
 ) -> Result<(), String> {
     let transaction = args;
 
-    let result = state_manager.validation.parse_and_validate_user_transaction_slice(&transaction.payload);
+    let result = state_manager
+        .user_transaction_validator
+        .parse_and_validate_user_transaction_slice(&transaction.payload);
 
     result.map_err(|err| format!("{:?}", err))?;
 

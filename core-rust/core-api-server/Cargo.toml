@@ -20,12 +20,11 @@ state-manager = { path = "../state-manager" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-131727" }
-scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-131727" }
-transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-131727" }
-radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-131727" }
-radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-131727" }
-
+sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-542d6b" }
+scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-542d6b" }
+transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-542d6b" }
+radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-542d6b" }
+radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-542d6b" }
 
 jni = "0.19.0"
 

@@ -30,7 +30,8 @@ fn handle_v0_state_component_internal(
     if !(component_info_option.is_some() && component_state_option.is_some()) {
         return Err(MappingError::InvalidComponentStateEntities {
             message: "Have only one of state and info substates".to_owned(),
-        })?;
+        }
+        .into());
     }
 
     let component_dump = dump_component(&state_manager.store, component_address)

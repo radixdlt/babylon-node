@@ -43,9 +43,10 @@ impl TryFrom<EngineTransactionReceipt> for LedgerTransactionReceipt {
                 engine_receipt.execution.application_logs,
             )
                 .into()),
-            TransactionResult::Reject(error) => {
-                Err(format!("Can't create a ledger receipt for rejected txn: {:?}", error))
-            }
+            TransactionResult::Reject(error) => Err(format!(
+                "Can't create a ledger receipt for rejected txn: {:?}",
+                error
+            )),
         }
     }
 }

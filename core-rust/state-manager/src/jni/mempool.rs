@@ -73,8 +73,9 @@ use sbor::{Decode, Encode, TypeId};
 use transaction::errors::TransactionValidationError;
 
 use crate::jni::utils::*;
+use crate::transaction::UserTransactionValidator;
 use crate::types::PendingTransaction;
-use crate::{mempool::*, PayloadHash, TransactionValidation};
+use crate::{mempool::*, PayloadHash};
 
 //
 // JNI Interface
@@ -97,7 +98,9 @@ fn do_add(
     let transaction = args;
 
     let notarized_transaction =
-        TransactionValidation::parse_unvalidated_user_transaction_from_slice(&transaction.payload)?;
+        UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
+            &transaction.payload,
+        )?;
 
     state_manager
         .check_for_rejection_and_add_to_mempool(notarized_transaction)

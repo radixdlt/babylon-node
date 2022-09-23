@@ -127,15 +127,21 @@ impl TryFrom<RENodeId> for MappedEntityId {
             RENodeId::System => {
                 MappedEntityId::new(EntityType::System, FAKED_SYSTEM_ADDRESS.to_vec())
             }
-            RENodeId::Bucket(_) => Err(MappingError::TransientSubstatePersisted {
-                message: "Bucket persisted".to_owned(),
-            })?,
-            RENodeId::Proof(_) => Err(MappingError::TransientSubstatePersisted {
-                message: "Proof persisted".to_owned(),
-            })?,
-            RENodeId::Worktop => Err(MappingError::TransientSubstatePersisted {
-                message: "Worktop persisted".to_owned(),
-            })?,
+            RENodeId::Bucket(_) => {
+                return Err(MappingError::TransientSubstatePersisted {
+                    message: "Bucket persisted".to_owned(),
+                })
+            }
+            RENodeId::Proof(_) => {
+                return Err(MappingError::TransientSubstatePersisted {
+                    message: "Proof persisted".to_owned(),
+                })
+            }
+            RENodeId::Worktop => {
+                return Err(MappingError::TransientSubstatePersisted {
+                    message: "Worktop persisted".to_owned(),
+                })
+            }
         })
     }
 

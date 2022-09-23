@@ -1,7 +1,8 @@
 use crate::core_api::*;
 
-use state_manager::{jni::state_manager::ActualStateManager, TransactionValidation};
+use state_manager::jni::state_manager::ActualStateManager;
 
+use state_manager::transaction::UserTransactionValidator;
 use state_manager::MempoolAddError;
 use transaction::model::NotarizedTransaction;
 
@@ -40,6 +41,9 @@ pub fn extract_unvalidated_transaction(
     payload: &str,
 ) -> Result<NotarizedTransaction, ExtractionError> {
     let transaction_bytes = from_hex(payload)?;
-    let notarized_transaction = TransactionValidation::parse_unvalidated_user_transaction_from_slice(&transaction_bytes)?;
+    let notarized_transaction =
+        UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
+            &transaction_bytes,
+        )?;
     Ok(notarized_transaction)
 }
