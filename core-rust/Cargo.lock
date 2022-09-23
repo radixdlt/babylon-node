@@ -1089,7 +1089,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.6.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-a64622ae1#a64622ae18e9a3705561f4063935f4fd759390a6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-e7c531a80#e7c531a8002ffc10a75a40bfab266fc8264e5b2e"
 dependencies = [
  "colored",
  "hex",
@@ -1106,7 +1106,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.6.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-a64622ae1#a64622ae18e9a3705561f4063935f4fd759390a6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-e7c531a80#e7c531a8002ffc10a75a40bfab266fc8264e5b2e"
 dependencies = [
  "radix-engine",
  "rocksdb",
@@ -1204,7 +1204,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.6.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-a64622ae1#a64622ae18e9a3705561f4063935f4fd759390a6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-e7c531a80#e7c531a8002ffc10a75a40bfab266fc8264e5b2e"
 dependencies = [
  "hex",
  "sbor-derive",
@@ -1214,7 +1214,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.6.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-a64622ae1#a64622ae18e9a3705561f4063935f4fd759390a6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-e7c531a80#e7c531a8002ffc10a75a40bfab266fc8264e5b2e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1225,7 +1225,7 @@ dependencies = [
 [[package]]
 name = "scrypto"
 version = "0.6.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-a64622ae1#a64622ae18e9a3705561f4063935f4fd759390a6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-e7c531a80#e7c531a8002ffc10a75a40bfab266fc8264e5b2e"
 dependencies = [
  "bech32",
  "forward_ref",
@@ -1244,7 +1244,7 @@ dependencies = [
 [[package]]
 name = "scrypto-abi"
 version = "0.6.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-a64622ae1#a64622ae18e9a3705561f4063935f4fd759390a6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-e7c531a80#e7c531a8002ffc10a75a40bfab266fc8264e5b2e"
 dependencies = [
  "sbor",
  "serde",
@@ -1253,7 +1253,7 @@ dependencies = [
 [[package]]
 name = "scrypto-derive"
 version = "0.6.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-a64622ae1#a64622ae18e9a3705561f4063935f4fd759390a6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-e7c531a80#e7c531a8002ffc10a75a40bfab266fc8264e5b2e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1674,7 +1674,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.6.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-a64622ae1#a64622ae18e9a3705561f4063935f4fd759390a6"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=alphanet-e7c531a80#e7c531a8002ffc10a75a40bfab266fc8264e5b2e"
 dependencies = [
  "clap",
  "ed25519-dalek",
