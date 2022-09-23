@@ -156,9 +156,8 @@ public final class REv2TestTransactions {
   }
 
   /**
-   * Constructs a user transaction which attempts to set the epoch. This
-   * should cause the transaction to be committed but failing due to insufficient
-   * permissions to set epoch.
+   * Constructs a user transaction which attempts to set the epoch. This should cause the
+   * transaction to be committed but failing due to insufficient permissions to set epoch.
    */
   public static RawTransaction constructFailingSetEpochTransaction(long epoch) {
     var intentBytes =

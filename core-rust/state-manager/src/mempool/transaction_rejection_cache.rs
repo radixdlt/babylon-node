@@ -4,7 +4,7 @@ use radix_engine::{
 };
 use transaction::errors::TransactionValidationError;
 
-use crate::{IntentHash, PayloadHash};
+use crate::{IntentHash, UserPayloadHash};
 
 use lru::LruCache;
 use std::{
@@ -83,8 +83,8 @@ pub struct RejectionRecord {
 }
 
 pub struct RejectionCache {
-    rejected_payloads: LruCache<PayloadHash, RejectionRecord>,
-    intent_lookup: HashMap<IntentHash, HashSet<PayloadHash>>,
+    rejected_payloads: LruCache<UserPayloadHash, RejectionRecord>,
+    intent_lookup: HashMap<IntentHash, HashSet<UserPayloadHash>>,
     recently_committed_intents: LruCache<IntentHash, ()>,
     max_time_to_live_for_temporary_rejections: Duration,
 }
@@ -110,7 +110,7 @@ impl RejectionCache {
     pub fn track_rejection(
         &mut self,
         intent_hash: IntentHash,
-        payload_hash: PayloadHash,
+        payload_hash: UserPayloadHash,
         reason: RejectionReason,
     ) {
         let removed = self.rejected_payloads.push(
@@ -137,7 +137,7 @@ impl RejectionCache {
     pub fn get_rejection_status<'a>(
         &'a mut self,
         intent_hash: &IntentHash,
-        payload_hash: &PayloadHash,
+        payload_hash: &UserPayloadHash,
     ) -> Option<&'a RejectionReason> {
         if self.recently_committed_intents.get(intent_hash).is_some() {
             return Some(&RejectionReason::IntentHashCommitted);
@@ -156,7 +156,7 @@ impl RejectionCache {
     pub fn peek_all_rejected_payloads_for_intent(
         &mut self,
         intent_hash: &IntentHash,
-    ) -> HashMap<PayloadHash, RejectionRecord> {
+    ) -> HashMap<UserPayloadHash, RejectionRecord> {
         match self.intent_lookup.get(intent_hash) {
             Some(payload_hashes) => payload_hashes
                 .iter()
@@ -172,7 +172,7 @@ impl RejectionCache {
         }
     }
 
-    fn handled_added(&mut self, intent_hash: IntentHash, payload_hash: PayloadHash) {
+    fn handled_added(&mut self, intent_hash: IntentHash, payload_hash: UserPayloadHash) {
         // Add the intent hash <-> payload hash lookup
         match self.intent_lookup.entry(intent_hash) {
             Entry::Occupied(mut e) => {
@@ -184,7 +184,11 @@ impl RejectionCache {
         }
     }
 
-    fn handled_removed(&mut self, payload_hash: PayloadHash, rejection_record: RejectionRecord) {
+    fn handled_removed(
+        &mut self,
+        payload_hash: UserPayloadHash,
+        rejection_record: RejectionRecord,
+    ) {
         // Remove the intent hash <-> payload hash lookup
         let intent_hash = rejection_record.intent_hash;
         match self.intent_lookup.entry(intent_hash) {
@@ -226,12 +230,12 @@ mod tests {
         let mut cache =
             RejectionCache::new(rejection_limit, recently_committed_intents_limit, max_ttl);
 
-        let payload_hash_1 = PayloadHash::for_payload(&[1]);
-        let payload_hash_2 = PayloadHash::for_payload(&[2]);
-        let payload_hash_3 = PayloadHash::for_payload(&[3]);
-        let payload_hash_4 = PayloadHash::for_payload(&[4]);
-        let payload_hash_5 = PayloadHash::for_payload(&[5]);
-        let payload_hash_6 = PayloadHash::for_payload(&[6]);
+        let payload_hash_1 = UserPayloadHash::for_payload(&[1]);
+        let payload_hash_2 = UserPayloadHash::for_payload(&[2]);
+        let payload_hash_3 = UserPayloadHash::for_payload(&[3]);
+        let payload_hash_4 = UserPayloadHash::for_payload(&[4]);
+        let payload_hash_5 = UserPayloadHash::for_payload(&[5]);
+        let payload_hash_6 = UserPayloadHash::for_payload(&[6]);
 
         let intent_hash_1 = IntentHash::for_intent_bytes(&[1]);
         let intent_hash_2 = IntentHash::for_intent_bytes(&[2]);
@@ -333,8 +337,8 @@ mod tests {
         let mut cache =
             RejectionCache::new(rejection_limit, recently_committed_intents_limit, max_ttl);
 
-        let payload_hash_1 = PayloadHash::for_payload(&[1]);
-        let payload_hash_2 = PayloadHash::for_payload(&[2]);
+        let payload_hash_1 = UserPayloadHash::for_payload(&[1]);
+        let payload_hash_2 = UserPayloadHash::for_payload(&[2]);
 
         let intent_hash_1 = IntentHash::for_intent_bytes(&[1]);
         let intent_hash_2 = IntentHash::for_intent_bytes(&[2]);
@@ -359,8 +363,8 @@ mod tests {
         let mut cache =
             RejectionCache::new(rejection_limit, recently_committed_intents_limit, max_ttl);
 
-        let payload_hash_1 = PayloadHash::for_payload(&[1]);
-        let payload_hash_2 = PayloadHash::for_payload(&[2]);
+        let payload_hash_1 = UserPayloadHash::for_payload(&[1]);
+        let payload_hash_2 = UserPayloadHash::for_payload(&[2]);
 
         let intent_hash_1 = IntentHash::for_intent_bytes(&[1]);
 

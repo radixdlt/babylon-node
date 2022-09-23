@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::core_api::*;
 use state_manager::jni::state_manager::ActualStateManager;
-use state_manager::PayloadHash;
+use state_manager::{HasUserPayloadHash, UserPayloadHash};
 
 use state_manager::mempool::transaction_rejection_cache::RejectionRecord;
 use state_manager::store::traits::*;
@@ -33,7 +33,7 @@ fn handle_v0_transaction_status_internal(
         .peek_all_rejected_payloads_for_intent(&intent_hash);
 
     if let Some((stored_transaction, receipt, _)) = committed_option {
-        let payload_hash = stored_transaction.get_hash();
+        let payload_hash = stored_transaction.user_payload_hash();
 
         // Remove the committed payload from the rejection list if it's present
         rejected_payloads.remove(&payload_hash);
@@ -105,7 +105,7 @@ fn handle_v0_transaction_status_internal(
 }
 
 fn map_rejected_payloads(
-    known_rejected_payloads: HashMap<PayloadHash, RejectionRecord>,
+    known_rejected_payloads: HashMap<UserPayloadHash, RejectionRecord>,
 ) -> Vec<models::V0TransactionPayloadStatus> {
     known_rejected_payloads
         .into_iter()

@@ -70,9 +70,9 @@ use transaction::model::{
 };
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
-pub struct PayloadHash(pub [u8; Self::LENGTH]);
+pub struct TransactionPayloadHash(pub [u8; Self::LENGTH]);
 
-impl PayloadHash {
+impl TransactionPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_payload(payload_bytes: &[u8]) -> Self {
@@ -80,45 +80,76 @@ impl PayloadHash {
     }
 }
 
-impl fmt::Display for PayloadHash {
+impl From<Hash> for TransactionPayloadHash {
+    fn from(hash: Hash) -> Self {
+        TransactionPayloadHash(hash.0)
+    }
+}
+
+impl fmt::Display for TransactionPayloadHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(&self.0))
     }
 }
 
-impl fmt::Debug for PayloadHash {
+impl fmt::Debug for TransactionPayloadHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("PayloadHash")
+        f.debug_tuple("TransactionPayloadHash")
             .field(&hex::encode(self.0))
             .finish()
     }
 }
 
-impl From<Hash> for PayloadHash {
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
+pub struct UserPayloadHash(pub [u8; Self::LENGTH]);
+
+impl UserPayloadHash {
+    pub const LENGTH: usize = 32;
+
+    pub fn for_payload(payload_bytes: &[u8]) -> Self {
+        sha256_twice(payload_bytes).into()
+    }
+}
+
+impl fmt::Display for UserPayloadHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(&self.0))
+    }
+}
+
+impl fmt::Debug for UserPayloadHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("UserPayloadHash")
+            .field(&hex::encode(self.0))
+            .finish()
+    }
+}
+
+impl From<Hash> for UserPayloadHash {
     fn from(hash: Hash) -> Self {
-        PayloadHash(hash.0)
+        UserPayloadHash(hash.0)
     }
 }
 
-pub trait HasPayloadHash {
-    fn payload_hash(&self) -> PayloadHash;
+pub trait HasUserPayloadHash {
+    fn user_payload_hash(&self) -> UserPayloadHash;
 }
 
-impl HasPayloadHash for NotarizedTransaction {
-    fn payload_hash(&self) -> PayloadHash {
-        PayloadHash::for_payload(&scrypto_encode(self))
+impl HasUserPayloadHash for NotarizedTransaction {
+    fn user_payload_hash(&self) -> UserPayloadHash {
+        UserPayloadHash::for_payload(&scrypto_encode(self))
     }
 }
 
-impl HasPayloadHash for Validated<NotarizedTransaction> {
-    fn payload_hash(&self) -> PayloadHash {
-        self.transaction().payload_hash()
+impl HasUserPayloadHash for Validated<NotarizedTransaction> {
+    fn user_payload_hash(&self) -> UserPayloadHash {
+        self.transaction().user_payload_hash()
     }
 }
 
-impl HasPayloadHash for Transaction {
-    fn payload_hash(&self) -> PayloadHash {
-        PayloadHash::for_payload(&scrypto_encode(self))
+impl HasUserPayloadHash for Transaction {
+    fn user_payload_hash(&self) -> UserPayloadHash {
+        UserPayloadHash::for_payload(&scrypto_encode(self))
     }
 }
 
@@ -177,45 +208,25 @@ impl HasIntentHash for Validated<NotarizedTransaction> {
     }
 }
 
-impl HasIntentHash for Transaction {
-    fn intent_hash(&self) -> IntentHash {
-        match self {
-            Transaction::User(notarized_transaction) => notarized_transaction.intent_hash(),
-            Transaction::Validator(validator_transaction) => {
-                IntentHash::for_intent_bytes(&scrypto_encode(validator_transaction))
-            }
-        }
-    }
-}
-
 /// An uncommitted user transaction, in eg the mempool
 #[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
 pub struct PendingTransaction {
     pub payload: NotarizedTransaction,
-    pub payload_hash: PayloadHash,
+    pub payload_hash: UserPayloadHash,
     pub intent_hash: IntentHash,
 }
 
 impl From<NotarizedTransaction> for PendingTransaction {
     fn from(transaction: NotarizedTransaction) -> Self {
-        let _payload_hash = transaction.payload_hash();
+        let _payload_hash = transaction.user_payload_hash();
         let intent_hash = transaction.intent_hash();
         PendingTransaction {
-            payload_hash: transaction.payload_hash(),
+            payload_hash: transaction.user_payload_hash(),
             intent_hash,
             payload: transaction,
         }
     }
 }
-
-/// A transaction for persisting - eg in the Database or in a block
-#[derive(Debug, PartialEq, Eq, Clone, Decode, Encode, TypeId)]
-pub enum StoredTransaction {
-    User(NotarizedTransaction),
-    System(Vec<u8>), // Just a payload for now. Todo - something better soon?
-}
-
-impl StoredTransaction {}
 
 #[derive(Debug, Decode, Encode, TypeId)]
 pub struct PreviewRequest {

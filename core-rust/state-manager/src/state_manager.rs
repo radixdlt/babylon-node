@@ -68,7 +68,7 @@ use crate::query::ResourceAccounter;
 use crate::store::traits::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
 use crate::{
-    CommittedTransactionIdentifiers, HasIntentHash, HasPayloadHash, IntentHash,
+    CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
     LedgerTransactionReceipt, MempoolAddError, PendingTransaction,
 };
 use radix_engine::constants::{
@@ -276,7 +276,7 @@ where
     ) -> Result<(), MempoolAddError> {
         // Quick check to avoid transaction validation if it couldn't be added to the mempool anyway
         self.mempool
-            .check_add_would_be_possible(&unvalidated_transaction.payload_hash())?;
+            .check_add_would_be_possible(&unvalidated_transaction.user_payload_hash())?;
 
         let rejection_check = self.check_for_rejection_with_caching(&unvalidated_transaction);
 
@@ -301,7 +301,7 @@ where
     ) -> Result<(), RejectionReason> {
         let cached_status = self
             .rejection_cache
-            .get_rejection_status(&transaction.intent_hash(), &transaction.payload_hash());
+            .get_rejection_status(&transaction.intent_hash(), &transaction.user_payload_hash());
 
         if let Some(rejection_reason) = cached_status {
             return Err(rejection_reason.clone());
@@ -310,12 +310,12 @@ where
         let new_status = self.check_for_rejection_uncached(transaction);
 
         if let Err(rejection_reason) = new_status {
-            let payload_hash = transaction.payload_hash();
+            let payload_hash = transaction.user_payload_hash();
             // Let's also remove it from the mempool, if it's present
             self.mempool.remove_transaction(&payload_hash);
             self.rejection_cache.track_rejection(
                 transaction.intent_hash(),
-                transaction.payload_hash(),
+                transaction.user_payload_hash(),
                 rejection_reason.clone(),
             );
             return Err(rejection_reason);
@@ -451,8 +451,9 @@ where
             );
             match receipt.result {
                 TransactionResult::Commit(..) => {
-                    let serialized_validated_txn =
-                        scrypto_encode(&Transaction::Validator(epoch_update_txn.into_transaction()));
+                    let serialized_validated_txn = scrypto_encode(&Transaction::Validator(
+                        epoch_update_txn.into_transaction(),
+                    ));
                     committed.push(serialized_validated_txn);
                 }
                 TransactionResult::Reject(reject_result) => {
@@ -568,15 +569,20 @@ where
                 });
 
             let transaction = validated_txn.into_transaction();
-            let payload_hash = transaction.payload_hash();
-            let intent_hash = transaction.intent_hash();
+            let payload_hash = transaction.get_hash();
+            match &transaction {
+                Transaction::User(notarized_transaction) => {
+                    let intent_hash = notarized_transaction.intent_hash();
+                    intent_hashes.push(intent_hash);
+                }
+                _ => {}
+            };
 
             let identifiers = CommittedTransactionIdentifiers {
                 state_version: current_state_version,
             };
             to_store.push((transaction, ledger_receipt, identifiers));
             payload_hashes.push(payload_hash);
-            intent_hashes.push(intent_hash);
             current_state_version += 1;
         }
 

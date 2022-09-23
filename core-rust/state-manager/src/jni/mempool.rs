@@ -75,7 +75,7 @@ use transaction::errors::TransactionValidationError;
 use crate::jni::utils::*;
 use crate::transaction::UserTransactionValidator;
 use crate::types::PendingTransaction;
-use crate::{mempool::*, PayloadHash};
+use crate::{mempool::*, TransactionPayloadHash, UserPayloadHash};
 
 //
 // JNI Interface
@@ -129,9 +129,9 @@ fn do_get_transactions_for_proposal(
 ) -> Vec<JavaRawTransaction> {
     let (count, prepared_transactions) = args;
 
-    let prepared_ids: HashSet<PayloadHash> = prepared_transactions
+    let prepared_ids: HashSet<UserPayloadHash> = prepared_transactions
         .into_iter()
-        .map(|id| PayloadHash(id.0.try_into().expect("transaction id the wrong length")))
+        .map(|id| UserPayloadHash(id.0.try_into().expect("transaction id the wrong length")))
         .collect();
 
     state_manager
@@ -190,8 +190,8 @@ fn do_get_transactions_to_relay(
 #[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
 pub struct JavaPayloadHash(Vec<u8>);
 
-impl From<PayloadHash> for JavaPayloadHash {
-    fn from(payload_hash: PayloadHash) -> Self {
+impl From<TransactionPayloadHash> for JavaPayloadHash {
+    fn from(payload_hash: TransactionPayloadHash) -> Self {
         JavaPayloadHash(payload_hash.0.to_vec())
     }
 }

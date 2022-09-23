@@ -90,8 +90,7 @@ public class REv2IncreasingEpochTest {
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
-                SafetyRecoveryConfig.berkeleyStore(
-                    folder.getRoot().getAbsolutePath()),
+                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(

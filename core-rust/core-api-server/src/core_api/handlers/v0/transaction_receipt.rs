@@ -2,7 +2,6 @@ use crate::core_api::handlers::to_api_committed_transaction;
 use crate::core_api::*;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
-use state_manager::transaction::Transaction;
 
 pub(crate) async fn handle_v0_transaction_receipt(
     state: Extension<CoreApiState>,
@@ -23,16 +22,7 @@ fn handle_v0_transaction_receipt_internal(
         .store
         .get_committed_transaction_by_intent(&intent_hash);
 
-    if let Some((stored_transaction, receipt, identifiers)) = committed_option {
-        let notarized_transaction = match stored_transaction {
-            Transaction::User(notarized) => notarized,
-            Transaction::Validator(..) => {
-                return Err(not_found_error(
-                    "Validator transaction found instead of user transaction?!",
-                ))
-            }
-        };
-
+    if let Some((notarized_transaction, receipt, identifiers)) = committed_option {
         Ok(models::V0CommittedTransactionResponse {
             committed: Box::new(to_api_committed_transaction(
                 network,

@@ -64,8 +64,11 @@
 
 use crate::store::traits::*;
 use crate::transaction::Transaction;
-use crate::types::PayloadHash;
-use crate::{CommittedTransactionIdentifiers, HasIntentHash, IntentHash, LedgerTransactionReceipt};
+use crate::types::UserPayloadHash;
+use crate::{
+    CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
+    LedgerTransactionReceipt, TransactionPayloadHash,
+};
 use scrypto::prelude::{scrypto_decode, scrypto_encode};
 use std::collections::{BTreeMap, HashMap};
 
@@ -100,10 +103,11 @@ impl Default for InMemoryVertexStore {
 
 #[derive(Debug)]
 pub struct InMemoryStore {
-    transactions: HashMap<PayloadHash, Vec<u8>>,
-    transaction_intent_lookup: HashMap<IntentHash, PayloadHash>,
+    transactions: HashMap<TransactionPayloadHash, Vec<u8>>,
+    transaction_intent_lookup: HashMap<IntentHash, TransactionPayloadHash>,
+    user_payload_hash_lookup: HashMap<UserPayloadHash, TransactionPayloadHash>,
     proofs: BTreeMap<u64, Vec<u8>>,
-    txids: BTreeMap<u64, PayloadHash>,
+    txids: BTreeMap<u64, TransactionPayloadHash>,
 }
 
 impl InMemoryStore {
@@ -111,6 +115,7 @@ impl InMemoryStore {
         InMemoryStore {
             transactions: HashMap::new(),
             transaction_intent_lookup: HashMap::new(),
+            user_payload_hash_lookup: HashMap::new(),
             proofs: BTreeMap::new(),
             txids: BTreeMap::new(),
         }
@@ -132,6 +137,8 @@ impl InMemoryStore {
                     existing_payload_hash
                 );
             }
+            self.user_payload_hash_lookup
+                .insert(notarized_transaction.user_payload_hash(), payload_hash);
             self.transaction_intent_lookup
                 .insert(intent_hash, payload_hash);
         }
@@ -166,35 +173,30 @@ impl WriteableTransactionStore for InMemoryStore {
 impl QueryableTransactionStore for InMemoryStore {
     fn get_committed_transaction(
         &self,
-        payload_hash: &PayloadHash,
+        payload_hash: &TransactionPayloadHash,
     ) -> Option<(
         Transaction,
         LedgerTransactionReceipt,
         CommittedTransactionIdentifiers,
     )> {
         let saved = self.transactions.get(payload_hash)?;
-
         let decoded = scrypto_decode(saved)
             .unwrap_or_else(|_| panic!("Failed to decode a stored transaction {}", payload_hash));
 
         Some(decoded)
     }
 
-    fn get_committed_transaction_by_intent(
+    fn get_hash_by_user_payload(
         &self,
-        intent_hash: &IntentHash,
-    ) -> Option<(
-        Transaction,
-        LedgerTransactionReceipt,
-        CommittedTransactionIdentifiers,
-    )> {
-        let payload_hash = self.transaction_intent_lookup.get(intent_hash)?;
+        user_payload_hash: &UserPayloadHash,
+    ) -> Option<TransactionPayloadHash> {
+        self.user_payload_hash_lookup
+            .get(user_payload_hash)
+            .cloned()
+    }
 
-        let transaction_data = self.get_committed_transaction(payload_hash).expect(
-            "Transaction payload hash was found for transaction, but payload couldn't be found",
-        );
-
-        Some(transaction_data)
+    fn get_hash_by_intent(&self, intent_hash: &IntentHash) -> Option<TransactionPayloadHash> {
+        self.transaction_intent_lookup.get(intent_hash).cloned()
     }
 }
 
@@ -202,7 +204,7 @@ impl WriteableProofStore for InMemoryStore {
     fn insert_tids_and_proof(
         &mut self,
         state_version: u64,
-        ids: Vec<PayloadHash>,
+        ids: Vec<TransactionPayloadHash>,
         proof_bytes: Vec<u8>,
     ) {
         self.insert_tids_without_proof(state_version, ids);
@@ -210,7 +212,7 @@ impl WriteableProofStore for InMemoryStore {
         self.proofs.insert(state_version, proof_bytes);
     }
 
-    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<PayloadHash>) {
+    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<TransactionPayloadHash>) {
         if !ids.is_empty() {
             let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
             for (index, id) in ids.into_iter().enumerate() {
@@ -230,12 +232,12 @@ impl QueryableProofStore for InMemoryStore {
             .unwrap_or_default()
     }
 
-    fn get_payload_hash(&self, state_version: u64) -> Option<PayloadHash> {
+    fn get_payload_hash(&self, state_version: u64) -> Option<TransactionPayloadHash> {
         self.txids.get(&state_version).cloned()
     }
 
     /// Returns the next proof from a state version (excluded)
-    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<PayloadHash>, Vec<u8>)> {
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TransactionPayloadHash>, Vec<u8>)> {
         let next_state_version = state_version + 1;
         self.proofs
             .range(next_state_version..)
