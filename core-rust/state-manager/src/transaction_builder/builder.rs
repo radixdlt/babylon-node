@@ -114,10 +114,9 @@ pub fn create_100kb_txn_intent(
 
     let manifest = ManifestBuilder::new(&network_definition)
         .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
-        .call_function(
-            SYS_UTILS_PACKAGE,
-            "SysUtils",
-            "new_resource",
+        .call_native_method(
+            Receiver::CurrentAuthZone,
+            NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create),
             args!(
                 ResourceType::NonFungible,
                 metadata,
