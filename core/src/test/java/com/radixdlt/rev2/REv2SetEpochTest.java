@@ -127,7 +127,7 @@ public class REv2SetEpochTest {
     var proposalGenerator = new ControlledProposerGenerator();
 
     try (var test = createTest(proposalGenerator)) {
-      var setEpochTransaction = REv2TestTransactions.constructSetEpochTransaction(1000L);
+      var setEpochTransaction = REv2TestTransactions.constructFailingSetEpochTransaction(1000L);
 
       // Act: Submit transaction to mempool and run consensus
       test.startAllNodes();

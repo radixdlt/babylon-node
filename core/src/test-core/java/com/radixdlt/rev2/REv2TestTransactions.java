@@ -155,7 +155,12 @@ public final class REv2TestTransactions {
     return TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
   }
 
-  public static RawTransaction constructSetEpochTransaction(long epoch) {
+  /**
+   * Constructs a user transaction which attempts to set the epoch. This
+   * should cause the transaction to be committed but failing due to insufficient
+   * permissions to set epoch.
+   */
+  public static RawTransaction constructFailingSetEpochTransaction(long epoch) {
     var intentBytes =
         TransactionBuilder.buildSetEpochIntent(
             NetworkDefinition.INT_TEST_NET, DEFAULT_NOTARY.getPublicKey().toPublicKey(), epoch);

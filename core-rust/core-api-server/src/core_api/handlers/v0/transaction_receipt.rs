@@ -28,7 +28,7 @@ fn handle_v0_transaction_receipt_internal(
             Transaction::User(notarized) => notarized,
             Transaction::Validator(..) => {
                 return Err(not_found_error(
-                    "System transaction found instead of user transaction?!",
+                    "Validator transaction found instead of user transaction?!",
                 ))
             }
         };

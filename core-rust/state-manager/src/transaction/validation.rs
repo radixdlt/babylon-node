@@ -67,6 +67,7 @@ impl CommittedTransactionValidator {
         &self,
         transaction_payload: &[u8],
     ) -> Result<Validated<Transaction>, TransactionValidationError> {
+        // TODO: Need a good way to do payload transaction size here
         let transaction = Self::parse_unvalidated_transaction_from_slice(transaction_payload)?;
         self.validate_transaction(transaction)
     }

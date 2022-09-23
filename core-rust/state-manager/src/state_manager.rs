@@ -437,24 +437,27 @@ where
         }
 
         let mut committed = Vec::new();
-        let epoch_update_txn: Validated<ValidatorTransaction> =
-            ValidatorTransaction::EpochUpdate(prepare_request.round_number).into();
-        let mut fee_reserve = SystemLoanFeeReserve::default();
-        // TODO: Clean up fee reserve
-        fee_reserve.credit(10_000_000);
-        let receipt = transaction_executor.execute_with_fee_reserve(
-            &epoch_update_txn,
-            &self.execution_config,
-            fee_reserve,
-        );
-        match receipt.result {
-            TransactionResult::Commit(..) => {
-                let serialized_validated_txn =
-                    scrypto_encode(&Transaction::Validator(epoch_update_txn.into_transaction()));
-                committed.push(serialized_validated_txn);
-            }
-            TransactionResult::Reject(reject_result) => {
-                panic!("Epoch Update rejected: {:?}", reject_result);
+
+        if prepare_request.round_number % 60 == 0 {
+            let epoch_update_txn: Validated<ValidatorTransaction> =
+                ValidatorTransaction::EpochUpdate((prepare_request.round_number / 60) + 1).into();
+            let mut fee_reserve = SystemLoanFeeReserve::default();
+            // TODO: Clean up fee reserve
+            fee_reserve.credit(10_000_000);
+            let receipt = transaction_executor.execute_with_fee_reserve(
+                &epoch_update_txn,
+                &self.execution_config,
+                fee_reserve,
+            );
+            match receipt.result {
+                TransactionResult::Commit(..) => {
+                    let serialized_validated_txn =
+                        scrypto_encode(&Transaction::Validator(epoch_update_txn.into_transaction()));
+                    committed.push(serialized_validated_txn);
+                }
+                TransactionResult::Reject(reject_result) => {
+                    panic!("Epoch Update rejected: {:?}", reject_result);
+                }
             }
         }
 

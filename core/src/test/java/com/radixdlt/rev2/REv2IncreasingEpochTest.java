@@ -67,6 +67,7 @@ package com.radixdlt.rev2;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
 import static com.radixdlt.harness.predicates.NodesPredicate.anyAtOrOverStateEpoch;
+import static com.radixdlt.modules.FunctionalRadixNodeModule.*;
 
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -89,10 +90,10 @@ public class REv2IncreasingEpochTest {
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(
+                SafetyRecoveryConfig.berkeleyStore(
                     folder.getRoot().getAbsolutePath()),
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
