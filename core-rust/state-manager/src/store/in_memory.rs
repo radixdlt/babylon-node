@@ -170,6 +170,18 @@ impl WriteableTransactionStore for InMemoryStore {
     }
 }
 
+impl UserTransactionIndex<UserPayloadHash> for InMemoryStore {
+    fn get_hash(&self, identifier: &UserPayloadHash) -> Option<TransactionPayloadHash> {
+        self.user_payload_hash_lookup.get(identifier).cloned()
+    }
+}
+
+impl UserTransactionIndex<IntentHash> for InMemoryStore {
+    fn get_hash(&self, identifier: &IntentHash) -> Option<TransactionPayloadHash> {
+        self.transaction_intent_lookup.get(identifier).cloned()
+    }
+}
+
 impl QueryableTransactionStore for InMemoryStore {
     fn get_committed_transaction(
         &self,
@@ -184,19 +196,6 @@ impl QueryableTransactionStore for InMemoryStore {
             .unwrap_or_else(|_| panic!("Failed to decode a stored transaction {}", payload_hash));
 
         Some(decoded)
-    }
-
-    fn get_hash_by_user_payload(
-        &self,
-        user_payload_hash: &UserPayloadHash,
-    ) -> Option<TransactionPayloadHash> {
-        self.user_payload_hash_lookup
-            .get(user_payload_hash)
-            .cloned()
-    }
-
-    fn get_hash_by_intent(&self, intent_hash: &IntentHash) -> Option<TransactionPayloadHash> {
-        self.transaction_intent_lookup.get(intent_hash).cloned()
     }
 }
 

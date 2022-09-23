@@ -5,6 +5,7 @@ use crate::transaction::validator::ValidatorTransaction;
 use crate::TransactionPayloadHash;
 use transaction::model::NotarizedTransaction;
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Transaction {
     User(NotarizedTransaction),

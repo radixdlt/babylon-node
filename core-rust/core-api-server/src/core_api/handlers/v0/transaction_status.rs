@@ -26,7 +26,7 @@ fn handle_v0_transaction_status_internal(
 
     let committed_option = state_manager
         .store
-        .get_committed_transaction_by_intent(&intent_hash);
+        .get_committed_transaction_by_identifier(&intent_hash);
 
     let mut rejected_payloads = state_manager
         .rejection_cache

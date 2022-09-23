@@ -87,8 +87,7 @@ pub mod substate {
 pub mod transactions {
     use crate::transaction::Transaction;
     use crate::{
-        CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt,
-        TransactionPayloadHash, UserPayloadHash,
+        CommittedTransactionIdentifiers, LedgerTransactionReceipt, TransactionPayloadHash,
     };
     use transaction::model::NotarizedTransaction;
 
@@ -112,42 +111,20 @@ pub mod transactions {
             LedgerTransactionReceipt,
             CommittedTransactionIdentifiers,
         )>;
+    }
 
-        fn get_hash_by_user_payload(
-            &self,
-            user_payload_hash: &UserPayloadHash,
-        ) -> Option<TransactionPayloadHash>;
-        fn get_hash_by_intent(&self, intent_hash: &IntentHash) -> Option<TransactionPayloadHash>;
+    pub trait UserTransactionIndex<T>: QueryableTransactionStore {
+        fn get_hash(&self, identifier: &T) -> Option<TransactionPayloadHash>;
 
-        fn get_committed_transaction_by_user_payload(
+        fn get_committed_transaction_by_identifier(
             &self,
-            user_payload_hash: &UserPayloadHash,
+            identifier: &T,
         ) -> Option<(
             NotarizedTransaction,
             LedgerTransactionReceipt,
             CommittedTransactionIdentifiers,
         )> {
-            let payload_hash = self.get_hash_by_user_payload(user_payload_hash)?;
-            let (transaction, receipt, identifiers) =
-                self.get_committed_transaction(&payload_hash).expect(
-                    "User payload hash was found for transaction, but payload couldn't be found",
-                );
-            let notarized_transaction = match transaction {
-                Transaction::User(notarized_transaction) => notarized_transaction,
-                Transaction::Validator(..) => panic!("Found validator transaction with intent"),
-            };
-            Some((notarized_transaction, receipt, identifiers))
-        }
-
-        fn get_committed_transaction_by_intent(
-            &self,
-            intent_hash: &IntentHash,
-        ) -> Option<(
-            NotarizedTransaction,
-            LedgerTransactionReceipt,
-            CommittedTransactionIdentifiers,
-        )> {
-            let payload_hash = self.get_hash_by_intent(intent_hash)?;
+            let payload_hash = self.get_hash(identifier)?;
             let (transaction, receipt, identifiers) =
                 self.get_committed_transaction(&payload_hash).expect(
                     "User payload hash was found for transaction, but payload couldn't be found",

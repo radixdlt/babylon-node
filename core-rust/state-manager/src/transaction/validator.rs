@@ -13,11 +13,11 @@ pub enum ValidatorTransaction {
     EpochUpdate(u64),
 }
 
-impl Into<Validated<ValidatorTransaction>> for ValidatorTransaction {
-    fn into(self) -> Validated<ValidatorTransaction> {
-        let transaction_hash = hash(scrypto_encode(&self)); // TODO: Figure out better way to do this or if we even do need it
+impl From<ValidatorTransaction> for Validated<ValidatorTransaction> {
+    fn from(validator_transaction: ValidatorTransaction) -> Self {
+        let transaction_hash = hash(scrypto_encode(&validator_transaction)); // TODO: Figure out better way to do this or if we even do need it
 
-        let instruction = match self {
+        let instruction = match validator_transaction {
             ValidatorTransaction::EpochUpdate(epoch) => Instruction::CallMethod {
                 method_identifier: MethodIdentifier::Native {
                     receiver: Receiver::Ref(RENodeId::System),
@@ -39,7 +39,7 @@ impl Into<Validated<ValidatorTransaction>> for ValidatorTransaction {
             instruction,
         ];
         Validated::new(
-            self,
+            validator_transaction,
             transaction_hash,
             instructions,
             vec![AuthModule::validator_role_nf_address()],

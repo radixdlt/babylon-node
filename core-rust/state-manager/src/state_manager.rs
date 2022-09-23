@@ -222,6 +222,7 @@ where
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 enum ValidationResult {
     Ok {
         validated: Validated<NotarizedTransaction>,
@@ -236,7 +237,7 @@ enum ValidationResult {
 impl<S> StateManager<S>
 where
     S: ReadableSubstateStore,
-    S: QueryableTransactionStore,
+    S: UserTransactionIndex<IntentHash> + QueryableTransactionStore,
 {
     /// Performs static-validation, and then executes the transaction.
     /// By checking the TransactionReceipt, you can see if the transaction is presently commitable.
@@ -330,7 +331,7 @@ where
     ) -> Result<(), RejectionReason> {
         if self
             .store
-            .get_committed_transaction_by_intent(&transaction.intent_hash())
+            .get_committed_transaction_by_identifier(&transaction.intent_hash())
             .is_some()
         {
             return Err(RejectionReason::IntentHashCommitted);
@@ -399,7 +400,7 @@ where
                 let intent_hash = validated_transaction.intent_hash();
                 if self
                     .store
-                    .get_committed_transaction_by_intent(&intent_hash)
+                    .get_committed_transaction_by_identifier(&intent_hash)
                     .is_some()
                 {
                     already_committed_or_prepared_intent_hashes.insert(intent_hash);
@@ -570,13 +571,10 @@ where
 
             let transaction = validated_txn.into_transaction();
             let payload_hash = transaction.get_hash();
-            match &transaction {
-                Transaction::User(notarized_transaction) => {
-                    let intent_hash = notarized_transaction.intent_hash();
-                    intent_hashes.push(intent_hash);
-                }
-                _ => {}
-            };
+            if let Transaction::User(notarized_transaction) = &transaction {
+                let intent_hash = notarized_transaction.intent_hash();
+                intent_hashes.push(intent_hash);
+            }
 
             let identifiers = CommittedTransactionIdentifiers {
                 state_version: current_state_version,

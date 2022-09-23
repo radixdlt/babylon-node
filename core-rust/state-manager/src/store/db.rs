@@ -353,30 +353,29 @@ impl QueryableTransactionStore for StateManagerDatabase {
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
+}
 
-    fn get_hash_by_user_payload(
-        &self,
-        user_payload_hash: &UserPayloadHash,
-    ) -> Option<TransactionPayloadHash> {
+impl UserTransactionIndex<UserPayloadHash> for StateManagerDatabase {
+    fn get_hash(&self, identifier: &UserPayloadHash) -> Option<TransactionPayloadHash> {
         match self {
             StateManagerDatabase::InMemory {
                 transactions_and_proofs,
                 ..
-            } => transactions_and_proofs.get_hash_by_user_payload(user_payload_hash),
-            StateManagerDatabase::RocksDB(store) => {
-                store.get_hash_by_user_payload(user_payload_hash)
-            }
+            } => transactions_and_proofs.get_hash(identifier),
+            StateManagerDatabase::RocksDB(store) => store.get_hash(identifier),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
+}
 
-    fn get_hash_by_intent(&self, intent_hash: &IntentHash) -> Option<TransactionPayloadHash> {
+impl UserTransactionIndex<IntentHash> for StateManagerDatabase {
+    fn get_hash(&self, identifier: &IntentHash) -> Option<TransactionPayloadHash> {
         match self {
             StateManagerDatabase::InMemory {
                 transactions_and_proofs,
                 ..
-            } => transactions_and_proofs.get_hash_by_intent(intent_hash),
-            StateManagerDatabase::RocksDB(store) => store.get_hash_by_intent(intent_hash),
+            } => transactions_and_proofs.get_hash(identifier),
+            StateManagerDatabase::RocksDB(store) => store.get_hash(identifier),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }

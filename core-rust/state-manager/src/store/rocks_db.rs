@@ -334,14 +334,13 @@ impl QueryableTransactionStore for RocksDBStore {
         let decoded = scrypto_decode(&entry).expect("Transaction wasn't encoded as expected");
         Some(decoded)
     }
+}
 
-    fn get_hash_by_user_payload(
-        &self,
-        user_payload_hash: &UserPayloadHash,
-    ) -> Option<TransactionPayloadHash> {
+impl UserTransactionIndex<UserPayloadHash> for RocksDBStore {
+    fn get_hash(&self, identifier: &UserPayloadHash) -> Option<TransactionPayloadHash> {
         let payload_hash_entry = self
             .db
-            .get(get_user_transaction_payload_key(user_payload_hash))
+            .get(get_user_transaction_payload_key(identifier))
             .expect("DB error loading payload hash")?;
         let hash = TransactionPayloadHash(
             payload_hash_entry
@@ -350,11 +349,13 @@ impl QueryableTransactionStore for RocksDBStore {
         );
         Some(hash)
     }
+}
 
-    fn get_hash_by_intent(&self, intent_hash: &IntentHash) -> Option<TransactionPayloadHash> {
+impl UserTransactionIndex<IntentHash> for RocksDBStore {
+    fn get_hash(&self, identifier: &IntentHash) -> Option<TransactionPayloadHash> {
         let payload_hash_entry = self
             .db
-            .get(get_transaction_intent_key(intent_hash))
+            .get(get_transaction_intent_key(identifier))
             .expect("DB error loading payload hash")?;
         let hash = TransactionPayloadHash(
             payload_hash_entry
