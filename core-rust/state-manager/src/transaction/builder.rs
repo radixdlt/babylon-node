@@ -140,7 +140,6 @@ pub fn create_100kb_txn_intent(
     let large_string = "s".repeat(1024 * 100);
     metadata.insert("key".to_string(), large_string);
     let access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> = HashMap::new();
-    let initial_supply: Option<MintParams> = None;
 
     let manifest = ManifestBuilder::new(&network_definition)
         .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
@@ -148,7 +147,7 @@ pub fn create_100kb_txn_intent(
             ResourceType::NonFungible,
             metadata,
             access_rules,
-            initial_supply,
+            Option::<MintParams>::None,
         )
         .build();
 
