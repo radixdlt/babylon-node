@@ -114,6 +114,9 @@ pub struct StateManagerLoggingConfig {
     pub log_on_transaction_rejection: bool,
 }
 
+/// Around 5 minutes per epoch
+const ROUNDS_PER_EPOCH: u64 = 60;
+
 pub struct StateManager<S> {
     pub mempool: SimpleMempool,
     pub network: NetworkDefinition,
@@ -439,9 +442,9 @@ where
 
         let mut committed = Vec::new();
 
-        if prepare_request.round_number % 60 == 0 {
+        if prepare_request.round_number % ROUNDS_PER_EPOCH == 0 {
             let epoch_update_txn: Validated<ValidatorTransaction> =
-                ValidatorTransaction::EpochUpdate((prepare_request.round_number / 60) + 1).into();
+                ValidatorTransaction::EpochUpdate((prepare_request.round_number / ROUNDS_PER_EPOCH) + 1).into();
             let mut fee_reserve = SystemLoanFeeReserve::default();
             // TODO: Clean up fee reserve
             fee_reserve.credit(10_000_000);

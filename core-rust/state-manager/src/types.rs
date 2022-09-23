@@ -218,7 +218,6 @@ pub struct PendingTransaction {
 
 impl From<NotarizedTransaction> for PendingTransaction {
     fn from(transaction: NotarizedTransaction) -> Self {
-        let _payload_hash = transaction.user_payload_hash();
         let intent_hash = transaction.intent_hash();
         PendingTransaction {
             payload_hash: transaction.user_payload_hash(),
