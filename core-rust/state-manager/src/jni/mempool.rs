@@ -97,7 +97,7 @@ fn do_add(
     let transaction = args;
 
     let notarized_transaction =
-        TransactionValidation::parse_unvalidated_transaction_from_slice(&transaction.payload)?;
+        TransactionValidation::parse_unvalidated_user_transaction_from_slice(&transaction.payload)?;
 
     state_manager
         .check_for_rejection_and_add_to_mempool(notarized_transaction)

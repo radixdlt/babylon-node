@@ -113,9 +113,6 @@ public class REv2StateComputerTest {
         stateComputer.prepare(List.of(), List.of(validTransaction), mock(RoundDetails.class));
 
     // Assert
-    assertThat(result.getSuccessfullyExecutedTransactions())
-        .extracting(StateComputerLedger.ExecutedTransaction::transaction)
-        .contains(validTransaction);
     assertThat(result.getFailedTransactions()).isEmpty();
   }
 

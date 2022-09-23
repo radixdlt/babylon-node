@@ -93,7 +93,7 @@ fn do_verify(
 ) -> Result<(), String> {
     let transaction = args;
 
-    let result = state_manager.validation.parse_and_validate_transaction_slice(&transaction.payload);
+    let result = state_manager.validation.parse_and_validate_user_transaction_slice(&transaction.payload);
 
     result.map_err(|err| format!("{:?}", err))?;
 

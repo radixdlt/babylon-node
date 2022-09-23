@@ -87,11 +87,11 @@ use scrypto::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::time::Duration;
+use radix_engine::fee::SystemLoanFeeReserve;
 use tracing::info;
 
-use crate::transaction_builder::create_set_epoch_intent;
 use transaction::errors::TransactionValidationError;
-use transaction::model::{NotarizedTransaction, PreviewFlags, PreviewIntent, SignedTransactionIntent, TransactionHeader, TransactionIntent, Validated};
+use transaction::model::{NotarizedTransaction, PreviewFlags, PreviewIntent, Transaction, TransactionHeader, TransactionIntent, Validated};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{NetworkTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig};
 use transaction::validation::MAX_PAYLOAD_SIZE;
@@ -115,7 +115,7 @@ pub struct TransactionValidation {
 
 impl TransactionValidation {
     /// Checks the Payload max size, and SBOR decodes to a NotarizedTransaction if the size is okay
-    pub fn parse_unvalidated_transaction_from_slice(
+    pub fn parse_unvalidated_user_transaction_from_slice(
         transaction_payload: &[u8],
     ) -> Result<NotarizedTransaction, TransactionValidationError> {
         if transaction_payload.len() > MAX_PAYLOAD_SIZE {
@@ -129,20 +129,40 @@ impl TransactionValidation {
     }
 
     /// Performs static validation only
-    pub fn parse_and_validate_transaction_slice(
+    pub fn parse_and_validate_user_transaction_slice(
         &self,
         transaction_payload: &[u8],
     ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
-        let notarized_transaction = Self::parse_unvalidated_transaction_from_slice(transaction_payload)?;
-
-        self.validate_transaction(notarized_transaction)
+        let notarized_transaction = Self::parse_unvalidated_user_transaction_from_slice(transaction_payload)?;
+        self.validate_user_transaction(notarized_transaction)
     }
 
     /// Performs static validation only
-    fn validate_transaction(
+    fn validate_user_transaction(
         &self,
         transaction: NotarizedTransaction,
     ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
+        self.validator.validate(transaction, &self.intent_hash_manager)
+    }
+
+    pub fn parse_unvalidated_transaction_from_slice(
+        transaction_payload: &[u8],
+    ) -> Result<Transaction, TransactionValidationError> {
+        let transaction: Transaction = scrypto_decode(transaction_payload)
+            .map_err(TransactionValidationError::DeserializationError)?;
+
+        Ok(transaction)
+    }
+
+    pub fn parse_and_validate_transaction_slice(
+        &self,
+        transaction_payload: &[u8],
+    ) -> Result<Validated<Transaction>, TransactionValidationError> {
+        let transaction = Self::parse_unvalidated_transaction_from_slice(transaction_payload)?;
+        self.validate_transaction(transaction)
+    }
+
+    fn validate_transaction(&self, transaction: Transaction) -> Result<Validated<Transaction>, TransactionValidationError> {
         self.validator.validate(transaction, &self.intent_hash_manager)
     }
 }
@@ -245,6 +265,17 @@ where
     }
 }
 
+enum ValidationResult {
+    Ok {
+        validated: Validated<NotarizedTransaction>,
+        payload: Vec<u8>,
+    },
+    Err {
+        error: TransactionValidationError,
+        payload: Vec<u8>
+    }
+}
+
 impl<S> StateManager<S>
 where
     S: ReadableSubstateStore,
@@ -256,7 +287,7 @@ where
         &mut self,
         transaction: &NotarizedTransaction,
     ) -> Result<TransactionReceipt, TransactionValidationError> {
-        let validated_transaction = self.validation.validate_transaction(transaction.clone())?;
+        let validated_transaction = self.validation.validate_user_transaction(transaction.clone())?;
 
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
@@ -391,16 +422,18 @@ where
                 .parse_and_validate_transaction_slice(&prepared)
                 .expect("Already prepared transactions should be decodeable");
 
-            already_committed_or_prepared_intent_hashes.insert(validated_transaction.intent_hash());
+            if let Transaction::User(notarized_transaction) = validated_transaction.transaction() {
+                already_committed_or_prepared_intent_hashes.insert(notarized_transaction.intent_hash());
+            }
             validated_prepared.push(validated_transaction);
         }
 
-        let mut validated_proposed_transactions = Vec::new();
+        let mut validated_proposed_transactions : Vec<ValidationResult> = Vec::new();
 
         for proposed_payload in prepare_request.proposed_payloads {
             let validation_result = self
                 .validation
-                .parse_and_validate_transaction_slice(&proposed_payload);
+                .parse_and_validate_user_transaction_slice(&proposed_payload);
 
             if let Ok(validated_transaction) = &validation_result {
                 let intent_hash = validated_transaction.intent_hash();
@@ -413,7 +446,11 @@ where
                 }
             }
 
-            validated_proposed_transactions.push((proposed_payload, validation_result));
+            let validation_result = validation_result.map(|validated| {
+                ValidationResult::Ok { validated, payload: proposed_payload.clone() }
+            }).unwrap_or_else(|error| ValidationResult::Err { error, payload: proposed_payload.clone() });
+
+            validated_proposed_transactions.push(validation_result);
         }
 
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
@@ -433,66 +470,62 @@ where
             );
         }
 
-        let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
-        let public_key = private_key.public_key();
-        let intent = create_set_epoch_intent(
-            &self.network,
-            PublicKey::EcdsaSecp256k1(public_key),
-            prepare_request.round_number,
-        );
-        let signed_intent = SignedTransactionIntent {
-            intent,
-            intent_signatures: vec![],
-        };
-        let signed_intent_payload = scrypto_encode(&signed_intent);
-        let notary_signature = private_key.sign(&signed_intent_payload).into();
-        let notarized = NotarizedTransaction {
-            signed_intent,
-            notary_signature,
-        };
-        let notarized_bytes = scrypto_encode(&notarized);
-        let validated_epoch_update = self
-            .validation
-            .parse_and_validate_transaction_slice(&notarized_bytes)
-            .unwrap();
-        validated_proposed_transactions.insert(0, (notarized_bytes, Ok(validated_epoch_update)));
+        let mut committed = Vec::new();
+        let epoch_update_txn = Transaction::EpochUpdate(prepare_request.round_number);
+        let validated_epoch_update_txn = self.validation.validate_transaction(epoch_update_txn).unwrap();
+        let mut fee_reserve = SystemLoanFeeReserve::default();
+        // TODO: Clean up fee reserve
+        fee_reserve.credit(10_000_000);
+        let receipt = transaction_executor.execute_with_fee_reserve(&validated_epoch_update_txn, &self.execution_config, fee_reserve);
+        match receipt.result {
+            TransactionResult::Commit(..) => {
+                let serialized_validated_txn = scrypto_encode(validated_epoch_update_txn.transaction());
+                committed.push(serialized_validated_txn);
+            }
+            TransactionResult::Reject(reject_result) => {
+                panic!("Epoch Update rejected: {:?}", reject_result);
+            }
+        }
 
         let mut rejected = Vec::new();
-        let mut committed = Vec::new();
 
-        for (raw_transaction, validation_result) in validated_proposed_transactions {
+        for validation_result in validated_proposed_transactions {
             match validation_result {
-                Ok(validated_transaction) => {
-                    let intent_hash = validated_transaction.intent_hash();
+                ValidationResult::Ok { validated, payload } => {
+                    let intent_hash = validated.intent_hash();
                     if already_committed_or_prepared_intent_hashes.contains(&intent_hash) {
                         rejected.push((
-                            raw_transaction,
+                            payload,
                             "Transaction rejected - duplicate intent hash".to_string(),
                         ));
-                    } else {
-                        let receipt = transaction_executor.execute_and_commit(
-                            &validated_transaction,
-                            &self.fee_reserve_config,
-                            &self.execution_config,
-                        );
-                        match receipt.result {
-                            TransactionResult::Commit(..) => {
-                                committed.push(raw_transaction);
-                                already_committed_or_prepared_intent_hashes.insert(intent_hash);
-                            }
-                            TransactionResult::Reject(reject_result) => {
-                                rejected.push((raw_transaction, format!("{:?}", reject_result)));
-                                if self.logging_config.log_on_transaction_rejection {
-                                    info!("TXN REJECTED: {:?}", reject_result);
-                                }
+                        continue;
+                    }
+
+                    let receipt = transaction_executor.execute_and_commit(
+                        &validated,
+                        &self.fee_reserve_config,
+                        &self.execution_config,
+                    );
+
+                    match receipt.result {
+                        TransactionResult::Commit(..) => {
+                            already_committed_or_prepared_intent_hashes.insert(validated.intent_hash());
+                            let serialized_validated_txn = scrypto_encode(&Transaction::User(validated.into_transaction()));
+                            committed.push(serialized_validated_txn);
+                        }
+                        TransactionResult::Reject(reject_result) => {
+                            rejected.push((payload, format!("{:?}", reject_result)));
+
+                            if self.logging_config.log_on_transaction_rejection {
+                                info!("TXN REJECTED: {:?}", reject_result);
                             }
                         }
                     }
                 }
-                Err(validation_error) => {
-                    rejected.push((raw_transaction, format!("{:?}", validation_error)));
+                ValidationResult::Err { error, payload } => {
+                    rejected.push((payload, format!("{:?}", error)));
                     if self.logging_config.log_on_transaction_rejection {
-                        info!("TXN INVALID: {:?}", validation_error);
+                        info!("TXN INVALID: {:?}", error);
                     }
                 }
             }
@@ -551,23 +584,29 @@ where
             );
 
             let ledger_receipt: LedgerTransactionReceipt =
-                engine_receipt.try_into().unwrap_or_else(|_| {
+                engine_receipt.try_into()
+                    .unwrap_or_else(|error| {
                     panic!(
-                        "Failed to commit a txn at state version {}",
-                        commit_request.state_version
+                        "Failed to commit a txn at state version {}: {}",
+                        commit_request.state_version, error
                     )
                 });
 
-            let notarized_transaction = validated_txn.into_transaction();
+            let transaction = validated_txn.into_transaction();
+            let payload_hash = transaction.payload_hash();
+            let intent_hash = transaction.intent_hash();
 
-            let payload_hash = notarized_transaction.payload_hash();
-            let intent_hash = notarized_transaction.intent_hash();
+            // TODO: Remove
+            let stored_transaction = match transaction {
+                Transaction::User(notarized_transaction) => StoredTransaction::User(notarized_transaction),
+                Transaction::EpochUpdate(epoch) => StoredTransaction::System(scrypto_encode(&epoch)),
+            };
 
             let identifiers = CommittedTransactionIdentifiers {
                 state_version: current_state_version,
             };
             to_store.push((
-                StoredTransaction::User(notarized_transaction),
+                stored_transaction,
                 ledger_receipt,
                 identifiers,
             ));

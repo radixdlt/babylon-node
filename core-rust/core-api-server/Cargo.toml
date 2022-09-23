@@ -17,16 +17,15 @@ state-manager = { path = "../state-manager" }
 #   $ git pull
 #   $ git rev-parse --short HEAD
 #   $ git tag "develop-<8 char hash id from previous command>"
-#   $ git push origin "develop-BLAH"
-# * Then use tag="develop-BLAH" in the below dependencies.
-# 
+#
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-762721" }
-scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-762721" }
-transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-762721" }
-radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-762721" }
-radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-762721" }
+sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-131727" }
+scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-131727" }
+transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-131727" }
+radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-131727" }
+radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-131727" }
+
 
 jni = "0.19.0"
 

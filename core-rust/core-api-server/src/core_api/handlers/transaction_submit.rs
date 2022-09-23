@@ -40,6 +40,6 @@ pub fn extract_unvalidated_transaction(
     payload: &str,
 ) -> Result<NotarizedTransaction, ExtractionError> {
     let transaction_bytes = from_hex(payload)?;
-    let notarized_transaction = TransactionValidation::parse_unvalidated_transaction_from_slice(&transaction_bytes)?;
+    let notarized_transaction = TransactionValidation::parse_unvalidated_user_transaction_from_slice(&transaction_bytes)?;
     Ok(notarized_transaction)
 }
