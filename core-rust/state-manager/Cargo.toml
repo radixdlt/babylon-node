@@ -24,11 +24,11 @@ tracing-subscriber = { version = "0.3" }
 # 
 # Ensure this version is also identically updated in ../core-api-server/Cargo.toml
 #
-sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="native-method-0861f4" }
-scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="native-method-0861f4" }
-transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="native-method-0861f4" }
-radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="native-method-0861f4" }
-radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="native-method-0861f4" }
+sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-762721" }
+scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-762721" }
+transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-762721" }
+radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-762721" }
+radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="refactor-txn-762721" }
 
 # Non-Radix Engine Dependencies:
 rocksdb = { version = "0.19.0" }

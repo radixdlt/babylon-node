@@ -91,12 +91,10 @@ use tracing::info;
 
 use crate::transaction_builder::create_set_epoch_intent;
 use transaction::errors::TransactionValidationError;
-use transaction::model::{
-    NotarizedTransaction, PreviewFlags, PreviewIntent, SignedTransactionIntent, TransactionHeader,
-    TransactionIntent, ValidatedTransaction,
-};
+use transaction::model::{NotarizedTransaction, PreviewFlags, PreviewIntent, SignedTransactionIntent, TransactionHeader, TransactionIntent, Validated};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
-use transaction::validation::{TestIntentHashManager, TransactionValidator, ValidationConfig};
+use transaction::validation::{NetworkTransactionValidator, TestIntentHashManager, TransactionValidator, ValidationConfig};
+use transaction::validation::MAX_PAYLOAD_SIZE;
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct LoggingConfig {
@@ -111,7 +109,7 @@ pub struct StateManagerLoggingConfig {
 }
 
 pub struct TransactionValidation {
-    validation_config: ValidationConfig,
+    validator: NetworkTransactionValidator,
     intent_hash_manager: TestIntentHashManager,
 }
 
@@ -120,7 +118,7 @@ impl TransactionValidation {
     pub fn parse_unvalidated_transaction_from_slice(
         transaction_payload: &[u8],
     ) -> Result<NotarizedTransaction, TransactionValidationError> {
-        if transaction_payload.len() > TransactionValidator::MAX_PAYLOAD_SIZE {
+        if transaction_payload.len() > MAX_PAYLOAD_SIZE {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
@@ -130,20 +128,11 @@ impl TransactionValidation {
         Ok(transaction)
     }
 
-    pub fn validate_transaction_slice(
-        &self,
-        transaction_payload: &[u8],
-    ) -> Result<ValidatedTransaction, TransactionValidationError> {
-        let notarized_transaction = Self::parse_unvalidated_transaction_from_slice(transaction_payload)?;
-
-        self.validate_transaction(notarized_transaction)
-    }
-
     /// Performs static validation only
     pub fn parse_and_validate_transaction_slice(
         &self,
         transaction_payload: &[u8],
-    ) -> Result<ValidatedTransaction, TransactionValidationError> {
+    ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
         let notarized_transaction = Self::parse_unvalidated_transaction_from_slice(transaction_payload)?;
 
         self.validate_transaction(notarized_transaction)
@@ -153,8 +142,8 @@ impl TransactionValidation {
     fn validate_transaction(
         &self,
         transaction: NotarizedTransaction,
-    ) -> Result<ValidatedTransaction, TransactionValidationError> {
-        TransactionValidator::validate(transaction, &self.intent_hash_manager, &self.validation_config)
+    ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
+        self.validator.validate(transaction, &self.intent_hash_manager)
     }
 }
 
@@ -180,12 +169,12 @@ impl<S> StateManager<S> {
         logging_config: LoggingConfig,
     ) -> StateManager<S> {
         let validation = TransactionValidation {
-            validation_config: ValidationConfig {
+            validator: NetworkTransactionValidator::new(ValidationConfig {
                 network_id: network.id,
                 current_epoch: 1,
                 max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
                 min_tip_percentage: 0,
-            },
+            }),
             intent_hash_manager: TestIntentHashManager::new(),
         };
 
@@ -198,7 +187,6 @@ impl<S> StateManager<S> {
             validation,
             execution_config: ExecutionConfig {
                 max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                is_system: true,
                 trace: logging_config.engine_trace,
             },
             fee_reserve_config: FeeReserveConfig {
@@ -465,7 +453,7 @@ where
         let notarized_bytes = scrypto_encode(&notarized);
         let validated_epoch_update = self
             .validation
-            .validate_transaction_slice(&notarized_bytes)
+            .parse_and_validate_transaction_slice(&notarized_bytes)
             .unwrap();
         validated_proposed_transactions.insert(0, (notarized_bytes, Ok(validated_epoch_update)));
 
@@ -570,14 +558,16 @@ where
                     )
                 });
 
-            let payload_hash = validated_txn.transaction.payload_hash();
-            let intent_hash = validated_txn.transaction.intent_hash();
+            let notarized_transaction = validated_txn.into_transaction();
+
+            let payload_hash = notarized_transaction.payload_hash();
+            let intent_hash = notarized_transaction.intent_hash();
 
             let identifiers = CommittedTransactionIdentifiers {
                 state_version: current_state_version,
             };
             to_store.push((
-                StoredTransaction::User(validated_txn.transaction),
+                StoredTransaction::User(notarized_transaction),
                 ledger_receipt,
                 identifiers,
             ));

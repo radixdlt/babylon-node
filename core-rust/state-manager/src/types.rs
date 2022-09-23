@@ -64,10 +64,7 @@
 
 use scrypto::prelude::*;
 use std::fmt;
-use transaction::model::{
-    NotarizedTransaction, PreviewFlags, TransactionIntent, TransactionManifest,
-    ValidatedTransaction,
-};
+use transaction::model::{NotarizedTransaction, PreviewFlags, TransactionIntent, TransactionManifest, Validated};
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
 pub struct PayloadHash(pub [u8; Self::LENGTH]);
@@ -110,9 +107,9 @@ impl HasPayloadHash for NotarizedTransaction {
     }
 }
 
-impl HasPayloadHash for ValidatedTransaction {
+impl HasPayloadHash for Validated<NotarizedTransaction> {
     fn payload_hash(&self) -> PayloadHash {
-        self.transaction.payload_hash()
+        self.transaction().payload_hash()
     }
 }
 
@@ -165,9 +162,9 @@ impl HasIntentHash for NotarizedTransaction {
     }
 }
 
-impl HasIntentHash for ValidatedTransaction {
+impl HasIntentHash for Validated<NotarizedTransaction> {
     fn intent_hash(&self) -> IntentHash {
-        self.transaction.intent_hash()
+        self.transaction().intent_hash()
     }
 }
 
