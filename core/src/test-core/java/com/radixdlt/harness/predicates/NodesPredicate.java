@@ -86,11 +86,11 @@ public final class NodesPredicate {
   }
 
   public static Predicate<List<Injector>> allCommittedTransaction(RawTransaction transaction) {
-    return n -> n.stream().allMatch(NodePredicate.committedTransaction(transaction));
+    return n -> n.stream().allMatch(NodePredicate.committedUserTransaction(transaction));
   }
 
   public static Predicate<List<Injector>> anyCommittedTransaction(RawTransaction transaction) {
-    return n -> n.stream().anyMatch(NodePredicate.committedTransaction(transaction));
+    return n -> n.stream().anyMatch(NodePredicate.committedUserTransaction(transaction));
   }
 
   public static Predicate<List<Injector>> anyAtExactlyStateVersion(long stateVersion) {

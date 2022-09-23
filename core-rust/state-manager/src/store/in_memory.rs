@@ -63,7 +63,8 @@
  */
 
 use crate::store::traits::*;
-use crate::types::{PayloadHash, StoredTransaction};
+use crate::transaction::Transaction;
+use crate::types::PayloadHash;
 use crate::{CommittedTransactionIdentifiers, HasIntentHash, IntentHash, LedgerTransactionReceipt};
 use scrypto::prelude::{scrypto_decode, scrypto_encode};
 use std::collections::{BTreeMap, HashMap};
@@ -117,12 +118,12 @@ impl InMemoryStore {
 
     fn insert_transaction(
         &mut self,
-        transaction: StoredTransaction,
+        transaction: Transaction,
         receipt: LedgerTransactionReceipt,
         identifiers: CommittedTransactionIdentifiers,
     ) {
         let payload_hash = transaction.get_hash();
-        if let StoredTransaction::User(notarized_transaction) = &transaction {
+        if let Transaction::User(notarized_transaction) = &transaction {
             let intent_hash = notarized_transaction.intent_hash();
             let key_already_exists = self.transaction_intent_lookup.get(&intent_hash);
             if let Some(existing_payload_hash) = key_already_exists {
@@ -151,7 +152,7 @@ impl WriteableTransactionStore for InMemoryStore {
     fn insert_committed_transactions(
         &mut self,
         transactions: Vec<(
-            StoredTransaction,
+            Transaction,
             LedgerTransactionReceipt,
             CommittedTransactionIdentifiers,
         )>,
@@ -167,7 +168,7 @@ impl QueryableTransactionStore for InMemoryStore {
         &self,
         payload_hash: &PayloadHash,
     ) -> Option<(
-        StoredTransaction,
+        Transaction,
         LedgerTransactionReceipt,
         CommittedTransactionIdentifiers,
     )> {
@@ -183,7 +184,7 @@ impl QueryableTransactionStore for InMemoryStore {
         &self,
         intent_hash: &IntentHash,
     ) -> Option<(
-        StoredTransaction,
+        Transaction,
         LedgerTransactionReceipt,
         CommittedTransactionIdentifiers,
     )> {

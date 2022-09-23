@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::types::{PayloadHash, StoredTransaction};
+use crate::types::PayloadHash;
 use std::collections::HashMap;
 
 use crate::store::traits::*;
@@ -94,6 +94,7 @@ enum RocksDBTable {
     VertexStore,
     TransactionIntentLookup,
 }
+use crate::transaction::Transaction;
 use RocksDBTable::*;
 
 impl RocksDBTable {
@@ -165,12 +166,12 @@ pub struct RocksDBCommitTransaction<'db> {
 impl<'db> RocksDBCommitTransaction<'db> {
     fn insert_transaction(
         &mut self,
-        transaction: StoredTransaction,
+        transaction: Transaction,
         receipt: LedgerTransactionReceipt,
         identifiers: CommittedTransactionIdentifiers,
     ) {
         // TEMPORARY until this is handled in the engine: we store both an intent lookup and the transaction itself
-        if let StoredTransaction::User(notarized_transaction) = &transaction {
+        if let Transaction::User(notarized_transaction) = &transaction {
             let key = get_transaction_intent_key(&notarized_transaction.intent_hash());
             let existing_intent_option = self
                 .db_txn
@@ -219,7 +220,7 @@ impl<'db> WriteableTransactionStore for RocksDBCommitTransaction<'db> {
     fn insert_committed_transactions(
         &mut self,
         transactions: Vec<(
-            StoredTransaction,
+            Transaction,
             LedgerTransactionReceipt,
             CommittedTransactionIdentifiers,
         )>,
@@ -313,7 +314,7 @@ impl QueryableTransactionStore for RocksDBStore {
         &self,
         payload_hash: &PayloadHash,
     ) -> Option<(
-        StoredTransaction,
+        Transaction,
         LedgerTransactionReceipt,
         CommittedTransactionIdentifiers,
     )> {
@@ -329,7 +330,7 @@ impl QueryableTransactionStore for RocksDBStore {
         &self,
         intent_hash: &IntentHash,
     ) -> Option<(
-        StoredTransaction,
+        Transaction,
         LedgerTransactionReceipt,
         CommittedTransactionIdentifiers,
     )> {

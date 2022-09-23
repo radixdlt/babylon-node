@@ -69,6 +69,7 @@ import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.CommittedTransactionStatus;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.function.Predicate;
 
@@ -77,7 +78,10 @@ public class NodePredicate {
     throw new IllegalStateException("Cannot instanitate.");
   }
 
-  public static Predicate<Injector> committedFailedTransaction(RawTransaction transaction) {
+  public static Predicate<Injector> committedFailedUserTransaction(RawTransaction userTransaction) {
+    var committedTransaction =
+        RawTransaction.create(
+            TransactionBuilder.userTransactionToCommittedBytes(userTransaction.getPayload()));
     return i -> {
       var store = i.getInstance(REv2TransactionAndProofStore.class);
       for (long version = 1; true; version++) {
@@ -86,7 +90,7 @@ public class NodePredicate {
           break;
         } else {
           var txn = maybeTxn.unwrap();
-          if (txn.rawTransaction().equals(transaction)) {
+          if (txn.rawTransaction().equals(committedTransaction)) {
             return txn.status() instanceof CommittedTransactionStatus.Failure;
           }
         }
@@ -96,7 +100,10 @@ public class NodePredicate {
     };
   }
 
-  public static Predicate<Injector> committedTransaction(RawTransaction transaction) {
+  public static Predicate<Injector> committedUserTransaction(RawTransaction userTransaction) {
+    var committedTransaction =
+        RawTransaction.create(
+            TransactionBuilder.userTransactionToCommittedBytes(userTransaction.getPayload()));
     return i -> {
       var store = i.getInstance(REv2TransactionAndProofStore.class);
       for (long version = 1; true; version++) {
@@ -105,7 +112,7 @@ public class NodePredicate {
           break;
         } else {
           var txn = maybeTxn.unwrap();
-          if (txn.rawTransaction().equals(transaction)) {
+          if (txn.rawTransaction().equals(committedTransaction)) {
             return true;
           }
         }

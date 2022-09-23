@@ -85,16 +85,16 @@ pub mod substate {
 }
 
 pub mod transactions {
+    use crate::transaction::Transaction;
     use crate::{
         CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt, PayloadHash,
-        StoredTransaction,
     };
 
     pub trait WriteableTransactionStore {
         fn insert_committed_transactions(
             &mut self,
             transactions: Vec<(
-                StoredTransaction,
+                Transaction,
                 LedgerTransactionReceipt,
                 CommittedTransactionIdentifiers,
             )>,
@@ -106,7 +106,7 @@ pub mod transactions {
             &self,
             payload_hash: &PayloadHash,
         ) -> Option<(
-            StoredTransaction,
+            Transaction,
             LedgerTransactionReceipt,
             CommittedTransactionIdentifiers,
         )>;
@@ -115,7 +115,7 @@ pub mod transactions {
             &self,
             intent_hash: &IntentHash,
         ) -> Option<(
-            StoredTransaction,
+            Transaction,
             LedgerTransactionReceipt,
             CommittedTransactionIdentifiers,
         )>;

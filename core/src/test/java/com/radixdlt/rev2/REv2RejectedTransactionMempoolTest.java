@@ -139,14 +139,12 @@ public class REv2RejectedTransactionMempoolTest {
 
   private static ExecutedTransaction executeTransaction(
       DeterministicTest test, RawTransaction transaction) throws Exception {
-    var currentStateVersion =
-        Math.max(1, NodesReader.getHighestStateVersion(test.getNodeInjectors()));
     var mempoolInserter =
         test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
     mempoolInserter.addTransaction(transaction);
 
     test.runUntilState(allCommittedTransaction(transaction), onlyConsensusEvents());
-    return NodesReader.getCommittedTransaction(test.getNodeInjectors(), transaction);
+    return NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), transaction);
   }
 
   @Test

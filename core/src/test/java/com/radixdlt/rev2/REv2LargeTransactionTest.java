@@ -136,7 +136,7 @@ public final class REv2LargeTransactionTest {
       test.runUntilState(allCommittedTransaction(newAccountTransaction), onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
-      NodesReader.getCommittedTransaction(test.getNodeInjectors(), newAccountTransaction);
+      NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), newAccountTransaction);
     }
   }
 }

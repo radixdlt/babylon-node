@@ -215,21 +215,7 @@ pub enum StoredTransaction {
     System(Vec<u8>), // Just a payload for now. Todo - something better soon?
 }
 
-impl StoredTransaction {
-    pub fn get_hash(&self) -> PayloadHash {
-        match self {
-            StoredTransaction::User(notarized) => notarized.payload_hash(),
-            StoredTransaction::System(payload) => PayloadHash::for_payload(payload),
-        }
-    }
-
-    pub fn into_payload(self) -> Vec<u8> {
-        match self {
-            StoredTransaction::User(notarized) => scrypto_encode(&notarized),
-            StoredTransaction::System(payload) => payload,
-        }
-    }
-}
+impl StoredTransaction {}
 
 #[derive(Debug, Decode, Encode, TypeId)]
 pub struct PreviewRequest {

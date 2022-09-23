@@ -66,9 +66,7 @@ use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::transaction_rejection_cache::{RejectionCache, RejectionReason};
 use crate::query::ResourceAccounter;
 use crate::store::traits::*;
-use crate::types::{
-    CommitRequest, PrepareRequest, PrepareResult, PreviewRequest, StoredTransaction,
-};
+use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasPayloadHash, IntentHash,
     LedgerTransactionReceipt, MempoolAddError, PendingTransaction,
@@ -570,20 +568,10 @@ where
             let payload_hash = transaction.payload_hash();
             let intent_hash = transaction.intent_hash();
 
-            // TODO: Remove
-            let stored_transaction = match transaction {
-                Transaction::User(notarized_transaction) => {
-                    StoredTransaction::User(notarized_transaction)
-                }
-                Transaction::Validator(validator_transaction) => {
-                    StoredTransaction::System(scrypto_encode(&validator_transaction))
-                }
-            };
-
             let identifiers = CommittedTransactionIdentifiers {
                 state_version: current_state_version,
             };
-            to_store.push((stored_transaction, ledger_receipt, identifiers));
+            to_store.push((transaction, ledger_receipt, identifiers));
             payload_hashes.push(payload_hash);
             intent_hashes.push(intent_hash);
             current_state_version += 1;

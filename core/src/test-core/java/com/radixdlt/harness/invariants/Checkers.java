@@ -86,7 +86,8 @@ public final class Checkers {
   public static void assertAllCommittedFailedTransaction(
       List<Injector> nodeInjectors, RawTransaction transaction) {
     assertThat(
-            nodeInjectors.stream().allMatch(NodePredicate.committedFailedTransaction(transaction)))
+            nodeInjectors.stream()
+                .allMatch(NodePredicate.committedFailedUserTransaction(transaction)))
         .isTrue();
   }
 
@@ -119,7 +120,8 @@ public final class Checkers {
           var numCommitted =
               transactions.stream()
                   .filter(
-                      transaction -> NodePredicate.committedTransaction(transaction).test(injector))
+                      transaction ->
+                          NodePredicate.committedUserTransaction(transaction).test(injector))
                   .count();
           assertThat(numCommitted).isEqualTo(1);
         });

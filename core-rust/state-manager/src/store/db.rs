@@ -72,7 +72,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tracing::debug;
 
-use crate::types::{PayloadHash, StoredTransaction};
+use crate::types::PayloadHash;
 use radix_engine::engine::{Substate, Track};
 use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
 use radix_engine::ledger::{
@@ -85,6 +85,7 @@ use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use crate::store::in_memory::InMemoryVertexStore;
 use crate::store::rocks_db::RocksDBCommitTransaction;
 use crate::store::traits::RecoverableVertexStore;
+use crate::transaction::{Transaction, ValidatorTransaction};
 use crate::{CommittedTransactionIdentifiers, LedgerTransactionReceipt};
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
 
@@ -146,7 +147,7 @@ impl StateManagerDatabase {
                 )
                     .into();
 
-                let mock_genesis = StoredTransaction::System(vec![]);
+                let mock_genesis = Transaction::Validator(ValidatorTransaction::EpochUpdate(0)); // Mocked
                 let payload_hash = mock_genesis.get_hash();
                 let identifiers = CommittedTransactionIdentifiers { state_version: 1 };
                 db_txn.insert_committed_transactions(vec![(
@@ -217,7 +218,7 @@ impl<'db> WriteableTransactionStore for StateManagerCommitTransaction<'db> {
     fn insert_committed_transactions(
         &mut self,
         transactions: Vec<(
-            StoredTransaction,
+            Transaction,
             LedgerTransactionReceipt,
             CommittedTransactionIdentifiers,
         )>,
@@ -337,7 +338,7 @@ impl QueryableTransactionStore for StateManagerDatabase {
         &self,
         payload_hash: &PayloadHash,
     ) -> Option<(
-        StoredTransaction,
+        Transaction,
         LedgerTransactionReceipt,
         CommittedTransactionIdentifiers,
     )> {
@@ -355,7 +356,7 @@ impl QueryableTransactionStore for StateManagerDatabase {
         &self,
         intent_hash: &crate::IntentHash,
     ) -> Option<(
-        StoredTransaction,
+        Transaction,
         LedgerTransactionReceipt,
         CommittedTransactionIdentifiers,
     )> {

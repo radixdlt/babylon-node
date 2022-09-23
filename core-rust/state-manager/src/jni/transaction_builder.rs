@@ -66,15 +66,18 @@ use crate::jni::java_structure::JavaStructure;
 use crate::result::StateManagerResult;
 use crate::transaction::{
     create_100kb_txn_intent, create_intent_bytes, create_manifest, create_new_account_intent_bytes,
-    create_notarized_bytes, create_set_epoch_intent, create_signed_intent_bytes,
+    create_notarized_bytes, create_set_epoch_intent, create_signed_intent_bytes, Transaction,
 };
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use radix_engine::types::scrypto_encode;
 use sbor::{Decode, Encode, TypeId};
+use scrypto::buffer::scrypto_decode;
 use scrypto::prelude::{NetworkDefinition, PublicKey, Signature, SignatureWithPublicKey};
-use transaction::model::{SignedTransactionIntent, TransactionHeader, TransactionIntent};
+use transaction::model::{
+    NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
+};
 
 use super::utils::{jni_static_sbor_call, jni_static_sbor_call_flatten_result};
 
@@ -228,6 +231,20 @@ fn do_create_notarized_bytes(args: (Vec<u8>, Signature)) -> StateManagerResult<V
     let signed_intent = SignedTransactionIntent::from_java(&signed_intent_bytes)?;
 
     Ok(create_notarized_bytes(signed_intent, signature))
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_userTransactionToCommitted(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call_flatten_result(env, request_payload, do_user_transaction_to_committed)
+}
+
+fn do_user_transaction_to_committed(args: Vec<u8>) -> StateManagerResult<Vec<u8>> {
+    let notarized_transaction: NotarizedTransaction = scrypto_decode(&args).unwrap();
+    Ok(scrypto_encode(&Transaction::User(notarized_transaction)))
 }
 
 pub fn export_extern_functions() {}

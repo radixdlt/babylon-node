@@ -69,6 +69,7 @@ import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
@@ -78,8 +79,12 @@ public final class NodesReader {
     throw new IllegalStateException("Not allowed to instantiate.");
   }
 
-  public static ExecutedTransaction getCommittedTransaction(
-      List<Injector> nodes, RawTransaction transaction) {
+  public static ExecutedTransaction getCommittedUserTransaction(
+      List<Injector> nodes, RawTransaction userTransaction) {
+    var committedTransaction =
+        RawTransaction.create(
+            TransactionBuilder.userTransactionToCommittedBytes(userTransaction.getPayload()));
+
     for (var injector : nodes) {
       if (injector == null) {
         continue;
@@ -89,17 +94,17 @@ public final class NodesReader {
       for (long version = 1; true; version++) {
         var maybeTxn = store.getTransactionAtStateVersion(version);
         if (maybeTxn.isEmpty()) {
-          continue;
+          break;
         } else {
           var txn = maybeTxn.unwrap();
-          if (txn.rawTransaction().equals(transaction)) {
+          if (txn.rawTransaction().equals(committedTransaction)) {
             return txn;
           }
         }
       }
     }
 
-    throw new IllegalStateException("Committed Transaction Not Found " + transaction);
+    throw new IllegalStateException("Committed Transaction Not Found " + userTransaction);
   }
 
   public static long getHighestStateVersion(List<Injector> nodes) {

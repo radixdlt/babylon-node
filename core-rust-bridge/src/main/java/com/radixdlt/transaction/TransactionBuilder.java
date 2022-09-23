@@ -174,4 +174,16 @@ public final class TransactionBuilder {
               new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::createNotarizedBytes);
 
   private static native byte[] createNotarizedBytes(byte[] requestPayload);
+
+  public static byte[] userTransactionToCommittedBytes(byte[] userTransactionBytes) {
+    return userTransactionToCommitted.call(userTransactionBytes);
+  }
+
+  private static final NativeCalls.StaticFunc1<byte[], byte[]> userTransactionToCommitted =
+      NativeCalls.StaticFunc1.with(
+          new TypeToken<>() {},
+          new TypeToken<>() {},
+          TransactionBuilder::userTransactionToCommitted);
+
+  private static native byte[] userTransactionToCommitted(byte[] requestPayload);
 }
