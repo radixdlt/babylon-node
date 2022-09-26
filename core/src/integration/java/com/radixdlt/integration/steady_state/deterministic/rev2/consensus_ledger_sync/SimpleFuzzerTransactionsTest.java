@@ -79,7 +79,9 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.REv2SimpleFuzzerTransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.utils.UInt64;
 import java.util.Random;
 import org.junit.Rule;
 import org.junit.Test;
@@ -103,6 +105,7 @@ public final class SimpleFuzzerTransactionsTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.LOCALSIMULATOR.getId(),
+                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(transactionGenerator, 10)),
                     SyncRelayConfig.of(5000, 10, 3000L))));

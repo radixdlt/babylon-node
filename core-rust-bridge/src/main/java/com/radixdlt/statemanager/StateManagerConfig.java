@@ -73,6 +73,8 @@ import com.radixdlt.sbor.codec.StructCodec;
 
 public record StateManagerConfig(
     NetworkDefinition networkDefinition,
+    REv2StateConfig
+        stateConfig, // TODO: This should be replaced by a genesis configuration at some point
     Option<RustMempoolConfig> mempoolConfigOpt,
     REv2DatabaseConfig databaseConfig,
     LoggingConfig loggingConfig) {
@@ -86,9 +88,11 @@ public record StateManagerConfig(
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
                 (s, encoder) ->
                     encoder.encode(
                         s.networkDefinition,
+                        s.stateConfig,
                         s.mempoolConfigOpt,
                         s.databaseConfig,
                         s.loggingConfig)));
