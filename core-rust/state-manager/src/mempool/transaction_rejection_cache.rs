@@ -219,7 +219,17 @@ impl RejectionCache {
 mod tests {
     use std::thread;
 
+    use scrypto::prelude::sha256_twice;
+
     use super::*;
+
+    fn user_payload_hash(nonce: u8) -> UserPayloadHash {
+        UserPayloadHash::from_raw_bytes(sha256_twice(&[0, nonce]).0)
+    }
+
+    fn intent_hash(nonce: u8) -> IntentHash {
+        IntentHash::from_raw_bytes(sha256_twice(&[1, nonce]).0)
+    }
 
     #[test]
     fn add_evict_and_peek_by_intent_test() {
@@ -230,16 +240,16 @@ mod tests {
         let mut cache =
             RejectionCache::new(rejection_limit, recently_committed_intents_limit, max_ttl);
 
-        let payload_hash_1 = UserPayloadHash::for_payload(&[1]);
-        let payload_hash_2 = UserPayloadHash::for_payload(&[2]);
-        let payload_hash_3 = UserPayloadHash::for_payload(&[3]);
-        let payload_hash_4 = UserPayloadHash::for_payload(&[4]);
-        let payload_hash_5 = UserPayloadHash::for_payload(&[5]);
-        let payload_hash_6 = UserPayloadHash::for_payload(&[6]);
+        let payload_hash_1 = user_payload_hash(1);
+        let payload_hash_2 = user_payload_hash(2);
+        let payload_hash_3 = user_payload_hash(3);
+        let payload_hash_4 = user_payload_hash(4);
+        let payload_hash_5 = user_payload_hash(5);
+        let payload_hash_6 = user_payload_hash(6);
 
-        let intent_hash_1 = IntentHash::for_intent_bytes(&[1]);
-        let intent_hash_2 = IntentHash::for_intent_bytes(&[2]);
-        let intent_hash_3 = IntentHash::for_intent_bytes(&[3]);
+        let intent_hash_1 = intent_hash(1);
+        let intent_hash_2 = intent_hash(2);
+        let intent_hash_3 = intent_hash(3);
 
         let reason_1 =
             RejectionReason::ValidationError(TransactionValidationError::TransactionTooLarge);
@@ -337,11 +347,11 @@ mod tests {
         let mut cache =
             RejectionCache::new(rejection_limit, recently_committed_intents_limit, max_ttl);
 
-        let payload_hash_1 = UserPayloadHash::for_payload(&[1]);
-        let payload_hash_2 = UserPayloadHash::for_payload(&[2]);
+        let payload_hash_1 = user_payload_hash(1);
+        let payload_hash_2 = user_payload_hash(2);
 
-        let intent_hash_1 = IntentHash::for_intent_bytes(&[1]);
-        let intent_hash_2 = IntentHash::for_intent_bytes(&[2]);
+        let intent_hash_1 = intent_hash(1);
+        let intent_hash_2 = intent_hash(2);
 
         cache.track_committed_transactions(vec![intent_hash_1]);
         assert!(cache
@@ -363,10 +373,10 @@ mod tests {
         let mut cache =
             RejectionCache::new(rejection_limit, recently_committed_intents_limit, max_ttl);
 
-        let payload_hash_1 = UserPayloadHash::for_payload(&[1]);
-        let payload_hash_2 = UserPayloadHash::for_payload(&[2]);
+        let payload_hash_1 = user_payload_hash(1);
+        let payload_hash_2 = user_payload_hash(2);
 
-        let intent_hash_1 = IntentHash::for_intent_bytes(&[1]);
+        let intent_hash_1 = intent_hash(1);
 
         let temporary_reason =
             RejectionReason::FromExecution(RejectionError::SuccessButFeeLoanNotRepaid);

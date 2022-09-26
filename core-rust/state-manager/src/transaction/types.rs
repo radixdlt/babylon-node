@@ -14,7 +14,7 @@ pub enum Transaction {
 
 impl Transaction {
     pub fn get_hash(&self) -> TransactionPayloadHash {
-        TransactionPayloadHash::for_payload(&scrypto_encode(self))
+        TransactionPayloadHash::for_transaction(self)
     }
 
     pub fn into_payload(self) -> Vec<u8> {

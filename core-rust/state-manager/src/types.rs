@@ -66,17 +66,30 @@ use crate::transaction::Transaction;
 use scrypto::prelude::*;
 use std::fmt;
 use transaction::model::{
-    NotarizedTransaction, PreviewFlags, TransactionIntent, TransactionManifest, Validated,
+    NotarizedTransaction, PreviewFlags, SignedTransactionIntent, TransactionIntent,
+    TransactionManifest, Validated,
 };
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
-pub struct TransactionPayloadHash(pub [u8; Self::LENGTH]);
+pub struct TransactionPayloadHash([u8; Self::LENGTH]);
 
 impl TransactionPayloadHash {
     pub const LENGTH: usize = 32;
 
-    pub fn for_payload(payload_bytes: &[u8]) -> Self {
-        sha256_twice(payload_bytes).into()
+    pub fn for_transaction(transaction: &Transaction) -> Self {
+        Self(sha256_twice(&scrypto_encode(transaction)).0)
+    }
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+
+    pub fn get_bytes(&self) -> &[u8; Self::LENGTH] {
+        &self.0
     }
 }
 
@@ -101,13 +114,25 @@ impl fmt::Debug for TransactionPayloadHash {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
-pub struct UserPayloadHash(pub [u8; Self::LENGTH]);
+pub struct UserPayloadHash([u8; Self::LENGTH]);
 
 impl UserPayloadHash {
     pub const LENGTH: usize = 32;
 
-    pub fn for_payload(payload_bytes: &[u8]) -> Self {
-        sha256_twice(payload_bytes).into()
+    pub fn for_transaction(transaction: &NotarizedTransaction) -> Self {
+        Self(sha256_twice(&scrypto_encode(transaction)).0)
+    }
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+
+    pub fn get_bytes(&self) -> &[u8; Self::LENGTH] {
+        &self.0
     }
 }
 
@@ -125,19 +150,13 @@ impl fmt::Debug for UserPayloadHash {
     }
 }
 
-impl From<Hash> for UserPayloadHash {
-    fn from(hash: Hash) -> Self {
-        UserPayloadHash(hash.0)
-    }
-}
-
 pub trait HasUserPayloadHash {
     fn user_payload_hash(&self) -> UserPayloadHash;
 }
 
 impl HasUserPayloadHash for NotarizedTransaction {
     fn user_payload_hash(&self) -> UserPayloadHash {
-        UserPayloadHash::for_payload(&scrypto_encode(self))
+        UserPayloadHash::for_transaction(self)
     }
 }
 
@@ -147,22 +166,79 @@ impl HasUserPayloadHash for Validated<NotarizedTransaction> {
     }
 }
 
-impl HasUserPayloadHash for Transaction {
-    fn user_payload_hash(&self) -> UserPayloadHash {
-        UserPayloadHash::for_payload(&scrypto_encode(self))
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
+pub struct SignaturesHash([u8; Self::LENGTH]);
+
+impl SignaturesHash {
+    pub const LENGTH: usize = 32;
+
+    pub fn for_signed_intent(signed_intent: &SignedTransactionIntent) -> Self {
+        Self(sha256_twice(&scrypto_encode(signed_intent)).0)
+    }
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+
+    pub fn get_bytes(&self) -> &[u8; Self::LENGTH] {
+        &self.0
+    }
+}
+
+impl fmt::Display for SignaturesHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", hex::encode(&self.0))
+    }
+}
+
+impl fmt::Debug for SignaturesHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("SignaturesHash")
+            .field(&hex::encode(self.0))
+            .finish()
+    }
+}
+
+pub trait HasSignaturesHash {
+    fn signatures_hash(&self) -> SignaturesHash;
+}
+
+impl HasSignaturesHash for SignedTransactionIntent {
+    fn signatures_hash(&self) -> SignaturesHash {
+        SignaturesHash::for_signed_intent(self)
+    }
+}
+
+impl HasSignaturesHash for NotarizedTransaction {
+    fn signatures_hash(&self) -> SignaturesHash {
+        self.signed_intent.signatures_hash()
     }
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
-pub struct IntentHash(pub [u8; Self::LENGTH]);
+pub struct IntentHash([u8; Self::LENGTH]);
 
 impl IntentHash {
     pub const LENGTH: usize = 32;
-}
 
-impl IntentHash {
-    pub fn for_intent_bytes(intent_bytes: &[u8]) -> Self {
-        sha256_twice(intent_bytes).into()
+    pub fn for_intent(intent: &TransactionIntent) -> Self {
+        Self(sha256_twice(&scrypto_encode(intent)).0)
+    }
+
+    pub fn from_raw_bytes(hash_bytes: [u8; Self::LENGTH]) -> Self {
+        Self(hash_bytes)
+    }
+
+    pub fn into_bytes(self) -> [u8; Self::LENGTH] {
+        self.0
+    }
+
+    pub fn get_bytes(&self) -> &[u8; Self::LENGTH] {
+        &self.0
     }
 }
 
@@ -180,19 +256,13 @@ impl fmt::Debug for IntentHash {
     }
 }
 
-impl From<Hash> for IntentHash {
-    fn from(hash: Hash) -> Self {
-        IntentHash(hash.0)
-    }
-}
-
 pub trait HasIntentHash {
     fn intent_hash(&self) -> IntentHash;
 }
 
 impl HasIntentHash for TransactionIntent {
     fn intent_hash(&self) -> IntentHash {
-        IntentHash::for_intent_bytes(&scrypto_encode(self))
+        IntentHash::for_intent(self)
     }
 }
 

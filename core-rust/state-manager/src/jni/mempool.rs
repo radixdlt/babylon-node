@@ -131,7 +131,11 @@ fn do_get_transactions_for_proposal(
 
     let prepared_ids: HashSet<UserPayloadHash> = prepared_transactions
         .into_iter()
-        .map(|id| UserPayloadHash(id.0.try_into().expect("transaction id the wrong length")))
+        .map(|id| {
+            UserPayloadHash::from_raw_bytes(
+                id.0.try_into().expect("transaction id the wrong length"),
+            )
+        })
         .collect();
 
     state_manager
@@ -192,7 +196,7 @@ pub struct JavaPayloadHash(Vec<u8>);
 
 impl From<TransactionPayloadHash> for JavaPayloadHash {
     fn from(payload_hash: TransactionPayloadHash) -> Self {
-        JavaPayloadHash(payload_hash.0.to_vec())
+        JavaPayloadHash(payload_hash.into_bytes().to_vec())
     }
 }
 
@@ -206,7 +210,7 @@ impl From<PendingTransaction> for JavaRawTransaction {
     fn from(transaction: PendingTransaction) -> Self {
         JavaRawTransaction {
             payload: scrypto_encode(&transaction.payload),
-            payload_hash: JavaPayloadHash(transaction.payload_hash.0.to_vec()),
+            payload_hash: JavaPayloadHash(transaction.payload_hash.into_bytes().to_vec()),
         }
     }
 }

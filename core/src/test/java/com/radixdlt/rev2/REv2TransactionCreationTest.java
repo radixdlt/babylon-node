@@ -143,9 +143,9 @@ public class REv2TransactionCreationTest {
     log.info(description + ":");
     log.info("Intent Hash: " + Bytes.toHexString(transactionInfo.intentHash.asBytes()));
     log.info(
-        "Payload Hash: "
+        "User Payload Hash: "
             + Bytes.toHexString(transactionInfo.transaction.getPayloadHash().asBytes()));
-    log.info("Payload: " + Bytes.toHexString(transactionInfo.transaction.getPayload()));
+    log.info("Notarized Payload: " + Bytes.toHexString(transactionInfo.transaction.getPayload()));
     log.info("=============================");
   }
 

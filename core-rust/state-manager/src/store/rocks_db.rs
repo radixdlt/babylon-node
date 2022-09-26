@@ -121,15 +121,15 @@ pub struct RocksDBStore {
 }
 
 fn get_transaction_key(payload_hash: &TransactionPayloadHash) -> Vec<u8> {
-    db_key!(Transactions, &payload_hash.0)
+    db_key!(Transactions, payload_hash.get_bytes())
 }
 
 fn get_user_transaction_payload_key(payload_hash: &UserPayloadHash) -> Vec<u8> {
-    db_key!(UserPayloadHashLookup, &payload_hash.0)
+    db_key!(UserPayloadHashLookup, payload_hash.get_bytes())
 }
 
 fn get_transaction_intent_key(intent_hash: &IntentHash) -> Vec<u8> {
-    db_key!(TransactionIntentLookup, &intent_hash.0)
+    db_key!(TransactionIntentLookup, intent_hash.get_bytes())
 }
 
 impl RocksDBStore {
@@ -186,16 +186,16 @@ impl<'db> RocksDBCommitTransaction<'db> {
                 .db_txn
                 .get_for_update(key, true)
                 .expect("RocksDB: failure to read intent hash");
-            if let Some(existing_payload_hash) = existing_intent_option {
+            if let Some(existing_intent_hash) = existing_intent_option {
                 panic!(
                     "Attempted to save intent hash which already exists: {:?}",
-                    UserPayloadHash(existing_payload_hash.try_into().unwrap())
+                    IntentHash::from_raw_bytes(existing_intent_hash.try_into().unwrap())
                 );
             }
             self.db_txn
                 .put(
                     get_transaction_intent_key(&notarized_transaction.intent_hash()),
-                    transaction.get_hash().0,
+                    transaction.get_hash().get_bytes(),
                 )
                 .expect("RocksDB: failure to put intent hash");
         }
@@ -259,7 +259,9 @@ impl<'db> WriteableProofStore for RocksDBCommitTransaction<'db> {
             for (index, payload_hash) in ids.into_iter().enumerate() {
                 let txn_state_version = first_state_version + index as u64;
                 let version_key = db_key!(StateVersions, &txn_state_version.to_be_bytes());
-                self.db_txn.put(version_key, payload_hash.0).unwrap();
+                self.db_txn
+                    .put(version_key, payload_hash.get_bytes())
+                    .unwrap();
             }
         }
     }
@@ -342,7 +344,7 @@ impl UserTransactionIndex<UserPayloadHash> for RocksDBStore {
             .db
             .get(get_user_transaction_payload_key(identifier))
             .expect("DB error loading payload hash")?;
-        let hash = TransactionPayloadHash(
+        let hash = TransactionPayloadHash::from_raw_bytes(
             payload_hash_entry
                 .try_into()
                 .expect("Saved payload hash is wrong length"),
@@ -357,7 +359,7 @@ impl UserTransactionIndex<IntentHash> for RocksDBStore {
             .db
             .get(get_transaction_intent_key(identifier))
             .expect("DB error loading payload hash")?;
-        let hash = TransactionPayloadHash(
+        let hash = TransactionPayloadHash::from_raw_bytes(
             payload_hash_entry
                 .try_into()
                 .expect("Saved payload hash is wrong length"),
@@ -386,7 +388,9 @@ impl QueryableProofStore for RocksDBStore {
     fn get_payload_hash(&self, state_version: u64) -> Option<TransactionPayloadHash> {
         let txn_version_key = db_key!(StateVersions, &state_version.to_be_bytes());
         self.db.get(&txn_version_key).unwrap().map(|bytes| {
-            TransactionPayloadHash(bytes.try_into().expect("Payload hash is the wrong length"))
+            TransactionPayloadHash::from_raw_bytes(
+                bytes.try_into().expect("Payload hash is the wrong length"),
+            )
         })
     }
 
@@ -410,7 +414,7 @@ impl QueryableProofStore for RocksDBStore {
         for v in first_state_version..=next_state_version {
             let txn_version_key = db_key!(StateVersions, &v.to_be_bytes());
             let bytes = self.db.get(txn_version_key).unwrap().unwrap();
-            tids.push(TransactionPayloadHash(
+            tids.push(TransactionPayloadHash::from_raw_bytes(
                 bytes.try_into().expect("Payload hash is the wrong length"),
             ));
         }

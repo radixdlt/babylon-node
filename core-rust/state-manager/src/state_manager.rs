@@ -444,7 +444,10 @@ where
 
         if prepare_request.round_number % ROUNDS_PER_EPOCH == 0 {
             let epoch_update_txn: Validated<ValidatorTransaction> =
-                ValidatorTransaction::EpochUpdate((prepare_request.round_number / ROUNDS_PER_EPOCH) + 1).into();
+                ValidatorTransaction::EpochUpdate(
+                    (prepare_request.round_number / ROUNDS_PER_EPOCH) + 1,
+                )
+                .into();
             let mut fee_reserve = SystemLoanFeeReserve::default();
             // TODO: Clean up fee reserve
             fee_reserve.credit(10_000_000);

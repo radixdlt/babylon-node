@@ -7,7 +7,7 @@ use scrypto::core::NetworkDefinition;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 use state_manager::transaction::Transaction;
-use state_manager::LedgerTransactionReceipt;
+use state_manager::{IntentHash, LedgerTransactionReceipt, SignaturesHash, UserPayloadHash};
 use std::cmp;
 use std::collections::HashMap;
 use transaction::manifest;
@@ -123,21 +123,23 @@ fn to_api_notarized_transaction(
     tx: NotarizedTransaction,
     network: &NetworkDefinition,
 ) -> Result<models::NotarizedTransaction, MappingError> {
+    // NOTE: We don't use the .hash() method on the struct impls themselves,
+    //       because they use the wrong hash function
     let payload = tx.to_bytes();
-    let payload_hash = tx.hash();
+    let payload_hash = UserPayloadHash::for_transaction(&tx);
     let signed_intent = tx.signed_intent;
-    let signed_intent_hash = signed_intent.hash();
+    let signed_intent_hash = SignaturesHash::for_signed_intent(&signed_intent);
     let intent = signed_intent.intent;
-    let intent_hash = intent.hash();
+    let intent_hash = IntentHash::for_intent(&intent);
     let header = intent.header;
 
     Ok(models::NotarizedTransaction {
-        hash: to_hex(payload_hash),
+        hash: to_api_payload_hash(&payload_hash),
         payload_hex: to_hex(payload),
         signed_intent: Box::new(models::SignedTransactionIntent {
-            hash: to_hex(signed_intent_hash),
+            hash: to_api_signed_intent_hash(&signed_intent_hash),
             intent: Box::new(models::TransactionIntent {
-                hash: to_hex(intent_hash),
+                hash: to_api_intent_hash(&intent_hash),
                 header: Box::new(models::TransactionHeader {
                     version: header.version.into(),
                     network_id: header.network_id.into(),

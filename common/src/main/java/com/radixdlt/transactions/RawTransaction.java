@@ -73,7 +73,17 @@ import com.radixdlt.sbor.codec.StructCodec;
 import java.util.Objects;
 
 /**
- * A wrapper around the raw bytes of a transaction payload (System or User Transaction)
+ * A wrapper around the raw bytes of a transaction payload.
+ *
+ * <p>WARNING: For now, this can represent one of two different payload types:
+ *
+ * <ul>
+ *   <li>The bytes of a (user) NotarizedTransaction
+ *   <li>The bytes of a Transaction Enum (either wrapping a NotarizedTransaction or a system
+ *       transaction)
+ * </ul>
+ *
+ * <p>We should probably separate these two concepts on the Java side too.
  *
  * <p>The transaction is yet to be parsed, and may be invalid.
  */
