@@ -115,7 +115,7 @@ pub struct StateManagerLoggingConfig {
 }
 
 /// Around 5 minutes per epoch
-const ROUNDS_PER_EPOCH: u64 = 60;
+const ROUNDS_PER_EPOCH: u64 = 1800;
 
 pub struct StateManager<S> {
     pub mempool: SimpleMempool,
