@@ -82,7 +82,9 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.junit.Test;
 
@@ -91,7 +93,11 @@ public class REv2StateComputerTest {
     return Guice.createInjector(
         new CryptoModule(),
         REv2StateManagerModule.create(
-            Network.INTEGRATIONTESTNET.getId(), 10, REv2DatabaseConfig.inMemory(), Option.none()),
+            Network.INTEGRATIONTESTNET.getId(),
+            10,
+            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
+            REv2DatabaseConfig.inMemory(),
+            Option.none()),
         new AbstractModule() {
           @Override
           protected void configure() {

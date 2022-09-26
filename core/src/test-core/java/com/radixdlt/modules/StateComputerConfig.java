@@ -70,6 +70,7 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.statemanager.REv2StateConfig;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -86,15 +87,21 @@ public sealed interface StateComputerConfig {
 
   static StateComputerConfig rev2(
       int networkId,
+      REv2StateConfig stateConfig,
       REv2DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging) {
-    return new REv2StateComputerConfig(networkId, databaseConfig, proposerConfig, debugLogging);
+    return new REv2StateComputerConfig(
+        networkId, stateConfig, databaseConfig, proposerConfig, debugLogging);
   }
 
   static StateComputerConfig rev2(
-      int networkId, REv2DatabaseConfig databaseConfig, REV2ProposerConfig proposerConfig) {
-    return new REv2StateComputerConfig(networkId, databaseConfig, proposerConfig, false);
+      int networkId,
+      REv2StateConfig stateConfig,
+      REv2DatabaseConfig databaseConfig,
+      REV2ProposerConfig proposerConfig) {
+    return new REv2StateComputerConfig(
+        networkId, stateConfig, databaseConfig, proposerConfig, false);
   }
 
   sealed interface MockedMempoolConfig {
@@ -116,6 +123,7 @@ public sealed interface StateComputerConfig {
 
   record REv2StateComputerConfig(
       int networkId,
+      REv2StateConfig stateConfig,
       REv2DatabaseConfig databaseConfig,
       REV2ProposerConfig proposerConfig,
       boolean debugLogging)

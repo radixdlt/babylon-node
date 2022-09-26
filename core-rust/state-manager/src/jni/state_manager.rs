@@ -98,8 +98,14 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
+pub struct StateConfig {
+    pub rounds_per_epoch: u64,
+}
+
+#[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,
+    pub state_config: StateConfig,
     pub mempool_config: Option<MempoolConfig>,
     pub db_config: DatabaseConfig,
     pub logging_config: LoggingConfig,
@@ -136,6 +142,7 @@ impl JNIStateManager {
         // Build the state manager.
         let state_manager = Arc::new(Mutex::new(StateManager::new(
             config.network_definition,
+            config.state_config.rounds_per_epoch,
             mempool,
             store,
             config.logging_config,
