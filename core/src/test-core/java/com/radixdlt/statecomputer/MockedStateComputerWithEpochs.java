@@ -62,18 +62,74 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.statecomputer;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.MockExecuted;
+import com.radixdlt.ledger.StateComputerLedger.ExecutedTransaction;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.rev1.EpochMaxRound;
+import com.radixdlt.rev1.RoundDetails;
+import com.radixdlt.transactions.RawTransaction;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
-public class LedgerAndBFTProofTest {
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(LedgerAndBFTProof.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+public final class MockedStateComputerWithEpochs implements StateComputer {
+  private final Function<Long, BFTValidatorSet> validatorSetMapping;
+  private final Round epochMaxRound;
+  private final MockedStateComputer stateComputer;
+
+  @Inject
+  public MockedStateComputerWithEpochs(
+      @EpochMaxRound Round epochMaxRound,
+      Function<Long, BFTValidatorSet> validatorSetMapping,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      Hasher hasher) {
+    this.validatorSetMapping = Objects.requireNonNull(validatorSetMapping);
+    this.epochMaxRound = Objects.requireNonNull(epochMaxRound);
+    this.stateComputer = new MockedStateComputer(ledgerUpdateDispatcher, hasher);
+  }
+
+  @Override
+  public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
+
+  @Override
+  public List<RawTransaction> getTransactionsForProposal(
+      List<ExecutedTransaction> executedTransactions) {
+    return List.of();
+  }
+
+  @Override
+  public StateComputerResult prepare(
+      List<ExecutedTransaction> previous,
+      List<RawTransaction> proposedTransactions,
+      RoundDetails roundDetails) {
+    if (roundDetails.roundNumber() >= epochMaxRound.number()) {
+      return new StateComputerResult(
+          proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
+          ImmutableMap.of(),
+          validatorSetMapping.apply(roundDetails.epoch() + 1));
+    } else {
+      return stateComputer.prepare(previous, proposedTransactions, roundDetails);
+    }
+  }
+
+  @Override
+  public void commit(
+      CommittedTransactionsWithProof committedTransactionsWithProof,
+      VertexStoreState vertexStoreState) {
+    this.stateComputer.commit(committedTransactionsWithProof, vertexStoreState);
   }
 }
