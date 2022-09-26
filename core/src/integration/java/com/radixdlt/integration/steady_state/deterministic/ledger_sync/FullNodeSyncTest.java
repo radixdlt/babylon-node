@@ -62,18 +62,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.integration.steady_state.deterministic.ledger_sync;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.NodePredicate.*;
+import static com.radixdlt.harness.predicates.NodesPredicate.*;
+import static org.junit.Assert.assertTrue;
+
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.sync.SyncRelayConfig;
+import java.util.stream.IntStream;
 import org.junit.Test;
 
-public class StakesTest {
+public class FullNodeSyncTest {
+  /* maximum state lag is a single transaction */
+  private static final int FULL_NODE_MAX_BEHIND_STATE_VER = 1;
+
+  private void run(int numNodes, int numValidators, Round epochMaxRound, long targetStateVersion) {
+    final var syncConfig =
+        new SyncRelayConfig(
+            500L,
+            0 /* unused */,
+            Long.MAX_VALUE /* unused */,
+            numNodes, /* send ledger status update to all nodes */
+            Integer.MAX_VALUE /* no rate limiting */);
+
+    final var test =
+        DeterministicTest.builder()
+            .numNodes(numNodes, 0)
+            .messageSelector(firstSelector())
+            .epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
+            .buildWithEpochsAndSync(epochMaxRound, syncConfig);
+
+    test.startAllNodes();
+    test.runUntilState(nodeAt(numNodes - 1, atOrOverStateVersion(targetStateVersion)), 10000000);
+
+    final var validatorsCounters =
+        IntStream.range(0, numValidators).mapToObj(i -> test.getInstance(i, SystemCounters.class));
+
+    final var validatorsMaxStateVersion =
+        validatorsCounters
+            .map(sc -> sc.get(CounterType.LEDGER_STATE_VERSION))
+            .max(Long::compareTo)
+            .get();
+
+    final var nonValidatorsStateVersions =
+        IntStream.range(numValidators, numNodes - numValidators)
+            .mapToObj(i -> test.getInstance(i, SystemCounters.class))
+            .map(sc -> sc.get(CounterType.LEDGER_STATE_VERSION))
+            .toList();
+
+    nonValidatorsStateVersions.forEach(
+        stateVersion ->
+            assertTrue(stateVersion + FULL_NODE_MAX_BEHIND_STATE_VER >= validatorsMaxStateVersion));
+  }
+
   @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(Rewards.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+  public void total_five_nodes_and_a_single_full_node() {
+    this.run(5, 4, Round.of(100), 1000L);
+  }
+
+  @Test
+  public void total_50_nodes_and_just_4_validators_two_rounds_per_epoch() {
+    this.run(50, 4, Round.of(2), 500L);
+  }
+
+  @Test
+  public void total_three_nodes_and_a_single_full_node_10k_rounds_per_epoch() {
+    this.run(3, 2, Round.of(10000), 1000L);
   }
 }

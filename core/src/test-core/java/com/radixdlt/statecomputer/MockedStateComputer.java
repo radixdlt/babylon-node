@@ -62,78 +62,99 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1.checkpoint;
+package com.radixdlt.statecomputer;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
+import com.google.common.collect.ImmutableClassToInstanceMap;
 import com.google.inject.Inject;
-import com.google.inject.Scopes;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
-import com.radixdlt.modules.CryptoModule;
-import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.monitoring.SystemCountersImpl;
-import com.radixdlt.networks.GenesisSource;
-import com.radixdlt.networks.Network;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.LedgerProof;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexWithHash;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.MockExecuted;
+import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.transactions.RawTransaction;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
-@RunWith(Parameterized.class)
-@Ignore("Genesis is no longer a rev1 transaction")
-public class GenesisTest {
-  @Parameterized.Parameters
-  public static Collection<Object[]> parameters() {
-    return Arrays.stream(Network.values())
-        .flatMap(
-            n ->
-                n.genesisSource() instanceof GenesisSource.Fixed fixedGenesis
-                    ? Stream.of(fixedGenesis.genesisTransactionPayload())
-                    : Stream.empty())
-        .map(RawTransaction::create)
-        .map(txn -> new Object[] {txn})
-        .toList();
+public final class MockedStateComputer implements StateComputer {
+  private final EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher;
+  private final Hasher hasher;
+
+  @Inject
+  public MockedStateComputer(EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher, Hasher hasher) {
+    this.ledgerUpdateDispatcher = ledgerUpdateDispatcher;
+    this.hasher = hasher;
   }
 
-  private static final Logger logger = LogManager.getLogger();
-  private final RawTransaction genesis;
+  @Override
+  public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
 
-  @Inject private GenesisBuilder genesisBuilder;
-
-  public GenesisTest(RawTransaction genesis) {
-    this.genesis = genesis;
+  @Override
+  public List<RawTransaction> getTransactionsForProposal(
+      List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
+    return List.of();
   }
 
-  @Test
-  public void genesis_should_be_a_valid_transaction() throws RadixEngineException {
-    Guice.createInjector(
-            new MainnetForksModule(),
-            new ForksModule(),
-            new CryptoModule(),
-            new AbstractModule() {
-              @Override
-              public void configure() {
-                bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-                bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
-              }
-            })
-        .injectMembers(this);
-    var proof = genesisBuilder.generateGenesisProof(genesis);
-    var validatorSet = proof.getNextValidatorSet().orElseThrow();
-    logger.info(
-        "validator_set{size={} stake={}}",
-        validatorSet.getValidators().size(),
-        Amount.ofSubunits(validatorSet.getTotalPower()));
+  @Override
+  public StateComputerLedger.StateComputerResult prepare(
+      List<StateComputerLedger.ExecutedTransaction> previous,
+      List<RawTransaction> proposedTransactions,
+      RoundDetails roundDetails) {
+    return new StateComputerLedger.StateComputerResult(
+        proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
+        Map.of());
+  }
+
+  @Override
+  public void commit(
+      CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
+    var output =
+        txnsAndProof
+            .getProof()
+            .getNextValidatorSet()
+            .map(
+                validatorSet -> {
+                  LedgerProof header = txnsAndProof.getProof();
+                  VertexWithHash genesisVertex =
+                      Vertex.createGenesis(header.getHeader()).withId(hasher);
+                  LedgerHeader nextLedgerHeader =
+                      LedgerHeader.create(
+                          header.getNextEpoch(),
+                          Round.genesis(),
+                          header.getAccumulatorState(),
+                          header.timestamp());
+                  QuorumCertificate genesisQC =
+                      QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
+                  final var initialState =
+                      VertexStoreState.create(
+                          HighQC.from(genesisQC), genesisVertex, Optional.empty(), hasher);
+                  var proposerElection = new WeightedRotatingLeaders(validatorSet);
+                  var bftConfiguration =
+                      new BFTConfiguration(proposerElection, validatorSet, initialState);
+                  return new EpochChange(header, bftConfiguration);
+                })
+            .map(e -> ImmutableClassToInstanceMap.<Object, EpochChange>of(EpochChange.class, e))
+            .orElse(ImmutableClassToInstanceMap.of());
+
+    var ledgerUpdate = new LedgerUpdate(txnsAndProof, output);
+    ledgerUpdateDispatcher.dispatch(ledgerUpdate);
   }
 }
