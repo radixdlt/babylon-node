@@ -143,9 +143,9 @@ public class REv2TransactionCreationTest {
     log.info(description + ":");
     log.info("Intent Hash: " + Bytes.toHexString(transactionInfo.intentHash.asBytes()));
     log.info(
-        "Payload Hash: "
+        "User Payload Hash: "
             + Bytes.toHexString(transactionInfo.transaction.getPayloadHash().asBytes()));
-    log.info("Payload: " + Bytes.toHexString(transactionInfo.transaction.getPayload()));
+    log.info("Notarized Payload: " + Bytes.toHexString(transactionInfo.transaction.getPayload()));
     log.info("=============================");
   }
 
@@ -161,7 +161,7 @@ public class REv2TransactionCreationTest {
       NetworkDefinition networkDefinition, long nonce, int numSigs) {
 
     final var intentBytes =
-        REv2TestTransactions.constractValidIntentBytes(
+        REv2TestTransactions.constructValidIntentBytes(
             networkDefinition, nonce, NOTARY.getPublicKey().toPublicKey());
 
     return createTransaction(intentBytes, createSignatories(numSigs));
@@ -192,7 +192,7 @@ public class REv2TransactionCreationTest {
       NetworkDefinition networkDefinition, long nonce) {
 
     final var intentBytes =
-        REv2TestTransactions.constractValidIntentBytes(
+        REv2TestTransactions.constructValidIntentBytes(
             networkDefinition, nonce, NOTARY.getPublicKey().toPublicKey());
 
     final var duplicateSignatories = List.of(PrivateKeys.ofNumeric(1), PrivateKeys.ofNumeric(1));

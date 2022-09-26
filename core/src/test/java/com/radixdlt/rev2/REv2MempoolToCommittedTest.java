@@ -65,7 +65,7 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.predicates.NodesPredicate.allAtExactlyStateVersion;
+import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
@@ -108,10 +108,11 @@ public class REv2MempoolToCommittedTest {
       // Arrange: Add node1 mempool
       var mempoolInserter =
           test.getInstance(1, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
-      mempoolInserter.addTransaction(REv2TestTransactions.validTransaction(0));
+      var transaction = REv2TestTransactions.constructValidTransaction(0);
+      mempoolInserter.addTransaction(transaction);
 
       // Act/Assert
-      test.runUntilState(allAtExactlyStateVersion(2), 100000);
+      test.runUntilState(anyCommittedTransaction(transaction), 100000);
     }
   }
 }

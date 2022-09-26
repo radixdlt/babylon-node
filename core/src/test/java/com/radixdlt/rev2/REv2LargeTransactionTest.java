@@ -67,12 +67,12 @@ package com.radixdlt.rev2;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.harness.predicates.EventPredicate.*;
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.*;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.harness.deterministic.NodesReader;
 import com.radixdlt.mempool.MempoolInserter;
 import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -83,7 +83,6 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
@@ -134,15 +133,10 @@ public final class REv2LargeTransactionTest {
       var mempoolInserter =
           test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
       mempoolInserter.addTransaction(newAccountTransaction);
-      test.runUntilState(allAtExactlyStateVersion(2), onlyConsensusEvents());
+      test.runUntilState(allCommittedTransaction(newAccountTransaction), onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
-      var receipt =
-          test.getInstance(0, REv2TransactionAndProofStore.class)
-              .getTransactionAtStateVersion(2)
-              .unwrap();
-      var receiptTransaction = RawTransaction.create(receipt.transactionBytes());
-      assertThat(newAccountTransaction).isEqualTo(receiptTransaction);
+      NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), newAccountTransaction);
     }
   }
 }

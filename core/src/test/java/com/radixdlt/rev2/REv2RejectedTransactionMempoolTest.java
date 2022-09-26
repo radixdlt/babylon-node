@@ -65,10 +65,9 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.invariants.Checkers.assertNodesSyncedToExactVersion;
+import static com.radixdlt.harness.invariants.Checkers.*;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
-import static com.radixdlt.harness.predicates.NodesPredicate.allAtExactlyStateVersion;
-import static com.radixdlt.harness.predicates.NodesPredicate.allHaveExactMempoolCount;
+import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.Key;
@@ -86,8 +85,8 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transaction.ExecutedTransaction;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -128,28 +127,24 @@ public class REv2RejectedTransactionMempoolTest {
       test.runForCount(100, onlyConsensusEvents());
 
       // Act: Submit valid transaction to mempool
-      mempoolInserter.addTransaction(REv2TestTransactions.validTransaction(0));
+      mempoolInserter.addTransaction(REv2TestTransactions.constructValidTransaction(0));
 
       // Assert
       var mempoolReader = test.getInstance(0, MempoolReader.class);
       assertThat(mempoolReader.getCount()).isEqualTo(1);
       // Verify that transaction was not committed
-      assertNodesSyncedToExactVersion(test.getNodeInjectors(), 1);
+      assertTransactionNotCommitted(test.getNodeInjectors(), rejectableTransaction);
     }
   }
 
   private static ExecutedTransaction executeTransaction(
       DeterministicTest test, RawTransaction transaction) throws Exception {
-    var currentStateVersion =
-        Math.max(1, NodesReader.getHighestStateVersion(test.getNodeInjectors()));
     var mempoolInserter =
         test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
     mempoolInserter.addTransaction(transaction);
-    var nextStateVersion = currentStateVersion + 1;
-    test.runUntilState(allAtExactlyStateVersion(nextStateVersion), onlyConsensusEvents());
-    return test.getInstance(0, REv2TransactionAndProofStore.class)
-        .getTransactionAtStateVersion(nextStateVersion)
-        .unwrap();
+
+    test.runUntilState(allCommittedTransaction(transaction), onlyConsensusEvents());
+    return NodesReader.getCommittedUserTransaction(test.getNodeInjectors(), transaction);
   }
 
   @Test
@@ -181,8 +176,9 @@ public class REv2RejectedTransactionMempoolTest {
       // Assert
       var mempoolReader = test.getInstance(0, MempoolReader.class);
       assertThat(mempoolReader.getCount()).isEqualTo(0);
-      assertThat(NodesReader.getHighestStateVersion(test.getNodeInjectors()))
-          .isEqualTo(nextStateVersion);
+      // Check that only one of the two transactions was committed
+      assertOneTransactionCommittedOutOf(
+          test.getNodeInjectors(), List.of(transferTxn1, transferTxn2));
     }
   }
 }

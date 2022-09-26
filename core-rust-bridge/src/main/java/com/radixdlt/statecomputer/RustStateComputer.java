@@ -78,6 +78,7 @@ import com.radixdlt.statecomputer.commit.PrepareResult;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.Objects;
 
@@ -115,6 +116,9 @@ public class RustStateComputer {
             new TypeToken<>() {},
             new TypeToken<>() {},
             RustStateComputer::componentXrdAmount);
+    this.epoch =
+        NativeCalls.Func1.with(
+            stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustStateComputer::epoch);
   }
 
   public VertexStoreRecovery getVertexStoreRecovery() {
@@ -177,4 +181,12 @@ public class RustStateComputer {
   }
 
   private static native byte[] componentXrdAmount(StateManager stateManager, byte[] payload);
+
+  private final NativeCalls.Func1<StateManager, Unit, UInt64> epoch;
+
+  public UInt64 getEpoch() {
+    return epoch.call(Unit.unit());
+  }
+
+  private static native byte[] epoch(StateManager stateManager, byte[] payload);
 }

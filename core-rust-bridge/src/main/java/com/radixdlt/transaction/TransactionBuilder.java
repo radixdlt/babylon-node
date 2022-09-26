@@ -74,6 +74,7 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.NativeCalls;
+import com.radixdlt.utils.UInt64;
 import java.util.List;
 
 public final class TransactionBuilder {
@@ -133,7 +134,20 @@ public final class TransactionBuilder {
           NativeCalls.StaticFunc1.with(
               new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::newAccountIntent);
 
+  public static byte[] buildSetEpochIntent(
+      NetworkDefinition network, PublicKey notary, long epoch) {
+    return setEpochIntentFunc.call(tuple(network, notary, UInt64.fromNonNegativeLong(epoch)));
+  }
+
   private static native byte[] newAccountIntent(byte[] requestPayload);
+
+  private static final NativeCalls.StaticFunc1<
+          Tuple.Tuple3<NetworkDefinition, PublicKey, UInt64>, byte[]>
+      setEpochIntentFunc =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::setEpochIntent);
+
+  private static native byte[] setEpochIntent(byte[] requestPayload);
 
   private static final NativeCalls.StaticFunc1<
           Tuple.Tuple4<NetworkDefinition, TransactionHeader, String, List<byte[]>>,
@@ -160,4 +174,16 @@ public final class TransactionBuilder {
               new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::createNotarizedBytes);
 
   private static native byte[] createNotarizedBytes(byte[] requestPayload);
+
+  public static byte[] userTransactionToCommittedBytes(byte[] userTransactionBytes) {
+    return userTransactionToCommitted.call(userTransactionBytes);
+  }
+
+  private static final NativeCalls.StaticFunc1<byte[], byte[]> userTransactionToCommitted =
+      NativeCalls.StaticFunc1.with(
+          new TypeToken<>() {},
+          new TypeToken<>() {},
+          TransactionBuilder::userTransactionToCommitted);
+
+  private static native byte[] userTransactionToCommitted(byte[] requestPayload);
 }

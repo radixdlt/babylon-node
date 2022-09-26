@@ -62,11 +62,14 @@
  * permissions under this License.
  */
 
-use crate::types::{PayloadHash, StoredTransaction};
+use crate::types::UserPayloadHash;
 use std::collections::HashMap;
 
 use crate::store::traits::*;
-use crate::{CommittedTransactionIdentifiers, HasIntentHash, IntentHash, LedgerTransactionReceipt};
+use crate::{
+    CommittedTransactionIdentifiers, HasIntentHash, IntentHash, LedgerTransactionReceipt,
+    TransactionPayloadHash,
+};
 use radix_engine::engine::Substate;
 use radix_engine::ledger::{
     OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
@@ -93,7 +96,9 @@ enum RocksDBTable {
     RootSubstates,
     VertexStore,
     TransactionIntentLookup,
+    UserPayloadHashLookup,
 }
+use crate::transaction::Transaction;
 use RocksDBTable::*;
 
 impl RocksDBTable {
@@ -106,6 +111,7 @@ impl RocksDBTable {
             RootSubstates => 4u8,
             VertexStore => 5u8,
             TransactionIntentLookup => 6u8,
+            UserPayloadHashLookup => 7u8,
         }
     }
 }
@@ -114,12 +120,16 @@ pub struct RocksDBStore {
     db: TransactionDB<SingleThreaded>,
 }
 
-fn get_transaction_key(payload_hash: &PayloadHash) -> Vec<u8> {
-    db_key!(Transactions, &payload_hash.0)
+fn get_transaction_key(payload_hash: &TransactionPayloadHash) -> Vec<u8> {
+    db_key!(Transactions, payload_hash.get_bytes())
+}
+
+fn get_user_transaction_payload_key(payload_hash: &UserPayloadHash) -> Vec<u8> {
+    db_key!(UserPayloadHashLookup, payload_hash.get_bytes())
 }
 
 fn get_transaction_intent_key(intent_hash: &IntentHash) -> Vec<u8> {
-    db_key!(TransactionIntentLookup, &intent_hash.0)
+    db_key!(TransactionIntentLookup, intent_hash.get_bytes())
 }
 
 impl RocksDBStore {
@@ -165,27 +175,27 @@ pub struct RocksDBCommitTransaction<'db> {
 impl<'db> RocksDBCommitTransaction<'db> {
     fn insert_transaction(
         &mut self,
-        transaction: StoredTransaction,
+        transaction: Transaction,
         receipt: LedgerTransactionReceipt,
         identifiers: CommittedTransactionIdentifiers,
     ) {
         // TEMPORARY until this is handled in the engine: we store both an intent lookup and the transaction itself
-        if let StoredTransaction::User(notarized_transaction) = &transaction {
+        if let Transaction::User(notarized_transaction) = &transaction {
             let key = get_transaction_intent_key(&notarized_transaction.intent_hash());
             let existing_intent_option = self
                 .db_txn
                 .get_for_update(key, true)
                 .expect("RocksDB: failure to read intent hash");
-            if let Some(existing_payload_hash) = existing_intent_option {
+            if let Some(existing_intent_hash) = existing_intent_option {
                 panic!(
                     "Attempted to save intent hash which already exists: {:?}",
-                    PayloadHash(existing_payload_hash.try_into().unwrap())
+                    IntentHash::from_raw_bytes(existing_intent_hash.try_into().unwrap())
                 );
             }
             self.db_txn
                 .put(
                     get_transaction_intent_key(&notarized_transaction.intent_hash()),
-                    transaction.get_hash().0,
+                    transaction.get_hash().get_bytes(),
                 )
                 .expect("RocksDB: failure to put intent hash");
         }
@@ -219,7 +229,7 @@ impl<'db> WriteableTransactionStore for RocksDBCommitTransaction<'db> {
     fn insert_committed_transactions(
         &mut self,
         transactions: Vec<(
-            StoredTransaction,
+            Transaction,
             LedgerTransactionReceipt,
             CommittedTransactionIdentifiers,
         )>,
@@ -234,7 +244,7 @@ impl<'db> WriteableProofStore for RocksDBCommitTransaction<'db> {
     fn insert_tids_and_proof(
         &mut self,
         state_version: u64,
-        ids: Vec<PayloadHash>,
+        ids: Vec<TransactionPayloadHash>,
         proof_bytes: Vec<u8>,
     ) {
         self.insert_tids_without_proof(state_version, ids);
@@ -243,13 +253,15 @@ impl<'db> WriteableProofStore for RocksDBCommitTransaction<'db> {
         self.db_txn.put(proof_version_key, proof_bytes).unwrap();
     }
 
-    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<PayloadHash>) {
+    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<TransactionPayloadHash>) {
         if !ids.is_empty() {
             let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
             for (index, payload_hash) in ids.into_iter().enumerate() {
                 let txn_state_version = first_state_version + index as u64;
                 let version_key = db_key!(StateVersions, &txn_state_version.to_be_bytes());
-                self.db_txn.put(version_key, payload_hash.0).unwrap();
+                self.db_txn
+                    .put(version_key, payload_hash.get_bytes())
+                    .unwrap();
             }
         }
     }
@@ -311,9 +323,9 @@ impl ReadableSubstateStore for RocksDBStore {
 impl QueryableTransactionStore for RocksDBStore {
     fn get_committed_transaction(
         &self,
-        payload_hash: &PayloadHash,
+        payload_hash: &TransactionPayloadHash,
     ) -> Option<(
-        StoredTransaction,
+        Transaction,
         LedgerTransactionReceipt,
         CommittedTransactionIdentifiers,
     )> {
@@ -324,28 +336,35 @@ impl QueryableTransactionStore for RocksDBStore {
         let decoded = scrypto_decode(&entry).expect("Transaction wasn't encoded as expected");
         Some(decoded)
     }
+}
 
-    fn get_committed_transaction_by_intent(
-        &self,
-        intent_hash: &IntentHash,
-    ) -> Option<(
-        StoredTransaction,
-        LedgerTransactionReceipt,
-        CommittedTransactionIdentifiers,
-    )> {
+impl UserTransactionIndex<UserPayloadHash> for RocksDBStore {
+    fn get_hash(&self, identifier: &UserPayloadHash) -> Option<TransactionPayloadHash> {
         let payload_hash_entry = self
             .db
-            .get(get_transaction_intent_key(intent_hash))
+            .get(get_user_transaction_payload_key(identifier))
             .expect("DB error loading payload hash")?;
-        let payload_hash = PayloadHash(
+        let hash = TransactionPayloadHash::from_raw_bytes(
             payload_hash_entry
                 .try_into()
                 .expect("Saved payload hash is wrong length"),
         );
-        let transaction_data = self
-            .get_committed_transaction(&payload_hash)
-            .expect("Transaction wasn't present but its intent hash was");
-        Some(transaction_data)
+        Some(hash)
+    }
+}
+
+impl UserTransactionIndex<IntentHash> for RocksDBStore {
+    fn get_hash(&self, identifier: &IntentHash) -> Option<TransactionPayloadHash> {
+        let payload_hash_entry = self
+            .db
+            .get(get_transaction_intent_key(identifier))
+            .expect("DB error loading payload hash")?;
+        let hash = TransactionPayloadHash::from_raw_bytes(
+            payload_hash_entry
+                .try_into()
+                .expect("Saved payload hash is wrong length"),
+        );
+        Some(hash)
     }
 }
 
@@ -366,15 +385,16 @@ impl QueryableProofStore for RocksDBStore {
             .unwrap_or(0)
     }
 
-    fn get_payload_hash(&self, state_version: u64) -> Option<PayloadHash> {
+    fn get_payload_hash(&self, state_version: u64) -> Option<TransactionPayloadHash> {
         let txn_version_key = db_key!(StateVersions, &state_version.to_be_bytes());
-        self.db
-            .get(&txn_version_key)
-            .unwrap()
-            .map(|bytes| PayloadHash(bytes.try_into().expect("Payload hash is the wrong length")))
+        self.db.get(&txn_version_key).unwrap().map(|bytes| {
+            TransactionPayloadHash::from_raw_bytes(
+                bytes.try_into().expect("Payload hash is the wrong length"),
+            )
+        })
     }
 
-    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<PayloadHash>, Vec<u8>)> {
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TransactionPayloadHash>, Vec<u8>)> {
         let first_state_version = state_version + 1;
         let proof_version_key = db_key!(Proofs, &first_state_version.to_be_bytes());
         let (next_state_version, proof) = self
@@ -394,7 +414,7 @@ impl QueryableProofStore for RocksDBStore {
         for v in first_state_version..=next_state_version {
             let txn_version_key = db_key!(StateVersions, &v.to_be_bytes());
             let bytes = self.db.get(txn_version_key).unwrap().unwrap();
-            tids.push(PayloadHash(
+            tids.push(TransactionPayloadHash::from_raw_bytes(
                 bytes.try_into().expect("Payload hash is the wrong length"),
             ));
         }

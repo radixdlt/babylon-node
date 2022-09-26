@@ -80,8 +80,8 @@ impl MempoolData {
 
 pub struct SimpleMempool {
     max_size: u64,
-    data: HashMap<PayloadHash, MempoolData>,
-    intent_lookup: HashMap<IntentHash, HashSet<PayloadHash>>,
+    data: HashMap<UserPayloadHash, MempoolData>,
+    intent_lookup: HashMap<IntentHash, HashSet<UserPayloadHash>>,
 }
 
 impl SimpleMempool {
@@ -128,7 +128,7 @@ impl SimpleMempool {
 
     pub fn check_add_would_be_possible(
         &mut self,
-        payload_hash: &PayloadHash,
+        payload_hash: &UserPayloadHash,
     ) -> Result<(), MempoolAddError> {
         if self.contains_payload(payload_hash) {
             return Err(MempoolAddError::Duplicate);
@@ -177,7 +177,7 @@ impl SimpleMempool {
     pub fn get_proposal_transactions(
         &self,
         count: u64,
-        prepared_ids: &HashSet<PayloadHash>,
+        prepared_ids: &HashSet<UserPayloadHash>,
     ) -> Vec<PendingTransaction> {
         let transactions = self
             .data
@@ -190,15 +190,15 @@ impl SimpleMempool {
         transactions
     }
 
-    pub fn get_transactions(&self) -> HashMap<PayloadHash, MempoolData> {
+    pub fn get_transactions(&self) -> HashMap<UserPayloadHash, MempoolData> {
         self.data.clone()
     }
 
-    pub fn remove_transaction(&mut self, hash: &PayloadHash) {
+    pub fn remove_transaction(&mut self, hash: &UserPayloadHash) {
         self.data.remove(hash);
     }
 
-    pub fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<PayloadHash> {
+    pub fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<UserPayloadHash> {
         let payload_hashes = self.intent_lookup.get(intent_hash);
         if payload_hashes.is_none() {
             return vec![];
@@ -206,15 +206,15 @@ impl SimpleMempool {
         payload_hashes.unwrap().iter().cloned().collect()
     }
 
-    pub fn get_all_payload_hashes(&self) -> Vec<PayloadHash> {
+    pub fn get_all_payload_hashes(&self) -> Vec<UserPayloadHash> {
         self.data.keys().cloned().collect()
     }
 
-    pub fn get_payload(&self, payload_hash: &PayloadHash) -> Option<&PendingTransaction> {
+    pub fn get_payload(&self, payload_hash: &UserPayloadHash) -> Option<&PendingTransaction> {
         Some(&self.data.get(payload_hash)?.transaction)
     }
 
-    pub fn contains_payload(&self, payload_hash: &PayloadHash) -> bool {
+    pub fn contains_payload(&self, payload_hash: &UserPayloadHash) -> bool {
         self.data.contains_key(payload_hash)
     }
 }
@@ -283,7 +283,7 @@ mod tests {
 
     fn create_fake_pending_transaction(nonce: u64, sigs_count: usize) -> PendingTransaction {
         let notarized_transaction = create_fake_notarized_transaction(nonce, sigs_count);
-        let payload_hash = notarized_transaction.payload_hash();
+        let payload_hash = notarized_transaction.user_payload_hash();
         let intent_hash = notarized_transaction.intent_hash();
         PendingTransaction {
             payload: notarized_transaction,

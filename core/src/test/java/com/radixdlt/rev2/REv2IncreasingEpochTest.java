@@ -62,127 +62,53 @@
  * permissions under this License.
  */
 
-use scrypto::prelude::*;
-use scrypto::resource::ResourceType;
-use std::collections::HashMap;
-use transaction::builder::ManifestBuilder;
-use transaction::manifest::{compile, CompileError};
-use transaction::model::{
-    NotarizedTransaction, SignedTransactionIntent, TransactionHeader, TransactionIntent,
-    TransactionManifest,
-};
+package com.radixdlt.rev2;
 
-pub fn create_new_account_intent_bytes(
-    network_definition: &NetworkDefinition,
-    public_key: PublicKey,
-) -> Vec<u8> {
-    let manifest = ManifestBuilder::new(network_definition)
-        .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
-        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-            builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
-        })
-        .build();
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
+import static com.radixdlt.harness.predicates.NodesPredicate.anyAtOrOverStateEpoch;
+import static com.radixdlt.modules.FunctionalRadixNodeModule.*;
 
-    let intent = TransactionIntent {
-        header: TransactionHeader {
-            version: 1,
-            network_id: network_definition.id,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
-            nonce: 5,
-            notary_public_key: public_key,
-            notary_as_signatory: false,
-            cost_unit_limit: 10_000_000,
-            tip_percentage: 5,
-        },
-        manifest,
-    };
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.modules.FunctionalRadixNodeModule;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.statemanager.REv2DatabaseConfig;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-    intent.to_bytes()
-}
+public class REv2IncreasingEpochTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-pub fn create_100kb_txn_intent(
-    network_definition: NetworkDefinition,
-    public_key: PublicKey,
-) -> Vec<u8> {
-    let mut metadata = HashMap::new();
-    let large_string = "s".repeat(1024 * 100);
-    metadata.insert("key".to_string(), large_string);
-    let access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> = HashMap::new();
-    let initial_supply: Option<MintParams> = None;
+  private DeterministicTest createTest() {
+    return DeterministicTest.builder()
+        .numNodes(1, 0)
+        .messageSelector(firstSelector())
+        .messageMutator(MessageMutator.dropTimeouts())
+        .functionalNodeModule(
+            new FunctionalRadixNodeModule(
+                false,
+                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
+                ConsensusConfig.of(1000),
+                LedgerConfig.stateComputerNoSync(
+                    StateComputerConfig.rev2(
+                        Network.INTEGRATIONTESTNET.getId(),
+                        REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
+                        StateComputerConfig.REV2ProposerConfig.noUserTransactions()))));
+  }
 
-    let manifest = ManifestBuilder::new(&network_definition)
-        .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
-        .call_native_method(
-            Receiver::CurrentAuthZone,
-            NativeFnIdentifier::ResourceManager(ResourceManagerFnIdentifier::Create),
-            args!(
-                ResourceType::NonFungible,
-                metadata,
-                access_rules,
-                initial_supply
-            ),
-        )
-        .build();
+  @Test
+  public void epoch_should_increase() {
+    try (var test = createTest()) {
+      // Arrange: Start single node network
+      test.startAllNodes();
+      var stateReader = test.getInstance(0, REv2StateReader.class);
+      var epoch0 = stateReader.getEpoch();
 
-    let intent = TransactionIntent {
-        header: TransactionHeader {
-            version: 1,
-            network_id: network_definition.id,
-            start_epoch_inclusive: 0,
-            end_epoch_exclusive: 100,
-            nonce: 5,
-            notary_public_key: public_key,
-            notary_as_signatory: false,
-            cost_unit_limit: 10_000_000,
-            tip_percentage: 5,
-        },
-        manifest,
-    };
-
-    intent.to_bytes()
-}
-
-pub fn create_intent_bytes(
-    network_definition: &NetworkDefinition,
-    header: TransactionHeader,
-    manifest_str: String,
-    blobs: Vec<Vec<u8>>,
-) -> Result<Vec<u8>, CompileError> {
-    let manifest = create_manifest(network_definition, &manifest_str, blobs)?;
-
-    let intent = TransactionIntent { header, manifest };
-
-    Ok(intent.to_bytes())
-}
-
-pub fn create_manifest(
-    network_definition: &NetworkDefinition,
-    manifest_str: &str,
-    blobs: Vec<Vec<u8>>,
-) -> Result<TransactionManifest, CompileError> {
-    compile(manifest_str, network_definition, blobs)
-}
-
-pub fn create_signed_intent_bytes(
-    intent: TransactionIntent,
-    signatures: Vec<SignatureWithPublicKey>,
-) -> Vec<u8> {
-    let signed_intent = SignedTransactionIntent {
-        intent,
-        intent_signatures: signatures,
-    };
-    signed_intent.to_bytes()
-}
-
-pub fn create_notarized_bytes(
-    signed_intent: SignedTransactionIntent,
-    notary_signature: Signature,
-) -> Vec<u8> {
-    let notarized = NotarizedTransaction {
-        signed_intent,
-        notary_signature,
-    };
-    notarized.to_bytes()
+      // Act/Assert: Run until next epoch is reached
+      test.runUntilState(anyAtOrOverStateEpoch(epoch0 + 1), onlyConsensusEvents());
+    }
+  }
 }

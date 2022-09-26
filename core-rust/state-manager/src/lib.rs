@@ -69,7 +69,7 @@ mod receipt;
 mod result;
 mod state_manager;
 pub mod store;
-mod transaction_builder;
+pub mod transaction;
 mod types;
 
 pub use mempool::MempoolAddError;

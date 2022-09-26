@@ -62,6 +62,33 @@
  * permissions under this License.
  */
 
-mod builder;
+package com.radixdlt.transaction;
 
-pub use builder::*;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.EnumEntry;
+import java.util.List;
+
+public interface CommittedTransactionStatus {
+  static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        CommittedTransactionStatus.class,
+        (codecs) ->
+            EnumCodec.fromEntries(
+                EnumEntry.with(
+                    Success.class,
+                    Success::new,
+                    codecs.of(new TypeToken<>() {}),
+                    (t, encoder) -> encoder.encode(t.results)),
+                EnumEntry.with(
+                    Failure.class,
+                    Failure::new,
+                    codecs.of(String.class),
+                    (t, encoder) -> encoder.encode(t.message))));
+  }
+
+  record Success(List<byte[]> results) implements CommittedTransactionStatus {}
+
+  record Failure(String message) implements CommittedTransactionStatus {}
+}

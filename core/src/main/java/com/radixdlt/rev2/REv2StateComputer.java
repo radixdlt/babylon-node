@@ -79,11 +79,8 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
-import com.radixdlt.statecomputer.commit.TransactionPrepareResult;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt64;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -148,27 +145,25 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         previous.stream()
             .map(StateComputerLedger.ExecutedTransaction::transaction)
             .collect(Collectors.toList());
-    var prepareRequest = new PrepareRequest(previousTransactions, proposedTransactions);
+    var prepareRequest =
+        new PrepareRequest(
+            previousTransactions,
+            proposedTransactions,
+            UInt64.fromNonNegativeLong(roundDetails.roundNumber()));
 
     var result = stateComputer.prepare(prepareRequest);
-
-    // Zip prepared transactions and results together
-    var committableTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-    var rejectedTransactions = new HashMap<RawTransaction, Exception>();
-    for (var i = 0; i < proposedTransactions.size(); i++) {
-      var transaction = proposedTransactions.get(i);
-      var transactionResult = result.transactionResults().get(i);
-      if (!transaction.getPayloadHash().equals(transactionResult.first())) {
-        throw new IllegalStateException(
-            "Prepared transaction hash did not match proposed transaction");
-      }
-      switch (transactionResult.last()) {
-        case TransactionPrepareResult.CanCommit ignored -> committableTransactions.add(
-            new REv2ExecutedTransaction(transaction));
-        case TransactionPrepareResult.Reject rejection -> rejectedTransactions.put(
-            transaction, new InvalidREv2Transaction(rejection.reason()));
-      }
-    }
+    var committableTransactions =
+        result.committed().stream()
+            .map(RawTransaction::create)
+            .map(REv2ExecutedTransaction::new)
+            .map(StateComputerLedger.ExecutedTransaction.class::cast)
+            .collect(Collectors.toList());
+    var rejectedTransactions =
+        result.rejected().stream()
+            .collect(
+                Collectors.toMap(
+                    r -> RawTransaction.create(r.first()),
+                    r -> (Exception) new InvalidREv2Transaction(r.last())));
 
     return new StateComputerLedger.StateComputerResult(
         committableTransactions, rejectedTransactions);

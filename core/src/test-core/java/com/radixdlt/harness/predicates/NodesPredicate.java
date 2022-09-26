@@ -66,6 +66,7 @@ package com.radixdlt.harness.predicates;
 
 import com.google.inject.Injector;
 import com.radixdlt.mempool.MempoolReader;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -84,6 +85,14 @@ public final class NodesPredicate {
     return n -> n.stream().allMatch(NodePredicate.atExactlyStateVersion(stateVersion));
   }
 
+  public static Predicate<List<Injector>> allCommittedTransaction(RawTransaction transaction) {
+    return n -> n.stream().allMatch(NodePredicate.committedUserTransaction(transaction));
+  }
+
+  public static Predicate<List<Injector>> anyCommittedTransaction(RawTransaction transaction) {
+    return n -> n.stream().anyMatch(NodePredicate.committedUserTransaction(transaction));
+  }
+
   public static Predicate<List<Injector>> anyAtExactlyStateVersion(long stateVersion) {
     return n ->
         n.stream()
@@ -91,11 +100,19 @@ public final class NodesPredicate {
             .anyMatch(NodePredicate.atExactlyStateVersion(stateVersion));
   }
 
+  public static Predicate<List<Injector>> allAtOrOverStateVersion(long stateVersion) {
+    return n -> n.stream().allMatch(NodePredicate.atOrOverStateVersion(stateVersion));
+  }
+
   public static Predicate<List<Injector>> anyAtOrOverStateVersion(long stateVersion) {
     return n ->
         n.stream()
             .filter(Objects::nonNull)
             .anyMatch(NodePredicate.atOrOverStateVersion(stateVersion));
+  }
+
+  public static Predicate<List<Injector>> anyAtOrOverStateEpoch(long epoch) {
+    return n -> n.stream().filter(Objects::nonNull).anyMatch(NodePredicate.atOrOverEpoch(epoch));
   }
 
   public static Predicate<List<Injector>> allHaveExactMempoolCount(int count) {

@@ -68,12 +68,14 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 /** A wrapper for a transaction and its ledger receipt */
 public record ExecutedTransaction(
+    CommittedTransactionStatus status,
     byte[] ledgerReceiptBytes,
     byte[] transactionBytes,
     List<ComponentAddress> newComponentAddresses) {
@@ -86,9 +88,17 @@ public record ExecutedTransaction(
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
+                codecs.of(new TypeToken<>() {}),
                 (t, encoder) ->
                     encoder.encode(
-                        t.ledgerReceiptBytes, t.transactionBytes, t.newComponentAddresses)));
+                        t.status,
+                        t.ledgerReceiptBytes,
+                        t.transactionBytes,
+                        t.newComponentAddresses)));
+  }
+
+  public RawTransaction rawTransaction() {
+    return RawTransaction.create(transactionBytes);
   }
 
   @Override

@@ -73,8 +73,9 @@ use sbor::{Decode, Encode, TypeId};
 use transaction::errors::TransactionValidationError;
 
 use crate::jni::utils::*;
+use crate::transaction::UserTransactionValidator;
 use crate::types::PendingTransaction;
-use crate::{mempool::*, parse_unvalidated_transaction_from_slice, PayloadHash};
+use crate::{mempool::*, TransactionPayloadHash, UserPayloadHash};
 
 //
 // JNI Interface
@@ -96,10 +97,13 @@ fn do_add(
 ) -> Result<JavaPayloadHash, MempoolAddErrorJava> {
     let transaction = args;
 
-    let unvalidated_transaction = parse_unvalidated_transaction_from_slice(&transaction.payload)?;
+    let notarized_transaction =
+        UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
+            &transaction.payload,
+        )?;
 
     state_manager
-        .check_for_rejection_and_add_to_mempool(unvalidated_transaction)
+        .check_for_rejection_and_add_to_mempool(notarized_transaction)
         .map(|_| transaction.payload_hash)
         .map_err(|err| err.into())
 }
@@ -125,9 +129,13 @@ fn do_get_transactions_for_proposal(
 ) -> Vec<JavaRawTransaction> {
     let (count, prepared_transactions) = args;
 
-    let prepared_ids: HashSet<PayloadHash> = prepared_transactions
+    let prepared_ids: HashSet<UserPayloadHash> = prepared_transactions
         .into_iter()
-        .map(|id| PayloadHash(id.0.try_into().expect("transaction id the wrong length")))
+        .map(|id| {
+            UserPayloadHash::from_raw_bytes(
+                id.0.try_into().expect("transaction id the wrong length"),
+            )
+        })
         .collect();
 
     state_manager
@@ -186,9 +194,9 @@ fn do_get_transactions_to_relay(
 #[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
 pub struct JavaPayloadHash(Vec<u8>);
 
-impl From<PayloadHash> for JavaPayloadHash {
-    fn from(payload_hash: PayloadHash) -> Self {
-        JavaPayloadHash(payload_hash.0.to_vec())
+impl From<TransactionPayloadHash> for JavaPayloadHash {
+    fn from(payload_hash: TransactionPayloadHash) -> Self {
+        JavaPayloadHash(payload_hash.into_bytes().to_vec())
     }
 }
 
@@ -202,7 +210,7 @@ impl From<PendingTransaction> for JavaRawTransaction {
     fn from(transaction: PendingTransaction) -> Self {
         JavaRawTransaction {
             payload: scrypto_encode(&transaction.payload),
-            payload_hash: JavaPayloadHash(transaction.payload_hash.0.to_vec()),
+            payload_hash: JavaPayloadHash(transaction.payload_hash.into_bytes().to_vec()),
         }
     }
 }

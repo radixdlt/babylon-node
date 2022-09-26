@@ -67,13 +67,15 @@ package com.radixdlt.harness.invariants;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.inject.Injector;
-import com.radixdlt.mempool.MempoolReader;
+import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -81,14 +83,48 @@ import org.apache.logging.log4j.Logger;
 public final class Checkers {
   private static final Logger logger = LogManager.getLogger();
 
-  /** Assert that all nodes have an exact mempool count */
-  public static void assertNodesHaveExactMempoolCount(List<Injector> nodeInjectors, int count) {
-    for (int i = 0; i < nodeInjectors.size(); i++) {
-      var injector = nodeInjectors.get(i);
+  public static void assertAllCommittedFailedTransaction(
+      List<Injector> nodeInjectors, RawTransaction transaction) {
+    assertThat(
+            nodeInjectors.stream()
+                .allMatch(NodePredicate.committedFailedUserTransaction(transaction)))
+        .isTrue();
+  }
 
-      var reader = injector.getInstance(MempoolReader.class);
-      assertThat(reader.getCount()).as("node %s has %s txns in mempool", i, count).isEqualTo(count);
-    }
+  public static void assertTransactionNotCommitted(
+      List<Injector> nodeInjectors, RawTransaction transaction) {
+    assertTransactionsCommitted(nodeInjectors, t -> assertThat(t).isNotEqualTo(transaction));
+  }
+
+  public static void assertTransactionsCommitted(
+      List<Injector> nodeInjectors, Consumer<ExecutedTransaction> consumer) {
+    nodeInjectors.forEach(
+        injector -> {
+          var store = injector.getInstance(REv2TransactionAndProofStore.class);
+          for (long version = 1; true; version++) {
+            var maybeTxn = store.getTransactionAtStateVersion(version);
+            if (maybeTxn.isEmpty()) {
+              break;
+            } else {
+              var transaction = maybeTxn.unwrap();
+              consumer.accept(transaction);
+            }
+          }
+        });
+  }
+
+  public static void assertOneTransactionCommittedOutOf(
+      List<Injector> nodeInjectors, List<RawTransaction> transactions) {
+    nodeInjectors.forEach(
+        injector -> {
+          var numCommitted =
+              transactions.stream()
+                  .filter(
+                      transaction ->
+                          NodePredicate.committedUserTransaction(transaction).test(injector))
+                  .count();
+          assertThat(numCommitted).isEqualTo(1);
+        });
   }
 
   /** Verifies that all nodes have synced at an exact stateVersion */

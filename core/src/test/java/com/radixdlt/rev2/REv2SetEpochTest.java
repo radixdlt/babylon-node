@@ -65,20 +65,17 @@
 package com.radixdlt.rev2;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.harness.invariants.Checkers.*;
-import static com.radixdlt.harness.predicates.EventPredicate.*;
+import static com.radixdlt.harness.invariants.Checkers.assertAllCommittedFailedTransaction;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyConsensusEvents;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.transactions.RawTransaction;
@@ -87,7 +84,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public final class REv2RejectedTransactionTest {
+public class REv2SetEpochTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private DeterministicTest createTest(ProposalGenerator proposalGenerator) {
@@ -98,13 +95,15 @@ public final class REv2RejectedTransactionTest {
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 false,
-                SafetyRecoveryConfig.berkeleyStore(folder.getRoot().getAbsolutePath()),
-                ConsensusConfig.of(1000),
-                LedgerConfig.stateComputerNoSync(
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.berkeleyStore(
+                    folder.getRoot().getAbsolutePath()),
+                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
-                        REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
+                        StateComputerConfig.REV2ProposerConfig.transactionGenerator(
+                            proposalGenerator)))));
   }
 
   private static class ControlledProposerGenerator implements ProposalGenerator {
@@ -124,22 +123,22 @@ public final class REv2RejectedTransactionTest {
   }
 
   @Test
-  public void rejected_transaction_in_proposal_should_not_be_committed() {
+  public void user_should_not_be_able_set_epoch() {
     var proposalGenerator = new ControlledProposerGenerator();
 
     try (var test = createTest(proposalGenerator)) {
-      var rejectableTransaction = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_1;
+      var setEpochTransaction = REv2TestTransactions.constructFailingSetEpochTransaction(1000L);
 
       // Act: Submit transaction to mempool and run consensus
       test.startAllNodes();
-      proposalGenerator.nextTransaction = rejectableTransaction;
+      proposalGenerator.nextTransaction = setEpochTransaction;
       test.runUntilState(ignored -> proposalGenerator.nextTransaction == null);
       test.runForCount(100, onlyConsensusEvents());
 
       // Assert: Check transaction and post submission state
       assertThat(proposalGenerator.nextTransaction).isNull();
       // Verify that transaction was not committed
-      assertTransactionNotCommitted(test.getNodeInjectors(), rejectableTransaction);
+      assertAllCommittedFailedTransaction(test.getNodeInjectors(), setEpochTransaction);
     }
   }
 }

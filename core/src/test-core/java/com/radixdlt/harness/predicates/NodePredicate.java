@@ -65,12 +65,61 @@
 package com.radixdlt.harness.predicates;
 
 import com.google.inject.Injector;
+import com.radixdlt.rev2.REv2StateReader;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transaction.CommittedTransactionStatus;
+import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawTransaction;
 import java.util.function.Predicate;
 
 public class NodePredicate {
   private NodePredicate() {
     throw new IllegalStateException("Cannot instanitate.");
+  }
+
+  public static Predicate<Injector> committedFailedUserTransaction(RawTransaction userTransaction) {
+    var committedTransaction =
+        RawTransaction.create(
+            TransactionBuilder.userTransactionToCommittedBytes(userTransaction.getPayload()));
+    return i -> {
+      var store = i.getInstance(REv2TransactionAndProofStore.class);
+      for (long version = 1; true; version++) {
+        var maybeTxn = store.getTransactionAtStateVersion(version);
+        if (maybeTxn.isEmpty()) {
+          break;
+        } else {
+          var txn = maybeTxn.unwrap();
+          if (txn.rawTransaction().equals(committedTransaction)) {
+            return txn.status() instanceof CommittedTransactionStatus.Failure;
+          }
+        }
+      }
+
+      return false;
+    };
+  }
+
+  public static Predicate<Injector> committedUserTransaction(RawTransaction userTransaction) {
+    var committedTransaction =
+        RawTransaction.create(
+            TransactionBuilder.userTransactionToCommittedBytes(userTransaction.getPayload()));
+    return i -> {
+      var store = i.getInstance(REv2TransactionAndProofStore.class);
+      for (long version = 1; true; version++) {
+        var maybeTxn = store.getTransactionAtStateVersion(version);
+        if (maybeTxn.isEmpty()) {
+          break;
+        } else {
+          var txn = maybeTxn.unwrap();
+          if (txn.rawTransaction().equals(committedTransaction)) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    };
   }
 
   public static Predicate<Injector> atExactlyStateVersion(long stateVersion) {
@@ -87,5 +136,9 @@ public class NodePredicate {
             .getLastProof()
             .map(p -> p.getStateVersion() >= stateVersion)
             .orElse(false);
+  }
+
+  public static Predicate<Injector> atOrOverEpoch(long epoch) {
+    return i -> i.getInstance(REv2StateReader.class).getEpoch() >= epoch;
   }
 }

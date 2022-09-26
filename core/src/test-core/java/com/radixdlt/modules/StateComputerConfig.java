@@ -70,6 +70,7 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -136,6 +137,10 @@ public sealed interface StateComputerConfig {
 
     static REV2ProposerConfig transactionGenerator(ProposalGenerator proposalGenerator) {
       return new Generated(proposalGenerator);
+    }
+
+    static REV2ProposerConfig noUserTransactions() {
+      return new Generated((round, prepared) -> List.of());
     }
 
     static REV2ProposerConfig mempool(

@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::TransactionPrepareResult;
+use crate::jni::mempool::JavaRawTransaction;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -71,7 +71,6 @@ use scrypto::prelude::*;
 use crate::jni::utils::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult};
 
-use super::mempool::{JavaPayloadHash, JavaRawTransaction};
 use super::state_manager::ActualStateManager;
 
 //
@@ -94,7 +93,9 @@ fn do_verify(
 ) -> Result<(), String> {
     let transaction = args;
 
-    let result = state_manager.parse_and_validate_transaction_slice(&transaction.payload);
+    let result = state_manager
+        .user_transaction_validator
+        .parse_and_validate_user_transaction_slice(&transaction.payload);
 
     result.map_err(|err| format!("{:?}", err))?;
 
@@ -171,6 +172,20 @@ fn get_component_xrd(state_manager: &mut ActualStateManager, args: ComponentAddr
         .unwrap_or_else(Decimal::zero)
 }
 
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_epoch(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_get_epoch)
+}
+
+fn do_get_epoch(state_manager: &mut ActualStateManager, _args: ()) -> u64 {
+    state_manager.get_epoch()
+}
+
 pub fn export_extern_functions() {}
 
 #[derive(Debug, Decode, Encode, TypeId)]
@@ -200,6 +215,7 @@ impl From<JavaCommitRequest> for CommitRequest {
 pub struct JavaPrepareRequest {
     pub already_prepared: Vec<JavaRawTransaction>,
     pub proposed: Vec<JavaRawTransaction>,
+    pub round_number: u64,
 }
 
 impl From<JavaPrepareRequest> for PrepareRequest {
@@ -215,23 +231,22 @@ impl From<JavaPrepareRequest> for PrepareRequest {
                 .into_iter()
                 .map(|t| t.payload)
                 .collect(),
+            round_number: prepare_request.round_number,
         }
     }
 }
 
 #[derive(Debug, Decode, Encode, TypeId)]
 pub struct JavaPrepareResult {
-    pub transaction_results: Vec<(JavaPayloadHash, TransactionPrepareResult)>,
+    pub committed: Vec<Vec<u8>>,
+    pub rejected: Vec<(Vec<u8>, String)>,
 }
 
 impl From<PrepareResult> for JavaPrepareResult {
     fn from(prepare_results: PrepareResult) -> Self {
         JavaPrepareResult {
-            transaction_results: prepare_results
-                .transaction_results
-                .into_iter()
-                .map(|r| (r.0.into(), r.1))
-                .collect(),
+            committed: prepare_results.committed,
+            rejected: prepare_results.rejected,
         }
     }
 }

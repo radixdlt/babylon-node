@@ -68,9 +68,11 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.UInt64;
 import java.util.List;
 
-public record PrepareRequest(List<RawTransaction> previous, List<RawTransaction> proposed) {
+public record PrepareRequest(
+    List<RawTransaction> previous, List<RawTransaction> proposed, UInt64 roundNumber) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareRequest.class,
@@ -79,6 +81,7 @@ public record PrepareRequest(List<RawTransaction> previous, List<RawTransaction>
                 PrepareRequest::new,
                 codecs.of(new TypeToken<>() {}),
                 codecs.of(new TypeToken<>() {}),
-                (t, encoder) -> encoder.encode(t.previous, t.proposed)));
+                codecs.of(new TypeToken<>() {}),
+                (t, encoder) -> encoder.encode(t.previous, t.proposed, t.roundNumber)));
   }
 }
