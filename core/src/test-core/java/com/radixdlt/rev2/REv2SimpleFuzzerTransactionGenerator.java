@@ -125,6 +125,8 @@ public final class REv2SimpleFuzzerTransactionGenerator implements TransactionGe
     var header =
         TransactionHeader.defaults(
             NetworkDefinition.LOCAL_SIMULATOR,
+            0,
+            5,
             transactionNonce++,
             keyPair.getPublicKey().toPublicKey(),
             false);

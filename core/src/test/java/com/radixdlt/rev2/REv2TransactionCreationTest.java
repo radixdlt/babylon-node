@@ -162,7 +162,7 @@ public class REv2TransactionCreationTest {
 
     final var intentBytes =
         REv2TestTransactions.constructValidIntentBytes(
-            networkDefinition, nonce, NOTARY.getPublicKey().toPublicKey());
+            networkDefinition, 0, nonce, NOTARY.getPublicKey().toPublicKey());
 
     return createTransaction(intentBytes, createSignatories(numSigs));
   }
@@ -181,7 +181,7 @@ public class REv2TransactionCreationTest {
       NetworkDefinition networkDefinition, long nonce, int numSigs) {
     final var intentBytes =
         REv2TestTransactions.constructNewAccountIntent(
-            networkDefinition, nonce, NOTARY.getPublicKey().toPublicKey());
+            networkDefinition, 0, nonce, NOTARY.getPublicKey().toPublicKey());
     return createTransaction(intentBytes, createSignatories(numSigs));
   }
 
@@ -193,7 +193,7 @@ public class REv2TransactionCreationTest {
 
     final var intentBytes =
         REv2TestTransactions.constructValidIntentBytes(
-            networkDefinition, nonce, NOTARY.getPublicKey().toPublicKey());
+            networkDefinition, 0, nonce, NOTARY.getPublicKey().toPublicKey());
 
     final var duplicateSignatories = List.of(PrivateKeys.ofNumeric(1), PrivateKeys.ofNumeric(1));
 
@@ -212,7 +212,13 @@ public class REv2TransactionCreationTest {
 
     final var header =
         TransactionHeader.defaults(
-            networkDefinition, nonce, NOTARY.getPublicKey().toPublicKey(), insufficientLimit, true);
+            networkDefinition,
+            0,
+            5,
+            nonce,
+            NOTARY.getPublicKey().toPublicKey(),
+            insufficientLimit,
+            true);
 
     var intentBytes =
         TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());

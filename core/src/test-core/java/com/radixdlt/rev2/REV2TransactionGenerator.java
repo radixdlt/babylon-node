@@ -84,6 +84,6 @@ public final class REV2TransactionGenerator implements TransactionGenerator {
   @Override
   public RawTransaction nextTransaction() {
     return REv2TestTransactions.constructNewAccountTransaction(
-        networkDefinition, currentTransactionNonce++);
+        networkDefinition, 0, currentTransactionNonce++);
   }
 }

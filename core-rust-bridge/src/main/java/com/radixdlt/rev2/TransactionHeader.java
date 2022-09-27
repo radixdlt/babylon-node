@@ -113,14 +113,20 @@ public record TransactionHeader(
 
   public static TransactionHeader defaults(
       NetworkDefinition networkDefinition,
+      long baseEpoch,
+      long numEpochsValidFor,
       long nonce,
       PublicKey notary,
       Boolean notaryIsSignatory) {
+    if (numEpochsValidFor > 100) {
+      throw new RuntimeException(
+          "Transaction can't be valid for that many epochs: " + numEpochsValidFor);
+    }
     return new TransactionHeader(
         (byte) 1, // Version
         networkDefinition.id(),
-        UInt64.fromNonNegativeLong(1), // From Epoch (inclusive)
-        UInt64.fromNonNegativeLong(100), // To Epoch (exclusive)
+        UInt64.fromNonNegativeLong(baseEpoch), // From Epoch (inclusive)
+        UInt64.fromNonNegativeLong(baseEpoch + numEpochsValidFor), // To Epoch (exclusive)
         UInt64.fromNonNegativeLong(nonce), // Nonce
         notary,
         notaryIsSignatory,
@@ -131,16 +137,22 @@ public record TransactionHeader(
 
   public static TransactionHeader defaults(
       NetworkDefinition networkDefinition,
+      long baseEpoch,
+      long numEpochsValidFor,
       long nonce,
       PublicKey notary,
       UInt32 costUnitLimit,
       Boolean notaryIsSignatory) {
+    if (numEpochsValidFor > 100) {
+      throw new RuntimeException(
+          "Transaction can't be valid for that many epochs: " + numEpochsValidFor);
+    }
     var costUnitLimitToUse = UInt32.Min(MAX_COST_UNIT_LIMIT, costUnitLimit);
     return new TransactionHeader(
         (byte) 1, // Version
         networkDefinition.id(),
-        UInt64.fromNonNegativeLong(1), // From Epoch (inclusive)
-        UInt64.fromNonNegativeLong(100), // To Epoch (exclusive)
+        UInt64.fromNonNegativeLong(baseEpoch), // From Epoch (inclusive)
+        UInt64.fromNonNegativeLong(baseEpoch + numEpochsValidFor), // To Epoch (exclusive)
         UInt64.fromNonNegativeLong(nonce), // Nonce
         notary,
         notaryIsSignatory,
