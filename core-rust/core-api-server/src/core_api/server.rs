@@ -64,13 +64,16 @@
 
 use std::future::Future;
 
-use axum::{routing::{post, get}, Extension, Router};
+use axum::{
+    routing::{get, post},
+    Extension, Router,
+};
 use std::sync::{Arc, Mutex};
 
 use scrypto::prelude::*;
 use state_manager::jni::state_manager::ActualStateManager;
 
-use super::{handlers::*, RequestHandlingError, not_found_error};
+use super::{handlers::*, not_found_error, RequestHandlingError};
 
 use handle_network_configuration as handle_provide_info_at_root_path;
 
@@ -132,8 +135,7 @@ pub async fn create_server<F>(
 }
 
 #[tracing::instrument(err(Debug))]
-pub(crate) async fn handle_no_core_path(
-) -> Result<(), RequestHandlingError> {
+pub(crate) async fn handle_no_core_path() -> Result<(), RequestHandlingError> {
     Err(not_found_error("Try /core"))
 }
 
