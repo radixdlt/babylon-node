@@ -21,11 +21,11 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-259457" }
-scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-259457" }
-transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-259457" }
-radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-259457" }
-radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-259457" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-259457" }
+scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-259457" }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-259457" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-259457" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-259457" }
 
 jni = "0.19.0"
 
