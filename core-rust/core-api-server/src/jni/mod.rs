@@ -83,7 +83,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";
 
 pub struct RunningServer {
-    pub tokio_runtime: Arc<TokioRuntime>,
+    pub tokio_runtime: TokioRuntime,
     pub shutdown_signal_sender: Sender<()>,
 }
 
@@ -124,7 +124,7 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
     _class: JClass,
     j_core_api_server: JObject,
 ) {
-    let tokio_runtime = Arc::new(TokioRuntime::new().unwrap());
+    let tokio_runtime = TokioRuntime::new().unwrap();
 
     let (shutdown_signal_sender, shutdown_signal_receiver) = oneshot::channel::<()>();
 
@@ -172,12 +172,10 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
         .await;
     });
 
-    let running_server = RunningServer {
+    jni_core_api_server.running_server = Some(RunningServer {
         tokio_runtime,
         shutdown_signal_sender,
-    };
-
-    jni_core_api_server.running_server = Option::from(running_server);
+    });
 }
 
 #[no_mangle]
