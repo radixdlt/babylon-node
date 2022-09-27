@@ -62,93 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.rev1.full_function;
+package com.radixdlt.statecomputer;
 
-import static com.radixdlt.constraintmachine.REInstruction.REMicroOp.MSG;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
-import com.radixdlt.application.system.FeeTable;
-import com.radixdlt.application.tokens.Amount;
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.application.RadixEngineUniqueGenerator;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.mempool.MempoolRelayConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RERulesConfig;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.UInt256;
-import java.time.Duration;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.OptionalInt;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-@RunWith(Parameterized.class)
-public class OneOutOfBoundsTest {
-  @Parameterized.Parameters
-  public static Collection<Object[]> fees() {
-    return List.of(
-        new Object[][] {
-          {UInt256.ONE}, {UInt256.ZERO},
-        });
-  }
-
-  private final SimulationTest.Builder bftTestBuilder;
-
-  public OneOutOfBoundsTest(UInt256 perByteFee) {
-    bftTestBuilder =
-        SimulationTest.builder()
-            .numNodes(4)
-            .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.oneOutOfBounds(50, 10000))
-            .fullFunctionNodes(ConsensusConfig.of(3000), SyncRelayConfig.of(400L, 10, 2000L), 1000)
-            .addRadixEngineConfigModules(
-                new MainnetForksModule(),
-                new RadixEngineForksLatestOnlyModule(
-                    new RERulesConfig(
-                        Set.of("xrd"),
-                        Pattern.compile("[a-z0-9]+"),
-                        FeeTable.create(Amount.ofSubunits(perByteFee), Map.of()),
-                        1024 * 1024,
-                        OptionalInt.of(5),
-                        20L,
-                        2,
-                        Amount.ofTokens(10),
-                        1,
-                        Amount.ofTokens(10),
-                        9800,
-                        10,
-                        MSG.maxLength())),
-                new ForksModule())
-            .addNodeModule(MempoolRelayConfig.of(10).asModule())
-            .addTestModules(
-                ConsensusMonitors.safety(),
-                ConsensusMonitors.liveness(10000, TimeUnit.SECONDS),
-                LedgerMonitors.consensusToLedger(),
-                LedgerMonitors.ordered(),
-                RadixEngineMonitors.noInvalidProposedTransactions())
-            .addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
-  }
-
-  @Test
-  public void sanity_tests_should_pass() {
-    SimulationTest simulationTest = bftTestBuilder.build();
-
-    final var results = simulationTest.run(Duration.ofMinutes(2)).awaitCompletion();
-    assertThat(results)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+public class MockedStateComputerWithEpochsModule extends AbstractModule {
+  @Override
+  protected void configure() {
+    bind(StateComputer.class).to(MockedStateComputerWithEpochs.class).in(Scopes.SINGLETON);
   }
 }

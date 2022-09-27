@@ -62,18 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1;
+package com.radixdlt.statemanager;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.HashUtils;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.utils.UInt64;
 
-public class StakesTest {
-  @Test
-  public void equalsContract() {
-    EqualsVerifier.forClass(Rewards.class)
-        .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-        .verify();
+// TODO: This should be replaced by a genesis configuration at some point
+public record REv2StateConfig(UInt64 roundsPerEpoch) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        REv2StateConfig.class,
+        codecs ->
+            StructCodec.with(
+                REv2StateConfig::new,
+                codecs.of(new TypeToken<>() {}),
+                (s, encoder) -> encoder.encode(s.roundsPerEpoch)));
   }
 }

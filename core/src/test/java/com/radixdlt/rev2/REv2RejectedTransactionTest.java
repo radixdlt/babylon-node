@@ -81,7 +81,9 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
@@ -103,6 +105,7 @@ public final class REv2RejectedTransactionTest {
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
+                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.rocksDB(folder.getRoot().getAbsolutePath()),
                         REV2ProposerConfig.transactionGenerator(proposalGenerator)))));
   }

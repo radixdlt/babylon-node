@@ -62,42 +62,29 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1.forks;
+package com.radixdlt.statecomputer;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
-import com.google.common.collect.ImmutableClassToInstanceMap;
-import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.rev1.LedgerAndBFTProof;
-import java.util.Optional;
-import java.util.Set;
-import org.junit.Test;
+import com.radixdlt.ledger.StateComputerLedger;
 
-public final class CurrentForkViewTest {
-  private final RERules reRules = RERulesVersion.OLYMPIA_V1.create(RERulesConfig.testingDefault());
+public class MockedStateComputerModule extends AbstractModule {
+  @Override
+  protected void configure() {
+    bind(StateComputerLedger.StateComputer.class).to(StatelessComputer.class);
+    bind(StatelessTransactionVerifier.class).toInstance(txn -> true);
+  }
 
-  @Test
-  public void should_keep_track_of_current_fork_config() {
-    final var initialFork = new FixedEpochForkConfig("fork1", reRules, 0L);
-    final var nextFork = new FixedEpochForkConfig("fork2", reRules, 2L);
-    final var forks = Forks.create(Set.of(initialFork, nextFork));
-
-    final var currentForkView = new CurrentForkView(forks, initialFork);
-
-    assertEquals("fork1", currentForkView.currentForkConfig().name());
-
-    final var ledgerAndBftProof =
-        LedgerAndBFTProof.create(
-            mock(LedgerProof.class), null, Optional.of("fork2"), Optional.empty());
-    final var ledgerUpdate =
-        new LedgerUpdate(
-            mock(CommittedTransactionsWithProof.class),
-            ImmutableClassToInstanceMap.of(LedgerAndBFTProof.class, ledgerAndBftProof));
-    currentForkView.ledgerUpdateEventProcessor().process(ledgerUpdate);
-
-    assertEquals("fork2", currentForkView.currentForkConfig().name());
+  @Provides
+  @Singleton
+  private StatelessComputer statelessComputer(
+      StatelessTransactionVerifier verifier,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      Hasher hasher) {
+    return new StatelessComputer(verifier, ledgerUpdateDispatcher, hasher);
   }
 }

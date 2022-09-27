@@ -13,6 +13,7 @@ pub const FAKED_SYSTEM_ADDRESS: ComponentAddress = ComponentAddress::System([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5,
 ]);
 
+#[tracing::instrument(skip_all)]
 pub fn to_api_global_entity_id_from_substate_id(
     bech32_encoder: &Bech32Encoder,
     substate_id: SubstateId,
@@ -21,6 +22,7 @@ pub fn to_api_global_entity_id_from_substate_id(
     to_api_global_entity_id(bech32_encoder, mapped.into())
 }
 
+#[tracing::instrument(skip_all)]
 pub fn to_api_global_entity_id(
     bech32_encoder: &Bech32Encoder,
     entity_id: MappedEntityId,
@@ -66,6 +68,7 @@ pub fn to_api_entity_id(node_id: RENodeId) -> Result<models::EntityId, MappingEr
     Ok(mapped.into())
 }
 
+#[tracing::instrument(skip_all)]
 pub fn to_api_substate_id(substate_id: SubstateId) -> Result<models::SubstateId, MappingError> {
     let mapped = to_mapped_substate_id(substate_id)?;
 
@@ -179,6 +182,7 @@ impl From<MappedSubstateId> for models::EntityId {
     }
 }
 
+#[tracing::instrument(skip_all)]
 fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, MappingError> {
     // It's crucial that we ensure all Entity Addresses are unique
     // It's crucial that we ensure all Substate keys are locally unique

@@ -336,6 +336,7 @@ impl<'db> CommitStore<'db> for StateManagerDatabase {
 }
 
 impl QueryableTransactionStore for StateManagerDatabase {
+    #[tracing::instrument(skip_all)]
     fn get_committed_transaction(
         &self,
         payload_hash: &TransactionPayloadHash,
@@ -393,6 +394,7 @@ impl QueryableProofStore for StateManagerDatabase {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     fn get_payload_hash(&self, state_version: u64) -> Option<TransactionPayloadHash> {
         match self {
             StateManagerDatabase::InMemory {

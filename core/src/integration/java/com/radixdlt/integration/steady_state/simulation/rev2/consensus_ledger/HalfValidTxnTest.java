@@ -80,6 +80,8 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statecomputer.StatelessComputer;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.statemanager.REv2StateConfig;
+import com.radixdlt.utils.UInt64;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.data.Offset;
@@ -98,6 +100,7 @@ public class HalfValidTxnTest {
                   LedgerConfig.stateComputerNoSync(
                       StateComputerConfig.rev2(
                           Network.INTEGRATIONTESTNET.getId(),
+                          new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                           REv2DatabaseConfig.none(),
                           REV2ProposerConfig.halfCorrectProposer()))))
           .addTestModules(

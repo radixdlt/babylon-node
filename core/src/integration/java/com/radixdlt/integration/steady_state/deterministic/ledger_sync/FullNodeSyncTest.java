@@ -62,96 +62,76 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev1.store;
+package com.radixdlt.integration.steady_state.deterministic.ledger_sync;
 
-import static com.radixdlt.rev1.store.AppendLog.openCompressed;
-import static com.radixdlt.rev1.store.AppendLog.openSimple;
-import static org.junit.Assert.assertArrayEquals;
-import static org.mockito.Mockito.mock;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.NodePredicate.*;
+import static com.radixdlt.harness.predicates.NodesPredicate.*;
+import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.monitoring.SystemCounters;
-import java.io.IOException;
-import org.junit.Rule;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.sync.SyncRelayConfig;
+import java.util.stream.IntStream;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-public class SimpleAppendLogTest {
-  private final SystemCounters systemCounters = mock(SystemCounters.class);
+public class FullNodeSyncTest {
+  /* maximum state lag is a single transaction */
+  private static final int FULL_NODE_MAX_BEHIND_STATE_VER = 1;
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
+  private void run(int numNodes, int numValidators, Round epochMaxRound, long targetStateVersion) {
+    final var syncConfig =
+        new SyncRelayConfig(
+            500L,
+            0 /* unused */,
+            Long.MAX_VALUE /* unused */,
+            numNodes, /* send ledger status update to all nodes */
+            Integer.MAX_VALUE /* no rate limiting */);
 
-  @Test
-  public void appendLogCanBeCreated() throws IOException {
-    String path = createTempPath();
+    final var test =
+        DeterministicTest.builder()
+            .numNodes(numNodes, 0)
+            .messageSelector(firstSelector())
+            .epochNodeIndexesMapping(epoch -> IntStream.range(0, numValidators))
+            .buildWithEpochsAndSync(epochMaxRound, syncConfig);
 
-    readAfterWrite(openSimple(path));
+    test.startAllNodes();
+    test.runUntilState(nodeAt(numNodes - 1, atOrOverStateVersion(targetStateVersion)), 10000000);
+
+    final var validatorsCounters =
+        IntStream.range(0, numValidators).mapToObj(i -> test.getInstance(i, SystemCounters.class));
+
+    final var validatorsMaxStateVersion =
+        validatorsCounters
+            .map(sc -> sc.get(CounterType.LEDGER_STATE_VERSION))
+            .max(Long::compareTo)
+            .get();
+
+    final var nonValidatorsStateVersions =
+        IntStream.range(numValidators, numNodes - numValidators)
+            .mapToObj(i -> test.getInstance(i, SystemCounters.class))
+            .map(sc -> sc.get(CounterType.LEDGER_STATE_VERSION))
+            .toList();
+
+    nonValidatorsStateVersions.forEach(
+        stateVersion ->
+            assertTrue(stateVersion + FULL_NODE_MAX_BEHIND_STATE_VER >= validatorsMaxStateVersion));
   }
 
   @Test
-  public void appendLogCanBeReadFromTheBeginning() throws IOException {
-    var path = createTempPath();
-
-    writeLogEntriesAndClose(openSimple(path));
-
-    readSequentially(openSimple(path));
+  public void total_five_nodes_and_a_single_full_node() {
+    this.run(5, 4, Round.of(100), 1000L);
   }
 
   @Test
-  public void compressedAppendLogCanBeCreated() throws IOException {
-    String path = createTempPath();
-
-    readAfterWrite(openCompressed(path, systemCounters));
+  public void total_50_nodes_and_just_4_validators_two_rounds_per_epoch() {
+    this.run(50, 4, Round.of(2), 500L);
   }
 
   @Test
-  public void compressedAppendLogCanBeReadFromTheBeginning() throws IOException {
-    var path = createTempPath();
-
-    writeLogEntriesAndClose(openCompressed(path, systemCounters));
-
-    readSequentially(openCompressed(path, systemCounters));
-  }
-
-  private String createTempPath() throws IOException {
-    return folder.newFile().getAbsolutePath();
-  }
-
-  private void readSequentially(final AppendLog newAppendLog) throws IOException {
-    long pos;
-
-    pos = checkSingleChunk(newAppendLog, 0L, new byte[] {0x01});
-    pos = checkSingleChunk(newAppendLog, pos, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05});
-    pos =
-        checkSingleChunk(
-            newAppendLog, pos, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x0C, 0x7F, -1});
-  }
-
-  private void writeLogEntriesAndClose(final AppendLog appendLog) throws IOException {
-    var s0 = appendLog.write(new byte[] {0x01}, 0);
-    var s1 = appendLog.write(new byte[] {0x01, 0x02, 0x03, 0x04, 0x05}, s0);
-    appendLog.write(new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x0C, 0x7F, -1}, s0 + s1);
-    appendLog.close();
-  }
-
-  private void readAfterWrite(final AppendLog appendLog) throws IOException {
-    checkReadAfterWrite(appendLog, new byte[] {0x01});
-    checkReadAfterWrite(appendLog, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05});
-    checkReadAfterWrite(appendLog, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x0C, 0x7F, -1});
-  }
-
-  private void checkReadAfterWrite(AppendLog appendLog, byte[] data) throws IOException {
-    long pos = appendLog.position();
-    appendLog.write(data, pos);
-
-    assertArrayEquals(data, appendLog.read(pos));
-  }
-
-  private long checkSingleChunk(AppendLog appendLog, long offset, byte[] expect)
-      throws IOException {
-    var result = appendLog.readChunk(offset);
-
-    assertArrayEquals(expect, result.getFirst());
-
-    return offset + result.getSecond() + Integer.BYTES;
+  public void total_three_nodes_and_a_single_full_node_10k_rounds_per_epoch() {
+    this.run(3, 2, Round.of(10000), 1000L);
   }
 }

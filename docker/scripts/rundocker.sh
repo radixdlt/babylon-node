@@ -33,7 +33,7 @@ echo "||> Building the code and debian image"
 ${reporoot}/gradlew -p "${reporoot}" deb4docker
 
 echo "||> Killing all running docker containers"
-(docker kill $(docker ps -q) || true) 2>/dev/null # The 2>/dev/null discards the error message (if there's no docker containers running)
+docker compose -f "${dockerfile}" down | tee docker.log
 
 echo "||> Starting up new docker containers"
 docker compose -f "${dockerfile}" up --build | tee docker.log

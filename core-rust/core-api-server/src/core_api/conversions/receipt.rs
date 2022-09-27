@@ -10,6 +10,7 @@ use radix_engine::{
 use scrypto::address::Bech32Encoder;
 use state_manager::{CommittedTransactionStatus, LedgerTransactionReceipt};
 
+#[tracing::instrument(skip_all)]
 pub fn to_api_receipt(
     bech32_encoder: &Bech32Encoder,
     receipt: LedgerTransactionReceipt,
@@ -80,6 +81,7 @@ pub fn to_api_receipt(
     })
 }
 
+#[tracing::instrument(skip_all)]
 pub fn to_api_up_substate(
     bech32_encoder: &Bech32Encoder,
     (substate_id, output_value): (SubstateId, OutputValue),
@@ -101,6 +103,7 @@ pub fn to_api_up_substate(
     })
 }
 
+#[tracing::instrument(skip_all)]
 pub fn to_api_down_substate(output_id: OutputId) -> Result<DownSubstate, MappingError> {
     Ok(DownSubstate {
         substate_id: Box::new(to_api_substate_id(output_id.substate_id)?),
@@ -109,12 +112,14 @@ pub fn to_api_down_substate(output_id: OutputId) -> Result<DownSubstate, Mapping
     })
 }
 
+#[tracing::instrument(skip_all)]
 pub fn to_api_down_virtual_substate(
     VirtualSubstateId(root_substate_id, key): VirtualSubstateId,
 ) -> Result<models::SubstateId, MappingError> {
     to_api_virtual_substate_id(root_substate_id, key)
 }
 
+#[tracing::instrument(skip_all)]
 pub fn to_api_fee_summary(fee_summary: EngineFeeSummary) -> FeeSummary {
     FeeSummary {
         loan_fully_repaid: fee_summary.loan_fully_repaid,

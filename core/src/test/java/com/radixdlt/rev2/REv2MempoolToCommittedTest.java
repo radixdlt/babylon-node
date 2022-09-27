@@ -76,8 +76,10 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.UInt64;
 import org.junit.Test;
 
 public class REv2MempoolToCommittedTest {
@@ -94,6 +96,7 @@ public class REv2MempoolToCommittedTest {
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
+                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             1, 1, new MempoolRelayConfig(0, 100))),

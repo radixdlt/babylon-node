@@ -71,11 +71,9 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.statemanager.LoggingConfig;
-import com.radixdlt.statemanager.REv2DatabaseConfig;
-import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.statemanager.StateManagerConfig;
+import com.radixdlt.statemanager.*;
 import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.utils.UInt64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -89,6 +87,7 @@ public final class RustMempoolTest {
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
+            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
@@ -148,6 +147,7 @@ public final class RustMempoolTest {
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
+            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());
@@ -245,6 +245,7 @@ public final class RustMempoolTest {
     final var config =
         new StateManagerConfig(
             NetworkDefinition.INT_TEST_NET,
+            new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
             Option.some(new RustMempoolConfig(mempoolSize)),
             REv2DatabaseConfig.inMemory(),
             LoggingConfig.getDefault());

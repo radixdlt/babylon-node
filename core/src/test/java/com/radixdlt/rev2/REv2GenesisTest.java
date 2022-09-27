@@ -73,7 +73,9 @@ import com.radixdlt.mempool.MempoolRelayConfig;
 import com.radixdlt.modules.*;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.utils.UInt64;
 import org.junit.Test;
 
 public final class REv2GenesisTest {
@@ -90,6 +92,7 @@ public final class REv2GenesisTest {
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2(
                         Network.INTEGRATIONTESTNET.getId(),
+                        new REv2StateConfig(UInt64.fromNonNegativeLong(10)),
                         REv2DatabaseConfig.inMemory(),
                         StateComputerConfig.REV2ProposerConfig.mempool(
                             0, 0, MempoolRelayConfig.of())))));

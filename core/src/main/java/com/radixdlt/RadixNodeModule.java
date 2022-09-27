@@ -98,10 +98,12 @@ import com.radixdlt.rev2.modules.REv2ConsensusRecoveryModule;
 import com.radixdlt.rev2.modules.REv2LedgerRecoveryModule;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
+import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.BooleanUtils;
 import com.radixdlt.utils.IOUtils;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt64;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -199,9 +201,15 @@ public final class RadixNodeModule extends AbstractModule {
     var mempoolConfig = new RustMempoolConfig(mempoolMaxSize);
     var databaseConfig = new REv2DatabaseConfig.RocksDB(databasePath);
     var transactionsPerProposalCount = 10;
+    var stateConfig =
+        new REv2StateConfig(UInt64.fromNonNegativeLong(1800)); // approximately 5 minutes per epoch
     install(
         REv2StateManagerModule.create(
-            networkId, transactionsPerProposalCount, databaseConfig, Option.some(mempoolConfig)));
+            networkId,
+            transactionsPerProposalCount,
+            stateConfig,
+            databaseConfig,
+            Option.some(mempoolConfig)));
 
     // Recovery
     install(new BerkeleySafetyStoreModule(databasePath));

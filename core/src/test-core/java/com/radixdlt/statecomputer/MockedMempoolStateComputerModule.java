@@ -62,55 +62,107 @@
  * permissions under this License.
  */
 
-package com.radixdlt.integration.steady_state.simulation.rev1.consensus_ledger_epochs_radixengine;
+package com.radixdlt.statecomputer;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import com.google.common.collect.ImmutableClassToInstanceMap;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VertexStoreState;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.ledger.CommittedTransactionsWithProof;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.MockExecuted;
+import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.rev1.RoundDetails;
+import com.radixdlt.targeted.mempool.SimpleMempool;
+import com.radixdlt.transactions.RawTransaction;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import com.radixdlt.harness.simulation.NetworkLatencies;
-import com.radixdlt.harness.simulation.NetworkOrdering;
-import com.radixdlt.harness.simulation.SimulationTest;
-import com.radixdlt.harness.simulation.SimulationTest.Builder;
-import com.radixdlt.harness.simulation.application.RadixEngineUniqueGenerator;
-import com.radixdlt.harness.simulation.monitors.application.ApplicationMonitors;
-import com.radixdlt.harness.simulation.monitors.consensus.ConsensusMonitors;
-import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
-import com.radixdlt.harness.simulation.monitors.radix_engine.RadixEngineMonitors;
-import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.rev1.forks.ForksModule;
-import com.radixdlt.rev1.forks.MainnetForksModule;
-import com.radixdlt.rev1.forks.RERulesConfig;
-import com.radixdlt.rev1.forks.RadixEngineForksLatestOnlyModule;
-import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Test;
+/** Simple Mempool state computer */
+public class MockedMempoolStateComputerModule extends AbstractModule {
+  private static final Logger log = LogManager.getLogger();
 
-public class SanityTest {
-  private final Builder bftTestBuilder =
-      SimulationTest.builder()
-          .numNodes(4)
-          .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
-          .addRadixEngineConfigModules(
-              new MainnetForksModule(),
-              new RadixEngineForksLatestOnlyModule(RERulesConfig.testingDefault()),
-              new ForksModule())
-          .ledgerAndRadixEngineWithEpochMaxRound(ConsensusConfig.of())
-          .addTestModules(
-              ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
-              ConsensusMonitors.noTimeouts(),
-              ConsensusMonitors.directParents(),
-              LedgerMonitors.consensusToLedger(),
-              LedgerMonitors.ordered(),
-              RadixEngineMonitors.noInvalidProposedTransactions(),
-              ApplicationMonitors.mempoolCommitted())
-          .addMempoolSubmissionsSteadyState(RadixEngineUniqueGenerator.class);
+  private final int mempoolMaxSize;
 
-  @Test
-  public void sanity_tests_should_pass() {
-    SimulationTest simulationTest = bftTestBuilder.build();
+  public MockedMempoolStateComputerModule(int mempoolMaxSize) {
+    this.mempoolMaxSize = mempoolMaxSize;
+  }
 
-    final var checkResults = simulationTest.run().awaitCompletion();
-    assertThat(checkResults)
-        .allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+  @Override
+  protected void configure() {
+    bind(new TypeLiteral<Mempool<?>>() {})
+        .to(new TypeLiteral<Mempool<RawTransaction>>() {})
+        .in(Scopes.SINGLETON);
+  }
+
+  @Provides
+  @Singleton
+  private Mempool<RawTransaction> mempool(SystemCounters systemCounters, Random random) {
+    return new SimpleMempool(systemCounters, mempoolMaxSize, random);
+  }
+
+  @Provides
+  @Singleton
+  private StateComputerLedger.StateComputer stateComputer(
+      Mempool<RawTransaction> mempool,
+      EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
+      SystemCounters counters) {
+    return new StateComputerLedger.StateComputer() {
+      @Override
+      public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {
+        mempoolAdd
+            .transactions()
+            .forEach(
+                txn -> {
+                  try {
+                    mempool.addTransaction(txn);
+                    counters.set(
+                        SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+                  } catch (MempoolRejectedException e) {
+                    log.error(e);
+                  }
+                });
+      }
+
+      @Override
+      public List<RawTransaction> getTransactionsForProposal(
+          List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
+        return mempool.getTransactionsForProposal(1, List.of());
+      }
+
+      @Override
+      public StateComputerLedger.StateComputerResult prepare(
+          List<StateComputerLedger.ExecutedTransaction> previous,
+          List<RawTransaction> proposedTransactions,
+          RoundDetails roundDetails) {
+        return new StateComputerLedger.StateComputerResult(
+            proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
+            Map.of());
+      }
+
+      @Override
+      public void commit(
+          CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
+        mempool.handleTransactionsCommitted(txnsAndProof.getTransactions());
+        counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
+
+        var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());
+        ledgerUpdateDispatcher.dispatch(ledgerUpdate);
+      }
+    };
   }
 }

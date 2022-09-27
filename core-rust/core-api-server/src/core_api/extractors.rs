@@ -10,6 +10,8 @@ use serde::Serialize;
 use super::{generated::models::ErrorResponse, RequestHandlingError};
 
 // We define our own `Json` extractor that customizes the error from `axum::Json`
+
+#[derive(Debug)]
 pub(crate) struct Json<T>(pub T);
 pub use axum::Extension; // Re-export Extension so that it can be used easily
 
