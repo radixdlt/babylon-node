@@ -48,12 +48,12 @@ def run(command, cwd = '.', should_log = False):
     if (should_log): logging.debug('Response: %s', stdout)
     return stdout
 
-def generate_models(spec_file, tmp_client_folder, out_location):
+def generate_models(schema_file, tmp_client_folder, out_location):
     safe_os_remove(out_location, True)
     # See https://openapi-generator.tech/docs/generators/rust/
     run(['java', '-jar', OPENAPI_GENERATOR_FIXED_VERSION_JAR, 'generate',
          '-g', 'rust',
-         '-i', spec_file,
+         '-i', schema_file,
          '-o', tmp_client_folder,
     ], should_log=False)
 
@@ -65,8 +65,17 @@ def generate_models(spec_file, tmp_client_folder, out_location):
 
     os.makedirs(os.path.join(out_location))
     shutil.copytree(rust_models, out_models)
-    create_file(os.path.join(out_location, 'mod.rs'), "pub mod models;")
-    
+
+    def get_version_from_oas_file(file_path):
+        version_finds = find_in_file_multiline(schema_file, re.compile("  version: '([^']+)'"))
+        if len(version_finds) == 0:
+            return "UNKNOWN"
+        return version_finds[0]
+
+    version = get_version_from_oas_file(schema_file)
+    logging.info("Version is: " + version)
+    create_file(os.path.join(out_location, 'mod.rs'), "pub mod models;\npub const SCHEMA_VERSION: &str = \"" + version + "\";\n")
+
     def fix_broken_discriminator_tag(file_path, tag_name):
         # Fix bug that discriminator tags are incorrectly stripped and lower cased
         broken_tag_name = re.sub(r'[^A-Za-z0-9]+', "", tag_name.lower())
