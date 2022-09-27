@@ -64,7 +64,7 @@
 
 use crate::mempool::simple_mempool::SimpleMempool;
 use crate::mempool::transaction_rejection_cache::{RejectionCache, RejectionReason};
-use crate::query::ResourceAccounter;
+use crate::query::*;
 use crate::store::traits::*;
 use crate::types::{CommitRequest, PrepareRequest, PrepareResult, PreviewRequest};
 use crate::{
@@ -78,10 +78,11 @@ use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     ExecutionConfig, FeeReserveConfig, PreviewError, PreviewExecutor, PreviewResult,
-    TransactionExecutor, TransactionReceipt, TransactionResult,
+    TransactionExecutor, TransactionOutcome, TransactionReceipt, TransactionResult,
 };
+use radix_engine::types::SubstateId;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
-use scrypto::engine::types::{RENodeId, SubstateId};
+use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -94,9 +95,7 @@ use transaction::model::{
     Validated,
 };
 use transaction::signing::EcdsaSecp256k1PrivateKey;
-use transaction::validation::{
-    NotarizedTransactionValidator, TestIntentHashManager, ValidationConfig,
-};
+use transaction::validation::{TestIntentHashManager, ValidationConfig};
 
 use crate::transaction::{
     CommittedTransactionValidator, Transaction, UserTransactionValidator, ValidatorTransaction,
@@ -140,22 +139,22 @@ impl<S> StateManager<S> {
         logging_config: LoggingConfig,
     ) -> StateManager<S> {
         let user_transaction_validator = UserTransactionValidator {
-            validator: NotarizedTransactionValidator::new(ValidationConfig {
+            base_validation_config: ValidationConfig {
                 network_id: network.id,
-                current_epoch: 1,
+                current_epoch: 1, // Temporary workaround for alphanet - is changed to current-epoch per-use
                 max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
                 min_tip_percentage: 0,
-            }),
+            },
             intent_hash_manager: TestIntentHashManager::new(),
         };
 
         let committed_transaction_validator = CommittedTransactionValidator {
-            validator: NotarizedTransactionValidator::new(ValidationConfig {
+            base_validation_config: ValidationConfig {
                 network_id: network.id,
-                current_epoch: 1,
+                current_epoch: 1, // Temporary workaround for alphanet - is changed to current-epoch per-use
                 max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
                 min_tip_percentage: 0,
-            }),
+            },
             intent_hash_manager: TestIntentHashManager::new(),
         };
 
@@ -225,22 +224,11 @@ where
     }
 }
 
-#[allow(clippy::large_enum_variant)]
-enum ValidationResult {
-    Ok {
-        validated: Validated<NotarizedTransaction>,
-        payload: Vec<u8>,
-    },
-    Err {
-        error: TransactionValidationError,
-        payload: Vec<u8>,
-    },
-}
-
 impl<S> StateManager<S>
 where
     S: ReadableSubstateStore,
     S: UserTransactionIndex<IntentHash> + QueryableTransactionStore,
+    S: ReadableSubstateStore + QueryableSubstateStore, // Temporary - can remove when epoch validation moves to executor
 {
     /// Performs static-validation, and then executes the transaction.
     /// By checking the TransactionReceipt, you can see if the transaction is presently commitable.
@@ -250,7 +238,7 @@ where
     ) -> Result<TransactionReceipt, TransactionValidationError> {
         let validated_transaction = self
             .user_transaction_validator
-            .validate_user_transaction(transaction.clone())?;
+            .validate_user_transaction(self.get_epoch(), transaction.clone())?;
 
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
@@ -374,32 +362,17 @@ where
     }
 
     pub fn prepare(&mut self, prepare_request: PrepareRequest) -> PrepareResult {
-        let mut validated_prepared = Vec::new();
-
-        // This intent hash check should eventually live in the executor
+        // This intent hash check, and current epoch should eventually live in the executor
         let mut already_committed_or_prepared_intent_hashes: HashSet<IntentHash> = HashSet::new();
+        let mut current_epoch = self.get_epoch();
 
-        for prepared in prepare_request.already_prepared_payloads {
-            let validated_transaction = self
-                .committed_transaction_validator
-                .parse_and_validate_transaction_slice(&prepared)
-                .expect("Already prepared transactions should be decodeable");
+        for proposed_payload in prepare_request.proposed_payloads.iter() {
+            let notarized_transaction =
+                UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
+                    proposed_payload,
+                );
 
-            if let Transaction::User(notarized_transaction) = validated_transaction.transaction() {
-                already_committed_or_prepared_intent_hashes
-                    .insert(notarized_transaction.intent_hash());
-            }
-            validated_prepared.push(validated_transaction);
-        }
-
-        let mut validated_proposed_transactions: Vec<ValidationResult> = Vec::new();
-
-        for proposed_payload in prepare_request.proposed_payloads {
-            let validation_result = self
-                .user_transaction_validator
-                .parse_and_validate_user_transaction_slice(&proposed_payload);
-
-            if let Ok(validated_transaction) = &validation_result {
+            if let Ok(validated_transaction) = &notarized_transaction {
                 let intent_hash = validated_transaction.intent_hash();
                 if self
                     .store
@@ -409,18 +382,6 @@ where
                     already_committed_or_prepared_intent_hashes.insert(intent_hash);
                 }
             }
-
-            let validation_result = validation_result
-                .map(|validated| ValidationResult::Ok {
-                    validated,
-                    payload: proposed_payload.clone(),
-                })
-                .unwrap_or_else(|error| ValidationResult::Err {
-                    error,
-                    payload: proposed_payload.clone(),
-                });
-
-            validated_proposed_transactions.push(validation_result);
         }
 
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
@@ -432,22 +393,46 @@ where
             &mut self.wasm_instrumenter,
         );
 
-        for prepared in validated_prepared {
-            transaction_executor.execute_and_commit(
-                &prepared,
+        for prepared in prepare_request.already_prepared_payloads {
+            let validated_transaction = self
+                .committed_transaction_validator
+                .parse_and_validate_transaction_slice(current_epoch, &prepared)
+                .expect("Already prepared transactions should be decodeable");
+
+            if let Transaction::User(notarized_transaction) = validated_transaction.transaction() {
+                already_committed_or_prepared_intent_hashes
+                    .insert(notarized_transaction.intent_hash());
+            }
+
+            let receipt = transaction_executor.execute_and_commit(
+                &validated_transaction,
                 &self.fee_reserve_config,
                 &self.execution_config,
             );
+            match receipt.result {
+                TransactionResult::Commit(commit_result) => {
+                    // Temporary workaround to keep current_epoch in sync until transaction epoch validation lives in the engine
+                    for (substate_id, output_value) in commit_result.state_updates.up_substates {
+                        if let SubstateId::System = substate_id {
+                            current_epoch = output_value.substate.system().epoch;
+                        }
+                    }
+                }
+                TransactionResult::Reject(reject_result) => {
+                    panic!(
+                        "Already prepared transactions should be rejectable. Reject result: {:?}",
+                        reject_result
+                    )
+                }
+            }
         }
 
         let mut committed = Vec::new();
 
         if prepare_request.round_number % ROUNDS_PER_EPOCH == 0 {
+            let new_epoch = (prepare_request.round_number / ROUNDS_PER_EPOCH) + 1;
             let epoch_update_txn: Validated<ValidatorTransaction> =
-                ValidatorTransaction::EpochUpdate(
-                    (prepare_request.round_number / ROUNDS_PER_EPOCH) + 1,
-                )
-                .into();
+                ValidatorTransaction::EpochUpdate(new_epoch).into();
             let mut fee_reserve = SystemLoanFeeReserve::default();
             // TODO: Clean up fee reserve
             fee_reserve.credit(10_000_000);
@@ -457,7 +442,10 @@ where
                 fee_reserve,
             );
             match receipt.result {
-                TransactionResult::Commit(..) => {
+                TransactionResult::Commit(commit_result) => {
+                    if let TransactionOutcome::Failure(failure) = commit_result.outcome {
+                        panic!("Epoch Update failed: {:?}", failure);
+                    }
                     let serialized_validated_txn = scrypto_encode(&Transaction::Validator(
                         epoch_update_txn.into_transaction(),
                     ));
@@ -467,17 +455,22 @@ where
                     panic!("Epoch Update rejected: {:?}", reject_result);
                 }
             }
+            current_epoch = new_epoch;
         }
 
         let mut rejected = Vec::new();
 
-        for validation_result in validated_proposed_transactions {
+        for proposed_payload in prepare_request.proposed_payloads {
+            let validation_result = self
+                .user_transaction_validator
+                .parse_and_validate_user_transaction_slice(current_epoch, &proposed_payload);
+
             match validation_result {
-                ValidationResult::Ok { validated, payload } => {
+                Result::Ok(validated) => {
                     let intent_hash = validated.intent_hash();
                     if already_committed_or_prepared_intent_hashes.contains(&intent_hash) {
                         rejected.push((
-                            payload,
+                            proposed_payload,
                             "Transaction rejected - duplicate intent hash".to_string(),
                         ));
                         continue;
@@ -498,7 +491,7 @@ where
                             committed.push(serialized_validated_txn);
                         }
                         TransactionResult::Reject(reject_result) => {
-                            rejected.push((payload, format!("{:?}", reject_result)));
+                            rejected.push((proposed_payload, format!("{:?}", reject_result)));
 
                             if self.logging_config.log_on_transaction_rejection {
                                 info!("TXN REJECTED: {:?}", reject_result);
@@ -506,8 +499,8 @@ where
                         }
                     }
                 }
-                ValidationResult::Err { error, payload } => {
-                    rejected.push((payload, format!("{:?}", error)));
+                Err(error) => {
+                    rejected.push((proposed_payload, format!("{:?}", error)));
                     if self.logging_config.log_on_transaction_rejection {
                         info!("TXN INVALID: {:?}", error);
                     }
@@ -525,6 +518,7 @@ where
 impl<'db, S> StateManager<S>
 where
     S: CommitStore<'db>,
+    S: ReadableSubstateStore + QueryableSubstateStore, // Temporary - can remove when epoch validation moves to executor
 {
     pub fn save_vertex_store(&'db mut self, vertex_store: Vec<u8>) {
         let mut db_transaction = self.store.create_db_transaction();
@@ -537,12 +531,13 @@ where
         let mut payload_hashes = Vec::new();
         let mut intent_hashes = Vec::new();
 
+        let current_epoch = self.get_epoch();
         let transactions_to_commit = commit_request
             .transaction_payloads
             .into_iter()
             .map(|t| {
                 self.committed_transaction_validator
-                    .parse_and_validate_transaction_slice(&t)
+                    .parse_and_validate_transaction_slice(current_epoch, &t)
                     .expect("Error on Byzantine quorum")
             })
             .collect::<Vec<_>>();
@@ -619,11 +614,6 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
     }
 
     pub fn get_epoch(&self) -> u64 {
-        self.store
-            .get_substate(&SubstateId::System)
-            .unwrap()
-            .substate
-            .system()
-            .epoch
+        self.store.get_epoch()
     }
 }

@@ -95,7 +95,7 @@ fn do_verify(
 
     let result = state_manager
         .user_transaction_validator
-        .parse_and_validate_user_transaction_slice(&transaction.payload);
+        .parse_and_validate_user_transaction_slice(state_manager.get_epoch(), &transaction.payload);
 
     result.map_err(|err| format!("{:?}", err))?;
 

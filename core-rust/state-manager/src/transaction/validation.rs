@@ -3,13 +3,13 @@ use crate::transaction::ValidatorTransaction;
 use scrypto::buffer::scrypto_decode;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{NotarizedTransaction, Validated};
-use transaction::validation::MAX_PAYLOAD_SIZE;
 use transaction::validation::{
     NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
 };
+use transaction::validation::{ValidationConfig, MAX_PAYLOAD_SIZE};
 
 pub struct UserTransactionValidator {
-    pub validator: NotarizedTransactionValidator,
+    pub base_validation_config: ValidationConfig,
     pub intent_hash_manager: TestIntentHashManager,
 }
 
@@ -31,25 +31,30 @@ impl UserTransactionValidator {
     /// Performs static validation only
     pub fn parse_and_validate_user_transaction_slice(
         &self,
+        epoch: u64, // Temporary
         transaction_payload: &[u8],
     ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
         let notarized_transaction =
             Self::parse_unvalidated_user_transaction_from_slice(transaction_payload)?;
-        self.validate_user_transaction(notarized_transaction)
+        self.validate_user_transaction(epoch, notarized_transaction)
     }
 
     /// Performs static validation only
     pub fn validate_user_transaction(
         &self,
+        epoch: u64, // Temporary
         transaction: NotarizedTransaction,
     ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
-        self.validator
-            .validate(transaction, &self.intent_hash_manager)
+        let mut config = self.base_validation_config;
+        config.current_epoch = epoch;
+        let validator = NotarizedTransactionValidator::new(config);
+
+        validator.validate(transaction, &self.intent_hash_manager)
     }
 }
 
 pub struct CommittedTransactionValidator {
-    pub validator: NotarizedTransactionValidator,
+    pub base_validation_config: ValidationConfig,
     pub intent_hash_manager: TestIntentHashManager,
 }
 
@@ -65,20 +70,24 @@ impl CommittedTransactionValidator {
 
     pub fn parse_and_validate_transaction_slice(
         &self,
+        epoch: u64, // Temporary
         transaction_payload: &[u8],
     ) -> Result<Validated<Transaction>, TransactionValidationError> {
         // TODO: Need a good way to do payload transaction size here
         let transaction = Self::parse_unvalidated_transaction_from_slice(transaction_payload)?;
-        self.validate_transaction(transaction)
+        self.validate_transaction(epoch, transaction)
     }
 
     fn validate_transaction(
         &self,
+        epoch: u64, // Temporary
         transaction: Transaction,
     ) -> Result<Validated<Transaction>, TransactionValidationError> {
+        let mut config = self.base_validation_config;
+        config.current_epoch = epoch;
+        let validator = NotarizedTransactionValidator::new(config);
         match transaction {
-            Transaction::User(notarized_transaction) => self
-                .validator
+            Transaction::User(notarized_transaction) => validator
                 .validate(notarized_transaction, &self.intent_hash_manager)
                 .map(|validated| Validated {
                     transaction: Transaction::User(validated.transaction),
