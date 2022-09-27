@@ -63,13 +63,13 @@
  */
 
 use std::future::Future;
+use std::sync::Arc;
 
 use axum::{
     routing::{get, post},
     Extension, Router,
 };
-use std::sync::{Arc, Mutex};
-
+use parking_lot::RwLock;
 use scrypto::prelude::*;
 use state_manager::jni::state_manager::ActualStateManager;
 
@@ -79,13 +79,13 @@ use handle_network_configuration as handle_provide_info_at_root_path;
 
 #[derive(Clone)]
 pub(crate) struct CoreApiState {
-    pub state_manager: Arc<Mutex<ActualStateManager>>,
+    pub state_manager: Arc<RwLock<ActualStateManager>>,
 }
 // TODO - try mapping request JSON errors into Response type
 pub async fn create_server<F>(
     bind_addr: &str,
     shutdown_signal: F,
-    state_manager: Arc<Mutex<ActualStateManager>>,
+    state_manager: Arc<RwLock<ActualStateManager>>,
 ) where
     F: Future<Output = ()>,
 {

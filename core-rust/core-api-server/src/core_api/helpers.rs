@@ -10,9 +10,7 @@ pub(crate) fn core_api_handler_empty_request<Response>(
     method: impl FnOnce(&mut ActualStateManager) -> Result<Response, RequestHandlingError>,
 ) -> Result<Json<Response>, RequestHandlingError> {
     let state_manager_arc = state.0.state_manager;
-    let mut state_manager = state_manager_arc
-        .lock()
-        .map_err(|_| server_error("Internal server error: Could not take state manager lock"))?;
+    let mut state_manager = state_manager_arc.write();
 
     let response = method(state_manager.deref_mut())?;
     Ok(Json(response))
@@ -25,9 +23,7 @@ pub(crate) fn core_api_handler<Request, Response>(
     method: impl FnOnce(&mut ActualStateManager, Request) -> Result<Response, RequestHandlingError>,
 ) -> Result<Json<Response>, RequestHandlingError> {
     let state_manager_arc = state.0.state_manager;
-    let mut state_manager = state_manager_arc
-        .lock()
-        .map_err(|_| server_error("Internal server error: Could not take state manager lock"))?;
+    let mut state_manager = state_manager_arc.write();
 
     let response = method(state_manager.deref_mut(), request_body)?;
     Ok(Json(response))

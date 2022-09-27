@@ -166,11 +166,9 @@ fn jni_state_manager_sbor_call_inner<Args: JavaStructure, Response: JavaStructur
     let args = Args::from_java(&vec_payload)?;
 
     let state_manager_arc = JNIStateManager::get_state_manager(env, j_state_manager);
-    let mut state_manager = state_manager_arc
-        .lock()
-        .expect("Can't acquire a state manager mutex lock");
+    let mut state_manager = state_manager_arc.write();
 
-    let response = method(state_manager.deref_mut(), args);
+    let response = method(&mut *state_manager, args);
     Ok(response)
 }
 
@@ -205,9 +203,7 @@ fn jni_state_manager_sbor_call_flatten_result_inner<
     let args = Args::from_java(&vec_payload)?;
 
     let state_manager_arc = JNIStateManager::get_state_manager(env, j_state_manager);
-    let mut state_manager = state_manager_arc
-        .lock()
-        .expect("Can't acquire a state manager mutex lock");
+    let mut state_manager = state_manager_arc.write();
 
     let response = method(state_manager.deref_mut(), args)?;
     Ok(response)

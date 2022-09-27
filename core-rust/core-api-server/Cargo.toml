@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 state-manager = { path = "../state-manager" }
+parking_lot = { version = "0.12" }
 
 # DEPENDENCIES ON RADIXDLT-SCRYPTO
 #
