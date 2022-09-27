@@ -82,4 +82,5 @@ pub(crate) use server::{create_server, CoreApiServerConfig, CoreApiState};
 
 pub(crate) mod models {
     pub(crate) use super::generated::models::*;
+    pub(crate) use super::generated::SCHEMA_VERSION;
 }

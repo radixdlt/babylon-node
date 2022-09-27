@@ -201,6 +201,25 @@ paths:
 ####################
 # v0 API Responses #
 ####################
+  "/v0/status/network-configuration":
+    post:
+      summary: Get Network Configuration
+      description: Returns the network configuration.
+      tags:
+        - Status
+      responses:
+        '200':
+          description: Network Configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetworkConfigurationResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   "/v0/transaction/submit":
     post:
       summary: Transaction Submit
@@ -1250,6 +1269,7 @@ components:
         - version
         - network
         - network_hrp_suffix
+        - well_known_addresses
       properties:
         version:
           description: Different versions regarding the node, network and api.
@@ -1267,6 +1287,26 @@ components:
         network_hrp_suffix:
           type: string
           description: The network suffix used for Bech32m HRPs used for addressing.
+        well_known_addresses:
+          type: object
+          description: Key addresses for this network.
+          required:
+            - account_package
+            - faucet
+            - ecdsa_secp256k1
+            - eddsa_ed25519
+            - xrd
+          properties:
+            account_package:
+              type: string
+            faucet:
+              type: string
+            ecdsa_secp256k1:
+              type: string
+            eddsa_ed25519:
+              type: string
+            xrd:
+              type: string
 ###################################
 # REQUEST: /status/network-status #
 ###################################

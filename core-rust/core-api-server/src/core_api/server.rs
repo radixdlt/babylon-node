@@ -64,13 +64,15 @@
 
 use std::future::Future;
 
-use axum::{routing::post, Extension, Router};
+use axum::{routing::{post, get}, Extension, Router};
 use std::sync::{Arc, Mutex};
 
 use scrypto::prelude::*;
 use state_manager::jni::state_manager::ActualStateManager;
 
-use super::handlers::*;
+use super::{handlers::*, RequestHandlingError, not_found_error};
+
+use handle_network_configuration as handle_provide_info_at_root_path;
 
 #[derive(Clone)]
 pub(crate) struct CoreApiState {
@@ -87,6 +89,8 @@ pub async fn create_server<F>(
     let core_api_state = CoreApiState { state_manager };
 
     let router = Router::new()
+        // This only adds a route for /core, /core/ doesn't seem possible using /nest
+        .route("/", get(handle_provide_info_at_root_path))
         .route(
             "/status/network-configuration",
             post(handle_network_configuration),
@@ -95,6 +99,12 @@ pub async fn create_server<F>(
         .route("/transaction/submit", post(handle_transaction_submit))
         .route("/transaction/preview", post(handle_transaction_preview))
         .route("/transaction/stream", post(handle_transaction_stream))
+        .route("/v0", get(handle_provide_info_at_root_path))
+        .route("/v0/", get(handle_provide_info_at_root_path))
+        .route(
+            "/v0/status/network-configuration",
+            post(handle_network_configuration),
+        )
         .route("/v0/transaction/submit", post(handle_v0_transaction_submit))
         .route("/v0/transaction/status", post(handle_v0_transaction_status))
         .route(
@@ -108,7 +118,9 @@ pub async fn create_server<F>(
         .route("/v0/state/package", post(handle_v0_state_package))
         .layer(Extension(core_api_state));
 
-    let prefixed_router = Router::new().nest("/core", router);
+    let prefixed_router = Router::new()
+        .nest("/core", router)
+        .route("/", get(handle_no_core_path));
 
     let bind_addr = bind_addr.parse().expect("Failed to parse bind address");
 
@@ -117,6 +129,12 @@ pub async fn create_server<F>(
         .with_graceful_shutdown(shutdown_signal)
         .await
         .unwrap();
+}
+
+#[tracing::instrument(err(Debug))]
+pub(crate) async fn handle_no_core_path(
+) -> Result<(), RequestHandlingError> {
+    Err(not_found_error("Try /core"))
 }
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]

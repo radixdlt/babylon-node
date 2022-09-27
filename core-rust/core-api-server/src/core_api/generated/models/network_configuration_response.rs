@@ -21,14 +21,17 @@ pub struct NetworkConfigurationResponse {
     /// The network suffix used for Bech32m HRPs used for addressing.
     #[serde(rename = "network_hrp_suffix")]
     pub network_hrp_suffix: String,
+    #[serde(rename = "well_known_addresses")]
+    pub well_known_addresses: Box<crate::core_api::generated::models::NetworkConfigurationResponseWellKnownAddresses>,
 }
 
 impl NetworkConfigurationResponse {
-    pub fn new(version: crate::core_api::generated::models::NetworkConfigurationResponseVersion, network: String, network_hrp_suffix: String) -> NetworkConfigurationResponse {
+    pub fn new(version: crate::core_api::generated::models::NetworkConfigurationResponseVersion, network: String, network_hrp_suffix: String, well_known_addresses: crate::core_api::generated::models::NetworkConfigurationResponseWellKnownAddresses) -> NetworkConfigurationResponse {
         NetworkConfigurationResponse {
             version: Box::new(version),
             network,
             network_hrp_suffix,
+            well_known_addresses: Box::new(well_known_addresses),
         }
     }
 }

@@ -52,6 +52,8 @@ pub mod network_configuration_response;
 pub use self::network_configuration_response::NetworkConfigurationResponse;
 pub mod network_configuration_response_version;
 pub use self::network_configuration_response_version::NetworkConfigurationResponseVersion;
+pub mod network_configuration_response_well_known_addresses;
+pub use self::network_configuration_response_well_known_addresses::NetworkConfigurationResponseWellKnownAddresses;
 pub mod network_status_request;
 pub use self::network_status_request::NetworkStatusRequest;
 pub mod network_status_response;
