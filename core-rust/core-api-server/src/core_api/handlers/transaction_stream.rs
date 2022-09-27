@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use transaction::manifest;
 use transaction::model::NotarizedTransaction;
 
+#[tracing::instrument(skip(state))]
 pub(crate) async fn handle_transaction_stream(
     state: Extension<CoreApiState>,
     request: Json<models::CommittedTransactionsRequest>,
@@ -20,6 +21,7 @@ pub(crate) async fn handle_transaction_stream(
     core_api_handler(state, request, handle_transaction_stream_internal)
 }
 
+#[tracing::instrument(err(Debug), skip(state_manager))]
 fn handle_transaction_stream_internal(
     state_manager: &mut ActualStateManager,
     request: models::CommittedTransactionsRequest,
@@ -99,6 +101,7 @@ fn handle_transaction_stream_internal(
     })
 }
 
+#[tracing::instrument(skip_all)]
 pub fn to_api_committed_transaction(
     network: &NetworkDefinition,
     tx: Option<NotarizedTransaction>,
@@ -119,6 +122,7 @@ pub fn to_api_committed_transaction(
     })
 }
 
+#[tracing::instrument(skip_all)]
 fn to_api_notarized_transaction(
     tx: NotarizedTransaction,
     network: &NetworkDefinition,

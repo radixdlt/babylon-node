@@ -7,6 +7,7 @@ use state_manager::{LedgerTransactionReceipt, PreviewRequest};
 use transaction::manifest;
 use transaction::model::PreviewFlags;
 
+#[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_transaction_preview(
     state: Extension<CoreApiState>,
     request: Json<models::TransactionPreviewRequest>,
@@ -48,7 +49,7 @@ fn parse_preview_request(
         .map_err(|err| err.into_response_error("blobs"))?;
 
     let manifest = manifest::compile(&request.manifest, network, manifest_blobs)
-        .map_err(|err| client_error(&format!("Invalid manifest - {:?}", err)))?;
+        .map_err(|err| client_error(format!("Invalid manifest - {:?}", err)))?;
 
     let signer_public_keys = request
         .signer_public_keys

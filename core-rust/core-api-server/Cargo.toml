@@ -33,9 +33,18 @@ serde_json = "1.0"
 hex = { version = "0.4.3", default-features = false }
 futures = "0.3"
 
+tracing = { version = "0.1" }
+tracing-opentelemetry = "0.18"
+tracing-subscriber = { version = "0.3.15" }
+opentelemetry = { version = "0.18", default-features = false, features = [
+  "rt-tokio",
+  "trace",
+] }
+opentelemetry-jaeger = { version = "0.17", features = ["rt-tokio"] }
+
 ### TYPES FOR THE SERVER
 # Axum - see https://docs.rs/axum/latest/axum/#required-dependencies
-axum = { version = "0.5.15", features = ["http1", "json"] } 
+axum = { version = "0.5.15", features = ["http1", "json"] }
 # Hyper - see https://docs.rs/axum/latest/axum/#required-dependencies
 hyper = { version = "0.14.20", features = ["server", "http1"] }
 # Tokio - see https://docs.rs/tokio/latest/tokio/

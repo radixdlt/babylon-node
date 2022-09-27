@@ -6,6 +6,7 @@ use state_manager::transaction::UserTransactionValidator;
 use state_manager::MempoolAddError;
 use transaction::model::NotarizedTransaction;
 
+#[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_transaction_submit(
     state: Extension<CoreApiState>,
     request: Json<models::TransactionSubmitRequest>,
@@ -13,6 +14,7 @@ pub(crate) async fn handle_transaction_submit(
     core_api_handler(state, request, handle_transaction_submit_internal)
 }
 
+#[tracing::instrument(skip(state_manager), err(Debug))]
 fn handle_transaction_submit_internal(
     state_manager: &mut ActualStateManager,
     request: models::TransactionSubmitRequest,
@@ -32,7 +34,7 @@ fn handle_transaction_submit_internal(
             max_size: _,
         }) => Err(client_error("Mempool is full")),
         Err(MempoolAddError::Rejected(reason)) => {
-            Err(client_error(&format!("Rejected: {}", reason)))
+            Err(client_error(format!("Rejected: {}", reason)))
         }
     }
 }

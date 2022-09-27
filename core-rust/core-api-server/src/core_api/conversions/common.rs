@@ -2,6 +2,7 @@ use sbor::decode_any;
 
 use crate::core_api::*;
 
+#[tracing::instrument(skip_all)]
 pub fn to_hex<T: AsRef<[u8]>>(v: T) -> String {
     hex::encode(v)
 }

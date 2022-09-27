@@ -77,6 +77,9 @@ use std::str;
 use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::runtime::Runtime as TokioRuntime;
 
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+
 const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";
 
 pub struct RunningServer {
@@ -135,6 +138,32 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
 
     let bind_addr = format!("{}:{}", config.bind_interface, config.port);
     tokio_runtime.spawn(async move {
+        match std::env::var("JAEGER_AGENT_ENDPOINT") {
+            Ok(jaeger_agent_endpoint) => {
+                let tracer = opentelemetry_jaeger::new_agent_pipeline()
+                    .with_endpoint(jaeger_agent_endpoint)
+                    .with_auto_split_batch(true)
+                    .with_service_name("core_api")
+                    .install_batch(opentelemetry::runtime::Tokio)
+                    .unwrap();
+
+                let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+
+                // Trying to initialize a global logger here, and carry on if this fails.
+                let _ = tracing_subscriber::registry()
+                    .with(tracing_subscriber::filter::LevelFilter::DEBUG)
+                    .with(opentelemetry)
+                    .with(tracing_subscriber::fmt::layer())
+                    .try_init();
+            }
+            Err(_) => {
+                let _ = tracing_subscriber::registry()
+                    .with(tracing_subscriber::filter::LevelFilter::DEBUG)
+                    .with(tracing_subscriber::fmt::layer())
+                    .try_init();
+            }
+        }
+
         create_server(
             &bind_addr,
             shutdown_signal_receiver.map(|_| ()),
