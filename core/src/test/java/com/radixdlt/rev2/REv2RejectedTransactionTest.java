@@ -131,7 +131,7 @@ public final class REv2RejectedTransactionTest {
     var proposalGenerator = new ControlledProposerGenerator();
 
     try (var test = createTest(proposalGenerator)) {
-      var rejectableTransaction = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_1;
+      var rejectableTransaction = REv2TestTransactions.constructValidButRejectTransaction(1, 1);
 
       // Act: Submit transaction to mempool and run consensus
       test.startAllNodes();

@@ -120,7 +120,7 @@ public class REv2RejectedTransactionMempoolTest {
     try (var test = createTest(1)) {
       // Arrange
       test.startAllNodes();
-      var rejectableTransaction = REv2TestTransactions.STATICALLY_VALID_BUT_REJECT_TXN_1;
+      var rejectableTransaction = REv2TestTransactions.constructValidButRejectTransaction(0, 1);
       var mempoolInserter =
           test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
       try {
@@ -130,7 +130,7 @@ public class REv2RejectedTransactionMempoolTest {
       test.runForCount(100, onlyConsensusEvents());
 
       // Act: Submit valid transaction to mempool
-      mempoolInserter.addTransaction(REv2TestTransactions.constructValidTransaction(0));
+      mempoolInserter.addTransaction(REv2TestTransactions.constructValidTransaction(0, 0));
 
       // Assert
       var mempoolReader = test.getInstance(0, MempoolReader.class);
@@ -156,18 +156,18 @@ public class REv2RejectedTransactionMempoolTest {
       // Arrange: Two conflicting transactions in mempool
       test.startAllNodes();
       var accountTxn =
-          REv2TestTransactions.constructNewAccountTransaction(NetworkDefinition.INT_TEST_NET, 0);
+          REv2TestTransactions.constructNewAccountTransaction(NetworkDefinition.INT_TEST_NET, 0, 0);
       var executedTransaction = executeTransaction(test, accountTxn);
       var accountAddress = executedTransaction.newComponentAddresses().get(0);
       var mempoolInserter =
           test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
       var transferTxn1 =
           REv2TestTransactions.constructNewAccountFromAccountTransaction(
-              NetworkDefinition.INT_TEST_NET, accountAddress, 0);
+              NetworkDefinition.INT_TEST_NET, accountAddress, 0, 0);
       mempoolInserter.addTransaction(transferTxn1);
       var transferTxn2 =
           REv2TestTransactions.constructNewAccountFromAccountTransaction(
-              NetworkDefinition.INT_TEST_NET, accountAddress, 1);
+              NetworkDefinition.INT_TEST_NET, accountAddress, 0, 1);
       mempoolInserter.addTransaction(transferTxn2);
 
       // Act

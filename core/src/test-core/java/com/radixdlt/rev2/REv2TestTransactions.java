@@ -78,16 +78,20 @@ public final class REv2TestTransactions {
   // These have to come first for static ordering issues
   public static final ECKeyPair DEFAULT_NOTARY = generateKeyPair(1);
 
-  public static final RawTransaction STATICALLY_VALID_BUT_REJECT_TXN_1 =
-      constructTransaction(
-          NetworkDefinition.INT_TEST_NET, "CLEAR_AUTH_ZONE;", 0, List.of(generateKeyPair(10)));
-
   private static ECKeyPair generateKeyPair(int keySource) {
     return PrivateKeys.numeric(keySource).findFirst().orElseThrow();
   }
 
+  public static RawTransaction constructValidButRejectTransaction(long fromEpoch, long nonce) {
+    // Note - rejects due to lack of fee payment
+    final var manifest = "CLEAR_AUTH_ZONE;";
+    final var signatories = List.of(generateKeyPair(10));
+    return constructTransaction(
+        NetworkDefinition.INT_TEST_NET, manifest, fromEpoch, nonce, signatories);
+  }
+
   public static byte[] constructValidIntentBytes(
-      NetworkDefinition network, long nonce, PublicKey notary) {
+      NetworkDefinition network, long fromEpoch, long nonce, PublicKey notary) {
     final var addressing = Addressing.ofNetwork(network);
     final var faucetAddress =
         addressing.encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
@@ -99,7 +103,7 @@ public final class REv2TestTransactions {
         CLEAR_AUTH_ZONE;
     """,
             faucetAddress);
-    var header = TransactionHeader.defaults(network, nonce, notary, false);
+    var header = TransactionHeader.defaults(network, fromEpoch, 100, nonce, notary, false);
     return TransactionBuilder.createIntent(network, header, manifest, List.of());
   }
 
@@ -140,18 +144,19 @@ public final class REv2TestTransactions {
   }
 
   public static RawTransaction constructNewAccountFromAccountTransaction(
-      NetworkDefinition networkDefinition, ComponentAddress from, long nonce) {
+      NetworkDefinition networkDefinition, ComponentAddress from, long fromEpoch, long nonce) {
     var manifest = constructNewAccountFromAccountManifest(networkDefinition, from);
     var signatories = List.<ECKeyPair>of();
 
     return constructTransaction(
-        networkDefinition, nonce, manifest, DEFAULT_NOTARY, false, signatories);
+        networkDefinition, fromEpoch, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
   public static byte[] constructNewAccountIntent(
-      NetworkDefinition networkDefinition, long nonce, PublicKey notary) {
+      NetworkDefinition networkDefinition, long fromEpoch, long nonce, PublicKey notary) {
     final var manifest = constructNewAccountManifest(networkDefinition);
-    final var header = TransactionHeader.defaults(networkDefinition, nonce, notary, false);
+    final var header =
+        TransactionHeader.defaults(networkDefinition, fromEpoch, 100, nonce, notary, false);
     return TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
   }
 
@@ -166,33 +171,38 @@ public final class REv2TestTransactions {
     return REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of());
   }
 
-  public static RawTransaction constructValidTransaction(long nonce) {
+  public static RawTransaction constructValidTransaction(long fromEpoch, long nonce) {
     var intentBytes =
         constructValidIntentBytes(
-            NetworkDefinition.INT_TEST_NET, nonce, DEFAULT_NOTARY.getPublicKey().toPublicKey());
+            NetworkDefinition.INT_TEST_NET,
+            fromEpoch,
+            nonce,
+            DEFAULT_NOTARY.getPublicKey().toPublicKey());
     return REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of());
   }
 
   public static RawTransaction constructNewAccountTransaction(
-      NetworkDefinition networkDefinition, long nonce) {
+      NetworkDefinition networkDefinition, long fromEpoch, long nonce) {
     var manifest = constructNewAccountManifest(networkDefinition);
     var signatories = List.<ECKeyPair>of();
 
     return constructTransaction(
-        networkDefinition, nonce, manifest, DEFAULT_NOTARY, false, signatories);
+        networkDefinition, fromEpoch, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
   public static RawTransaction constructTransaction(
       NetworkDefinition networkDefinition,
       String manifest,
+      long fromEpoch,
       long nonce,
       List<ECKeyPair> signatories) {
     return constructTransaction(
-        networkDefinition, nonce, manifest, DEFAULT_NOTARY, false, signatories);
+        networkDefinition, fromEpoch, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
   public static RawTransaction constructTransaction(
       NetworkDefinition networkDefinition,
+      long fromEpoch,
       long nonce,
       String manifest,
       ECKeyPair notary,
@@ -201,7 +211,12 @@ public final class REv2TestTransactions {
     // Build intent
     final var header =
         TransactionHeader.defaults(
-            networkDefinition, nonce, notary.getPublicKey().toPublicKey(), notaryIsSignatory);
+            networkDefinition,
+            fromEpoch,
+            100,
+            nonce,
+            notary.getPublicKey().toPublicKey(),
+            notaryIsSignatory);
     var intentBytes =
         TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
 
