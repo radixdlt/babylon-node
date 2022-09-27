@@ -532,16 +532,26 @@ where
         let mut payload_hashes = Vec::new();
         let mut intent_hashes = Vec::new();
 
-        let current_epoch = self.get_epoch();
-        let transactions_to_commit = commit_request
-            .transaction_payloads
-            .into_iter()
-            .map(|t| {
-                self.committed_transaction_validator
-                    .parse_and_validate_transaction_slice(current_epoch, &t)
-                    .expect("Error on Byzantine quorum")
-            })
-            .collect::<Vec<_>>();
+        let transactions_to_commit = {
+            let mut current_epoch = self.get_epoch();
+            commit_request
+                .transaction_payloads
+                .into_iter()
+                .map(|t| {
+                    let txn = self
+                        .committed_transaction_validator
+                        .parse_and_validate_transaction_slice(current_epoch, &t)
+                        .expect("Error on Byzantine quorum");
+                    if let Transaction::Validator(ValidatorTransaction::EpochUpdate(epoch)) =
+                        txn.transaction()
+                    {
+                        current_epoch = *epoch;
+                    }
+
+                    txn
+                })
+                .collect::<Vec<_>>()
+        };
 
         let mut db_transaction = self.store.create_db_transaction();
         let ids_count: u64 = payload_hashes
