@@ -9,11 +9,11 @@ pub(crate) async fn handle_v0_state_component(
     state: Extension<CoreApiState>,
     request: Json<models::V0StateComponentRequest>,
 ) -> Result<Json<models::V0StateComponentResponse>, RequestHandlingError> {
-    core_api_handler(state, request, handle_v0_state_component_internal)
+    core_api_read_handler(state, request, handle_v0_state_component_internal)
 }
 
 fn handle_v0_state_component_internal(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     request: models::V0StateComponentRequest,
 ) -> Result<models::V0StateComponentResponse, RequestHandlingError> {
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);

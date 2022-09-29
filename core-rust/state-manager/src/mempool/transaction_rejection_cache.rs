@@ -154,7 +154,7 @@ impl RejectionCache {
     }
 
     pub fn peek_all_rejected_payloads_for_intent(
-        &mut self,
+        &self,
         intent_hash: &IntentHash,
     ) -> HashMap<UserPayloadHash, RejectionRecord> {
         match self.intent_lookup.get(intent_hash) {
