@@ -105,25 +105,22 @@ impl SimpleMempool {
         let intent_hash = transaction.intent_hash;
 
         match self.data.entry(payload_hash) {
-            Entry::Occupied(_) => Err(MempoolAddError::Duplicate),
-
+            Entry::Occupied(_) => Err(MempoolAddError::Duplicate)?,
             Entry::Vacant(e) => {
                 // Insert Transaction into vacant entry in the mempool.
                 e.insert(MempoolData::create(transaction));
-
-                // Add intent lookup
-                match self.intent_lookup.entry(intent_hash) {
-                    Entry::Occupied(mut e) => {
-                        e.get_mut().insert(payload_hash);
-                    }
-                    Entry::Vacant(e) => {
-                        e.insert(HashSet::from([payload_hash]));
-                    }
-                }
-
-                Ok(())
             }
-        }
+        };
+
+        // Add intent lookup
+        self.intent_lookup
+            .entry(intent_hash)
+            .and_modify(|e| {
+                e.insert(payload_hash);
+            })
+            .or_insert_with(|| HashSet::from([payload_hash]));
+
+        Ok(())
     }
 
     pub fn check_add_would_be_possible(
