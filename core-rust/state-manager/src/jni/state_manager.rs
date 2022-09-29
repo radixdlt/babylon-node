@@ -62,6 +62,8 @@
  * permissions under this License.
  */
 
+use std::sync::{Arc, MutexGuard};
+
 use crate::jni::java_structure::*;
 use crate::jni::utils::*;
 use crate::mempool::simple_mempool::SimpleMempool;
@@ -71,11 +73,9 @@ use crate::store::{DatabaseConfig, StateManagerDatabase};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
-
 use parking_lot::RwLock;
-use scrypto::core::NetworkDefinition;
 
-use std::sync::{Arc, MutexGuard};
+use scrypto::core::NetworkDefinition;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";
 

@@ -91,6 +91,7 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
     jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_add)
 }
 
+#[tracing::instrument(skip_all)]
 fn do_add(
     state_manager: &mut ActualStateManager,
     args: JavaRawTransaction,
@@ -115,7 +116,7 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(
+    jni_state_manager_sbor_read_call(
         env,
         j_state_manager,
         request_payload,
@@ -123,8 +124,9 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsForPropo
     )
 }
 
+#[tracing::instrument(skip_all)]
 fn do_get_transactions_for_proposal(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     args: (u32, Vec<JavaPayloadHash>),
 ) -> Vec<JavaRawTransaction> {
     let (count, prepared_transactions) = args;
@@ -153,10 +155,11 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_get_count)
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_get_count)
 }
 
-fn do_get_count(state_manager: &mut ActualStateManager, _args: ()) -> i32 {
+#[tracing::instrument(skip_all)]
+fn do_get_count(state_manager: &ActualStateManager, _args: ()) -> i32 {
     state_manager.mempool.get_count().try_into().unwrap()
 }
 
@@ -175,6 +178,7 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getTransactionsToRelay(
     )
 }
 
+#[tracing::instrument(skip_all)]
 fn do_get_transactions_to_relay(
     state_manager: &mut ActualStateManager,
     _args: (),
