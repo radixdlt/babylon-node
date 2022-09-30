@@ -164,17 +164,10 @@ impl JNIStateManager {
         env: &JNIEnv,
         j_state_manager: JObject,
     ) -> Arc<RwLock<ActualStateManager>> {
-        let state_manager = {
-            let jni_state_manager: MutexGuard<JNIStateManager> = env
-                .get_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
-                .unwrap();
-            let state_manager = jni_state_manager.state_manager.clone();
-            // Ensure the JNI mutex lock is released
-            drop(jni_state_manager);
-            state_manager
-        };
-
-        state_manager
+        let jni_state_manager: MutexGuard<JNIStateManager> = env
+            .get_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
+            .unwrap();
+        jni_state_manager.state_manager.clone()
     }
 }
 
