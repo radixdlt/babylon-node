@@ -34,7 +34,7 @@ impl From<ValidatorTransaction> for Validated<ValidatorTransaction> {
                     component_address: SYS_FAUCET_COMPONENT,
                     ident: "lock_fee".to_string(),
                 },
-                args: args!(Decimal::from(1000u32)),
+                args: args!(Decimal::from(100u32)),
             },
             instruction,
         ];

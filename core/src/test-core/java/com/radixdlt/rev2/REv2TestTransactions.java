@@ -99,7 +99,7 @@ public final class REv2TestTransactions {
     var manifest =
         String.format(
             """
-        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("10");
+        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
         CLEAR_AUTH_ZONE;
     """,
             faucetAddress);
@@ -117,7 +117,7 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                    CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("1000");
+                    CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
                     CALL_METHOD ComponentAddress("%s") "free_xrd";
                     TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
                     CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("xrd");
@@ -135,7 +135,7 @@ public final class REv2TestTransactions {
 
     return String.format(
         """
-                        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("500");
+                        CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
                         CALL_METHOD ComponentAddress("%s") "withdraw_by_amount" Decimal("500") ResourceAddress("%s");
                         TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
                         CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("xrd");
