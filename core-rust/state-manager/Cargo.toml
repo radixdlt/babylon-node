@@ -23,11 +23,11 @@ tracing = { version = "0.1" }
 # 
 # Ensure this version is also identically updated in ../core-api-server/Cargo.toml
 #
-sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-26316e417" }
-scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-26316e417" }
-transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-26316e417" }
-radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-26316e417" }
-radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-26316e417" }
+sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-6e5b037b7" }
+scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-6e5b037b7" }
+transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-6e5b037b7" }
+radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-6e5b037b7" }
+radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-6e5b037b7" }
 
 # Non-Radix Engine Dependencies:
 rocksdb = { version = "0.19.0" }
