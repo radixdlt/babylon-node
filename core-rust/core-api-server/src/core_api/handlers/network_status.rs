@@ -7,11 +7,11 @@ pub(crate) async fn handle_network_status(
     state: Extension<CoreApiState>,
     request: Json<models::NetworkStatusRequest>,
 ) -> Result<Json<models::NetworkStatusResponse>, RequestHandlingError> {
-    core_api_handler(state, request, handle_network_status_internal)
+    core_api_read_handler(state, request, handle_network_status_internal)
 }
 
 pub(crate) fn handle_network_status_internal(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     request: models::NetworkStatusRequest,
 ) -> Result<models::NetworkStatusResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;

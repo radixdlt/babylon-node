@@ -84,13 +84,10 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_verify(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_verify)
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_verify)
 }
 
-fn do_verify(
-    state_manager: &mut ActualStateManager,
-    args: JavaRawTransaction,
-) -> Result<(), String> {
+fn do_verify(state_manager: &ActualStateManager, args: JavaRawTransaction) -> Result<(), String> {
     let transaction = args;
 
     let result = state_manager
@@ -112,6 +109,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_saveVertexS
     jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_save_vertex_store)
 }
 
+#[tracing::instrument(skip_all)]
 fn do_save_vertex_store(state_manager: &mut ActualStateManager, args: Vec<u8>) {
     let vertex_store_bytes: Vec<u8> = args;
     state_manager.save_vertex_store(vertex_store_bytes);
@@ -127,6 +125,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
     jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_prepare)
 }
 
+#[tracing::instrument(skip_all)]
 fn do_prepare(
     state_manager: &mut ActualStateManager,
     args: JavaPrepareRequest,
@@ -148,6 +147,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
     jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_commit)
 }
 
+#[tracing::instrument(skip_all)]
 fn do_commit(state_manager: &mut ActualStateManager, args: JavaCommitRequest) {
     let commit_request = args;
     state_manager.commit(commit_request.into());
@@ -160,10 +160,10 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_componentXr
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, get_component_xrd)
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, get_component_xrd)
 }
 
-fn get_component_xrd(state_manager: &mut ActualStateManager, args: ComponentAddress) -> Decimal {
+fn get_component_xrd(state_manager: &ActualStateManager, args: ComponentAddress) -> Decimal {
     let component_address = args;
     let resources = state_manager.get_component_resources(component_address);
 
@@ -179,10 +179,10 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_epoch(
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_get_epoch)
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_get_epoch)
 }
 
-fn do_get_epoch(state_manager: &mut ActualStateManager, _args: ()) -> u64 {
+fn do_get_epoch(state_manager: &ActualStateManager, _args: ()) -> u64 {
     state_manager.get_epoch()
 }
 

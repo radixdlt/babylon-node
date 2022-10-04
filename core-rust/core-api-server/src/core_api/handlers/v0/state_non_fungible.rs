@@ -8,11 +8,11 @@ pub(crate) async fn handle_v0_state_non_fungible(
     state: Extension<CoreApiState>,
     request: Json<models::V0StateNonFungibleRequest>,
 ) -> Result<Json<models::V0StateNonFungibleResponse>, RequestHandlingError> {
-    core_api_handler(state, request, handle_v0_state_non_fungible_internal)
+    core_api_read_handler(state, request, handle_v0_state_non_fungible_internal)
 }
 
 fn handle_v0_state_non_fungible_internal(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     request: models::V0StateNonFungibleRequest,
 ) -> Result<models::V0StateNonFungibleResponse, RequestHandlingError> {
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);

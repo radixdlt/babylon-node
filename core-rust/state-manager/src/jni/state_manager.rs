@@ -62,6 +62,8 @@
  * permissions under this License.
  */
 
+use std::sync::{Arc, MutexGuard};
+
 use crate::jni::java_structure::*;
 use crate::jni::utils::*;
 use crate::mempool::simple_mempool::SimpleMempool;
@@ -71,10 +73,9 @@ use crate::store::{DatabaseConfig, StateManagerDatabase};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
+use parking_lot::RwLock;
 
 use scrypto::core::NetworkDefinition;
-
-use std::sync::{Arc, Mutex, MutexGuard};
 
 const POINTER_JNI_FIELD_NAME: &str = "rustStateManagerPointer";
 
@@ -114,7 +115,7 @@ pub struct StateManagerConfig {
 pub type ActualStateManager = StateManager<StateManagerDatabase>;
 
 pub struct JNIStateManager {
-    pub state_manager: Arc<Mutex<ActualStateManager>>,
+    pub state_manager: Arc<RwLock<ActualStateManager>>,
 }
 
 impl JNIStateManager {
@@ -137,7 +138,7 @@ impl JNIStateManager {
         let mempool = SimpleMempool::new(mempool_config);
 
         // Build the state manager.
-        let state_manager = Arc::new(Mutex::new(StateManager::new(
+        let state_manager = Arc::new(parking_lot::const_rwlock(StateManager::new(
             config.network_definition,
             config.state_config.rounds_per_epoch,
             mempool,
@@ -162,18 +163,11 @@ impl JNIStateManager {
     pub fn get_state_manager(
         env: &JNIEnv,
         j_state_manager: JObject,
-    ) -> Arc<Mutex<ActualStateManager>> {
-        let state_manager = {
-            let jni_state_manager: MutexGuard<JNIStateManager> = env
-                .get_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
-                .unwrap();
-            let state_manager = jni_state_manager.state_manager.clone();
-            // Ensure the JNI mutex lock is released
-            drop(jni_state_manager);
-            state_manager
-        };
-
-        state_manager
+    ) -> Arc<RwLock<ActualStateManager>> {
+        let jni_state_manager: MutexGuard<JNIStateManager> = env
+            .get_rust_field(j_state_manager, POINTER_JNI_FIELD_NAME)
+            .unwrap();
+        jni_state_manager.state_manager.clone()
     }
 }
 
