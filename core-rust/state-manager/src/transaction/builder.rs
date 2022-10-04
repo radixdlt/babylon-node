@@ -79,7 +79,7 @@ pub fn create_set_epoch_intent(
     epoch: u64,
 ) -> TransactionIntent {
     let manifest = ManifestBuilder::new(network_definition)
-        .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
         .call_native_method(
             Receiver::Ref(RENodeId::System),
             NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch),
@@ -107,7 +107,7 @@ pub fn create_new_account_intent_bytes(
     public_key: PublicKey,
 ) -> Vec<u8> {
     let manifest = ManifestBuilder::new(network_definition)
-        .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
         .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
@@ -142,7 +142,7 @@ pub fn create_100kb_txn_intent(
     let access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> = HashMap::new();
 
     let manifest = ManifestBuilder::new(&network_definition)
-        .lock_fee(1000.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
         .create_resource(
             ResourceType::NonFungible,
             metadata,
