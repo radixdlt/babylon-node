@@ -2,6 +2,7 @@ use crate::core_api::*;
 
 use state_manager::jni::state_manager::ActualStateManager;
 
+use state_manager::mempool::transaction_rejection_cache::RejectionReason;
 use state_manager::transaction::UserTransactionValidator;
 use state_manager::MempoolAddError;
 use transaction::model::NotarizedTransaction;
@@ -23,7 +24,8 @@ fn handle_transaction_submit_internal(
     let notarized_transaction = extract_unvalidated_transaction(&request.notarized_transaction_hex)
         .map_err(|err| err.into_response_error("notarized_transaction"))?;
 
-    let result = state_manager.check_for_rejection_and_add_to_mempool(notarized_transaction);
+    let result =
+        state_manager.check_for_rejection_and_add_to_mempool_from_core_api(notarized_transaction);
 
     match result {
         Ok(_) => Ok(models::TransactionSubmitResponse::new(false)),
@@ -33,6 +35,16 @@ fn handle_transaction_submit_internal(
             max_size: _,
         }) => Err(client_error("Mempool is full")),
         Err(MempoolAddError::Rejected(reason)) => {
+            let prometheus_rejection_dimension = match reason {
+                RejectionReason::FromExecution(_) => "ExecutionError",
+                RejectionReason::ValidationError(_) => "ValidationError",
+                RejectionReason::IntentHashCommitted => "IntentHashCommitted",
+            };
+            state_manager
+                .counters
+                .mempool_submission_rejected_count
+                .with_label_values(&["CoreApi", prometheus_rejection_dimension])
+                .inc();
             Err(client_error(format!("Rejected: {}", reason)))
         }
     }

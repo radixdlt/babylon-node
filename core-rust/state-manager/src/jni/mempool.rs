@@ -65,6 +65,7 @@
 use std::collections::HashSet;
 
 use crate::jni::state_manager::ActualStateManager;
+use crate::mempool::transaction_rejection_cache::RejectionReason;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -104,9 +105,9 @@ fn do_add(
         )?;
 
     state_manager
-        .check_for_rejection_and_add_to_mempool(notarized_transaction)
+        .check_for_rejection_and_add_to_mempool_from_mempool_sync(notarized_transaction)
         .map(|_| transaction.payload_hash)
-        .map_err(|err| err.into())
+        .map_err(Into::into)
 }
 
 #[no_mangle]

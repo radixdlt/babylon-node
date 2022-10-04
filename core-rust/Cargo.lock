@@ -296,6 +296,7 @@ dependencies = [
  "opentelemetry",
  "opentelemetry-jaeger",
  "parking_lot",
+ "prometheus",
  "radix-engine",
  "radix-engine-stores",
  "sbor",
@@ -1240,6 +1241,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "prometheus"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45c8babc29389186697fe5a2a4859d697825496b83db5d0b65271cdc0488e88c"
+dependencies = [
+ "cfg-if",
+ "fnv",
+ "lazy_static",
+ "memchr",
+ "parking_lot",
+ "thiserror",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1649,6 +1664,7 @@ dependencies = [
  "jni",
  "lru",
  "parking_lot",
+ "prometheus",
  "radix-engine",
  "radix-engine-stores",
  "rocksdb",

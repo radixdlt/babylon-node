@@ -191,8 +191,8 @@ impl SimpleMempool {
         self.data.clone()
     }
 
-    pub fn remove_transaction(&mut self, hash: &UserPayloadHash) {
-        self.data.remove(hash);
+    pub fn remove_transaction(&mut self, hash: &UserPayloadHash) -> Option<MempoolData> {
+        self.data.remove(hash)
     }
 
     pub fn get_payload_hashes_for_intent(&self, intent_hash: &IntentHash) -> Vec<UserPayloadHash> {

@@ -34,6 +34,7 @@ serde_json = "1.0"
 hex = { version = "0.4.3", default-features = false }
 futures = "0.3"
 
+prometheus = { version = "0.13.2", default-features = false, features = [] }
 tracing = { version = "0.1" }
 tracing-opentelemetry = "0.18"
 tracing-subscriber = { version = "0.3.15" }
@@ -47,7 +48,9 @@ opentelemetry-jaeger = { version = "0.17", features = ["rt-tokio"] }
 # Axum - see https://docs.rs/axum/latest/axum/#required-dependencies
 axum = { version = "0.5.15", features = ["http1", "json"] }
 # Tower HTTP - Axum middleware
-tower-http = { version = "0.3.4", default-features = false, features = ["limit"] }
+tower-http = { version = "0.3.4", default-features = false, features = [
+  "limit",
+] }
 # Hyper - see https://docs.rs/axum/latest/axum/#required-dependencies
 hyper = { version = "0.14.20", features = ["server", "http1"] }
 # Tokio - see https://docs.rs/tokio/latest/tokio/

@@ -98,6 +98,27 @@ extern "system" fn Java_com_radixdlt_statemanager_StateManager_cleanup(
     JNIStateManager::cleanup(&env, j_state_manager);
 }
 
+fn do_prometheus_metrics(state_manager: &ActualStateManager, _args: ()) -> String {
+    use prometheus::Encoder;
+    let encoder = prometheus::TextEncoder::new();
+    let mut buffer = vec![];
+    encoder
+        .encode(&state_manager.prometheus_registry.gather(), &mut buffer)
+        .unwrap();
+
+    String::from_utf8(buffer).unwrap()
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_prometheus_StateManagerPrometheus_prometheusMetrics(
+    env: JNIEnv,
+    _class: JClass,
+    j_state_manager: JObject,
+    args: jbyteArray,
+) -> jbyteArray {
+    jni_state_manager_sbor_read_call(env, j_state_manager, args, do_prometheus_metrics)
+}
+
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub struct StateConfig {
     pub rounds_per_epoch: u64,

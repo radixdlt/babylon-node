@@ -80,6 +80,7 @@ import com.radixdlt.monitoring.InMemorySystemInfo;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;
+import com.radixdlt.prometheus.StateManagerPrometheus;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -123,6 +124,7 @@ public class PrometheusService {
   private static final String MISSED_PROPOSALS =
       COUNTER_PREFIX + "radix_engine_cur_epoch_missed_proposals";
 
+  private final StateManagerPrometheus stateManagerPrometheus;
   private final SystemCounters systemCounters;
   private final HealthInfoService healthInfoService;
   private final Addressing addressing;
@@ -138,19 +140,22 @@ public class PrometheusService {
       HealthInfoService healthInfoService,
       InMemorySystemInfo inMemorySystemInfo,
       @Self BFTNode self,
-      Addressing addressing) {
+      Addressing addressing,
+      StateManagerPrometheus stateManagerPrometheus) {
     this.systemCounters = systemCounters;
     this.peersView = peersView;
     this.healthInfoService = healthInfoService;
     this.inMemorySystemInfo = inMemorySystemInfo;
     this.self = self;
     this.addressing = addressing;
+    this.stateManagerPrometheus = stateManagerPrometheus;
   }
 
   public String getMetrics() {
     var builder = new StringBuilder();
 
     exportCounters(builder);
+    builder.append(this.stateManagerPrometheus.prometheusMetrics());
     exportSystemInfo(builder);
 
     return builder.append('\n').toString();
