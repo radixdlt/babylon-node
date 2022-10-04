@@ -106,6 +106,7 @@ pub fn jni_static_sbor_call<
     jni_slice_to_jbytearray(&env, &response_result.to_java())
 }
 
+#[tracing::instrument(skip_all)]
 fn jni_static_sbor_call_inner<Args: JavaStructure, Response: JavaStructure>(
     env: &JNIEnv,
     request_payload: jbyteArray,
@@ -142,6 +143,20 @@ fn jni_static_sbor_call_flatten_result_inner<Args: JavaStructure, Response: Java
     Ok(response)
 }
 
+pub fn jni_state_manager_sbor_read_call<
+    Args: JavaStructure + Encode + Decode + TypeId,
+    Response: JavaStructure + Encode + Decode + TypeId,
+>(
+    env: JNIEnv,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+    method: impl FnOnce(&ActualStateManager, Args) -> Response,
+) -> jbyteArray {
+    let response_result =
+        jni_state_manager_sbor_read_call_inner(&env, j_state_manager, request_payload, method);
+    jni_slice_to_jbytearray(&env, &response_result.to_java())
+}
+
 pub fn jni_state_manager_sbor_call<
     Args: JavaStructure + Encode + Decode + TypeId,
     Response: JavaStructure + Encode + Decode + TypeId,
@@ -156,6 +171,23 @@ pub fn jni_state_manager_sbor_call<
     jni_slice_to_jbytearray(&env, &response_result.to_java())
 }
 
+#[tracing::instrument(skip_all)]
+fn jni_state_manager_sbor_read_call_inner<Args: JavaStructure, Response: JavaStructure>(
+    env: &JNIEnv,
+    j_state_manager: JObject,
+    request_payload: jbyteArray,
+    method: impl FnOnce(&ActualStateManager, Args) -> Response,
+) -> StateManagerResult<Response> {
+    let vec_payload = jni_jbytearray_to_vector(env, request_payload)?;
+    let args = Args::from_java(&vec_payload)?;
+
+    let state_manager_arc = JNIStateManager::get_state_manager(env, j_state_manager);
+    let state_manager = state_manager_arc.read();
+
+    let response = method(&*state_manager, args);
+    Ok(response)
+}
+
 fn jni_state_manager_sbor_call_inner<Args: JavaStructure, Response: JavaStructure>(
     env: &JNIEnv,
     j_state_manager: JObject,
@@ -166,11 +198,9 @@ fn jni_state_manager_sbor_call_inner<Args: JavaStructure, Response: JavaStructur
     let args = Args::from_java(&vec_payload)?;
 
     let state_manager_arc = JNIStateManager::get_state_manager(env, j_state_manager);
-    let mut state_manager = state_manager_arc
-        .lock()
-        .expect("Can't acquire a state manager mutex lock");
+    let mut state_manager = state_manager_arc.write();
 
-    let response = method(state_manager.deref_mut(), args);
+    let response = method(&mut *state_manager, args);
     Ok(response)
 }
 
@@ -205,9 +235,7 @@ fn jni_state_manager_sbor_call_flatten_result_inner<
     let args = Args::from_java(&vec_payload)?;
 
     let state_manager_arc = JNIStateManager::get_state_manager(env, j_state_manager);
-    let mut state_manager = state_manager_arc
-        .lock()
-        .expect("Can't acquire a state manager mutex lock");
+    let mut state_manager = state_manager_arc.write();
 
     let response = method(state_manager.deref_mut(), args)?;
     Ok(response)

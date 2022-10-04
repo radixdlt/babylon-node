@@ -8,11 +8,11 @@ use state_manager::store::traits::*;
 pub(crate) async fn handle_v0_state_epoch(
     state: Extension<CoreApiState>,
 ) -> Result<Json<models::V0StateEpochResponse>, RequestHandlingError> {
-    core_api_handler(state, Json(()), handle_v0_state_epoch_internal)
+    core_api_read_handler(state, Json(()), handle_v0_state_epoch_internal)
 }
 
 fn handle_v0_state_epoch_internal(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     _request: (),
 ) -> Result<models::V0StateEpochResponse, RequestHandlingError> {
     if let Some(output_value) = state_manager.store.get_substate(&SubstateId::System) {

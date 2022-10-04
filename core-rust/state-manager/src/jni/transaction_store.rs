@@ -74,7 +74,7 @@ use scrypto::buffer::scrypto_encode;
 use scrypto::prelude::ComponentAddress;
 
 use super::mempool::JavaPayloadHash;
-use super::utils::jni_state_manager_sbor_call;
+use super::utils::jni_state_manager_sbor_read_call;
 
 #[derive(Encode, Decode, TypeId)]
 struct ExecutedTransaction {
@@ -92,7 +92,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(
+    jni_state_manager_sbor_read_call(
         env,
         j_state_manager,
         request_payload,
@@ -101,7 +101,7 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
 }
 
 fn do_get_transaction_at_state_version(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     state_version: u64,
 ) -> Option<ExecutedTransaction> {
     let payload_hash = state_manager.store.get_payload_hash(state_version)?;
@@ -126,11 +126,12 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_get_next_proof)
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_get_next_proof)
 }
 
+#[tracing::instrument(skip_all)]
 fn do_get_next_proof(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     state_version: u64,
 ) -> Option<(Vec<JavaPayloadHash>, Vec<u8>)> {
     let (payload_hashes, proof) = state_manager.store.get_next_proof(state_version)?;
@@ -147,10 +148,11 @@ extern "system" fn Java_com_radixdlt_transaction_REv2TransactionAndProofStore_ge
     j_state_manager: JObject,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_state_manager_sbor_call(env, j_state_manager, request_payload, do_get_last_proof)
+    jni_state_manager_sbor_read_call(env, j_state_manager, request_payload, do_get_last_proof)
 }
 
-fn do_get_last_proof(state_manager: &mut ActualStateManager, _args: ()) -> Option<Vec<u8>> {
+#[tracing::instrument(skip_all)]
+fn do_get_last_proof(state_manager: &ActualStateManager, _args: ()) -> Option<Vec<u8>> {
     state_manager.store.get_last_proof()
 }
 

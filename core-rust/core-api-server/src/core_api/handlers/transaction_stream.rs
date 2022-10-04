@@ -18,12 +18,12 @@ pub(crate) async fn handle_transaction_stream(
     state: Extension<CoreApiState>,
     request: Json<models::CommittedTransactionsRequest>,
 ) -> Result<Json<models::CommittedTransactionsResponse>, RequestHandlingError> {
-    core_api_handler(state, request, handle_transaction_stream_internal)
+    core_api_read_handler(state, request, handle_transaction_stream_internal)
 }
 
 #[tracing::instrument(err(Debug), skip(state_manager))]
 fn handle_transaction_stream_internal(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     request: models::CommittedTransactionsRequest,
 ) -> Result<models::CommittedTransactionsResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;

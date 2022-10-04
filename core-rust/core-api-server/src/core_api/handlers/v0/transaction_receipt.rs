@@ -8,11 +8,11 @@ pub(crate) async fn handle_v0_transaction_receipt(
     state: Extension<CoreApiState>,
     request: Json<models::V0CommittedTransactionRequest>,
 ) -> Result<Json<models::V0CommittedTransactionResponse>, RequestHandlingError> {
-    core_api_handler(state, request, handle_v0_transaction_receipt_internal)
+    core_api_read_handler(state, request, handle_v0_transaction_receipt_internal)
 }
 
 fn handle_v0_transaction_receipt_internal(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     request: models::V0CommittedTransactionRequest,
 ) -> Result<models::V0CommittedTransactionResponse, RequestHandlingError> {
     let intent_hash = extract_intent_hash(request.intent_hash)

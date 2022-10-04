@@ -12,14 +12,14 @@ pub(crate) async fn handle_v0_transaction_status(
     state: Extension<CoreApiState>,
     request: Json<models::V0TransactionStatusRequest>,
 ) -> Result<Json<models::V0TransactionStatusResponse>, RequestHandlingError> {
-    core_api_handler(state, request, handle_v0_transaction_status_internal)
+    core_api_read_handler(state, request, handle_v0_transaction_status_internal)
 }
 
 use models::v0_transaction_payload_status::Status as PayloadStatus;
 use models::v0_transaction_status_response::IntentStatus;
 
 fn handle_v0_transaction_status_internal(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     request: models::V0TransactionStatusRequest,
 ) -> Result<models::V0TransactionStatusResponse, RequestHandlingError> {
     let intent_hash = extract_intent_hash(request.intent_hash)

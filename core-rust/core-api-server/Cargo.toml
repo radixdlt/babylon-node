@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 state-manager = { path = "../state-manager" }
+parking_lot = { version = "0.12" }
 
 # DEPENDENCIES ON RADIXDLT-SCRYPTO
 #
@@ -20,11 +21,11 @@ state-manager = { path = "../state-manager" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-6e5b037b7" }
-scrypto = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-6e5b037b7" }
-transaction = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-6e5b037b7" }
-radix-engine = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-6e5b037b7" }
-radix-engine-stores = { git="https://github.com/radixdlt/radixdlt-scrypto", tag="alphanet-6e5b037b7" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-6e5b037b7" }
+scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-6e5b037b7" }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-6e5b037b7" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-6e5b037b7" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-6e5b037b7" }
 
 jni = "0.19.0"
 
