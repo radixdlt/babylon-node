@@ -35,5 +35,12 @@ ${reporoot}/gradlew -p "${reporoot}" deb4docker
 echo "||> Killing all running docker containers"
 docker compose -f "${dockerfile}" down | tee docker.log
 
+function cleanup {
+  echo "||> Killing all running docker containers"
+  docker compose -f "${dockerfile}" down | tee docker.log
+}
+
+trap cleanup EXIT
+
 echo "||> Starting up new docker containers"
 docker compose -f "${dockerfile}" up --build | tee docker.log
