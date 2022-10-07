@@ -32,16 +32,19 @@ pub fn to_api_global_entity_id(
     let address_bytes_hex = to_hex(&address_bytes);
 
     let global_address_bech32m = match entity_type {
-        entity_type::EntityType::System => bech32_encoder.encode_component_address(
+        entity_type::EntityType::System => bech32_encoder.encode_component_address_to_string(
             &ComponentAddress::try_from(address_bytes.as_slice()).unwrap(),
         ),
         entity_type::EntityType::ResourceManager => bech32_encoder
-            .encode_resource_address(&ResourceAddress::try_from(address_bytes.as_slice()).unwrap()),
-        entity_type::EntityType::Component => bech32_encoder.encode_component_address(
+            .encode_resource_address_to_string(
+                &ResourceAddress::try_from(address_bytes.as_slice()).unwrap(),
+            ),
+        entity_type::EntityType::Component => bech32_encoder.encode_component_address_to_string(
             &ComponentAddress::try_from(address_bytes.as_slice()).unwrap(),
         ),
-        entity_type::EntityType::Package => bech32_encoder
-            .encode_package_address(&PackageAddress::try_from(address_bytes.as_slice()).unwrap()),
+        entity_type::EntityType::Package => bech32_encoder.encode_package_address_to_string(
+            &PackageAddress::try_from(address_bytes.as_slice()).unwrap(),
+        ),
         entity_type::EntityType::Vault => {
             return Err(MappingError::InvalidRootEntity {
                 message: "Vault".to_owned(),
