@@ -80,7 +80,8 @@ pub fn to_api_component_info_substate(
     // TODO: map access_rules
     models::Substate::ComponentInfoSubstate {
         entity_type: EntityType::Component,
-        package_address: bech32_encoder.encode_package_address(&component_info.package_address()),
+        package_address: bech32_encoder
+            .encode_package_address_to_string(&component_info.package_address()),
         blueprint_name: component_info.blueprint_name().to_string(),
     }
 }
