@@ -24,11 +24,11 @@ pub(crate) fn handle_network_configuration_internal(
         network: network.logical_name,
         network_hrp_suffix: network.hrp_suffix,
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
-            account_package: bech32_encoder.encode_package_address(&ACCOUNT_PACKAGE),
-            faucet: bech32_encoder.encode_component_address(&SYS_FAUCET_COMPONENT),
-            ecdsa_secp256k1: bech32_encoder.encode_resource_address(&ECDSA_TOKEN),
-            eddsa_ed25519: bech32_encoder.encode_resource_address(&ED25519_TOKEN),
-            xrd: bech32_encoder.encode_resource_address(&RADIX_TOKEN),
+            account_package: bech32_encoder.encode_package_address_to_string(&ACCOUNT_PACKAGE),
+            faucet: bech32_encoder.encode_component_address_to_string(&SYS_FAUCET_COMPONENT),
+            ecdsa_secp256k1: bech32_encoder.encode_resource_address_to_string(&ECDSA_TOKEN),
+            eddsa_ed25519: bech32_encoder.encode_resource_address_to_string(&ED25519_TOKEN),
+            xrd: bech32_encoder.encode_resource_address_to_string(&RADIX_TOKEN),
         }),
     })
 }

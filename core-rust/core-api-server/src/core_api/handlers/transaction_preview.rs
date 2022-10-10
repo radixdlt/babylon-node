@@ -98,9 +98,10 @@ fn to_api_response(
                 .resource_changes
                 .iter()
                 .map(|v| models::ResourceChange {
-                    resource_address: bech32_encoder.encode_resource_address(&v.resource_address),
+                    resource_address: bech32_encoder
+                        .encode_resource_address_to_string(&v.resource_address),
                     component_address: bech32_encoder
-                        .encode_component_address(&v.component_address),
+                        .encode_component_address_to_string(&v.component_address),
                     vault_entity_id: Box::new(to_vault_entity_id(&v.vault_id).into()),
                     amount_attos: to_api_decimal_attos(&v.amount),
                 })
