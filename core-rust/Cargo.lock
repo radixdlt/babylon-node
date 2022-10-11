@@ -304,6 +304,7 @@ dependencies = [
  "serde_json",
  "state-manager",
  "tokio",
+ "tower-http",
  "tracing",
  "tracing-opentelemetry",
  "tracing-subscriber",
