@@ -66,8 +66,9 @@ use std::future::Future;
 use std::sync::Arc;
 
 use axum::{
+    extract::DefaultBodyLimit,
     routing::{get, post},
-    Extension, Router, extract::DefaultBodyLimit,
+    Extension, Router,
 };
 use parking_lot::RwLock;
 use scrypto::prelude::*;
@@ -106,13 +107,17 @@ pub async fn create_server<F>(
             post(handle_network_configuration),
         )
         .route("/status/network-status", post(handle_network_status))
-        .route("/transaction/submit", post(handle_transaction_submit)
-            .layer(DefaultBodyLimit::disable())
-            .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES))
+        .route(
+            "/transaction/submit",
+            post(handle_transaction_submit)
+                .layer(DefaultBodyLimit::disable())
+                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
         )
-        .route("/transaction/preview", post(handle_transaction_preview)
-            .layer(DefaultBodyLimit::disable())
-            .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES))
+        .route(
+            "/transaction/preview",
+            post(handle_transaction_preview)
+                .layer(DefaultBodyLimit::disable())
+                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
         )
         .route("/transaction/stream", post(handle_transaction_stream))
         .route("/v0", get(handle_provide_info_at_root_path))
@@ -121,9 +126,11 @@ pub async fn create_server<F>(
             "/v0/status/network-configuration",
             post(handle_network_configuration),
         )
-        .route("/v0/transaction/submit", post(handle_v0_transaction_submit)
-            .layer(DefaultBodyLimit::disable())
-            .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES))
+        .route(
+            "/v0/transaction/submit",
+            post(handle_v0_transaction_submit)
+                .layer(DefaultBodyLimit::disable())
+                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
         )
         .route("/v0/transaction/status", post(handle_v0_transaction_status))
         .route(

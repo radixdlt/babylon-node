@@ -3,10 +3,10 @@ use crate::transaction::ValidatorTransaction;
 use scrypto::buffer::scrypto_decode;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{NotarizedTransaction, Validated};
+use transaction::validation::ValidationConfig;
 use transaction::validation::{
     NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
 };
-use transaction::validation::ValidationConfig;
 
 pub struct UserTransactionValidator {
     pub base_validation_config: ValidationConfig,
