@@ -6,19 +6,24 @@ use transaction::model::{NotarizedTransaction, Validated};
 use transaction::validation::{
     NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
 };
-use transaction::validation::{ValidationConfig, MAX_PAYLOAD_SIZE};
+use transaction::validation::ValidationConfig;
 
 pub struct UserTransactionValidator {
     pub base_validation_config: ValidationConfig,
     pub intent_hash_manager: TestIntentHashManager,
 }
 
+// NB - For alphanet, we allow transactions of up to 24MB, up from
+// 4MB MAX_PAYLOAD_SIZE in the radixdlt-scrypto codebase
+// This limit will likely need reducing after some review
+pub const OVERRIDE_MAX_PAYLOAD_SIZE: usize = 24 * 1024 * 1024;
+
 impl UserTransactionValidator {
     /// Checks the Payload max size, and SBOR decodes to a NotarizedTransaction if the size is okay
     pub fn parse_unvalidated_user_transaction_from_slice(
         transaction_payload: &[u8],
     ) -> Result<NotarizedTransaction, TransactionValidationError> {
-        if transaction_payload.len() > MAX_PAYLOAD_SIZE {
+        if transaction_payload.len() > OVERRIDE_MAX_PAYLOAD_SIZE {
             return Err(TransactionValidationError::TransactionTooLarge);
         }
 
