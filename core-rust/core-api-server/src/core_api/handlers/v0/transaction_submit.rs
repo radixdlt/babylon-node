@@ -5,7 +5,6 @@ use state_manager::jni::state_manager::ActualStateManager;
 
 use state_manager::MempoolAddError;
 
-#[tracing::instrument(err(Debug), skip(state))]
 pub(crate) async fn handle_v0_transaction_submit(
     state: Extension<CoreApiState>,
     request: Json<models::V0TransactionSubmitRequest>,
@@ -13,6 +12,7 @@ pub(crate) async fn handle_v0_transaction_submit(
     core_api_handler(state, request, handle_v0_transaction_submit_internal)
 }
 
+#[tracing::instrument(level = "debug", skip(state_manager), err(Debug))]
 fn handle_v0_transaction_submit_internal(
     state_manager: &mut ActualStateManager,
     request: models::V0TransactionSubmitRequest,
