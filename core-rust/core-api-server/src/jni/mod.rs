@@ -152,14 +152,12 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_start(
 
                 // Trying to initialize a global logger here, and carry on if this fails.
                 let _ = tracing_subscriber::registry()
-                    .with(tracing_subscriber::filter::LevelFilter::DEBUG)
                     .with(opentelemetry)
                     .with(tracing_subscriber::fmt::layer())
                     .try_init();
             }
             Err(_) => {
                 let _ = tracing_subscriber::registry()
-                    .with(tracing_subscriber::filter::LevelFilter::DEBUG)
                     .with(tracing_subscriber::fmt::layer())
                     .try_init();
             }
