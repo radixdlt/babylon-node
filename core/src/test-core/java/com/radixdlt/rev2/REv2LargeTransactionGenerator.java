@@ -64,9 +64,7 @@
 
 package com.radixdlt.rev2;
 
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
@@ -83,9 +81,13 @@ public final class REv2LargeTransactionGenerator implements TransactionGenerator
 
   @Override
   public RawTransaction nextTransaction() {
-    final ECKeyPair key = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
+    final var notary = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
+
+    // Somewhere from 100kb to just over 23MB
+    var size = (int) (Math.random() * 23 * 1024 * 1024) + 100 * 1024;
     var intentBytes =
-        TransactionBuilder.build100KBIntent(networkDefinition, key.getPublicKey().toPublicKey());
-    return REv2TestTransactions.constructTransaction(intentBytes, key, List.of(key));
+        REv2TestTransactions.constructLargeValidTransactionIntent(
+            networkDefinition, 0, 1, notary.getPublicKey().toPublicKey(), size);
+    return REv2TestTransactions.constructTransaction(intentBytes, notary, List.of());
   }
 }

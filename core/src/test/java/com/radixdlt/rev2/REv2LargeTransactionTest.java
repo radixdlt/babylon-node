@@ -84,7 +84,6 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
-import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
@@ -118,10 +117,10 @@ public final class REv2LargeTransactionTest {
                         REV2ProposerConfig.mempool(10, 1, MempoolRelayConfig.of())))));
   }
 
-  private static RawTransaction create100KBTransaction() {
+  private static RawTransaction createLargeValidTransaction() {
     var intentBytes =
-        TransactionBuilder.build100KBIntent(
-            NETWORK_DEFINITION, TEST_KEY.getPublicKey().toPublicKey());
+        REv2TestTransactions.constructLargeValidTransactionIntent(
+            NETWORK_DEFINITION, 0, 1, TEST_KEY.getPublicKey().toPublicKey(), 23 * 1024 * 1024);
     return REv2TestTransactions.constructTransaction(intentBytes, TEST_KEY, List.of(TEST_KEY));
   }
 
@@ -129,7 +128,7 @@ public final class REv2LargeTransactionTest {
   public void large_transaction_should_be_committable() throws Exception {
     try (var test = createTest()) {
       // Arrange: Start single node network
-      var newAccountTransaction = create100KBTransaction();
+      var newAccountTransaction = createLargeValidTransaction();
 
       // Act: Submit transaction to mempool and run consensus
       test.startAllNodes();

@@ -81,7 +81,7 @@ public record TransactionHeader(
     UInt32 costUnitLimit,
     UInt32 tipPercentage) {
 
-  public static final UInt32 MAX_COST_UNIT_LIMIT = UInt32.fromNonNegativeInt(10_000_000);
+  public static final UInt32 MAX_COST_UNIT_LIMIT = UInt32.fromNonNegativeInt(100_000_000);
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(

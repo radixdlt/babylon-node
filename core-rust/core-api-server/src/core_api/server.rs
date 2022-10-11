@@ -66,12 +66,14 @@ use std::future::Future;
 use std::sync::Arc;
 
 use axum::{
+    extract::DefaultBodyLimit,
     routing::{get, post},
     Extension, Router,
 };
 use parking_lot::RwLock;
 use scrypto::prelude::*;
 use state_manager::jni::state_manager::ActualStateManager;
+use tower_http::limit::RequestBodyLimitLayer;
 
 use super::{handlers::*, not_found_error, RequestHandlingError};
 
@@ -91,6 +93,12 @@ pub async fn create_server<F>(
 {
     let core_api_state = CoreApiState { state_manager };
 
+    // TODO - Change to remove the Tower RequestBodyLimitLayer middleware and use DefaultBodyLimit::max
+    // once it is released https://github.com/tokio-rs/axum/pull/1397
+    // TODO - Change this to be slightly larger than the double the max transaction payload size.
+    // (We double due to the hex encoding of the payload)
+    const LARGE_REQUEST_MAX_BYTES: usize = 50 * 1024 * 1024;
+
     let router = Router::new()
         // This only adds a route for /core, /core/ doesn't seem possible using /nest
         .route("/", get(handle_provide_info_at_root_path))
@@ -99,8 +107,18 @@ pub async fn create_server<F>(
             post(handle_network_configuration),
         )
         .route("/status/network-status", post(handle_network_status))
-        .route("/transaction/submit", post(handle_transaction_submit))
-        .route("/transaction/preview", post(handle_transaction_preview))
+        .route(
+            "/transaction/submit",
+            post(handle_transaction_submit)
+                .layer(DefaultBodyLimit::disable())
+                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
+        )
+        .route(
+            "/transaction/preview",
+            post(handle_transaction_preview)
+                .layer(DefaultBodyLimit::disable())
+                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
+        )
         .route("/transaction/stream", post(handle_transaction_stream))
         .route("/v0", get(handle_provide_info_at_root_path))
         .route("/v0/", get(handle_provide_info_at_root_path))
@@ -108,7 +126,12 @@ pub async fn create_server<F>(
             "/v0/status/network-configuration",
             post(handle_network_configuration),
         )
-        .route("/v0/transaction/submit", post(handle_v0_transaction_submit))
+        .route(
+            "/v0/transaction/submit",
+            post(handle_v0_transaction_submit)
+                .layer(DefaultBodyLimit::disable())
+                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
+        )
         .route("/v0/transaction/status", post(handle_v0_transaction_status))
         .route(
             "/v0/transaction/receipt",

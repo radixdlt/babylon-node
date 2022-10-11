@@ -7,7 +7,6 @@ use state_manager::{LedgerTransactionReceipt, PreviewRequest};
 use transaction::manifest;
 use transaction::model::PreviewFlags;
 
-#[tracing::instrument(skip(state), err(Debug))]
 pub(crate) async fn handle_transaction_preview(
     state: Extension<CoreApiState>,
     request: Json<models::TransactionPreviewRequest>,
@@ -15,6 +14,7 @@ pub(crate) async fn handle_transaction_preview(
     core_api_handler(state, request, handle_preview_internal)
 }
 
+#[tracing::instrument(level = "debug", skip(state_manager), err(Debug))]
 fn handle_preview_internal(
     state_manager: &mut ActualStateManager,
     request: models::TransactionPreviewRequest,

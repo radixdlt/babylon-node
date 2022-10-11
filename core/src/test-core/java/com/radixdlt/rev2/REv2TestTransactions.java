@@ -163,6 +163,15 @@ public final class REv2TestTransactions {
     return TransactionBuilder.createIntent(networkDefinition, header, manifest, List.of());
   }
 
+  public static byte[] constructLargeValidTransactionIntent(
+      NetworkDefinition networkDefinition, long fromEpoch, long nonce, PublicKey notary, int size) {
+    final var manifest = constructNewAccountManifest(networkDefinition);
+    final var header =
+        TransactionHeader.defaults(networkDefinition, fromEpoch, 100, nonce, notary, false);
+    final var blobs = List.of(new byte[size]);
+    return TransactionBuilder.createIntent(networkDefinition, header, manifest, blobs);
+  }
+
   /**
    * Constructs a user transaction which attempts to set the epoch. This should cause the
    * transaction to be committed but failing due to insufficient permissions to set epoch.
