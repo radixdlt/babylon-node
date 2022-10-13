@@ -532,23 +532,23 @@ where
         let mut already_committed_or_prepared_intent_hashes: HashSet<IntentHash> = HashSet::new();
         let mut current_epoch = self.get_epoch();
 
-        for proposed_payload in prepare_request.proposed_payloads.iter() {
-            let notarized_transaction =
+        let already_committed_proposed_payload_hashes = prepare_request
+            .proposed_payloads
+            .iter()
+            .filter_map(|proposed_payload| {
                 UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
                     proposed_payload,
-                );
-
-            if let Ok(validated_transaction) = &notarized_transaction {
-                let intent_hash = validated_transaction.intent_hash();
-                if self
-                    .store
-                    .get_committed_transaction_by_identifier(&intent_hash)
-                    .is_some()
-                {
-                    already_committed_or_prepared_intent_hashes.insert(intent_hash);
-                }
-            }
-        }
+                )
+                .ok()
+                .map(|validated_transaction| validated_transaction.intent_hash())
+                .and_then(|intent_hash| {
+                    self.store
+                        .get_committed_transaction_by_identifier(&intent_hash)
+                        .map(|_| intent_hash)
+                })
+            });
+        already_committed_or_prepared_intent_hashes
+            .extend(already_committed_proposed_payload_hashes);
 
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
