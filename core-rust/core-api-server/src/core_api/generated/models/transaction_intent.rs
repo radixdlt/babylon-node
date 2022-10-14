@@ -18,21 +18,16 @@ pub struct TransactionIntent {
     pub hash: String,
     #[serde(rename = "header")]
     pub header: Box<crate::core_api::generated::models::TransactionHeader>,
-    /// The decompiled transaction manifest
     #[serde(rename = "manifest")]
-    pub manifest: String,
-    /// A map of the hex-encoded blob hash, to hex-encoded blob content
-    #[serde(rename = "blobs_hex")]
-    pub blobs_hex: ::std::collections::HashMap<String, String>,
+    pub manifest: Box<crate::core_api::generated::models::TransactionManifest>,
 }
 
 impl TransactionIntent {
-    pub fn new(hash: String, header: crate::core_api::generated::models::TransactionHeader, manifest: String, blobs_hex: ::std::collections::HashMap<String, String>) -> TransactionIntent {
+    pub fn new(hash: String, header: crate::core_api::generated::models::TransactionHeader, manifest: crate::core_api::generated::models::TransactionManifest) -> TransactionIntent {
         TransactionIntent {
             hash,
             header: Box::new(header),
-            manifest,
-            blobs_hex,
+            manifest: Box::new(manifest),
         }
     }
 }
