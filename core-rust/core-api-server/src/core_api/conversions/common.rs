@@ -85,10 +85,10 @@ fn convert_custom_payloads_recursive(
                             .expect("Could not format custom value");
                             buf
                         };
-                        let mut m = serde_json::Map::new();
-                        m.insert("type".into(), JsonValue::String(type_name));
-                        m.insert("value".into(), JsonValue::String(value));
-                        return JsonValue::Object(m);
+                        return serde_json::json!({
+                            "type": type_name,
+                            "value": value
+                        });
                     }
                 };
             }
