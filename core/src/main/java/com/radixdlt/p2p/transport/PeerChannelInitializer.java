@@ -96,9 +96,10 @@ import org.apache.logging.log4j.Logger;
 public final class PeerChannelInitializer extends ChannelInitializer<SocketChannel> {
   private static final Logger log = LogManager.getLogger();
 
-  private static final int MAX_PACKET_LENGTH = 1024 * 1024;
+  // This needs to be larger than proposals / vertices
+  // TODO - update this number once we have a REP/RNP for these numbers
+  private static final int MAX_PACKET_LENGTH = 25 * 1024 * 1024;
   private static final int FRAME_HEADER_LENGTH = Integer.BYTES;
-  private static final int RECEIVE_BUFFER_SIZE = 1024 * 1024;
   private static final int SOCKET_BACKLOG_SIZE = 1024;
 
   private final P2PConfig config;
@@ -145,7 +146,7 @@ public final class PeerChannelInitializer extends ChannelInitializer<SocketChann
     final var socketChannelConfig = socketChannel.config();
     socketChannelConfig.setReceiveBufferSize(MAX_PACKET_LENGTH);
     socketChannelConfig.setSendBufferSize(MAX_PACKET_LENGTH);
-    socketChannelConfig.setOption(ChannelOption.SO_RCVBUF, RECEIVE_BUFFER_SIZE);
+    socketChannelConfig.setOption(ChannelOption.SO_RCVBUF, MAX_PACKET_LENGTH);
     socketChannelConfig.setOption(ChannelOption.SO_BACKLOG, SOCKET_BACKLOG_SIZE);
 
     if (log.isDebugEnabled()) {
