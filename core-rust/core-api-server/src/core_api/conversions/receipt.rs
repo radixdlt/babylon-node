@@ -66,7 +66,7 @@ pub fn to_api_receipt(
         Some(output) => Some(
             output
                 .into_iter()
-                .map(|line_output| scrypto_bytes_to_api_sbor_data(&line_output))
+                .map(|line_output| scrypto_bytes_to_api_sbor_data(bech32_encoder, &line_output))
                 .collect::<Result<Vec<_>, _>>()?,
         ),
         None => None,
