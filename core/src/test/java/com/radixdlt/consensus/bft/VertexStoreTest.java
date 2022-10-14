@@ -67,6 +67,7 @@ package com.radixdlt.consensus.bft;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -207,6 +208,94 @@ public class VertexStoreTest {
   }
 
   @Test
+  public void vertex_store_should_correctly_remove_vertices_when_commit() {
+    /* This test checks that when vertex is committed all obsolete vertices are
+    removed from the vertex store (including their children).
+    Specifically, this scenario includes the following vertices:
+
+      A
+      | \
+      B  C
+      | \
+      D  E
+      |
+      F
+      |
+      G
+
+    adding a QC for G should result in vertex D being committed, which should result in:
+    a) D becoming a new rootVertex,
+    b) removal of vertices A, B, C and E */
+
+    // Arrange
+    // Three mock vertices for A's ancestors
+    final var v1 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
+    final var v2 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
+    final var v3 = new BFTHeader(Round.genesis(), genesisHash, MOCKED_HEADER);
+
+    final var vertexA = createVertex(v3, v2, v1, new byte[] {0});
+    final var vertexB = createVertex(v2, v1, mockedHeaderOf(vertexA), new byte[] {0});
+    final var vertexC = createVertex(v2, v1, mockedHeaderOf(vertexA), new byte[] {1});
+    final var vertexD =
+        createVertex(v1, mockedHeaderOf(vertexA), mockedHeaderOf(vertexB), new byte[] {0});
+    final var vertexE =
+        createVertex(v1, mockedHeaderOf(vertexA), mockedHeaderOf(vertexB), new byte[] {1});
+    final var vertexF =
+        createVertex(
+            mockedHeaderOf(vertexA),
+            mockedHeaderOf(vertexB),
+            mockedHeaderOf(vertexD),
+            new byte[] {0});
+    final var vertexG =
+        createVertex(
+            mockedHeaderOf(vertexB),
+            mockedHeaderOf(vertexD),
+            mockedHeaderOf(vertexF),
+            new byte[] {0});
+
+    for (var v : List.of(vertexA, vertexB, vertexC, vertexD, vertexE, vertexF, vertexG)) {
+      vertexStoreAdapter.insertVertex(v);
+    }
+
+    final var qcForVertexG =
+        createVertex(
+                mockedHeaderOf(vertexD),
+                mockedHeaderOf(vertexF),
+                mockedHeaderOf(vertexG),
+                new byte[] {0})
+            .getQCToParent();
+
+    // Act
+    boolean success = vertexStoreAdapter.insertQc(qcForVertexG);
+
+    assertTrue(success);
+    assertEquals(vertexStoreAdapter.getRoot().getHash(), vertexD.getHash());
+    assertFalse(vertexStoreAdapter.containsVertex(vertexA.getHash()));
+    assertFalse(vertexStoreAdapter.containsVertex(vertexB.getHash()));
+    assertFalse(vertexStoreAdapter.containsVertex(vertexC.getHash()));
+    assertFalse(vertexStoreAdapter.containsVertex(vertexE.getHash()));
+    assertTrue(isVertexStoreChildrenMappingTidy(underlyingVertexStore));
+  }
+
+  private VertexWithHash createVertex(
+      BFTHeader greatGrandParent, BFTHeader grandParent, BFTHeader parent, byte[] tx) {
+    final QuorumCertificate qc;
+    if (!parent.getRound().equals(Round.genesis())) {
+      final var data = new VoteData(parent, grandParent, greatGrandParent);
+      qc = new QuorumCertificate(data, new TimestampedECDSASignatures());
+    } else {
+      qc = rootQC;
+    }
+    final var round = parent.getRound().next();
+    return Vertex.create(qc, round, List.of(RawTransaction.create(tx)), BFTNode.random())
+        .withId(hasher);
+  }
+
+  private BFTHeader mockedHeaderOf(VertexWithHash vertex) {
+    return new BFTHeader(vertex.getRound(), vertex.getHash(), MOCKED_HEADER);
+  }
+
+  @Test
   public void adding_a_qc_with_commit_should_commit_vertices_to_ledger() {
     // Arrange
     final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
@@ -233,6 +322,10 @@ public class VertexStoreTest {
     assertTrue(isVertexStoreChildrenMappingTidy(underlyingVertexStore));
   }
 
+  /**
+   * Checks that the vertex store is not storing any obsolete child vertices entries for vertices
+   * that no longer exist.
+   */
   private boolean isVertexStoreChildrenMappingTidy(VertexStoreJavaImpl vertexStore) {
     for (HashCode vertexHash : vertexStore.verticesForWhichChildrenAreBeingStored()) {
       if (!vertexStore.containsVertex(vertexHash)) {
