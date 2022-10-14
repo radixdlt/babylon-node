@@ -17,12 +17,14 @@ fn handle_v0_state_component_internal(
     request: models::V0StateComponentRequest,
 ) -> Result<models::V0StateComponentResponse, RequestHandlingError> {
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);
+    let bech32_encoder = Bech32Encoder::new(&state_manager.network);
 
     let component_address = extract_component_address(&bech32_decoder, &request.component_address)
         .map_err(|err| err.into_response_error("component_address"))?;
 
     let component_info_option = read_component_info(state_manager, &component_address)?;
-    let component_state_option = read_component_state(state_manager, &component_address)?;
+    let component_state_option =
+        read_component_state(&bech32_encoder, state_manager, &component_address)?;
 
     if component_info_option.is_none() && component_state_option.is_none() {
         return Err(not_found_error("Component not found"));
@@ -93,13 +95,17 @@ fn read_component_info(
 }
 
 fn read_component_state(
+    bech32_encoder: &Bech32Encoder,
     state_manager: &ActualStateManager,
     component_address: &ComponentAddress,
 ) -> Result<Option<models::Substate>, MappingError> {
     let substate_id = SubstateId::ComponentState(*component_address);
     if let Some(output_value) = state_manager.store.get_substate(&substate_id) {
         if let Substate::ComponentState(component_state) = output_value.substate {
-            return Ok(Some(to_api_component_state_substate(&component_state)?));
+            return Ok(Some(to_api_component_state_substate(
+                bech32_encoder,
+                &component_state,
+            )?));
         }
         return Err(MappingError::MismatchedSubstateId {
             message: "Component state substate was not of the right type".to_owned(),
