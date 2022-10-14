@@ -29,15 +29,19 @@ pub fn to_api_substate(
             to_api_component_info_substate(component_info, bech32_encoder)
         }
         Substate::ComponentState(component_state) => {
-            to_api_component_state_substate(component_state)?
+            to_api_component_state_substate(bech32_encoder, component_state)?
         }
         Substate::Package(package) => to_api_package_substate(package),
         Substate::Vault(vault) => to_api_vault_substate(bech32_encoder, vault)?,
         Substate::NonFungible(non_fungible_wrapper) => {
-            to_api_non_fungible_substate(substate_id, non_fungible_wrapper)?
+            to_api_non_fungible_substate(bech32_encoder, substate_id, non_fungible_wrapper)?
         }
         Substate::KeyValueStoreEntry(kv_store_entry_wrapper) => {
-            to_api_key_value_story_entry_substate(substate_id, kv_store_entry_wrapper)?
+            to_api_key_value_story_entry_substate(
+                bech32_encoder,
+                substate_id,
+                kv_store_entry_wrapper,
+            )?
         }
     })
 }
@@ -87,24 +91,27 @@ pub fn to_api_component_info_substate(
 }
 
 pub fn to_api_component_state_substate(
+    bech32_encoder: &Bech32Encoder,
     component_state: &ComponentState,
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::ComponentStateSubstate {
         entity_type: EntityType::Component,
-        data_struct: Box::new(to_api_data_struct(component_state.state())?),
+        data_struct: Box::new(to_api_data_struct(bech32_encoder, component_state.state())?),
     })
 }
 
 fn scrypto_value_to_api_data_struct(
+    bech32_encoder: &Bech32Encoder,
     scrypto_value: ScryptoValue,
 ) -> Result<models::DataStruct, MappingError> {
     let entities = extract_entities(&scrypto_value)?;
     Ok(models::DataStruct {
         struct_data: Box::new(models::SborData {
             data_hex: to_hex(scrypto_value.raw),
-            data_json: Some(
-                serde_json::to_value(&scrypto_value.dom).expect("JSON serialize error"),
-            ),
+            data_json: Some(convert_scrypto_sbor_value_to_json(
+                bech32_encoder,
+                &scrypto_value.dom,
+            )),
         }),
         owned_entities: entities.owned_entities,
         referenced_entities: entities.referenced_entities,
@@ -237,6 +244,7 @@ fn to_api_non_fungible_resource_amount(
 }
 
 pub fn to_api_non_fungible_substate(
+    bech32_encoder: &Bech32Encoder,
     substate_id: &SubstateId,
     non_fungible: &NonFungibleWrapper,
 ) -> Result<models::Substate, MappingError> {
@@ -255,7 +263,10 @@ pub fn to_api_non_fungible_substate(
             entity_type: EntityType::KeyValueStore,
             nf_id_hex: to_hex(nf_id_bytes),
             is_deleted: false,
-            non_fungible_data: Option::Some(Box::new(to_api_non_fungible_data(non_fungible)?)),
+            non_fungible_data: Option::Some(Box::new(to_api_non_fungible_data(
+                bech32_encoder,
+                non_fungible,
+            )?)),
         },
         None => models::Substate::NonFungibleSubstate {
             entity_type: EntityType::KeyValueStore,
@@ -267,15 +278,23 @@ pub fn to_api_non_fungible_substate(
 }
 
 fn to_api_non_fungible_data(
+    bech32_encoder: &Bech32Encoder,
     non_fungible: &NonFungible,
 ) -> Result<models::NonFungibleData, MappingError> {
     Ok(models::NonFungibleData {
-        immutable_data: Box::new(to_api_data_struct(&non_fungible.immutable_data())?),
-        mutable_data: Box::new(to_api_data_struct(&non_fungible.mutable_data())?),
+        immutable_data: Box::new(to_api_data_struct(
+            bech32_encoder,
+            &non_fungible.immutable_data(),
+        )?),
+        mutable_data: Box::new(to_api_data_struct(
+            bech32_encoder,
+            &non_fungible.mutable_data(),
+        )?),
     })
 }
 
 fn to_api_key_value_story_entry_substate(
+    bech32_encoder: &Bech32Encoder,
     substate_id: &SubstateId,
     key_value_store_entry: &KeyValueStoreEntryWrapper,
 ) -> Result<models::Substate, MappingError> {
@@ -294,7 +313,7 @@ fn to_api_key_value_story_entry_substate(
             entity_type: EntityType::KeyValueStore,
             key_hex: to_hex(key),
             is_deleted: false,
-            data_struct: Option::Some(Box::new(to_api_data_struct(data)?)),
+            data_struct: Option::Some(Box::new(to_api_data_struct(bech32_encoder, data)?)),
         },
         None => models::Substate::KeyValueStoreEntrySubstate {
             entity_type: EntityType::KeyValueStore,
@@ -305,11 +324,14 @@ fn to_api_key_value_story_entry_substate(
     })
 }
 
-fn to_api_data_struct(data: &[u8]) -> Result<models::DataStruct, MappingError> {
+fn to_api_data_struct(
+    bech32_encoder: &Bech32Encoder,
+    data: &[u8],
+) -> Result<models::DataStruct, MappingError> {
     let scrypto_value =
         ScryptoValue::from_slice(data).map_err(|err| MappingError::InvalidSbor {
             decode_error: err,
             bytes: data.to_vec(),
         })?;
-    scrypto_value_to_api_data_struct(scrypto_value)
+    scrypto_value_to_api_data_struct(bech32_encoder, scrypto_value)
 }

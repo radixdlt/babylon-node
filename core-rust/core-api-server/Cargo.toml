@@ -18,14 +18,16 @@ parking_lot = { version = "0.12" }
 #   $ git pull
 #   $ git rev-parse --short HEAD
 #   $ git tag "develop-<8 char hash id from previous command>"
+#   $ git push origin "develop-BLAH"
+# * Then use tag="develop-BLAH" in the below dependencies.
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-fd0a32ce8" }
-scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-fd0a32ce8" }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-fd0a32ce8" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-fd0a32ce8" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-fd0a32ce8" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-977195dc1" }
+scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-977195dc1" }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-977195dc1" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-977195dc1" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-977195dc1" }
 
 jni = "0.19.0"
 
