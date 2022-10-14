@@ -10,3 +10,4 @@ For general documentation, please visit https://docs.radixdlt.com/.
 - [API Specifications](./api-specs)
 - [Transaction Specifications](./transaction-specs)
 - [Logging Configuration](./logging)
+- [Logging in Rust](./how-to-logging-in-rust.md)

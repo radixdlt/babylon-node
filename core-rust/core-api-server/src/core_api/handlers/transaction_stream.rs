@@ -156,7 +156,12 @@ fn to_api_notarized_transaction(
                     tip_percentage: to_api_u32_as_i64(header.tip_percentage),
                 }),
                 manifest: manifest::decompile(&intent.manifest.instructions, network)
-                    .expect("Failed to decompile a transaction manifest"),
+                    .unwrap_or_else(|e| {
+                        panic!(
+                            "Failed to decompile a transaction manifest: {e:?}, instructions: {:?}",
+                            &intent.manifest.instructions
+                        );
+                    }),
                 blobs_hex: intent
                     .manifest
                     .blobs

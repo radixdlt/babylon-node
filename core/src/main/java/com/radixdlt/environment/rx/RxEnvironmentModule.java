@@ -173,12 +173,14 @@ public final class RxEnvironmentModule extends AbstractModule {
       RxEnvironment rxEnvironment,
       Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
       RxRemoteEnvironment rxRemoteEnvironment,
-      Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers) {
+      Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers,
+      Set<StartProcessorOnRunner> startProcessors) {
     final var runnerName = Runners.MEMPOOL;
     final var builder = RxModuleRunnerImpl.builder();
     addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
     addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
     addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
+    addStartProcessorsOnRunner(startProcessors, runnerName, builder);
     return builder.build("MempoolRunner " + name);
   }
 
@@ -193,7 +195,6 @@ public final class RxEnvironmentModule extends AbstractModule {
       RxRemoteEnvironment rxRemoteEnvironment,
       Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers,
       Set<StartProcessorOnRunner> startProcessors) {
-
     final var runnerName = Runners.SYNC;
     final var builder = RxModuleRunnerImpl.builder();
     addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
@@ -212,12 +213,14 @@ public final class RxEnvironmentModule extends AbstractModule {
       RxEnvironment rxEnvironment,
       Set<RemoteEventProcessorOnRunner<?>> remoteProcessors,
       RxRemoteEnvironment rxRemoteEnvironment,
-      Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers) {
+      Set<ScheduledEventProducerOnRunner<?>> scheduledEventProducers,
+      Set<StartProcessorOnRunner> startProcessors) {
     final var runnerName = Runners.P2P_NETWORK;
     final var builder = RxModuleRunnerImpl.builder();
     addProcessorsOnRunner(processors, rxEnvironment, runnerName, builder);
     addRemoteProcessorsOnRunner(remoteProcessors, rxRemoteEnvironment, runnerName, builder);
     addScheduledEventProducersOnRunner(scheduledEventProducers, runnerName, builder);
+    addStartProcessorsOnRunner(startProcessors, runnerName, builder);
     return builder.build("P2PNetworkRunner " + name);
   }
 
