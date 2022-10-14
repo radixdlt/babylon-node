@@ -67,6 +67,7 @@ package com.radixdlt.consensus.bft;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -78,8 +79,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.sync.VertexStoreAdapter;
-import com.radixdlt.consensus.sync.VertexStoreJavaImpl;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -102,7 +101,8 @@ public class VertexStoreTest {
   private Function<Boolean, VertexWithHash> nextSkippableVertex;
   private HashCode genesisHash;
   private QuorumCertificate rootQC;
-  private VertexStoreAdapter sut;
+  private VertexStoreJavaImpl underlyingVertexStore;
+  private VertexStoreAdapter vertexStoreAdapter;
   private Ledger ledger;
   private EventDispatcher<BFTInsertUpdate> bftUpdateSender;
   private EventDispatcher<BFTRebuildUpdate> rebuildUpdateEventDispatcher;
@@ -137,13 +137,14 @@ public class VertexStoreTest {
     this.genesisVertex = Vertex.createGenesis(MOCKED_HEADER).withId(ZeroHasher.INSTANCE);
     this.genesisHash = genesisVertex.getHash();
     this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
-    this.sut =
+    this.underlyingVertexStore =
+        VertexStoreJavaImpl.create(
+            VertexStoreState.create(HighQC.from(rootQC), genesisVertex, Optional.empty(), hasher),
+            ledger,
+            hasher);
+    this.vertexStoreAdapter =
         new VertexStoreAdapter(
-            VertexStoreJavaImpl.create(
-                VertexStoreState.create(
-                    HighQC.from(rootQC), genesisVertex, Optional.empty(), hasher),
-                ledger,
-                hasher),
+            underlyingVertexStore,
             bftHighQCUpdateEventDispatcher,
             bftUpdateSender,
             rebuildUpdateEventDispatcher,
@@ -193,34 +194,35 @@ public class VertexStoreTest {
   public void adding_a_qc_should_update_highest_qc() {
     // Arrange
     final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
-    sut.insertVertex(vertices.get(0));
+    vertexStoreAdapter.insertVertex(vertices.get(0));
 
     // Act
     QuorumCertificate qc = vertices.get(1).getQCToParent();
-    sut.insertQc(qc);
+    vertexStoreAdapter.insertQc(qc);
 
     // Assert
-    assertThat(sut.highQC().highestQC()).isEqualTo(qc);
-    assertThat(sut.highQC().highestCommittedQC()).isEqualTo(rootQC);
+    assertThat(vertexStoreAdapter.highQC().highestQC()).isEqualTo(qc);
+    assertThat(vertexStoreAdapter.highQC().highestCommittedQC()).isEqualTo(rootQC);
+    assertTrue(isVertexStoreChildrenMappingTidy(underlyingVertexStore));
   }
 
   @Test
   public void adding_a_qc_with_commit_should_commit_vertices_to_ledger() {
     // Arrange
     final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
-    sut.insertVertex(vertices.get(0));
-    sut.insertVertex(vertices.get(1));
-    sut.insertVertex(vertices.get(2));
+    vertexStoreAdapter.insertVertex(vertices.get(0));
+    vertexStoreAdapter.insertVertex(vertices.get(1));
+    vertexStoreAdapter.insertVertex(vertices.get(2));
 
     // Act
     QuorumCertificate qc = vertices.get(3).getQCToParent();
-    boolean success = sut.insertQc(qc);
+    boolean success = vertexStoreAdapter.insertQc(qc);
 
     // Assert
     assertThat(success).isTrue();
-    assertThat(sut.highQC().highestQC()).isEqualTo(qc);
-    assertThat(sut.highQC().highestCommittedQC()).isEqualTo(qc);
-    assertThat(sut.getVertices(vertices.get(2).getHash(), 3))
+    assertThat(vertexStoreAdapter.highQC().highestQC()).isEqualTo(qc);
+    assertThat(vertexStoreAdapter.highQC().highestCommittedQC()).isEqualTo(qc);
+    assertThat(vertexStoreAdapter.getVertices(vertices.get(2).getHash(), 3))
         .hasValue(ImmutableList.of(vertices.get(2), vertices.get(1), vertices.get(0)));
     verify(committedSender, times(1))
         .dispatch(
@@ -228,6 +230,16 @@ public class VertexStoreTest {
                 u ->
                     u.committed().size() == 1
                         && u.committed().get(0).getVertex().equals(vertices.get(0))));
+    assertTrue(isVertexStoreChildrenMappingTidy(underlyingVertexStore));
+  }
+
+  private boolean isVertexStoreChildrenMappingTidy(VertexStoreJavaImpl vertexStore) {
+    for (HashCode vertexHash : vertexStore.verticesForWhichChildrenAreBeingStored()) {
+      if (!vertexStore.containsVertex(vertexHash)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @Test
@@ -237,7 +249,7 @@ public class VertexStoreTest {
 
     // Act
     QuorumCertificate qc = this.nextVertex.get().getQCToParent();
-    boolean success = sut.insertQc(qc);
+    boolean success = vertexStoreAdapter.insertQc(qc);
 
     // Assert
     assertThat(success).isFalse();
@@ -252,11 +264,11 @@ public class VertexStoreTest {
             HighQC.from(vertices.get(3).getQCToParent()),
             vertices.get(0),
             vertices.stream().skip(1).collect(ImmutableList.toImmutableList()),
-            sut.highQC().highestTC(),
+            vertexStoreAdapter.highQC().highestTC(),
             hasher);
 
     // Act
-    sut.tryRebuild(vertexStoreState);
+    vertexStoreAdapter.tryRebuild(vertexStoreState);
 
     // Assert
     verify(rebuildUpdateEventDispatcher, times(1))
@@ -275,13 +287,13 @@ public class VertexStoreTest {
     TimeoutCertificate higherTC =
         new TimeoutCertificate(1, Round.of(101), mock(TimestampedECDSASignatures.class));
 
-    sut.insertTimeoutCertificate(initialTC);
-    assertEquals(initialTC, sut.highQC().highestTC().orElse(null));
+    vertexStoreAdapter.insertTimeoutCertificate(initialTC);
+    assertEquals(initialTC, vertexStoreAdapter.highQC().highestTC().orElse(null));
 
-    sut.insertTimeoutCertificate(higherTC);
-    assertEquals(higherTC, sut.highQC().highestTC().orElse(null));
+    vertexStoreAdapter.insertTimeoutCertificate(higherTC);
+    assertEquals(higherTC, vertexStoreAdapter.highQC().highestTC().orElse(null));
 
-    sut.insertTimeoutCertificate(initialTC);
-    assertEquals(higherTC, sut.highQC().highestTC().orElse(null));
+    vertexStoreAdapter.insertTimeoutCertificate(initialTC);
+    assertEquals(higherTC, vertexStoreAdapter.highQC().highestTC().orElse(null));
   }
 }

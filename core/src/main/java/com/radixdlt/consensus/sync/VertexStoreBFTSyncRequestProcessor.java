@@ -66,6 +66,7 @@ package com.radixdlt.consensus.sync;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VertexStoreAdapter;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.monitoring.SystemCounters;

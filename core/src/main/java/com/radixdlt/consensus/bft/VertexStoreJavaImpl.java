@@ -62,8 +62,9 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.sync;
+package com.radixdlt.consensus.bft;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
@@ -72,11 +73,6 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.ExecutedVertex;
-import com.radixdlt.consensus.bft.MissingParentException;
-import com.radixdlt.consensus.bft.VertexChain;
-import com.radixdlt.consensus.bft.VertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.lang.Option;
 import java.util.ArrayList;
@@ -361,6 +357,11 @@ public final class VertexStoreJavaImpl implements VertexStore {
     final HashCode vertexId = header.getVertexId();
     final VertexWithHash tipVertex = vertices.get(vertexId).getVertex();
 
+    /* removeVertexAndPruneInternal skips children removal for the rootVertex, so we need to
+    keep a reference to the previous root and prune it *after* new rootVertex is set.
+    This isn't particularly easy to reason about and should be refactored at some point
+    (i.e. the logic should be moved out of removeVertexAndPruneInternal). */
+    final var prevRootVertex = this.rootVertex;
     this.rootVertex = tipVertex;
     this.highestCommittedQC = commitQC;
     final var path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getHash()));
@@ -369,6 +370,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
       this.removeVertexAndPruneInternal(path.get(i).getVertexHash(), prev);
       prev = path.get(i).getVertexHash();
     }
+    removeVertexAndPruneInternal(prevRootVertex.getHash(), null);
 
     return Optional.of(new CommittedUpdate(path));
   }
@@ -423,5 +425,10 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
 
     return Option.present(builder.build());
+  }
+
+  @VisibleForTesting
+  Set<HashCode> verticesForWhichChildrenAreBeingStored() {
+    return this.vertexChildren.keySet();
   }
 }
