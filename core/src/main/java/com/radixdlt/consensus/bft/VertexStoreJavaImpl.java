@@ -336,9 +336,11 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
 
     var children = vertexChildren.remove(vertexId);
-    for (HashCode child : children) {
-      if (!child.equals(skip)) {
-        removeVertexAndPruneInternal(child, null);
+    if (children != null) {
+      for (HashCode child : children) {
+        if (!child.equals(skip)) {
+          removeVertexAndPruneInternal(child, null);
+        }
       }
     }
   }
