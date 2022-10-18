@@ -30,6 +30,9 @@ pub enum MappingError {
     InvalidComponentStateEntities {
         message: String,
     },
+    InvalidManifest {
+        message: String,
+    },
     MismatchedSubstateId {
         message: String,
     },

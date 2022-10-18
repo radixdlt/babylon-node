@@ -203,8 +203,15 @@ impl SimpleMempool {
         payload_hashes.unwrap().iter().cloned().collect()
     }
 
-    pub fn get_all_payload_hashes(&self) -> Vec<UserPayloadHash> {
-        self.data.keys().cloned().collect()
+    pub fn list_all_hashes(&self) -> Vec<(&IntentHash, &UserPayloadHash)> {
+        self.intent_lookup
+            .iter()
+            .flat_map(|(intent_hash, payload_hashes)| {
+                payload_hashes
+                    .iter()
+                    .map(move |payload_hash| (intent_hash, payload_hash))
+            })
+            .collect()
     }
 
     pub fn get_payload(&self, payload_hash: &UserPayloadHash) -> Option<&PendingTransaction> {

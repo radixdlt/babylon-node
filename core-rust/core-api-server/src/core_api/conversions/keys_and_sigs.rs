@@ -2,7 +2,7 @@ use scrypto::crypto::*;
 
 use crate::core_api::*;
 
-pub fn to_api_public_key(public_key: PublicKey) -> models::PublicKey {
+pub fn to_api_public_key(public_key: &PublicKey) -> models::PublicKey {
     match public_key {
         PublicKey::EcdsaSecp256k1(key) => models::PublicKey::EcdsaSecp256k1PublicKey {
             key_hex: to_hex(key.to_vec()),
@@ -13,7 +13,7 @@ pub fn to_api_public_key(public_key: PublicKey) -> models::PublicKey {
     }
 }
 
-pub fn to_api_signature(signature: Signature) -> models::Signature {
+pub fn to_api_signature(signature: &Signature) -> models::Signature {
     match signature {
         Signature::EcdsaSecp256k1(sig) => models::Signature::EcdsaSecp256k1Signature {
             signature_hex: to_hex(sig.to_vec()),
@@ -25,7 +25,7 @@ pub fn to_api_signature(signature: Signature) -> models::Signature {
 }
 
 pub fn to_api_signature_with_public_key(
-    sig_with_public_key: SignatureWithPublicKey,
+    sig_with_public_key: &SignatureWithPublicKey,
 ) -> models::SignatureWithPublicKey {
     match sig_with_public_key {
         SignatureWithPublicKey::EcdsaSecp256k1 { signature } => {
