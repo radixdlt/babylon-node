@@ -14,11 +14,11 @@ pub(crate) async fn handle_transaction_parse(
     state: Extension<CoreApiState>,
     request: Json<models::TransactionParseRequest>,
 ) -> Result<Json<models::TransactionParseResponse>, RequestHandlingError> {
-    core_api_handler(state, request, handle_transaction_parse_internal)
+    core_api_read_handler(state, request, handle_transaction_parse_internal)
 }
 
 fn handle_transaction_parse_internal(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     request: models::TransactionParseRequest,
 ) -> Result<models::TransactionParseResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;
