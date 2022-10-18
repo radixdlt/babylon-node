@@ -101,11 +101,13 @@ def generate_models(schema_file, tmp_client_folder, out_location):
         fix_broken_discriminator_tag(file_path, "substate_type")
         fix_broken_discriminator_tag(file_path, "resource_type")
         fix_broken_discriminator_tag(file_path, "key_type")
+        fix_broken_discriminator_tag(file_path, "type")
         fix_for_enum_not_implementing_default(file_path, "Substate")
         fix_for_enum_not_implementing_default(file_path, "ResourceAmount")
         fix_for_enum_not_implementing_default(file_path, "Signature")
         fix_for_enum_not_implementing_default(file_path, "PublicKey")
         fix_for_enum_not_implementing_default(file_path, "SignatureWithPublicKey")
+        fix_for_enum_not_implementing_default(file_path, "ParsedTransaction")
 
     logging.info("Successfully fixed up.")
 

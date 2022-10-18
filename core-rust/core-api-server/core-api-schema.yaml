@@ -106,6 +106,93 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  "/mempool/list":
+    post:
+      summary: Get Mempool List
+      description: Returns the hashes of all the transactions currently in the mempool
+      tags:
+        - Mempool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/MempoolListRequest"
+      responses:
+        '200':
+          description: Mempool List Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MempoolListResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/mempool/transaction":
+    post:
+      summary: Get Mempool Transaction
+      description: Returns the payload of a transaction currently in the mempool
+      tags:
+        - Mempool
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/MempoolTransactionRequest"
+      responses:
+        '200':
+          description: Mempool Transaction Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MempoolTransactionResponse"
+        '404':
+          description: Not found error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  "/transaction/parse":
+    post:
+      summary: Parse a transaction payload
+      description: Returns the contents and hashes of a notarized transaction, signed transaction or transaction intent.
+      tags:
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionParseRequest"
+      responses:
+        '200':
+          description: Transaction Parse Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionParseResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   "/transaction/submit":
     post:
       summary: Submit transaction to the network
@@ -577,14 +664,7 @@ components:
         header:
           $ref: "#/components/schemas/TransactionHeader"
         manifest:
-          type: string
-          description: The decompiled transaction manifest
-        blobs_hex:
-          type: object
-          description: A map of the hex-encoded blob hash, to hex-encoded blob content
-          additionalProperties:
-            type: string
-            description: The hex-encoded blob content
+          $ref: "#/components/schemas/TransactionManifest"
     TransactionHeader:
       type: object
       required:
@@ -638,6 +718,21 @@ components:
           minimum: 0
           maximum: 4294967295
           description: An integer between 0 and 2^32 - 1, giving the validator tip as a percentage amount. A value of "1" corresponds to 1% of the fee.
+    TransactionManifest:
+      type: object
+      required:
+        - instructions
+        - blobs_hex
+      properties:
+        instructions:
+          type: string
+          description: The decompiled transaction manifest instructions
+        blobs_hex:
+          type: object
+          description: A map of the hex-encoded blob hash, to hex-encoded blob content
+          additionalProperties:
+            type: string
+            description: The hex-encoded blob content
     NetworkIdentifier:
       description: The logical name of the network
       type: string
@@ -1335,6 +1430,163 @@ components:
           description: |
             The current state identifier at the top of the node's copy of the ledger.
             This is also the resultant state identifier of the node's last committed transaction.
+##########################
+# REQUEST: /mempool/list #
+##########################
+    MempoolListRequest:
+      type: object
+      required:
+        - network
+      properties:
+        network:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+    MempoolListResponse:
+      type: object
+      required:
+        - contents
+      properties:
+        contents:
+          type: array
+          items:
+            "$ref": "#/components/schemas/MempoolTransactionHashes"
+    MempoolTransactionHashes:
+      type: object
+      required:
+        - intent_hash
+        - payload_hash
+      properties:
+        intent_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+        payload_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+#################################
+# REQUEST: /mempool/transaction #
+#################################
+    MempoolTransactionRequest:
+      type: object
+      required:
+        - network
+        - payload_hash
+      properties:
+        network:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+        payload_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+    MempoolTransactionResponse:
+      type: object
+      required:
+        - notarized_transaction
+      properties:
+        notarized_transaction:
+          "$ref": "#/components/schemas/NotarizedTransaction"
+###############################
+# REQUEST: /transaction/parse #
+###############################
+    TransactionParseRequest:
+      type: object
+      required:
+        - network
+        - payload_hex
+      properties:
+        network:
+          "$ref": "#/components/schemas/NetworkIdentifier"
+        payload_hex:
+          type: string
+          description: |
+            A hex-encoded payload of a full transaction or a partial transaction - either a notarized transaction,
+            a signed transaction intent an unsigned transaction intent, or a transaction manifest.
+    TransactionParseResponse:
+      type: object
+      required:
+        - parsed
+        - is_valid
+      properties:
+        parsed:
+          "$ref": "#/components/schemas/ParsedTransaction"
+    ParsedTransactionType:
+      type: string
+      description: The type of the parsed (partial) transaction payload
+      enum:
+        - NotarizedTransaction
+        - SignedTransactionIntent
+        - TransactionIntent
+        - TransactionManifest
+    ParsedTransaction:
+      oneOf:
+        - $ref: '#/components/schemas/ParsedNotarizedTransaction'
+        - $ref: '#/components/schemas/ParsedSignedTransactionIntent'
+        - $ref: '#/components/schemas/ParsedTransactionIntent'
+        - $ref: '#/components/schemas/ParsedTransactionManifest'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match ParsedTransactionType
+          NotarizedTransaction: '#/components/schemas/ParsedNotarizedTransaction'
+          SignedTransactionIntent: '#/components/schemas/ParsedSignedTransactionIntent'
+          TransactionIntent: '#/components/schemas/ParsedTransactionIntent'
+          TransactionManifest: '#/components/schemas/ParsedTransactionManifest'
+    ParsedTransactionBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          "$ref": "#/components/schemas/ParsedTransactionType"
+    ParsedNotarizedTransaction:
+      allOf:
+        - "$ref": "#/components/schemas/ParsedTransactionType"
+        - type: object
+          required:
+            - notarized_transaction
+            - is_statically_valid
+          properties:
+            notarized_transaction:
+              "$ref": "#/components/schemas/NotarizedTransaction"
+            is_statically_valid:
+              type: boolean
+              description: |
+                Gives if the transaction is statically valid. Note that, even if statically valid, the transaction may
+                still be rejected or fail due to issues at runtime (eg if the loan cannot be repaid).
+            validity_error:
+              type: string
+              description: |
+                If the transaction is not statically valid, this gives a reason.
+    ParsedSignedTransactionIntent:
+      allOf:
+        - "$ref": "#/components/schemas/ParsedTransactionType"
+        - type: object
+          required:
+            - signed_intent
+          properties:
+            signed_intent:
+              "$ref": "#/components/schemas/SignedTransactionIntent"
+    ParsedTransactionIntent:
+      allOf:
+        - "$ref": "#/components/schemas/ParsedTransactionType"
+        - type: object
+          required:
+            - intent
+          properties:
+            intent:
+              "$ref": "#/components/schemas/TransactionIntent"
+    ParsedTransactionManifest:
+      allOf:
+        - "$ref": "#/components/schemas/ParsedTransactionType"
+        - type: object
+          required:
+            - manifest
+          properties:
+            manifest:
+              "$ref": "#/components/schemas/TransactionManifest"
 ################################
 # REQUEST: /transaction/submit #
 ################################
@@ -1566,6 +1818,9 @@ components:
       properties:
         payload_hash:
           type: string
+          minLength: 64
+          maxLength: 64
+          description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
         status:
           type: string
           description: The status of the transaction payload, as per this node
