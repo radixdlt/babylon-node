@@ -460,11 +460,11 @@ where
         if let Err(rejection_reason) = new_status {
             let payload_hash = transaction.user_payload_hash();
             // Let's also remove it from the mempool, if it's present
-            self.mempool.remove_transaction(&payload_hash).map(|_| {
+            if self.mempool.remove_transaction(&payload_hash).is_some() {
                 self.counters
                     .mempool_current_transactions_total
                     .set(self.mempool.get_count() as i64);
-            });
+            }
             self.rejection_cache.track_rejection(
                 transaction.intent_hash(),
                 transaction.user_payload_hash(),
@@ -512,11 +512,11 @@ where
 
         for txn_to_remove in txns_to_remove {
             mempool_txns.remove(&txn_to_remove);
-            self.mempool.remove_transaction(&txn_to_remove).map(|_| {
+            if self.mempool.remove_transaction(&txn_to_remove).is_some() {
                 self.counters
                     .mempool_current_transactions_total
                     .set(self.mempool.get_count() as i64);
-            });
+            }
         }
 
         mempool_txns

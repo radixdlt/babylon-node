@@ -101,7 +101,7 @@ impl From<Hash> for TransactionPayloadHash {
 
 impl fmt::Display for TransactionPayloadHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(&self.0))
+        write!(f, "{}", hex::encode(self.0))
     }
 }
 
@@ -138,7 +138,7 @@ impl UserPayloadHash {
 
 impl fmt::Display for UserPayloadHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(&self.0))
+        write!(f, "{}", hex::encode(self.0))
     }
 }
 
@@ -191,7 +191,7 @@ impl SignaturesHash {
 
 impl fmt::Display for SignaturesHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(&self.0))
+        write!(f, "{}", hex::encode(self.0))
     }
 }
 
@@ -244,7 +244,7 @@ impl IntentHash {
 
 impl fmt::Display for IntentHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", hex::encode(&self.0))
+        write!(f, "{}", hex::encode(self.0))
     }
 }
 

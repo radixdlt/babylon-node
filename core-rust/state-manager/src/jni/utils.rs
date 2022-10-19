@@ -184,7 +184,7 @@ fn jni_state_manager_sbor_read_call_inner<Args: JavaStructure, Response: JavaStr
     let state_manager_arc = JNIStateManager::get_state_manager(env, j_state_manager);
     let state_manager = state_manager_arc.read();
 
-    let response = method(&*state_manager, args);
+    let response = method(&state_manager, args);
     Ok(response)
 }
 
@@ -200,7 +200,7 @@ fn jni_state_manager_sbor_call_inner<Args: JavaStructure, Response: JavaStructur
     let state_manager_arc = JNIStateManager::get_state_manager(env, j_state_manager);
     let mut state_manager = state_manager_arc.write();
 
-    let response = method(&mut *state_manager, args);
+    let response = method(&mut state_manager, args);
     Ok(response)
 }
 
