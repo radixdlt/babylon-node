@@ -88,6 +88,7 @@ import com.radixdlt.mempool.MempoolReceiverModule;
 import com.radixdlt.mempool.MempoolRelayerModule;
 import com.radixdlt.modules.StateComputerConfig.*;
 import com.radixdlt.rev1.ReV1DispatcherModule;
+import com.radixdlt.rev1.mempool.ReV1MempoolRelayerModule;
 import com.radixdlt.rev1.modules.*;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
@@ -337,7 +338,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           }
           case REv1StateComputerConfig config -> {
             install(new MempoolReceiverModule());
-            install(new MempoolRelayerModule(10000));
+            install(new ReV1MempoolRelayerModule(10000));
             install(new RadixEngineStateComputerModule(config.mempoolSize()));
             install(new RadixEngineModule());
             install(new ReV1DispatcherModule());

@@ -80,7 +80,7 @@ import com.radixdlt.harness.simulation.monitors.ledger.LedgerMonitors;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.Mempools;
 import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -104,7 +104,8 @@ public class MempoolSanityTest {
                 new AbstractModule() {
                   @Override
                   protected void configure() {
-                    bind(new TypeLiteral<Mempool<RawTransaction>>() {})
+                    bind(new TypeLiteral<
+                            Mempool<RawNotarizedTransaction, RawNotarizedTransaction>>() {})
                         .toInstance(Mempools.empty());
                   }
                 })

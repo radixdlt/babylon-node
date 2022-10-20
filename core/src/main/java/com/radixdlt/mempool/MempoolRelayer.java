@@ -72,7 +72,7 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.p2p.PeersView;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -87,13 +87,13 @@ public final class MempoolRelayer {
 
   private final SystemCounters counters;
 
-  private final MempoolReader mempoolRelayReader;
+  private final MempoolReader<RawNotarizedTransaction> mempoolRelayReader;
 
   private final int maxPeers;
 
   @Inject
   public MempoolRelayer(
-      MempoolReader mempoolRelayReader,
+      MempoolReader<RawNotarizedTransaction> mempoolRelayReader,
       RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
       PeersView peersView,
       @MempoolRelayMaxPeers int maxPeers,
@@ -123,7 +123,7 @@ public final class MempoolRelayer {
   }
 
   private void relayTransactions(
-      List<RawTransaction> transactions, ImmutableList<BFTNode> ignorePeers) {
+      List<RawNotarizedTransaction> transactions, ImmutableList<BFTNode> ignorePeers) {
     final var mempoolAddMsg = MempoolAdd.create(transactions);
     final var peers =
         this.peersView.peers().map(PeersView.PeerInfo::bftNode).collect(Collectors.toList());

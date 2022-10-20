@@ -69,7 +69,7 @@ import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Arrays;
 import java.util.Objects;
@@ -80,10 +80,11 @@ import org.apache.logging.log4j.Logger;
 /** Checks to make sure that transactions have been committed in a certain amount of time */
 public class CommittedChecker implements TestInvariant {
   private static final Logger log = LogManager.getLogger();
-  private final Observable<RawTransaction> submittedTransactions;
+  private final Observable<RawNotarizedTransaction> submittedTransactions;
   private final NodeEvents commits;
 
-  public CommittedChecker(Observable<RawTransaction> submittedTransactions, NodeEvents commits) {
+  public CommittedChecker(
+      Observable<RawNotarizedTransaction> submittedTransactions, NodeEvents commits) {
     this.submittedTransactions = Objects.requireNonNull(submittedTransactions);
     this.commits = Objects.requireNonNull(commits);
   }

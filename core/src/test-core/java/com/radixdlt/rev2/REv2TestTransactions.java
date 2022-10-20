@@ -70,7 +70,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.PublicKey;
 import com.radixdlt.crypto.SignatureWithPublicKey;
 import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 
@@ -82,7 +82,8 @@ public final class REv2TestTransactions {
     return PrivateKeys.numeric(keySource).findFirst().orElseThrow();
   }
 
-  public static RawTransaction constructValidButRejectTransaction(long fromEpoch, long nonce) {
+  public static RawNotarizedTransaction constructValidButRejectTransaction(
+      long fromEpoch, long nonce) {
     // Note - rejects due to lack of fee payment
     final var manifest = "CLEAR_AUTH_ZONE;";
     final var signatories = List.of(generateKeyPair(10));
@@ -94,7 +95,7 @@ public final class REv2TestTransactions {
       NetworkDefinition network, long fromEpoch, long nonce, PublicKey notary) {
     final var addressing = Addressing.ofNetwork(network);
     final var faucetAddress =
-        addressing.encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
+        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
 
     var manifest =
         String.format(
@@ -110,15 +111,15 @@ public final class REv2TestTransactions {
   public static String constructNewAccountManifest(NetworkDefinition networkDefinition) {
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var faucetAddress =
-        addressing.encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
-    final var xrdAddress = addressing.encodeResourceAddress(ResourceAddress.XRD_ADDRESS);
+        addressing.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
+    final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
     final var accountPackageAddress =
-        addressing.encodePackageAddress(PackageAddress.ACCOUNT_PACKAGE_ADDRESS);
+        addressing.encodePackageAddress(ScryptoConstants.ACCOUNT_PACKAGE_ADDRESS);
 
     return String.format(
         """
                     CALL_METHOD ComponentAddress("%s") "lock_fee" Decimal("100");
-                    CALL_METHOD ComponentAddress("%s") "free_xrd";
+                    CALL_METHOD ComponentAddress("%s") "free";
                     TAKE_FROM_WORKTOP ResourceAddress("%s") Bucket("xrd");
                     CALL_FUNCTION PackageAddress("%s") "Account" "new_with_resource" Enum("AllowAll") Bucket("xrd");
                     """,
@@ -132,9 +133,9 @@ public final class REv2TestTransactions {
     // of 1000, the size of the free XRD bucket)
     final var addressing = Addressing.ofNetwork(networkDefinition);
     final var fromAddress = addressing.encodeAccountAddress(from);
-    final var xrdAddress = addressing.encodeResourceAddress(ResourceAddress.XRD_ADDRESS);
+    final var xrdAddress = addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
     final var accountPackageAddress =
-        addressing.encodePackageAddress(PackageAddress.ACCOUNT_PACKAGE_ADDRESS);
+        addressing.encodePackageAddress(ScryptoConstants.ACCOUNT_PACKAGE_ADDRESS);
 
     return String.format(
         """
@@ -146,7 +147,7 @@ public final class REv2TestTransactions {
         fromAddress, fromAddress, xrdAddress, xrdAddress, accountPackageAddress);
   }
 
-  public static RawTransaction constructNewAccountFromAccountTransaction(
+  public static RawNotarizedTransaction constructNewAccountFromAccountTransaction(
       NetworkDefinition networkDefinition, ComponentAddress from, long fromEpoch, long nonce) {
     var manifest = constructNewAccountFromAccountManifest(networkDefinition, from);
     var signatories = List.<ECKeyPair>of();
@@ -176,14 +177,14 @@ public final class REv2TestTransactions {
    * Constructs a user transaction which attempts to set the epoch. This should cause the
    * transaction to be committed but failing due to insufficient permissions to set epoch.
    */
-  public static RawTransaction constructFailingSetEpochTransaction(long epoch) {
+  public static RawNotarizedTransaction constructFailingSetEpochTransaction(long epoch) {
     var intentBytes =
         TransactionBuilder.buildSetEpochIntent(
             NetworkDefinition.INT_TEST_NET, DEFAULT_NOTARY.getPublicKey().toPublicKey(), epoch);
     return REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of());
   }
 
-  public static RawTransaction constructValidTransaction(long fromEpoch, long nonce) {
+  public static RawNotarizedTransaction constructValidTransaction(long fromEpoch, long nonce) {
     var intentBytes =
         constructValidIntentBytes(
             NetworkDefinition.INT_TEST_NET,
@@ -193,7 +194,7 @@ public final class REv2TestTransactions {
     return REv2TestTransactions.constructTransaction(intentBytes, DEFAULT_NOTARY, List.of());
   }
 
-  public static RawTransaction constructNewAccountTransaction(
+  public static RawNotarizedTransaction constructNewAccountTransaction(
       NetworkDefinition networkDefinition, long fromEpoch, long nonce) {
     var manifest = constructNewAccountManifest(networkDefinition);
     var signatories = List.<ECKeyPair>of();
@@ -202,7 +203,7 @@ public final class REv2TestTransactions {
         networkDefinition, fromEpoch, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
-  public static RawTransaction constructTransaction(
+  public static RawNotarizedTransaction constructTransaction(
       NetworkDefinition networkDefinition,
       String manifest,
       long fromEpoch,
@@ -212,7 +213,7 @@ public final class REv2TestTransactions {
         networkDefinition, fromEpoch, nonce, manifest, DEFAULT_NOTARY, false, signatories);
   }
 
-  public static RawTransaction constructTransaction(
+  public static RawNotarizedTransaction constructTransaction(
       NetworkDefinition networkDefinition,
       long fromEpoch,
       long nonce,
@@ -236,7 +237,7 @@ public final class REv2TestTransactions {
     return constructTransaction(intentBytes, notary, signatories);
   }
 
-  public static RawTransaction constructTransaction(
+  public static RawNotarizedTransaction constructTransaction(
       NetworkDefinition networkDefinition,
       TransactionHeader header,
       String manifest,
@@ -250,7 +251,7 @@ public final class REv2TestTransactions {
     return constructTransaction(intentBytes, notary, signatories);
   }
 
-  public static RawTransaction constructTransaction(
+  public static RawNotarizedTransaction constructTransaction(
       byte[] intentBytes, ECKeyPair notary, List<ECKeyPair> signatories) {
     // Sign intent
     var hashedIntent = HashUtils.sha256Twice(intentBytes).asBytes();
@@ -269,8 +270,7 @@ public final class REv2TestTransactions {
     var notarySignature = notary.sign(hashedSignedIntent).toSignature();
     var notarizedBytes =
         TransactionBuilder.createNotarizedBytes(signedIntentBytes, notarySignature);
-
-    return RawTransaction.create(notarizedBytes);
+    return RawNotarizedTransaction.create(notarizedBytes);
   }
 
   private REv2TestTransactions() {

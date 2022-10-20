@@ -70,7 +70,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.networks.Network;
 import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt32;
@@ -84,7 +84,7 @@ public class REv2TransactionCreationTest {
   private static final Logger log = LogManager.getLogger();
   private static final ECKeyPair NOTARY = REv2TestTransactions.DEFAULT_NOTARY;
 
-  public record TransactionInfo(RawTransaction transaction, HashCode intentHash) {}
+  public record TransactionInfo(RawNotarizedTransaction transaction, HashCode intentHash) {}
 
   @Test
   public void can_create_some_test_transactions() {
@@ -95,11 +95,12 @@ public class REv2TransactionCreationTest {
     var addressing = Addressing.ofNetwork(network);
     log.info(
         String.format(
-            "XRD Address: %s", addressing.encodeResourceAddress(ResourceAddress.XRD_ADDRESS)));
+            "XRD Address: %s",
+            addressing.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS)));
     log.info(
         String.format(
             "Account Package Address: %s",
-            addressing.encodePackageAddress(PackageAddress.ACCOUNT_PACKAGE_ADDRESS)));
+            addressing.encodePackageAddress(ScryptoConstants.ACCOUNT_PACKAGE_ADDRESS)));
     log.info("===================================");
 
     logTransaction(

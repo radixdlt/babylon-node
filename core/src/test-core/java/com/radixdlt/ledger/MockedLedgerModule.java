@@ -105,7 +105,7 @@ public class MockedLedgerModule extends AbstractModule {
                 vertex,
                 ledgerHeader,
                 vertex.getTransactions().stream()
-                    .<ExecutedTransaction>map(MockExecuted::new)
+                    .<ExecutedTransaction>map(tx -> new MockExecuted(tx.unsafeAsRawTransaction()))
                     .toList(),
                 Map.of(),
                 timeSupplier.currentTime()));

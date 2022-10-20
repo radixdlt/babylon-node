@@ -1,8 +1,7 @@
 use crate::transaction::types::Transaction;
-use crate::transaction::ValidatorTransaction;
 use scrypto::buffer::scrypto_decode;
 use transaction::errors::TransactionValidationError;
-use transaction::model::{NotarizedTransaction, Validated};
+use transaction::model::{Executable, NotarizedTransaction};
 use transaction::validation::ValidationConfig;
 use transaction::validation::{
     NotarizedTransactionValidator, TestIntentHashManager, TransactionValidator,
@@ -38,7 +37,7 @@ impl UserTransactionValidator {
         &self,
         epoch: u64, // Temporary
         transaction_payload: &[u8],
-    ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
+    ) -> Result<ValidatedTransaction<NotarizedTransaction>, TransactionValidationError> {
         let notarized_transaction =
             Self::parse_unvalidated_user_transaction_from_slice(transaction_payload)?;
         self.validate_user_transaction(epoch, notarized_transaction)
@@ -49,13 +48,23 @@ impl UserTransactionValidator {
         &self,
         epoch: u64, // Temporary
         transaction: NotarizedTransaction,
-    ) -> Result<Validated<NotarizedTransaction>, TransactionValidationError> {
+    ) -> Result<ValidatedTransaction<NotarizedTransaction>, TransactionValidationError> {
         let mut config = self.base_validation_config;
         config.current_epoch = epoch;
         let validator = NotarizedTransactionValidator::new(config);
 
-        validator.validate(transaction, &self.intent_hash_manager)
+        validator
+            .validate(transaction.clone(), &self.intent_hash_manager)
+            .map(|executable| ValidatedTransaction {
+                transaction,
+                executable,
+            })
     }
+}
+
+pub struct ValidatedTransaction<T> {
+    pub transaction: T,
+    pub executable: Executable,
 }
 
 pub struct CommittedTransactionValidator {
@@ -77,7 +86,7 @@ impl CommittedTransactionValidator {
         &self,
         epoch: u64, // Temporary
         transaction_payload: &[u8],
-    ) -> Result<Validated<Transaction>, TransactionValidationError> {
+    ) -> Result<ValidatedTransaction<Transaction>, TransactionValidationError> {
         // TODO: Need a good way to do payload transaction size here
         let transaction = Self::parse_unvalidated_transaction_from_slice(transaction_payload)?;
         self.validate_transaction(epoch, transaction)
@@ -87,34 +96,19 @@ impl CommittedTransactionValidator {
         &self,
         epoch: u64, // Temporary
         transaction: Transaction,
-    ) -> Result<Validated<Transaction>, TransactionValidationError> {
+    ) -> Result<ValidatedTransaction<Transaction>, TransactionValidationError> {
         let mut config = self.base_validation_config;
         config.current_epoch = epoch;
         let validator = NotarizedTransactionValidator::new(config);
-        match transaction {
-            Transaction::User(notarized_transaction) => validator
-                .validate(notarized_transaction, &self.intent_hash_manager)
-                .map(|validated| Validated {
-                    transaction: Transaction::User(validated.transaction),
-                    transaction_hash: validated.transaction_hash,
-                    instructions: validated.instructions,
-                    initial_proofs: validated.initial_proofs,
-                    cost_unit_limit: validated.cost_unit_limit,
-                    tip_percentage: validated.tip_percentage,
-                    blobs: validated.blobs,
-                }),
-            Transaction::Validator(validator_transaction) => {
-                let validated: Validated<ValidatorTransaction> = validator_transaction.into();
-                Ok(Validated {
-                    transaction: Transaction::Validator(validated.transaction),
-                    transaction_hash: validated.transaction_hash,
-                    instructions: validated.instructions,
-                    initial_proofs: validated.initial_proofs,
-                    cost_unit_limit: validated.cost_unit_limit,
-                    tip_percentage: validated.tip_percentage,
-                    blobs: validated.blobs,
-                })
+        let executable = match transaction.clone() {
+            Transaction::User(notarized_transaction) => {
+                validator.validate(notarized_transaction, &self.intent_hash_manager)
             }
-        }
+            Transaction::Validator(validator_transaction) => Ok(validator_transaction.into()),
+        }?;
+        Ok(ValidatedTransaction {
+            transaction,
+            executable,
+        })
     }
 }

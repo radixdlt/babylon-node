@@ -70,13 +70,15 @@ use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, IntentHash, LedgerTransactionReceipt,
     TransactionPayloadHash,
 };
-use radix_engine::engine::Substate;
 use radix_engine::ledger::{
     OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
+use radix_engine::model::PersistedSubstate;
 use rocksdb::{Direction, IteratorMode, SingleThreaded, TransactionDB};
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::engine::types::{KeyValueStoreId, SubstateId};
+use scrypto::engine::types::{
+    KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId, SubstateOffset,
+};
 use std::path::PathBuf;
 
 #[macro_export]
@@ -157,15 +159,6 @@ impl WriteableSubstateStore for RocksDBStore {
             )
             .expect("RockDB: put_substate unexpected error");
     }
-
-    fn set_root(&mut self, substate_id: SubstateId) {
-        self.db
-            .put(
-                db_key!(RootSubstates, &scrypto_encode(&substate_id)),
-                vec![],
-            )
-            .expect("RockDB: set_root unexpected error");
-    }
 }
 
 pub struct RocksDBCommitTransaction<'db> {
@@ -215,13 +208,6 @@ impl<'db> ReadableSubstateStore for RocksDBCommitTransaction<'db> {
             .get(db_key!(Substates, &scrypto_encode(substate_id)))
             .unwrap()
             .map(|b| scrypto_decode(&b).unwrap())
-    }
-
-    fn is_root(&self, substate_id: &SubstateId) -> bool {
-        self.db_txn
-            .get(db_key!(RootSubstates, &scrypto_encode(substate_id)))
-            .unwrap()
-            .is_some()
     }
 }
 
@@ -276,15 +262,6 @@ impl<'db> WriteableSubstateStore for RocksDBCommitTransaction<'db> {
             )
             .expect("RocksDB: put_substate unexpected error");
     }
-
-    fn set_root(&mut self, substate_id: SubstateId) {
-        self.db_txn
-            .put(
-                db_key!(RootSubstates, &scrypto_encode(&substate_id)),
-                vec![],
-            )
-            .expect("RocksDB: set_root unexpected error");
-    }
 }
 
 impl<'db> WriteableVertexStore for RocksDBCommitTransaction<'db> {
@@ -310,13 +287,6 @@ impl ReadableSubstateStore for RocksDBStore {
             .get(db_key!(Substates, &scrypto_encode(substate_id)))
             .unwrap()
             .map(|b| scrypto_decode(&b).unwrap())
-    }
-
-    fn is_root(&self, substate_id: &SubstateId) -> bool {
-        self.db
-            .get(db_key!(RootSubstates, &scrypto_encode(substate_id)))
-            .unwrap()
-            .is_some()
     }
 }
 
@@ -435,11 +405,13 @@ impl QueryableProofStore for RocksDBStore {
 }
 
 impl QueryableSubstateStore for RocksDBStore {
-    fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<Vec<u8>, Substate> {
-        let unit = scrypto_encode(&());
-        let id = scrypto_encode(&SubstateId::KeyValueStoreEntry(
-            *kv_store_id,
-            scrypto_encode(&unit),
+    fn get_kv_store_entries(
+        &self,
+        kv_store_id: &KeyValueStoreId,
+    ) -> HashMap<Vec<u8>, PersistedSubstate> {
+        let id = scrypto_encode(&SubstateId(
+            RENodeId::KeyValueStore(*kv_store_id),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(vec![])),
         ));
 
         let iter = self.db.iterator(IteratorMode::From(
@@ -456,7 +428,11 @@ impl QueryableSubstateStore for RocksDBStore {
 
             let substate: OutputValue = scrypto_decode(&value).unwrap();
             let substate_id: SubstateId = scrypto_decode(key).unwrap();
-            if let SubstateId::KeyValueStoreEntry(id, key) = substate_id {
+            if let SubstateId(
+                RENodeId::KeyValueStore(id),
+                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+            ) = substate_id
+            {
                 if id == *kv_store_id {
                     items.insert(key, substate.substate)
                 } else {

@@ -62,129 +62,90 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.rev1.mempool;
 
-import com.google.common.hash.HashCode;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolReader;
+import com.radixdlt.mempool.MempoolRelayMaxPeers;
+import com.radixdlt.mempool.MempoolRelayTrigger;
+import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.monitoring.SystemCounters.CounterType;
+import com.radixdlt.p2p.PeersView;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.transactions.RawTransaction;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import javax.inject.Inject;
 
-/**
- * A vertex representing a possible future committed round of transactions, along with a hash
- * computed locally.
- *
- * <p>As such, whilst the content of the vertex may be from a peer, and so untrusted, we are
- * confident that the hash accurately represents the vertex contents.
- */
-public final class VertexWithHash {
-  private final Vertex vertex;
-  private final HashCode vertexHash;
+/** Relays transactions from the local mempool to node neighbors. */
+@Singleton
+public final class ReV1MempoolRelayer {
+  private final PeersView peersView;
+  private final RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher;
 
-  public VertexWithHash(Vertex vertex, HashCode vertexHash) {
-    this.vertex = Objects.requireNonNull(vertex);
-    this.vertexHash = Objects.requireNonNull(vertexHash);
+  private final SystemCounters counters;
+
+  private final MempoolReader<RawTransaction> mempoolRelayReader;
+
+  private final int maxPeers;
+
+  @Inject
+  public ReV1MempoolRelayer(
+      MempoolReader<RawTransaction> mempoolRelayReader,
+      RemoteEventDispatcher<MempoolAdd> remoteEventDispatcher,
+      PeersView peersView,
+      @MempoolRelayMaxPeers int maxPeers,
+      SystemCounters counters) {
+    this.mempoolRelayReader = mempoolRelayReader;
+    this.remoteEventDispatcher = Objects.requireNonNull(remoteEventDispatcher);
+    this.peersView = Objects.requireNonNull(peersView);
+    this.maxPeers = maxPeers;
+    this.counters = Objects.requireNonNull(counters);
   }
 
-  public static VertexWithHash from(Vertex vertex, Hasher hasher) {
-    return new VertexWithHash(vertex, hasher.hashDsonEncoded(vertex));
+  public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
+    return mempoolAddSuccess -> {
+      final var ignorePeers =
+          mempoolAddSuccess.getOrigin().map(ImmutableList::of).orElse(ImmutableList.of());
+      relayTransactions(
+          ImmutableList.of(mempoolAddSuccess.getTxn().unsafeAsRawTransaction()), ignorePeers);
+    };
   }
 
-  public BFTNode getProposer() {
-    return vertex.getProposer();
+  public EventProcessor<MempoolRelayTrigger> mempoolRelayTriggerEventProcessor() {
+    return ev -> {
+      final var transactions = this.mempoolRelayReader.getTransactionsToRelay();
+      if (!transactions.isEmpty()) {
+        relayTransactions(transactions, ImmutableList.of());
+      }
+    };
   }
 
-  public boolean isTimeout() {
-    return vertex.isTimeout();
-  }
-
-  public Vertex toSerializable() {
-    return vertex;
-  }
-
-  public List<RawNotarizedTransaction> getTransactions() {
-    return vertex.getTransactions();
-  }
-
-  public boolean touchesGenesis() {
-    return this.getRound().isGenesis()
-        || this.getParentHeader().getRound().isGenesis()
-        || this.getGrandParentHeader().getRound().isGenesis();
-  }
-
-  public boolean hasDirectParent() {
-    return this.vertex.getRound().equals(this.getParentHeader().getRound().next());
-  }
-
-  public boolean parentHasDirectParent() {
-    return this.getParentHeader().getRound().equals(this.getGrandParentHeader().getRound().next());
-  }
-
-  public BFTHeader getParentHeader() {
-    return vertex.getQCToParent().getProposedHeader();
-  }
-
-  public BFTHeader getGrandParentHeader() {
-    return vertex.getQCToParent().getParentHeader();
-  }
-
-  public Round getRound() {
-    return vertex.getRound();
-  }
-
-  public QuorumCertificate getQCToParent() {
-    return vertex.getQCToParent();
-  }
-
-  public HashCode getHash() {
-    return vertexHash;
-  }
-
-  public HashCode getParentVertexId() {
-    return vertex.getQCToParent().getProposedHeader().getVertexId();
-  }
-
-  /**
-   * @return The weighted timestamp of the signatures in the parent QC, in milliseconds since Unix
-   *     Epoch.
-   */
-  public long getWeightedTimestampOfQCToParent() {
-    // If the vertex has a genesis parent then its QC is mocked so just use previous timestamp
-    // this does have the edge case of never increasing timestamps if configuration is
-    // one round per epoch but good enough for now
-
-    return getQCToParent().getWeightedTimestampOfSignatures();
-  }
-
-  public long getEpoch() {
-    return getParentHeader().getLedgerHeader().getEpoch();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.vertex, this.vertexHash);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (o instanceof VertexWithHash) {
-      final var that = (VertexWithHash) o;
-      return Objects.equals(this.vertexHash, that.vertexHash)
-          && Objects.equals(this.vertex, that.vertex);
-    }
-    return false;
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{epoch=%s round=%s qc=%s hash=%s}",
-        this.getClass().getSimpleName(),
-        this.vertex.getQCToParent().getProposedHeader().getLedgerHeader().getEpoch(),
-        this.vertex.getRound(),
-        this.vertex.getQCToParent(),
-        this.vertexHash);
+  private void relayTransactions(
+      List<RawTransaction> transactions, ImmutableList<BFTNode> ignorePeers) {
+    final var mempoolAddMsg =
+        MempoolAdd.create(
+            transactions.stream()
+                .map(tx -> RawNotarizedTransaction.create(tx.getPayload()))
+                .toList());
+    final var peers =
+        this.peersView.peers().map(PeersView.PeerInfo::bftNode).collect(Collectors.toList());
+    peers.removeAll(ignorePeers);
+    Collections.shuffle(peers);
+    peers.stream()
+        .limit(maxPeers)
+        .forEach(
+            peer -> {
+              counters.add(CounterType.MEMPOOL_RELAYS_SENT, transactions.size());
+              this.remoteEventDispatcher.dispatch(peer, mempoolAddMsg);
+            });
   }
 }

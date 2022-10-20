@@ -85,7 +85,7 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import org.junit.Rule;
 import org.junit.Test;
@@ -93,7 +93,7 @@ import org.junit.rules.TemporaryFolder;
 
 public final class SanityTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
-  private final TransactionGenerator transactionGenerator =
+  private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator =
       new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
   private DeterministicTest createTest() {
@@ -126,7 +126,9 @@ public final class SanityTest {
         var mempoolInserter =
             test.getInstance(
                 i % test.numNodes(),
-                Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+                Key.get(
+                    new TypeLiteral<
+                        MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
         mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
       }
 

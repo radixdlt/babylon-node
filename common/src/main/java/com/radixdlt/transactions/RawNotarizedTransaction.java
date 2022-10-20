@@ -62,129 +62,80 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.transactions;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import java.util.List;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 import java.util.Objects;
 
 /**
- * A vertex representing a possible future committed round of transactions, along with a hash
- * computed locally.
- *
- * <p>As such, whilst the content of the vertex may be from a peer, and so untrusted, we are
- * confident that the hash accurately represents the vertex contents.
+ * A wrapper around the raw bytes of a notarized transaction payload. The transaction is yet to be
+ * parsed, and may be invalid.
  */
-public final class VertexWithHash {
-  private final Vertex vertex;
-  private final HashCode vertexHash;
-
-  public VertexWithHash(Vertex vertex, HashCode vertexHash) {
-    this.vertex = Objects.requireNonNull(vertex);
-    this.vertexHash = Objects.requireNonNull(vertexHash);
+public final class RawNotarizedTransaction {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        RawNotarizedTransaction.class,
+        codecs ->
+            StructCodec.with(
+                RawNotarizedTransaction::new,
+                codecs.of(byte[].class),
+                codecs.of(HashCode.class),
+                (t, encoder) -> encoder.encode(t.payload, t.payloadHash)));
   }
 
-  public static VertexWithHash from(Vertex vertex, Hasher hasher) {
-    return new VertexWithHash(vertex, hasher.hashDsonEncoded(vertex));
+  private final byte[] payload;
+  private final HashCode payloadHash;
+
+  private RawNotarizedTransaction(byte[] payload, HashCode payloadHash) {
+    this.payload = Objects.requireNonNull(payload);
+    this.payloadHash = Objects.requireNonNull(payloadHash);
   }
 
-  public BFTNode getProposer() {
-    return vertex.getProposer();
+  private RawNotarizedTransaction(byte[] payload) {
+    this.payload = Objects.requireNonNull(payload);
+    this.payloadHash = HashUtils.transactionIdHash(payload);
   }
 
-  public boolean isTimeout() {
-    return vertex.isTimeout();
+  @JsonCreator
+  public static RawNotarizedTransaction create(byte[] payload) {
+    return new RawNotarizedTransaction(payload);
   }
 
-  public Vertex toSerializable() {
-    return vertex;
+  public HashCode getPayloadHash() {
+    return payloadHash;
   }
 
-  public List<RawNotarizedTransaction> getTransactions() {
-    return vertex.getTransactions();
-  }
-
-  public boolean touchesGenesis() {
-    return this.getRound().isGenesis()
-        || this.getParentHeader().getRound().isGenesis()
-        || this.getGrandParentHeader().getRound().isGenesis();
-  }
-
-  public boolean hasDirectParent() {
-    return this.vertex.getRound().equals(this.getParentHeader().getRound().next());
-  }
-
-  public boolean parentHasDirectParent() {
-    return this.getParentHeader().getRound().equals(this.getGrandParentHeader().getRound().next());
-  }
-
-  public BFTHeader getParentHeader() {
-    return vertex.getQCToParent().getProposedHeader();
-  }
-
-  public BFTHeader getGrandParentHeader() {
-    return vertex.getQCToParent().getParentHeader();
-  }
-
-  public Round getRound() {
-    return vertex.getRound();
-  }
-
-  public QuorumCertificate getQCToParent() {
-    return vertex.getQCToParent();
-  }
-
-  public HashCode getHash() {
-    return vertexHash;
-  }
-
-  public HashCode getParentVertexId() {
-    return vertex.getQCToParent().getProposedHeader().getVertexId();
-  }
-
-  /**
-   * @return The weighted timestamp of the signatures in the parent QC, in milliseconds since Unix
-   *     Epoch.
-   */
-  public long getWeightedTimestampOfQCToParent() {
-    // If the vertex has a genesis parent then its QC is mocked so just use previous timestamp
-    // this does have the edge case of never increasing timestamps if configuration is
-    // one round per epoch but good enough for now
-
-    return getQCToParent().getWeightedTimestampOfSignatures();
-  }
-
-  public long getEpoch() {
-    return getParentHeader().getLedgerHeader().getEpoch();
+  @JsonValue
+  public byte[] getPayload() {
+    return payload;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.vertex, this.vertexHash);
+    return Objects.hash(payloadHash);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof VertexWithHash) {
-      final var that = (VertexWithHash) o;
-      return Objects.equals(this.vertexHash, that.vertexHash)
-          && Objects.equals(this.vertex, that.vertex);
+    if (!(o instanceof RawNotarizedTransaction other)) {
+      return false;
     }
-    return false;
+
+    return Objects.equals(this.payloadHash, other.payloadHash);
   }
 
   @Override
   public String toString() {
-    return String.format(
-        "%s{epoch=%s round=%s qc=%s hash=%s}",
-        this.getClass().getSimpleName(),
-        this.vertex.getQCToParent().getProposedHeader().getLedgerHeader().getEpoch(),
-        this.vertex.getRound(),
-        this.vertex.getQCToParent(),
-        this.vertexHash);
+    return String.format("%s{payloadHash=%s}", this.getClass().getSimpleName(), this.payloadHash);
+  }
+
+  // TODO: remove me; used for some rev1 compatibility
+  public RawTransaction unsafeAsRawTransaction() {
+    return RawTransaction.create(getPayload());
   }
 }

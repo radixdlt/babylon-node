@@ -86,7 +86,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.transaction.ExecutedTransaction;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.junit.Rule;
@@ -122,7 +122,11 @@ public class REv2RejectedTransactionMempoolTest {
       test.startAllNodes();
       var rejectableTransaction = REv2TestTransactions.constructValidButRejectTransaction(0, 1);
       var mempoolInserter =
-          test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+          test.getInstance(
+              0,
+              Key.get(
+                  new TypeLiteral<
+                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
       try {
         mempoolInserter.addTransaction(rejectableTransaction);
       } catch (MempoolRejectedException ignored) {
@@ -133,7 +137,9 @@ public class REv2RejectedTransactionMempoolTest {
       mempoolInserter.addTransaction(REv2TestTransactions.constructValidTransaction(0, 0));
 
       // Assert
-      var mempoolReader = test.getInstance(0, MempoolReader.class);
+      var mempoolReader =
+          test.getInstance(
+              0, Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
       assertThat(mempoolReader.getCount()).isEqualTo(1);
       // Verify that transaction was not committed
       assertTransactionNotCommitted(test.getNodeInjectors(), rejectableTransaction);
@@ -141,9 +147,13 @@ public class REv2RejectedTransactionMempoolTest {
   }
 
   private static ExecutedTransaction executeTransaction(
-      DeterministicTest test, RawTransaction transaction) throws Exception {
+      DeterministicTest test, RawNotarizedTransaction transaction) throws Exception {
     var mempoolInserter =
-        test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+        test.getInstance(
+            0,
+            Key.get(
+                new TypeLiteral<
+                    MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
     mempoolInserter.addTransaction(transaction);
 
     test.runUntilState(allCommittedTransaction(transaction), onlyConsensusEvents());
@@ -160,7 +170,11 @@ public class REv2RejectedTransactionMempoolTest {
       var executedTransaction = executeTransaction(test, accountTxn);
       var accountAddress = executedTransaction.newComponentAddresses().get(0);
       var mempoolInserter =
-          test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+          test.getInstance(
+              0,
+              Key.get(
+                  new TypeLiteral<
+                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
       var transferTxn1 =
           REv2TestTransactions.constructNewAccountFromAccountTransaction(
               NetworkDefinition.INT_TEST_NET, accountAddress, 0, 0);
@@ -177,7 +191,9 @@ public class REv2RejectedTransactionMempoolTest {
       test.runUntilState(allHaveExactMempoolCount(0), 10000);
 
       // Assert
-      var mempoolReader = test.getInstance(0, MempoolReader.class);
+      var mempoolReader =
+          test.getInstance(
+              0, Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
       assertThat(mempoolReader.getCount()).isEqualTo(0);
       // Check that only one of the two transactions was committed
       assertOneTransactionCommittedOutOf(

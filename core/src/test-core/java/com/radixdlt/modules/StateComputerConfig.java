@@ -71,6 +71,7 @@ import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.rev2.HalfCorrectREv2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -135,7 +136,7 @@ public sealed interface StateComputerConfig {
     }
 
     static REV2ProposerConfig transactionGenerator(
-        TransactionGenerator transactionGenerator, long count) {
+        TransactionGenerator<RawNotarizedTransaction> transactionGenerator, long count) {
       return new Generated(
           (round, prepared) ->
               Stream.generate(transactionGenerator::nextTransaction)

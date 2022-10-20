@@ -77,6 +77,7 @@ import com.radixdlt.statecomputer.commit.PrepareRequest;
 import com.radixdlt.statecomputer.commit.PrepareResult;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
@@ -129,16 +130,16 @@ public class RustStateComputer {
     return this.transactionStore;
   }
 
-  public MempoolReader getMempoolReader() {
+  public MempoolReader<RawNotarizedTransaction> getMempoolReader() {
     return this.mempool;
   }
 
-  public MempoolInserter<RawTransaction> getMempoolInserter() {
+  public MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction> getMempoolInserter() {
     return this.mempool::addTransaction;
   }
 
-  public List<RawTransaction> getTransactionsForProposal(
-      int count, List<RawTransaction> transactionToExclude) {
+  public List<RawNotarizedTransaction> getTransactionsForProposal(
+      int count, List<RawNotarizedTransaction> transactionToExclude) {
     return this.mempool.getTransactionsForProposal(count, transactionToExclude);
   }
 

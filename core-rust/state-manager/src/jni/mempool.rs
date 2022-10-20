@@ -65,7 +65,7 @@
 use std::collections::HashSet;
 
 use crate::jni::state_manager::ActualStateManager;
-use crate::mempool::transaction_rejection_cache::RejectionReason;
+
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;

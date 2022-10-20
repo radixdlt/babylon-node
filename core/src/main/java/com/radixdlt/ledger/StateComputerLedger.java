@@ -85,6 +85,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Comparator;
@@ -137,11 +138,12 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   public interface StateComputer {
     void addToMempool(MempoolAdd mempoolAdd, BFTNode origin);
 
-    List<RawTransaction> getTransactionsForProposal(List<ExecutedTransaction> executedTransactions);
+    List<RawNotarizedTransaction> getTransactionsForProposal(
+        List<ExecutedTransaction> executedTransactions);
 
     StateComputerResult prepare(
         List<ExecutedTransaction> previous,
-        List<RawTransaction> proposedTransactions,
+        List<RawNotarizedTransaction> proposedTransactions,
         RoundDetails roundDetails);
 
     void commit(
@@ -194,7 +196,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
   }
 
   @Override
-  public List<RawTransaction> getTransactionsForProposal(
+  public List<RawNotarizedTransaction> getTransactionsForProposal(
       Round round, List<ExecutedVertex> prepared) {
     final ImmutableList<ExecutedTransaction> executedTransactions =
         prepared.stream()

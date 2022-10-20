@@ -84,13 +84,13 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import org.junit.Test;
 
 public final class REv2MempoolRelayerTest {
   private final int MEMPOOL_SIZE = 1000;
-  private final TransactionGenerator transactionGenerator =
+  private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator =
       new REV2TransactionGenerator(NetworkDefinition.INT_TEST_NET);
 
   private DeterministicTest createTest() {
@@ -119,7 +119,11 @@ public final class REv2MempoolRelayerTest {
 
       // Arrange: Fill node1 mempool
       var mempoolInserter =
-          test.getInstance(1, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+          test.getInstance(
+              1,
+              Key.get(
+                  new TypeLiteral<
+                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
       for (int i = 0; i < MEMPOOL_SIZE; i++) {
         mempoolInserter.addTransaction(transactionGenerator.nextTransaction());
       }

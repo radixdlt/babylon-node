@@ -62,6 +62,8 @@
  * permissions under this License.
  */
 
+extern crate core;
+
 pub mod jni;
 pub mod mempool;
 pub mod query;

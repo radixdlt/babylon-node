@@ -67,29 +67,32 @@ use crate::jni::java_structure::*;
 use crate::store::traits::*;
 use crate::store::{InMemoryStore, RocksDBStore};
 
-use radix_engine::constants::GENESIS_CREATION_CREDIT;
-use std::collections::HashMap;
+use radix_engine::fee::FeeSummary;
+use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
-use tracing::debug;
 
 use crate::types::UserPayloadHash;
-use radix_engine::engine::{Substate, Track};
-use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
+
 use radix_engine::ledger::{
-    execute_genesis, OutputValue, QueryableSubstateStore, ReadableSubstateStore,
-    WriteableSubstateStore,
+    bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
-use radix_engine::transaction::TransactionResult;
+use radix_engine::model::PersistedSubstate;
+use radix_engine::state_manager::StateDiff;
+use radix_engine::transaction::EntityChanges;
+
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
+use scrypto::constants::{SYS_FAUCET_COMPONENT, SYS_FAUCET_PACKAGE, SYS_SYSTEM_COMPONENT};
 
 use crate::store::in_memory::InMemoryVertexStore;
 use crate::store::rocks_db::RocksDBCommitTransaction;
 use crate::store::traits::RecoverableVertexStore;
 use crate::transaction::{Transaction, ValidatorTransaction};
 use crate::{
-    CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt, TransactionPayloadHash,
+    CommittedTransactionIdentifiers, CommittedTransactionStatus, IntentHash,
+    LedgerTransactionReceipt, TransactionPayloadHash,
 };
 use scrypto::engine::types::{KeyValueStoreId, SubstateId};
+use tracing::debug;
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
 pub enum DatabaseConfig {
@@ -128,26 +131,39 @@ impl StateManagerDatabase {
             && state_manager_db.max_state_version() == 0
         {
             debug!("Running genesis on the engine...");
-
             let mut db_txn = state_manager_db.create_db_transaction();
-            let mut fee_reserve = SystemLoanFeeReserve::default();
-            fee_reserve.credit(GENESIS_CREATION_CREDIT);
-            let track = Track::new(&db_txn, fee_reserve, FeeTable::new());
-            let track_receipt = execute_genesis(track);
-            let commit_result = match track_receipt.result {
-                TransactionResult::Commit(result) => result,
-                _ => panic!("Genesis execution failed"),
-            };
-            commit_result.state_updates.commit(&mut db_txn);
+
+            bootstrap(&mut db_txn);
 
             // TODO: Remove this when serialized genesis intent is implemented
+            // TODO: fixme: bootstrap should return a transaction receipt to be used below
             {
-                let ledger_receipt: LedgerTransactionReceipt = (
-                    commit_result,
-                    track_receipt.fee_summary,
-                    track_receipt.application_logs,
-                )
-                    .into();
+                let ledger_receipt: LedgerTransactionReceipt = LedgerTransactionReceipt {
+                    status: CommittedTransactionStatus::Success(vec![]),
+                    fee_summary: FeeSummary {
+                        loan_fully_repaid: true,
+                        cost_unit_limit: 0,
+                        cost_unit_consumed: 0,
+                        cost_unit_price: Default::default(),
+                        tip_percentage: 0,
+                        burned: Default::default(),
+                        tipped: Default::default(),
+                        payments: vec![],
+                        cost_breakdown: Default::default(),
+                    },
+                    application_logs: vec![],
+                    state_updates: StateDiff {
+                        down_virtual_substates: vec![],
+                        up_substates: BTreeMap::new(),
+                        down_substates: vec![],
+                    },
+                    entity_changes: EntityChanges {
+                        new_package_addresses: vec![SYS_FAUCET_PACKAGE],
+                        new_component_addresses: vec![SYS_SYSTEM_COMPONENT, SYS_FAUCET_COMPONENT],
+                        new_resource_addresses: vec![],
+                    },
+                    resource_changes: vec![],
+                };
 
                 let mock_genesis = Transaction::Validator(ValidatorTransaction::EpochUpdate(0)); // Mocked
                 let payload_hash = mock_genesis.get_hash();
@@ -161,8 +177,6 @@ impl StateManagerDatabase {
             }
 
             db_txn.commit();
-
-            debug!("Genesis committed");
         }
 
         state_manager_db
@@ -174,14 +188,6 @@ impl ReadableSubstateStore for StateManagerDatabase {
         match self {
             StateManagerDatabase::InMemory { substates, .. } => substates.get_substate(substate_id),
             StateManagerDatabase::RocksDB(store) => store.get_substate(substate_id),
-            StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
-        }
-    }
-
-    fn is_root(&self, substate_id: &SubstateId) -> bool {
-        match self {
-            StateManagerDatabase::InMemory { substates, .. } => substates.is_root(substate_id),
-            StateManagerDatabase::RocksDB(store) => store.is_root(substate_id),
             StateManagerDatabase::None => panic!("Unexpected call to no state manager store"),
         }
     }
@@ -203,15 +209,6 @@ impl<'db> ReadableSubstateStore for StateManagerCommitTransaction<'db> {
                 substates.get_substate(substate_id)
             }
             StateManagerCommitTransaction::RocksDB(db_txn) => db_txn.get_substate(substate_id),
-        }
-    }
-
-    fn is_root(&self, substate_id: &SubstateId) -> bool {
-        match self {
-            StateManagerCommitTransaction::InMemory { substates, .. } => {
-                substates.is_root(substate_id)
-            }
-            StateManagerCommitTransaction::RocksDB(db_txn) => db_txn.is_root(substate_id),
         }
     }
 }
@@ -277,15 +274,6 @@ impl<'db> WriteableSubstateStore for StateManagerCommitTransaction<'db> {
             StateManagerCommitTransaction::RocksDB(db_txn) => {
                 db_txn.put_substate(substate_id, substate)
             }
-        }
-    }
-
-    fn set_root(&mut self, substate_id: SubstateId) {
-        match self {
-            StateManagerCommitTransaction::InMemory { substates, .. } => {
-                substates.set_root(substate_id)
-            }
-            StateManagerCommitTransaction::RocksDB(db_txn) => db_txn.set_root(substate_id),
         }
     }
 }
@@ -430,7 +418,10 @@ impl QueryableProofStore for StateManagerDatabase {
 }
 
 impl QueryableSubstateStore for StateManagerDatabase {
-    fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<Vec<u8>, Substate> {
+    fn get_kv_store_entries(
+        &self,
+        kv_store_id: &KeyValueStoreId,
+    ) -> HashMap<Vec<u8>, PersistedSubstate> {
         match self {
             StateManagerDatabase::InMemory { substates, .. } => {
                 substates.get_kv_store_entries(kv_store_id)

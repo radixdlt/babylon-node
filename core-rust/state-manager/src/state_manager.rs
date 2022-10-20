@@ -77,6 +77,7 @@ use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
 use radix_engine::fee::SystemLoanFeeReserve;
+use radix_engine::model::SystemSubstate;
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     ExecutionConfig, FeeReserveConfig, PreviewError, PreviewExecutor, PreviewResult,
@@ -84,7 +85,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::SubstateId;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
-use scrypto::engine::types::RENodeId;
+use scrypto::engine::types::{GlobalAddress, RENodeId};
 use scrypto::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -93,8 +94,8 @@ use tracing::info;
 
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
-    NotarizedTransaction, PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent,
-    Validated,
+    Executable, NotarizedTransaction, PreviewFlags, PreviewIntent, TransactionHeader,
+    TransactionIntent,
 };
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, ValidationConfig};
@@ -291,6 +292,7 @@ where
             signer_public_keys: preview_request.signer_public_keys,
             flags: PreviewFlags {
                 unlimited_loan: preview_request.flags.unlimited_loan,
+                assume_all_signature_proofs: false, // TODO: add param
             },
         };
 
@@ -331,7 +333,7 @@ where
             &mut self.wasm_instrumenter,
         );
         let receipt = transaction_executor.execute(
-            &validated_transaction,
+            &validated_transaction.executable,
             &self.fee_reserve_config,
             &self.execution_config,
         );
@@ -460,11 +462,11 @@ where
         if let Err(rejection_reason) = new_status {
             let payload_hash = transaction.user_payload_hash();
             // Let's also remove it from the mempool, if it's present
-            self.mempool.remove_transaction(&payload_hash).map(|_| {
+            if self.mempool.remove_transaction(&payload_hash).is_some() {
                 self.counters
                     .mempool_current_transactions_total
                     .set(self.mempool.get_count() as i64);
-            });
+            }
             self.rejection_cache.track_rejection(
                 transaction.intent_hash(),
                 transaction.user_payload_hash(),
@@ -512,11 +514,11 @@ where
 
         for txn_to_remove in txns_to_remove {
             mempool_txns.remove(&txn_to_remove);
-            self.mempool.remove_transaction(&txn_to_remove).map(|_| {
+            if self.mempool.remove_transaction(&txn_to_remove).is_some() {
                 self.counters
                     .mempool_current_transactions_total
                     .set(self.mempool.get_count() as i64);
-            });
+            }
         }
 
         mempool_txns
@@ -563,13 +565,13 @@ where
                 .parse_and_validate_transaction_slice(current_epoch, &prepared)
                 .expect("Already prepared transactions should be decodeable");
 
-            if let Transaction::User(notarized_transaction) = validated_transaction.transaction() {
+            if let Transaction::User(notarized_transaction) = &validated_transaction.transaction {
                 already_committed_or_prepared_intent_hashes
                     .insert(notarized_transaction.intent_hash());
             }
 
             let receipt = transaction_executor.execute_and_commit(
-                &validated_transaction,
+                &validated_transaction.executable,
                 &self.fee_reserve_config,
                 &self.execution_config,
             );
@@ -577,8 +579,9 @@ where
                 TransactionResult::Commit(commit_result) => {
                     // Temporary workaround to keep current_epoch in sync until transaction epoch validation lives in the engine
                     for (substate_id, output_value) in commit_result.state_updates.up_substates {
-                        if let SubstateId::System = substate_id {
-                            current_epoch = output_value.substate.system().epoch;
+                        if let SubstateId(RENodeId::System(..), ..) = substate_id {
+                            let system: SystemSubstate = output_value.substate.to_runtime().into();
+                            current_epoch = system.epoch;
                         }
                     }
                 }
@@ -595,14 +598,14 @@ where
 
         if prepare_request.round_number % self.rounds_per_epoch == 0 {
             let new_epoch = (prepare_request.round_number / self.rounds_per_epoch) + 1;
-            let epoch_update_txn: Validated<ValidatorTransaction> =
-                ValidatorTransaction::EpochUpdate(new_epoch).into();
+            let epoch_update_txn = ValidatorTransaction::EpochUpdate(new_epoch);
+            let executable: Executable = epoch_update_txn.into();
 
             let mut fee_reserve = SystemLoanFeeReserve::default();
             // TODO: Clean up fee reserve
             fee_reserve.credit(10_000_000);
             let receipt = transaction_executor.execute_with_fee_reserve(
-                &epoch_update_txn,
+                &executable,
                 &self.execution_config,
                 fee_reserve,
             );
@@ -611,9 +614,8 @@ where
                     if let TransactionOutcome::Failure(failure) = commit_result.outcome {
                         panic!("Epoch Update failed: {:?}", failure);
                     }
-                    let serialized_validated_txn = scrypto_encode(&Transaction::Validator(
-                        epoch_update_txn.into_transaction(),
-                    ));
+                    let serialized_validated_txn =
+                        scrypto_encode(&Transaction::Validator(epoch_update_txn));
                     committed.push(serialized_validated_txn);
                 }
                 TransactionResult::Reject(reject_result) => {
@@ -631,8 +633,8 @@ where
                 .parse_and_validate_user_transaction_slice(current_epoch, &proposed_payload);
 
             match validation_result {
-                Result::Ok(validated) => {
-                    let intent_hash = validated.intent_hash();
+                Ok(validated) => {
+                    let intent_hash = validated.transaction.intent_hash();
                     if already_committed_or_prepared_intent_hashes.contains(&intent_hash) {
                         rejected.push((
                             proposed_payload,
@@ -642,7 +644,7 @@ where
                     }
 
                     let receipt = transaction_executor.execute_and_commit(
-                        &validated,
+                        &validated.executable,
                         &self.fee_reserve_config,
                         &self.execution_config,
                     );
@@ -650,9 +652,9 @@ where
                     match receipt.result {
                         TransactionResult::Commit(..) => {
                             already_committed_or_prepared_intent_hashes
-                                .insert(validated.intent_hash());
+                                .insert(validated.transaction.intent_hash());
                             let serialized_validated_txn =
-                                scrypto_encode(&Transaction::User(validated.into_transaction()));
+                                scrypto_encode(&Transaction::User(validated.transaction));
                             committed.push(serialized_validated_txn);
                         }
                         TransactionResult::Reject(reject_result) => {
@@ -707,7 +709,7 @@ where
                         .parse_and_validate_transaction_slice(current_epoch, &t)
                         .expect("Error on Byzantine quorum");
                     if let Transaction::Validator(ValidatorTransaction::EpochUpdate(epoch)) =
-                        txn.transaction()
+                        &txn.transaction
                     {
                         current_epoch = *epoch;
                     }
@@ -732,7 +734,7 @@ where
             );
 
             let engine_receipt = transaction_executor.execute_and_commit(
-                &validated_txn,
+                &validated_txn.executable,
                 &self.fee_reserve_config,
                 &self.execution_config,
             );
@@ -745,7 +747,7 @@ where
                     )
                 });
 
-            let transaction = validated_txn.into_transaction();
+            let transaction = validated_txn.transaction;
             let payload_hash = transaction.get_hash();
             if let Transaction::User(notarized_transaction) = &transaction {
                 let intent_hash = notarized_transaction.intent_hash();
@@ -802,8 +804,10 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
     ) -> Option<HashMap<ResourceAddress, Decimal>> {
         let mut resource_accounter = ResourceAccounter::new(&self.store);
         resource_accounter
-            .add_resources(RENodeId::Component(component_address))
-            .map_or(Option::None, |()| Some(resource_accounter.into_map()))
+            .add_resources(RENodeId::Global(GlobalAddress::Component(
+                component_address,
+            )))
+            .map_or(None, |()| Some(resource_accounter.into_map()))
     }
 
     pub fn get_epoch(&self) -> u64 {

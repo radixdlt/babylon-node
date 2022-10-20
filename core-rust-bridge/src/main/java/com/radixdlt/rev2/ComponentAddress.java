@@ -91,39 +91,6 @@ public record ComponentAddress(byte[] value) {
   public static byte ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID = 3;
   public static byte SYSTEM_COMPONENT_ADDRESS_ENTITY_ID = 4;
 
-  public static final ComponentAddress SYSTEM_FAUCET_COMPONENT_ADDRESS =
-      // See constants.rs (component.rs defines the encoding)
-      ComponentAddress.create(
-          new byte[] {
-            SYSTEM_COMPONENT_ADDRESS_ENTITY_ID,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1
-          });
-
   public static final ComponentAddress NON_EXISTENT_COMPONENT_ADDRESS =
       // See constants.rs (component.rs defines the encoding)
       ComponentAddress.create(

@@ -102,6 +102,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.substate.*;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 import java.util.Objects;
@@ -199,7 +200,9 @@ public final class RadixEngineStateComputer implements StateComputer {
         systemCounters.increment(CounterType.MEMPOOL_ADD_SUCCESS);
         systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 
-        var success = MempoolAddSuccess.create(transaction, processed, origin);
+        var success =
+            MempoolAddSuccess.create(
+                RawNotarizedTransaction.create(transaction.getPayload()), processed, origin);
         mempoolAddSuccessEventDispatcher.dispatch(success);
 
         return processed;
@@ -219,7 +222,7 @@ public final class RadixEngineStateComputer implements StateComputer {
         .forEach(
             txn -> {
               try {
-                addToMempool(txn, origin);
+                addToMempool(txn.unsafeAsRawTransaction(), origin);
               } catch (MempoolDuplicateException ex) {
                 log.trace(
                     "Transaction {} was not added as it was already in the mempool",
@@ -231,7 +234,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   @Override
-  public List<RawTransaction> getTransactionsForProposal(
+  public List<RawNotarizedTransaction> getTransactionsForProposal(
       List<ExecutedTransaction> executedTransactions) {
     synchronized (lock) {
       var cmds =
@@ -241,14 +244,16 @@ public final class RadixEngineStateComputer implements StateComputer {
               .toList();
 
       // TODO: only return transactions which will not cause a missing dependency error
-      return mempool.getTransactionsForProposal(maxSigsPerRound.orElse(50), cmds);
+      return mempool.getTransactionsForProposal(maxSigsPerRound.orElse(50), cmds).stream()
+          .map(tx -> RawNotarizedTransaction.create(tx.getPayload()))
+          .toList();
     }
   }
 
   @Override
   public StateComputerResult prepare(
       List<ExecutedTransaction> previousTransactions,
-      List<RawTransaction> proposedTransactions,
+      List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     synchronized (lock) {
       var transientBranch = this.radixEngine.transientBranch();
@@ -279,7 +284,9 @@ public final class RadixEngineStateComputer implements StateComputer {
         this.executeUserTransactions(
             roundDetails.roundProposer(),
             transientBranch,
-            proposedTransactions,
+            proposedTransactions.stream()
+                .map(tx -> RawTransaction.create(tx.getPayload()))
+                .toList(),
             successBuilder,
             exceptionBuilder);
       }
@@ -347,7 +354,10 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
 
     try {
-      final var systemUpdate = branch.construct(systemActions).buildWithoutSignature();
+      final var systemUpdate =
+          RawTransaction.create(
+              branch.construct(systemActions).buildWithoutSignature().getPayload());
+      // TODO: fixme
       final var result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
       return new RadixEngineTransaction(
           systemUpdate, result.getProcessedTxn(), PermissionLevel.SUPER_USER);

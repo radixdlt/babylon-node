@@ -70,6 +70,7 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.CommittedTransactionStatus;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.function.Predicate;
 
@@ -78,7 +79,8 @@ public class NodePredicate {
     throw new IllegalStateException("Cannot instanitate.");
   }
 
-  public static Predicate<Injector> committedFailedUserTransaction(RawTransaction userTransaction) {
+  public static Predicate<Injector> committedFailedUserTransaction(
+      RawNotarizedTransaction userTransaction) {
     var committedTransaction =
         RawTransaction.create(
             TransactionBuilder.userTransactionToCommittedBytes(userTransaction.getPayload()));
@@ -100,7 +102,8 @@ public class NodePredicate {
     };
   }
 
-  public static Predicate<Injector> committedUserTransaction(RawTransaction userTransaction) {
+  public static Predicate<Injector> committedUserTransaction(
+      RawNotarizedTransaction userTransaction) {
     var committedTransaction =
         RawTransaction.create(
             TransactionBuilder.userTransactionToCommittedBytes(userTransaction.getPayload()));

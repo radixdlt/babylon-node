@@ -64,7 +64,6 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 
 /**
@@ -72,7 +71,8 @@ import java.util.List;
  *
  * <p>Note that conceptually, a mempool can be thought of as a list indexable by hash.
  */
-public interface Mempool<T> extends MempoolReader, MempoolInserter<T> {
+public interface Mempool<RawTx, ProcessedTx>
+    extends MempoolReader<RawTx>, MempoolInserter<RawTx, ProcessedTx> {
   /**
    * Retrieve a list of transactions from the local mempool for creating a proposal for consensus.
    *
@@ -81,9 +81,9 @@ public interface Mempool<T> extends MempoolReader, MempoolInserter<T> {
    *     which will need to be taken into account when choosing transactions
    * @return A list of transactions for processing by consensus
    */
-  List<RawTransaction> getTransactionsForProposal(int count, List<T> preparedTransactions);
+  List<RawTx> getTransactionsForProposal(int count, List<ProcessedTx> preparedTransactions);
 
-  void handleTransactionsCommitted(List<T> transactions);
+  void handleTransactionsCommitted(List<ProcessedTx> transactions);
 
   int getCount();
 }

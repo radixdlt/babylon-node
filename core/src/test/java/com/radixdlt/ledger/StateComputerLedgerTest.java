@@ -93,6 +93,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.transactions.RawTransaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
@@ -121,9 +122,11 @@ public class StateComputerLedgerTest {
   private VertexWithHash genesisVertex;
   private QuorumCertificate genesisQC;
 
-  private final RawTransaction nextTransaction = RawTransaction.create(new byte[] {0});
+  private final RawNotarizedTransaction nextTransaction =
+      RawNotarizedTransaction.create(new byte[] {0});
   private final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
-  private final ExecutedTransaction successfulNextTransaction = () -> nextTransaction;
+  private final ExecutedTransaction successfulNextTransaction =
+      nextTransaction::unsafeAsRawTransaction;
 
   private final long genesisEpoch = 3L;
   private final long genesisStateVersion = 123L;
@@ -254,7 +257,7 @@ public class StateComputerLedgerTest {
                     accumulatorVerifier.verifyAndGetExtension(
                         ledgerHeader.getAccumulatorState(),
                         List.of(nextTransaction),
-                        RawTransaction::getPayloadHash,
+                        RawNotarizedTransaction::getPayloadHash,
                         x.getLedgerHeader().getAccumulatorState())))
         .contains(List.of(nextTransaction));
   }
@@ -273,7 +276,10 @@ public class StateComputerLedgerTest {
         LedgerHeader.create(genesisEpoch, Round.of(2), accumulatorState, 1234);
     final LedgerProof header =
         new LedgerProof(HashUtils.random256(), ledgerHeader, new TimestampedECDSASignatures());
-    var verified = CommittedTransactionsWithProof.create(List.of(nextTransaction), header);
+    // TODO: fixme
+    var verified =
+        CommittedTransactionsWithProof.create(
+            List.of(RawTransaction.create(nextTransaction.getPayload())), header);
 
     // Act
     sut.syncEventProcessor().process(verified);

@@ -107,6 +107,5 @@ fn filter_state_updates(state_updates: StateDiff) -> StateDiff {
         down_virtual_substates: state_updates.down_virtual_substates,
         up_substates: possible_up_substates,
         down_substates: valid_down_substates,
-        new_roots: state_updates.new_roots,
     }
 }

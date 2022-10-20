@@ -10,6 +10,8 @@
 
 
 
+use scrypto::engine::types::GlobalAddress;
+
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "substate_type")]
 pub enum Substate {
@@ -90,6 +92,14 @@ pub enum Substate {
         entity_type: crate::core_api::generated::models::EntityType,
         #[serde(rename = "resource_amount")]
         resource_amount: Box<crate::core_api::generated::models::ResourceAmount>,
+    },
+    #[serde(rename="Global")]
+    GlobalSubstate {
+        #[serde(rename = "entity_type")]
+        entity_type: crate::core_api::generated::models::EntityType,
+        /// An integer between 0 and 10^10, marking the current epoch
+        #[serde(rename = "derefed_to")]
+        derefed_to: String,
     },
 }
 

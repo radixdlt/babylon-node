@@ -94,7 +94,7 @@ import org.apache.logging.log4j.Logger;
 
 /** A mempool which uses internal radix engine to be more efficient. */
 @Singleton
-public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
+public final class RadixEngineMempool implements Mempool<RawTransaction, REProcessedTxn> {
   private static final Logger logger = LogManager.getLogger();
 
   private final ConcurrentHashMap<TID, Pair<REProcessedTxn, MempoolMetadata>> data =
@@ -224,7 +224,9 @@ public final class RadixEngineMempool implements Mempool<REProcessedTxn> {
   }
 
   public List<RawTransaction> getTransactionsToRelay() {
-    return this.data.values().stream().map(t -> t.getFirst().getTxn()).collect(Collectors.toList());
+    return this.data.values().stream()
+        .map(t -> RawTransaction.create(t.getFirst().getTxn().getPayload()))
+        .collect(Collectors.toList());
   }
 
   public int getCount() {

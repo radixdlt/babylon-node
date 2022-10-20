@@ -11,6 +11,7 @@ fn export_extern_functions() {
     state_manager::jni::transaction_store::export_extern_functions();
     state_manager::jni::vertex_store_recovery::export_extern_functions();
     state_manager::jni::addressing::export_extern_functions();
+    state_manager::jni::scrypto_constants::export_extern_functions();
 
     // core-api-server
     core_api_server::jni::export_extern_functions();

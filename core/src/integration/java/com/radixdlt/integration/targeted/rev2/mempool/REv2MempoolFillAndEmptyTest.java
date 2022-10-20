@@ -103,7 +103,7 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
@@ -133,8 +133,8 @@ public final class REv2MempoolFillAndEmptyTest {
 
   @Inject private SystemCounters systemCounters;
   @Inject private DeterministicProcessor processor;
-  @Inject private MempoolInserter<RawTransaction> mempoolInserter;
-  @Inject private MempoolReader mempoolReader;
+  @Inject private MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction> mempoolInserter;
+  @Inject private MempoolReader<RawNotarizedTransaction> mempoolReader;
 
   private Injector createInjector() {
     return Guice.createInjector(

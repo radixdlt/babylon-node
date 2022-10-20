@@ -234,4 +234,29 @@ fn do_user_transaction_to_committed(args: Vec<u8>) -> StateManagerResult<Vec<u8>
     Ok(scrypto_encode(&Transaction::User(notarized_transaction)))
 }
 
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_transactionBytesToNotarizedTransactionBytes(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call_flatten_result(
+        env,
+        request_payload,
+        do_transaction_bytes_to_notarized_transaction_bytes,
+    )
+}
+
+fn do_transaction_bytes_to_notarized_transaction_bytes(
+    args: Vec<u8>,
+) -> StateManagerResult<Option<Vec<u8>>> {
+    let transaction: Transaction = scrypto_decode(&args).unwrap();
+    Ok(match transaction {
+        Transaction::User(notarized_transaction) => {
+            Some(scrypto_encode(&notarized_transaction.to_bytes()))
+        }
+        Transaction::Validator(..) => None,
+    })
+}
+
 pub fn export_extern_functions() {}

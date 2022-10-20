@@ -83,7 +83,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.targeted.mempool.SimpleMempool;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -104,21 +104,22 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bind(new TypeLiteral<Mempool<?>>() {})
-        .to(new TypeLiteral<Mempool<RawTransaction>>() {})
+    bind(new TypeLiteral<Mempool<?, ?>>() {})
+        .to(new TypeLiteral<Mempool<RawNotarizedTransaction, RawNotarizedTransaction>>() {})
         .in(Scopes.SINGLETON);
   }
 
   @Provides
   @Singleton
-  private Mempool<RawTransaction> mempool(SystemCounters systemCounters, Random random) {
+  private Mempool<RawNotarizedTransaction, RawNotarizedTransaction> mempool(
+      SystemCounters systemCounters, Random random) {
     return new SimpleMempool(systemCounters, mempoolMaxSize, random);
   }
 
   @Provides
   @Singleton
   private StateComputerLedger.StateComputer stateComputer(
-      Mempool<RawTransaction> mempool,
+      Mempool<RawNotarizedTransaction, RawNotarizedTransaction> mempool,
       EventDispatcher<LedgerUpdate> ledgerUpdateDispatcher,
       SystemCounters counters) {
     return new StateComputerLedger.StateComputer() {
@@ -139,7 +140,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       }
 
       @Override
-      public List<RawTransaction> getTransactionsForProposal(
+      public List<RawNotarizedTransaction> getTransactionsForProposal(
           List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
         return mempool.getTransactionsForProposal(1, List.of());
       }
@@ -147,17 +148,23 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       @Override
       public StateComputerLedger.StateComputerResult prepare(
           List<StateComputerLedger.ExecutedTransaction> previous,
-          List<RawTransaction> proposedTransactions,
+          List<RawNotarizedTransaction> proposedTransactions,
           RoundDetails roundDetails) {
         return new StateComputerLedger.StateComputerResult(
-            proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
+            proposedTransactions.stream()
+                .map(tx -> new MockExecuted(tx.unsafeAsRawTransaction()))
+                .collect(Collectors.toList()),
             Map.of());
       }
 
       @Override
       public void commit(
           CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-        mempool.handleTransactionsCommitted(txnsAndProof.getTransactions());
+        // TODO: unsafe, fixme
+        mempool.handleTransactionsCommitted(
+            txnsAndProof.getTransactions().stream()
+                .map(tx -> RawNotarizedTransaction.create(tx.getPayload()))
+                .toList());
         counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 
         var ledgerUpdate = new LedgerUpdate(txnsAndProof, ImmutableClassToInstanceMap.of());

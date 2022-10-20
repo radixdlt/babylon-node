@@ -62,129 +62,39 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+use jni::objects::JClass;
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import java.util.List;
-import java.util.Objects;
+use scrypto::constants::{ACCOUNT_PACKAGE, RADIX_TOKEN, SYS_FAUCET_COMPONENT};
 
-/**
- * A vertex representing a possible future committed round of transactions, along with a hash
- * computed locally.
- *
- * <p>As such, whilst the content of the vertex may be from a peer, and so untrusted, we are
- * confident that the hash accurately represents the vertex contents.
- */
-public final class VertexWithHash {
-  private final Vertex vertex;
-  private final HashCode vertexHash;
+use super::utils::jni_static_sbor_call;
 
-  public VertexWithHash(Vertex vertex, HashCode vertexHash) {
-    this.vertex = Objects.requireNonNull(vertex);
-    this.vertexHash = Objects.requireNonNull(vertexHash);
-  }
-
-  public static VertexWithHash from(Vertex vertex, Hasher hasher) {
-    return new VertexWithHash(vertex, hasher.hashDsonEncoded(vertex));
-  }
-
-  public BFTNode getProposer() {
-    return vertex.getProposer();
-  }
-
-  public boolean isTimeout() {
-    return vertex.isTimeout();
-  }
-
-  public Vertex toSerializable() {
-    return vertex;
-  }
-
-  public List<RawNotarizedTransaction> getTransactions() {
-    return vertex.getTransactions();
-  }
-
-  public boolean touchesGenesis() {
-    return this.getRound().isGenesis()
-        || this.getParentHeader().getRound().isGenesis()
-        || this.getGrandParentHeader().getRound().isGenesis();
-  }
-
-  public boolean hasDirectParent() {
-    return this.vertex.getRound().equals(this.getParentHeader().getRound().next());
-  }
-
-  public boolean parentHasDirectParent() {
-    return this.getParentHeader().getRound().equals(this.getGrandParentHeader().getRound().next());
-  }
-
-  public BFTHeader getParentHeader() {
-    return vertex.getQCToParent().getProposedHeader();
-  }
-
-  public BFTHeader getGrandParentHeader() {
-    return vertex.getQCToParent().getParentHeader();
-  }
-
-  public Round getRound() {
-    return vertex.getRound();
-  }
-
-  public QuorumCertificate getQCToParent() {
-    return vertex.getQCToParent();
-  }
-
-  public HashCode getHash() {
-    return vertexHash;
-  }
-
-  public HashCode getParentVertexId() {
-    return vertex.getQCToParent().getProposedHeader().getVertexId();
-  }
-
-  /**
-   * @return The weighted timestamp of the signatures in the parent QC, in milliseconds since Unix
-   *     Epoch.
-   */
-  public long getWeightedTimestampOfQCToParent() {
-    // If the vertex has a genesis parent then its QC is mocked so just use previous timestamp
-    // this does have the edge case of never increasing timestamps if configuration is
-    // one round per epoch but good enough for now
-
-    return getQCToParent().getWeightedTimestampOfSignatures();
-  }
-
-  public long getEpoch() {
-    return getParentHeader().getLedgerHeader().getEpoch();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(this.vertex, this.vertexHash);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (o instanceof VertexWithHash) {
-      final var that = (VertexWithHash) o;
-      return Objects.equals(this.vertexHash, that.vertexHash)
-          && Objects.equals(this.vertex, that.vertex);
-    }
-    return false;
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{epoch=%s round=%s qc=%s hash=%s}",
-        this.getClass().getSimpleName(),
-        this.vertex.getQCToParent().getProposedHeader().getLedgerHeader().getEpoch(),
-        this.vertex.getRound(),
-        this.vertex.getQCToParent(),
-        this.vertexHash);
-  }
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getFaucetComponentAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, |_: ()| SYS_FAUCET_COMPONENT)
 }
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getAccountPackageAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, |_: ()| ACCOUNT_PACKAGE)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getXrdResourceAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call(env, request_payload, |_: ()| RADIX_TOKEN)
+}
+
+pub fn export_extern_functions() {}

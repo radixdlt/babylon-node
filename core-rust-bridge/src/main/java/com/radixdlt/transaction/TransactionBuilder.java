@@ -69,6 +69,7 @@ import static com.radixdlt.lang.Tuple.tuple;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.*;
 import com.radixdlt.exceptions.ManifestCompilationException;
+import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.NetworkDefinition;
@@ -168,11 +169,25 @@ public final class TransactionBuilder {
     return userTransactionToCommitted.call(userTransactionBytes);
   }
 
+  public static Option<byte[]> convertTransactionBytesToNotarizedTransactionBytes(
+      byte[] transactionBytes) {
+    return transactionBytesToNotarizedTransactionBytesFn.call(transactionBytes);
+  }
+
   private static final NativeCalls.StaticFunc1<byte[], byte[]> userTransactionToCommitted =
       NativeCalls.StaticFunc1.with(
           new TypeToken<>() {},
           new TypeToken<>() {},
           TransactionBuilder::userTransactionToCommitted);
 
+  private static final NativeCalls.StaticFunc1<byte[], Option<byte[]>>
+      transactionBytesToNotarizedTransactionBytesFn =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {},
+              new TypeToken<>() {},
+              TransactionBuilder::transactionBytesToNotarizedTransactionBytes);
+
   private static native byte[] userTransactionToCommitted(byte[] requestPayload);
+
+  private static native byte[] transactionBytesToNotarizedTransactionBytes(byte[] transactionBytes);
 }

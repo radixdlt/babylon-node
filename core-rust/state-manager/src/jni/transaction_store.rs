@@ -109,6 +109,7 @@ fn do_get_transaction_at_state_version(
     let (stored_transaction, ledger_receipt, _) = state_manager
         .store
         .get_committed_transaction(&payload_hash)?;
+
     let ledger_receipt_bytes = scrypto_encode(&ledger_receipt);
 
     Some(ExecutedTransaction {

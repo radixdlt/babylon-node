@@ -85,7 +85,7 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
@@ -123,16 +123,17 @@ public final class REv2RejectMultipleIntentsTest {
         NETWORK_DEFINITION, 0, nonce, NOTARY.getPublicKey().toPublicKey());
   }
 
-  private static RawTransaction createValidTransactionWithSigs(byte[] intentBytes, int sigsCount) {
+  private static RawNotarizedTransaction createValidTransactionWithSigs(
+      byte[] intentBytes, int sigsCount) {
     var keys = IntStream.rangeClosed(1, sigsCount).mapToObj(PrivateKeys::ofNumeric).toList();
     return REv2TestTransactions.constructTransaction(intentBytes, NOTARY, keys);
   }
 
   private static class ControlledProposerGenerator implements ProposalGenerator {
-    private List<RawTransaction> nextTransactions = null;
+    private List<RawNotarizedTransaction> nextTransactions = null;
 
     @Override
-    public List<RawTransaction> getTransactionsForProposal(
+    public List<RawNotarizedTransaction> getTransactionsForProposal(
         Round round, List<ExecutedVertex> prepared) {
       if (nextTransactions == null) {
         return List.of();

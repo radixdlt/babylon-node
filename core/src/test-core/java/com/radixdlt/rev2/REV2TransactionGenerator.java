@@ -65,10 +65,11 @@
 package com.radixdlt.rev2;
 
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 
 /** Generates a valid transaction for REV2 */
-public final class REV2TransactionGenerator implements TransactionGenerator {
+public final class REV2TransactionGenerator
+    implements TransactionGenerator<RawNotarizedTransaction> {
   private final NetworkDefinition networkDefinition;
 
   public REV2TransactionGenerator() {
@@ -82,7 +83,7 @@ public final class REV2TransactionGenerator implements TransactionGenerator {
   private int currentTransactionNonce = 1;
 
   @Override
-  public RawTransaction nextTransaction() {
+  public RawNotarizedTransaction nextTransaction() {
     return REv2TestTransactions.constructNewAccountTransaction(
         networkDefinition, 0, currentTransactionNonce++);
   }

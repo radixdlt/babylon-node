@@ -1,6 +1,7 @@
 use crate::core_api::*;
-use radix_engine::engine::Substate;
+use radix_engine::model::PersistedSubstate;
 use radix_engine::types::{Bech32Decoder, SubstateId};
+use scrypto::engine::types::{PackageOffset, RENodeId, SubstateOffset};
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 
@@ -20,11 +21,13 @@ fn handle_v0_state_package_internal(
     let package_address = extract_package_address(&bech32_decoder, &request.package_address)
         .map_err(|err| err.into_response_error("package_address"))?;
 
-    if let Some(output_value) = state_manager
-        .store
-        .get_substate(&SubstateId::Package(package_address))
-    {
-        if let Substate::Package(package) = output_value.substate {
+    let substate_id = SubstateId(
+        RENodeId::Package(package_address),
+        SubstateOffset::Package(PackageOffset::Package),
+    );
+
+    if let Some(output_value) = state_manager.store.get_substate(&substate_id) {
+        if let PersistedSubstate::Package(package) = output_value.substate {
             return Ok(models::V0StatePackageResponse {
                 package: Some(to_api_package_substate(&package)),
             });

@@ -64,9 +64,7 @@
 
 package com.radixdlt.harness.simulation.application;
 
-import com.radixdlt.transactions.RawTransaction;
-
 /** Generator of transactions for consensus processing */
-public interface TransactionGenerator {
-  RawTransaction nextTransaction();
+public interface TransactionGenerator<T> {
+  T nextTransaction();
 }

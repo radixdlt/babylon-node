@@ -8,6 +8,7 @@ use radix_engine::{
     types::{hash, scrypto_encode, SubstateId},
 };
 use scrypto::address::Bech32Encoder;
+use scrypto::engine::types::{GlobalAddress, GlobalOffset, RENodeId, SubstateOffset};
 use state_manager::{CommittedTransactionStatus, LedgerTransactionReceipt};
 
 #[tracing::instrument(skip_all)]
@@ -46,12 +47,49 @@ pub fn to_api_receipt(
         .map(to_api_down_virtual_substate)
         .collect::<Result<Vec<_>, _>>()?;
 
-    // These should be entity ids, not substate ids
-    let new_global_entities = state_updates
-        .new_roots
-        .into_iter()
-        .map(|x| to_api_global_entity_id_from_substate_id(bech32_encoder, x))
+    // TODO: Cleanup
+    let new_components = receipt
+        .entity_changes
+        .new_component_addresses
+        .iter()
+        .map(|addr| {
+            let substate_id = SubstateId(
+                RENodeId::Global(GlobalAddress::Component(*addr)),
+                SubstateOffset::Global(GlobalOffset::Global),
+            );
+            to_api_global_entity_id_from_substate_id(bech32_encoder, substate_id)
+        })
         .collect::<Result<Vec<_>, _>>()?;
+    let new_packages = receipt
+        .entity_changes
+        .new_package_addresses
+        .iter()
+        .map(|addr| {
+            let substate_id = SubstateId(
+                RENodeId::Global(GlobalAddress::Package(*addr)),
+                SubstateOffset::Global(GlobalOffset::Global),
+            );
+            to_api_global_entity_id_from_substate_id(bech32_encoder, substate_id)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let new_resources = receipt
+        .entity_changes
+        .new_resource_addresses
+        .iter()
+        .map(|addr| {
+            let substate_id = SubstateId(
+                RENodeId::Global(GlobalAddress::Resource(*addr)),
+                SubstateOffset::Global(GlobalOffset::Global),
+            );
+            to_api_global_entity_id_from_substate_id(bech32_encoder, substate_id)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    // These should be entity ids, not substate ids
+    let mut new_global_entities = vec![];
+    new_global_entities.extend(new_components);
+    new_global_entities.extend(new_packages);
+    new_global_entities.extend(new_resources);
 
     let api_state_updates = StateUpdates {
         up_substates,

@@ -62,129 +62,72 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.rev1.mempool;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.transactions.RawNotarizedTransaction;
-import java.util.List;
-import java.util.Objects;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.environment.EventProcessorOnRunner;
+import com.radixdlt.environment.EventProducer;
+import com.radixdlt.environment.LocalEvents;
+import com.radixdlt.environment.Runners;
+import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.environment.StartProcessorOnRunner;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.mempool.MempoolRelayTrigger;
 
-/**
- * A vertex representing a possible future committed round of transactions, along with a hash
- * computed locally.
- *
- * <p>As such, whilst the content of the vertex may be from a peer, and so untrusted, we are
- * confident that the hash accurately represents the vertex contents.
- */
-public final class VertexWithHash {
-  private final Vertex vertex;
-  private final HashCode vertexHash;
+/** Module responsible for sending mempool messages to other nodes. */
+public final class ReV1MempoolRelayerModule extends AbstractModule {
+  private final long mempoolRelayIntervalMs;
 
-  public VertexWithHash(Vertex vertex, HashCode vertexHash) {
-    this.vertex = Objects.requireNonNull(vertex);
-    this.vertexHash = Objects.requireNonNull(vertexHash);
-  }
-
-  public static VertexWithHash from(Vertex vertex, Hasher hasher) {
-    return new VertexWithHash(vertex, hasher.hashDsonEncoded(vertex));
-  }
-
-  public BFTNode getProposer() {
-    return vertex.getProposer();
-  }
-
-  public boolean isTimeout() {
-    return vertex.isTimeout();
-  }
-
-  public Vertex toSerializable() {
-    return vertex;
-  }
-
-  public List<RawNotarizedTransaction> getTransactions() {
-    return vertex.getTransactions();
-  }
-
-  public boolean touchesGenesis() {
-    return this.getRound().isGenesis()
-        || this.getParentHeader().getRound().isGenesis()
-        || this.getGrandParentHeader().getRound().isGenesis();
-  }
-
-  public boolean hasDirectParent() {
-    return this.vertex.getRound().equals(this.getParentHeader().getRound().next());
-  }
-
-  public boolean parentHasDirectParent() {
-    return this.getParentHeader().getRound().equals(this.getGrandParentHeader().getRound().next());
-  }
-
-  public BFTHeader getParentHeader() {
-    return vertex.getQCToParent().getProposedHeader();
-  }
-
-  public BFTHeader getGrandParentHeader() {
-    return vertex.getQCToParent().getParentHeader();
-  }
-
-  public Round getRound() {
-    return vertex.getRound();
-  }
-
-  public QuorumCertificate getQCToParent() {
-    return vertex.getQCToParent();
-  }
-
-  public HashCode getHash() {
-    return vertexHash;
-  }
-
-  public HashCode getParentVertexId() {
-    return vertex.getQCToParent().getProposedHeader().getVertexId();
-  }
-
-  /**
-   * @return The weighted timestamp of the signatures in the parent QC, in milliseconds since Unix
-   *     Epoch.
-   */
-  public long getWeightedTimestampOfQCToParent() {
-    // If the vertex has a genesis parent then its QC is mocked so just use previous timestamp
-    // this does have the edge case of never increasing timestamps if configuration is
-    // one round per epoch but good enough for now
-
-    return getQCToParent().getWeightedTimestampOfSignatures();
-  }
-
-  public long getEpoch() {
-    return getParentHeader().getLedgerHeader().getEpoch();
+  public ReV1MempoolRelayerModule(long mempoolRelayIntervalMs) {
+    this.mempoolRelayIntervalMs = mempoolRelayIntervalMs;
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(this.vertex, this.vertexHash);
+  public void configure() {
+    bind(ReV1MempoolRelayer.class).in(Scopes.SINGLETON);
+    var eventBinder =
+        Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
+            .permitDuplicates();
+    eventBinder.addBinding().toInstance(MempoolAddSuccess.class);
+    eventBinder.addBinding().toInstance(MempoolRelayTrigger.class);
   }
 
-  @Override
-  public boolean equals(Object o) {
-    if (o instanceof VertexWithHash) {
-      final var that = (VertexWithHash) o;
-      return Objects.equals(this.vertexHash, that.vertexHash)
-          && Objects.equals(this.vertex, that.vertex);
-    }
-    return false;
+  @Provides
+  @Singleton
+  private EventProducer<MempoolRelayTrigger> eventProducer(
+      ScheduledEventDispatcher<MempoolRelayTrigger> dispatcher) {
+    return new EventProducer<>(MempoolRelayTrigger::create, dispatcher, mempoolRelayIntervalMs);
   }
 
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{epoch=%s round=%s qc=%s hash=%s}",
-        this.getClass().getSimpleName(),
-        this.vertex.getQCToParent().getProposedHeader().getLedgerHeader().getEpoch(),
-        this.vertex.getRound(),
-        this.vertex.getQCToParent(),
-        this.vertexHash);
+  @ProvidesIntoSet
+  private StartProcessorOnRunner mempoolRelayerStart(
+      EventProducer<MempoolRelayTrigger> dispatcher) {
+    return new StartProcessorOnRunner(Runners.MEMPOOL, dispatcher::start);
+  }
+
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> processor(EventProducer<MempoolRelayTrigger> eventProducer) {
+    return new EventProcessorOnRunner<>(Runners.MEMPOOL, MempoolRelayTrigger.class, eventProducer);
+  }
+
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> mempoolAddEventProcessor(ReV1MempoolRelayer mempoolRelayer) {
+    return new EventProcessorOnRunner<>(
+        Runners.MEMPOOL, MempoolAddSuccess.class, mempoolRelayer.mempoolAddSuccessEventProcessor());
+  }
+
+  @ProvidesIntoSet
+  private EventProcessorOnRunner<?> mempoolRelayTransactionsEventProcessor(
+      ReV1MempoolRelayer mempoolRelayer) {
+    return new EventProcessorOnRunner<>(
+        Runners.MEMPOOL,
+        MempoolRelayTrigger.class,
+        mempoolRelayer.mempoolRelayTriggerEventProcessor());
   }
 }

@@ -82,7 +82,7 @@ import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.junit.Rule;
@@ -111,10 +111,10 @@ public final class REv2RejectedTransactionTest {
   }
 
   private static class ControlledProposerGenerator implements ProposalGenerator {
-    private RawTransaction nextTransaction = null;
+    private RawNotarizedTransaction nextTransaction = null;
 
     @Override
-    public List<RawTransaction> getTransactionsForProposal(
+    public List<RawNotarizedTransaction> getTransactionsForProposal(
         Round round, List<ExecutedVertex> prepared) {
       if (nextTransaction == null) {
         return List.of();

@@ -80,7 +80,7 @@ import java.nio.charset.StandardCharsets;
  * Generates a new unique rri consumer transaction. Because new addresses are used on every call,
  * the transaction should never fail when executed on a radix engine.
  */
-public class RadixEngineUniqueGenerator implements TransactionGenerator {
+public class RadixEngineUniqueGenerator implements TransactionGenerator<RawTransaction> {
   @Inject private REParser parser;
 
   @Inject private CurrentForkView currentForkView;

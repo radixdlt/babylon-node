@@ -122,7 +122,9 @@ public final class GenesisBuilder {
     txnConstructionRequest.action(new CreateSystem(timestamp));
     actions.forEach(txnConstructionRequest::action);
     txnConstructionRequest.action(new NextEpoch(timestamp));
-    var txn = radixEngine.construct(txnConstructionRequest).buildWithoutSignature();
+    var txn =
+        RawTransaction.create(
+            radixEngine.construct(txnConstructionRequest).buildWithoutSignature().getPayload());
 
     // Verify that it executes okay
     var branch = radixEngine.transientBranch();

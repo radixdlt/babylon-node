@@ -73,12 +73,12 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.sbor.NativeCalls;
 import com.radixdlt.statemanager.StateManager;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
 import java.util.List;
 import java.util.Objects;
 
-public class RustMempool implements MempoolReader {
+public class RustMempool implements MempoolReader<RawNotarizedTransaction> {
 
   public RustMempool(StateManager stateManager) {
     Objects.requireNonNull(stateManager);
@@ -102,7 +102,8 @@ public class RustMempool implements MempoolReader {
             stateManager, new TypeToken<>() {}, new TypeToken<>() {}, RustMempool::getCount);
   }
 
-  public RawTransaction addTransaction(RawTransaction transaction) throws MempoolRejectedException {
+  public RawNotarizedTransaction addTransaction(RawNotarizedTransaction transaction)
+      throws MempoolRejectedException {
     var result = addFunc.call(transaction);
 
     // Handle Errors.
@@ -123,19 +124,20 @@ public class RustMempool implements MempoolReader {
     return transaction;
   }
 
-  public List<RawTransaction> getTransactionsForProposal(
-      int count, List<RawTransaction> preparedTransactions) {
+  public List<RawNotarizedTransaction> getTransactionsForProposal(
+      int count, List<RawNotarizedTransaction> preparedTransactions) {
     if (count <= 0) {
       throw new IllegalArgumentException("State Manager Mempool: count must be > 0: " + count);
     }
 
-    final var hashes = preparedTransactions.stream().map(RawTransaction::getPayloadHash).toList();
+    final var hashes =
+        preparedTransactions.stream().map(RawNotarizedTransaction::getPayloadHash).toList();
 
     return getTransactionsForProposalFunc.call(tuple(UInt32.fromNonNegativeInt(count), hashes));
   }
 
   @Override
-  public List<RawTransaction> getTransactionsToRelay() {
+  public List<RawNotarizedTransaction> getTransactionsToRelay() {
     return getTransactionsToRelayFunc.call(Unit.unit());
   }
 
@@ -146,19 +148,20 @@ public class RustMempool implements MempoolReader {
 
   private static native byte[] add(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, RawTransaction, Result<HashCode, MempoolError>>
+  private final NativeCalls.Func1<
+          StateManager, RawNotarizedTransaction, Result<HashCode, MempoolError>>
       addFunc;
 
   private static native byte[] getTransactionsForProposal(
       StateManager stateManager, byte[] payload);
 
   private final NativeCalls.Func1<
-          StateManager, Tuple.Tuple2<UInt32, List<HashCode>>, List<RawTransaction>>
+          StateManager, Tuple.Tuple2<UInt32, List<HashCode>>, List<RawNotarizedTransaction>>
       getTransactionsForProposalFunc;
 
   private static native byte[] getTransactionsToRelay(StateManager stateManager, byte[] payload);
 
-  private final NativeCalls.Func1<StateManager, Unit, List<RawTransaction>>
+  private final NativeCalls.Func1<StateManager, Unit, List<RawNotarizedTransaction>>
       getTransactionsToRelayFunc;
 
   private static native byte[] getCount(Object stateManager, byte[] payload);

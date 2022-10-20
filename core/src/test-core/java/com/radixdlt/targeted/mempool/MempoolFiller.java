@@ -83,7 +83,7 @@ import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.RadixEngineMempool;
 import com.radixdlt.substate.TxBuilderException;
 import com.radixdlt.substate.TxnConstructionRequest;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
 import java.util.Random;
@@ -170,13 +170,14 @@ public final class MempoolFiller {
               .splitNative(REAddr.ofNativeToken(), account, minSize)
               .avoidSubstates(shuttingDown);
 
-      var txns = new ArrayList<RawTransaction>();
+      var txns = new ArrayList<RawNotarizedTransaction>();
       for (int i = 0; i < numTransactions; i++) {
         try {
           var builder = radixEngine.construct(txnConstructionRequest);
           shuttingDown.addAll(builder.toLowLevelBuilder().remoteDownSubstate());
           var txn = builder.signAndBuild(hashSigner::sign);
-          txns.add(txn);
+          // TODO: unsafe, fixme
+          txns.add(RawNotarizedTransaction.create(txn.getPayload()));
         } catch (TxBuilderException e) {
           break;
         }

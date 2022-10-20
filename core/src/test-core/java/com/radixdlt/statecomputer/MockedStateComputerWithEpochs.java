@@ -79,7 +79,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.rev1.EpochMaxRound;
 import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -106,7 +106,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   public void addToMempool(MempoolAdd mempoolAdd, @Nullable BFTNode origin) {}
 
   @Override
-  public List<RawTransaction> getTransactionsForProposal(
+  public List<RawNotarizedTransaction> getTransactionsForProposal(
       List<ExecutedTransaction> executedTransactions) {
     return List.of();
   }
@@ -114,11 +114,13 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
   @Override
   public StateComputerResult prepare(
       List<ExecutedTransaction> previous,
-      List<RawTransaction> proposedTransactions,
+      List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     if (roundDetails.roundNumber() >= epochMaxRound.number()) {
       return new StateComputerResult(
-          proposedTransactions.stream().map(MockExecuted::new).collect(Collectors.toList()),
+          proposedTransactions.stream()
+              .map(tx -> new MockExecuted(tx.unsafeAsRawTransaction()))
+              .collect(Collectors.toList()),
           ImmutableMap.of(),
           validatorSetMapping.apply(roundDetails.epoch() + 1));
     } else {

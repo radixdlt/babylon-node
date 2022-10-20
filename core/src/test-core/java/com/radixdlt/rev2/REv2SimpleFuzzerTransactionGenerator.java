@@ -64,24 +64,28 @@
 
 package com.radixdlt.rev2;
 
+import com.radixdlt.addressing.Addressing;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
+import com.radixdlt.networks.Network;
 import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 import java.util.Random;
 
 /**
  * A simple fuzzer for transactions which randomly arranges 4 manifest instructions: 1. sys-faucet
- * lock_fee 2. sys-faucet free_xrd 3. Account new 4. Account new_with_resource
+ * lock_fee 2. sys-faucet free 3. Account new 4. Account new_with_resource
  */
-public final class REv2SimpleFuzzerTransactionGenerator implements TransactionGenerator {
+public final class REv2SimpleFuzzerTransactionGenerator
+    implements TransactionGenerator<RawNotarizedTransaction> {
+  private static final Addressing ADDRESSING = Addressing.ofNetwork(Network.LOCALSIMULATOR);
   private static final String SIM_XRD_ADDRESS =
-      "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag";
+      ADDRESSING.encodeResourceAddress(ScryptoConstants.XRD_RESOURCE_ADDRESS);
   private static final String SIM_FAUCET_ADDRESS =
-      "system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqs9fh54n";
+      ADDRESSING.encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
   private static final String SIM_ACCOUNT_PACKAGE_ADDRESS =
-      "package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpsuluv44";
+      ADDRESSING.encodePackageAddress(ScryptoConstants.ACCOUNT_PACKAGE_ADDRESS);
 
   private final Random random;
   private int count = 0;
@@ -98,8 +102,7 @@ public final class REv2SimpleFuzzerTransactionGenerator implements TransactionGe
       case 0 -> String.format(
           "CALL_METHOD ComponentAddress(\"%s\") \"lock_fee\" Decimal(\"100\");",
           SIM_FAUCET_ADDRESS);
-      case 1 -> String.format(
-          "CALL_METHOD ComponentAddress(\"%s\") \"free_xrd\";", SIM_FAUCET_ADDRESS);
+      case 1 -> String.format("CALL_METHOD ComponentAddress(\"%s\") \"free\";", SIM_FAUCET_ADDRESS);
       case 2 -> String.format(
           "CALL_FUNCTION PackageAddress(\"%s\") \"Account\" \"new\" Enum(\"AllowAll\");",
           SIM_ACCOUNT_PACKAGE_ADDRESS);
@@ -113,7 +116,7 @@ public final class REv2SimpleFuzzerTransactionGenerator implements TransactionGe
   }
 
   @Override
-  public RawTransaction nextTransaction() {
+  public RawNotarizedTransaction nextTransaction() {
     final var keyPair = PrivateKeys.numeric(1 + random.nextInt(10)).findFirst().orElseThrow();
     var manifestBuilder = new StringBuilder();
 
@@ -126,7 +129,7 @@ public final class REv2SimpleFuzzerTransactionGenerator implements TransactionGe
         TransactionHeader.defaults(
             NetworkDefinition.LOCAL_SIMULATOR,
             0,
-            5,
+            100,
             transactionNonce++,
             keyPair.getPublicKey().toPublicKey(),
             false);

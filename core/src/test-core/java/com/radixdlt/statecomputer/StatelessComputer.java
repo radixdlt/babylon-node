@@ -78,6 +78,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.rev1.RoundDetails;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.transactions.RawTransaction;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -118,7 +119,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
   public void addToMempool(MempoolAdd mempoolAdd, BFTNode origin) {}
 
   @Override
-  public List<RawTransaction> getTransactionsForProposal(
+  public List<RawNotarizedTransaction> getTransactionsForProposal(
       List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
     return List.of();
   }
@@ -126,17 +127,19 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
   @Override
   public StateComputerLedger.StateComputerResult prepare(
       List<StateComputerLedger.ExecutedTransaction> previous,
-      List<RawTransaction> proposedTransactions,
+      List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
     var invalidTransactions = new HashMap<RawTransaction, Exception>();
 
     for (var transaction : proposedTransactions) {
-      var success = verifier.verify(transaction);
+      var success = verifier.verify(transaction.unsafeAsRawTransaction());
       if (success) {
-        successfulTransactions.add(new StatelessComputerExecutedTransaction(transaction));
+        successfulTransactions.add(
+            new StatelessComputerExecutedTransaction(transaction.unsafeAsRawTransaction()));
       } else {
-        invalidTransactions.put(transaction, new StatelessTransactionException());
+        invalidTransactions.put(
+            transaction.unsafeAsRawTransaction(), new StatelessTransactionException());
       }
     }
 

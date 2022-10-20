@@ -65,8 +65,10 @@
 package com.radixdlt.harness.predicates;
 
 import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.mempool.MempoolReader;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -85,11 +87,13 @@ public final class NodesPredicate {
     return n -> n.stream().allMatch(NodePredicate.atExactlyStateVersion(stateVersion));
   }
 
-  public static Predicate<List<Injector>> allCommittedTransaction(RawTransaction transaction) {
+  public static Predicate<List<Injector>> allCommittedTransaction(
+      RawNotarizedTransaction transaction) {
     return n -> n.stream().allMatch(NodePredicate.committedUserTransaction(transaction));
   }
 
-  public static Predicate<List<Injector>> anyCommittedTransaction(RawTransaction transaction) {
+  public static Predicate<List<Injector>> anyCommittedTransaction(
+      RawNotarizedTransaction transaction) {
     return n -> n.stream().anyMatch(NodePredicate.committedUserTransaction(transaction));
   }
 
@@ -120,7 +124,9 @@ public final class NodesPredicate {
         n.stream()
             .allMatch(
                 i -> {
-                  var reader = i.getInstance(MempoolReader.class);
+                  var reader =
+                      i.getInstance(
+                          Key.get(new TypeLiteral<MempoolReader<RawNotarizedTransaction>>() {}));
                   return reader.getCount() == count;
                 });
   }

@@ -63,7 +63,7 @@
  */
 
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::model::Vault;
+use radix_engine::model::VaultSubstate;
 use radix_engine::types::SubstateId;
 use scrypto::engine::types::RENodeId;
 use scrypto::prelude::*;
@@ -107,21 +107,21 @@ impl Accounting {
         }
     }
 
-    pub fn add_vault(&mut self, vault: &Vault) {
-        match self.balances.entry(vault.resource_address()) {
+    pub fn add_vault(&mut self, vault: &VaultSubstate) {
+        match self.balances.entry(vault.0.resource_address()) {
             Entry::Occupied(mut e) => {
-                let new_amount = vault.total_amount() + *e.get();
+                let new_amount = vault.0.amount() + *e.get();
                 e.insert(new_amount);
             }
             Entry::Vacant(e) => {
-                e.insert(vault.total_amount());
+                e.insert(vault.0.amount());
             }
         }
     }
 }
 
 impl StateTreeVisitor for Accounting {
-    fn visit_vault(&mut self, _parent_id: Option<&SubstateId>, vault: &Vault) {
+    fn visit_vault(&mut self, _parent_id: Option<&SubstateId>, vault: &VaultSubstate) {
         self.add_vault(vault);
     }
 }
