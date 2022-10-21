@@ -118,7 +118,7 @@ import com.radixdlt.substate.CloseableCursor;
 import com.radixdlt.substate.SubstateId;
 import com.radixdlt.substate.SubstateTypeId;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.Shorts;
 import com.radixdlt.utils.UInt256;
@@ -1176,7 +1176,7 @@ public final class BerkeleyLedgerEntryStore
       transaction.commit();
     }
 
-    final var transactions = ImmutableList.<RawTransaction>builder();
+    final var transactions = ImmutableList.<RawLedgerTransaction>builder();
     final var transactionSearchKey = toPKey(stateVersion + 1);
     final var transactionPosData = entry();
 
@@ -1191,7 +1191,7 @@ public final class BerkeleyLedgerEntryStore
         }
         var offset = fromByteArray(transactionPosData.getData());
         var txnBytes = txnLog.read(offset);
-        transactions.add(RawTransaction.create(txnBytes));
+        transactions.add(RawLedgerTransaction.create(txnBytes));
         transactionCursorStatus =
             txnCursor.getNext(transactionSearchKey, transactionPosData, DEFAULT);
         count++;
@@ -1206,10 +1206,10 @@ public final class BerkeleyLedgerEntryStore
     }
   }
 
-  public List<RawTransaction> getCommittedTxns(long stateVersion, long limit) {
+  public List<RawLedgerTransaction> getCommittedTxns(long stateVersion, long limit) {
     try (var txnCursor = txnDatabase.openCursor(null, null)) {
       var iterator =
-          new Iterator<RawTransaction>() {
+          new Iterator<RawLedgerTransaction>() {
             final DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(stateVersion + 1));
             final DatabaseEntry value = new DatabaseEntry();
             OperationStatus status =
@@ -1223,7 +1223,7 @@ public final class BerkeleyLedgerEntryStore
             }
 
             @Override
-            public RawTransaction next() {
+            public RawLedgerTransaction next() {
               if (status != SUCCESS) {
                 throw new NoSuchElementException();
               }
@@ -1234,7 +1234,7 @@ public final class BerkeleyLedgerEntryStore
               } catch (IOException e) {
                 throw new IllegalStateException("Unable to read transaction", e);
               }
-              RawTransaction next = RawTransaction.create(txnBytes);
+              RawLedgerTransaction next = RawLedgerTransaction.create(txnBytes);
 
               status = txnCursor.getNext(key, value, null);
               return next;

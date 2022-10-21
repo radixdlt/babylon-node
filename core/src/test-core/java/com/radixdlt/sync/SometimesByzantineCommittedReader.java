@@ -77,7 +77,7 @@ import com.radixdlt.ledger.DtoLedgerProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.store.InMemoryTransactionsAndProofReader;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -110,7 +110,7 @@ public final class SometimesByzantineCommittedReader implements TransactionsAndP
 
   private static class ByzantineCommittedTransactionRunBuilder {
     private DtoLedgerProof request;
-    private UnaryOperator<RawTransaction> transactionMapper;
+    private UnaryOperator<RawLedgerTransaction> transactionMapper;
     private CommittedTransactionsWithProof base;
     private TimestampedECDSASignatures overwriteSignatures;
     private LedgerAccumulator accumulator;
@@ -134,7 +134,7 @@ public final class SometimesByzantineCommittedReader implements TransactionsAndP
     }
 
     public ByzantineCommittedTransactionRunBuilder replaceTransactions(
-        UnaryOperator<RawTransaction> transactionMapper) {
+        UnaryOperator<RawLedgerTransaction> transactionMapper) {
       this.transactionMapper = transactionMapper;
       return this;
     }
@@ -146,7 +146,7 @@ public final class SometimesByzantineCommittedReader implements TransactionsAndP
     }
 
     public CommittedTransactionsWithProof build() {
-      List<RawTransaction> transactions;
+      List<RawLedgerTransaction> transactions;
       if (transactionMapper != null) {
         transactions =
             base.getTransactions().stream()
@@ -204,7 +204,7 @@ public final class SometimesByzantineCommittedReader implements TransactionsAndP
         return new ByzantineCommittedTransactionRunBuilder()
             .hasher(hasher)
             .base(correctCommittedTransactionsWithProof)
-            .replaceTransactions(cmd -> RawTransaction.create(new byte[] {0}))
+            .replaceTransactions(cmd -> RawLedgerTransaction.create(new byte[] {0}))
             .build();
       }
     },
@@ -218,7 +218,7 @@ public final class SometimesByzantineCommittedReader implements TransactionsAndP
         return new ByzantineCommittedTransactionRunBuilder()
             .hasher(hasher)
             .base(correctCommittedTransactionsWithProof)
-            .replaceTransactions(cmd -> RawTransaction.create(new byte[] {0}))
+            .replaceTransactions(cmd -> RawLedgerTransaction.create(new byte[] {0}))
             .accumulator(request, accumulator)
             .overwriteSignatures(new TimestampedECDSASignatures())
             .build();
@@ -234,7 +234,7 @@ public final class SometimesByzantineCommittedReader implements TransactionsAndP
         return new ByzantineCommittedTransactionRunBuilder()
             .hasher(hasher)
             .base(correctCommittedTransactionsWithProof)
-            .replaceTransactions(cmd -> RawTransaction.create(new byte[] {0}))
+            .replaceTransactions(cmd -> RawLedgerTransaction.create(new byte[] {0}))
             .accumulator(request, accumulator)
             .build();
       }

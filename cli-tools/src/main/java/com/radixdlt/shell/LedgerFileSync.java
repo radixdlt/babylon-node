@@ -76,7 +76,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Compress;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -150,7 +150,7 @@ public final class LedgerFileSync {
 
     @JsonProperty("txns")
     @DsonOutput(DsonOutput.Output.ALL)
-    private final List<RawTransaction> transactions;
+    private final List<RawLedgerTransaction> transactions;
 
     @JsonProperty("proof")
     @DsonOutput(DsonOutput.Output.ALL)
@@ -158,13 +158,13 @@ public final class LedgerFileSync {
 
     @JsonCreator
     public CommittedTransactionsWithProofDto(
-        @JsonProperty("txns") List<RawTransaction> transactions,
+        @JsonProperty("txns") List<RawLedgerTransaction> transactions,
         @JsonProperty("proof") DtoLedgerProof proof) {
       this.transactions = Objects.requireNonNull(transactions);
       this.proof = Objects.requireNonNull(proof);
     }
 
-    public List<RawTransaction> getTxns() {
+    public List<RawLedgerTransaction> getTxns() {
       return transactions;
     }
 

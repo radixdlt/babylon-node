@@ -18,7 +18,7 @@ use scrypto::engine::types::{
 pub fn to_api_global_entity_id_from_substate_id(
     bech32_encoder: &Bech32Encoder,
     substate_id: SubstateId,
-) -> Result<models::GlobalEntityId, MappingError> {
+) -> Result<GlobalEntityId, MappingError> {
     let mapped = to_mapped_substate_id(substate_id)?;
     to_api_global_entity_id(bech32_encoder, mapped.into())
 }
@@ -27,7 +27,7 @@ pub fn to_api_global_entity_id_from_substate_id(
 pub fn to_api_global_entity_id(
     bech32_encoder: &Bech32Encoder,
     entity_id: MappedEntityId,
-) -> Result<models::GlobalEntityId, MappingError> {
+) -> Result<GlobalEntityId, MappingError> {
     let entity_type = entity_id.entity_type;
     let address_bytes = entity_id.entity_address;
     let address_bytes_hex = to_hex(&address_bytes);
@@ -57,7 +57,7 @@ pub fn to_api_global_entity_id(
         }
         EntityType::Global => {
             return Err(MappingError::InvalidRootEntity {
-                message: "Vault".to_owned(),
+                message: "Global".to_owned(),
             })
         }
         EntityType::NonFungibleStore => {

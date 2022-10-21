@@ -75,7 +75,7 @@ import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.parser.exceptions.TrailingBytesException;
 import com.radixdlt.engine.parser.exceptions.TxnParseException;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
@@ -94,7 +94,7 @@ public final class REParser {
   }
 
   public static class ParserState {
-    private final RawTransaction transaction;
+    private final RawLedgerTransaction transaction;
     private final List<REInstruction> instructions = new ArrayList<>();
     private byte[] msg = null;
     private int upSubstateCount = 0;
@@ -103,7 +103,7 @@ public final class REParser {
     private int position = 0;
     private boolean disableResourceAllocAndDestroy = false;
 
-    ParserState(RawTransaction transaction) {
+    ParserState(RawLedgerTransaction transaction) {
       this.transaction = transaction;
     }
 
@@ -177,7 +177,7 @@ public final class REParser {
     }
   }
 
-  public ParsedTxn parse(RawTransaction transaction) throws TxnParseException {
+  public ParsedTxn parse(RawLedgerTransaction transaction) throws TxnParseException {
     UInt256 feePaid = null;
     ECDSASecp256k1Signature sig = null;
     int sigPosition = 0;
@@ -260,7 +260,7 @@ public final class REParser {
         parserState.disableResourceAllocAndDestroy);
   }
 
-  private HashCode calculatePayloadHash(RawTransaction transaction, int sigPosition) {
+  private HashCode calculatePayloadHash(RawLedgerTransaction transaction, int sigPosition) {
     return HashUtils.sha256Twice(transaction.getPayload(), 0, sigPosition); // This is a double hash
   }
 

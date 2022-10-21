@@ -65,7 +65,7 @@
 package com.radixdlt.ledger;
 
 import com.radixdlt.consensus.LedgerProof;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
 import java.util.Objects;
 
@@ -89,24 +89,24 @@ import java.util.Objects;
  * </ul>
  */
 public final class CommittedTransactionsWithProof {
-  private final List<RawTransaction> transactions;
+  private final List<RawLedgerTransaction> transactions;
   private final LedgerProof proof;
 
-  private CommittedTransactionsWithProof(List<RawTransaction> transactions, LedgerProof proof) {
+  private CommittedTransactionsWithProof(List<RawLedgerTransaction> transactions, LedgerProof proof) {
     this.transactions = Objects.requireNonNull(transactions);
     this.proof = Objects.requireNonNull(proof);
   }
 
   public static CommittedTransactionsWithProof create(
-      List<RawTransaction> transactions, LedgerProof proof) {
+		  List<RawLedgerTransaction> transactions, LedgerProof proof) {
     return new CommittedTransactionsWithProof(transactions, proof);
   }
 
-  public List<RawTransaction> getTransactions() {
+  public List<RawLedgerTransaction> getTransactions() {
     return transactions;
   }
 
-  public boolean contains(RawTransaction transaction) {
+  public boolean contains(RawLedgerTransaction transaction) {
     return transactions.contains(transaction);
   }
 

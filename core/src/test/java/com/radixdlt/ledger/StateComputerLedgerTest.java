@@ -92,9 +92,12 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.TypedMocks;
@@ -109,7 +112,7 @@ import org.junit.Test;
 
 public class StateComputerLedgerTest {
 
-  private Mempool mempool;
+  private Mempool<RawNotarizedTransaction, RawNotarizedTransaction> mempool;
   private StateComputer stateComputer;
   private StateComputerLedger sut;
   private LedgerProof currentLedgerHeader;
@@ -122,8 +125,10 @@ public class StateComputerLedgerTest {
   private VertexWithHash genesisVertex;
   private QuorumCertificate genesisQC;
 
+  // Doesn't matter what kind of transaction it is, but needs to be a valid tx payload
+  // to be able to convert it from NotarizedTransaction to LedgerTransaction.
   private final RawNotarizedTransaction nextTransaction =
-      RawNotarizedTransaction.create(new byte[] {0});
+      REv2TestTransactions.constructNewAccountTransaction(NetworkDefinition.LOCAL_SIMULATOR, 0, 0);
   private final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
   private final ExecutedTransaction successfulNextTransaction =
       nextTransaction::unsafeAsRawTransaction;
@@ -276,10 +281,9 @@ public class StateComputerLedgerTest {
         LedgerHeader.create(genesisEpoch, Round.of(2), accumulatorState, 1234);
     final LedgerProof header =
         new LedgerProof(HashUtils.random256(), ledgerHeader, new TimestampedECDSASignatures());
-    // TODO: fixme
     var verified =
         CommittedTransactionsWithProof.create(
-            List.of(RawTransaction.create(nextTransaction.getPayload())), header);
+            List.of(RawLedgerTransaction.create(TransactionBuilder.userTransactionToLedgerBytes(nextTransaction.getPayload()))), header);
 
     // Act
     sut.syncEventProcessor().process(verified);

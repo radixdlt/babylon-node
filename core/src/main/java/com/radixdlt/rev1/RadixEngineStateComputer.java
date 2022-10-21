@@ -103,7 +103,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.substate.*;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -165,14 +165,14 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   public record RadixEngineTransaction(
-      RawTransaction transaction, REProcessedTxn processed, PermissionLevel permissionLevel)
+          RawLedgerTransaction transaction, REProcessedTxn processed, PermissionLevel permissionLevel)
       implements ExecutedTransaction {}
 
   public REProcessedTxn test(byte[] payload, boolean isSigned) throws RadixEngineException {
     synchronized (lock) {
       var txn =
           isSigned
-              ? RawTransaction.create(payload)
+              ? RawLedgerTransaction.create(payload)
               : TxLowLevelBuilder.newBuilder(payload)
                   .sig(ECDSASecp256k1Signature.zeroSignature())
                   .build();
@@ -187,11 +187,11 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
   }
 
-  public REProcessedTxn addToMempool(RawTransaction transaction) throws MempoolRejectedException {
+  public REProcessedTxn addToMempool(RawLedgerTransaction transaction) throws MempoolRejectedException {
     return addToMempool(transaction, null);
   }
 
-  public REProcessedTxn addToMempool(RawTransaction transaction, BFTNode origin)
+  public REProcessedTxn addToMempool(RawLedgerTransaction transaction, BFTNode origin)
       throws MempoolRejectedException {
     synchronized (lock) {
       try {
@@ -265,7 +265,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
       successBuilder.add(systemUpdateTransaction);
 
-      var exceptionBuilder = ImmutableMap.<RawTransaction, Exception>builder();
+      var exceptionBuilder = ImmutableMap.<RawLedgerTransaction, Exception>builder();
       var nextValidatorSet =
           systemUpdateTransaction.processed().getEvents().stream()
               .filter(REEvent.NextValidatorSetEvent.class::isInstance)
@@ -285,7 +285,7 @@ public final class RadixEngineStateComputer implements StateComputer {
             roundDetails.roundProposer(),
             transientBranch,
             proposedTransactions.stream()
-                .map(tx -> RawTransaction.create(tx.getPayload()))
+                .map(tx -> RawLedgerTransaction.create(tx.getPayload()))
                 .toList(),
             successBuilder,
             exceptionBuilder);
@@ -355,7 +355,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
     try {
       final var systemUpdate =
-          RawTransaction.create(
+          RawLedgerTransaction.create(
               branch.construct(systemActions).buildWithoutSignature().getPayload());
       // TODO: fixme
       final var result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
@@ -374,9 +374,9 @@ public final class RadixEngineStateComputer implements StateComputer {
   private void executeUserTransactions(
       BFTNode proposer,
       RadixEngineBranch<LedgerAndBFTProof> branch,
-      List<RawTransaction> nextTransactions,
+      List<RawLedgerTransaction> nextTransactions,
       ImmutableList.Builder<ExecutedTransaction> successBuilder,
-      ImmutableMap.Builder<RawTransaction, Exception> errorBuilder) {
+      ImmutableMap.Builder<RawLedgerTransaction, Exception> errorBuilder) {
     // TODO: This check should probably be done before getting into state computer
     this.maxSigsPerRound.ifPresent(
         max -> {

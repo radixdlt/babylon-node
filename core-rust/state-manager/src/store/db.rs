@@ -73,9 +73,7 @@ use std::path::PathBuf;
 
 use crate::types::UserPayloadHash;
 
-use radix_engine::ledger::{
-    bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
-};
+use radix_engine::ledger::{bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore};
 use radix_engine::model::PersistedSubstate;
 use radix_engine::state_manager::StateDiff;
 use radix_engine::transaction::EntityChanges;

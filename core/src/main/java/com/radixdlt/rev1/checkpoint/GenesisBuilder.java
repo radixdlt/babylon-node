@@ -85,7 +85,7 @@ import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.substate.TxAction;
 import com.radixdlt.substate.TxBuilderException;
 import com.radixdlt.substate.TxnConstructionRequest;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -115,7 +115,7 @@ public final class GenesisBuilder {
             rules.config().maxMessageLen());
   }
 
-  public RawTransaction build(String message, long timestamp, List<TxAction> actions)
+  public RawLedgerTransaction build(String message, long timestamp, List<TxAction> actions)
       throws TxBuilderException, RadixEngineException {
     var txnConstructionRequest = TxnConstructionRequest.create();
     txnConstructionRequest.msg(message.getBytes(StandardCharsets.UTF_8));
@@ -123,7 +123,7 @@ public final class GenesisBuilder {
     actions.forEach(txnConstructionRequest::action);
     txnConstructionRequest.action(new NextEpoch(timestamp));
     var txn =
-        RawTransaction.create(
+        RawLedgerTransaction.create(
             radixEngine.construct(txnConstructionRequest).buildWithoutSignature().getPayload());
 
     // Verify that it executes okay
@@ -134,7 +134,7 @@ public final class GenesisBuilder {
     return txn;
   }
 
-  public LedgerProof generateGenesisProof(RawTransaction transaction) throws RadixEngineException {
+  public LedgerProof generateGenesisProof(RawLedgerTransaction transaction) throws RadixEngineException {
     var branch = radixEngine.transientBranch();
     var result = branch.execute(List.of(transaction), PermissionLevel.SYSTEM);
     radixEngine.deleteBranches();

@@ -63,7 +63,7 @@
  */
 
 use crate::jni::java_structure::JavaStructure;
-use crate::result::StateManagerResult;
+use crate::result::{StateManagerError, StateManagerResult, ToStateManagerError};
 use crate::transaction::{
     create_intent_bytes, create_manifest, create_new_account_intent_bytes, create_notarized_bytes,
     create_set_epoch_intent, create_signed_intent_bytes, Transaction,
@@ -221,16 +221,17 @@ fn do_create_notarized_bytes(args: (Vec<u8>, Signature)) -> StateManagerResult<V
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_userTransactionToCommitted(
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_userTransactionToLedger(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call_flatten_result(env, request_payload, do_user_transaction_to_committed)
+    jni_static_sbor_call_flatten_result(env, request_payload, do_user_transaction_to_ledger)
 }
 
-fn do_user_transaction_to_committed(args: Vec<u8>) -> StateManagerResult<Vec<u8>> {
-    let notarized_transaction: NotarizedTransaction = scrypto_decode(&args).unwrap();
+fn do_user_transaction_to_ledger(args: Vec<u8>) -> StateManagerResult<Vec<u8>> {
+    let notarized_transaction: NotarizedTransaction = scrypto_decode(&args)
+        .map_err(|e| e.to_state_manager_error())?;
     Ok(scrypto_encode(&Transaction::User(notarized_transaction)))
 }
 
@@ -250,7 +251,8 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_transactionB
 fn do_transaction_bytes_to_notarized_transaction_bytes(
     args: Vec<u8>,
 ) -> StateManagerResult<Option<Vec<u8>>> {
-    let transaction: Transaction = scrypto_decode(&args).unwrap();
+    let transaction: Transaction = scrypto_decode(&args)
+        .map_err(|e| e.to_state_manager_error())?;
     Ok(match transaction {
         Transaction::User(notarized_transaction) => {
             Some(scrypto_encode(&notarized_transaction.to_bytes()))

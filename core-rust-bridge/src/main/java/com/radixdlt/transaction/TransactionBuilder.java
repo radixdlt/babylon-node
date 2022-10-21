@@ -165,8 +165,8 @@ public final class TransactionBuilder {
 
   private static native byte[] createNotarizedBytes(byte[] requestPayload);
 
-  public static byte[] userTransactionToCommittedBytes(byte[] userTransactionBytes) {
-    return userTransactionToCommitted.call(userTransactionBytes);
+  public static byte[] userTransactionToLedgerBytes(byte[] userTransactionBytes) {
+    return userTransactionToLedger.call(userTransactionBytes);
   }
 
   public static Option<byte[]> convertTransactionBytesToNotarizedTransactionBytes(
@@ -174,11 +174,11 @@ public final class TransactionBuilder {
     return transactionBytesToNotarizedTransactionBytesFn.call(transactionBytes);
   }
 
-  private static final NativeCalls.StaticFunc1<byte[], byte[]> userTransactionToCommitted =
+  private static final NativeCalls.StaticFunc1<byte[], byte[]> userTransactionToLedger =
       NativeCalls.StaticFunc1.with(
           new TypeToken<>() {},
           new TypeToken<>() {},
-          TransactionBuilder::userTransactionToCommitted);
+          TransactionBuilder::userTransactionToLedger);
 
   private static final NativeCalls.StaticFunc1<byte[], Option<byte[]>>
       transactionBytesToNotarizedTransactionBytesFn =
@@ -187,7 +187,7 @@ public final class TransactionBuilder {
               new TypeToken<>() {},
               TransactionBuilder::transactionBytesToNotarizedTransactionBytes);
 
-  private static native byte[] userTransactionToCommitted(byte[] requestPayload);
+  private static native byte[] userTransactionToLedger(byte[] requestPayload);
 
   private static native byte[] transactionBytesToNotarizedTransactionBytes(byte[] transactionBytes);
 }

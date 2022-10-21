@@ -72,7 +72,7 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import org.junit.Test;
 
-public class RawTransactionTest {
+public class RawLedgerTransactionTest {
 
   public static void registerHashCodeCodec(CodecMap codecMap) {
     codecMap.register(
@@ -90,14 +90,14 @@ public class RawTransactionTest {
         new Sbor(
             true,
             new CodecMap()
-                .register(RawTransactionTest::registerHashCodeCodec)
-                .register(RawTransaction::registerCodec));
+                .register(RawLedgerTransactionTest::registerHashCodeCodec)
+                .register(RawLedgerTransaction::registerCodec));
 
     byte[] payload = new byte[10];
-    RawTransaction t0 = RawTransaction.create(payload);
+    RawLedgerTransaction t0 = RawLedgerTransaction.create(payload);
 
-    var r0 = sbor.encode(t0, RawTransaction.class);
-    var t1 = sbor.decode(r0, RawTransaction.class);
+    var r0 = sbor.encode(t0, RawLedgerTransaction.class);
+    var t1 = sbor.decode(r0, RawLedgerTransaction.class);
 
     assertEquals(t0, t1);
   }

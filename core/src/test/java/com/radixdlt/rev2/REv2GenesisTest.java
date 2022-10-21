@@ -112,11 +112,9 @@ public final class REv2GenesisTest {
       assertThat(genesis.newComponentAddresses())
           .contains(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
 
-      /* TODO: figure out why this doesn't work... seems something wrong with state_tree_traverser
       var systemAmount =
-          stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
+          stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
       assertThat(systemAmount).isEqualTo(REv2Constants.GENESIS_AMOUNT);
-       */
 
       var emptyAccountAmount =
           stateReader.getComponentXrdAmount(ComponentAddress.NON_EXISTENT_COMPONENT_ADDRESS);

@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::result::{StateManagerError, StateManagerResult, ERRCODE_SBOR};
+use crate::result::{StateManagerError, StateManagerResult, ToStateManagerError};
 use sbor::{decode_with_static_info, encode_with_static_info};
 
 pub use sbor::{Decode, Encode, TypeId};
@@ -77,9 +77,8 @@ pub trait JavaStructure {
 
 impl<T: Encode + Decode + TypeId> JavaStructure for T {
     fn from_java(data: &[u8]) -> StateManagerResult<Self> {
-        decode_with_static_info(data).map_err(|e| {
-            StateManagerError::create(ERRCODE_SBOR, format!("SBOR Decode Failed: {:?}", e))
-        })
+        decode_with_static_info(data)
+            .map_err(|e| e.to_state_manager_error())
     }
 
     fn to_java(&self) -> Vec<u8> {

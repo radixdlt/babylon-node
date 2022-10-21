@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use sbor::{Decode, Encode, TypeId};
+use sbor::{Decode, DecodeError, Encode, TypeId};
 
 // System Errors.
 pub const ERRCODE_JNI: i16 = 0;
@@ -83,12 +83,18 @@ impl StateManagerError {
     }
 
     pub fn create_result<T>(error_code: i16, error_msg: String) -> StateManagerResult<T> {
-        StateManagerResult::Err(StateManagerError::create(error_code, error_msg))
+        Err(StateManagerError::create(error_code, error_msg))
     }
 }
 
 pub trait ToStateManagerError {
     fn to_state_manager_error(&self) -> StateManagerError;
+}
+
+impl ToStateManagerError for DecodeError {
+    fn to_state_manager_error(&self) -> StateManagerError {
+        StateManagerError::create(ERRCODE_SBOR, format!("SBOR Decode Failed: {:?}", self))
+    }
 }
 
 pub type StateManagerResult<T> = Result<T, StateManagerError>;

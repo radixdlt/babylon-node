@@ -69,7 +69,7 @@ import com.radixdlt.application.system.state.RoundData;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.engine.parser.ParsedTxn;
 import com.radixdlt.substate.SubstateId;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.Objects;
@@ -114,7 +114,7 @@ public final class REProcessedTxn {
     return Optional.ofNullable(signedByKey);
   }
 
-  public RawTransaction getTxn() {
+  public RawLedgerTransaction getTxn() {
     return parsedTxn.txn();
   }
 

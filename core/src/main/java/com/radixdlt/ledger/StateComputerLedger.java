@@ -86,7 +86,7 @@ import com.radixdlt.monitoring.SystemCounters.CounterType;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -99,17 +99,17 @@ import java.util.Optional;
 public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   public interface ExecutedTransaction {
-    RawTransaction transaction();
+    RawLedgerTransaction transaction();
   }
 
   public static class StateComputerResult {
     private final List<ExecutedTransaction> executedTransactions;
-    private final Map<RawTransaction, Exception> failedTransactions;
+    private final Map<RawLedgerTransaction, Exception> failedTransactions;
     private final BFTValidatorSet nextValidatorSet;
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<RawTransaction, Exception> failedTransactions,
+        Map<RawLedgerTransaction, Exception> failedTransactions,
         BFTValidatorSet nextValidatorSet) {
       this.executedTransactions = Objects.requireNonNull(executedTransactions);
       this.failedTransactions = Objects.requireNonNull(failedTransactions);
@@ -118,7 +118,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
     public StateComputerResult(
         List<ExecutedTransaction> executedTransactions,
-        Map<RawTransaction, Exception> failedTransactions) {
+        Map<RawLedgerTransaction, Exception> failedTransactions) {
       this(executedTransactions, failedTransactions, null);
     }
 
@@ -130,7 +130,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
       return executedTransactions;
     }
 
-    public Map<RawTransaction, Exception> getFailedTransactions() {
+    public Map<RawLedgerTransaction, Exception> getFailedTransactions() {
       return failedTransactions;
     }
   }
@@ -280,7 +280,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
 
   public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
     return committedUpdate -> {
-      final ImmutableList<RawTransaction> transactions =
+      final ImmutableList<RawLedgerTransaction> transactions =
           committedUpdate.committed().stream()
               .flatMap(ExecutedVertex::successfulTransactions)
               .map(ExecutedTransaction::transaction)

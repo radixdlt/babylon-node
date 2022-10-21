@@ -83,6 +83,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.targeted.mempool.SimpleMempool;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Map;
@@ -160,10 +161,11 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       @Override
       public void commit(
           CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-        // TODO: unsafe, fixme
+        // TODO: is this okay???
         mempool.handleTransactionsCommitted(
             txnsAndProof.getTransactions().stream()
-                .map(tx -> RawNotarizedTransaction.create(tx.getPayload()))
+                .flatMap(tx -> TransactionBuilder.convertTransactionBytesToNotarizedTransactionBytes(tx.getPayload()).stream())
+                .map(RawNotarizedTransaction::create)
                 .toList());
         counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 

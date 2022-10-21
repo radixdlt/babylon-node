@@ -135,7 +135,7 @@ public final class RawNotarizedTransaction {
   }
 
   // TODO: remove me; used for some rev1 compatibility
-  public RawTransaction unsafeAsRawTransaction() {
-    return RawTransaction.create(getPayload());
+  public RawLedgerTransaction unsafeAsRawTransaction() {
+    return RawLedgerTransaction.create(getPayload());
   }
 }

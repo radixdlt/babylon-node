@@ -78,7 +78,7 @@ import com.radixdlt.constraintmachine.SubstateSerialization;
 import com.radixdlt.constraintmachine.SystemMapKey;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Shorts;
 import com.radixdlt.utils.UInt256;
 import java.io.ByteArrayOutputStream;
@@ -369,7 +369,7 @@ public final class TxLowLevelBuilder {
     return this;
   }
 
-  public RawTransaction build() {
-    return RawTransaction.create(blobStream.toByteArray());
+  public RawLedgerTransaction build() {
+    return RawLedgerTransaction.create(blobStream.toByteArray());
   }
 }

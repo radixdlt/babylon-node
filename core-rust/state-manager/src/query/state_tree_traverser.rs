@@ -172,14 +172,6 @@ impl<'s, 'v, S: ReadableSubstateStore + QueryableSubstateStore, V: StateTreeVisi
                 }
             }
             RENodeId::Component(..) => {
-                let info_substate_id =
-                    SubstateId(node_id, SubstateOffset::Component(ComponentOffset::Info));
-                let info_output_value = self
-                    .substate_store
-                    .get_substate(&info_substate_id)
-                    .expect("Broken Node Store");
-                let info_runtime_substate = info_output_value.substate.to_runtime();
-
                 let substate_id =
                     SubstateId(node_id, SubstateOffset::Component(ComponentOffset::State));
                 let output_value = self

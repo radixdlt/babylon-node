@@ -72,6 +72,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
+import com.radixdlt.transaction.TransactionBuilder;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.HashMap;
 import java.util.List;
@@ -93,10 +94,10 @@ public final class Checkers {
 
   public static void assertTransactionNotCommitted(
       List<Injector> nodeInjectors, RawNotarizedTransaction transaction) {
-    // TODO: fixme?
+      final var rawTransactionBytes = TransactionBuilder.userTransactionToLedgerBytes(transaction.getPayload());
     assertTransactionsCommitted(
         nodeInjectors,
-        t -> assertThat(t.transactionBytes()).isNotEqualTo(transaction.getPayload()));
+        t -> assertThat(t.transactionBytes()).isNotEqualTo(rawTransactionBytes));
   }
 
   public static void assertTransactionsCommitted(

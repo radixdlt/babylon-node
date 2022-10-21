@@ -79,7 +79,7 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -130,10 +130,10 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
       List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-    var invalidTransactions = new HashMap<RawTransaction, Exception>();
+    var invalidTransactions = new HashMap<RawLedgerTransaction, Exception>();
 
     for (var transaction : proposedTransactions) {
-      var success = verifier.verify(transaction.unsafeAsRawTransaction());
+      var success = verifier.verify(transaction);
       if (success) {
         successfulTransactions.add(
             new StatelessComputerExecutedTransaction(transaction.unsafeAsRawTransaction()));

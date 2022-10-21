@@ -73,16 +73,16 @@ import com.radixdlt.sbor.codec.StructCodec;
 import java.util.Objects;
 
 /**
- * A wrapper around the raw bytes of a Transaction Enum (either wrapping a NotarizedTransaction or a
+ * A wrapper around the raw bytes of a LedgerTransaction Enum (either wrapping a NotarizedTransaction or a
  * system transaction) The transaction is yet to be parsed, and may be invalid.
  */
-public final class RawTransaction {
+public final class RawLedgerTransaction {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        RawTransaction.class,
+        RawLedgerTransaction.class,
         codecs ->
             StructCodec.with(
-                RawTransaction::new,
+                RawLedgerTransaction::new,
                 codecs.of(byte[].class),
                 codecs.of(HashCode.class),
                 (t, encoder) -> encoder.encode(t.payload, t.payloadHash)));
@@ -91,19 +91,19 @@ public final class RawTransaction {
   private final byte[] payload;
   private final HashCode payloadHash;
 
-  private RawTransaction(byte[] payload, HashCode payloadHash) {
+  private RawLedgerTransaction(byte[] payload, HashCode payloadHash) {
     this.payload = Objects.requireNonNull(payload);
     this.payloadHash = Objects.requireNonNull(payloadHash);
   }
 
-  private RawTransaction(byte[] payload) {
+  private RawLedgerTransaction(byte[] payload) {
     this.payload = Objects.requireNonNull(payload);
     this.payloadHash = HashUtils.transactionIdHash(payload);
   }
 
   @JsonCreator
-  public static RawTransaction create(byte[] payload) {
-    return new RawTransaction(payload);
+  public static RawLedgerTransaction create(byte[] payload) {
+    return new RawLedgerTransaction(payload);
   }
 
   public HashCode getPayloadHash() {
@@ -122,7 +122,7 @@ public final class RawTransaction {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof RawTransaction other)) {
+    if (!(o instanceof RawLedgerTransaction other)) {
       return false;
     }
 

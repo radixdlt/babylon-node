@@ -78,7 +78,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.substate.SubstateId;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -94,7 +94,7 @@ import org.apache.logging.log4j.Logger;
 
 /** A mempool which uses internal radix engine to be more efficient. */
 @Singleton
-public final class RadixEngineMempool implements Mempool<RawTransaction, REProcessedTxn> {
+public final class RadixEngineMempool implements Mempool<RawLedgerTransaction, REProcessedTxn> {
   private static final Logger logger = LogManager.getLogger();
 
   private final ConcurrentHashMap<TID, Pair<REProcessedTxn, MempoolMetadata>> data =
@@ -117,7 +117,7 @@ public final class RadixEngineMempool implements Mempool<RawTransaction, REProce
   }
 
   @Override
-  public REProcessedTxn addTransaction(RawTransaction transaction) throws MempoolRejectedException {
+  public REProcessedTxn addTransaction(RawLedgerTransaction transaction) throws MempoolRejectedException {
     if (this.data.size() >= maxSize) {
       throw new MempoolFullException(this.data.size(), maxSize);
     }
@@ -157,7 +157,7 @@ public final class RadixEngineMempool implements Mempool<RawTransaction, REProce
 
   @Override
   public void handleTransactionsCommitted(List<REProcessedTxn> transactions) {
-    final var removed = new ArrayList<RawTransaction>();
+    final var removed = new ArrayList<RawLedgerTransaction>();
     final var committedIds =
         transactions.stream().map(p -> p.getTxn().getPayloadHash()).collect(Collectors.toSet());
 
@@ -188,7 +188,7 @@ public final class RadixEngineMempool implements Mempool<RawTransaction, REProce
   }
 
   @Override
-  public List<RawTransaction> getTransactionsForProposal(
+  public List<RawLedgerTransaction> getTransactionsForProposal(
       int count, List<REProcessedTxn> preparedTransactions) {
     // TODO: Order by highest fees paid
     var copy = new TreeSet<>(data.keySet());
@@ -199,7 +199,7 @@ public final class RadixEngineMempool implements Mempool<RawTransaction, REProce
         .distinct()
         .forEach(copy::remove);
 
-    var txns = new ArrayList<RawTransaction>();
+    var txns = new ArrayList<RawLedgerTransaction>();
 
     for (int i = 0; i < count && !copy.isEmpty(); i++) {
       var txId = copy.first();
@@ -223,9 +223,9 @@ public final class RadixEngineMempool implements Mempool<RawTransaction, REProce
     return new HashSet<>(substateIndex.keySet());
   }
 
-  public List<RawTransaction> getTransactionsToRelay() {
+  public List<RawLedgerTransaction> getTransactionsToRelay() {
     return this.data.values().stream()
-        .map(t -> RawTransaction.create(t.getFirst().getTxn().getPayload()))
+        .map(t -> RawLedgerTransaction.create(t.getFirst().getTxn().getPayload()))
         .collect(Collectors.toList());
   }
 

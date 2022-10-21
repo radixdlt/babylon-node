@@ -68,7 +68,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -97,8 +97,8 @@ public record ExecutedTransaction(
                         t.newComponentAddresses)));
   }
 
-  public RawTransaction rawTransaction() {
-    return RawTransaction.create(transactionBytes);
+  public RawLedgerTransaction rawTransaction() {
+    return RawLedgerTransaction.create(transactionBytes);
   }
 
   @Override
