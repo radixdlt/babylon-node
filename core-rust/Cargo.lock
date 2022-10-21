@@ -1266,7 +1266,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-17#d1391a9f33d1627ff3cfa04fd4647e359b68b38a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-5675ea32a#5675ea32ab5cc87db696bed1be442195136662c3"
 dependencies = [
  "bitflags",
  "colored",
@@ -1284,7 +1284,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-17#d1391a9f33d1627ff3cfa04fd4647e359b68b38a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-5675ea32a#5675ea32ab5cc87db696bed1be442195136662c3"
 dependencies = [
  "radix-engine",
  "rocksdb",
@@ -1404,6 +1404,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
+name = "rustversion"
+version = "1.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97477e48b4cf8603ad5f7aaf897467cf42ab4218a38ef76fb14c2d6773a6d6a8"
+
+[[package]]
 name = "ryu"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1421,7 +1427,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-17#d1391a9f33d1627ff3cfa04fd4647e359b68b38a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-5675ea32a#5675ea32ab5cc87db696bed1be442195136662c3"
 dependencies = [
  "hex",
  "sbor-derive",
@@ -1431,7 +1437,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-17#d1391a9f33d1627ff3cfa04fd4647e359b68b38a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-5675ea32a#5675ea32ab5cc87db696bed1be442195136662c3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1448,7 +1454,7 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 [[package]]
 name = "scrypto"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-17#d1391a9f33d1627ff3cfa04fd4647e359b68b38a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-5675ea32a#5675ea32ab5cc87db696bed1be442195136662c3"
 dependencies = [
  "bech32",
  "forward_ref",
@@ -1461,12 +1467,13 @@ dependencies = [
  "scrypto-derive",
  "sha2 0.10.6",
  "sha3",
+ "strum",
 ]
 
 [[package]]
 name = "scrypto-abi"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-17#d1391a9f33d1627ff3cfa04fd4647e359b68b38a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-5675ea32a#5675ea32ab5cc87db696bed1be442195136662c3"
 dependencies = [
  "sbor",
  "serde",
@@ -1475,7 +1482,7 @@ dependencies = [
 [[package]]
 name = "scrypto-derive"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-17#d1391a9f33d1627ff3cfa04fd4647e359b68b38a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-5675ea32a#5675ea32ab5cc87db696bed1be442195136662c3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1680,6 +1687,28 @@ name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
+
+[[package]]
+name = "strum"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
+dependencies = [
+ "strum_macros",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.24.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn",
+]
 
 [[package]]
 name = "subtle"
@@ -1943,7 +1972,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-17#d1391a9f33d1627ff3cfa04fd4647e359b68b38a"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-5675ea32a#5675ea32ab5cc87db696bed1be442195136662c3"
 dependencies = [
  "clap",
  "ed25519-dalek",

@@ -168,9 +168,9 @@ impl TryFrom<RENodeId> for MappedEntityId {
                     message: "Worktop persisted".to_owned(),
                 })
             }
-            RENodeId::AuthZone(_) => {
+            RENodeId::AuthZoneStack(_) => {
                 return Err(MappingError::TransientSubstatePersisted {
-                    message: "AuthZone persisted".to_owned(),
+                    message: "AuthZoneStack persisted".to_owned(),
                 })
             }
             RENodeId::NonFungibleStore(non_fungible_store_id) => MappedEntityId::new(
