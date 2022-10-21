@@ -217,14 +217,15 @@ public final class RadixEngine<M> {
     }
 
     public RadixEngineResult<M> execute(
-			List<RawLedgerTransaction> transactions, boolean skipAuthorization) throws RadixEngineException {
+        List<RawLedgerTransaction> transactions, boolean skipAuthorization)
+        throws RadixEngineException {
       assertNotDeleted();
       return engine.execute(
           transactions, Optional.empty(), PermissionLevel.USER, skipAuthorization);
     }
 
     public RadixEngineResult<M> execute(
-			List<RawLedgerTransaction> transactions, PermissionLevel permissionLevel)
+        List<RawLedgerTransaction> transactions, PermissionLevel permissionLevel)
         throws RadixEngineException {
       assertNotDeleted();
       return engine.execute(transactions, null, permissionLevel);
@@ -308,7 +309,7 @@ public final class RadixEngine<M> {
   }
 
   public RadixEngineResult<M> execute(
-		  List<RawLedgerTransaction> transactions, M meta, PermissionLevel permissionLevel)
+      List<RawLedgerTransaction> transactions, M meta, PermissionLevel permissionLevel)
       throws RadixEngineException {
     return execute(transactions, Optional.ofNullable(meta), permissionLevel, false);
   }

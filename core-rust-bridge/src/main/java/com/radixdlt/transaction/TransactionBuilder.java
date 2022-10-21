@@ -176,9 +176,7 @@ public final class TransactionBuilder {
 
   private static final NativeCalls.StaticFunc1<byte[], byte[]> userTransactionToLedger =
       NativeCalls.StaticFunc1.with(
-          new TypeToken<>() {},
-          new TypeToken<>() {},
-          TransactionBuilder::userTransactionToLedger);
+          new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::userTransactionToLedger);
 
   private static final NativeCalls.StaticFunc1<byte[], Option<byte[]>>
       transactionBytesToNotarizedTransactionBytesFn =

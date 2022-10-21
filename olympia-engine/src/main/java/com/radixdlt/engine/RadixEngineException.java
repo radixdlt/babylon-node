@@ -75,7 +75,7 @@ public final class RadixEngineException extends Exception {
   private final int batchSize;
 
   public RadixEngineException(
-		  int txnIndex, int batchSize, RawLedgerTransaction transaction, Exception cause) {
+      int txnIndex, int batchSize, RawLedgerTransaction transaction, Exception cause) {
     super(
         "index="
             + txnIndex

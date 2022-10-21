@@ -164,7 +164,11 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
         // TODO: is this okay???
         mempool.handleTransactionsCommitted(
             txnsAndProof.getTransactions().stream()
-                .flatMap(tx -> TransactionBuilder.convertTransactionBytesToNotarizedTransactionBytes(tx.getPayload()).stream())
+                .flatMap(
+                    tx ->
+                        TransactionBuilder.convertTransactionBytesToNotarizedTransactionBytes(
+                            tx.getPayload())
+                            .stream())
                 .map(RawNotarizedTransaction::create)
                 .toList());
         counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());

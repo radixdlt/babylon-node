@@ -78,14 +78,14 @@ public final class InvalidProposedTransaction {
   private final Exception e;
 
   private InvalidProposedTransaction(
-		  ECDSASecp256k1PublicKey proposer, RawLedgerTransaction transaction, Exception e) {
+      ECDSASecp256k1PublicKey proposer, RawLedgerTransaction transaction, Exception e) {
     this.proposer = proposer;
     this.transaction = transaction;
     this.e = e;
   }
 
   public static InvalidProposedTransaction create(
-		  ECDSASecp256k1PublicKey proposer, RawLedgerTransaction transaction, Exception e) {
+      ECDSASecp256k1PublicKey proposer, RawLedgerTransaction transaction, Exception e) {
     Objects.requireNonNull(transaction);
     Objects.requireNonNull(e);
     return new InvalidProposedTransaction(proposer, transaction, e);

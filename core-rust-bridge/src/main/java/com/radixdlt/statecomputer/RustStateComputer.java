@@ -78,7 +78,6 @@ import com.radixdlt.statecomputer.commit.PrepareResult;
 import com.radixdlt.statemanager.StateManager;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.Objects;
@@ -147,7 +146,8 @@ public class RustStateComputer {
     return verifyFunc.call(transaction);
   }
 
-  private final NativeCalls.Func1<StateManager, RawNotarizedTransaction, Result<Unit, String>> verifyFunc;
+  private final NativeCalls.Func1<StateManager, RawNotarizedTransaction, Result<Unit, String>>
+      verifyFunc;
 
   private static native byte[] verify(StateManager stateManager, byte[] payload);
 

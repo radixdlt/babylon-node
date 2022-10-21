@@ -73,8 +73,9 @@ import com.radixdlt.sbor.codec.StructCodec;
 import java.util.Objects;
 
 /**
- * A wrapper around the raw bytes of a LedgerTransaction Enum (either wrapping a NotarizedTransaction or a
- * system transaction) The transaction is yet to be parsed, and may be invalid.
+ * A wrapper around the raw bytes of a LedgerTransaction Enum (either wrapping a
+ * NotarizedTransaction or a system transaction) The transaction is yet to be parsed, and may be
+ * invalid.
  */
 public final class RawLedgerTransaction {
   public static void registerCodec(CodecMap codecMap) {

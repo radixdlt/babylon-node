@@ -538,7 +538,7 @@ public final class SimulationTest {
 
               @Genesis
               @Provides
-			  RawLedgerTransaction genesis(@Genesis CommittedTransactionsWithProof txnsAndProof) {
+              RawLedgerTransaction genesis(@Genesis CommittedTransactionsWithProof txnsAndProof) {
                 return txnsAndProof.getTransactions().get(0);
               }
             });

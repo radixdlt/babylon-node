@@ -102,8 +102,8 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.substate.*;
-import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -165,7 +165,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   public record RadixEngineTransaction(
-          RawLedgerTransaction transaction, REProcessedTxn processed, PermissionLevel permissionLevel)
+      RawLedgerTransaction transaction, REProcessedTxn processed, PermissionLevel permissionLevel)
       implements ExecutedTransaction {}
 
   public REProcessedTxn test(byte[] payload, boolean isSigned) throws RadixEngineException {
@@ -187,7 +187,8 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
   }
 
-  public REProcessedTxn addToMempool(RawLedgerTransaction transaction) throws MempoolRejectedException {
+  public REProcessedTxn addToMempool(RawLedgerTransaction transaction)
+      throws MempoolRejectedException {
     return addToMempool(transaction, null);
   }
 

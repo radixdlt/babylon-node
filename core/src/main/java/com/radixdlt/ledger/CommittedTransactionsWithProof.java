@@ -92,13 +92,14 @@ public final class CommittedTransactionsWithProof {
   private final List<RawLedgerTransaction> transactions;
   private final LedgerProof proof;
 
-  private CommittedTransactionsWithProof(List<RawLedgerTransaction> transactions, LedgerProof proof) {
+  private CommittedTransactionsWithProof(
+      List<RawLedgerTransaction> transactions, LedgerProof proof) {
     this.transactions = Objects.requireNonNull(transactions);
     this.proof = Objects.requireNonNull(proof);
   }
 
   public static CommittedTransactionsWithProof create(
-		  List<RawLedgerTransaction> transactions, LedgerProof proof) {
+      List<RawLedgerTransaction> transactions, LedgerProof proof) {
     return new CommittedTransactionsWithProof(transactions, proof);
   }
 

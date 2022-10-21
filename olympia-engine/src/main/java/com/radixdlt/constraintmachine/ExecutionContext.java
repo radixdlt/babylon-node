@@ -100,7 +100,10 @@ public final class ExecutionContext {
   private List<REEvent> events = new ArrayList<>();
 
   public ExecutionContext(
-		  RawLedgerTransaction transaction, PermissionLevel level, boolean skipAuthorization, int sigsLeft) {
+      RawLedgerTransaction transaction,
+      PermissionLevel level,
+      boolean skipAuthorization,
+      int sigsLeft) {
     this.transaction = transaction;
     this.level = level;
     this.skipAuthorization = skipAuthorization;

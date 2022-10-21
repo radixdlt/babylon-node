@@ -96,8 +96,8 @@ import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.TypedMocks;
@@ -283,7 +283,10 @@ public class StateComputerLedgerTest {
         new LedgerProof(HashUtils.random256(), ledgerHeader, new TimestampedECDSASignatures());
     var verified =
         CommittedTransactionsWithProof.create(
-            List.of(RawLedgerTransaction.create(TransactionBuilder.userTransactionToLedgerBytes(nextTransaction.getPayload()))), header);
+            List.of(
+                RawLedgerTransaction.create(
+                    TransactionBuilder.userTransactionToLedgerBytes(nextTransaction.getPayload()))),
+            header);
 
     // Act
     sut.syncEventProcessor().process(verified);

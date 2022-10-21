@@ -134,7 +134,8 @@ public final class GenesisBuilder {
     return txn;
   }
 
-  public LedgerProof generateGenesisProof(RawLedgerTransaction transaction) throws RadixEngineException {
+  public LedgerProof generateGenesisProof(RawLedgerTransaction transaction)
+      throws RadixEngineException {
     var branch = radixEngine.transientBranch();
     var result = branch.execute(List.of(transaction), PermissionLevel.SYSTEM);
     radixEngine.deleteBranches();

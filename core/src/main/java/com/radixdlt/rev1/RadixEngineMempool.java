@@ -117,7 +117,8 @@ public final class RadixEngineMempool implements Mempool<RawLedgerTransaction, R
   }
 
   @Override
-  public REProcessedTxn addTransaction(RawLedgerTransaction transaction) throws MempoolRejectedException {
+  public REProcessedTxn addTransaction(RawLedgerTransaction transaction)
+      throws MempoolRejectedException {
     if (this.data.size() >= maxSize) {
       throw new MempoolFullException(this.data.size(), maxSize);
     }
