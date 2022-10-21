@@ -44,7 +44,7 @@ pub enum MappingError {
 impl From<MappingError> for RequestHandlingError {
     fn from(mapping_error: MappingError) -> Self {
         warn!(?mapping_error, "Error mapping response on Core API");
-        server_error("Server error mapping response")
+        server_error(format!("Server error mapping response {:?}", mapping_error))
     }
 }
 
