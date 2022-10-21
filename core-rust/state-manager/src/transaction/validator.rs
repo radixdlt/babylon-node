@@ -2,9 +2,8 @@ use sbor::*;
 use scrypto::args;
 use scrypto::buffer::scrypto_encode;
 use scrypto::constants::{SYS_FAUCET_COMPONENT, SYS_SYSTEM_COMPONENT};
-use scrypto::core::{MethodIdent, NativeMethod, Receiver, ReceiverMethodIdent, SystemMethod};
 use scrypto::crypto::hash;
-use scrypto::engine::types::{GlobalAddress, RENodeId};
+use scrypto::engine::types::{ScryptoMethodIdent, ScryptoReceiver};
 use scrypto::math::Decimal;
 use std::collections::BTreeSet;
 use transaction::model::{AuthModule, AuthZoneParams, Executable, Instruction};
@@ -20,11 +19,9 @@ impl From<ValidatorTransaction> for Executable {
 
         let instruction = match validator_transaction {
             ValidatorTransaction::EpochUpdate(epoch) => Instruction::CallMethod {
-                method_ident: ReceiverMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                        SYS_SYSTEM_COMPONENT,
-                    ))),
-                    method_ident: MethodIdent::Native(NativeMethod::System(SystemMethod::SetEpoch)),
+                method_ident: ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(SYS_SYSTEM_COMPONENT),
+                    method_name: "set_epoch".to_string(),
                 },
                 args: args!(epoch),
             },
@@ -33,11 +30,9 @@ impl From<ValidatorTransaction> for Executable {
         let instructions = vec![
             // TODO: Remove lock fee requirement
             Instruction::CallMethod {
-                method_ident: ReceiverMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
-                        SYS_FAUCET_COMPONENT,
-                    ))),
-                    method_ident: MethodIdent::Scrypto("lock_fee".to_string()),
+                method_ident: ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(SYS_FAUCET_COMPONENT),
+                    method_name: "lock_fee".to_string(),
                 },
                 args: args!(Decimal::from(100u32)),
             },

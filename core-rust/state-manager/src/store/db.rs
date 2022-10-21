@@ -67,8 +67,7 @@ use crate::jni::java_structure::*;
 use crate::store::traits::*;
 use crate::store::{InMemoryStore, RocksDBStore};
 
-use radix_engine::fee::FeeSummary;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use crate::types::UserPayloadHash;
@@ -76,22 +75,19 @@ use crate::types::UserPayloadHash;
 use radix_engine::ledger::{
     bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
-use radix_engine::model::PersistedSubstate;
-use radix_engine::state_manager::StateDiff;
-use radix_engine::transaction::EntityChanges;
+use radix_engine::model::{GlobalAddressSubstate, PersistedSubstate};
 
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
-use scrypto::constants::{SYS_FAUCET_COMPONENT, SYS_FAUCET_PACKAGE, SYS_SYSTEM_COMPONENT};
 
 use crate::store::in_memory::InMemoryVertexStore;
 use crate::store::rocks_db::RocksDBCommitTransaction;
 use crate::store::traits::RecoverableVertexStore;
 use crate::transaction::{Transaction, ValidatorTransaction};
 use crate::{
-    CommittedTransactionIdentifiers, CommittedTransactionStatus, IntentHash,
-    LedgerTransactionReceipt, TransactionPayloadHash,
+    CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt, TransactionPayloadHash,
 };
-use scrypto::engine::types::{KeyValueStoreId, SubstateId};
+use scrypto::engine::types::{ComponentId, GlobalAddress, GlobalOffset, KeyValueStoreId, RENodeId, SubstateId, SubstateOffset};
+use scrypto::prelude::SYS_SYSTEM_COMPONENT;
 use tracing::debug;
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
@@ -133,37 +129,14 @@ impl StateManagerDatabase {
             debug!("Running genesis on the engine...");
             let mut db_txn = state_manager_db.create_db_transaction();
 
-            bootstrap(&mut db_txn);
+            let genesis_receipt = bootstrap(&mut db_txn).expect("Genesis wasn't run");
 
             // TODO: Remove this when serialized genesis intent is implemented
-            // TODO: fixme: bootstrap should return a transaction receipt to be used below
             {
-                let ledger_receipt: LedgerTransactionReceipt = LedgerTransactionReceipt {
-                    status: CommittedTransactionStatus::Success(vec![]),
-                    fee_summary: FeeSummary {
-                        loan_fully_repaid: true,
-                        cost_unit_limit: 0,
-                        cost_unit_consumed: 0,
-                        cost_unit_price: Default::default(),
-                        tip_percentage: 0,
-                        burned: Default::default(),
-                        tipped: Default::default(),
-                        payments: vec![],
-                        cost_breakdown: Default::default(),
-                    },
-                    application_logs: vec![],
-                    state_updates: StateDiff {
-                        down_virtual_substates: vec![],
-                        up_substates: BTreeMap::new(),
-                        down_substates: vec![],
-                    },
-                    entity_changes: EntityChanges {
-                        new_package_addresses: vec![SYS_FAUCET_PACKAGE],
-                        new_component_addresses: vec![SYS_SYSTEM_COMPONENT, SYS_FAUCET_COMPONENT],
-                        new_resource_addresses: vec![],
-                    },
-                    resource_changes: vec![],
-                };
+                let ledger_receipt: LedgerTransactionReceipt = genesis_receipt
+                    .try_into()
+                    .expect("Genesis execution failed");
+                println!("Genesis run created components {:?}", ledger_receipt.entity_changes.new_component_addresses);
 
                 let mock_genesis = Transaction::Validator(ValidatorTransaction::EpochUpdate(0)); // Mocked
                 let payload_hash = mock_genesis.get_hash();

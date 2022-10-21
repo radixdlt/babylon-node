@@ -68,6 +68,7 @@ import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CHECKPOINTER;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_CLEANER;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_EVICTOR;
 import static com.sleepycat.je.EnvironmentConfig.ENV_RUN_VERIFIER;
+import static com.sleepycat.je.EnvironmentConfig.FREE_DISK;
 import static com.sleepycat.je.EnvironmentConfig.LOG_FILE_CACHE_SIZE;
 import static com.sleepycat.je.EnvironmentConfig.TREE_MAX_EMBEDDED_LN;
 
@@ -108,6 +109,7 @@ public final class DatabaseEnvironment implements NodeAutoCloseable {
     environmentConfig.setConfigParam(ENV_RUN_EVICTOR, "true");
     environmentConfig.setConfigParam(ENV_RUN_VERIFIER, "false");
     environmentConfig.setConfigParam(TREE_MAX_EMBEDDED_LN, "0");
+    environmentConfig.setConfigParam(FREE_DISK, "0");
     environmentConfig.setCacheSize(cacheSize);
     environmentConfig.setCacheMode(CacheMode.EVICT_LN);
 

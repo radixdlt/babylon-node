@@ -2,6 +2,7 @@ use crate::core_api::*;
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::{Bech32Decoder, SubstateId};
 use scrypto::engine::types::{RENodeId, ResourceManagerOffset, SubstateOffset};
+use scrypto::prelude::hash;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 
@@ -22,7 +23,7 @@ fn handle_v0_state_resource_internal(
         .map_err(|err| err.into_response_error("resource_address"))?;
 
     let substate_id = SubstateId(
-        RENodeId::ResourceManager(resource_address),
+        RENodeId::ResourceManager((hash(vec![]), 0)), // TODO: fixme
         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
     );
 

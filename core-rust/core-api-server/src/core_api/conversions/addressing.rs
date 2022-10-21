@@ -13,6 +13,7 @@ use scrypto::engine::types::{
     NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset,
     SystemOffset, VaultOffset, WorktopOffset,
 };
+use scrypto::prelude::scrypto_encode;
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_global_entity_id_from_substate_id(
@@ -147,9 +148,9 @@ impl TryFrom<RENodeId> for MappedEntityId {
                 MappedEntityId::new(EntityType::Vault, basic_address_to_vec(&addr))
             }
             RENodeId::ResourceManager(addr) => {
-                MappedEntityId::new(EntityType::ResourceManager, addr.to_vec())
+                MappedEntityId::new(EntityType::ResourceManager, scrypto_encode(&addr))
             }
-            RENodeId::Package(addr) => MappedEntityId::new(EntityType::Package, addr.to_vec()),
+            RENodeId::Package(addr) => MappedEntityId::new(EntityType::Package, scrypto_encode(&addr)),
             RENodeId::System(id) => {
                 MappedEntityId::new(EntityType::System, basic_address_to_vec(&id))
             }
@@ -168,9 +169,9 @@ impl TryFrom<RENodeId> for MappedEntityId {
                     message: "Worktop persisted".to_owned(),
                 })
             }
-            RENodeId::AuthZone(_) => {
+            RENodeId::AuthZoneStack(_) => {
                 return Err(MappingError::TransientSubstatePersisted {
-                    message: "AuthZone persisted".to_owned(),
+                    message: "AuthZoneStack persisted".to_owned(),
                 })
             }
             RENodeId::NonFungibleStore(non_fungible_store_id) => MappedEntityId::new(
@@ -268,7 +269,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         SubstateId(RENodeId::Package(addr), SubstateOffset::Package(PackageOffset::Package)) => {
             MappedSubstateId(
                 EntityType::Package,
-                addr.to_vec(),
+                scrypto_encode(&addr), // TODO: fixme
                 SubstateType::Package,
                 vec![0],
             )
@@ -279,7 +280,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ) => MappedSubstateId(
             EntityType::ResourceManager,
-            addr.to_vec(),
+            scrypto_encode(&addr), // TODO: fixme
             SubstateType::ResourceManager,
             vec![0],
         ),

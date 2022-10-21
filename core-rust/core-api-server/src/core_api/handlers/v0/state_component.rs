@@ -142,7 +142,7 @@ fn read_component_re_node_id(
         SubstateOffset::Global(GlobalOffset::Global),
     );
     if let Some(output_value) = state_manager.store.get_substate(&substate_id) {
-        if let PersistedSubstate::GlobalRENode(global) = output_value.substate {
+        if let PersistedSubstate::Global(global) = output_value.substate {
             Ok(Some(global.node_deref()))
         } else {
             Err(MappingError::MismatchedSubstateId {

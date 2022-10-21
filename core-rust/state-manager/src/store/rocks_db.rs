@@ -95,7 +95,6 @@ enum RocksDBTable {
     StateVersions,
     Proofs,
     Substates,
-    RootSubstates,
     VertexStore,
     TransactionIntentLookup,
     UserPayloadHashLookup,
@@ -110,10 +109,9 @@ impl RocksDBTable {
             StateVersions => 1u8,
             Proofs => 2u8,
             Substates => 3u8,
-            RootSubstates => 4u8,
-            VertexStore => 5u8,
-            TransactionIntentLookup => 6u8,
-            UserPayloadHashLookup => 7u8,
+            VertexStore => 4u8,
+            TransactionIntentLookup => 5u8,
+            UserPayloadHashLookup => 6u8,
         }
     }
 }

@@ -1,9 +1,11 @@
 use crate::core_api::*;
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::{Bech32Decoder, Bech32Encoder, SubstateId};
+use scrypto::abi::ScryptoType::Hash;
 use scrypto::engine::types::{
     NonFungibleStoreOffset, RENodeId, ResourceManagerOffset, SubstateOffset,
 };
+use scrypto::prelude::hash;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
 
@@ -28,7 +30,7 @@ fn handle_v0_state_non_fungible_internal(
         .map_err(|err| err.into_response_error("non_fungible_id"))?;
 
     let resource_manager_substate_id = SubstateId(
-        RENodeId::ResourceManager(resource_address),
+        RENodeId::ResourceManager((hash(vec![]), 0)), // TODO: fixme
         SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
     );
 
@@ -38,7 +40,7 @@ fn handle_v0_state_non_fungible_internal(
     {
         if let PersistedSubstate::ResourceManager(resource_manager_substate) = output_value.substate
         {
-            if let Some(non_fungible_store_id) = resource_manager_substate.non_fungible_store_id {
+            if let Some(non_fungible_store_id) = resource_manager_substate.nf_store_id {
                 let non_fungible_substate_id = SubstateId(
                     RENodeId::NonFungibleStore(non_fungible_store_id),
                     SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(

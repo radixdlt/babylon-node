@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use scrypto::engine::types::{GlobalAddress, RENodeId};
+use scrypto::engine::types::{GlobalAddress, RENodeId, Receiver};
 use scrypto::prelude::*;
 
 use transaction::builder::ManifestBuilder;
@@ -83,7 +83,7 @@ pub fn create_set_epoch_intent(
             Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
                 SYS_SYSTEM_COMPONENT,
             ))),
-            NativeMethod::System(SystemMethod::SetEpoch),
+            "set_epoch",
             args!(epoch),
         )
         .build();
