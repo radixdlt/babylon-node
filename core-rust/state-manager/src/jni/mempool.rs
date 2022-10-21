@@ -64,8 +64,6 @@
 
 use std::collections::HashSet;
 
-use crate::jni::state_manager::ActualStateManager;
-use crate::mempool::transaction_rejection_cache::RejectionReason;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -73,6 +71,7 @@ use radix_engine::types::scrypto_encode;
 use sbor::{Decode, Encode, TypeId};
 use transaction::errors::TransactionValidationError;
 
+use crate::jni::state_manager::ActualStateManager;
 use crate::jni::utils::*;
 use crate::transaction::UserTransactionValidator;
 use crate::types::PendingTransaction;

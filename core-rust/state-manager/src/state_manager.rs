@@ -460,11 +460,11 @@ where
         if let Err(rejection_reason) = new_status {
             let payload_hash = transaction.user_payload_hash();
             // Let's also remove it from the mempool, if it's present
-            self.mempool.remove_transaction(&payload_hash).map(|_| {
+            if self.mempool.remove_transaction(&payload_hash).is_some() {
                 self.counters
                     .mempool_current_transactions_total
                     .set(self.mempool.get_count() as i64);
-            });
+            }
             self.rejection_cache.track_rejection(
                 transaction.intent_hash(),
                 transaction.user_payload_hash(),
@@ -512,11 +512,11 @@ where
 
         for txn_to_remove in txns_to_remove {
             mempool_txns.remove(&txn_to_remove);
-            self.mempool.remove_transaction(&txn_to_remove).map(|_| {
+            if self.mempool.remove_transaction(&txn_to_remove).is_some() {
                 self.counters
                     .mempool_current_transactions_total
                     .set(self.mempool.get_count() as i64);
-            });
+            }
         }
 
         mempool_txns
@@ -530,23 +530,23 @@ where
         let mut already_committed_or_prepared_intent_hashes: HashSet<IntentHash> = HashSet::new();
         let mut current_epoch = self.get_epoch();
 
-        for proposed_payload in prepare_request.proposed_payloads.iter() {
-            let notarized_transaction =
+        let already_committed_proposed_payload_hashes = prepare_request
+            .proposed_payloads
+            .iter()
+            .filter_map(|proposed_payload| {
                 UserTransactionValidator::parse_unvalidated_user_transaction_from_slice(
                     proposed_payload,
-                );
-
-            if let Ok(validated_transaction) = &notarized_transaction {
-                let intent_hash = validated_transaction.intent_hash();
-                if self
-                    .store
-                    .get_committed_transaction_by_identifier(&intent_hash)
-                    .is_some()
-                {
-                    already_committed_or_prepared_intent_hashes.insert(intent_hash);
-                }
-            }
-        }
+                )
+                .ok()
+                .map(|validated_transaction| validated_transaction.intent_hash())
+                .and_then(|intent_hash| {
+                    self.store
+                        .get_committed_transaction_by_identifier(&intent_hash)
+                        .map(|_| intent_hash)
+                })
+            });
+        already_committed_or_prepared_intent_hashes
+            .extend(already_committed_proposed_payload_hashes);
 
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);

@@ -127,7 +127,7 @@ impl SimpleMempool {
         &mut self,
         payload_hash: &UserPayloadHash,
     ) -> Result<(), MempoolAddError> {
-        if self.contains_payload(payload_hash) {
+        if self.data.contains_key(payload_hash) {
             return Err(MempoolAddError::Duplicate);
         }
         self.check_if_mempool_full()?;
@@ -216,10 +216,6 @@ impl SimpleMempool {
 
     pub fn get_payload(&self, payload_hash: &UserPayloadHash) -> Option<&PendingTransaction> {
         Some(&self.data.get(payload_hash)?.transaction)
-    }
-
-    pub fn contains_payload(&self, payload_hash: &UserPayloadHash) -> bool {
-        self.data.contains_key(payload_hash)
     }
 }
 
