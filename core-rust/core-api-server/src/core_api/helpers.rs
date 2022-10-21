@@ -38,6 +38,6 @@ pub(crate) fn core_api_read_handler<Request, Response>(
     let state_manager_arc = state.0.state_manager;
     let state_manager = state_manager_arc.read();
 
-    let response = method(&*state_manager, request_body)?;
+    let response = method(&state_manager, request_body)?;
     Ok(Json(response))
 }

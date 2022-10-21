@@ -107,6 +107,14 @@ pub async fn create_server<F>(
             post(handle_network_configuration),
         )
         .route("/status/network-status", post(handle_network_status))
+        .route("/mempool/list", post(handle_mempool_list))
+        .route("/mempool/transaction", post(handle_mempool_transaction))
+        .route(
+            "/transaction/parse",
+            post(handle_transaction_parse)
+                .layer(DefaultBodyLimit::disable())
+                .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
+        )
         .route(
             "/transaction/submit",
             post(handle_transaction_submit)

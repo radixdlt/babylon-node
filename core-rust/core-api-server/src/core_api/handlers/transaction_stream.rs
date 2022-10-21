@@ -11,7 +11,9 @@ use state_manager::{IntentHash, LedgerTransactionReceipt, SignaturesHash, UserPa
 use std::cmp;
 use std::collections::HashMap;
 use transaction::manifest;
-use transaction::model::NotarizedTransaction;
+use transaction::model::{
+    NotarizedTransaction, SignedTransactionIntent, TransactionIntent, TransactionManifest,
+};
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_transaction_stream(
@@ -111,7 +113,7 @@ pub fn to_api_committed_transaction(
     let bech32_encoder = Bech32Encoder::new(network);
     let receipt = to_api_receipt(&bech32_encoder, receipt)?;
     let api_notarized_transaction = match tx {
-        Some(tx) => Some(Box::new(to_api_notarized_transaction(tx, network)?)),
+        Some(tx) => Some(Box::new(to_api_notarized_transaction(&tx, network)?)),
         None => None,
     };
 
@@ -123,58 +125,88 @@ pub fn to_api_committed_transaction(
 }
 
 #[tracing::instrument(skip_all)]
-fn to_api_notarized_transaction(
-    tx: NotarizedTransaction,
+pub fn to_api_notarized_transaction(
+    tx: &NotarizedTransaction,
     network: &NetworkDefinition,
 ) -> Result<models::NotarizedTransaction, MappingError> {
     // NOTE: We don't use the .hash() method on the struct impls themselves,
     //       because they use the wrong hash function
     let payload = tx.to_bytes();
-    let payload_hash = UserPayloadHash::for_transaction(&tx);
-    let signed_intent = tx.signed_intent;
-    let signed_intent_hash = SignaturesHash::for_signed_intent(&signed_intent);
-    let intent = signed_intent.intent;
-    let intent_hash = IntentHash::for_intent(&intent);
-    let header = intent.header;
+    let payload_hash = UserPayloadHash::for_transaction(tx);
 
     Ok(models::NotarizedTransaction {
         hash: to_api_payload_hash(&payload_hash),
         payload_hex: to_hex(payload),
-        signed_intent: Box::new(models::SignedTransactionIntent {
-            hash: to_api_signed_intent_hash(&signed_intent_hash),
-            intent: Box::new(models::TransactionIntent {
-                hash: to_api_intent_hash(&intent_hash),
-                header: Box::new(models::TransactionHeader {
-                    version: header.version.into(),
-                    network_id: header.network_id.into(),
-                    start_epoch_inclusive: to_api_epoch(header.start_epoch_inclusive)?,
-                    end_epoch_exclusive: to_api_epoch(header.end_epoch_exclusive)?,
-                    nonce: to_api_u64_as_string(header.nonce),
-                    notary_public_key: Some(to_api_public_key(header.notary_public_key)),
-                    notary_as_signatory: header.notary_as_signatory,
-                    cost_unit_limit: to_api_u32_as_i64(header.cost_unit_limit),
-                    tip_percentage: to_api_u32_as_i64(header.tip_percentage),
-                }),
-                manifest: manifest::decompile(&intent.manifest.instructions, network)
-                    .unwrap_or_else(|e| {
-                        panic!(
-                            "Failed to decompile a transaction manifest: {e:?}, instructions: {:?}",
-                            &intent.manifest.instructions
-                        );
-                    }),
-                blobs_hex: intent
-                    .manifest
-                    .blobs
-                    .into_iter()
-                    .map(|blob| (to_hex(hash(&blob)), to_hex(blob)))
-                    .collect::<HashMap<String, String>>(),
-            }),
-            intent_signatures: signed_intent
-                .intent_signatures
-                .into_iter()
-                .map(to_api_signature_with_public_key)
-                .collect(),
+        signed_intent: Box::new(to_api_signed_intent(&tx.signed_intent, network)?),
+        notary_signature: Some(to_api_signature(&tx.notary_signature)),
+    })
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_signed_intent(
+    signed_intent: &SignedTransactionIntent,
+    network: &NetworkDefinition,
+) -> Result<models::SignedTransactionIntent, MappingError> {
+    // NOTE: We don't use the .hash() method on the struct impls themselves,
+    //       because they use the wrong hash function
+    let signed_intent_hash = SignaturesHash::for_signed_intent(signed_intent);
+
+    Ok(models::SignedTransactionIntent {
+        hash: to_api_signed_intent_hash(&signed_intent_hash),
+        intent: Box::new(to_api_intent(&signed_intent.intent, network)?),
+        intent_signatures: signed_intent
+            .intent_signatures
+            .iter()
+            .map(to_api_signature_with_public_key)
+            .collect(),
+    })
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_intent(
+    intent: &TransactionIntent,
+    network: &NetworkDefinition,
+) -> Result<models::TransactionIntent, MappingError> {
+    // NOTE: We don't use the .hash() method on the struct impls themselves,
+    //       because they use the wrong hash function
+    let intent_hash = IntentHash::for_intent(intent);
+    let header = &intent.header;
+
+    Ok(models::TransactionIntent {
+        hash: to_api_intent_hash(&intent_hash),
+        header: Box::new(models::TransactionHeader {
+            version: header.version.into(),
+            network_id: header.network_id.into(),
+            start_epoch_inclusive: to_api_epoch(header.start_epoch_inclusive)?,
+            end_epoch_exclusive: to_api_epoch(header.end_epoch_exclusive)?,
+            nonce: to_api_u64_as_string(header.nonce),
+            notary_public_key: Some(to_api_public_key(&header.notary_public_key)),
+            notary_as_signatory: header.notary_as_signatory,
+            cost_unit_limit: to_api_u32_as_i64(header.cost_unit_limit),
+            tip_percentage: to_api_u32_as_i64(header.tip_percentage),
         }),
-        notary_signature: Some(to_api_signature(tx.notary_signature)),
+        manifest: Box::new(to_api_manifest(&intent.manifest, network)?),
+    })
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_manifest(
+    manifest: &TransactionManifest,
+    network: &NetworkDefinition,
+) -> Result<models::TransactionManifest, MappingError> {
+    Ok(models::TransactionManifest {
+        instructions: manifest::decompile(&manifest.instructions, network).map_err(|err| {
+            MappingError::InvalidManifest {
+                message: format!(
+                    "Failed to decompile a transaction manifest: {err:?}, instructions: {:?}",
+                    &manifest.instructions
+                ),
+            }
+        })?,
+        blobs_hex: manifest
+            .blobs
+            .iter()
+            .map(|blob| (to_hex(hash(blob)), to_hex(blob)))
+            .collect::<HashMap<String, String>>(),
     })
 }

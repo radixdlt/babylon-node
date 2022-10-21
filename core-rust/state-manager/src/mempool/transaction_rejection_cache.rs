@@ -224,11 +224,11 @@ mod tests {
     use super::*;
 
     fn user_payload_hash(nonce: u8) -> UserPayloadHash {
-        UserPayloadHash::from_raw_bytes(sha256_twice(&[0, nonce]).0)
+        UserPayloadHash::from_raw_bytes(sha256_twice([0, nonce]).0)
     }
 
     fn intent_hash(nonce: u8) -> IntentHash {
-        IntentHash::from_raw_bytes(sha256_twice(&[1, nonce]).0)
+        IntentHash::from_raw_bytes(sha256_twice([1, nonce]).0)
     }
 
     #[test]

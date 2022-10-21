@@ -1,5 +1,6 @@
 use radix_engine::types::AddressError;
 use sbor::DecodeError;
+use tracing::warn;
 use transaction::errors::TransactionValidationError;
 
 use crate::core_api::{client_error, server_error, RequestHandlingError};
@@ -29,6 +30,9 @@ pub enum MappingError {
     InvalidComponentStateEntities {
         message: String,
     },
+    InvalidManifest {
+        message: String,
+    },
     MismatchedSubstateId {
         message: String,
     },
@@ -38,9 +42,8 @@ pub enum MappingError {
 }
 
 impl From<MappingError> for RequestHandlingError {
-    fn from(_: MappingError) -> Self {
-        // TODO - replace with warn when we have logging
-        // println!("Error mapping response on Core API: {:?}", mapping_error);
+    fn from(mapping_error: MappingError) -> Self {
+        warn!(?mapping_error, "Error mapping response on Core API");
         server_error("Server error mapping response")
     }
 }

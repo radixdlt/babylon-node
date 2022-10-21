@@ -38,7 +38,7 @@ pub fn convert_scrypto_sbor_value_to_json(
 ) -> JsonValue {
     convert_custom_payloads_recursive(
         bech32_encoder,
-        serde_json::to_value(&scrypto_value).expect("JSON serialize error"),
+        serde_json::to_value(scrypto_value).expect("JSON serialize error"),
     )
 }
 

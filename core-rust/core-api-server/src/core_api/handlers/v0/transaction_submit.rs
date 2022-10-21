@@ -2,7 +2,6 @@ use crate::core_api::handlers::extract_unvalidated_transaction;
 use crate::core_api::*;
 
 use state_manager::jni::state_manager::ActualStateManager;
-
 use state_manager::MempoolAddError;
 
 pub(crate) async fn handle_v0_transaction_submit(
