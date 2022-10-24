@@ -87,8 +87,10 @@ impl TransactionPayloadHash {
     pub fn into_bytes(self) -> [u8; Self::LENGTH] {
         self.0
     }
+}
 
-    pub fn get_bytes(&self) -> &[u8; Self::LENGTH] {
+impl AsRef<[u8]> for TransactionPayloadHash {
+    fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
@@ -130,8 +132,10 @@ impl UserPayloadHash {
     pub fn into_bytes(self) -> [u8; Self::LENGTH] {
         self.0
     }
+}
 
-    pub fn get_bytes(&self) -> &[u8; Self::LENGTH] {
+impl AsRef<[u8]> for UserPayloadHash {
+    fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
@@ -177,8 +181,10 @@ impl SignaturesHash {
     pub fn into_bytes(self) -> [u8; Self::LENGTH] {
         self.0
     }
+}
 
-    pub fn get_bytes(&self) -> &[u8; Self::LENGTH] {
+impl AsRef<[u8]> for SignaturesHash {
+    fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
@@ -230,8 +236,10 @@ impl IntentHash {
     pub fn into_bytes(self) -> [u8; Self::LENGTH] {
         self.0
     }
+}
 
-    pub fn get_bytes(&self) -> &[u8; Self::LENGTH] {
+impl AsRef<[u8]> for IntentHash {
+    fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }

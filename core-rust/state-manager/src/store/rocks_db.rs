@@ -121,15 +121,15 @@ pub struct RocksDBStore {
 }
 
 fn get_transaction_key(payload_hash: &TransactionPayloadHash) -> Vec<u8> {
-    db_key!(Transactions, payload_hash.get_bytes())
+    db_key!(Transactions, payload_hash.as_ref())
 }
 
 fn get_user_transaction_payload_key(payload_hash: &UserPayloadHash) -> Vec<u8> {
-    db_key!(UserPayloadHashLookup, payload_hash.get_bytes())
+    db_key!(UserPayloadHashLookup, payload_hash.as_ref())
 }
 
 fn get_transaction_intent_key(intent_hash: &IntentHash) -> Vec<u8> {
-    db_key!(TransactionIntentLookup, intent_hash.get_bytes())
+    db_key!(TransactionIntentLookup, intent_hash.as_ref())
 }
 
 impl RocksDBStore {
@@ -186,7 +186,7 @@ impl<'db> RocksDBCommitTransaction<'db> {
             self.db_txn
                 .put(
                     get_transaction_intent_key(&notarized_transaction.intent_hash()),
-                    transaction.get_hash().get_bytes(),
+                    transaction.get_hash().as_ref(),
                 )
                 .expect("RocksDB: failure to put intent hash");
         }
@@ -243,9 +243,7 @@ impl<'db> WriteableProofStore for RocksDBCommitTransaction<'db> {
             for (index, payload_hash) in ids.into_iter().enumerate() {
                 let txn_state_version = first_state_version + index as u64;
                 let version_key = db_key!(StateVersions, &txn_state_version.to_be_bytes());
-                self.db_txn
-                    .put(version_key, payload_hash.get_bytes())
-                    .unwrap();
+                self.db_txn.put(version_key, payload_hash.as_ref()).unwrap();
             }
         }
     }

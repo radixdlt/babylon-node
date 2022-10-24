@@ -4,15 +4,15 @@ use crate::core_api::*;
 
 #[allow(dead_code)]
 pub fn to_api_intent_hash(intent_hash: &IntentHash) -> String {
-    to_hex(intent_hash.get_bytes())
+    to_hex(intent_hash)
 }
 
 pub fn to_api_signed_intent_hash(signatures_hash: &SignaturesHash) -> String {
-    to_hex(signatures_hash.get_bytes())
+    to_hex(signatures_hash)
 }
 
 pub fn to_api_payload_hash(payload_hash: &UserPayloadHash) -> String {
-    to_hex(payload_hash.get_bytes())
+    to_hex(payload_hash)
 }
 
 pub fn extract_intent_hash(intent_hash_str: String) -> Result<IntentHash, ExtractionError> {
