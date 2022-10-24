@@ -70,7 +70,7 @@ fn parse_preview_request(
         signer_public_keys,
         flags: PreviewFlags {
             unlimited_loan: request.flags.unlimited_loan,
-            assume_all_signature_proofs: true,
+            assume_all_signature_proofs: request.flags.assume_all_signature_proofs,
         },
     })
 }

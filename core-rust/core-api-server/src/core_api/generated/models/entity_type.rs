@@ -12,14 +12,10 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum EntityType {
-    #[serde(rename = "Global")]
-    Global,
     #[serde(rename = "System")]
     System,
     #[serde(rename = "ResourceManager")]
     ResourceManager,
-    #[serde(rename = "NonFungibleStore")]
-    NonFungibleStore,
     #[serde(rename = "Component")]
     Component,
     #[serde(rename = "Package")]
@@ -28,20 +24,24 @@ pub enum EntityType {
     Vault,
     #[serde(rename = "KeyValueStore")]
     KeyValueStore,
+    #[serde(rename = "Global")]
+    Global,
+    #[serde(rename = "NonFungibleStore")]
+    NonFungibleStore,
 
 }
 
 impl ToString for EntityType {
     fn to_string(&self) -> String {
         match self {
-            Self::Global => String::from("Global"),
             Self::System => String::from("System"),
             Self::ResourceManager => String::from("ResourceManager"),
-            Self::NonFungibleStore => String::from("NonFungibleStore"),
             Self::Component => String::from("Component"),
             Self::Package => String::from("Package"),
             Self::Vault => String::from("Vault"),
             Self::KeyValueStore => String::from("KeyValueStore"),
+            Self::Global => String::from("Global"),
+            Self::NonFungibleStore => String::from("NonFungibleStore"),
         }
     }
 }

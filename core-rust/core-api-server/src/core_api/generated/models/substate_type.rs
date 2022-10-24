@@ -12,8 +12,6 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum SubstateType {
-    #[serde(rename = "Global")]
-    Global,
     #[serde(rename = "System")]
     System,
     #[serde(rename = "ResourceManager")]
@@ -30,13 +28,14 @@ pub enum SubstateType {
     NonFungible,
     #[serde(rename = "KeyValueStoreEntry")]
     KeyValueStoreEntry,
+    #[serde(rename = "Global")]
+    Global,
 
 }
 
 impl ToString for SubstateType {
     fn to_string(&self) -> String {
         match self {
-            Self::Global => String::from("Global"),
             Self::System => String::from("System"),
             Self::ResourceManager => String::from("ResourceManager"),
             Self::ComponentInfo => String::from("ComponentInfo"),
@@ -45,6 +44,7 @@ impl ToString for SubstateType {
             Self::Vault => String::from("Vault"),
             Self::NonFungible => String::from("NonFungible"),
             Self::KeyValueStoreEntry => String::from("KeyValueStoreEntry"),
+            Self::Global => String::from("Global"),
         }
     }
 }

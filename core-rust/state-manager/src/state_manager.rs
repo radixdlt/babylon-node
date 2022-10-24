@@ -309,7 +309,7 @@ where
             signer_public_keys: preview_request.signer_public_keys,
             flags: PreviewFlags {
                 unlimited_loan: preview_request.flags.unlimited_loan,
-                assume_all_signature_proofs: false, // TODO: add param
+                assume_all_signature_proofs: preview_request.flags.assume_all_signature_proofs,
             },
         };
 

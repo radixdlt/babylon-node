@@ -1108,6 +1108,8 @@ components:
         - Package
         - Vault
         - KeyValueStore
+        - Global
+        - NonFungibleStore
     Substate:
       oneOf:
         - $ref: '#/components/schemas/SystemSubstate'
@@ -1118,6 +1120,7 @@ components:
         - $ref: '#/components/schemas/VaultSubstate'
         - $ref: '#/components/schemas/NonFungibleSubstate'
         - $ref: '#/components/schemas/KeyValueStoreEntrySubstate'
+        - $ref: '#/components/schemas/GlobalSubstate'
       discriminator:
         propertyName: substate_type
         mapping:
@@ -1130,6 +1133,7 @@ components:
           Vault: '#/components/schemas/VaultSubstate'
           NonFungible: '#/components/schemas/NonFungibleSubstate'
           KeyValueStoreEntry: '#/components/schemas/KeyValueStoreEntrySubstate'
+          Global: '#/components/schemas/GlobalSubstate'
     SubstateType:
       type: string
       enum:
@@ -1141,6 +1145,7 @@ components:
         - Vault
         - NonFungible
         - KeyValueStoreEntry
+        - Global
     SubstateBase:
       type: object
       required:
@@ -1355,6 +1360,15 @@ components:
               type: boolean
             data_struct:
               $ref: '#/components/schemas/DataStruct'
+    GlobalSubstate:
+      allOf:
+        - $ref: '#/components/schemas/SubstateBase'
+        - type: object
+          required:
+            - derefed_to
+          properties:
+            derefed_to:
+              type: string
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -1657,8 +1671,11 @@ components:
           type: object
           required:
             - unlimited_loan
+            - assume_all_signature_proofs
           properties:
             unlimited_loan:
+              type: boolean
+            assume_all_signature_proofs:
               type: boolean
     TransactionPreviewResponse:
       type: object

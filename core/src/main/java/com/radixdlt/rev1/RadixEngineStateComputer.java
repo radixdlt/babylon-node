@@ -358,7 +358,6 @@ public final class RadixEngineStateComputer implements StateComputer {
       final var systemUpdate =
           RawLedgerTransaction.create(
               branch.construct(systemActions).buildWithoutSignature().getPayload());
-      // TODO: fixme
       final var result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
       return new RadixEngineTransaction(
           systemUpdate, result.getProcessedTxn(), PermissionLevel.SUPER_USER);
