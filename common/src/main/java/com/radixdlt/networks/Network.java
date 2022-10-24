@@ -85,11 +85,16 @@ public enum Network {
 
   /// RDX Development - Semi-permanent Testnets (start with 0x2)
   // - gilganet = Integration, after Gilgamesh
-  // - enkinet = Misc Network 1, after Enkidu
+  // - enkinet = Misc Network 1, after Enki / Enkidu
   // - hammunet = Misc Network 2, after Hammurabi
+  // - nergalnet = A Network for DevOps testing, after the Mesopotamian god Nergal
+  // - mardunet = A staging Network for testing new releases to the primary public environment,
+  //              after the Babylonian god Marduk
   GILGANET(32 /* 0x20 */, "gilganet", "tdx_20_", GenesisSource.fromConfiguration),
   ENKINET(33 /* 0x21 */, "enkinet", "tdx_21_", GenesisSource.fromConfiguration),
   HAMMUNET(34 /* 0x22 */, "hammunet", "tdx_22_", GenesisSource.fromConfiguration),
+  NERGALNET(35 /* 0x23 */, "nergalnet", "tdx_23_", GenesisSource.fromConfiguration),
+  MARDUNET(36 /* 0x24 */, "mardunet", "tdx_24_", GenesisSource.fromConfiguration),
 
   /// Ephemeral Networks (start with 0xF)
   // - localnet = The network used when running locally in development
