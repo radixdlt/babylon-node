@@ -12,12 +12,20 @@ openapi: 3.1.0
 #    => If not, to be compatible with OAS, we need to put it into an int64:
 #       type: integer, format: int64, minimum: 0, maximum: 4294967295 = 2^32 - 1
 # => If an i32, use type: integer, format: int32
-# => If a u64: , use type: integer, format: int64, minimum: 0, maximum: 18446744073709551615 = 2^64 - 1
-#    => If there's a domain-imposed requirement that fits it within an i64 (9,223,372,036,854,775,807 = 2^63 - 1), with bound B use
+# => If a u64:
+#    => The maximum safe integer in Javascript is (+-)9,007,199,254,740,991 = 2^53 – 1 (Nine thousand billion)
+#       To be pragmatic, any numbers outside this range we will choose to represent as strings.
+#    => So if it's possible for us to assert that: value <= bound B <= 2^53 - 1, then use:
 #       type: integer, format: int64, minimum: 0, maximum: B
 #       And be sure to validate against B in the code which maps into the type. See EG epoch max length in numerics.rs
-#    => If not, to be compatible with OAS, it won't fit in a numeric type, so use a string instead
-# => If an i64, use type: integer, format: int64
+#    => If not, use a string instead
+# => If an i64:
+#    => The maximum safe integer in Javascript is (+-)9,007,199,254,740,991 = 2^53 – 1 (Nine thousand billion)
+#       To be pragmatic, any numbers outside this range we will choose to represent as strings.
+#    => So if it's possible for us to assert that: -(2^53 - 1) <= B1 <= value <= B2 <= 2^53 - 1, then use:
+#       type: integer, format: int64, minimum: B1, maximum: B2
+#       And be sure to validate against B in the code which maps into the type. See EG epoch max length in numerics.rs
+#    => If not, use a string instead
 # => If something over i64/u64, use type: string
 #
 # Regardless of the type, specify in the description what the underlying type and bounds are, by starting with something like:
