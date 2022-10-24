@@ -1,4 +1,4 @@
-use crate::transaction::types::Transaction;
+use crate::transaction::types::LedgerTransaction;
 use scrypto::buffer::scrypto_decode;
 use transaction::errors::TransactionValidationError;
 use transaction::model::{Executable, NotarizedTransaction};
@@ -75,8 +75,8 @@ pub struct CommittedTransactionValidator {
 impl CommittedTransactionValidator {
     pub fn parse_unvalidated_transaction_from_slice(
         transaction_payload: &[u8],
-    ) -> Result<Transaction, TransactionValidationError> {
-        let transaction: Transaction = scrypto_decode(transaction_payload)
+    ) -> Result<LedgerTransaction, TransactionValidationError> {
+        let transaction: LedgerTransaction = scrypto_decode(transaction_payload)
             .map_err(TransactionValidationError::DeserializationError)?;
 
         Ok(transaction)
@@ -86,7 +86,7 @@ impl CommittedTransactionValidator {
         &self,
         epoch: u64, // Temporary
         transaction_payload: &[u8],
-    ) -> Result<ValidatedTransaction<Transaction>, TransactionValidationError> {
+    ) -> Result<ValidatedTransaction<LedgerTransaction>, TransactionValidationError> {
         // TODO: Need a good way to do payload transaction size here
         let transaction = Self::parse_unvalidated_transaction_from_slice(transaction_payload)?;
         self.validate_transaction(epoch, transaction)
@@ -95,16 +95,16 @@ impl CommittedTransactionValidator {
     fn validate_transaction(
         &self,
         epoch: u64, // Temporary
-        transaction: Transaction,
-    ) -> Result<ValidatedTransaction<Transaction>, TransactionValidationError> {
+        transaction: LedgerTransaction,
+    ) -> Result<ValidatedTransaction<LedgerTransaction>, TransactionValidationError> {
         let mut config = self.base_validation_config;
         config.current_epoch = epoch;
         let validator = NotarizedTransactionValidator::new(config);
         let executable = match transaction.clone() {
-            Transaction::User(notarized_transaction) => {
+            LedgerTransaction::User(notarized_transaction) => {
                 validator.validate(notarized_transaction, &self.intent_hash_manager)
             }
-            Transaction::Validator(validator_transaction) => Ok(validator_transaction.into()),
+            LedgerTransaction::Validator(validator_transaction) => Ok(validator_transaction.into()),
         }?;
         Ok(ValidatedTransaction {
             transaction,

@@ -82,7 +82,7 @@ use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 use crate::store::in_memory::InMemoryVertexStore;
 use crate::store::rocks_db::RocksDBCommitTransaction;
 use crate::store::traits::RecoverableVertexStore;
-use crate::transaction::{Transaction, ValidatorTransaction};
+use crate::transaction::{LedgerTransaction, ValidatorTransaction};
 use crate::{
     CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt, TransactionPayloadHash,
 };
@@ -137,7 +137,8 @@ impl StateManagerDatabase {
                     .try_into()
                     .expect("Genesis execution failed");
 
-                let mock_genesis = Transaction::Validator(ValidatorTransaction::EpochUpdate(0)); // Mocked
+                let mock_genesis =
+                    LedgerTransaction::Validator(ValidatorTransaction::EpochUpdate(0)); // Mocked
                 let payload_hash = mock_genesis.get_hash();
                 let identifiers = CommittedTransactionIdentifiers { state_version: 1 };
                 db_txn.insert_committed_transactions(vec![(
@@ -189,7 +190,7 @@ impl<'db> WriteableTransactionStore for StateManagerCommitTransaction<'db> {
     fn insert_committed_transactions(
         &mut self,
         transactions: Vec<(
-            Transaction,
+            LedgerTransaction,
             LedgerTransactionReceipt,
             CommittedTransactionIdentifiers,
         )>,
@@ -301,7 +302,7 @@ impl QueryableTransactionStore for StateManagerDatabase {
         &self,
         payload_hash: &TransactionPayloadHash,
     ) -> Option<(
-        Transaction,
+        LedgerTransaction,
         LedgerTransactionReceipt,
         CommittedTransactionIdentifiers,
     )> {

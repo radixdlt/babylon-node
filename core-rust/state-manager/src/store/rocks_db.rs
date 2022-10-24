@@ -99,7 +99,7 @@ enum RocksDBTable {
     TransactionIntentLookup,
     UserPayloadHashLookup,
 }
-use crate::transaction::Transaction;
+use crate::transaction::LedgerTransaction;
 use RocksDBTable::*;
 
 impl RocksDBTable {
@@ -166,12 +166,12 @@ pub struct RocksDBCommitTransaction<'db> {
 impl<'db> RocksDBCommitTransaction<'db> {
     fn insert_transaction(
         &mut self,
-        transaction: Transaction,
+        transaction: LedgerTransaction,
         receipt: LedgerTransactionReceipt,
         identifiers: CommittedTransactionIdentifiers,
     ) {
         // TEMPORARY until this is handled in the engine: we store both an intent lookup and the transaction itself
-        if let Transaction::User(notarized_transaction) = &transaction {
+        if let LedgerTransaction::User(notarized_transaction) = &transaction {
             let key = get_transaction_intent_key(&notarized_transaction.intent_hash());
             let existing_intent_option = self
                 .db_txn
@@ -213,7 +213,7 @@ impl<'db> WriteableTransactionStore for RocksDBCommitTransaction<'db> {
     fn insert_committed_transactions(
         &mut self,
         transactions: Vec<(
-            Transaction,
+            LedgerTransaction,
             LedgerTransactionReceipt,
             CommittedTransactionIdentifiers,
         )>,
@@ -291,7 +291,7 @@ impl QueryableTransactionStore for RocksDBStore {
         &self,
         payload_hash: &TransactionPayloadHash,
     ) -> Option<(
-        Transaction,
+        LedgerTransaction,
         LedgerTransactionReceipt,
         CommittedTransactionIdentifiers,
     )> {

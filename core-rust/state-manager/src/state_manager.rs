@@ -106,7 +106,8 @@ use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, ValidationConfig};
 
 use crate::transaction::{
-    CommittedTransactionValidator, Transaction, UserTransactionValidator, ValidatorTransaction,
+    CommittedTransactionValidator, LedgerTransaction, UserTransactionValidator,
+    ValidatorTransaction,
 };
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
@@ -581,7 +582,9 @@ where
                 .parse_and_validate_transaction_slice(current_epoch, &prepared)
                 .expect("Already prepared transactions should be decodeable");
 
-            if let Transaction::User(notarized_transaction) = &validated_transaction.transaction {
+            if let LedgerTransaction::User(notarized_transaction) =
+                &validated_transaction.transaction
+            {
                 already_committed_or_prepared_intent_hashes
                     .insert(notarized_transaction.intent_hash());
             }
@@ -631,7 +634,7 @@ where
                         panic!("Epoch Update failed: {:?}", failure);
                     }
                     let serialized_validated_txn =
-                        scrypto_encode(&Transaction::Validator(epoch_update_txn));
+                        scrypto_encode(&LedgerTransaction::Validator(epoch_update_txn));
                     committed.push(serialized_validated_txn);
                 }
                 TransactionResult::Reject(reject_result) => {
@@ -670,7 +673,7 @@ where
                             already_committed_or_prepared_intent_hashes
                                 .insert(validated.transaction.intent_hash());
                             let serialized_validated_txn =
-                                scrypto_encode(&Transaction::User(validated.transaction));
+                                scrypto_encode(&LedgerTransaction::User(validated.transaction));
                             committed.push(serialized_validated_txn);
                         }
                         TransactionResult::Reject(reject_result) => {
@@ -724,7 +727,7 @@ where
                         .committed_transaction_validator
                         .parse_and_validate_transaction_slice(current_epoch, &t)
                         .expect("Error on Byzantine quorum");
-                    if let Transaction::Validator(ValidatorTransaction::EpochUpdate(epoch)) =
+                    if let LedgerTransaction::Validator(ValidatorTransaction::EpochUpdate(epoch)) =
                         &txn.transaction
                     {
                         current_epoch = *epoch;
@@ -764,7 +767,7 @@ where
 
             let transaction = validated_txn.transaction;
             let payload_hash = transaction.get_hash();
-            if let Transaction::User(notarized_transaction) = &transaction {
+            if let LedgerTransaction::User(notarized_transaction) = &transaction {
                 let intent_hash = notarized_transaction.intent_hash();
                 intent_hashes.push(intent_hash);
             }

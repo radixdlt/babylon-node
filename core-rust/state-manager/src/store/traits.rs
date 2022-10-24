@@ -85,7 +85,7 @@ pub mod substate {
 }
 
 pub mod transactions {
-    use crate::transaction::Transaction;
+    use crate::transaction::LedgerTransaction;
     use crate::{
         CommittedTransactionIdentifiers, LedgerTransactionReceipt, TransactionPayloadHash,
     };
@@ -95,7 +95,7 @@ pub mod transactions {
         fn insert_committed_transactions(
             &mut self,
             transactions: Vec<(
-                Transaction,
+                LedgerTransaction,
                 LedgerTransactionReceipt,
                 CommittedTransactionIdentifiers,
             )>,
@@ -107,7 +107,7 @@ pub mod transactions {
             &self,
             payload_hash: &TransactionPayloadHash,
         ) -> Option<(
-            Transaction,
+            LedgerTransaction,
             LedgerTransactionReceipt,
             CommittedTransactionIdentifiers,
         )>;
@@ -130,8 +130,10 @@ pub mod transactions {
                     "User payload hash was found for transaction, but payload couldn't be found",
                 );
             let notarized_transaction = match transaction {
-                Transaction::User(notarized_transaction) => notarized_transaction,
-                Transaction::Validator(..) => panic!("Found validator transaction with intent"),
+                LedgerTransaction::User(notarized_transaction) => notarized_transaction,
+                LedgerTransaction::Validator(..) => {
+                    panic!("Found validator transaction with intent")
+                }
             };
             Some((notarized_transaction, receipt, identifiers))
         }

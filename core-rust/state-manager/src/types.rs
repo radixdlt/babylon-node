@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::transaction::Transaction;
+use crate::transaction::LedgerTransaction;
 use scrypto::prelude::*;
 use std::fmt;
 use transaction::model::{
@@ -76,7 +76,7 @@ pub struct TransactionPayloadHash([u8; Self::LENGTH]);
 impl TransactionPayloadHash {
     pub const LENGTH: usize = 32;
 
-    pub fn for_transaction(transaction: &Transaction) -> Self {
+    pub fn for_transaction(transaction: &LedgerTransaction) -> Self {
         Self(sha256_twice(&scrypto_encode(transaction)).0)
     }
 
