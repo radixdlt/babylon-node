@@ -69,9 +69,9 @@ import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.RoundQuorumReached;
 import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.bft.VertexStoreAdapter;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.sync.VertexStoreAdapter;
 import com.radixdlt.environment.EventProcessor;
 
 /** Creates a new bft processor */
