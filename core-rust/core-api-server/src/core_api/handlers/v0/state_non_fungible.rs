@@ -30,12 +30,10 @@ fn handle_v0_state_non_fungible_internal(
     let non_fungible_id = extract_non_fungible_id(&request.non_fungible_id_hex)
         .map_err(|err| err.into_response_error("non_fungible_id"))?;
 
-    let substate_offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-
     match read_derefed_global_substate(
         state_manager,
         GlobalAddress::Resource(resource_address),
-        substate_offset,
+        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
     )? {
         Some(PersistedSubstate::ResourceManager(resource_manager)) => {
             if let Some(non_fungible_store_id) = resource_manager.nf_store_id {

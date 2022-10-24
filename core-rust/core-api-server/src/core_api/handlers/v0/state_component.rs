@@ -78,11 +78,10 @@ fn read_component_info(
 ) -> Result<Option<models::Substate>, MappingError> {
     let bech32_encoder = Bech32Encoder::new(&state_manager.network);
 
-    let substate_offset = SubstateOffset::Component(ComponentOffset::Info);
     match read_derefed_global_substate(
         state_manager,
         GlobalAddress::Component(*component_address),
-        substate_offset,
+        SubstateOffset::Component(ComponentOffset::Info),
     )? {
         Some(PersistedSubstate::ComponentInfo(component_info)) => Ok(Some(
             to_api_component_info_substate(&component_info, &bech32_encoder),

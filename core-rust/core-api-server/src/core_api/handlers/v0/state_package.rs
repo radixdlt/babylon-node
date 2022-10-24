@@ -21,12 +21,10 @@ fn handle_v0_state_package_internal(
     let package_address = extract_package_address(&bech32_decoder, &request.package_address)
         .map_err(|err| err.into_response_error("package_address"))?;
 
-    let substate_offset = SubstateOffset::Package(PackageOffset::Package);
-
     match read_derefed_global_substate(
         state_manager,
         GlobalAddress::Package(package_address),
-        substate_offset,
+        SubstateOffset::Package(PackageOffset::Package),
     )? {
         Some(PersistedSubstate::Package(package)) => Ok(models::V0StatePackageResponse {
             package: Some(to_api_package_substate(&package)),

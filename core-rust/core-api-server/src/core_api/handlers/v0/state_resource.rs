@@ -21,12 +21,10 @@ fn handle_v0_state_resource_internal(
     let resource_address = extract_resource_address(&bech32_decoder, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
 
-    let substate_offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-
     match read_derefed_global_substate(
         state_manager,
         GlobalAddress::Resource(resource_address),
-        substate_offset,
+        SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
     )? {
         Some(PersistedSubstate::ResourceManager(resource_manager)) => {
             Ok(models::V0StateResourceResponse {
