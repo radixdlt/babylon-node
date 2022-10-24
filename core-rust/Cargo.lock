@@ -880,9 +880,9 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "libc"
-version = "0.2.135"
+version = "0.2.136"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68783febc7782c6c5cb401fbda4de5a9898be1762314da0bb2c10ced61f18b0c"
+checksum = "55edcf6c0bb319052dea84732cf99db461780fd5e8d3eb46ab6ff312ab31f197"
 
 [[package]]
 name = "libloading"
@@ -1340,7 +1340,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-4dddb0d6d#4dddb0d6dbccc6b72afeedeea2a0044c63882da3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-24#c15a1581ce519b1443a6e9289f4273b3be14d9b9"
 dependencies = [
  "bitflags",
  "colored",
@@ -1358,7 +1358,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-stores"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-4dddb0d6d#4dddb0d6dbccc6b72afeedeea2a0044c63882da3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-24#c15a1581ce519b1443a6e9289f4273b3be14d9b9"
 dependencies = [
  "radix-engine",
  "rocksdb",
@@ -1501,7 +1501,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-4dddb0d6d#4dddb0d6dbccc6b72afeedeea2a0044c63882da3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-24#c15a1581ce519b1443a6e9289f4273b3be14d9b9"
 dependencies = [
  "hex",
  "sbor-derive",
@@ -1511,7 +1511,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-4dddb0d6d#4dddb0d6dbccc6b72afeedeea2a0044c63882da3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-24#c15a1581ce519b1443a6e9289f4273b3be14d9b9"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1534,7 +1534,7 @@ checksum = "9c8132065adcfd6e02db789d9285a0deb2f3fcb04002865ab67d5fb103533898"
 [[package]]
 name = "scrypto"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-4dddb0d6d#4dddb0d6dbccc6b72afeedeea2a0044c63882da3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-24#c15a1581ce519b1443a6e9289f4273b3be14d9b9"
 dependencies = [
  "bech32",
  "forward_ref",
@@ -1553,7 +1553,7 @@ dependencies = [
 [[package]]
 name = "scrypto-abi"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-4dddb0d6d#4dddb0d6dbccc6b72afeedeea2a0044c63882da3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-24#c15a1581ce519b1443a6e9289f4273b3be14d9b9"
 dependencies = [
  "sbor",
  "serde",
@@ -1562,7 +1562,7 @@ dependencies = [
 [[package]]
 name = "scrypto-derive"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-4dddb0d6d#4dddb0d6dbccc6b72afeedeea2a0044c63882da3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-24#c15a1581ce519b1443a6e9289f4273b3be14d9b9"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2069,7 +2069,7 @@ dependencies = [
 [[package]]
 name = "transaction"
 version = "0.7.0"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=expose-genesis-receipt-4dddb0d6d#4dddb0d6dbccc6b72afeedeea2a0044c63882da3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=develop-2022-10-24#c15a1581ce519b1443a6e9289f4273b3be14d9b9"
 dependencies = [
  "clap",
  "ed25519-dalek",
