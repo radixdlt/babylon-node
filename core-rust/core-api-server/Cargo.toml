@@ -23,7 +23,7 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-977195dc1" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-977195dc1", features = ["serde"] }
 scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-977195dc1" }
 transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-977195dc1" }
 radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "alphanet-977195dc1" }
