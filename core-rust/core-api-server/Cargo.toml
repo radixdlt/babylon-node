@@ -23,11 +23,11 @@ parking_lot = { version = "0.12" }
 #
 # Ensure this version is also identically updated in ../state-manager/Cargo.toml
 #
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "expose-genesis-receipt-910e6115c" }
-scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "expose-genesis-receipt-910e6115c" }
-transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "expose-genesis-receipt-910e6115c" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "expose-genesis-receipt-910e6115c" }
-radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "expose-genesis-receipt-910e6115c" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "expose-genesis-receipt-4dddb0d6d" }
+scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "expose-genesis-receipt-4dddb0d6d" }
+transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "expose-genesis-receipt-4dddb0d6d" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "expose-genesis-receipt-4dddb0d6d" }
+radix-engine-stores = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "expose-genesis-receipt-4dddb0d6d" }
 
 jni = "0.19.0"
 

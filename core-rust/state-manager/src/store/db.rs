@@ -75,7 +75,7 @@ use crate::types::UserPayloadHash;
 use radix_engine::ledger::{
     bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
-use radix_engine::model::{GlobalAddressSubstate, PersistedSubstate};
+use radix_engine::model::PersistedSubstate;
 
 use radix_engine_stores::memory_db::SerializedInMemorySubstateStore;
 
@@ -86,8 +86,8 @@ use crate::transaction::{Transaction, ValidatorTransaction};
 use crate::{
     CommittedTransactionIdentifiers, IntentHash, LedgerTransactionReceipt, TransactionPayloadHash,
 };
-use scrypto::engine::types::{ComponentId, GlobalAddress, GlobalOffset, KeyValueStoreId, RENodeId, SubstateId, SubstateOffset};
-use scrypto::prelude::SYS_SYSTEM_COMPONENT;
+use scrypto::engine::types::{KeyValueStoreId, SubstateId};
+
 use tracing::debug;
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
@@ -136,7 +136,6 @@ impl StateManagerDatabase {
                 let ledger_receipt: LedgerTransactionReceipt = genesis_receipt
                     .try_into()
                     .expect("Genesis execution failed");
-                println!("Genesis run created components {:?}", ledger_receipt.entity_changes.new_component_addresses);
 
                 let mock_genesis = Transaction::Validator(ValidatorTransaction::EpochUpdate(0)); // Mocked
                 let payload_hash = mock_genesis.get_hash();

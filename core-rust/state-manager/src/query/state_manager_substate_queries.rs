@@ -1,7 +1,7 @@
 use radix_engine::model::{GlobalAddressSubstate, SystemSubstate};
 use radix_engine::types::SubstateId;
 use scrypto::constants::SYS_SYSTEM_COMPONENT;
-use scrypto::engine::types::{ComponentId, GlobalAddress, GlobalOffset, RENodeId, SubstateOffset, SystemOffset};
+use scrypto::engine::types::{GlobalAddress, GlobalOffset, RENodeId, SubstateOffset, SystemOffset};
 
 use crate::store::traits::*;
 
@@ -39,6 +39,4 @@ impl<T: ReadableSubstateStore + QueryableSubstateStore> StateManagerSubstateQuer
 
         panic!("Failed to read SystemSubstate");
     }
-
-
 }

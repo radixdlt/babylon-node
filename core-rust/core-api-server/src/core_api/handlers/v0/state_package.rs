@@ -1,10 +1,9 @@
 use crate::core_api::*;
 use radix_engine::model::PersistedSubstate;
-use radix_engine::types::{Bech32Decoder, SubstateId};
-use scrypto::engine::types::{PackageOffset, RENodeId, SubstateOffset};
-use scrypto::prelude::hash;
+use radix_engine::types::Bech32Decoder;
+use scrypto::engine::types::{GlobalAddress, PackageOffset, SubstateOffset};
+
 use state_manager::jni::state_manager::ActualStateManager;
-use state_manager::store::traits::*;
 
 pub(crate) async fn handle_v0_state_package(
     state: Extension<CoreApiState>,
@@ -22,21 +21,20 @@ fn handle_v0_state_package_internal(
     let package_address = extract_package_address(&bech32_decoder, &request.package_address)
         .map_err(|err| err.into_response_error("package_address"))?;
 
-    let substate_id = SubstateId(
-        RENodeId::Package((hash(vec![]), 0)), // TODO: fixme
-        SubstateOffset::Package(PackageOffset::Package),
-    );
+    let substate_offset = SubstateOffset::Package(PackageOffset::Package);
 
-    if let Some(output_value) = state_manager.store.get_substate(&substate_id) {
-        if let PersistedSubstate::Package(package) = output_value.substate {
-            return Ok(models::V0StatePackageResponse {
-                package: Some(to_api_package_substate(&package)),
-            });
+    match read_derefed_global_substate(
+        state_manager,
+        GlobalAddress::Package(package_address),
+        substate_offset,
+    )? {
+        Some(PersistedSubstate::Package(package)) => Ok(models::V0StatePackageResponse {
+            package: Some(to_api_package_substate(&package)),
+        }),
+        Some(..) => Err(MappingError::MismatchedSubstateId {
+            message: "Package substate was not of the right type".to_owned(),
         }
-        return Err(MappingError::MismatchedSubstateId {
-            message: "Package Substate was not of the right type".to_owned(),
-        }
-        .into());
+        .into()),
+        None => Err(not_found_error("Package not found")),
     }
-    Err(not_found_error("Package not found"))
 }

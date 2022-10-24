@@ -3,7 +3,9 @@ use scrypto::args;
 use scrypto::buffer::scrypto_encode;
 use scrypto::constants::{SYS_FAUCET_COMPONENT, SYS_SYSTEM_COMPONENT};
 use scrypto::crypto::hash;
-use scrypto::engine::types::{GlobalAddress, NativeMethodIdent, Receiver, RENodeId, ScryptoMethodIdent, ScryptoReceiver};
+use scrypto::engine::types::{
+    GlobalAddress, NativeMethodIdent, RENodeId, Receiver, ScryptoMethodIdent, ScryptoReceiver,
+};
 use scrypto::math::Decimal;
 use std::collections::BTreeSet;
 use transaction::model::{AuthModule, AuthZoneParams, Executable, Instruction};
@@ -20,7 +22,9 @@ impl From<ValidatorTransaction> for Executable {
         let instruction = match validator_transaction {
             ValidatorTransaction::EpochUpdate(epoch) => Instruction::CallNativeMethod {
                 method_ident: NativeMethodIdent {
-                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(SYS_SYSTEM_COMPONENT))),
+                    receiver: Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                        SYS_SYSTEM_COMPONENT,
+                    ))),
                     method_name: "set_epoch".to_string(),
                 },
                 args: args!(epoch),

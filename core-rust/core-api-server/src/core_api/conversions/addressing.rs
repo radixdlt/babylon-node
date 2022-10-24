@@ -13,7 +13,6 @@ use scrypto::engine::types::{
     NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset,
     SystemOffset, VaultOffset, WorktopOffset,
 };
-use scrypto::prelude::scrypto_encode;
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_global_entity_id_from_substate_id(
@@ -148,9 +147,11 @@ impl TryFrom<RENodeId> for MappedEntityId {
                 MappedEntityId::new(EntityType::Vault, basic_address_to_vec(&addr))
             }
             RENodeId::ResourceManager(addr) => {
-                MappedEntityId::new(EntityType::ResourceManager, scrypto_encode(&addr))
+                MappedEntityId::new(EntityType::ResourceManager, basic_address_to_vec(&addr))
             }
-            RENodeId::Package(addr) => MappedEntityId::new(EntityType::Package, scrypto_encode(&addr)),
+            RENodeId::Package(addr) => {
+                MappedEntityId::new(EntityType::Package, basic_address_to_vec(&addr))
+            }
             RENodeId::System(id) => {
                 MappedEntityId::new(EntityType::System, basic_address_to_vec(&id))
             }
@@ -269,7 +270,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         SubstateId(RENodeId::Package(addr), SubstateOffset::Package(PackageOffset::Package)) => {
             MappedSubstateId(
                 EntityType::Package,
-                scrypto_encode(&addr), // TODO: fixme
+                basic_address_to_vec(&addr),
                 SubstateType::Package,
                 vec![0],
             )
@@ -280,7 +281,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ) => MappedSubstateId(
             EntityType::ResourceManager,
-            scrypto_encode(&addr), // TODO: fixme
+            basic_address_to_vec(&addr),
             SubstateType::ResourceManager,
             vec![0],
         ),
