@@ -147,9 +147,11 @@ impl TryFrom<RENodeId> for MappedEntityId {
                 MappedEntityId::new(EntityType::Vault, basic_address_to_vec(&addr))
             }
             RENodeId::ResourceManager(addr) => {
-                MappedEntityId::new(EntityType::ResourceManager, addr.to_vec())
+                MappedEntityId::new(EntityType::ResourceManager, basic_address_to_vec(&addr))
             }
-            RENodeId::Package(addr) => MappedEntityId::new(EntityType::Package, addr.to_vec()),
+            RENodeId::Package(addr) => {
+                MappedEntityId::new(EntityType::Package, basic_address_to_vec(&addr))
+            }
             RENodeId::System(id) => {
                 MappedEntityId::new(EntityType::System, basic_address_to_vec(&id))
             }
@@ -168,9 +170,9 @@ impl TryFrom<RENodeId> for MappedEntityId {
                     message: "Worktop persisted".to_owned(),
                 })
             }
-            RENodeId::AuthZone(_) => {
+            RENodeId::AuthZoneStack(_) => {
                 return Err(MappingError::TransientSubstatePersisted {
-                    message: "AuthZone persisted".to_owned(),
+                    message: "AuthZoneStack persisted".to_owned(),
                 })
             }
             RENodeId::NonFungibleStore(non_fungible_store_id) => MappedEntityId::new(
@@ -268,7 +270,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         SubstateId(RENodeId::Package(addr), SubstateOffset::Package(PackageOffset::Package)) => {
             MappedSubstateId(
                 EntityType::Package,
-                addr.to_vec(),
+                basic_address_to_vec(&addr),
                 SubstateType::Package,
                 vec![0],
             )
@@ -279,7 +281,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ) => MappedSubstateId(
             EntityType::ResourceManager,
-            addr.to_vec(),
+            basic_address_to_vec(&addr),
             SubstateType::ResourceManager,
             vec![0],
         ),

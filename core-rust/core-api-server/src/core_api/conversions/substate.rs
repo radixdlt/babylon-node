@@ -25,7 +25,7 @@ pub fn to_api_substate(
     bech32_encoder: &Bech32Encoder,
 ) -> Result<models::Substate, MappingError> {
     Ok(match substate {
-        PersistedSubstate::GlobalRENode(global) => to_api_global_substate(global)?,
+        PersistedSubstate::Global(global) => to_api_global_substate(global)?,
         PersistedSubstate::System(system) => to_api_system_substate(system)?,
         PersistedSubstate::ResourceManager(resource_manager) => {
             to_api_resource_substate(resource_manager)

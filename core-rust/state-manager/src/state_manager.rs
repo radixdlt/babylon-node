@@ -76,6 +76,7 @@ use prometheus::{IntCounter, IntCounterVec, IntGauge, Registry};
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
+use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::fee::SystemLoanFeeReserve;
 use radix_engine::model::SystemSubstate;
 use radix_engine::state_manager::StagedSubstateStoreManager;
@@ -84,11 +85,15 @@ use radix_engine::transaction::{
     TransactionExecutor, TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::SubstateId;
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
+use radix_engine::wasm::{
+    DefaultWasmEngine, DefaultWasmInstance, InstructionCostRules, WasmInstrumenter,
+    WasmMeteringParams,
+};
 use scrypto::engine::types::{GlobalAddress, RENodeId};
 use scrypto::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
+use std::marker::PhantomData;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::info;
 
@@ -197,9 +202,8 @@ pub struct StateManager<S> {
     rounds_per_epoch: u64,
     pub counters: Counters,
     pub prometheus_registry: Registry,
-    wasm_engine: DefaultWasmEngine,
-    wasm_instrumenter: WasmInstrumenter,
     execution_config: ExecutionConfig,
+    wasm_metering_params: WasmMeteringParams,
     fee_reserve_config: FeeReserveConfig,
     intent_hash_manager: TestIntentHashManager,
     logging_config: StateManagerLoggingConfig,
@@ -241,8 +245,6 @@ impl<S> StateManager<S> {
             network,
             mempool,
             store,
-            wasm_engine: DefaultWasmEngine::new(),
-            wasm_instrumenter: WasmInstrumenter::new(),
             user_transaction_validator,
             committed_transaction_validator,
             rounds_per_epoch,
@@ -250,6 +252,10 @@ impl<S> StateManager<S> {
                 max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                 trace: logging_config.engine_trace,
             },
+            wasm_metering_params: WasmMeteringParams::new(
+                InstructionCostRules::tiered(1, 5, 10, 5000),
+                512,
+            ),
             fee_reserve_config: FeeReserveConfig {
                 cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                 system_loan: DEFAULT_SYSTEM_LOAN,
@@ -267,6 +273,17 @@ impl<S> StateManager<S>
 where
     S: ReadableSubstateStore,
 {
+    fn new_scrypto_interpreter(
+        &self,
+    ) -> ScryptoInterpreter<DefaultWasmInstance, DefaultWasmEngine> {
+        ScryptoInterpreter {
+            wasm_engine: DefaultWasmEngine::new(),
+            wasm_instrumenter: WasmInstrumenter::new(),
+            wasm_metering_params: self.wasm_metering_params.clone(),
+            phantom: PhantomData,
+        }
+    }
+
     pub fn preview(
         &mut self,
         preview_request: PreviewRequest,
@@ -296,10 +313,11 @@ where
             },
         };
 
+        let mut scrypto_interpreter = self.new_scrypto_interpreter();
+
         PreviewExecutor::new(
             &mut self.store,
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
+            &mut scrypto_interpreter,
             &self.intent_hash_manager,
             &self.network,
         )
@@ -323,15 +341,14 @@ where
             .user_transaction_validator
             .validate_user_transaction(self.get_epoch(), transaction.clone())?;
 
+        let mut scrypto_interpreter = self.new_scrypto_interpreter();
+
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
         let mut staged_store = staged_store_manager.get_output_store(staged_node);
 
-        let mut transaction_executor = TransactionExecutor::new(
-            &mut staged_store,
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
-        );
+        let mut transaction_executor =
+            TransactionExecutor::new(&mut staged_store, &mut scrypto_interpreter);
         let receipt = transaction_executor.execute(
             &validated_transaction.executable,
             &self.fee_reserve_config,
@@ -550,14 +567,13 @@ where
         already_committed_or_prepared_intent_hashes
             .extend(already_committed_proposed_payload_hashes);
 
+        let mut scrypto_interpreter = self.new_scrypto_interpreter();
+
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
         let mut staged_store = staged_store_manager.get_output_store(staged_node);
-        let mut transaction_executor = TransactionExecutor::new(
-            &mut staged_store,
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
-        );
+        let mut transaction_executor =
+            TransactionExecutor::new(&mut staged_store, &mut scrypto_interpreter);
 
         for prepared in prepare_request.already_prepared_payloads {
             let validated_transaction = self
@@ -719,6 +735,8 @@ where
                 .collect::<Vec<_>>()
         };
 
+        let mut scrypto_interpreter = self.new_scrypto_interpreter();
+
         let mut db_transaction = self.store.create_db_transaction();
         let ids_count: u64 = payload_hashes
             .len()
@@ -727,11 +745,8 @@ where
         let mut current_state_version = commit_request.state_version - ids_count;
 
         for validated_txn in transactions_to_commit {
-            let mut transaction_executor = TransactionExecutor::new(
-                &mut db_transaction,
-                &mut self.wasm_engine,
-                &mut self.wasm_instrumenter,
-            );
+            let mut transaction_executor =
+                TransactionExecutor::new(&mut db_transaction, &mut scrypto_interpreter);
 
             let engine_receipt = transaction_executor.execute_and_commit(
                 &validated_txn.executable,

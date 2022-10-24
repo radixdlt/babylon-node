@@ -22,7 +22,7 @@ fn handle_v0_state_epoch_internal(
         SubstateOffset::Global(GlobalOffset::Global),
     );
     if let Some(output_value) = state_manager.store.get_substate(&substate_id) {
-        if let PersistedSubstate::GlobalRENode(global) = output_value.substate {
+        if let PersistedSubstate::Global(global) = output_value.substate {
             let derefed = global.node_deref();
             let substate_id = SubstateId(derefed, SubstateOffset::System(SystemOffset::System));
             let info_output = state_manager.store.get_substate(&substate_id);

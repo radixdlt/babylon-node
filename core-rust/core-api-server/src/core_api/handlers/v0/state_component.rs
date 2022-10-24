@@ -1,10 +1,9 @@
 use crate::core_api::*;
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::{Bech32Decoder, Bech32Encoder, ComponentAddress, RENodeId, SubstateId};
-use scrypto::engine::types::{ComponentOffset, GlobalAddress, GlobalOffset, SubstateOffset};
+use scrypto::engine::types::{ComponentOffset, GlobalAddress, SubstateOffset};
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::query::dump_component;
-use state_manager::store::traits::*;
 
 pub(crate) async fn handle_v0_state_component(
     state: Extension<CoreApiState>,
@@ -39,8 +38,6 @@ fn handle_v0_state_component_internal(
 
     let component_dump = dump_component(&state_manager.store, component_address)
         .map_err(|err| server_error(&format!("Error traversing component state: {:?}", err)))?;
-
-    let bech32_encoder = Bech32Encoder::new(&state_manager.network);
 
     let owned_vaults = component_dump
         .vaults
@@ -79,27 +76,20 @@ fn read_component_info(
     state_manager: &ActualStateManager,
     component_address: &ComponentAddress,
 ) -> Result<Option<models::Substate>, MappingError> {
-    match read_component_re_node_id(state_manager, component_address)? {
-        Some(component_re_node_id) => {
-            let bech32_encoder = Bech32Encoder::new(&state_manager.network);
-            let substate_id = SubstateId(
-                component_re_node_id,
-                SubstateOffset::Component(ComponentOffset::Info),
-            );
-            let info_output = state_manager.store.get_substate(&substate_id);
-            if let Some(PersistedSubstate::ComponentInfo(component_info)) =
-                info_output.map(|o| o.substate)
-            {
-                Ok(Some(to_api_component_info_substate(
-                    &component_info,
-                    &bech32_encoder,
-                )))
-            } else {
-                Err(MappingError::MismatchedSubstateId {
-                    message: "Component info substate was not of the right type".to_owned(),
-                })
-            }
-        }
+    let bech32_encoder = Bech32Encoder::new(&state_manager.network);
+
+    let substate_offset = SubstateOffset::Component(ComponentOffset::Info);
+    match read_derefed_global_substate(
+        state_manager,
+        GlobalAddress::Component(*component_address),
+        substate_offset,
+    )? {
+        Some(PersistedSubstate::ComponentInfo(component_info)) => Ok(Some(
+            to_api_component_info_substate(&component_info, &bech32_encoder),
+        )),
+        Some(..) => Err(MappingError::MismatchedSubstateId {
+            message: "Component info substate was not of the right type".to_owned(),
+        }),
         None => Ok(None),
     }
 }
@@ -109,47 +99,18 @@ fn read_component_state(
     state_manager: &ActualStateManager,
     component_address: &ComponentAddress,
 ) -> Result<Option<models::Substate>, MappingError> {
-    match read_component_re_node_id(state_manager, component_address)? {
-        Some(component_re_node_id) => {
-            let substate_id = SubstateId(
-                component_re_node_id,
-                SubstateOffset::Component(ComponentOffset::State),
-            );
-            let info_output = state_manager.store.get_substate(&substate_id);
-            if let Some(PersistedSubstate::ComponentState(component_state)) =
-                info_output.map(|o| o.substate)
-            {
-                Ok(Some(to_api_component_state_substate(
-                    bech32_encoder,
-                    &component_state,
-                )?))
-            } else {
-                Err(MappingError::MismatchedSubstateId {
-                    message: "Component state substate was not of the right type".to_owned(),
-                })
-            }
-        }
+    let substate_offset = SubstateOffset::Component(ComponentOffset::State);
+    match read_derefed_global_substate(
+        state_manager,
+        GlobalAddress::Component(*component_address),
+        substate_offset,
+    )? {
+        Some(PersistedSubstate::ComponentState(component_state)) => Ok(Some(
+            to_api_component_state_substate(bech32_encoder, &component_state)?,
+        )),
+        Some(..) => Err(MappingError::MismatchedSubstateId {
+            message: "Component state substate was not of the right type".to_owned(),
+        }),
         None => Ok(None),
-    }
-}
-
-fn read_component_re_node_id(
-    state_manager: &ActualStateManager,
-    component_address: &ComponentAddress,
-) -> Result<Option<RENodeId>, MappingError> {
-    let substate_id = SubstateId(
-        RENodeId::Global(GlobalAddress::Component(*component_address)),
-        SubstateOffset::Global(GlobalOffset::Global),
-    );
-    if let Some(output_value) = state_manager.store.get_substate(&substate_id) {
-        if let PersistedSubstate::GlobalRENode(global) = output_value.substate {
-            Ok(Some(global.node_deref()))
-        } else {
-            Err(MappingError::MismatchedSubstateId {
-                message: "Component global address substate was not of the right type".to_owned(),
-            })
-        }
-    } else {
-        Ok(None)
     }
 }

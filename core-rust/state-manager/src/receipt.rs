@@ -9,7 +9,7 @@ use radix_engine::transaction::{
 use radix_engine::types::hash;
 use sbor::{Decode, Encode, TypeId};
 use scrypto::buffer::scrypto_encode;
-use scrypto::prelude::Level;
+use scrypto::engine::types::Level;
 
 #[derive(Debug, Decode, Encode, TypeId)]
 pub struct CommittedTransactionIdentifiers {
