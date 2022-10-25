@@ -514,7 +514,9 @@ where
             .map_err(RejectionReason::ValidationError)?;
 
         match receipt.result {
-            TransactionResult::Reject(result) => Err(RejectionReason::FromExecution(result.error)),
+            TransactionResult::Reject(result) => {
+                Err(RejectionReason::FromExecution(Box::new(result.error)))
+            }
             TransactionResult::Commit(..) => Ok(()),
         }
     }

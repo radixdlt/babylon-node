@@ -90,7 +90,6 @@ impl StateManagerError {
 impl From<DecodeError> for StateManagerError {
     fn from(err: DecodeError) -> Self {
         StateManagerError::create(ERRCODE_SBOR, format!("SBOR decode failed: {:?}", err))
-
     }
 }
 

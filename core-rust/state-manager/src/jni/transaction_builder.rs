@@ -230,8 +230,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_userTransact
 }
 
 fn do_user_transaction_to_ledger(args: Vec<u8>) -> StateManagerResult<Vec<u8>> {
-    let notarized_transaction: NotarizedTransaction =
-        scrypto_decode(&args)?;
+    let notarized_transaction: NotarizedTransaction = scrypto_decode(&args)?;
     Ok(scrypto_encode(&LedgerTransaction::User(
         notarized_transaction,
     )))

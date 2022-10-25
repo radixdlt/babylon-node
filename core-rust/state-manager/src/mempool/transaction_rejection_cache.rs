@@ -2,7 +2,7 @@ use radix_engine::{
     engine::RejectionError,
     types::{scrypto_decode, scrypto_encode},
 };
-use transaction::errors::TransactionValidationError;
+use transaction::errors::{HeaderValidationError, TransactionValidationError};
 
 use crate::{IntentHash, UserPayloadHash};
 
@@ -16,7 +16,7 @@ use std::{
 
 #[derive(Debug)]
 pub enum RejectionReason {
-    FromExecution(RejectionError),
+    FromExecution(Box<RejectionError>),
     ValidationError(TransactionValidationError),
     IntentHashCommitted,
 }
@@ -25,6 +25,12 @@ impl RejectionReason {
     pub fn is_permanent(&self) -> bool {
         match self {
             RejectionReason::FromExecution(_) => false,
+            // TODO - need to distinguish between epoch too low and epoch too high
+            RejectionReason::ValidationError(
+                TransactionValidationError::HeaderValidationError(
+                    HeaderValidationError::OutOfEpochRange,
+                ),
+            ) => false,
             RejectionReason::ValidationError(_) => true,
             RejectionReason::IntentHashCommitted => true,
         }
@@ -253,7 +259,8 @@ mod tests {
 
         let reason_1 =
             RejectionReason::ValidationError(TransactionValidationError::TransactionTooLarge);
-        let reason_2 = RejectionReason::FromExecution(RejectionError::SuccessButFeeLoanNotRepaid);
+        let reason_2 =
+            RejectionReason::FromExecution(Box::new(RejectionError::SuccessButFeeLoanNotRepaid));
 
         // Start by adding 3 payloads against first intent hash. These all fit in, but cache is full
         cache.track_rejection(intent_hash_1, payload_hash_1, reason_1.clone());
@@ -379,7 +386,7 @@ mod tests {
         let intent_hash_1 = intent_hash(1);
 
         let temporary_reason =
-            RejectionReason::FromExecution(RejectionError::SuccessButFeeLoanNotRepaid);
+            RejectionReason::FromExecution(Box::new(RejectionError::SuccessButFeeLoanNotRepaid));
         let permanent_reason =
             RejectionReason::ValidationError(TransactionValidationError::TransactionTooLarge);
 
