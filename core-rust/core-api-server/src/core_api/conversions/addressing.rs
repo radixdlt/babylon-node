@@ -483,7 +483,7 @@ pub fn extract_non_fungible_id(non_fungible_id: &str) -> Result<NonFungibleId, E
 
 // NB - see id_allocator.rs - addresses are formed from (tx_hash, index_in_tx_for_exec_mode + offset_for_exec_mode)
 // There is a separate exec_mode for the manifest and the standard Application executor
-fn basic_address_to_vec(basic_address: &BasicAddress) -> Vec<u8> {
+pub fn basic_address_to_vec(basic_address: &BasicAddress) -> Vec<u8> {
     // NOTE - this only works because the trunc of basic_address is of fixed length.
     // If basic_address became variable length, we'd need to do something else (eg sbor encode) to ensure a 1:1 mapping here
 

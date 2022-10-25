@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct GlobalSubstateAllOf {
-    #[serde(rename = "target_entity_address")]
-    pub target_entity_address: String,
+    #[serde(rename = "target_entity_address_hex")]
+    pub target_entity_address_hex: String,
 }
 
 impl GlobalSubstateAllOf {
-    pub fn new(target_entity_address: String) -> GlobalSubstateAllOf {
+    pub fn new(target_entity_address_hex: String) -> GlobalSubstateAllOf {
         GlobalSubstateAllOf {
-            target_entity_address,
+            target_entity_address_hex,
         }
     }
 }

@@ -1373,9 +1373,9 @@ components:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - target_entity_address
+            - target_entity_address_hex
           properties:
-            target_entity_address:
+            target_entity_address_hex:
               type: string
 ##########################################
 # REQUEST: /status/network-configuration #

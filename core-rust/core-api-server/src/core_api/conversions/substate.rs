@@ -57,7 +57,7 @@ fn to_api_global_substate(
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::GlobalSubstate {
         entity_type: EntityType::Global,
-        target_entity_address: format!("{:?}", global.node_deref()),
+        target_entity_address_hex: to_hex(basic_address_to_vec(&global.node_deref().into())),
     })
 }
 
