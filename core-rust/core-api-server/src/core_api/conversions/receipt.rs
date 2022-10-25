@@ -59,6 +59,7 @@ pub fn to_api_receipt(
             global_address: bech32_encoder.encode_component_address_to_string(addr),
         })
         .collect();
+
     let new_packages: Vec<GlobalEntityId> = receipt
         .entity_changes
         .new_package_addresses
@@ -70,6 +71,7 @@ pub fn to_api_receipt(
             global_address: bech32_encoder.encode_package_address_to_string(addr),
         })
         .collect();
+
     let new_resources: Vec<GlobalEntityId> = receipt
         .entity_changes
         .new_resource_addresses
@@ -123,11 +125,12 @@ pub fn to_api_up_substate(
     let substate_bytes = scrypto_encode(&output_value.substate);
     let hash = to_hex(hash(&substate_bytes));
 
-    let api_substate_data = Option::Some(to_api_substate(
+    let api_substate_data = Some(to_api_substate(
         &substate_id,
         &output_value.substate,
         bech32_encoder,
     )?);
+
     Ok(UpSubstate {
         substate_id: Box::new(to_api_substate_id(substate_id)?),
         version: to_api_substate_version(output_value.version)?,

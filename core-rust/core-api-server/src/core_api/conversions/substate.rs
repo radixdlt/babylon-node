@@ -4,6 +4,7 @@ use super::*;
 use crate::core_api::models;
 use models::EntityType;
 
+use crate::core_api::models::SborData;
 use radix_engine::model::{
     ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
     KeyValueStoreEntrySubstate, NonFungible, NonFungibleSubstate, PackageSubstate,
@@ -14,7 +15,7 @@ use scrypto::address::Bech32Encoder;
 use scrypto::engine::types::{
     KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateOffset,
 };
-use scrypto::prelude::ResourceType;
+use scrypto::prelude::{scrypto_encode, ResourceType};
 
 use super::MappingError;
 
@@ -120,7 +121,7 @@ fn scrypto_value_to_api_data_struct(
 ) -> Result<models::DataStruct, MappingError> {
     let entities = extract_entities(&scrypto_value)?;
     Ok(models::DataStruct {
-        struct_data: Box::new(models::SborData {
+        struct_data: Box::new(SborData {
             data_hex: to_hex(scrypto_value.raw),
             data_json: Some(convert_scrypto_sbor_value_to_json(
                 bech32_encoder,
@@ -263,7 +264,7 @@ pub fn to_api_non_fungible_substate(
         ) => &nf_id.0,
         _ => {
             return Err(MappingError::MismatchedSubstateId {
-                message: "KVStoreEntry Substate was matched with a different substate id"
+                message: "NonFungibleStore substate was matched with a different substate id"
                     .to_owned(),
             })
         }
@@ -274,7 +275,7 @@ pub fn to_api_non_fungible_substate(
             entity_type: EntityType::KeyValueStore,
             nf_id_hex: to_hex(nf_id_bytes),
             is_deleted: false,
-            non_fungible_data: Option::Some(Box::new(to_api_non_fungible_data(
+            non_fungible_data: Some(Box::new(to_api_non_fungible_data(
                 bech32_encoder,
                 non_fungible,
             )?)),
@@ -283,7 +284,7 @@ pub fn to_api_non_fungible_substate(
             entity_type: EntityType::KeyValueStore,
             nf_id_hex: to_hex(nf_id_bytes),
             is_deleted: true,
-            non_fungible_data: Option::None,
+            non_fungible_data: None,
         },
     })
 }
@@ -292,14 +293,16 @@ fn to_api_non_fungible_data(
     bech32_encoder: &Bech32Encoder,
     non_fungible: &NonFungible,
 ) -> Result<models::NonFungibleData, MappingError> {
+    // TODO: NFT data is no longer a ScryptoValue (but it should be again at some point)
+    // remove scrypto_encode call once that happens
     Ok(models::NonFungibleData {
         immutable_data: Box::new(to_api_data_struct(
             bech32_encoder,
-            &non_fungible.immutable_data(),
+            &scrypto_encode(&non_fungible.immutable_data()),
         )?),
         mutable_data: Box::new(to_api_data_struct(
             bech32_encoder,
-            &non_fungible.mutable_data(),
+            &scrypto_encode(&non_fungible.mutable_data()),
         )?),
     })
 }
@@ -316,7 +319,7 @@ fn to_api_key_value_story_entry_substate(
         ) => key,
         _ => {
             return Err(MappingError::MismatchedSubstateId {
-                message: "KVStoreEntry Substate was matched with a different substate id"
+                message: "KVStoreEntry substate was matched with a different substate id"
                     .to_owned(),
             })
         }
@@ -327,13 +330,13 @@ fn to_api_key_value_story_entry_substate(
             entity_type: EntityType::KeyValueStore,
             key_hex: to_hex(key),
             is_deleted: false,
-            data_struct: Option::Some(Box::new(to_api_data_struct(bech32_encoder, data)?)),
+            data_struct: Some(Box::new(to_api_data_struct(bech32_encoder, data)?)),
         },
         None => models::Substate::KeyValueStoreEntrySubstate {
             entity_type: EntityType::KeyValueStore,
             key_hex: to_hex(key),
             is_deleted: true,
-            data_struct: Option::None,
+            data_struct: None,
         },
     })
 }
