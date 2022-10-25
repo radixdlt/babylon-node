@@ -1,5 +1,6 @@
 use crate::core_api::*;
 use models::parsed_notarized_transaction_all_of_identifiers::ParsedNotarizedTransactionAllOfIdentifiers;
+
 use models::parsed_signed_transaction_intent_all_of_identifiers::ParsedSignedTransactionIntentAllOfIdentifiers;
 use models::transaction_parse_request::{ParseMode, ResponseMode, ValidationMode};
 use models::transaction_parse_response::TransactionParseResponse;
@@ -176,11 +177,18 @@ fn to_api_parsed_notarized_transaction(
         )?)),
     };
 
-    let (validation_error, is_error_permanent) = parsed
+    let validation_error = parsed
         .validation
         .and_then(|result| result.err())
-        .map(|error| (Some(format!("{:?}", error)), Some(error.is_permanent())))
-        .unwrap_or((None, None));
+        .map(|error| {
+            Some(Box::new(
+                models::ParsedNotarizedTransactionAllOfValidationError {
+                    reason: format!("{:?}", error),
+                    is_permanent: error.is_permanent(),
+                },
+            ))
+        })
+        .unwrap_or(None);
 
     Ok(models::ParsedTransaction::ParsedNotarizedTransaction {
         notarized_transaction: model,
@@ -191,7 +199,6 @@ fn to_api_parsed_notarized_transaction(
             ledger_hash: to_api_ledger_hash(&parsed.transaction.ledger_payload_hash()),
         }),
         validation_error,
-        validation_error_is_permanent: is_error_permanent,
     })
 }
 

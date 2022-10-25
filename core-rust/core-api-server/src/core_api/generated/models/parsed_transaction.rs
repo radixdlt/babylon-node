@@ -26,12 +26,8 @@ pub enum ParsedTransaction {
         notarized_transaction: Option<Box<crate::core_api::generated::models::NotarizedTransaction>>,
         #[serde(rename = "identifiers")]
         identifiers: Box<crate::core_api::generated::models::ParsedNotarizedTransactionAllOfIdentifiers>,
-        /// If the transaction is known to not be valid, this gives a reason. Different levels of validation are performed, dependent on the validation mode. Note that, even if validation mode is Static or Full, the transaction may still be rejected or fail due to issues at runtime (eg if the loan cannot be repaid). 
         #[serde(rename = "validation_error", skip_serializing_if = "Option::is_none")]
-        validation_error: Option<String>,
-        /// If the transaction is known to not be valid, for a static/permanent reason (eg not a valid format, or max epoch is before the current epoch). 
-        #[serde(rename = "validation_error_is_permanent", skip_serializing_if = "Option::is_none")]
-        validation_error_is_permanent: Option<bool>,
+        validation_error: Option<Box<crate::core_api::generated::models::ParsedNotarizedTransactionAllOfValidationError>>,
     },
     #[serde(rename="SignedTransactionIntent")]
     ParsedSignedTransactionIntent {

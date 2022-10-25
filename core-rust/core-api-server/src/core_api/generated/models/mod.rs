@@ -110,6 +110,8 @@ pub mod parsed_notarized_transaction_all_of;
 pub use self::parsed_notarized_transaction_all_of::ParsedNotarizedTransactionAllOf;
 pub mod parsed_notarized_transaction_all_of_identifiers;
 pub use self::parsed_notarized_transaction_all_of_identifiers::ParsedNotarizedTransactionAllOfIdentifiers;
+pub mod parsed_notarized_transaction_all_of_validation_error;
+pub use self::parsed_notarized_transaction_all_of_validation_error::ParsedNotarizedTransactionAllOfValidationError;
 pub mod parsed_signed_transaction_intent;
 pub use self::parsed_signed_transaction_intent::ParsedSignedTransactionIntent;
 pub mod parsed_signed_transaction_intent_all_of;

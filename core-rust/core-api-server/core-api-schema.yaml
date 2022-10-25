@@ -1635,17 +1635,25 @@ components:
                   maxLength: 64
                   description: The hex-encoded ledger-wrapped transaction hash. This hash is SHA256(SHA256(ledger_transaction_bytes))
             validation_error:
-              type: string
+              type: object
               description: |
                 If the transaction is known to not be valid, this gives a reason.
                 Different levels of validation are performed, dependent on the validation mode.
                 Note that, even if validation mode is Static or Full, the transaction may
                 still be rejected or fail due to issues at runtime (eg if the loan cannot be repaid).
-            validation_error_is_permanent:
-              type: boolean
-              description: |
-                If the transaction is known to not be valid, for a static/permanent reason (eg not a valid format,
-                or max epoch is before the current epoch).
+              required:
+                - reason
+                - is_permanent
+              properties:
+                reason:
+                  type: string
+                  description: |
+                    The error message.
+                is_permanent:
+                  type: boolean
+                  description: |
+                    Whether the error is known to be permanent, or not.
+                    This relates to whether the transaction would be rejected permanently or temporarily if submitted.
     ParsedSignedTransactionIntent:
       allOf:
         - "$ref": "#/components/schemas/ParsedTransactionType"
