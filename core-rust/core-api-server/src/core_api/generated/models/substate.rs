@@ -34,8 +34,8 @@ pub enum Substate {
     GlobalSubstate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
-        #[serde(rename = "derefed_to")]
-        derefed_to: String,
+        #[serde(rename = "target_entity_address")]
+        target_entity_address: String,
     },
     #[serde(rename="KeyValueStoreEntry")]
     KeyValueStoreEntrySubstate {

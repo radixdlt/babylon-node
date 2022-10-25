@@ -56,7 +56,7 @@ fn to_api_global_substate(
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::GlobalSubstate {
         entity_type: EntityType::Global,
-        derefed_to: format!("{:?}", global.node_deref()),
+        target_entity_address: format!("{:?}", global.node_deref()),
     })
 }
 

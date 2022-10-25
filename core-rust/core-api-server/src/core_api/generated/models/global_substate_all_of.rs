@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct GlobalSubstateAllOf {
-    #[serde(rename = "derefed_to")]
-    pub derefed_to: String,
+    #[serde(rename = "target_entity_address")]
+    pub target_entity_address: String,
 }
 
 impl GlobalSubstateAllOf {
-    pub fn new(derefed_to: String) -> GlobalSubstateAllOf {
+    pub fn new(target_entity_address: String) -> GlobalSubstateAllOf {
         GlobalSubstateAllOf {
-            derefed_to,
+            target_entity_address,
         }
     }
 }

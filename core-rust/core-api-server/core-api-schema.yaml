@@ -1373,9 +1373,9 @@ components:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - derefed_to
+            - target_entity_address
           properties:
-            derefed_to:
+            target_entity_address:
               type: string
 ##########################################
 # REQUEST: /status/network-configuration #
