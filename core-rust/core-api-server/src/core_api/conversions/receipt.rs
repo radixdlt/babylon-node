@@ -8,7 +8,7 @@ use radix_engine::{
     types::{hash, scrypto_encode, SubstateId},
 };
 use scrypto::address::Bech32Encoder;
-use scrypto::engine::types::{GlobalAddress, GlobalOffset, RENodeId, SubstateOffset};
+
 use state_manager::{CommittedTransactionStatus, LedgerTransactionReceipt};
 
 #[tracing::instrument(skip_all)]
@@ -52,39 +52,33 @@ pub fn to_api_receipt(
         .entity_changes
         .new_component_addresses
         .iter()
-        .map(|addr| {
-            GlobalEntityId {
-                entity_type: EntityType::Component,
-                entity_address_hex: to_hex(addr.to_vec()),
-                global_address_hex: to_hex(addr.to_vec()),
-                global_address: bech32_encoder.encode_component_address_to_string(addr)
-            }
+        .map(|addr| GlobalEntityId {
+            entity_type: EntityType::Component,
+            entity_address_hex: to_hex(addr.to_vec()),
+            global_address_hex: to_hex(addr.to_vec()),
+            global_address: bech32_encoder.encode_component_address_to_string(addr),
         })
         .collect();
     let new_packages: Vec<GlobalEntityId> = receipt
         .entity_changes
         .new_package_addresses
         .iter()
-        .map(|addr| {
-            GlobalEntityId {
-                entity_type: EntityType::Package,
-                entity_address_hex: to_hex(addr.to_vec()),
-                global_address_hex: to_hex(addr.to_vec()),
-                global_address: bech32_encoder.encode_package_address_to_string(addr)
-            }
+        .map(|addr| GlobalEntityId {
+            entity_type: EntityType::Package,
+            entity_address_hex: to_hex(addr.to_vec()),
+            global_address_hex: to_hex(addr.to_vec()),
+            global_address: bech32_encoder.encode_package_address_to_string(addr),
         })
         .collect();
     let new_resources: Vec<GlobalEntityId> = receipt
         .entity_changes
         .new_resource_addresses
         .iter()
-        .map(|addr| {
-            GlobalEntityId {
-                entity_type: EntityType::ResourceManager,
-                entity_address_hex: to_hex(addr.to_vec()),
-                global_address_hex: to_hex(addr.to_vec()),
-                global_address: bech32_encoder.encode_resource_address_to_string(addr)
-            }
+        .map(|addr| GlobalEntityId {
+            entity_type: EntityType::ResourceManager,
+            entity_address_hex: to_hex(addr.to_vec()),
+            global_address_hex: to_hex(addr.to_vec()),
+            global_address: bech32_encoder.encode_resource_address_to_string(addr),
         })
         .collect();
 

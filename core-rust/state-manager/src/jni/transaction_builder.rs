@@ -253,8 +253,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_transactionB
 fn do_transaction_bytes_to_notarized_transaction_bytes(
     args: Vec<u8>,
 ) -> StateManagerResult<Option<Vec<u8>>> {
-    let transaction: LedgerTransaction =
-        scrypto_decode(&args).map_err(|e| e.into())?;
+    let transaction: LedgerTransaction = scrypto_decode(&args).map_err(|e| e.into())?;
     Ok(match transaction {
         LedgerTransaction::User(notarized_transaction) => {
             Some(scrypto_encode(&notarized_transaction.to_bytes()))
