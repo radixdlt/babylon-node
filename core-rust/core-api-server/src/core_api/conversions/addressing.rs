@@ -93,7 +93,7 @@ pub fn to_api_substate_id(substate_id: SubstateId) -> Result<models::SubstateId,
     })
 }
 
-/// A basic address is formed from the transaction hash and a creation index, speicifically:
+/// A basic address is formed from the transaction hash and a creation index, specifically:
 /// (tx_hash, index_in_tx_for_exec_mode + offset_for_exec_mode)
 /// There is a separate exec_mode for the manifest and the standard Application executor
 /// See id_allocator.rs for more information. - addresses are formed from (tx_hash, index_in_tx_for_exec_mode + offset_for_exec_mode)
@@ -103,6 +103,7 @@ pub fn to_api_substate_id(substate_id: SubstateId) -> Result<models::SubstateId,
 /// > If basic_address became variable length, we'd need to do something else (eg sbor encode) to ensure a 1:1 mapping there
 type BasicAddress = (scrypto::crypto::Hash, u32);
 
+#[derive(Debug)]
 pub struct MappedEntityId {
     entity_type: EntityType,
     entity_address: Vec<u8>,
@@ -185,6 +186,7 @@ impl TryFrom<RENodeId> for MappedEntityId {
     type Error = MappingError;
 }
 
+#[derive(Debug)]
 pub struct MappedSubstateId(EntityType, Vec<u8>, SubstateType, Vec<u8>);
 
 impl From<MappedSubstateId> for models::SubstateId {
@@ -409,6 +411,13 @@ pub fn to_component_entity_id(component_id: &ComponentId) -> MappedEntityId {
     MappedEntityId {
         entity_type: EntityType::Component,
         entity_address: basic_address_to_vec(component_id),
+    }
+}
+
+pub fn to_resource_entity_id(resource_address: &ResourceAddress) -> MappedEntityId {
+    MappedEntityId {
+        entity_type: EntityType::ResourceManager,
+        entity_address: resource_address.to_vec(),
     }
 }
 

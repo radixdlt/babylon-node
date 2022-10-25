@@ -231,7 +231,7 @@ fn to_api_fungible_resource_amount(
 ) -> Result<models::ResourceAmount, MappingError> {
     let resource_entity = to_api_global_entity_id(
         bech32_encoder,
-        to_global_resource_entity_id(resource_address),
+        to_resource_entity_id(resource_address),
     )?;
     Ok(models::ResourceAmount::FungibleResourceAmount {
         resource_address: resource_entity.global_address,
@@ -246,7 +246,7 @@ fn to_api_non_fungible_resource_amount(
 ) -> Result<models::ResourceAmount, MappingError> {
     let resource_entity = to_api_global_entity_id(
         bech32_encoder,
-        to_global_resource_entity_id(resource_address),
+        to_resource_entity_id(resource_address),
     )?;
     let nf_ids_hex = ids.iter().map(|nf_id| to_hex(&nf_id.0)).collect::<Vec<_>>();
     Ok(models::ResourceAmount::NonFungibleResourceAmount {

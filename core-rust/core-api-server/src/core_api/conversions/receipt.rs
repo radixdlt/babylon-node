@@ -48,44 +48,46 @@ pub fn to_api_receipt(
         .collect::<Result<Vec<_>, _>>()?;
 
     // TODO: Cleanup
-    let new_components = receipt
+    let new_components: Vec<GlobalEntityId> = receipt
         .entity_changes
         .new_component_addresses
         .iter()
         .map(|addr| {
-            let substate_id = SubstateId(
-                RENodeId::Global(GlobalAddress::Component(*addr)),
-                SubstateOffset::Global(GlobalOffset::Global),
-            );
-            to_api_global_entity_id_from_substate_id(bech32_encoder, substate_id)
+            GlobalEntityId {
+                entity_type: EntityType::Component,
+                entity_address_hex: to_hex(addr.to_vec()),
+                global_address_hex: to_hex(addr.to_vec()),
+                global_address: bech32_encoder.encode_component_address_to_string(addr)
+            }
         })
-        .collect::<Result<Vec<_>, _>>()?;
-    let new_packages = receipt
+        .collect();
+    let new_packages: Vec<GlobalEntityId> = receipt
         .entity_changes
         .new_package_addresses
         .iter()
         .map(|addr| {
-            let substate_id = SubstateId(
-                RENodeId::Global(GlobalAddress::Package(*addr)),
-                SubstateOffset::Global(GlobalOffset::Global),
-            );
-            to_api_global_entity_id_from_substate_id(bech32_encoder, substate_id)
+            GlobalEntityId {
+                entity_type: EntityType::Package,
+                entity_address_hex: to_hex(addr.to_vec()),
+                global_address_hex: to_hex(addr.to_vec()),
+                global_address: bech32_encoder.encode_package_address_to_string(addr)
+            }
         })
-        .collect::<Result<Vec<_>, _>>()?;
-    let new_resources = receipt
+        .collect();
+    let new_resources: Vec<GlobalEntityId> = receipt
         .entity_changes
         .new_resource_addresses
         .iter()
         .map(|addr| {
-            let substate_id = SubstateId(
-                RENodeId::Global(GlobalAddress::Resource(*addr)),
-                SubstateOffset::Global(GlobalOffset::Global),
-            );
-            to_api_global_entity_id_from_substate_id(bech32_encoder, substate_id)
+            GlobalEntityId {
+                entity_type: EntityType::ResourceManager,
+                entity_address_hex: to_hex(addr.to_vec()),
+                global_address_hex: to_hex(addr.to_vec()),
+                global_address: bech32_encoder.encode_resource_address_to_string(addr)
+            }
         })
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect();
 
-    // These should be entity ids, not substate ids
     let mut new_global_entities = vec![];
     new_global_entities.extend(new_components);
     new_global_entities.extend(new_packages);
