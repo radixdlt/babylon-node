@@ -64,7 +64,6 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 
 /** Mempool which is always empty */
@@ -73,17 +72,16 @@ public class Mempools {
     throw new IllegalStateException("Cannot instantiate.");
   }
 
-  public static <T> Mempool<T> empty() {
+  public static <RawTx, ProcessedTx> Mempool<RawTx, ProcessedTx> empty() {
     return new Mempool<>() {
       @Override
-      public T addTransaction(RawTransaction transaction)
-          throws MempoolFullException, MempoolDuplicateException {
+      public ProcessedTx addTransaction(RawTx transaction) {
         // No-op
         return null;
       }
 
       @Override
-      public void handleTransactionsCommitted(List<T> transactions) {}
+      public void handleTransactionsCommitted(List<ProcessedTx> transactions) {}
 
       @Override
       public int getCount() {
@@ -91,13 +89,13 @@ public class Mempools {
       }
 
       @Override
-      public List<RawTransaction> getTransactionsForProposal(
-          int count, List<T> preparedTransactions) {
+      public List<RawTx> getTransactionsForProposal(
+          int count, List<ProcessedTx> preparedTransactions) {
         return List.of();
       }
 
       @Override
-      public List<RawTransaction> getTransactionsToRelay() {
+      public List<RawTx> getTransactionsToRelay() {
         return List.of();
       }
     };

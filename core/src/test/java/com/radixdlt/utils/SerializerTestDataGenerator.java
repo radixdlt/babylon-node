@@ -85,7 +85,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
@@ -115,7 +115,7 @@ public class SerializerTestDataGenerator {
 
   public static Proposal randomProposal() {
     var qc = randomQC();
-    var txn = RawTransaction.create(new byte[] {0, 1, 2, 3});
+    var txn = RawNotarizedTransaction.create(new byte[] {0, 1, 2, 3});
     var author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
     var vertex = Vertex.create(qc, randomRound(), List.of(txn), author);
     return new Proposal(vertex, qc, ECDSASecp256k1Signature.zeroSignature(), Optional.empty());

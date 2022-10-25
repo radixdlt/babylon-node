@@ -83,7 +83,7 @@ import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import org.junit.Test;
@@ -127,16 +127,14 @@ public class REv2StateComputerTest {
     // Arrange
     var injector = createInjector();
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
-    var invalidTransaction = RawTransaction.create(new byte[1]);
+    var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
 
     // Act
     var result =
         stateComputer.prepare(List.of(), List.of(invalidTransaction), mock(RoundDetails.class));
 
     // Assert
-    assertThat(result.getSuccessfullyExecutedTransactions())
-        .extracting(StateComputerLedger.ExecutedTransaction::transaction)
-        .doesNotContain(invalidTransaction);
+    assertThat(result.getSuccessfullyExecutedTransactions().isEmpty());
     assertThat(result.getFailedTransactions()).hasSize(1);
   }
 }

@@ -70,7 +70,8 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Objects;
 
@@ -80,10 +81,10 @@ public final class NodesReader {
   }
 
   public static ExecutedTransaction getCommittedUserTransaction(
-      List<Injector> nodes, RawTransaction userTransaction) {
+      List<Injector> nodes, RawNotarizedTransaction userTransaction) {
     var committedTransaction =
-        RawTransaction.create(
-            TransactionBuilder.userTransactionToCommittedBytes(userTransaction.getPayload()));
+        RawLedgerTransaction.create(
+            TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
 
     for (var injector : nodes) {
       if (injector == null) {

@@ -8,6 +8,7 @@ use radix_engine::{
     types::{hash, scrypto_encode, SubstateId},
 };
 use scrypto::address::Bech32Encoder;
+
 use state_manager::{CommittedTransactionStatus, LedgerTransactionReceipt};
 
 #[tracing::instrument(skip_all)]
@@ -46,12 +47,47 @@ pub fn to_api_receipt(
         .map(to_api_down_virtual_substate)
         .collect::<Result<Vec<_>, _>>()?;
 
-    // These should be entity ids, not substate ids
-    let new_global_entities = state_updates
-        .new_roots
-        .into_iter()
-        .map(|x| to_api_global_entity_id_from_substate_id(bech32_encoder, x))
-        .collect::<Result<Vec<_>, _>>()?;
+    // TODO: Cleanup
+    let new_components: Vec<GlobalEntityId> = receipt
+        .entity_changes
+        .new_component_addresses
+        .iter()
+        .map(|addr| GlobalEntityId {
+            entity_type: EntityType::Component,
+            entity_address_hex: to_hex(addr.to_vec()),
+            global_address_hex: to_hex(addr.to_vec()),
+            global_address: bech32_encoder.encode_component_address_to_string(addr),
+        })
+        .collect();
+
+    let new_packages: Vec<GlobalEntityId> = receipt
+        .entity_changes
+        .new_package_addresses
+        .iter()
+        .map(|addr| GlobalEntityId {
+            entity_type: EntityType::Package,
+            entity_address_hex: to_hex(addr.to_vec()),
+            global_address_hex: to_hex(addr.to_vec()),
+            global_address: bech32_encoder.encode_package_address_to_string(addr),
+        })
+        .collect();
+
+    let new_resources: Vec<GlobalEntityId> = receipt
+        .entity_changes
+        .new_resource_addresses
+        .iter()
+        .map(|addr| GlobalEntityId {
+            entity_type: EntityType::ResourceManager,
+            entity_address_hex: to_hex(addr.to_vec()),
+            global_address_hex: to_hex(addr.to_vec()),
+            global_address: bech32_encoder.encode_resource_address_to_string(addr),
+        })
+        .collect();
+
+    let mut new_global_entities = vec![];
+    new_global_entities.extend(new_components);
+    new_global_entities.extend(new_packages);
+    new_global_entities.extend(new_resources);
 
     let api_state_updates = StateUpdates {
         up_substates,
@@ -89,11 +125,12 @@ pub fn to_api_up_substate(
     let substate_bytes = scrypto_encode(&output_value.substate);
     let hash = to_hex(hash(&substate_bytes));
 
-    let api_substate_data = Option::Some(to_api_substate(
+    let api_substate_data = Some(to_api_substate(
         &substate_id,
         &output_value.substate,
         bech32_encoder,
     )?);
+
     Ok(UpSubstate {
         substate_id: Box::new(to_api_substate_id(substate_id)?),
         version: to_api_substate_version(output_value.version)?,

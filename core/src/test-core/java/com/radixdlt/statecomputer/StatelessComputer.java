@@ -78,7 +78,8 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.rev1.RoundDetails;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -118,7 +119,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
   public void addToMempool(MempoolAdd mempoolAdd, BFTNode origin) {}
 
   @Override
-  public List<RawTransaction> getTransactionsForProposal(
+  public List<RawNotarizedTransaction> getTransactionsForProposal(
       List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
     return List.of();
   }
@@ -126,17 +127,21 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
   @Override
   public StateComputerLedger.StateComputerResult prepare(
       List<StateComputerLedger.ExecutedTransaction> previous,
-      List<RawTransaction> proposedTransactions,
+      List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var successfulTransactions = new ArrayList<StateComputerLedger.ExecutedTransaction>();
-    var invalidTransactions = new HashMap<RawTransaction, Exception>();
+    var invalidTransactions = new HashMap<RawLedgerTransaction, Exception>();
 
     for (var transaction : proposedTransactions) {
       var success = verifier.verify(transaction);
       if (success) {
-        successfulTransactions.add(new StatelessComputerExecutedTransaction(transaction));
+        successfulTransactions.add(
+            new StatelessComputerExecutedTransaction(
+                transaction.INCORRECTInterpretDirectlyAsRawLedgerTransaction()));
       } else {
-        invalidTransactions.put(transaction, new StatelessTransactionException());
+        invalidTransactions.put(
+            transaction.INCORRECTInterpretDirectlyAsRawLedgerTransaction(),
+            new StatelessTransactionException());
       }
     }
 

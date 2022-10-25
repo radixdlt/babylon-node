@@ -72,7 +72,7 @@ import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.statemanager.*;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.HashSet;
 import java.util.List;
@@ -166,8 +166,8 @@ public final class RustMempoolTest {
       // Simple Test. Get transactions, and check that are returned.
 
       // Get zero transactions.
-      List<RawTransaction> returnedList;
-      Set<RawTransaction> returnedSet;
+      List<RawNotarizedTransaction> returnedList;
+      Set<RawNotarizedTransaction> returnedSet;
 
       Assert.assertThrows(
           IllegalArgumentException.class,

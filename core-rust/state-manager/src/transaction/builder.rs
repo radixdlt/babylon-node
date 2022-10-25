@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use scrypto::engine::types::RENodeId;
+use scrypto::engine::types::{GlobalAddress, RENodeId, Receiver};
 use scrypto::prelude::*;
 
 use transaction::builder::ManifestBuilder;
@@ -80,8 +80,10 @@ pub fn create_set_epoch_intent(
     let manifest = ManifestBuilder::new(network_definition)
         .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
         .call_native_method(
-            Receiver::Ref(RENodeId::System),
-            NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch),
+            Receiver::Ref(RENodeId::Global(GlobalAddress::Component(
+                SYS_SYSTEM_COMPONENT,
+            ))),
+            "set_epoch",
             args!(epoch),
         )
         .build();
@@ -107,7 +109,7 @@ pub fn create_new_account_intent_bytes(
 ) -> Vec<u8> {
     let manifest = ManifestBuilder::new(network_definition)
         .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .call_method(SYS_FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.new_account_with_resource(&AccessRule::AllowAll, bucket_id)
         })
@@ -138,9 +140,7 @@ pub fn create_intent_bytes(
     blobs: Vec<Vec<u8>>,
 ) -> Result<Vec<u8>, CompileError> {
     let manifest = create_manifest(network_definition, &manifest_str, blobs)?;
-
     let intent = TransactionIntent { header, manifest };
-
     Ok(intent.to_bytes())
 }
 

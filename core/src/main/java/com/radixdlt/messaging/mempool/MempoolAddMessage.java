@@ -70,7 +70,7 @@ import com.radixdlt.messaging.core.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Objects;
 
@@ -86,12 +86,13 @@ public final class MempoolAddMessage extends Message {
     this.txns.forEach(Objects::requireNonNull);
   }
 
-  public static MempoolAddMessage from(List<RawTransaction> transactions) {
-    return new MempoolAddMessage(transactions.stream().map(RawTransaction::getPayload).toList());
+  public static MempoolAddMessage from(List<RawNotarizedTransaction> transactions) {
+    return new MempoolAddMessage(
+        transactions.stream().map(RawNotarizedTransaction::getPayload).toList());
   }
 
-  public List<RawTransaction> getTxns() {
-    return txns == null ? List.of() : txns.stream().map(RawTransaction::create).toList();
+  public List<RawNotarizedTransaction> getTxns() {
+    return txns == null ? List.of() : txns.stream().map(RawNotarizedTransaction::create).toList();
   }
 
   @Override

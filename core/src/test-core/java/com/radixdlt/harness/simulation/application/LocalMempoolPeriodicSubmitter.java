@@ -68,7 +68,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.harness.simulation.SimulationTest.SimulationNetworkActor;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -79,24 +79,25 @@ import java.util.concurrent.TimeUnit;
 /** Contributes to steady state by submitting transactions to the mempool every few seconds */
 public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
 
-  private final PublishSubject<Pair<RawTransaction, BFTNode>> transactionsSubject;
-  private final TransactionGenerator transactionGenerator;
+  private final PublishSubject<Pair<RawNotarizedTransaction, BFTNode>> transactionsSubject;
+  private final TransactionGenerator<RawNotarizedTransaction> transactionGenerator;
   private final NodeSelector nodeSelector;
 
   private Disposable transactionsDisposable;
 
   public LocalMempoolPeriodicSubmitter(
-      TransactionGenerator transactionGenerator, NodeSelector nodeSelector) {
+      TransactionGenerator<RawNotarizedTransaction> transactionGenerator,
+      NodeSelector nodeSelector) {
     this.transactionsSubject = PublishSubject.create();
     this.transactionGenerator = transactionGenerator;
     this.nodeSelector = nodeSelector;
   }
 
-  private void act(RunningNetwork network, RawTransaction transaction, BFTNode node) {
+  private void act(RunningNetwork network, RawNotarizedTransaction transaction, BFTNode node) {
     network.getDispatcher(MempoolAdd.class, node).dispatch(MempoolAdd.create(transaction));
   }
 
-  public Observable<Pair<RawTransaction, BFTNode>> issuedTransactions() {
+  public Observable<Pair<RawNotarizedTransaction, BFTNode>> issuedTransactions() {
     return transactionsSubject.observeOn(Schedulers.io());
   }
 

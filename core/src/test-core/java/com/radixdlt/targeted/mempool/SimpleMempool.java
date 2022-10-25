@@ -69,12 +69,13 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.monitoring.SystemCounters;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.*;
 
 /** Simple mempool which performs no validation and removes on commit. */
-public final class SimpleMempool implements Mempool<RawTransaction> {
-  private final Set<RawTransaction> data = new HashSet<>();
+public final class SimpleMempool
+    implements Mempool<RawNotarizedTransaction, RawNotarizedTransaction> {
+  private final Set<RawNotarizedTransaction> data = new HashSet<>();
   private final SystemCounters counters;
   private final Random random;
   private final int maxSize;
@@ -89,7 +90,7 @@ public final class SimpleMempool implements Mempool<RawTransaction> {
   }
 
   @Override
-  public RawTransaction addTransaction(RawTransaction transaction)
+  public RawNotarizedTransaction addTransaction(RawNotarizedTransaction transaction)
       throws MempoolFullException, MempoolDuplicateException {
     if (this.data.size() >= maxSize) {
       throw new MempoolFullException(this.data.size(), maxSize);
@@ -105,7 +106,7 @@ public final class SimpleMempool implements Mempool<RawTransaction> {
   }
 
   @Override
-  public void handleTransactionsCommitted(List<RawTransaction> transactions) {
+  public void handleTransactionsCommitted(List<RawNotarizedTransaction> transactions) {
     transactions.forEach(this.data::remove);
     updateCounts();
   }
@@ -116,15 +117,15 @@ public final class SimpleMempool implements Mempool<RawTransaction> {
   }
 
   @Override
-  public List<RawTransaction> getTransactionsForProposal(
-      int count, List<RawTransaction> preparedTransactions) {
+  public List<RawNotarizedTransaction> getTransactionsForProposal(
+      int count, List<RawNotarizedTransaction> preparedTransactions) {
     int size = Math.min(count, this.data.size());
     if (size > 0) {
-      List<RawTransaction> transactions = Lists.newArrayList();
+      List<RawNotarizedTransaction> transactions = Lists.newArrayList();
       var values = new ArrayList<>(this.data);
       Collections.shuffle(values, random);
 
-      Iterator<RawTransaction> i = values.iterator();
+      Iterator<RawNotarizedTransaction> i = values.iterator();
       while (transactions.size() < size && i.hasNext()) {
         var a = i.next();
         if (!preparedTransactions.contains(a)) {
@@ -138,7 +139,7 @@ public final class SimpleMempool implements Mempool<RawTransaction> {
   }
 
   @Override
-  public List<RawTransaction> getTransactionsToRelay() {
+  public List<RawNotarizedTransaction> getTransactionsToRelay() {
     return List.of();
   }
 

@@ -102,7 +102,8 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.forks.Forks;
 import com.radixdlt.substate.*;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -164,14 +165,14 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   public record RadixEngineTransaction(
-      RawTransaction transaction, REProcessedTxn processed, PermissionLevel permissionLevel)
+      RawLedgerTransaction transaction, REProcessedTxn processed, PermissionLevel permissionLevel)
       implements ExecutedTransaction {}
 
   public REProcessedTxn test(byte[] payload, boolean isSigned) throws RadixEngineException {
     synchronized (lock) {
       var txn =
           isSigned
-              ? RawTransaction.create(payload)
+              ? RawLedgerTransaction.create(payload)
               : TxLowLevelBuilder.newBuilder(payload)
                   .sig(ECDSASecp256k1Signature.zeroSignature())
                   .build();
@@ -186,11 +187,12 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
   }
 
-  public REProcessedTxn addToMempool(RawTransaction transaction) throws MempoolRejectedException {
+  public REProcessedTxn addToMempool(RawLedgerTransaction transaction)
+      throws MempoolRejectedException {
     return addToMempool(transaction, null);
   }
 
-  public REProcessedTxn addToMempool(RawTransaction transaction, BFTNode origin)
+  public REProcessedTxn addToMempool(RawLedgerTransaction transaction, BFTNode origin)
       throws MempoolRejectedException {
     synchronized (lock) {
       try {
@@ -199,7 +201,9 @@ public final class RadixEngineStateComputer implements StateComputer {
         systemCounters.increment(CounterType.MEMPOOL_ADD_SUCCESS);
         systemCounters.set(CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 
-        var success = MempoolAddSuccess.create(transaction, processed, origin);
+        var success =
+            MempoolAddSuccess.create(
+                RawNotarizedTransaction.create(transaction.getPayload()), processed, origin);
         mempoolAddSuccessEventDispatcher.dispatch(success);
 
         return processed;
@@ -219,7 +223,7 @@ public final class RadixEngineStateComputer implements StateComputer {
         .forEach(
             txn -> {
               try {
-                addToMempool(txn, origin);
+                addToMempool(txn.INCORRECTInterpretDirectlyAsRawLedgerTransaction(), origin);
               } catch (MempoolDuplicateException ex) {
                 log.trace(
                     "Transaction {} was not added as it was already in the mempool",
@@ -231,7 +235,7 @@ public final class RadixEngineStateComputer implements StateComputer {
   }
 
   @Override
-  public List<RawTransaction> getTransactionsForProposal(
+  public List<RawNotarizedTransaction> getTransactionsForProposal(
       List<ExecutedTransaction> executedTransactions) {
     synchronized (lock) {
       var cmds =
@@ -241,14 +245,16 @@ public final class RadixEngineStateComputer implements StateComputer {
               .toList();
 
       // TODO: only return transactions which will not cause a missing dependency error
-      return mempool.getTransactionsForProposal(maxSigsPerRound.orElse(50), cmds);
+      return mempool.getTransactionsForProposal(maxSigsPerRound.orElse(50), cmds).stream()
+          .map(tx -> RawNotarizedTransaction.create(tx.getPayload()))
+          .toList();
     }
   }
 
   @Override
   public StateComputerResult prepare(
       List<ExecutedTransaction> previousTransactions,
-      List<RawTransaction> proposedTransactions,
+      List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     synchronized (lock) {
       var transientBranch = this.radixEngine.transientBranch();
@@ -260,7 +266,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
       successBuilder.add(systemUpdateTransaction);
 
-      var exceptionBuilder = ImmutableMap.<RawTransaction, Exception>builder();
+      var exceptionBuilder = ImmutableMap.<RawLedgerTransaction, Exception>builder();
       var nextValidatorSet =
           systemUpdateTransaction.processed().getEvents().stream()
               .filter(REEvent.NextValidatorSetEvent.class::isInstance)
@@ -279,7 +285,9 @@ public final class RadixEngineStateComputer implements StateComputer {
         this.executeUserTransactions(
             roundDetails.roundProposer(),
             transientBranch,
-            proposedTransactions,
+            proposedTransactions.stream()
+                .map(tx -> RawLedgerTransaction.create(tx.getPayload()))
+                .toList(),
             successBuilder,
             exceptionBuilder);
       }
@@ -347,7 +355,9 @@ public final class RadixEngineStateComputer implements StateComputer {
     }
 
     try {
-      final var systemUpdate = branch.construct(systemActions).buildWithoutSignature();
+      final var systemUpdate =
+          RawLedgerTransaction.create(
+              branch.construct(systemActions).buildWithoutSignature().getPayload());
       final var result = branch.execute(List.of(systemUpdate), PermissionLevel.SUPER_USER);
       return new RadixEngineTransaction(
           systemUpdate, result.getProcessedTxn(), PermissionLevel.SUPER_USER);
@@ -364,9 +374,9 @@ public final class RadixEngineStateComputer implements StateComputer {
   private void executeUserTransactions(
       BFTNode proposer,
       RadixEngineBranch<LedgerAndBFTProof> branch,
-      List<RawTransaction> nextTransactions,
+      List<RawLedgerTransaction> nextTransactions,
       ImmutableList.Builder<ExecutedTransaction> successBuilder,
-      ImmutableMap.Builder<RawTransaction, Exception> errorBuilder) {
+      ImmutableMap.Builder<RawLedgerTransaction, Exception> errorBuilder) {
     // TODO: This check should probably be done before getting into state computer
     this.maxSigsPerRound.ifPresent(
         max -> {

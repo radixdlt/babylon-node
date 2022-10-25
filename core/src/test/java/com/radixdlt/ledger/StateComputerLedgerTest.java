@@ -92,8 +92,12 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.monitoring.SystemCounters;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.REv2TestTransactions;
 import com.radixdlt.serialization.DefaultSerialization;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.TypedMocks;
@@ -108,7 +112,7 @@ import org.junit.Test;
 
 public class StateComputerLedgerTest {
 
-  private Mempool mempool;
+  private Mempool<RawNotarizedTransaction, RawNotarizedTransaction> mempool;
   private StateComputer stateComputer;
   private StateComputerLedger sut;
   private LedgerProof currentLedgerHeader;
@@ -121,9 +125,13 @@ public class StateComputerLedgerTest {
   private VertexWithHash genesisVertex;
   private QuorumCertificate genesisQC;
 
-  private final RawTransaction nextTransaction = RawTransaction.create(new byte[] {0});
+  // Doesn't matter what kind of transaction it is, but needs to be a valid tx payload
+  // to be able to convert it from NotarizedTransaction to LedgerTransaction.
+  private final RawNotarizedTransaction nextTransaction =
+      REv2TestTransactions.constructNewAccountTransaction(NetworkDefinition.LOCAL_SIMULATOR, 0, 0);
   private final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
-  private final ExecutedTransaction successfulNextTransaction = () -> nextTransaction;
+  private final ExecutedTransaction successfulNextTransaction =
+      nextTransaction::INCORRECTInterpretDirectlyAsRawLedgerTransaction;
 
   private final long genesisEpoch = 3L;
   private final long genesisStateVersion = 123L;
@@ -254,7 +262,7 @@ public class StateComputerLedgerTest {
                     accumulatorVerifier.verifyAndGetExtension(
                         ledgerHeader.getAccumulatorState(),
                         List.of(nextTransaction),
-                        RawTransaction::getPayloadHash,
+                        RawNotarizedTransaction::getPayloadHash,
                         x.getLedgerHeader().getAccumulatorState())))
         .contains(List.of(nextTransaction));
   }
@@ -273,7 +281,12 @@ public class StateComputerLedgerTest {
         LedgerHeader.create(genesisEpoch, Round.of(2), accumulatorState, 1234);
     final LedgerProof header =
         new LedgerProof(HashUtils.random256(), ledgerHeader, new TimestampedECDSASignatures());
-    var verified = CommittedTransactionsWithProof.create(List.of(nextTransaction), header);
+    var verified =
+        CommittedTransactionsWithProof.create(
+            List.of(
+                RawLedgerTransaction.create(
+                    TransactionBuilder.userTransactionToLedgerBytes(nextTransaction.getPayload()))),
+            header);
 
     // Act
     sut.syncEventProcessor().process(verified);

@@ -81,7 +81,8 @@ import com.radixdlt.statecomputer.commit.PrepareResult;
 import com.radixdlt.statemanager.*;
 import com.radixdlt.transaction.CommittedTransactionStatus;
 import com.radixdlt.transaction.ExecutedTransaction;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 
@@ -116,7 +117,8 @@ public final class StateManagerSbor {
     LoggingConfig.registerCodec(codecMap);
     StateManagerLoggingConfig.registerCodec(codecMap);
     StateManagerConfig.registerCodec(codecMap);
-    RawTransaction.registerCodec(codecMap);
+    RawLedgerTransaction.registerCodec(codecMap);
+    RawNotarizedTransaction.registerCodec(codecMap);
     TransactionStatus.registerCodec(codecMap);
     Decimal.registerCodec(codecMap);
     LogLevel.registerCodec(codecMap);

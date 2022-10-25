@@ -87,7 +87,7 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statemanager.*;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 
 public final class REv2StateManagerModule extends AbstractModule {
   private final int networkId;
@@ -267,13 +267,14 @@ public final class REv2StateManagerModule extends AbstractModule {
       install(
           new AbstractModule() {
             @Provides
-            private MempoolReader mempoolReader(RustStateComputer stateComputer) {
+            private MempoolReader<RawNotarizedTransaction> mempoolReader(
+                RustStateComputer stateComputer) {
               return stateComputer.getMempoolReader();
             }
 
             @Provides
-            private MempoolInserter<RawTransaction> mempoolInserter(
-                RustStateComputer stateComputer) {
+            private MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>
+                mempoolInserter(RustStateComputer stateComputer) {
               return stateComputer.getMempoolInserter();
             }
           });

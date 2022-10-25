@@ -67,7 +67,7 @@ package com.radixdlt.engine.parser;
 import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.REInstruction;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -75,14 +75,14 @@ import java.util.Optional;
 
 public final class ParsedTxn {
   private final List<REInstruction> instructions;
-  private final RawTransaction transaction;
+  private final RawLedgerTransaction transaction;
   private final byte[] msg;
   private final UInt256 feePaid;
   private final boolean disableResourceAllocAndDestroy;
   private final Pair<HashCode, ECDSASecp256k1Signature> payloadHashAndSig;
 
   public ParsedTxn(
-      RawTransaction transaction,
+      RawLedgerTransaction transaction,
       UInt256 feePaid,
       List<REInstruction> instructions,
       byte[] msg,
@@ -96,7 +96,7 @@ public final class ParsedTxn {
     this.disableResourceAllocAndDestroy = disableResourceAllocAndDestroy;
   }
 
-  public RawTransaction txn() {
+  public RawLedgerTransaction txn() {
     return transaction;
   }
 

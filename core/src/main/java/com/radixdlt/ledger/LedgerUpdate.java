@@ -67,7 +67,7 @@ package com.radixdlt.ledger;
 import com.google.common.collect.ClassToInstanceMap;
 import com.radixdlt.consensus.LedgerProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -88,7 +88,7 @@ public final class LedgerUpdate {
     return output;
   }
 
-  public List<RawTransaction> getNewTransactions() {
+  public List<RawLedgerTransaction> getNewTransactions() {
     return committedTransactionsWithProof.getTransactions();
   }
 

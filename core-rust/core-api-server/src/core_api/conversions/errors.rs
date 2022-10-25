@@ -14,6 +14,9 @@ pub enum MappingError {
     VirtualSubstateDownedWithInvalidParent {
         message: String,
     },
+    UnsupportedSubstatePersisted {
+        message: String,
+    },
     TransientSubstatePersisted {
         message: String,
     },

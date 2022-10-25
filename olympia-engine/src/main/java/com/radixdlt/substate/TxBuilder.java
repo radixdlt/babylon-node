@@ -78,7 +78,7 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECDSASecp256k1Signature;
 import com.radixdlt.identifiers.REAddr;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import java.nio.ByteBuffer;
@@ -575,12 +575,12 @@ public final class TxBuilder {
     return this;
   }
 
-  public RawTransaction signAndBuild(Function<HashCode, ECDSASecp256k1Signature> signer) {
+  public RawLedgerTransaction signAndBuild(Function<HashCode, ECDSASecp256k1Signature> signer) {
     var hashToSign = lowLevelBuilder.hashToSign();
     return lowLevelBuilder.sig(signer.apply(hashToSign)).build();
   }
 
-  public RawTransaction buildWithoutSignature() {
+  public RawLedgerTransaction buildWithoutSignature() {
     return lowLevelBuilder.build();
   }
 

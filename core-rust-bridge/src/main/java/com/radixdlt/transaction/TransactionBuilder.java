@@ -69,6 +69,7 @@ import static com.radixdlt.lang.Tuple.tuple;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.*;
 import com.radixdlt.exceptions.ManifestCompilationException;
+import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.rev2.NetworkDefinition;
@@ -164,15 +165,27 @@ public final class TransactionBuilder {
 
   private static native byte[] createNotarizedBytes(byte[] requestPayload);
 
-  public static byte[] userTransactionToCommittedBytes(byte[] userTransactionBytes) {
-    return userTransactionToCommitted.call(userTransactionBytes);
+  public static byte[] userTransactionToLedgerBytes(byte[] userTransactionBytes) {
+    return userTransactionToLedger.call(userTransactionBytes);
   }
 
-  private static final NativeCalls.StaticFunc1<byte[], byte[]> userTransactionToCommitted =
-      NativeCalls.StaticFunc1.with(
-          new TypeToken<>() {},
-          new TypeToken<>() {},
-          TransactionBuilder::userTransactionToCommitted);
+  public static Option<byte[]> convertTransactionBytesToNotarizedTransactionBytes(
+      byte[] transactionBytes) {
+    return transactionBytesToNotarizedTransactionBytesFn.call(transactionBytes);
+  }
 
-  private static native byte[] userTransactionToCommitted(byte[] requestPayload);
+  private static final NativeCalls.StaticFunc1<byte[], byte[]> userTransactionToLedger =
+      NativeCalls.StaticFunc1.with(
+          new TypeToken<>() {}, new TypeToken<>() {}, TransactionBuilder::userTransactionToLedger);
+
+  private static final NativeCalls.StaticFunc1<byte[], Option<byte[]>>
+      transactionBytesToNotarizedTransactionBytesFn =
+          NativeCalls.StaticFunc1.with(
+              new TypeToken<>() {},
+              new TypeToken<>() {},
+              TransactionBuilder::transactionBytesToNotarizedTransactionBytes);
+
+  private static native byte[] userTransactionToLedger(byte[] requestPayload);
+
+  private static native byte[] transactionBytesToNotarizedTransactionBytes(byte[] transactionBytes);
 }

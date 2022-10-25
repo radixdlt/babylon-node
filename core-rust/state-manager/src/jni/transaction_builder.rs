@@ -66,7 +66,7 @@ use crate::jni::java_structure::JavaStructure;
 use crate::result::StateManagerResult;
 use crate::transaction::{
     create_intent_bytes, create_manifest, create_new_account_intent_bytes, create_notarized_bytes,
-    create_set_epoch_intent, create_signed_intent_bytes, Transaction,
+    create_set_epoch_intent, create_signed_intent_bytes, LedgerTransaction,
 };
 use jni::objects::JClass;
 use jni::sys::jbyteArray;
@@ -221,17 +221,44 @@ fn do_create_notarized_bytes(args: (Vec<u8>, Signature)) -> StateManagerResult<V
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_userTransactionToCommitted(
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_userTransactionToLedger(
     env: JNIEnv,
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call_flatten_result(env, request_payload, do_user_transaction_to_committed)
+    jni_static_sbor_call_flatten_result(env, request_payload, do_user_transaction_to_ledger)
 }
 
-fn do_user_transaction_to_committed(args: Vec<u8>) -> StateManagerResult<Vec<u8>> {
-    let notarized_transaction: NotarizedTransaction = scrypto_decode(&args).unwrap();
-    Ok(scrypto_encode(&Transaction::User(notarized_transaction)))
+fn do_user_transaction_to_ledger(args: Vec<u8>) -> StateManagerResult<Vec<u8>> {
+    let notarized_transaction: NotarizedTransaction = scrypto_decode(&args)?;
+    Ok(scrypto_encode(&LedgerTransaction::User(
+        notarized_transaction,
+    )))
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_transactionBytesToNotarizedTransactionBytes(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_static_sbor_call_flatten_result(
+        env,
+        request_payload,
+        do_transaction_bytes_to_notarized_transaction_bytes,
+    )
+}
+
+fn do_transaction_bytes_to_notarized_transaction_bytes(
+    args: Vec<u8>,
+) -> StateManagerResult<Option<Vec<u8>>> {
+    let transaction: LedgerTransaction = scrypto_decode(&args)?;
+    Ok(match transaction {
+        LedgerTransaction::User(notarized_transaction) => {
+            Some(scrypto_encode(&notarized_transaction.to_bytes()))
+        }
+        LedgerTransaction::Validator(..) => None,
+    })
 }
 
 pub fn export_extern_functions() {}

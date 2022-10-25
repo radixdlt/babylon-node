@@ -79,7 +79,9 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.CommitRequest;
 import com.radixdlt.statecomputer.commit.PrepareRequest;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -122,7 +124,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public List<RawTransaction> getTransactionsForProposal(
+  public List<RawNotarizedTransaction> getTransactionsForProposal(
       List<StateComputerLedger.ExecutedTransaction> executedTransactions) {
     if (transactionsPerProposalCount == 0) {
       return List.of();
@@ -130,7 +132,12 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
     var transactionsNotToInclude =
         executedTransactions.stream()
-            .map(StateComputerLedger.ExecutedTransaction::transaction)
+            .flatMap(
+                executedTx ->
+                    TransactionBuilder.convertTransactionBytesToNotarizedTransactionBytes(
+                            executedTx.transaction().getPayload())
+                        .stream()
+                        .map(RawNotarizedTransaction::create))
             .toList();
     return stateComputer.getTransactionsForProposal(
         transactionsPerProposalCount, transactionsNotToInclude);
@@ -139,7 +146,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   @Override
   public StateComputerLedger.StateComputerResult prepare(
       List<StateComputerLedger.ExecutedTransaction> previous,
-      List<RawTransaction> proposedTransactions,
+      List<RawNotarizedTransaction> proposedTransactions,
       RoundDetails roundDetails) {
     var previousTransactions =
         previous.stream()
@@ -154,7 +161,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var result = stateComputer.prepare(prepareRequest);
     var committableTransactions =
         result.committed().stream()
-            .map(RawTransaction::create)
+            .map(RawLedgerTransaction::create)
             .map(REv2ExecutedTransaction::new)
             .map(StateComputerLedger.ExecutedTransaction.class::cast)
             .collect(Collectors.toList());
@@ -162,7 +169,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         result.rejected().stream()
             .collect(
                 Collectors.toMap(
-                    r -> RawTransaction.create(r.first()),
+                    r -> RawLedgerTransaction.create(r.first()),
                     r -> (Exception) new InvalidREv2Transaction(r.last())));
 
     return new StateComputerLedger.StateComputerResult(

@@ -85,7 +85,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.UInt64;
 import java.util.List;
@@ -117,7 +117,7 @@ public final class REv2ConsensusTransferTest {
                             10, 1, MempoolRelayConfig.of())))));
   }
 
-  private static RawTransaction createNewAccountTransaction() {
+  private static RawNotarizedTransaction createNewAccountTransaction() {
     var notary = TEST_KEY;
     var intentBytes =
         TransactionBuilder.buildNewAccountIntent(
@@ -134,7 +134,11 @@ public final class REv2ConsensusTransferTest {
 
       // Act: Submit transaction to mempool and run consensus
       var mempoolInserter =
-          test.getInstance(0, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+          test.getInstance(
+              0,
+              Key.get(
+                  new TypeLiteral<
+                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
       mempoolInserter.addTransaction(newAccountTransaction);
       test.runUntilState(allCommittedTransaction(newAccountTransaction), onlyConsensusEvents());
 
@@ -146,7 +150,7 @@ public final class REv2ConsensusTransferTest {
       var accountAmount = stateReader.getComponentXrdAmount(componentAddress);
       assertThat(accountAmount).isEqualTo(Decimal.of(1_000L));
       var systemAmount =
-          stateReader.getComponentXrdAmount(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
+          stateReader.getComponentXrdAmount(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
       assertThat(systemAmount).isLessThan(REv2Constants.GENESIS_AMOUNT);
     }
   }

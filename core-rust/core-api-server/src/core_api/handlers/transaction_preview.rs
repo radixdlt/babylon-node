@@ -70,6 +70,7 @@ fn parse_preview_request(
         signer_public_keys,
         flags: PreviewFlags {
             unlimited_loan: request.flags.unlimited_loan,
+            assume_all_signature_proofs: request.flags.assume_all_signature_proofs,
         },
     })
 }
@@ -100,8 +101,10 @@ fn to_api_response(
                 .map(|v| models::ResourceChange {
                     resource_address: bech32_encoder
                         .encode_resource_address_to_string(&v.resource_address),
-                    component_address: bech32_encoder
-                        .encode_component_address_to_string(&v.component_address),
+                    /* Currently there's no easy way of recording a component_address in resource changes;
+                    Using component_id for now (but keeping the openapi spec unchanged, so it's temporarily wrong!).
+                    Fixme once pull/550 in scrypto is merged. */
+                    component_address: to_hex(&v.component_id.0),
                     vault_entity_id: Box::new(to_vault_entity_id(&v.vault_id).into()),
                     amount_attos: to_api_decimal_attos(&v.amount),
                 })

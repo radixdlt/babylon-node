@@ -65,6 +65,7 @@
 pub mod addressing;
 pub mod java_structure;
 pub mod mempool;
+pub mod scrypto_constants;
 pub mod state_computer;
 pub mod state_manager;
 pub mod transaction_builder;

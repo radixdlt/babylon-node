@@ -107,7 +107,7 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
@@ -243,11 +243,12 @@ public class ConsensusModuleTest {
 
   private Pair<QuorumCertificate, VertexWithHash> createNextVertex(
       QuorumCertificate parent, ECKeyPair proposerKeyPair) {
-    return createNextVertex(parent, proposerKeyPair, RawTransaction.create(new byte[] {0}));
+    return createNextVertex(
+        parent, proposerKeyPair, RawNotarizedTransaction.create(new byte[] {0}));
   }
 
   private Pair<QuorumCertificate, VertexWithHash> createNextVertex(
-      QuorumCertificate parent, ECKeyPair proposerKeyPair, RawTransaction txn) {
+      QuorumCertificate parent, ECKeyPair proposerKeyPair, RawNotarizedTransaction txn) {
     final var proposerBftNode = BFTNode.create(proposerKeyPair.getPublicKey());
     var vertex = Vertex.create(parent, Round.of(1), List.of(txn), proposerBftNode).withId(hasher);
     var next =
@@ -325,10 +326,14 @@ public class ConsensusModuleTest {
     final var parentVertex = createNextVertex(parentQc, validatorKeyPair);
     final var proposedVertex1 =
         createNextVertex(
-            parentVertex.getFirst(), validatorKeyPair, RawTransaction.create(new byte[] {1}));
+            parentVertex.getFirst(),
+            validatorKeyPair,
+            RawNotarizedTransaction.create(new byte[] {1}));
     final var proposedVertex2 =
         createNextVertex(
-            parentVertex.getFirst(), validatorKeyPair, RawTransaction.create(new byte[] {2}));
+            parentVertex.getFirst(),
+            validatorKeyPair,
+            RawNotarizedTransaction.create(new byte[] {2}));
     final var unsyncedHighQC1 =
         HighQC.from(proposedVertex1.getFirst(), proposedVertex1.getFirst(), Optional.empty());
     final var unsyncedHighQC2 =

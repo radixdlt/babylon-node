@@ -72,7 +72,8 @@ import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.ExecutedTransaction;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
@@ -84,7 +85,7 @@ public final class Checkers {
   private static final Logger logger = LogManager.getLogger();
 
   public static void assertAllCommittedFailedTransaction(
-      List<Injector> nodeInjectors, RawTransaction transaction) {
+      List<Injector> nodeInjectors, RawNotarizedTransaction transaction) {
     assertThat(
             nodeInjectors.stream()
                 .allMatch(NodePredicate.committedFailedUserTransaction(transaction)))
@@ -92,8 +93,11 @@ public final class Checkers {
   }
 
   public static void assertTransactionNotCommitted(
-      List<Injector> nodeInjectors, RawTransaction transaction) {
-    assertTransactionsCommitted(nodeInjectors, t -> assertThat(t).isNotEqualTo(transaction));
+      List<Injector> nodeInjectors, RawNotarizedTransaction transaction) {
+    final var rawTransactionBytes =
+        TransactionBuilder.userTransactionToLedgerBytes(transaction.getPayload());
+    assertTransactionsCommitted(
+        nodeInjectors, t -> assertThat(t.transactionBytes()).isNotEqualTo(rawTransactionBytes));
   }
 
   public static void assertTransactionsCommitted(
@@ -114,7 +118,7 @@ public final class Checkers {
   }
 
   public static void assertOneTransactionCommittedOutOf(
-      List<Injector> nodeInjectors, List<RawTransaction> transactions) {
+      List<Injector> nodeInjectors, List<RawNotarizedTransaction> transactions) {
     nodeInjectors.forEach(
         injector -> {
           var numCommitted =

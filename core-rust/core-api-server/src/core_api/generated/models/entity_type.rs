@@ -24,6 +24,10 @@ pub enum EntityType {
     Vault,
     #[serde(rename = "KeyValueStore")]
     KeyValueStore,
+    #[serde(rename = "Global")]
+    Global,
+    #[serde(rename = "NonFungibleStore")]
+    NonFungibleStore,
 
 }
 
@@ -36,6 +40,8 @@ impl ToString for EntityType {
             Self::Package => String::from("Package"),
             Self::Vault => String::from("Vault"),
             Self::KeyValueStore => String::from("KeyValueStore"),
+            Self::Global => String::from("Global"),
+            Self::NonFungibleStore => String::from("NonFungibleStore"),
         }
     }
 }

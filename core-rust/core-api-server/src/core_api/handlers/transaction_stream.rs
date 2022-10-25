@@ -6,7 +6,7 @@ use scrypto::core::NetworkDefinition;
 
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
-use state_manager::transaction::Transaction;
+use state_manager::transaction::LedgerTransaction;
 use state_manager::{IntentHash, LedgerTransactionReceipt, SignaturesHash, UserPayloadHash};
 use std::cmp;
 use std::collections::HashMap;
@@ -78,8 +78,8 @@ fn handle_transaction_stream_internal(
         .into_iter()
         .map(|((tx, receipt, _), state_version)| {
             let notarized_tx = match tx {
-                Transaction::User(notarized) => Some(notarized),
-                Transaction::Validator(..) => None,
+                LedgerTransaction::User(notarized) => Some(notarized),
+                LedgerTransaction::Validator(..) => None,
             };
 
             let api_tx =

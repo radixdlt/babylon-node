@@ -72,7 +72,7 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -107,7 +107,7 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
                       .mapToObj(
                           i -> {
                             var receipt = transactionStore.getTransactionAtStateVersion(i).unwrap();
-                            return RawTransaction.create(receipt.transactionBytes());
+                            return RawLedgerTransaction.create(receipt.transactionBytes());
                           })
                       .collect(Collectors.toList());
 

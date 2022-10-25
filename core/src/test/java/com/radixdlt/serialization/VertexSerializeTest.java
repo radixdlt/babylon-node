@@ -73,7 +73,7 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.LedgerHeaderMock;
 import java.util.List;
 
@@ -91,7 +91,7 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 
     QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
-    var txn = RawTransaction.create(new byte[] {0, 1, 2, 3});
+    var txn = RawNotarizedTransaction.create(new byte[] {0, 1, 2, 3});
 
     return Vertex.create(qc, round, List.of(txn), BFTNode.random());
   }

@@ -63,20 +63,20 @@
  */
 
 use radix_engine::ledger::{QueryableSubstateStore, ReadableSubstateStore};
-use radix_engine::model::Vault;
+use radix_engine::model::VaultSubstate;
 use radix_engine::types::SubstateId;
-use scrypto::engine::types::RENodeId;
+use scrypto::engine::types::{GlobalAddress, RENodeId};
 use scrypto::prelude::*;
 
 use super::state_tree_traverser::*;
 
 pub struct ComponentDump {
-    pub vaults: Vec<Vault>,
+    pub vaults: Vec<VaultSubstate>,
     pub descendents: Vec<(Option<SubstateId>, RENodeId, u32)>,
 }
 
 impl StateTreeVisitor for ComponentDump {
-    fn visit_vault(&mut self, _parent_id: Option<&SubstateId>, vault: &Vault) {
+    fn visit_vault(&mut self, _parent_id: Option<&SubstateId>, vault: &VaultSubstate) {
         self.vaults.push(vault.clone());
     }
 
@@ -93,7 +93,7 @@ pub fn dump_component<S>(
 where
     S: ReadableSubstateStore + QueryableSubstateStore,
 {
-    let node_id = RENodeId::Component(component);
+    let node_id = RENodeId::Global(GlobalAddress::Component(component));
     let mut component_dump = ComponentDump {
         vaults: Vec::new(),
         descendents: Vec::new(),

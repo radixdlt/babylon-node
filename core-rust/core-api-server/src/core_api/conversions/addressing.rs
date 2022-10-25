@@ -8,56 +8,57 @@ use radix_engine::types::{
     Bech32Decoder, Bech32Encoder, ComponentAddress, NonFungibleId, PackageAddress, RENodeId,
     ResourceAddress, SubstateId,
 };
-
-pub const FAKED_SYSTEM_ADDRESS: ComponentAddress = ComponentAddress::System([
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5,
-]);
-
-#[tracing::instrument(skip_all)]
-pub fn to_api_global_entity_id_from_substate_id(
-    bech32_encoder: &Bech32Encoder,
-    substate_id: SubstateId,
-) -> Result<models::GlobalEntityId, MappingError> {
-    let mapped = to_mapped_substate_id(substate_id)?;
-    to_api_global_entity_id(bech32_encoder, mapped.into())
-}
+use scrypto::engine::types::{
+    BucketOffset, ComponentId, ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset,
+    NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset,
+    SystemOffset, VaultOffset, WorktopOffset,
+};
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_global_entity_id(
     bech32_encoder: &Bech32Encoder,
     entity_id: MappedEntityId,
-) -> Result<models::GlobalEntityId, MappingError> {
+) -> Result<GlobalEntityId, MappingError> {
     let entity_type = entity_id.entity_type;
     let address_bytes = entity_id.entity_address;
     let address_bytes_hex = to_hex(&address_bytes);
 
     let global_address_bech32m = match entity_type {
-        entity_type::EntityType::System => bech32_encoder.encode_component_address_to_string(
+        EntityType::System => bech32_encoder.encode_component_address_to_string(
             &ComponentAddress::try_from(address_bytes.as_slice()).unwrap(),
         ),
-        entity_type::EntityType::ResourceManager => bech32_encoder
-            .encode_resource_address_to_string(
-                &ResourceAddress::try_from(address_bytes.as_slice()).unwrap(),
-            ),
-        entity_type::EntityType::Component => bech32_encoder.encode_component_address_to_string(
+        EntityType::ResourceManager => bech32_encoder.encode_resource_address_to_string(
+            &ResourceAddress::try_from(address_bytes.as_slice()).unwrap(),
+        ),
+        EntityType::Component => bech32_encoder.encode_component_address_to_string(
             &ComponentAddress::try_from(address_bytes.as_slice()).unwrap(),
         ),
-        entity_type::EntityType::Package => bech32_encoder.encode_package_address_to_string(
+        EntityType::Package => bech32_encoder.encode_package_address_to_string(
             &PackageAddress::try_from(address_bytes.as_slice()).unwrap(),
         ),
-        entity_type::EntityType::Vault => {
+        EntityType::Vault => {
             return Err(MappingError::InvalidRootEntity {
                 message: "Vault".to_owned(),
             })
         }
-        entity_type::EntityType::KeyValueStore => {
+        EntityType::KeyValueStore => {
             return Err(MappingError::InvalidRootEntity {
                 message: "KeyValueStore".to_owned(),
             })
         }
+        EntityType::Global => {
+            return Err(MappingError::InvalidRootEntity {
+                message: "Global".to_owned(),
+            })
+        }
+        EntityType::NonFungibleStore => {
+            return Err(MappingError::InvalidRootEntity {
+                message: "NonFungibleStore".to_owned(),
+            })
+        }
     };
 
-    Ok(models::GlobalEntityId {
+    Ok(GlobalEntityId {
         entity_type,
         entity_address_hex: address_bytes_hex.clone(),
         global_address_hex: address_bytes_hex,
@@ -83,7 +84,7 @@ pub fn to_api_substate_id(substate_id: SubstateId) -> Result<models::SubstateId,
     })
 }
 
-/// A basic address is formed from the transaction hash and a creation index, speicifically:
+/// A basic address is formed from the transaction hash and a creation index, specifically:
 /// (tx_hash, index_in_tx_for_exec_mode + offset_for_exec_mode)
 /// There is a separate exec_mode for the manifest and the standard Application executor
 /// See id_allocator.rs for more information. - addresses are formed from (tx_hash, index_in_tx_for_exec_mode + offset_for_exec_mode)
@@ -93,6 +94,7 @@ pub fn to_api_substate_id(substate_id: SubstateId) -> Result<models::SubstateId,
 /// > If basic_address became variable length, we'd need to do something else (eg sbor encode) to ensure a 1:1 mapping there
 type BasicAddress = (scrypto::crypto::Hash, u32);
 
+#[derive(Debug)]
 pub struct MappedEntityId {
     entity_type: EntityType,
     entity_address: Vec<u8>,
@@ -119,19 +121,31 @@ impl From<MappedEntityId> for models::EntityId {
 impl TryFrom<RENodeId> for MappedEntityId {
     fn try_from(re_node_id: RENodeId) -> Result<MappedEntityId, MappingError> {
         Ok(match re_node_id {
+            RENodeId::Global(addr) => MappedEntityId::new(
+                EntityType::Global,
+                match addr {
+                    GlobalAddress::Package(addr) => addr.to_vec(),
+                    GlobalAddress::Component(addr) => addr.to_vec(),
+                    GlobalAddress::Resource(addr) => addr.to_vec(),
+                },
+            ),
             RENodeId::KeyValueStore(addr) => {
                 MappedEntityId::new(EntityType::KeyValueStore, basic_address_to_vec(&addr))
             }
-            RENodeId::Component(addr) => MappedEntityId::new(EntityType::Component, addr.to_vec()),
+            RENodeId::Component(id) => {
+                MappedEntityId::new(EntityType::Component, basic_address_to_vec(&id))
+            }
             RENodeId::Vault(addr) => {
                 MappedEntityId::new(EntityType::Vault, basic_address_to_vec(&addr))
             }
             RENodeId::ResourceManager(addr) => {
-                MappedEntityId::new(EntityType::ResourceManager, addr.to_vec())
+                MappedEntityId::new(EntityType::ResourceManager, basic_address_to_vec(&addr))
             }
-            RENodeId::Package(addr) => MappedEntityId::new(EntityType::Package, addr.to_vec()),
-            RENodeId::System => {
-                MappedEntityId::new(EntityType::System, FAKED_SYSTEM_ADDRESS.to_vec())
+            RENodeId::Package(addr) => {
+                MappedEntityId::new(EntityType::Package, basic_address_to_vec(&addr))
+            }
+            RENodeId::System(id) => {
+                MappedEntityId::new(EntityType::System, basic_address_to_vec(&id))
             }
             RENodeId::Bucket(_) => {
                 return Err(MappingError::TransientSubstatePersisted {
@@ -148,12 +162,22 @@ impl TryFrom<RENodeId> for MappedEntityId {
                     message: "Worktop persisted".to_owned(),
                 })
             }
+            RENodeId::AuthZoneStack(_) => {
+                return Err(MappingError::TransientSubstatePersisted {
+                    message: "AuthZoneStack persisted".to_owned(),
+                })
+            }
+            RENodeId::NonFungibleStore(non_fungible_store_id) => MappedEntityId::new(
+                EntityType::NonFungibleStore,
+                basic_address_to_vec(&non_fungible_store_id),
+            ),
         })
     }
 
     type Error = MappingError;
 }
 
+#[derive(Debug)]
 pub struct MappedSubstateId(EntityType, Vec<u8>, SubstateType, Vec<u8>);
 
 impl From<MappedSubstateId> for models::SubstateId {
@@ -191,84 +215,136 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
     // It's crucial that we ensure all Substate keys are locally unique
     // NOTE: If you add any transient root spaces here, ensure they're added to to_api_virtual_substate_id
     Ok(match substate_id {
+        // GLOBAL
+        SubstateId(
+            RENodeId::Global(global_address),
+            SubstateOffset::Global(GlobalOffset::Global),
+        ) => MappedSubstateId(
+            EntityType::Global,
+            match global_address {
+                GlobalAddress::Package(package_addr) => package_addr.to_vec(),
+                GlobalAddress::Resource(resource_addr) => resource_addr.to_vec(),
+                GlobalAddress::Component(component_addr) => component_addr.to_vec(),
+            },
+            SubstateType::Global,
+            vec![0],
+        ),
+
         // SYSTEM SUBSTATES
-        SubstateId::System => MappedSubstateId(
+        SubstateId(
+            RENodeId::System(component_id),
+            SubstateOffset::System(SystemOffset::System),
+        ) => MappedSubstateId(
             EntityType::System,
-            FAKED_SYSTEM_ADDRESS.to_vec(),
+            basic_address_to_vec(&component_id),
             SubstateType::System,
             vec![0],
         ),
         // COMPONENT SUBSTATES
-        SubstateId::ComponentInfo(addr) => MappedSubstateId(
+        SubstateId(
+            RENodeId::Component(component_id),
+            SubstateOffset::Component(ComponentOffset::Info),
+        ) => MappedSubstateId(
             EntityType::Component,
-            addr.to_vec(),
+            basic_address_to_vec(&component_id),
             SubstateType::ComponentInfo,
             vec![0],
         ),
-        SubstateId::ComponentState(addr) => MappedSubstateId(
+        SubstateId(
+            RENodeId::Component(component_id),
+            SubstateOffset::Component(ComponentOffset::State),
+        ) => MappedSubstateId(
             EntityType::Component,
-            addr.to_vec(),
+            basic_address_to_vec(&component_id),
             SubstateType::ComponentState,
             vec![1],
         ),
         // PACKAGE SUBSTATES
-        SubstateId::Package(addr) => MappedSubstateId(
-            EntityType::Package,
-            addr.to_vec(),
-            SubstateType::Package,
-            vec![0],
-        ),
+        SubstateId(RENodeId::Package(addr), SubstateOffset::Package(PackageOffset::Package)) => {
+            MappedSubstateId(
+                EntityType::Package,
+                basic_address_to_vec(&addr),
+                SubstateType::Package,
+                vec![0],
+            )
+        }
         // RESOURCE SUBSTATES
-        SubstateId::ResourceManager(addr) => MappedSubstateId(
+        SubstateId(
+            RENodeId::ResourceManager(addr),
+            SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
+        ) => MappedSubstateId(
             EntityType::ResourceManager,
-            addr.to_vec(),
+            basic_address_to_vec(&addr),
             SubstateType::ResourceManager,
             vec![0],
         ),
-        SubstateId::NonFungibleSpace(_) => {
+        SubstateId(
+            RENodeId::NonFungibleStore(store_id),
+            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
+        ) => MappedSubstateId(
+            EntityType::NonFungibleStore,
+            basic_address_to_vec(&store_id),
+            SubstateType::NonFungible,
+            prefix(vec![2], id.0),
+        ),
+
+        SubstateId(
+            RENodeId::NonFungibleStore(..),
+            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+        ) => {
             return Err(MappingError::VirtualRootSubstatePersisted {
                 message: "No state_update known/possible for NonFungibleSpace".to_owned(),
             })
         }
-        SubstateId::NonFungible(addr, id) => MappedSubstateId(
-            EntityType::ResourceManager,
-            addr.to_vec(),
-            SubstateType::NonFungible,
-            prefix(vec![2], id.0),
-        ),
+
         // KEY VALUE STORE SUBSTATES
-        SubstateId::KeyValueStoreSpace(_) => {
+        SubstateId(
+            RENodeId::KeyValueStore(..),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+        ) => {
             return Err(MappingError::VirtualRootSubstatePersisted {
                 message: "No state_update known/possible for KeyValueStoreSpace".to_owned(),
             })
         }
-        SubstateId::KeyValueStoreEntry(basic_address, key) => MappedSubstateId(
+        SubstateId(
+            RENodeId::KeyValueStore(id),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+        ) => MappedSubstateId(
             EntityType::KeyValueStore,
-            basic_address_to_vec(&basic_address),
+            basic_address_to_vec(&id),
             SubstateType::KeyValueStoreEntry,
             prefix(vec![1], key),
         ),
+
         // VAULT SUBSTATES
-        SubstateId::Vault(basic_address) => MappedSubstateId(
-            EntityType::Vault,
-            basic_address_to_vec(&basic_address),
-            SubstateType::Vault,
-            vec![0],
-        ),
-        // TRANSIENT? SUBSTATES
-        SubstateId::Bucket(_) => {
-            return Err(MappingError::TransientSubstatePersisted {
-                message: "Proof persisted".to_owned(),
-            })
+        SubstateId(RENodeId::Vault(vault_id), SubstateOffset::Vault(VaultOffset::Vault)) => {
+            MappedSubstateId(
+                EntityType::Vault,
+                basic_address_to_vec(&vault_id),
+                SubstateType::Vault,
+                vec![0],
+            )
         }
-        SubstateId::Proof(_) => {
+
+        // TRANSIENT? SUBSTATES
+        SubstateId(RENodeId::Bucket(..), SubstateOffset::Bucket(BucketOffset::Bucket)) => {
             return Err(MappingError::TransientSubstatePersisted {
                 message: "Bucket persisted".to_owned(),
             })
         }
-        SubstateId::Worktop => {
+        SubstateId(RENodeId::Proof(..), SubstateOffset::Proof(ProofOffset::Proof)) => {
+            return Err(MappingError::TransientSubstatePersisted {
+                message: "Proof persisted".to_owned(),
+            })
+        }
+        SubstateId(RENodeId::Worktop, SubstateOffset::Worktop(WorktopOffset::Worktop)) => {
             return Err(MappingError::TransientSubstatePersisted {
                 message: "Worktop persisted".to_owned(),
+            })
+        }
+        _ => {
+            return Err(MappingError::UnsupportedSubstatePersisted {
+                message: format!("Unsupported substate persisted: {:?}", substate_id),
             })
         }
     })
@@ -281,16 +357,22 @@ pub fn to_api_virtual_substate_id(
     // These should match the ids of the keys
     let sub_id = match root_substate_id {
         // NonFungibleSpace key is downed to create a NonFungible
-        SubstateId::NonFungibleSpace(addr) => MappedSubstateId(
-            EntityType::ResourceManager,
-            addr.to_vec(),
+        SubstateId(
+            RENodeId::NonFungibleStore(store_id),
+            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
+        ) => MappedSubstateId(
+            EntityType::NonFungibleStore,
+            basic_address_to_vec(&store_id),
             SubstateType::NonFungible,
             prefix(vec![2], key),
         ),
         // KeyValueStoreSpace key is downed to create a KeyValueStoreEntry
-        SubstateId::KeyValueStoreSpace(basic_address) => MappedSubstateId(
+        SubstateId(
+            RENodeId::KeyValueStore(store_id),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
+        ) => MappedSubstateId(
             EntityType::KeyValueStore,
-            basic_address_to_vec(&basic_address),
+            basic_address_to_vec(&store_id),
             SubstateType::KeyValueStoreEntry,
             prefix(vec![1], key),
         ),
@@ -309,16 +391,30 @@ pub fn to_api_virtual_substate_id(
     })
 }
 
-pub fn to_component_entity_id(component_address: &ComponentAddress) -> MappedEntityId {
+pub fn to_global_component_entity_id(component_address: &ComponentAddress) -> MappedEntityId {
+    MappedEntityId {
+        entity_type: EntityType::Global,
+        entity_address: component_address.to_vec(),
+    }
+}
+
+pub fn to_component_entity_id(component_id: &ComponentId) -> MappedEntityId {
     MappedEntityId {
         entity_type: EntityType::Component,
-        entity_address: component_address.to_vec(),
+        entity_address: basic_address_to_vec(component_id),
     }
 }
 
 pub fn to_resource_entity_id(resource_address: &ResourceAddress) -> MappedEntityId {
     MappedEntityId {
         entity_type: EntityType::ResourceManager,
+        entity_address: resource_address.to_vec(),
+    }
+}
+
+pub fn to_global_resource_entity_id(resource_address: &ResourceAddress) -> MappedEntityId {
+    MappedEntityId {
+        entity_type: EntityType::Global,
         entity_address: resource_address.to_vec(),
     }
 }
@@ -378,7 +474,7 @@ pub fn extract_non_fungible_id(non_fungible_id: &str) -> Result<NonFungibleId, E
 
 // NB - see id_allocator.rs - addresses are formed from (tx_hash, index_in_tx_for_exec_mode + offset_for_exec_mode)
 // There is a separate exec_mode for the manifest and the standard Application executor
-fn basic_address_to_vec(basic_address: &BasicAddress) -> Vec<u8> {
+pub fn basic_address_to_vec(basic_address: &BasicAddress) -> Vec<u8> {
     // NOTE - this only works because the trunc of basic_address is of fixed length.
     // If basic_address became variable length, we'd need to do something else (eg sbor encode) to ensure a 1:1 mapping here
 

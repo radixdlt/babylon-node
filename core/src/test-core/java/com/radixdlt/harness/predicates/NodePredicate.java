@@ -70,7 +70,8 @@ import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.CommittedTransactionStatus;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transaction.TransactionBuilder;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.function.Predicate;
 
 public class NodePredicate {
@@ -78,10 +79,11 @@ public class NodePredicate {
     throw new IllegalStateException("Cannot instanitate.");
   }
 
-  public static Predicate<Injector> committedFailedUserTransaction(RawTransaction userTransaction) {
+  public static Predicate<Injector> committedFailedUserTransaction(
+      RawNotarizedTransaction userTransaction) {
     var committedTransaction =
-        RawTransaction.create(
-            TransactionBuilder.userTransactionToCommittedBytes(userTransaction.getPayload()));
+        RawLedgerTransaction.create(
+            TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
     return i -> {
       var store = i.getInstance(REv2TransactionAndProofStore.class);
       for (long version = 1; true; version++) {
@@ -100,10 +102,11 @@ public class NodePredicate {
     };
   }
 
-  public static Predicate<Injector> committedUserTransaction(RawTransaction userTransaction) {
+  public static Predicate<Injector> committedUserTransaction(
+      RawNotarizedTransaction userTransaction) {
     var committedTransaction =
-        RawTransaction.create(
-            TransactionBuilder.userTransactionToCommittedBytes(userTransaction.getPayload()));
+        RawLedgerTransaction.create(
+            TransactionBuilder.userTransactionToLedgerBytes(userTransaction.getPayload()));
     return i -> {
       var store = i.getInstance(REv2TransactionAndProofStore.class);
       for (long version = 1; true; version++) {

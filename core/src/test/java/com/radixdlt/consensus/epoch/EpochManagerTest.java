@@ -119,7 +119,7 @@ import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
@@ -153,7 +153,7 @@ public class EpochManagerTest {
         }
 
         @Override
-        public List<RawTransaction> getTransactionsForProposal(
+        public List<RawNotarizedTransaction> getTransactionsForProposal(
             List<ExecutedTransaction> executedTransactions) {
           return List.of();
         }
@@ -161,7 +161,7 @@ public class EpochManagerTest {
         @Override
         public StateComputerResult prepare(
             List<ExecutedTransaction> previous,
-            List<RawTransaction> proposedTransactions,
+            List<RawNotarizedTransaction> proposedTransactions,
             RoundDetails roundDetails) {
           return new StateComputerResult(List.of(), Map.of());
         }

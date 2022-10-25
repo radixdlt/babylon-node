@@ -7,12 +7,12 @@ use transaction::model::NotarizedTransaction;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum Transaction {
+pub enum LedgerTransaction {
     User(NotarizedTransaction),
     Validator(ValidatorTransaction),
 }
 
-impl Transaction {
+impl LedgerTransaction {
     pub fn get_hash(&self) -> TransactionPayloadHash {
         TransactionPayloadHash::for_transaction(self)
     }

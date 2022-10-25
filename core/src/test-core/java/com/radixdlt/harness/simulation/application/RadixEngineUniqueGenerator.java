@@ -73,22 +73,22 @@ import com.radixdlt.rev1.checkpoint.Genesis;
 import com.radixdlt.rev1.forks.CurrentForkView;
 import com.radixdlt.substate.SubstateId;
 import com.radixdlt.substate.TxBuilder;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import java.nio.charset.StandardCharsets;
 
 /**
  * Generates a new unique rri consumer transaction. Because new addresses are used on every call,
  * the transaction should never fail when executed on a radix engine.
  */
-public class RadixEngineUniqueGenerator implements TransactionGenerator {
+public class RadixEngineUniqueGenerator implements TransactionGenerator<RawLedgerTransaction> {
   @Inject private REParser parser;
 
   @Inject private CurrentForkView currentForkView;
 
-  @Inject @Genesis private RawTransaction genesis;
+  @Inject @Genesis private RawLedgerTransaction genesis;
 
   @Override
-  public RawTransaction nextTransaction() {
+  public RawLedgerTransaction nextTransaction() {
     var keyPair = ECKeyPair.generateNew();
     var addr = REAddr.ofHashedKey(keyPair.getPublicKey(), "smthng");
     var builder =

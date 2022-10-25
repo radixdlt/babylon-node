@@ -68,14 +68,14 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.utils.UInt64;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 public record CommitRequest(
-    List<RawTransaction> transactions,
+    List<RawLedgerTransaction> transactions,
     UInt64 stateVersion,
     byte[] proofBytes,
     Option<byte[]> vertexStoreBytes) {

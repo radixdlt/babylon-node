@@ -73,6 +73,7 @@ import com.radixdlt.mempool.MempoolReader;
 import com.radixdlt.rev1.LedgerAndBFTProof;
 import com.radixdlt.rev1.RadixEngineMempool;
 import com.radixdlt.rev1.RadixEngineStateComputer;
+import com.radixdlt.transactions.RawLedgerTransaction;
 
 public class RadixEngineStateComputerModule extends AbstractModule {
   private final int mempoolSize;
@@ -87,10 +88,12 @@ public class RadixEngineStateComputerModule extends AbstractModule {
     bind(StateComputerLedger.StateComputer.class)
         .to(RadixEngineStateComputer.class)
         .in(Scopes.SINGLETON);
-    bind(new TypeLiteral<Mempool<?>>() {}).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
-    bind(MempoolReader.class).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
+    bind(new TypeLiteral<Mempool<?, ?>>() {}).to(RadixEngineMempool.class).in(Scopes.SINGLETON);
+    bind(new TypeLiteral<MempoolReader<RawLedgerTransaction>>() {})
+        .to(RadixEngineMempool.class)
+        .in(Scopes.SINGLETON);
 
-    bind(new TypeLiteral<Mempool<REProcessedTxn>>() {})
+    bind(new TypeLiteral<Mempool<RawLedgerTransaction, REProcessedTxn>>() {})
         .to(RadixEngineMempool.class)
         .in(Scopes.SINGLETON);
   }

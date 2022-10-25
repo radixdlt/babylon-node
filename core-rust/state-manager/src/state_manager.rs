@@ -76,31 +76,38 @@ use prometheus::{IntCounter, IntCounterVec, IntGauge, Registry};
 use radix_engine::constants::{
     DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
+use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::fee::SystemLoanFeeReserve;
+use radix_engine::model::SystemSubstate;
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     ExecutionConfig, FeeReserveConfig, PreviewError, PreviewExecutor, PreviewResult,
     TransactionExecutor, TransactionOutcome, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::SubstateId;
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
-use scrypto::engine::types::RENodeId;
+use radix_engine::wasm::{
+    DefaultWasmEngine, DefaultWasmInstance, InstructionCostRules, WasmInstrumenter,
+    WasmMeteringParams,
+};
+use scrypto::engine::types::{GlobalAddress, RENodeId};
 use scrypto::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
+use std::marker::PhantomData;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::info;
 
 use transaction::errors::TransactionValidationError;
 use transaction::model::{
-    NotarizedTransaction, PreviewFlags, PreviewIntent, TransactionHeader, TransactionIntent,
-    Validated,
+    Executable, NotarizedTransaction, PreviewFlags, PreviewIntent, TransactionHeader,
+    TransactionIntent,
 };
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::{TestIntentHashManager, ValidationConfig};
 
 use crate::transaction::{
-    CommittedTransactionValidator, Transaction, UserTransactionValidator, ValidatorTransaction,
+    CommittedTransactionValidator, LedgerTransaction, UserTransactionValidator,
+    ValidatorTransaction,
 };
 
 #[derive(Debug, TypeId, Encode, Decode, Clone)]
@@ -196,9 +203,8 @@ pub struct StateManager<S> {
     rounds_per_epoch: u64,
     pub counters: Counters,
     pub prometheus_registry: Registry,
-    wasm_engine: DefaultWasmEngine,
-    wasm_instrumenter: WasmInstrumenter,
     execution_config: ExecutionConfig,
+    wasm_metering_params: WasmMeteringParams,
     fee_reserve_config: FeeReserveConfig,
     intent_hash_manager: TestIntentHashManager,
     logging_config: StateManagerLoggingConfig,
@@ -240,8 +246,6 @@ impl<S> StateManager<S> {
             network,
             mempool,
             store,
-            wasm_engine: DefaultWasmEngine::new(),
-            wasm_instrumenter: WasmInstrumenter::new(),
             user_transaction_validator,
             committed_transaction_validator,
             rounds_per_epoch,
@@ -249,6 +253,10 @@ impl<S> StateManager<S> {
                 max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                 trace: logging_config.engine_trace,
             },
+            wasm_metering_params: WasmMeteringParams::new(
+                InstructionCostRules::tiered(1, 5, 10, 5000),
+                512,
+            ),
             fee_reserve_config: FeeReserveConfig {
                 cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
                 system_loan: DEFAULT_SYSTEM_LOAN,
@@ -266,6 +274,17 @@ impl<S> StateManager<S>
 where
     S: ReadableSubstateStore,
 {
+    fn new_scrypto_interpreter(
+        &self,
+    ) -> ScryptoInterpreter<DefaultWasmInstance, DefaultWasmEngine> {
+        ScryptoInterpreter {
+            wasm_engine: DefaultWasmEngine::new(),
+            wasm_instrumenter: WasmInstrumenter::new(),
+            wasm_metering_params: self.wasm_metering_params.clone(),
+            phantom: PhantomData,
+        }
+    }
+
     pub fn preview(
         &mut self,
         preview_request: PreviewRequest,
@@ -291,13 +310,15 @@ where
             signer_public_keys: preview_request.signer_public_keys,
             flags: PreviewFlags {
                 unlimited_loan: preview_request.flags.unlimited_loan,
+                assume_all_signature_proofs: preview_request.flags.assume_all_signature_proofs,
             },
         };
 
+        let mut scrypto_interpreter = self.new_scrypto_interpreter();
+
         PreviewExecutor::new(
             &mut self.store,
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
+            &mut scrypto_interpreter,
             &self.intent_hash_manager,
             &self.network,
         )
@@ -321,17 +342,16 @@ where
             .user_transaction_validator
             .validate_user_transaction(self.get_epoch(), transaction.clone())?;
 
+        let mut scrypto_interpreter = self.new_scrypto_interpreter();
+
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
         let mut staged_store = staged_store_manager.get_output_store(staged_node);
 
-        let mut transaction_executor = TransactionExecutor::new(
-            &mut staged_store,
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
-        );
+        let mut transaction_executor =
+            TransactionExecutor::new(&mut staged_store, &mut scrypto_interpreter);
         let receipt = transaction_executor.execute(
-            &validated_transaction,
+            &validated_transaction.executable,
             &self.fee_reserve_config,
             &self.execution_config,
         );
@@ -494,7 +514,9 @@ where
             .map_err(RejectionReason::ValidationError)?;
 
         match receipt.result {
-            TransactionResult::Reject(result) => Err(RejectionReason::FromExecution(result.error)),
+            TransactionResult::Reject(result) => {
+                Err(RejectionReason::FromExecution(Box::new(result.error)))
+            }
             TransactionResult::Commit(..) => Ok(()),
         }
     }
@@ -548,14 +570,13 @@ where
         already_committed_or_prepared_intent_hashes
             .extend(already_committed_proposed_payload_hashes);
 
+        let mut scrypto_interpreter = self.new_scrypto_interpreter();
+
         let mut staged_store_manager = StagedSubstateStoreManager::new(&mut self.store);
         let staged_node = staged_store_manager.new_child_node(0);
         let mut staged_store = staged_store_manager.get_output_store(staged_node);
-        let mut transaction_executor = TransactionExecutor::new(
-            &mut staged_store,
-            &mut self.wasm_engine,
-            &mut self.wasm_instrumenter,
-        );
+        let mut transaction_executor =
+            TransactionExecutor::new(&mut staged_store, &mut scrypto_interpreter);
 
         for prepared in prepare_request.already_prepared_payloads {
             let validated_transaction = self
@@ -563,13 +584,15 @@ where
                 .parse_and_validate_transaction_slice(current_epoch, &prepared)
                 .expect("Already prepared transactions should be decodeable");
 
-            if let Transaction::User(notarized_transaction) = validated_transaction.transaction() {
+            if let LedgerTransaction::User(notarized_transaction) =
+                &validated_transaction.transaction
+            {
                 already_committed_or_prepared_intent_hashes
                     .insert(notarized_transaction.intent_hash());
             }
 
             let receipt = transaction_executor.execute_and_commit(
-                &validated_transaction,
+                &validated_transaction.executable,
                 &self.fee_reserve_config,
                 &self.execution_config,
             );
@@ -577,8 +600,9 @@ where
                 TransactionResult::Commit(commit_result) => {
                     // Temporary workaround to keep current_epoch in sync until transaction epoch validation lives in the engine
                     for (substate_id, output_value) in commit_result.state_updates.up_substates {
-                        if let SubstateId::System = substate_id {
-                            current_epoch = output_value.substate.system().epoch;
+                        if let SubstateId(RENodeId::System(..), ..) = substate_id {
+                            let system: SystemSubstate = output_value.substate.to_runtime().into();
+                            current_epoch = system.epoch;
                         }
                     }
                 }
@@ -595,14 +619,14 @@ where
 
         if prepare_request.round_number % self.rounds_per_epoch == 0 {
             let new_epoch = (prepare_request.round_number / self.rounds_per_epoch) + 1;
-            let epoch_update_txn: Validated<ValidatorTransaction> =
-                ValidatorTransaction::EpochUpdate(new_epoch).into();
+            let epoch_update_txn = ValidatorTransaction::EpochUpdate(new_epoch);
+            let executable: Executable = epoch_update_txn.into();
 
             let mut fee_reserve = SystemLoanFeeReserve::default();
             // TODO: Clean up fee reserve
             fee_reserve.credit(10_000_000);
             let receipt = transaction_executor.execute_with_fee_reserve(
-                &epoch_update_txn,
+                &executable,
                 &self.execution_config,
                 fee_reserve,
             );
@@ -611,9 +635,8 @@ where
                     if let TransactionOutcome::Failure(failure) = commit_result.outcome {
                         panic!("Epoch Update failed: {:?}", failure);
                     }
-                    let serialized_validated_txn = scrypto_encode(&Transaction::Validator(
-                        epoch_update_txn.into_transaction(),
-                    ));
+                    let serialized_validated_txn =
+                        scrypto_encode(&LedgerTransaction::Validator(epoch_update_txn));
                     committed.push(serialized_validated_txn);
                 }
                 TransactionResult::Reject(reject_result) => {
@@ -631,8 +654,8 @@ where
                 .parse_and_validate_user_transaction_slice(current_epoch, &proposed_payload);
 
             match validation_result {
-                Result::Ok(validated) => {
-                    let intent_hash = validated.intent_hash();
+                Ok(validated) => {
+                    let intent_hash = validated.transaction.intent_hash();
                     if already_committed_or_prepared_intent_hashes.contains(&intent_hash) {
                         rejected.push((
                             proposed_payload,
@@ -642,7 +665,7 @@ where
                     }
 
                     let receipt = transaction_executor.execute_and_commit(
-                        &validated,
+                        &validated.executable,
                         &self.fee_reserve_config,
                         &self.execution_config,
                     );
@@ -650,9 +673,9 @@ where
                     match receipt.result {
                         TransactionResult::Commit(..) => {
                             already_committed_or_prepared_intent_hashes
-                                .insert(validated.intent_hash());
+                                .insert(validated.transaction.intent_hash());
                             let serialized_validated_txn =
-                                scrypto_encode(&Transaction::User(validated.into_transaction()));
+                                scrypto_encode(&LedgerTransaction::User(validated.transaction));
                             committed.push(serialized_validated_txn);
                         }
                         TransactionResult::Reject(reject_result) => {
@@ -706,8 +729,8 @@ where
                         .committed_transaction_validator
                         .parse_and_validate_transaction_slice(current_epoch, &t)
                         .expect("Error on Byzantine quorum");
-                    if let Transaction::Validator(ValidatorTransaction::EpochUpdate(epoch)) =
-                        txn.transaction()
+                    if let LedgerTransaction::Validator(ValidatorTransaction::EpochUpdate(epoch)) =
+                        &txn.transaction
                     {
                         current_epoch = *epoch;
                     }
@@ -717,6 +740,8 @@ where
                 .collect::<Vec<_>>()
         };
 
+        let mut scrypto_interpreter = self.new_scrypto_interpreter();
+
         let mut db_transaction = self.store.create_db_transaction();
         let ids_count: u64 = payload_hashes
             .len()
@@ -725,14 +750,11 @@ where
         let mut current_state_version = commit_request.state_version - ids_count;
 
         for validated_txn in transactions_to_commit {
-            let mut transaction_executor = TransactionExecutor::new(
-                &mut db_transaction,
-                &mut self.wasm_engine,
-                &mut self.wasm_instrumenter,
-            );
+            let mut transaction_executor =
+                TransactionExecutor::new(&mut db_transaction, &mut scrypto_interpreter);
 
             let engine_receipt = transaction_executor.execute_and_commit(
-                &validated_txn,
+                &validated_txn.executable,
                 &self.fee_reserve_config,
                 &self.execution_config,
             );
@@ -745,9 +767,9 @@ where
                     )
                 });
 
-            let transaction = validated_txn.into_transaction();
+            let transaction = validated_txn.transaction;
             let payload_hash = transaction.get_hash();
-            if let Transaction::User(notarized_transaction) = &transaction {
+            if let LedgerTransaction::User(notarized_transaction) = &transaction {
                 let intent_hash = notarized_transaction.intent_hash();
                 intent_hashes.push(intent_hash);
             }
@@ -802,8 +824,10 @@ impl<S: ReadableSubstateStore + QueryableSubstateStore> StateManager<S> {
     ) -> Option<HashMap<ResourceAddress, Decimal>> {
         let mut resource_accounter = ResourceAccounter::new(&self.store);
         resource_accounter
-            .add_resources(RENodeId::Component(component_address))
-            .map_or(Option::None, |()| Some(resource_accounter.into_map()))
+            .add_resources(RENodeId::Global(GlobalAddress::Component(
+                component_address,
+            )))
+            .map_or(None, |()| Some(resource_accounter.into_map()))
     }
 
     pub fn get_epoch(&self) -> u64 {

@@ -64,11 +64,10 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.transactions.RawTransaction;
 import java.util.List;
 
-public interface MempoolReader {
-  List<RawTransaction> getTransactionsToRelay();
+public interface MempoolReader<RawTx> {
+  List<RawTx> getTransactionsToRelay();
 
   int getCount();
 }

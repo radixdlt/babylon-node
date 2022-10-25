@@ -71,7 +71,7 @@ import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.exceptions.Bech32DecodeException;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.ComponentAddress;
+import com.radixdlt.rev2.ScryptoConstants;
 import com.radixdlt.serialization.DeserializeException;
 import org.junit.Test;
 
@@ -80,17 +80,17 @@ public class AddressingTest {
   public void test_system_faucet_address_encoded_correctly() {
     assertThat(
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                .encodeSystemComponentAddress(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS))
-        .isEqualTo("system_test1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsfkwqvf");
+                .encodeNormalComponentAddress(ScryptoConstants.FAUCET_COMPONENT_ADDRESS))
+        .isEqualTo("component_test1qftacppvmr9ezmekxqpq58en0nk954x0a7jv2zz0hc7qxmn0qc");
   }
 
   @Test
   public void test_system_faucet_address_decoded_correctly() {
     assertThat(
             Addressing.ofNetwork(Network.INTEGRATIONTESTNET)
-                .decodeSystemComponentAddress(
-                    "system_test1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsfkwqvf"))
-        .isEqualTo(ComponentAddress.SYSTEM_FAUCET_COMPONENT_ADDRESS);
+                .decodeNormalComponentAddress(
+                    "component_test1qftacppvmr9ezmekxqpq58en0nk954x0a7jv2zz0hc7qxmn0qc"))
+        .isEqualTo(ScryptoConstants.FAUCET_COMPONENT_ADDRESS);
   }
 
   @Test

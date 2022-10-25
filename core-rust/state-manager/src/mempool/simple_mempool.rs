@@ -105,7 +105,7 @@ impl SimpleMempool {
         let intent_hash = transaction.intent_hash;
 
         match self.data.entry(payload_hash) {
-            Entry::Occupied(_) => Err(MempoolAddError::Duplicate)?,
+            Entry::Occupied(_) => return Err(MempoolAddError::Duplicate),
             Entry::Vacant(e) => {
                 // Insert Transaction into vacant entry in the mempool.
                 e.insert(MempoolData::create(transaction));

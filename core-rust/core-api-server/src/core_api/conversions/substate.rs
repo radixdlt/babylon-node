@@ -1,42 +1,48 @@
-use std::cell::Ref;
 use std::collections::BTreeSet;
 
 use super::*;
 use crate::core_api::models;
 use models::EntityType;
 
-use radix_engine::engine::Substate;
+use crate::core_api::models::SborData;
 use radix_engine::model::{
-    ComponentInfo, ComponentState, KeyValueStoreEntryWrapper, NonFungible, NonFungibleWrapper,
-    Package, ResourceContainer, ResourceManager, System, Vault,
+    ComponentInfoSubstate, ComponentStateSubstate, GlobalAddressSubstate,
+    KeyValueStoreEntrySubstate, NonFungible, NonFungibleSubstate, PackageSubstate,
+    PersistedSubstate, Resource, ResourceManagerSubstate, SystemSubstate, VaultSubstate,
 };
 use radix_engine::types::{Decimal, NonFungibleId, ResourceAddress, ScryptoValue, SubstateId};
 use scrypto::address::Bech32Encoder;
-use scrypto::prelude::ResourceType;
+use scrypto::engine::types::{
+    KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateOffset,
+};
+use scrypto::prelude::{scrypto_encode, ResourceType};
 
 use super::MappingError;
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_substate(
     substate_id: &SubstateId,
-    substate: &Substate,
+    substate: &PersistedSubstate,
     bech32_encoder: &Bech32Encoder,
 ) -> Result<models::Substate, MappingError> {
     Ok(match substate {
-        Substate::System(system) => to_api_system_substate(system)?,
-        Substate::Resource(resource_manager) => to_api_resource_substate(resource_manager),
-        Substate::ComponentInfo(component_info) => {
+        PersistedSubstate::Global(global) => to_api_global_substate(global)?,
+        PersistedSubstate::System(system) => to_api_system_substate(system)?,
+        PersistedSubstate::ResourceManager(resource_manager) => {
+            to_api_resource_substate(resource_manager)
+        }
+        PersistedSubstate::ComponentInfo(component_info) => {
             to_api_component_info_substate(component_info, bech32_encoder)
         }
-        Substate::ComponentState(component_state) => {
+        PersistedSubstate::ComponentState(component_state) => {
             to_api_component_state_substate(bech32_encoder, component_state)?
         }
-        Substate::Package(package) => to_api_package_substate(package),
-        Substate::Vault(vault) => to_api_vault_substate(bech32_encoder, vault)?,
-        Substate::NonFungible(non_fungible_wrapper) => {
+        PersistedSubstate::Package(package) => to_api_package_substate(package),
+        PersistedSubstate::Vault(vault) => to_api_vault_substate(bech32_encoder, vault)?,
+        PersistedSubstate::NonFungible(non_fungible_wrapper) => {
             to_api_non_fungible_substate(bech32_encoder, substate_id, non_fungible_wrapper)?
         }
-        Substate::KeyValueStoreEntry(kv_store_entry_wrapper) => {
+        PersistedSubstate::KeyValueStoreEntry(kv_store_entry_wrapper) => {
             to_api_key_value_story_entry_substate(
                 bech32_encoder,
                 substate_id,
@@ -46,15 +52,24 @@ pub fn to_api_substate(
     })
 }
 
-fn to_api_system_substate(system: &System) -> Result<models::Substate, MappingError> {
+fn to_api_global_substate(
+    global: &GlobalAddressSubstate,
+) -> Result<models::Substate, MappingError> {
+    Ok(models::Substate::GlobalSubstate {
+        entity_type: EntityType::Global,
+        target_entity_address_hex: to_hex(basic_address_to_vec(&global.node_deref().into())),
+    })
+}
+
+fn to_api_system_substate(system: &SystemSubstate) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::SystemSubstate {
         entity_type: EntityType::System,
         epoch: to_api_epoch(system.epoch)?,
     })
 }
 
-pub fn to_api_resource_substate(resource_manager: &ResourceManager) -> models::Substate {
-    let (resource_type, fungible_divisibility) = match resource_manager.resource_type() {
+pub fn to_api_resource_substate(resource_manager: &ResourceManagerSubstate) -> models::Substate {
+    let (resource_type, fungible_divisibility) = match resource_manager.resource_type {
         ResourceType::Fungible { divisibility } => {
             (models::ResourceType::Fungible, Some(divisibility as i32))
         }
@@ -66,37 +81,37 @@ pub fn to_api_resource_substate(resource_manager: &ResourceManager) -> models::S
         resource_type,
         fungible_divisibility,
         metadata: resource_manager
-            .metadata()
+            .metadata
             .iter()
             .map(|(k, v)| models::ResourceManagerSubstateAllOfMetadata {
                 key: k.clone(),
                 value: v.clone(),
             })
             .collect(),
-        total_supply_attos: to_api_decimal_attos(&resource_manager.total_supply()),
+        total_supply_attos: to_api_decimal_attos(&resource_manager.total_supply),
     }
 }
 
 pub fn to_api_component_info_substate(
-    component_info: &ComponentInfo,
+    component_info: &ComponentInfoSubstate,
     bech32_encoder: &Bech32Encoder,
 ) -> models::Substate {
     // TODO: map access_rules
     models::Substate::ComponentInfoSubstate {
         entity_type: EntityType::Component,
         package_address: bech32_encoder
-            .encode_package_address_to_string(&component_info.package_address()),
-        blueprint_name: component_info.blueprint_name().to_string(),
+            .encode_package_address_to_string(&component_info.package_address),
+        blueprint_name: component_info.blueprint_name.to_string(),
     }
 }
 
 pub fn to_api_component_state_substate(
     bech32_encoder: &Bech32Encoder,
-    component_state: &ComponentState,
+    component_state: &ComponentStateSubstate,
 ) -> Result<models::Substate, MappingError> {
     Ok(models::Substate::ComponentStateSubstate {
         entity_type: EntityType::Component,
-        data_struct: Box::new(to_api_data_struct(bech32_encoder, component_state.state())?),
+        data_struct: Box::new(to_api_data_struct(bech32_encoder, &component_state.raw)?),
     })
 }
 
@@ -106,7 +121,7 @@ fn scrypto_value_to_api_data_struct(
 ) -> Result<models::DataStruct, MappingError> {
     let entities = extract_entities(&scrypto_value)?;
     Ok(models::DataStruct {
-        struct_data: Box::new(models::SborData {
+        struct_data: Box::new(SborData {
             data_hex: to_hex(scrypto_value.raw),
             data_json: Some(convert_scrypto_sbor_value_to_json(
                 bech32_encoder,
@@ -138,7 +153,7 @@ fn extract_entities(struct_scrypto_value: &ScryptoValue) -> Result<Entities, Map
     let mut owned_entities = Vec::<models::EntityId>::new();
     owned_entities.extend(
         struct_scrypto_value
-            .owned_component_addresses
+            .component_ids
             .iter()
             .map(|x| to_component_entity_id(x).into()),
     );
@@ -160,13 +175,13 @@ fn extract_entities(struct_scrypto_value: &ScryptoValue) -> Result<Entities, Map
         struct_scrypto_value
             .refed_component_addresses
             .iter()
-            .map(|x| to_component_entity_id(x).into()),
+            .map(|x| to_global_component_entity_id(x).into()),
     );
     referenced_entities.extend(
         struct_scrypto_value
             .resource_addresses
             .iter()
-            .map(|x| to_resource_entity_id(x).into()),
+            .map(|x| to_global_resource_entity_id(x).into()),
     );
 
     Ok(Entities {
@@ -175,7 +190,7 @@ fn extract_entities(struct_scrypto_value: &ScryptoValue) -> Result<Entities, Map
     })
 }
 
-pub fn to_api_package_substate(package: &Package) -> models::Substate {
+pub fn to_api_package_substate(package: &PackageSubstate) -> models::Substate {
     // TODO: map blueprint_abis
     models::Substate::PackageSubstate {
         entity_type: EntityType::Package,
@@ -185,34 +200,28 @@ pub fn to_api_package_substate(package: &Package) -> models::Substate {
 
 pub fn to_api_vault_substate(
     bech32_encoder: &Bech32Encoder,
-    vault: &Vault,
+    vault: &VaultSubstate,
 ) -> Result<models::Substate, MappingError> {
-    let _resource_container = vault.borrow_container();
     Ok(models::Substate::VaultSubstate {
         entity_type: EntityType::Vault,
-        resource_amount: Box::new(to_api_resource_amount(
-            bech32_encoder,
-            vault.borrow_container(),
-        )?),
+        resource_amount: Box::new(to_api_resource_amount(bech32_encoder, &vault.0)?),
     })
 }
 
 fn to_api_resource_amount(
     bech32_encoder: &Bech32Encoder,
-    resource_container: Ref<ResourceContainer>,
+    resource: &Resource,
 ) -> Result<models::ResourceAmount, MappingError> {
-    Ok(match *resource_container {
-        ResourceContainer::Fungible {
+    Ok(match resource {
+        Resource::Fungible {
             ref resource_address,
             divisibility: _,
-            locked_amounts: _,
-            ref liquid_amount,
-        } => to_api_fungible_resource_amount(bech32_encoder, resource_address, liquid_amount)?,
-        ResourceContainer::NonFungible {
+            amount,
+        } => to_api_fungible_resource_amount(bech32_encoder, resource_address, amount)?,
+        Resource::NonFungible {
             ref resource_address,
-            locked_ids: _,
-            ref liquid_ids,
-        } => to_api_non_fungible_resource_amount(bech32_encoder, resource_address, liquid_ids)?,
+            ids,
+        } => to_api_non_fungible_resource_amount(bech32_encoder, resource_address, ids)?,
     })
 }
 
@@ -246,13 +255,16 @@ fn to_api_non_fungible_resource_amount(
 pub fn to_api_non_fungible_substate(
     bech32_encoder: &Bech32Encoder,
     substate_id: &SubstateId,
-    non_fungible: &NonFungibleWrapper,
+    non_fungible: &NonFungibleSubstate,
 ) -> Result<models::Substate, MappingError> {
     let nf_id_bytes = match substate_id {
-        SubstateId::NonFungible(_, nf_id) => &nf_id.0,
+        SubstateId(
+            RENodeId::NonFungibleStore(..),
+            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(nf_id)),
+        ) => &nf_id.0,
         _ => {
             return Err(MappingError::MismatchedSubstateId {
-                message: "KVStoreEntry Substate was matched with a different substate id"
+                message: "NonFungibleStore substate was matched with a different substate id"
                     .to_owned(),
             })
         }
@@ -263,7 +275,7 @@ pub fn to_api_non_fungible_substate(
             entity_type: EntityType::KeyValueStore,
             nf_id_hex: to_hex(nf_id_bytes),
             is_deleted: false,
-            non_fungible_data: Option::Some(Box::new(to_api_non_fungible_data(
+            non_fungible_data: Some(Box::new(to_api_non_fungible_data(
                 bech32_encoder,
                 non_fungible,
             )?)),
@@ -272,7 +284,7 @@ pub fn to_api_non_fungible_substate(
             entity_type: EntityType::KeyValueStore,
             nf_id_hex: to_hex(nf_id_bytes),
             is_deleted: true,
-            non_fungible_data: Option::None,
+            non_fungible_data: None,
         },
     })
 }
@@ -281,14 +293,16 @@ fn to_api_non_fungible_data(
     bech32_encoder: &Bech32Encoder,
     non_fungible: &NonFungible,
 ) -> Result<models::NonFungibleData, MappingError> {
+    // TODO: NFT data is no longer a ScryptoValue (but it should be again at some point)
+    // remove scrypto_encode call once that happens
     Ok(models::NonFungibleData {
         immutable_data: Box::new(to_api_data_struct(
             bech32_encoder,
-            &non_fungible.immutable_data(),
+            &scrypto_encode(&non_fungible.immutable_data()),
         )?),
         mutable_data: Box::new(to_api_data_struct(
             bech32_encoder,
-            &non_fungible.mutable_data(),
+            &scrypto_encode(&non_fungible.mutable_data()),
         )?),
     })
 }
@@ -296,13 +310,16 @@ fn to_api_non_fungible_data(
 fn to_api_key_value_story_entry_substate(
     bech32_encoder: &Bech32Encoder,
     substate_id: &SubstateId,
-    key_value_store_entry: &KeyValueStoreEntryWrapper,
+    key_value_store_entry: &KeyValueStoreEntrySubstate,
 ) -> Result<models::Substate, MappingError> {
     let key = match substate_id {
-        SubstateId::KeyValueStoreEntry(_, key) => key,
+        SubstateId(
+            RENodeId::KeyValueStore(..),
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+        ) => key,
         _ => {
             return Err(MappingError::MismatchedSubstateId {
-                message: "KVStoreEntry Substate was matched with a different substate id"
+                message: "KVStoreEntry substate was matched with a different substate id"
                     .to_owned(),
             })
         }
@@ -313,13 +330,13 @@ fn to_api_key_value_story_entry_substate(
             entity_type: EntityType::KeyValueStore,
             key_hex: to_hex(key),
             is_deleted: false,
-            data_struct: Option::Some(Box::new(to_api_data_struct(bech32_encoder, data)?)),
+            data_struct: Some(Box::new(to_api_data_struct(bech32_encoder, data)?)),
         },
         None => models::Substate::KeyValueStoreEntrySubstate {
             entity_type: EntityType::KeyValueStore,
             key_hex: to_hex(key),
             is_deleted: true,
-            data_struct: Option::None,
+            data_struct: None,
         },
     })
 }

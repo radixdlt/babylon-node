@@ -65,7 +65,7 @@
 package com.radixdlt.rev2;
 
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 
@@ -80,7 +80,7 @@ public final class REv2LargeTransactionGenerator implements TransactionGenerator
   }
 
   @Override
-  public RawTransaction nextTransaction() {
+  public RawNotarizedTransaction nextTransaction() {
     final var notary = PrivateKeys.numeric(currentKey++).findFirst().orElseThrow();
 
     // Somewhere from 100kb to just over 23MB

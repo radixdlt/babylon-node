@@ -78,7 +78,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.statemanager.REv2DatabaseConfig;
 import com.radixdlt.statemanager.REv2StateConfig;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
 import org.junit.Test;
 
@@ -110,7 +110,11 @@ public class REv2MempoolToCommittedTest {
 
       // Arrange: Add node1 mempool
       var mempoolInserter =
-          test.getInstance(1, Key.get(new TypeLiteral<MempoolInserter<RawTransaction>>() {}));
+          test.getInstance(
+              1,
+              Key.get(
+                  new TypeLiteral<
+                      MempoolInserter<RawNotarizedTransaction, RawNotarizedTransaction>>() {}));
       var transaction = REv2TestTransactions.constructValidTransaction(0, 5);
       mempoolInserter.addTransaction(transaction);
 

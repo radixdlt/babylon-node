@@ -62,43 +62,44 @@
  * permissions under this License.
  */
 
-package com.radixdlt.transactions;
+package com.radixdlt.rev2;
 
-import static org.junit.Assert.assertEquals;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.exceptions.StateManagerRuntimeError;
+import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Unit;
+import com.radixdlt.sbor.NativeCalls;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.sbor.Sbor;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-import org.junit.Test;
-
-public class RawTransactionTest {
-
-  public static void registerHashCodeCodec(CodecMap codecMap) {
-    codecMap.register(
-        HashCode.class,
-        codecs ->
-            StructCodec.with(
-                HashCode::fromBytes,
-                codecs.of(byte[].class),
-                (t, encoder) -> encoder.encode(t.asBytes())));
+public final class ScryptoConstants {
+  static {
+    // This is idempotent with the other calls
+    System.loadLibrary("corerust");
   }
 
-  @Test
-  public void testSBORSerialization() {
-    var sbor =
-        new Sbor(
-            true,
-            new CodecMap()
-                .register(RawTransactionTest::registerHashCodeCodec)
-                .register(RawTransaction::registerCodec));
+  public static final ComponentAddress FAUCET_COMPONENT_ADDRESS =
+      NativeCalls.StaticFunc1.with(
+              new TypeToken<Unit>() {},
+              new TypeToken<Result<ComponentAddress, StateManagerRuntimeError>>() {},
+              ScryptoConstants::getFaucetComponentAddress)
+          .call(Unit.unit());
 
-    byte[] payload = new byte[10];
-    RawTransaction t0 = RawTransaction.create(payload);
+  public static final PackageAddress ACCOUNT_PACKAGE_ADDRESS =
+      NativeCalls.StaticFunc1.with(
+              new TypeToken<Unit>() {},
+              new TypeToken<Result<PackageAddress, StateManagerRuntimeError>>() {},
+              ScryptoConstants::getAccountPackageAddress)
+          .call(Unit.unit());
 
-    var r0 = sbor.encode(t0, RawTransaction.class);
-    var t1 = sbor.decode(r0, RawTransaction.class);
+  public static final ResourceAddress XRD_RESOURCE_ADDRESS =
+      NativeCalls.StaticFunc1.with(
+              new TypeToken<Unit>() {},
+              new TypeToken<Result<ResourceAddress, StateManagerRuntimeError>>() {},
+              ScryptoConstants::getXrdResourceAddress)
+          .call(Unit.unit());
 
-    assertEquals(t0, t1);
-  }
+  private static native byte[] getFaucetComponentAddress(byte[] unused);
+
+  private static native byte[] getAccountPackageAddress(byte[] unused);
+
+  private static native byte[] getXrdResourceAddress(byte[] unused);
 }

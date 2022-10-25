@@ -69,7 +69,7 @@ import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
 import com.radixdlt.harness.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.transactions.RawTransaction;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -90,11 +90,11 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 
   @Override
   public Observable<TestInvariantError> check(RunningNetwork network) {
-    BehaviorSubject<Set<RawTransaction>> committedTxns = BehaviorSubject.create();
+    BehaviorSubject<Set<RawLedgerTransaction>> committedTxns = BehaviorSubject.create();
     Disposable d =
         network
             .ledgerUpdates()
-            .<Set<RawTransaction>>scan(
+            .<Set<RawLedgerTransaction>>scan(
                 new HashSet<>(),
                 (set, next) -> {
                   set.addAll(next.getSecond().getNewTransactions());
