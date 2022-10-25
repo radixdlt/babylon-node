@@ -135,7 +135,7 @@ impl StateManagerDatabase {
             {
                 let ledger_receipt: LedgerTransactionReceipt = genesis_receipt
                     .try_into()
-                    .expect("Genesis execution failed");
+                    .expect("Failed to convert genesis receipt to LedgerTransactionReceipt");
 
                 let mock_genesis =
                     LedgerTransaction::Validator(ValidatorTransaction::EpochUpdate(0)); // Mocked

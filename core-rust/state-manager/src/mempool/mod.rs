@@ -64,8 +64,6 @@
 
 use sbor::*;
 
-pub use crate::result::ToStateManagerError;
-
 use std::string::ToString;
 
 use self::transaction_rejection_cache::RejectionReason;

@@ -56,7 +56,7 @@ fn handle_v0_state_non_fungible_internal(
                         )?),
                     })
                 } else {
-                    Err(not_found_error("Non-fungible not found"))
+                    Err(not_found_error("Non-fungible key not found"))
                 }
             } else {
                 Err(MappingError::MismatchedSubstateId {

@@ -87,13 +87,9 @@ impl StateManagerError {
     }
 }
 
-pub trait ToStateManagerError {
-    fn to_state_manager_error(&self) -> StateManagerError;
-}
-
-impl ToStateManagerError for DecodeError {
-    fn to_state_manager_error(&self) -> StateManagerError {
-        StateManagerError::create(ERRCODE_SBOR, format!("SBOR Decode Failed: {:?}", self))
+impl Into<StateManagerError> for DecodeError {
+    fn into(self) -> StateManagerError {
+        StateManagerError::create(ERRCODE_SBOR, format!("SBOR decode failed: {:?}", self))
     }
 }
 

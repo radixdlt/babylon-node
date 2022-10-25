@@ -63,7 +63,7 @@
  */
 
 use crate::jni::java_structure::JavaStructure;
-use crate::result::{StateManagerResult, ToStateManagerError};
+use crate::result::StateManagerResult;
 use crate::transaction::{
     create_intent_bytes, create_manifest, create_new_account_intent_bytes, create_notarized_bytes,
     create_set_epoch_intent, create_signed_intent_bytes, LedgerTransaction,
@@ -231,7 +231,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionBuilder_userTransact
 
 fn do_user_transaction_to_ledger(args: Vec<u8>) -> StateManagerResult<Vec<u8>> {
     let notarized_transaction: NotarizedTransaction =
-        scrypto_decode(&args).map_err(|e| e.to_state_manager_error())?;
+        scrypto_decode(&args).map_err(|e| e.into())?;
     Ok(scrypto_encode(&LedgerTransaction::User(
         notarized_transaction,
     )))
@@ -254,7 +254,7 @@ fn do_transaction_bytes_to_notarized_transaction_bytes(
     args: Vec<u8>,
 ) -> StateManagerResult<Option<Vec<u8>>> {
     let transaction: LedgerTransaction =
-        scrypto_decode(&args).map_err(|e| e.to_state_manager_error())?;
+        scrypto_decode(&args).map_err(|e| e.into())?;
     Ok(match transaction {
         LedgerTransaction::User(notarized_transaction) => {
             Some(scrypto_encode(&notarized_transaction.to_bytes()))
