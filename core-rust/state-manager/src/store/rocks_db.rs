@@ -67,8 +67,8 @@ use std::collections::HashMap;
 
 use crate::store::traits::*;
 use crate::{
-    CommittedTransactionIdentifiers, HasIntentHash, IntentHash, LedgerTransactionReceipt,
-    TransactionPayloadHash,
+    CommittedTransactionIdentifiers, HasIntentHash, IntentHash, LedgerPayloadHash,
+    LedgerTransactionReceipt,
 };
 use radix_engine::ledger::{
     OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
@@ -120,7 +120,7 @@ pub struct RocksDBStore {
     db: TransactionDB<SingleThreaded>,
 }
 
-fn get_transaction_key(payload_hash: &TransactionPayloadHash) -> Vec<u8> {
+fn get_transaction_key(payload_hash: &LedgerPayloadHash) -> Vec<u8> {
     db_key!(Transactions, payload_hash.as_ref())
 }
 
@@ -228,7 +228,7 @@ impl<'db> WriteableProofStore for RocksDBCommitTransaction<'db> {
     fn insert_tids_and_proof(
         &mut self,
         state_version: u64,
-        ids: Vec<TransactionPayloadHash>,
+        ids: Vec<LedgerPayloadHash>,
         proof_bytes: Vec<u8>,
     ) {
         self.insert_tids_without_proof(state_version, ids);
@@ -237,7 +237,7 @@ impl<'db> WriteableProofStore for RocksDBCommitTransaction<'db> {
         self.db_txn.put(proof_version_key, proof_bytes).unwrap();
     }
 
-    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<TransactionPayloadHash>) {
+    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<LedgerPayloadHash>) {
         if !ids.is_empty() {
             let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
             for (index, payload_hash) in ids.into_iter().enumerate() {
@@ -289,7 +289,7 @@ impl ReadableSubstateStore for RocksDBStore {
 impl QueryableTransactionStore for RocksDBStore {
     fn get_committed_transaction(
         &self,
-        payload_hash: &TransactionPayloadHash,
+        payload_hash: &LedgerPayloadHash,
     ) -> Option<(
         LedgerTransaction,
         LedgerTransactionReceipt,
@@ -304,13 +304,13 @@ impl QueryableTransactionStore for RocksDBStore {
     }
 }
 
-impl UserTransactionIndex<UserPayloadHash> for RocksDBStore {
-    fn get_hash(&self, identifier: &UserPayloadHash) -> Option<TransactionPayloadHash> {
+impl TransactionIndex<&UserPayloadHash> for RocksDBStore {
+    fn get_payload_hash(&self, identifier: &UserPayloadHash) -> Option<LedgerPayloadHash> {
         let payload_hash_entry = self
             .db
             .get(get_user_transaction_payload_key(identifier))
             .expect("DB error loading payload hash")?;
-        let hash = TransactionPayloadHash::from_raw_bytes(
+        let hash = LedgerPayloadHash::from_raw_bytes(
             payload_hash_entry
                 .try_into()
                 .expect("Saved payload hash is wrong length"),
@@ -319,14 +319,29 @@ impl UserTransactionIndex<UserPayloadHash> for RocksDBStore {
     }
 }
 
-impl UserTransactionIndex<IntentHash> for RocksDBStore {
-    fn get_hash(&self, identifier: &IntentHash) -> Option<TransactionPayloadHash> {
+impl TransactionIndex<&IntentHash> for RocksDBStore {
+    fn get_payload_hash(&self, identifier: &IntentHash) -> Option<LedgerPayloadHash> {
         let payload_hash_entry = self
             .db
             .get(get_transaction_intent_key(identifier))
             .expect("DB error loading payload hash")?;
-        let hash = TransactionPayloadHash::from_raw_bytes(
+        let hash = LedgerPayloadHash::from_raw_bytes(
             payload_hash_entry
+                .try_into()
+                .expect("Saved payload hash is wrong length"),
+        );
+        Some(hash)
+    }
+}
+
+impl TransactionIndex<u64> for RocksDBStore {
+    fn get_payload_hash(&self, state_version: u64) -> Option<LedgerPayloadHash> {
+        let state_version_entry = self
+            .db
+            .get(&db_key!(StateVersions, &state_version.to_be_bytes()))
+            .expect("DB error loading state version")?;
+        let hash = LedgerPayloadHash::from_raw_bytes(
+            state_version_entry
                 .try_into()
                 .expect("Saved payload hash is wrong length"),
         );
@@ -351,16 +366,7 @@ impl QueryableProofStore for RocksDBStore {
             .unwrap_or(0)
     }
 
-    fn get_payload_hash(&self, state_version: u64) -> Option<TransactionPayloadHash> {
-        let txn_version_key = db_key!(StateVersions, &state_version.to_be_bytes());
-        self.db.get(&txn_version_key).unwrap().map(|bytes| {
-            TransactionPayloadHash::from_raw_bytes(
-                bytes.try_into().expect("Payload hash is the wrong length"),
-            )
-        })
-    }
-
-    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TransactionPayloadHash>, Vec<u8>)> {
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<LedgerPayloadHash>, Vec<u8>)> {
         let first_state_version = state_version + 1;
         let proof_version_key = db_key!(Proofs, &first_state_version.to_be_bytes());
         let (next_state_version, proof) = self
@@ -380,7 +386,7 @@ impl QueryableProofStore for RocksDBStore {
         for v in first_state_version..=next_state_version {
             let txn_version_key = db_key!(StateVersions, &v.to_be_bytes());
             let bytes = self.db.get(txn_version_key).unwrap().unwrap();
-            tids.push(TransactionPayloadHash::from_raw_bytes(
+            tids.push(LedgerPayloadHash::from_raw_bytes(
                 bytes.try_into().expect("Payload hash is the wrong length"),
             ));
         }

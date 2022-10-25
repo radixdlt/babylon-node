@@ -71,9 +71,9 @@ use transaction::model::{
 };
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Decode, Encode, TypeId)]
-pub struct TransactionPayloadHash([u8; Self::LENGTH]);
+pub struct LedgerPayloadHash([u8; Self::LENGTH]);
 
-impl TransactionPayloadHash {
+impl LedgerPayloadHash {
     pub const LENGTH: usize = 32;
 
     pub fn for_transaction(transaction: &LedgerTransaction) -> Self {
@@ -89,29 +89,47 @@ impl TransactionPayloadHash {
     }
 }
 
-impl AsRef<[u8]> for TransactionPayloadHash {
+impl AsRef<[u8]> for LedgerPayloadHash {
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl From<Hash> for TransactionPayloadHash {
+impl From<Hash> for LedgerPayloadHash {
     fn from(hash: Hash) -> Self {
-        TransactionPayloadHash(hash.0)
+        LedgerPayloadHash(hash.0)
     }
 }
 
-impl fmt::Display for TransactionPayloadHash {
+impl fmt::Display for LedgerPayloadHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", hex::encode(self.0))
     }
 }
 
-impl fmt::Debug for TransactionPayloadHash {
+impl fmt::Debug for LedgerPayloadHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("TransactionPayloadHash")
+        f.debug_tuple("LedgerPayloadHash")
             .field(&hex::encode(self.0))
             .finish()
+    }
+}
+
+pub trait HasLedgerPayloadHash {
+    fn ledger_payload_hash(&self) -> LedgerPayloadHash;
+}
+
+impl HasLedgerPayloadHash for LedgerTransaction {
+    fn ledger_payload_hash(&self) -> LedgerPayloadHash {
+        LedgerPayloadHash::for_transaction(self)
+    }
+}
+
+impl HasLedgerPayloadHash for NotarizedTransaction {
+    fn ledger_payload_hash(&self) -> LedgerPayloadHash {
+        // Could optimize this to remove the clone in future,
+        // once SBOR/models are more stable
+        LedgerTransaction::User(self.clone()).ledger_payload_hash()
     }
 }
 
@@ -265,6 +283,12 @@ pub trait HasIntentHash {
 impl HasIntentHash for TransactionIntent {
     fn intent_hash(&self) -> IntentHash {
         IntentHash::for_intent(self)
+    }
+}
+
+impl HasIntentHash for SignedTransactionIntent {
+    fn intent_hash(&self) -> IntentHash {
+        self.intent.intent_hash()
     }
 }
 

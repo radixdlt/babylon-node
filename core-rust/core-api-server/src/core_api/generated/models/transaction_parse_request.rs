@@ -19,6 +19,15 @@ pub struct TransactionParseRequest {
     /// A hex-encoded payload of a full transaction or a partial transaction - either a notarized transaction, a signed transaction intent an unsigned transaction intent, or a transaction manifest. 
     #[serde(rename = "payload_hex")]
     pub payload_hex: String,
+    /// The type of transaction payload that should be assumed. If omitted, \"Any\" is used - where the payload is attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Manifest, Ledger. 
+    #[serde(rename = "parse_mode", skip_serializing_if = "Option::is_none")]
+    pub parse_mode: Option<ParseMode>,
+    /// The type of validation that should be performed, if the payload correctly decompiles as a Notarized Transaction. This is only relevant for Notarized payloads. If omitted, \"Static\" is used. 
+    #[serde(rename = "validation_mode", skip_serializing_if = "Option::is_none")]
+    pub validation_mode: Option<ValidationMode>,
+    /// The amount of information to return in the response. \"Basic\" includes the type, validity information, and any relevant identifiers. \"Full\" also includes the fully parsed information. If omitted, \"Full\" is used. 
+    #[serde(rename = "response_mode", skip_serializing_if = "Option::is_none")]
+    pub response_mode: Option<ResponseMode>,
 }
 
 impl TransactionParseRequest {
@@ -26,8 +35,63 @@ impl TransactionParseRequest {
         TransactionParseRequest {
             network,
             payload_hex,
+            parse_mode: None,
+            validation_mode: None,
+            response_mode: None,
         }
     }
 }
 
+/// The type of transaction payload that should be assumed. If omitted, \"Any\" is used - where the payload is attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Manifest, Ledger. 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum ParseMode {
+    #[serde(rename = "Any")]
+    Any,
+    #[serde(rename = "Notarized")]
+    Notarized,
+    #[serde(rename = "Signed")]
+    Signed,
+    #[serde(rename = "Unsigned")]
+    Unsigned,
+    #[serde(rename = "Manifest")]
+    Manifest,
+    #[serde(rename = "Ledger")]
+    Ledger,
+}
+
+impl Default for ParseMode {
+    fn default() -> ParseMode {
+        Self::Any
+    }
+}
+/// The type of validation that should be performed, if the payload correctly decompiles as a Notarized Transaction. This is only relevant for Notarized payloads. If omitted, \"Static\" is used. 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum ValidationMode {
+    #[serde(rename = "None")]
+    None,
+    #[serde(rename = "Static")]
+    _Static,
+    #[serde(rename = "Full")]
+    Full,
+}
+
+impl Default for ValidationMode {
+    fn default() -> ValidationMode {
+        Self::None
+    }
+}
+/// The amount of information to return in the response. \"Basic\" includes the type, validity information, and any relevant identifiers. \"Full\" also includes the fully parsed information. If omitted, \"Full\" is used. 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+pub enum ResponseMode {
+    #[serde(rename = "Basic")]
+    Basic,
+    #[serde(rename = "Full")]
+    Full,
+}
+
+impl Default for ResponseMode {
+    fn default() -> ResponseMode {
+        Self::Basic
+    }
+}
 

@@ -13,31 +13,44 @@
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type")]
 pub enum ParsedTransaction {
+    #[serde(rename="LedgerTransaction")]
+    ParsedLedgerTransaction {
+        #[serde(rename = "ledger_transaction", skip_serializing_if = "Option::is_none")]
+        ledger_transaction: Option<Box<crate::core_api::generated::models::LedgerTransaction>>,
+        #[serde(rename = "identifiers")]
+        identifiers: Box<crate::core_api::generated::models::ParsedLedgerTransactionAllOfIdentifiers>,
+    },
     #[serde(rename="NotarizedTransaction")]
     ParsedNotarizedTransaction {
-        #[serde(rename = "notarized_transaction")]
-        notarized_transaction: Box<crate::core_api::generated::models::NotarizedTransaction>,
-        /// Gives if the transaction is statically valid. Note that, even if statically valid, the transaction may still be rejected or fail due to issues at runtime (eg if the loan cannot be repaid). 
-        #[serde(rename = "is_statically_valid")]
-        is_statically_valid: bool,
-        /// If the transaction is not statically valid, this gives a reason. 
-        #[serde(rename = "validity_error", skip_serializing_if = "Option::is_none")]
-        validity_error: Option<String>,
+        #[serde(rename = "notarized_transaction", skip_serializing_if = "Option::is_none")]
+        notarized_transaction: Option<Box<crate::core_api::generated::models::NotarizedTransaction>>,
+        #[serde(rename = "identifiers")]
+        identifiers: Box<crate::core_api::generated::models::ParsedNotarizedTransactionAllOfIdentifiers>,
+        /// If the transaction is known to not be valid, this gives a reason. Different levels of validation are performed, dependent on the validation mode. Note that, even if validation mode is Static or Full, the transaction may still be rejected or fail due to issues at runtime (eg if the loan cannot be repaid). 
+        #[serde(rename = "validation_error", skip_serializing_if = "Option::is_none")]
+        validation_error: Option<String>,
+        /// If the transaction is known to not be valid, for a static/permanent reason (eg not a valid format, or max epoch is before the current epoch). 
+        #[serde(rename = "validation_error_is_permanent", skip_serializing_if = "Option::is_none")]
+        validation_error_is_permanent: Option<bool>,
     },
     #[serde(rename="SignedTransactionIntent")]
     ParsedSignedTransactionIntent {
-        #[serde(rename = "signed_intent")]
-        signed_intent: Box<crate::core_api::generated::models::SignedTransactionIntent>,
+        #[serde(rename = "signed_intent", skip_serializing_if = "Option::is_none")]
+        signed_intent: Option<Box<crate::core_api::generated::models::SignedTransactionIntent>>,
+        #[serde(rename = "identifiers")]
+        identifiers: Box<crate::core_api::generated::models::ParsedSignedTransactionIntentAllOfIdentifiers>,
     },
     #[serde(rename="TransactionIntent")]
     ParsedTransactionIntent {
-        #[serde(rename = "intent")]
-        intent: Box<crate::core_api::generated::models::TransactionIntent>,
+        #[serde(rename = "intent", skip_serializing_if = "Option::is_none")]
+        intent: Option<Box<crate::core_api::generated::models::TransactionIntent>>,
+        #[serde(rename = "identifiers")]
+        identifiers: Box<crate::core_api::generated::models::ParsedTransactionIntentAllOfIdentifiers>,
     },
     #[serde(rename="TransactionManifest")]
     ParsedTransactionManifest {
-        #[serde(rename = "manifest")]
-        manifest: Box<crate::core_api::generated::models::TransactionManifest>,
+        #[serde(rename = "manifest", skip_serializing_if = "Option::is_none")]
+        manifest: Option<Box<crate::core_api::generated::models::TransactionManifest>>,
     },
 }
 

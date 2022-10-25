@@ -12,15 +12,16 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ParsedTransactionManifest {
-    #[serde(rename = "manifest", skip_serializing_if = "Option::is_none")]
-    pub manifest: Option<Box<crate::core_api::generated::models::TransactionManifest>>,
+pub struct EpochUpdateValidatorTransactionAllOf {
+    /// An integer between 0 and 10^10, marking the new epoch
+    #[serde(rename = "epoch")]
+    pub epoch: i64,
 }
 
-impl ParsedTransactionManifest {
-    pub fn new() -> ParsedTransactionManifest {
-        ParsedTransactionManifest {
-            manifest: None,
+impl EpochUpdateValidatorTransactionAllOf {
+    pub fn new(epoch: i64) -> EpochUpdateValidatorTransactionAllOf {
+        EpochUpdateValidatorTransactionAllOf {
+            epoch,
         }
     }
 }

@@ -43,8 +43,10 @@ pub enum Status {
     CommittedFailure,
     #[serde(rename = "InMempool")]
     InMempool,
-    #[serde(rename = "Rejected")]
-    Rejected,
+    #[serde(rename = "TransientlyRejected")]
+    TransientlyRejected,
+    #[serde(rename = "PermanentlyRejected")]
+    PermanentlyRejected,
 }
 
 impl Default for Status {

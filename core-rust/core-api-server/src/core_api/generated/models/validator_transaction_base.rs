@@ -12,15 +12,15 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct ParsedTransactionManifest {
-    #[serde(rename = "manifest", skip_serializing_if = "Option::is_none")]
-    pub manifest: Option<Box<crate::core_api::generated::models::TransactionManifest>>,
+pub struct ValidatorTransactionBase {
+    #[serde(rename = "type")]
+    pub _type: crate::core_api::generated::models::ValidatorTransactionType,
 }
 
-impl ParsedTransactionManifest {
-    pub fn new() -> ParsedTransactionManifest {
-        ParsedTransactionManifest {
-            manifest: None,
+impl ValidatorTransactionBase {
+    pub fn new(_type: crate::core_api::generated::models::ValidatorTransactionType) -> ValidatorTransactionBase {
+        ValidatorTransactionBase {
+            _type,
         }
     }
 }

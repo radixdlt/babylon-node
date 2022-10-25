@@ -23,11 +23,11 @@ fn handle_v0_transaction_receipt_internal(
         .store
         .get_committed_transaction_by_identifier(&intent_hash);
 
-    if let Some((notarized_transaction, receipt, identifiers)) = committed_option {
+    if let Some((ledger_transaction, receipt, identifiers)) = committed_option {
         Ok(models::V0CommittedTransactionResponse {
             committed: Box::new(to_api_committed_transaction(
                 network,
-                Some(notarized_transaction),
+                ledger_transaction,
                 receipt,
                 identifiers.state_version,
             )?),

@@ -329,7 +329,7 @@ where
 impl<S> StateManager<S>
 where
     S: ReadableSubstateStore,
-    S: UserTransactionIndex<IntentHash> + QueryableTransactionStore,
+    S: for<'a> TransactionIndex<&'a IntentHash> + TransactionIndex<u64> + QueryableTransactionStore,
     S: ReadableSubstateStore + QueryableSubstateStore, // Temporary - can remove when epoch validation moves to executor
 {
     /// Performs static-validation, and then executes the transaction.
@@ -463,7 +463,7 @@ where
     ///
     /// If the transaction is freshly rejected, it is removed from the mempool and added
     /// to the rejection cache.
-    fn check_for_rejection_with_caching(
+    pub fn check_for_rejection_with_caching(
         &mut self,
         transaction: &NotarizedTransaction,
     ) -> Result<(), RejectionReason> {
@@ -502,7 +502,7 @@ where
     ) -> Result<(), RejectionReason> {
         if self
             .store
-            .get_committed_transaction_by_identifier(&transaction.intent_hash())
+            .get_payload_hash(&transaction.intent_hash())
             .is_some()
         {
             return Err(RejectionReason::IntentHashCommitted);
@@ -563,7 +563,7 @@ where
                 .map(|validated_transaction| validated_transaction.intent_hash())
                 .and_then(|intent_hash| {
                     self.store
-                        .get_committed_transaction_by_identifier(&intent_hash)
+                        .get_payload_hash(&intent_hash)
                         .map(|_| intent_hash)
                 })
             });

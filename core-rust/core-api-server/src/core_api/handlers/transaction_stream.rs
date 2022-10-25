@@ -6,7 +6,7 @@ use scrypto::core::NetworkDefinition;
 
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::store::traits::*;
-use state_manager::transaction::LedgerTransaction;
+use state_manager::transaction::{LedgerTransaction, ValidatorTransaction};
 use state_manager::{IntentHash, LedgerTransactionReceipt, SignaturesHash, UserPayloadHash};
 use std::cmp;
 use std::collections::HashMap;
@@ -76,14 +76,9 @@ fn handle_transaction_stream_internal(
 
     let api_txns = txns
         .into_iter()
-        .map(|((tx, receipt, _), state_version)| {
-            let notarized_tx = match tx {
-                LedgerTransaction::User(notarized) => Some(notarized),
-                LedgerTransaction::Validator(..) => None,
-            };
-
+        .map(|((ledger_transaction, receipt, _), state_version)| {
             let api_tx =
-                to_api_committed_transaction(&network, notarized_tx, receipt, state_version)?;
+                to_api_committed_transaction(&network, ledger_transaction, receipt, state_version)?;
 
             Ok(api_tx)
         })
@@ -106,21 +101,32 @@ fn handle_transaction_stream_internal(
 #[tracing::instrument(skip_all)]
 pub fn to_api_committed_transaction(
     network: &NetworkDefinition,
-    tx: Option<NotarizedTransaction>,
+    ledger_transaction: LedgerTransaction,
     receipt: LedgerTransactionReceipt,
     state_version: u64,
 ) -> Result<models::CommittedTransaction, MappingError> {
     let bech32_encoder = Bech32Encoder::new(network);
     let receipt = to_api_receipt(&bech32_encoder, receipt)?;
-    let api_notarized_transaction = match tx {
-        Some(tx) => Some(Box::new(to_api_notarized_transaction(&tx, network)?)),
-        None => None,
-    };
 
     Ok(models::CommittedTransaction {
         state_version: to_api_state_version(state_version)?,
-        notarized_transaction: api_notarized_transaction,
+        ledger_transaction: Some(to_api_ledger_transaction(&ledger_transaction, network)?),
         receipt: Box::new(receipt),
+    })
+}
+
+#[tracing::instrument(skip_all)]
+pub fn to_api_ledger_transaction(
+    ledger_transaction: &LedgerTransaction,
+    network: &NetworkDefinition,
+) -> Result<models::LedgerTransaction, MappingError> {
+    Ok(match ledger_transaction {
+        LedgerTransaction::User(tx) => models::LedgerTransaction::UserLedgerTransaction {
+            notarized_transaction: Box::new(to_api_notarized_transaction(tx, network)?),
+        },
+        LedgerTransaction::Validator(tx) => models::LedgerTransaction::ValidatorLedgerTransaction {
+            validator_transaction: Box::new(to_api_validator_transaction(tx, network)?),
+        },
     })
 }
 
@@ -208,5 +214,18 @@ pub fn to_api_manifest(
             .iter()
             .map(|blob| (to_hex(hash(blob)), to_hex(blob)))
             .collect::<HashMap<String, String>>(),
+    })
+}
+
+pub fn to_api_validator_transaction(
+    validator_transaction: &ValidatorTransaction,
+    _network: &NetworkDefinition,
+) -> Result<models::ValidatorTransaction, MappingError> {
+    Ok(match validator_transaction {
+        ValidatorTransaction::EpochUpdate(epoch) => {
+            models::ValidatorTransaction::EpochUpdateValidatorTransaction {
+                epoch: to_api_epoch(*epoch)?,
+            }
+        }
     })
 }
