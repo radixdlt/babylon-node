@@ -77,7 +77,7 @@ pub trait JavaStructure {
 
 impl<T: Encode + Decode + TypeId> JavaStructure for T {
     fn from_java(data: &[u8]) -> StateManagerResult<Self> {
-        decode_with_static_info(data).map_err(|e| e.into())
+        Ok(decode_with_static_info(data)?)
     }
 
     fn to_java(&self) -> Vec<u8> {

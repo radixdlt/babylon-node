@@ -87,9 +87,10 @@ impl StateManagerError {
     }
 }
 
-impl Into<StateManagerError> for DecodeError {
-    fn into(self) -> StateManagerError {
-        StateManagerError::create(ERRCODE_SBOR, format!("SBOR decode failed: {:?}", self))
+impl From<DecodeError> for StateManagerError {
+    fn from(err: DecodeError) -> Self {
+        StateManagerError::create(ERRCODE_SBOR, format!("SBOR decode failed: {:?}", err))
+
     }
 }
 
