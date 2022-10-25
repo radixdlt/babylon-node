@@ -136,10 +136,12 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
       var success = verifier.verify(transaction);
       if (success) {
         successfulTransactions.add(
-            new StatelessComputerExecutedTransaction(transaction.unsafeAsRawTransaction()));
+            new StatelessComputerExecutedTransaction(
+                transaction.INCORRECTInterpretDirectlyAsRawLedgerTransaction()));
       } else {
         invalidTransactions.put(
-            transaction.unsafeAsRawTransaction(), new StatelessTransactionException());
+            transaction.INCORRECTInterpretDirectlyAsRawLedgerTransaction(),
+            new StatelessTransactionException());
       }
     }
 

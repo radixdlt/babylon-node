@@ -83,7 +83,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.monitoring.SystemCounters;
 import com.radixdlt.rev1.RoundDetails;
 import com.radixdlt.targeted.mempool.SimpleMempool;
-import com.radixdlt.transaction.TransactionBuilder;
+import com.radixdlt.transactions.RawLedgerTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import java.util.List;
 import java.util.Map;
@@ -153,7 +153,8 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
           RoundDetails roundDetails) {
         return new StateComputerLedger.StateComputerResult(
             proposedTransactions.stream()
-                .map(tx -> new MockExecuted(tx.unsafeAsRawTransaction()))
+                // This is a cheeky hack which is
+                .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
                 .collect(Collectors.toList()),
             Map.of());
       }
@@ -164,12 +165,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
         // TODO: is this okay???
         mempool.handleTransactionsCommitted(
             txnsAndProof.getTransactions().stream()
-                .flatMap(
-                    tx ->
-                        TransactionBuilder.convertTransactionBytesToNotarizedTransactionBytes(
-                            tx.getPayload())
-                            .stream())
-                .map(RawNotarizedTransaction::create)
+                .map(RawLedgerTransaction::INCORRECTInterpretDirectlyAsRawNotarizedTransaction)
                 .toList());
         counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());
 

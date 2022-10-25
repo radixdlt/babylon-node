@@ -134,8 +134,11 @@ public final class RawNotarizedTransaction {
     return String.format("%s{payloadHash=%s}", this.getClass().getSimpleName(), this.payloadHash);
   }
 
-  // TODO: remove me; used for some rev1 compatibility
-  public RawLedgerTransaction unsafeAsRawTransaction() {
+  /*
+   * This function is simply incorrect, and just used for some Rev1 Compatibility and some test mocks
+   * TODO - this should ideally be removed
+   */
+  public RawLedgerTransaction INCORRECTInterpretDirectlyAsRawLedgerTransaction() {
     return RawLedgerTransaction.create(getPayload());
   }
 }

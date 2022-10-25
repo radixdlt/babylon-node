@@ -120,7 +120,7 @@ public final class MockedStateComputer implements StateComputer {
       RoundDetails roundDetails) {
     return new StateComputerLedger.StateComputerResult(
         proposedTransactions.stream()
-            .map(tx -> new MockExecuted(tx.unsafeAsRawTransaction()))
+            .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
             .collect(Collectors.toList()),
         Map.of());
   }

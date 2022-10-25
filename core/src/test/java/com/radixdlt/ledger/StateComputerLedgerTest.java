@@ -131,7 +131,7 @@ public class StateComputerLedgerTest {
       REv2TestTransactions.constructNewAccountTransaction(NetworkDefinition.LOCAL_SIMULATOR, 0, 0);
   private final Hasher hasher = new Sha256Hasher(DefaultSerialization.getInstance());
   private final ExecutedTransaction successfulNextTransaction =
-      nextTransaction::unsafeAsRawTransaction;
+      nextTransaction::invalidInterpretDirectlyAsRawTransaction;
 
   private final long genesisEpoch = 3L;
   private final long genesisStateVersion = 123L;

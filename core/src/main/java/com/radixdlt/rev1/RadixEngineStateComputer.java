@@ -223,7 +223,7 @@ public final class RadixEngineStateComputer implements StateComputer {
         .forEach(
             txn -> {
               try {
-                addToMempool(txn.unsafeAsRawTransaction(), origin);
+                addToMempool(txn.INCORRECTInterpretDirectlyAsRawLedgerTransaction(), origin);
               } catch (MempoolDuplicateException ex) {
                 log.trace(
                     "Transaction {} was not added as it was already in the mempool",

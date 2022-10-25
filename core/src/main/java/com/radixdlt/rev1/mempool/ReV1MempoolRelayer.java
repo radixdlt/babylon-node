@@ -116,7 +116,9 @@ public final class ReV1MempoolRelayer {
       final var ignorePeers =
           mempoolAddSuccess.getOrigin().map(ImmutableList::of).orElse(ImmutableList.of());
       relayTransactions(
-          ImmutableList.of(mempoolAddSuccess.getTxn().unsafeAsRawTransaction()), ignorePeers);
+          ImmutableList.of(
+              mempoolAddSuccess.getTxn().INCORRECTInterpretDirectlyAsRawLedgerTransaction()),
+          ignorePeers);
     };
   }
 

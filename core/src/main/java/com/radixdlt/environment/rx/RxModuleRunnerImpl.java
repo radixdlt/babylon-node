@@ -110,9 +110,8 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
                 // TODO: Implement better error handling especially against Byzantine nodes.
                 // TODO: Exit process for now.
                 logger.error(
-                    "Unhandled exception in the event processing loop. Shutting down the node. ",
-                    e);
-                Thread.sleep(1000);
+                    "Unhandled exception in the event processing loop. Shutting down the node.", e);
+                Thread.sleep(500);
                 // This may cause integration test errors which look like:
                 // Process 'Gradle Test Executor 1' finished with non-zero exit value 255
                 System.exit(-1);

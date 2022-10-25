@@ -134,4 +134,12 @@ public final class RawLedgerTransaction {
   public String toString() {
     return String.format("%s{payloadHash=%s}", this.getClass().getSimpleName(), this.payloadHash);
   }
+
+  /*
+   * This function is simply incorrect, and just used for some Rev1 Compatibility and some test mocks
+   * TODO - this should ideally be removed
+   */
+  public RawNotarizedTransaction INCORRECTInterpretDirectlyAsRawNotarizedTransaction() {
+    return RawNotarizedTransaction.create(getPayload());
+  }
 }
