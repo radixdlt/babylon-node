@@ -15,15 +15,6 @@ use scrypto::engine::types::{
 };
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_global_entity_id_from_substate_id(
-    bech32_encoder: &Bech32Encoder,
-    substate_id: SubstateId,
-) -> Result<GlobalEntityId, MappingError> {
-    let mapped = to_mapped_substate_id(substate_id)?;
-    to_api_global_entity_id(bech32_encoder, mapped.into())
-}
-
-#[tracing::instrument(skip_all)]
 pub fn to_api_global_entity_id(
     bech32_encoder: &Bech32Encoder,
     entity_id: MappedEntityId,
