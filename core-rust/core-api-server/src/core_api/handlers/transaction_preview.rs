@@ -40,24 +40,23 @@ fn parse_preview_request(
     network: &NetworkDefinition,
     request: models::TransactionPreviewRequest,
 ) -> Result<PreviewRequest, RequestHandlingError> {
-    let manifest_blobs = request
+    let manifest_blobs: Vec<_> = request
         .blobs_hex
         .unwrap_or_default()
         .into_iter()
         .map(from_hex)
-        .collect::<Result<Vec<_>, _>>()
+        .collect::<Result<_, _>>()
         .map_err(|err| err.into_response_error("blobs"))?;
 
     let manifest = manifest::compile(&request.manifest, network, manifest_blobs)
         .map_err(|err| client_error(format!("Invalid manifest - {:?}", err)))?;
 
-    let signer_public_keys = request
+    let signer_public_keys: Vec<_> = request
         .signer_public_keys
         .into_iter()
-        .map(|pk| {
-            extract_api_public_key(pk).map_err(|err| err.into_response_error("signer_public_keys"))
-        })
-        .collect::<Result<Vec<PublicKey>, RequestHandlingError>>()?;
+        .map(|pk| extract_api_public_key(pk))
+        .collect::<Result<_, _>>()
+        .map_err(|err| err.into_response_error("signer_public_keys"))?;
 
     Ok(PreviewRequest {
         manifest,
