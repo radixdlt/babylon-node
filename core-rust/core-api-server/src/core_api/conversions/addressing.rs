@@ -1,69 +1,91 @@
 use std::convert::TryFrom;
 
-use crate::core_api::models::*;
 use crate::core_api::*;
 
 use models::{EntityType, SubstateType};
-use radix_engine::types::{
-    Bech32Decoder, Bech32Encoder, ComponentAddress, NonFungibleId, PackageAddress, RENodeId,
-    ResourceAddress, SubstateId,
+use radix_engine::{
+    model::GlobalAddressSubstate,
+    types::{
+        AddressError, Bech32Decoder, Bech32Encoder, ComponentAddress, NonFungibleId,
+        PackageAddress, RENodeId, ResourceAddress, SubstateId,
+    },
 };
-use scrypto::engine::types::{
-    BucketOffset, ComponentId, ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset,
-    NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset,
-    SystemOffset, VaultOffset, WorktopOffset,
+use scrypto::{
+    address,
+    engine::types::{
+        BucketOffset, ComponentId, ComponentOffset, GlobalAddress, GlobalOffset,
+        KeyValueStoreOffset, NonFungibleStoreOffset, PackageOffset, ProofOffset,
+        ResourceManagerOffset, SubstateOffset, SystemOffset, VaultOffset, WorktopOffset,
+    },
 };
 
-#[tracing::instrument(skip_all)]
 pub fn to_api_global_entity_id(
     bech32_encoder: &Bech32Encoder,
-    entity_id: MappedEntityId,
-) -> Result<GlobalEntityId, MappingError> {
-    let entity_type = entity_id.entity_type;
-    let address_bytes = entity_id.entity_address;
-    let address_bytes_hex = to_hex(&address_bytes);
+    global_address: &GlobalAddress,
+    global_substate: &GlobalAddressSubstate,
+) -> Result<models::GlobalEntityId, MappingError> {
+    let global_address_bytes =
+        MappedEntityId::try_from(RENodeId::Global(*global_address))?.entity_address;
 
-    let global_address_bech32m = match entity_type {
-        EntityType::System => bech32_encoder.encode_component_address_to_string(
-            &ComponentAddress::try_from(address_bytes.as_slice()).unwrap(),
-        ),
-        EntityType::ResourceManager => bech32_encoder.encode_resource_address_to_string(
-            &ResourceAddress::try_from(address_bytes.as_slice()).unwrap(),
-        ),
-        EntityType::Component => bech32_encoder.encode_component_address_to_string(
-            &ComponentAddress::try_from(address_bytes.as_slice()).unwrap(),
-        ),
-        EntityType::Package => bech32_encoder.encode_package_address_to_string(
-            &PackageAddress::try_from(address_bytes.as_slice()).unwrap(),
-        ),
-        EntityType::Vault => {
-            return Err(MappingError::InvalidRootEntity {
-                message: "Vault".to_owned(),
-            })
-        }
-        EntityType::KeyValueStore => {
-            return Err(MappingError::InvalidRootEntity {
-                message: "KeyValueStore".to_owned(),
-            })
-        }
-        EntityType::Global => {
-            return Err(MappingError::InvalidRootEntity {
-                message: "Global".to_owned(),
-            })
-        }
-        EntityType::NonFungibleStore => {
-            return Err(MappingError::InvalidRootEntity {
-                message: "NonFungibleStore".to_owned(),
-            })
-        }
+    let target_entity_address = match global_substate {
+        GlobalAddressSubstate::Component(scrypto::component::Component(id)) => id,
+        GlobalAddressSubstate::SystemComponent(scrypto::component::Component(id)) => id,
+        GlobalAddressSubstate::Resource(id) => id,
+        GlobalAddressSubstate::Package(id) => id,
     };
 
-    Ok(GlobalEntityId {
+    let target_entity_address_bytes = basic_address_to_vec(target_entity_address);
+
+    let global_address_bech32m = match global_address {
+        GlobalAddress::Component(addr) => bech32_encoder.encode_component_address_to_string(addr),
+        GlobalAddress::Package(addr) => bech32_encoder.encode_package_address_to_string(addr),
+        GlobalAddress::Resource(addr) => bech32_encoder.encode_resource_address_to_string(addr),
+    };
+
+    let entity_type = match global_address {
+        GlobalAddress::Component(_) => EntityType::Component,
+        GlobalAddress::Package(_) => EntityType::Package,
+        GlobalAddress::Resource(_) => EntityType::ResourceManager,
+    };
+
+    Ok(models::GlobalEntityId {
         entity_type,
-        entity_address_hex: address_bytes_hex.clone(),
-        global_address_hex: address_bytes_hex,
+        entity_address_hex: to_hex(target_entity_address_bytes),
+        global_address_hex: to_hex(global_address_bytes),
         global_address: global_address_bech32m,
     })
+}
+
+pub struct ParsedGlobalAddress(GlobalAddress);
+
+impl TryFrom<&[u8]> for ParsedGlobalAddress {
+    type Error = AddressError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        if slice.is_empty() {
+            return Err(AddressError::InvalidLength(slice.len()));
+        }
+        let entity_type = address::EntityType::try_from(slice[0])
+            .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?;
+        let global_address = match entity_type {
+            address::EntityType::Resource => {
+                GlobalAddress::Resource(ResourceAddress::try_from(slice)?)
+            }
+            address::EntityType::Package => {
+                GlobalAddress::Package(PackageAddress::try_from(slice)?)
+            }
+            address::EntityType::NormalComponent => {
+                GlobalAddress::Component(ComponentAddress::try_from(slice)?)
+            }
+            address::EntityType::AccountComponent => {
+                GlobalAddress::Component(ComponentAddress::try_from(slice)?)
+            }
+            address::EntityType::SystemComponent => {
+                GlobalAddress::Component(ComponentAddress::try_from(slice)?)
+            }
+        };
+        Ok(Self(global_address))
+    }
 }
 
 pub fn to_api_entity_id(node_id: RENodeId) -> Result<models::EntityId, MappingError> {

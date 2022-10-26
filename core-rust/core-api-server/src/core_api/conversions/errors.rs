@@ -20,9 +20,6 @@ pub enum MappingError {
     TransientSubstatePersisted {
         message: String,
     },
-    InvalidRootEntity {
-        message: String,
-    },
     InvalidSbor {
         decode_error: DecodeError,
         bytes: Vec<u8>,

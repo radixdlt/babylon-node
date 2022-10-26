@@ -1373,10 +1373,10 @@ components:
         - $ref: '#/components/schemas/SubstateBase'
         - type: object
           required:
-            - target_entity_address_hex
+            - target_entity
           properties:
-            target_entity_address_hex:
-              type: string
+            target_entity:
+              $ref: '#/components/schemas/GlobalEntityId'
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################

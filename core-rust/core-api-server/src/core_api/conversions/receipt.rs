@@ -11,7 +11,6 @@ use scrypto::address::Bech32Encoder;
 
 use state_manager::{CommittedTransactionStatus, LedgerTransactionReceipt};
 
-#[tracing::instrument(skip_all)]
 pub fn to_api_receipt(
     bech32_encoder: &Bech32Encoder,
     receipt: LedgerTransactionReceipt,
@@ -47,47 +46,18 @@ pub fn to_api_receipt(
         .map(to_api_down_virtual_substate)
         .collect::<Result<Vec<_>, _>>()?;
 
-    // TODO: Cleanup
-    let new_components: Vec<GlobalEntityId> = receipt
-        .entity_changes
-        .new_component_addresses
+    let new_global_entities: Vec<GlobalEntityId> = up_substates
         .iter()
-        .map(|addr| GlobalEntityId {
-            entity_type: EntityType::Component,
-            entity_address_hex: to_hex(addr.to_vec()),
-            global_address_hex: to_hex(addr.to_vec()),
-            global_address: bech32_encoder.encode_component_address_to_string(addr),
+        .filter_map(|substate| {
+            substate.substate_data.as_ref().and_then(|data| match data {
+                Substate::GlobalSubstate {
+                    entity_type: _,
+                    target_entity,
+                } => Some(target_entity.as_ref().clone()),
+                _ => None,
+            })
         })
         .collect();
-
-    let new_packages: Vec<GlobalEntityId> = receipt
-        .entity_changes
-        .new_package_addresses
-        .iter()
-        .map(|addr| GlobalEntityId {
-            entity_type: EntityType::Package,
-            entity_address_hex: to_hex(addr.to_vec()),
-            global_address_hex: to_hex(addr.to_vec()),
-            global_address: bech32_encoder.encode_package_address_to_string(addr),
-        })
-        .collect();
-
-    let new_resources: Vec<GlobalEntityId> = receipt
-        .entity_changes
-        .new_resource_addresses
-        .iter()
-        .map(|addr| GlobalEntityId {
-            entity_type: EntityType::ResourceManager,
-            entity_address_hex: to_hex(addr.to_vec()),
-            global_address_hex: to_hex(addr.to_vec()),
-            global_address: bech32_encoder.encode_resource_address_to_string(addr),
-        })
-        .collect();
-
-    let mut new_global_entities = vec![];
-    new_global_entities.extend(new_components);
-    new_global_entities.extend(new_packages);
-    new_global_entities.extend(new_resources);
 
     let api_state_updates = StateUpdates {
         up_substates,

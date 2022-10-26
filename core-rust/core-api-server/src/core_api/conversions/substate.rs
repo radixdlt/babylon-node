@@ -10,7 +10,9 @@ use radix_engine::model::{
     KeyValueStoreEntrySubstate, NonFungible, NonFungibleSubstate, PackageSubstate,
     PersistedSubstate, Resource, ResourceManagerSubstate, SystemSubstate, VaultSubstate,
 };
-use radix_engine::types::{Decimal, NonFungibleId, ResourceAddress, ScryptoValue, SubstateId};
+use radix_engine::types::{
+    Decimal, GlobalOffset, NonFungibleId, ResourceAddress, ScryptoValue, SubstateId,
+};
 use scrypto::address::Bech32Encoder;
 use scrypto::engine::types::{
     KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateOffset,
@@ -26,7 +28,9 @@ pub fn to_api_substate(
     bech32_encoder: &Bech32Encoder,
 ) -> Result<models::Substate, MappingError> {
     Ok(match substate {
-        PersistedSubstate::Global(global) => to_api_global_substate(global)?,
+        PersistedSubstate::Global(global) => {
+            to_api_global_substate(bech32_encoder, substate_id, global)?
+        }
         PersistedSubstate::System(system) => to_api_system_substate(system)?,
         PersistedSubstate::ResourceManager(resource_manager) => {
             to_api_resource_substate(resource_manager)
@@ -53,11 +57,28 @@ pub fn to_api_substate(
 }
 
 fn to_api_global_substate(
-    global: &GlobalAddressSubstate,
+    bech32_encoder: &Bech32Encoder,
+    substate_id: &SubstateId,
+    global_substate: &GlobalAddressSubstate,
 ) -> Result<models::Substate, MappingError> {
+    let global_address = match substate_id {
+        SubstateId(
+            RENodeId::Global(global_address),
+            SubstateOffset::Global(GlobalOffset::Global),
+        ) => global_address,
+        _ => {
+            return Err(MappingError::MismatchedSubstateId {
+                message: "Global substate was matched with a different substate id".to_owned(),
+            })
+        }
+    };
     Ok(models::Substate::GlobalSubstate {
         entity_type: EntityType::Global,
-        target_entity_address_hex: to_hex(basic_address_to_vec(&global.node_deref().into())),
+        target_entity: Box::new(to_api_global_entity_id(
+            bech32_encoder,
+            global_address,
+            global_substate,
+        )?),
     })
 }
 
@@ -170,6 +191,7 @@ fn extract_entities(struct_scrypto_value: &ScryptoValue) -> Result<Entities, Map
             .map(|x| to_key_value_store_entity_id(x).into()),
     );
 
+    // TODO - need to fix
     let mut referenced_entities = Vec::<models::EntityId>::new();
     referenced_entities.extend(
         struct_scrypto_value
@@ -230,10 +252,8 @@ fn to_api_fungible_resource_amount(
     resource_address: &ResourceAddress,
     amount: &Decimal,
 ) -> Result<models::ResourceAmount, MappingError> {
-    let resource_entity =
-        to_api_global_entity_id(bech32_encoder, to_resource_entity_id(resource_address))?;
     Ok(models::ResourceAmount::FungibleResourceAmount {
-        resource_address: resource_entity.global_address,
+        resource_address: bech32_encoder.encode_resource_address_to_string(resource_address),
         amount_attos: to_api_decimal_attos(amount),
     })
 }
@@ -243,11 +263,9 @@ fn to_api_non_fungible_resource_amount(
     resource_address: &ResourceAddress,
     ids: &BTreeSet<NonFungibleId>,
 ) -> Result<models::ResourceAmount, MappingError> {
-    let resource_entity =
-        to_api_global_entity_id(bech32_encoder, to_resource_entity_id(resource_address))?;
     let nf_ids_hex = ids.iter().map(|nf_id| to_hex(&nf_id.0)).collect::<Vec<_>>();
     Ok(models::ResourceAmount::NonFungibleResourceAmount {
-        resource_address: resource_entity.global_address,
+        resource_address: bech32_encoder.encode_resource_address_to_string(resource_address),
         nf_ids_hex,
     })
 }
