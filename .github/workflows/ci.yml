@@ -17,7 +17,7 @@ jobs:
           access_token: ${{ github.token }}
   build:
     name: Unit tests and sonarqube
-    runs-on: babylon-runner
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
         with:
@@ -80,7 +80,7 @@ jobs:
         run: ./gradlew :core-rust:buildRustForDocker
   steadystate-integration:
     name: Steady state integration tests
-    runs-on: babylon-runner
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
         with:
@@ -111,7 +111,7 @@ jobs:
         run: ./gradlew clean runSteadyStateIntegrationTests --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
-    runs-on: babylon-runner
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
         with:
