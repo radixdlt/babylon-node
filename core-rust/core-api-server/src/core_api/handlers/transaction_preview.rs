@@ -101,11 +101,14 @@ fn to_api_response(
                 .map(|v| models::ResourceChange {
                     resource_address: bech32_encoder
                         .encode_resource_address_to_string(&v.resource_address),
-                    /* Currently there's no easy way of recording a component_address in resource changes;
-                    Using component_id for now (but keeping the openapi spec unchanged, so it's temporarily wrong!).
-                    Fixme once pull/550 in scrypto is merged. */
-                    component_address: to_hex(&v.component_id.0),
-                    vault_entity_id: Box::new(to_vault_entity_id(&v.vault_id).into()),
+                    component_entity: Box::new(to_entity_reference(
+                        models::EntityType::Component,
+                        &v.component_id,
+                    )),
+                    vault_entity: Box::new(to_entity_reference(
+                        models::EntityType::Vault,
+                        &v.vault_id,
+                    )),
                     amount_attos: to_api_decimal_attos(&v.amount),
                 })
                 .collect();

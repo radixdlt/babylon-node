@@ -17,16 +17,16 @@ pub struct GlobalSubstate {
     pub entity_type: crate::core_api::generated::models::EntityType,
     #[serde(rename = "substate_type")]
     pub substate_type: crate::core_api::generated::models::SubstateType,
-    #[serde(rename = "target_entity_address_hex")]
-    pub target_entity_address_hex: String,
+    #[serde(rename = "target_entity")]
+    pub target_entity: Box<crate::core_api::generated::models::GlobalEntityAssignment>,
 }
 
 impl GlobalSubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, target_entity_address_hex: String) -> GlobalSubstate {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, target_entity: crate::core_api::generated::models::GlobalEntityAssignment) -> GlobalSubstate {
         GlobalSubstate {
             entity_type,
             substate_type,
-            target_entity_address_hex,
+            target_entity: Box::new(target_entity),
         }
     }
 }
