@@ -181,14 +181,11 @@ fn to_api_parsed_notarized_transaction(
         .validation
         .and_then(|result| result.err())
         .map(|error| {
-            Some(Box::new(
-                models::ParsedNotarizedTransactionAllOfValidationError {
-                    reason: format!("{:?}", error),
-                    is_permanent: error.is_permanent(),
-                },
-            ))
-        })
-        .unwrap_or(None);
+            Box::new(models::ParsedNotarizedTransactionAllOfValidationError {
+                reason: format!("{:?}", error),
+                is_permanent: error.is_permanent(),
+            })
+        });
 
     Ok(models::ParsedTransaction::ParsedNotarizedTransaction {
         notarized_transaction: model,
@@ -203,10 +200,7 @@ fn to_api_parsed_notarized_transaction(
 }
 
 fn attempt_parsing_as_signed_intent(bytes: &[u8]) -> Option<SignedTransactionIntent> {
-    match scrypto_decode::<SignedTransactionIntent>(bytes) {
-        Ok(signed_intent) => Some(signed_intent),
-        Err(_) => None,
-    }
+    scrypto_decode::<SignedTransactionIntent>(bytes).ok()
 }
 
 fn to_api_parsed_signed_intent(
@@ -230,10 +224,7 @@ fn to_api_parsed_signed_intent(
 }
 
 fn attempt_parsing_as_intent(bytes: &[u8]) -> Option<TransactionIntent> {
-    match scrypto_decode::<TransactionIntent>(bytes) {
-        Ok(intent) => Some(intent),
-        Err(_) => None,
-    }
+    scrypto_decode::<TransactionIntent>(bytes).ok()
 }
 
 fn to_api_parsed_intent(
@@ -256,10 +247,7 @@ fn to_api_parsed_intent(
 }
 
 fn attempt_parsing_as_manifest(bytes: &[u8]) -> Option<TransactionManifest> {
-    match scrypto_decode::<TransactionManifest>(bytes) {
-        Ok(manifest) => Some(manifest),
-        Err(_) => None,
-    }
+    scrypto_decode::<TransactionManifest>(bytes).ok()
 }
 
 fn to_api_parsed_manifest(
@@ -277,10 +265,7 @@ fn to_api_parsed_manifest(
 }
 
 fn attempt_parsing_as_ledger_transaction(bytes: &[u8]) -> Option<LedgerTransaction> {
-    match LedgerTransaction::from_slice(bytes) {
-        Ok(ledger_transaction) => Some(ledger_transaction),
-        Err(_) => None,
-    }
+    LedgerTransaction::from_slice(bytes).ok()
 }
 
 fn to_api_parsed_ledger_transaction(
