@@ -1,4 +1,5 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
+use std::iter;
 
 use super::*;
 use crate::core_api::models;
@@ -10,7 +11,9 @@ use radix_engine::model::{
     KeyValueStoreEntrySubstate, NonFungible, NonFungibleSubstate, PackageSubstate,
     PersistedSubstate, Resource, ResourceManagerSubstate, SystemSubstate, VaultSubstate,
 };
-use radix_engine::types::{Decimal, NonFungibleId, ResourceAddress, ScryptoValue, SubstateId};
+use radix_engine::types::{
+    Decimal, GlobalAddress, GlobalOffset, NonFungibleId, ResourceAddress, ScryptoValue, SubstateId,
+};
 use scrypto::address::Bech32Encoder;
 use scrypto::engine::types::{
     KeyValueStoreOffset, NonFungibleStoreOffset, RENodeId, SubstateOffset,
@@ -26,7 +29,9 @@ pub fn to_api_substate(
     bech32_encoder: &Bech32Encoder,
 ) -> Result<models::Substate, MappingError> {
     Ok(match substate {
-        PersistedSubstate::Global(global) => to_api_global_substate(global)?,
+        PersistedSubstate::Global(global) => {
+            to_api_global_substate(bech32_encoder, substate_id, global)?
+        }
         PersistedSubstate::System(system) => to_api_system_substate(system)?,
         PersistedSubstate::ResourceManager(resource_manager) => {
             to_api_resource_substate(resource_manager)
@@ -53,11 +58,28 @@ pub fn to_api_substate(
 }
 
 fn to_api_global_substate(
-    global: &GlobalAddressSubstate,
+    bech32_encoder: &Bech32Encoder,
+    substate_id: &SubstateId,
+    global_substate: &GlobalAddressSubstate,
 ) -> Result<models::Substate, MappingError> {
+    let global_address = match substate_id {
+        SubstateId(
+            RENodeId::Global(global_address),
+            SubstateOffset::Global(GlobalOffset::Global),
+        ) => global_address,
+        _ => {
+            return Err(MappingError::MismatchedSubstateId {
+                message: "Global substate was matched with a different substate id".to_owned(),
+            })
+        }
+    };
     Ok(models::Substate::GlobalSubstate {
         entity_type: EntityType::Global,
-        target_entity_address_hex: to_hex(basic_address_to_vec(&global.node_deref().into())),
+        target_entity: Box::new(to_api_global_entity_assignment(
+            bech32_encoder,
+            global_address,
+            global_substate,
+        )?),
     })
 }
 
@@ -119,7 +141,7 @@ fn scrypto_value_to_api_data_struct(
     bech32_encoder: &Bech32Encoder,
     scrypto_value: ScryptoValue,
 ) -> Result<models::DataStruct, MappingError> {
-    let entities = extract_entities(&scrypto_value)?;
+    let entities = extract_entities(bech32_encoder, &scrypto_value)?;
     Ok(models::DataStruct {
         struct_data: Box::new(SborData {
             data_hex: to_hex(scrypto_value.raw),
@@ -134,11 +156,14 @@ fn scrypto_value_to_api_data_struct(
 }
 
 struct Entities {
-    pub owned_entities: Vec<models::EntityId>,
-    pub referenced_entities: Vec<models::EntityId>,
+    pub owned_entities: Vec<models::EntityReference>,
+    pub referenced_entities: Vec<models::GlobalEntityReference>,
 }
 
-fn extract_entities(struct_scrypto_value: &ScryptoValue) -> Result<Entities, MappingError> {
+fn extract_entities(
+    bech32_encoder: &Bech32Encoder,
+    struct_scrypto_value: &ScryptoValue,
+) -> Result<Entities, MappingError> {
     if !struct_scrypto_value.bucket_ids.is_empty() {
         return Err(MappingError::InvalidComponentStateEntities {
             message: "Bucket/s in state".to_owned(),
@@ -150,39 +175,55 @@ fn extract_entities(struct_scrypto_value: &ScryptoValue) -> Result<Entities, Map
         });
     }
 
-    let mut owned_entities = Vec::<models::EntityId>::new();
+    let mut owned_entities = Vec::<models::EntityReference>::new();
     owned_entities.extend(
         struct_scrypto_value
             .component_ids
             .iter()
-            .map(|x| to_component_entity_id(x).into()),
+            .map(|x| to_entity_reference(EntityType::Component, x)),
     );
     owned_entities.extend(
         struct_scrypto_value
             .vault_ids
             .iter()
-            .map(|x| to_vault_entity_id(x).into()),
+            .map(|x| to_entity_reference(EntityType::Vault, x)),
     );
     owned_entities.extend(
         struct_scrypto_value
             .kv_store_ids
             .iter()
-            .map(|x| to_key_value_store_entity_id(x).into()),
+            .map(|x| to_entity_reference(EntityType::KeyValueStore, x)),
     );
 
-    let mut referenced_entities = Vec::<models::EntityId>::new();
-    referenced_entities.extend(
+    let mut referenced_resource_addresses = HashSet::<ResourceAddress>::new();
+    referenced_resource_addresses.extend(struct_scrypto_value.resource_addresses.iter());
+    referenced_resource_addresses.extend(
         struct_scrypto_value
-            .refed_component_addresses
+            .non_fungible_addresses
             .iter()
-            .map(|x| to_global_component_entity_id(x).into()),
+            .map(|addr| addr.resource_address()),
     );
-    referenced_entities.extend(
-        struct_scrypto_value
-            .resource_addresses
-            .iter()
-            .map(|x| to_global_resource_entity_id(x).into()),
-    );
+
+    let referenced_entities = iter::empty()
+        .chain(
+            struct_scrypto_value
+                .refed_component_addresses
+                .iter()
+                .map(|addr| GlobalAddress::Component(*addr)),
+        )
+        .chain(
+            referenced_resource_addresses
+                .into_iter()
+                .map(GlobalAddress::Resource),
+        )
+        .chain(
+            struct_scrypto_value
+                .package_addresses
+                .iter()
+                .map(|addr| GlobalAddress::Package(*addr)),
+        )
+        .map(|addr| to_global_entity_reference(bech32_encoder, &addr))
+        .collect::<Vec<_>>();
 
     Ok(Entities {
         owned_entities,
@@ -230,10 +271,8 @@ fn to_api_fungible_resource_amount(
     resource_address: &ResourceAddress,
     amount: &Decimal,
 ) -> Result<models::ResourceAmount, MappingError> {
-    let resource_entity =
-        to_api_global_entity_id(bech32_encoder, to_resource_entity_id(resource_address))?;
     Ok(models::ResourceAmount::FungibleResourceAmount {
-        resource_address: resource_entity.global_address,
+        resource_address: bech32_encoder.encode_resource_address_to_string(resource_address),
         amount_attos: to_api_decimal_attos(amount),
     })
 }
@@ -243,11 +282,9 @@ fn to_api_non_fungible_resource_amount(
     resource_address: &ResourceAddress,
     ids: &BTreeSet<NonFungibleId>,
 ) -> Result<models::ResourceAmount, MappingError> {
-    let resource_entity =
-        to_api_global_entity_id(bech32_encoder, to_resource_entity_id(resource_address))?;
     let nf_ids_hex = ids.iter().map(|nf_id| to_hex(&nf_id.0)).collect::<Vec<_>>();
     Ok(models::ResourceAmount::NonFungibleResourceAmount {
-        resource_address: resource_entity.global_address,
+        resource_address: bech32_encoder.encode_resource_address_to_string(resource_address),
         nf_ids_hex,
     })
 }

@@ -21,12 +21,12 @@ pub struct StateUpdates {
     #[serde(rename = "down_substates")]
     pub down_substates: Vec<crate::core_api::generated::models::DownSubstate>,
     #[serde(rename = "new_global_entities")]
-    pub new_global_entities: Vec<crate::core_api::generated::models::GlobalEntityId>,
+    pub new_global_entities: Vec<crate::core_api::generated::models::GlobalEntityAssignment>,
 }
 
 impl StateUpdates {
     /// Transaction state updates (only present if status is Succeeded or Failed)
-    pub fn new(down_virtual_substates: Vec<crate::core_api::generated::models::SubstateId>, up_substates: Vec<crate::core_api::generated::models::UpSubstate>, down_substates: Vec<crate::core_api::generated::models::DownSubstate>, new_global_entities: Vec<crate::core_api::generated::models::GlobalEntityId>) -> StateUpdates {
+    pub fn new(down_virtual_substates: Vec<crate::core_api::generated::models::SubstateId>, up_substates: Vec<crate::core_api::generated::models::UpSubstate>, down_substates: Vec<crate::core_api::generated::models::DownSubstate>, new_global_entities: Vec<crate::core_api::generated::models::GlobalEntityAssignment>) -> StateUpdates {
         StateUpdates {
             down_virtual_substates,
             up_substates,

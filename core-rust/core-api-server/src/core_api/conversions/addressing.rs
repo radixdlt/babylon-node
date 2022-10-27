@@ -1,73 +1,62 @@
 use std::convert::TryFrom;
 
-use crate::core_api::models::*;
 use crate::core_api::*;
 
 use models::{EntityType, SubstateType};
-use radix_engine::types::{
-    Bech32Decoder, Bech32Encoder, ComponentAddress, NonFungibleId, PackageAddress, RENodeId,
-    ResourceAddress, SubstateId,
+use radix_engine::{
+    model::GlobalAddressSubstate,
+    types::{
+        Bech32Decoder, Bech32Encoder, ComponentAddress, NonFungibleId, PackageAddress, RENodeId,
+        ResourceAddress, SubstateId,
+    },
 };
 use scrypto::engine::types::{
-    BucketOffset, ComponentId, ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset,
+    BucketOffset, ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset,
     NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset,
     SystemOffset, VaultOffset, WorktopOffset,
 };
 
-#[tracing::instrument(skip_all)]
-pub fn to_api_global_entity_id(
+pub fn to_api_global_entity_assignment(
     bech32_encoder: &Bech32Encoder,
-    entity_id: MappedEntityId,
-) -> Result<GlobalEntityId, MappingError> {
-    let entity_type = entity_id.entity_type;
-    let address_bytes = entity_id.entity_address;
-    let address_bytes_hex = to_hex(&address_bytes);
-
-    let global_address_bech32m = match entity_type {
-        EntityType::System => bech32_encoder.encode_component_address_to_string(
-            &ComponentAddress::try_from(address_bytes.as_slice()).unwrap(),
-        ),
-        EntityType::ResourceManager => bech32_encoder.encode_resource_address_to_string(
-            &ResourceAddress::try_from(address_bytes.as_slice()).unwrap(),
-        ),
-        EntityType::Component => bech32_encoder.encode_component_address_to_string(
-            &ComponentAddress::try_from(address_bytes.as_slice()).unwrap(),
-        ),
-        EntityType::Package => bech32_encoder.encode_package_address_to_string(
-            &PackageAddress::try_from(address_bytes.as_slice()).unwrap(),
-        ),
-        EntityType::Vault => {
-            return Err(MappingError::InvalidRootEntity {
-                message: "Vault".to_owned(),
-            })
-        }
-        EntityType::KeyValueStore => {
-            return Err(MappingError::InvalidRootEntity {
-                message: "KeyValueStore".to_owned(),
-            })
-        }
-        EntityType::Global => {
-            return Err(MappingError::InvalidRootEntity {
-                message: "Global".to_owned(),
-            })
-        }
-        EntityType::NonFungibleStore => {
-            return Err(MappingError::InvalidRootEntity {
-                message: "NonFungibleStore".to_owned(),
-            })
-        }
+    global_address: &GlobalAddress,
+    global_substate: &GlobalAddressSubstate,
+) -> Result<models::GlobalEntityAssignment, MappingError> {
+    let target_entity_id = match global_substate {
+        GlobalAddressSubstate::Component(scrypto::component::Component(id)) => id,
+        GlobalAddressSubstate::SystemComponent(scrypto::component::Component(id)) => id,
+        GlobalAddressSubstate::Resource(id) => id,
+        GlobalAddressSubstate::Package(id) => id,
     };
 
-    Ok(GlobalEntityId {
-        entity_type,
-        entity_address_hex: address_bytes_hex.clone(),
-        global_address_hex: address_bytes_hex,
-        global_address: global_address_bech32m,
+    Ok(models::GlobalEntityAssignment {
+        target_entity_type: get_entity_type_from_global_address(global_address),
+        target_entity_id_hex: to_hex(entity_id_to_bytes(target_entity_id)),
+        global_address_hex: to_hex(global_address_to_vec(global_address)),
+        global_address: encode_to_bech32m_string(bech32_encoder, global_address),
     })
 }
 
-pub fn to_api_entity_id(node_id: RENodeId) -> Result<models::EntityId, MappingError> {
-    let mapped: MappedEntityId = node_id.try_into()?;
+pub fn encode_to_bech32m_string(
+    bech32_encoder: &Bech32Encoder,
+    global_address: &GlobalAddress,
+) -> String {
+    match global_address {
+        GlobalAddress::Component(addr) => bech32_encoder.encode_component_address_to_string(addr),
+        GlobalAddress::Package(addr) => bech32_encoder.encode_package_address_to_string(addr),
+        GlobalAddress::Resource(addr) => bech32_encoder.encode_resource_address_to_string(addr),
+    }
+}
+
+pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> models::EntityType {
+    match global_address {
+        GlobalAddress::Component(_) => models::EntityType::Component,
+        GlobalAddress::Package(_) => models::EntityType::Package,
+        GlobalAddress::Resource(_) => models::EntityType::ResourceManager,
+    }
+}
+
+pub fn to_api_entity_reference(node_id: RENodeId) -> Result<models::EntityReference, MappingError> {
+    let mapped = MappedEntityId::try_from(node_id)?;
 
     Ok(mapped.into())
 }
@@ -76,23 +65,18 @@ pub fn to_api_entity_id(node_id: RENodeId) -> Result<models::EntityId, MappingEr
 pub fn to_api_substate_id(substate_id: SubstateId) -> Result<models::SubstateId, MappingError> {
     let mapped = to_mapped_substate_id(substate_id)?;
 
-    Ok(models::SubstateId {
-        entity_type: mapped.0,
-        entity_address_hex: to_hex(mapped.1),
-        substate_type: mapped.2,
-        substate_key_hex: to_hex(mapped.3),
-    })
+    Ok(mapped.into())
 }
 
-/// A basic address is formed from the transaction hash and a creation index, specifically:
+/// An entity id is formed from the transaction hash and a creation index, specifically:
 /// (tx_hash, index_in_tx_for_exec_mode + offset_for_exec_mode)
 /// There is a separate exec_mode for the manifest and the standard Application executor
 /// See id_allocator.rs for more information. - addresses are formed from (tx_hash, index_in_tx_for_exec_mode + offset_for_exec_mode)
 ///
 /// BEFORE updating this:
-/// > NOTE that basic_address_to_vec only works properly if basic_address is of fixed length
-/// > If basic_address became variable length, we'd need to do something else (eg sbor encode) to ensure a 1:1 mapping there
-type BasicAddress = (scrypto::crypto::Hash, u32);
+/// > NOTE that re_node_id only works properly if EntityId is of fixed length
+/// > If EntityId became variable length, we'd need to do something else (eg sbor encode) to ensure a 1:1 mapping there
+type EntityId = (scrypto::crypto::Hash, u32);
 
 #[derive(Debug)]
 pub struct MappedEntityId {
@@ -109,11 +93,11 @@ impl MappedEntityId {
     }
 }
 
-impl From<MappedEntityId> for models::EntityId {
+impl From<MappedEntityId> for models::EntityReference {
     fn from(mapped_entity_id: MappedEntityId) -> Self {
-        models::EntityId {
+        models::EntityReference {
             entity_type: mapped_entity_id.entity_type,
-            entity_address_hex: to_hex(mapped_entity_id.entity_address),
+            entity_id_hex: to_hex(mapped_entity_id.entity_address),
         }
     }
 }
@@ -121,31 +105,29 @@ impl From<MappedEntityId> for models::EntityId {
 impl TryFrom<RENodeId> for MappedEntityId {
     fn try_from(re_node_id: RENodeId) -> Result<MappedEntityId, MappingError> {
         Ok(match re_node_id {
-            RENodeId::Global(addr) => MappedEntityId::new(
-                EntityType::Global,
-                match addr {
-                    GlobalAddress::Package(addr) => addr.to_vec(),
-                    GlobalAddress::Component(addr) => addr.to_vec(),
-                    GlobalAddress::Resource(addr) => addr.to_vec(),
-                },
-            ),
+            RENodeId::Global(addr) => {
+                MappedEntityId::new(EntityType::Global, global_address_to_entity_id_bytes(&addr))
+            }
             RENodeId::KeyValueStore(addr) => {
-                MappedEntityId::new(EntityType::KeyValueStore, basic_address_to_vec(&addr))
+                MappedEntityId::new(EntityType::KeyValueStore, entity_id_to_bytes(&addr))
             }
             RENodeId::Component(id) => {
-                MappedEntityId::new(EntityType::Component, basic_address_to_vec(&id))
+                MappedEntityId::new(EntityType::Component, entity_id_to_bytes(&id))
             }
             RENodeId::Vault(addr) => {
-                MappedEntityId::new(EntityType::Vault, basic_address_to_vec(&addr))
+                MappedEntityId::new(EntityType::Vault, entity_id_to_bytes(&addr))
             }
             RENodeId::ResourceManager(addr) => {
-                MappedEntityId::new(EntityType::ResourceManager, basic_address_to_vec(&addr))
+                MappedEntityId::new(EntityType::ResourceManager, entity_id_to_bytes(&addr))
             }
             RENodeId::Package(addr) => {
-                MappedEntityId::new(EntityType::Package, basic_address_to_vec(&addr))
+                MappedEntityId::new(EntityType::Package, entity_id_to_bytes(&addr))
             }
             RENodeId::System(id) => {
-                MappedEntityId::new(EntityType::System, basic_address_to_vec(&id))
+                MappedEntityId::new(EntityType::System, entity_id_to_bytes(&id))
+            }
+            RENodeId::NonFungibleStore(id) => {
+                MappedEntityId::new(EntityType::NonFungibleStore, entity_id_to_bytes(&id))
             }
             RENodeId::Bucket(_) => {
                 return Err(MappingError::TransientSubstatePersisted {
@@ -167,10 +149,6 @@ impl TryFrom<RENodeId> for MappedEntityId {
                     message: "AuthZoneStack persisted".to_owned(),
                 })
             }
-            RENodeId::NonFungibleStore(non_fungible_store_id) => MappedEntityId::new(
-                EntityType::NonFungibleStore,
-                basic_address_to_vec(&non_fungible_store_id),
-            ),
         })
     }
 
@@ -184,7 +162,7 @@ impl From<MappedSubstateId> for models::SubstateId {
     fn from(mapped_substate_id: MappedSubstateId) -> Self {
         models::SubstateId {
             entity_type: mapped_substate_id.0,
-            entity_address_hex: to_hex(mapped_substate_id.1),
+            entity_id_hex: to_hex(mapped_substate_id.1),
             substate_type: mapped_substate_id.2,
             substate_key_hex: to_hex(mapped_substate_id.3),
         }
@@ -200,11 +178,11 @@ impl From<MappedSubstateId> for MappedEntityId {
     }
 }
 
-impl From<MappedSubstateId> for models::EntityId {
+impl From<MappedSubstateId> for models::EntityReference {
     fn from(mapped_substate_id: MappedSubstateId) -> Self {
-        models::EntityId {
+        models::EntityReference {
             entity_type: mapped_substate_id.0,
-            entity_address_hex: to_hex(mapped_substate_id.1),
+            entity_id_hex: to_hex(mapped_substate_id.1),
         }
     }
 }
@@ -221,11 +199,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             SubstateOffset::Global(GlobalOffset::Global),
         ) => MappedSubstateId(
             EntityType::Global,
-            match global_address {
-                GlobalAddress::Package(package_addr) => package_addr.to_vec(),
-                GlobalAddress::Resource(resource_addr) => resource_addr.to_vec(),
-                GlobalAddress::Component(component_addr) => component_addr.to_vec(),
-            },
+            global_address_to_entity_id_bytes(&global_address),
             SubstateType::Global,
             vec![0],
         ),
@@ -236,7 +210,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             SubstateOffset::System(SystemOffset::System),
         ) => MappedSubstateId(
             EntityType::System,
-            basic_address_to_vec(&component_id),
+            entity_id_to_bytes(&component_id),
             SubstateType::System,
             vec![0],
         ),
@@ -246,7 +220,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             SubstateOffset::Component(ComponentOffset::Info),
         ) => MappedSubstateId(
             EntityType::Component,
-            basic_address_to_vec(&component_id),
+            entity_id_to_bytes(&component_id),
             SubstateType::ComponentInfo,
             vec![0],
         ),
@@ -255,7 +229,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             SubstateOffset::Component(ComponentOffset::State),
         ) => MappedSubstateId(
             EntityType::Component,
-            basic_address_to_vec(&component_id),
+            entity_id_to_bytes(&component_id),
             SubstateType::ComponentState,
             vec![1],
         ),
@@ -263,7 +237,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         SubstateId(RENodeId::Package(addr), SubstateOffset::Package(PackageOffset::Package)) => {
             MappedSubstateId(
                 EntityType::Package,
-                basic_address_to_vec(&addr),
+                entity_id_to_bytes(&addr),
                 SubstateType::Package,
                 vec![0],
             )
@@ -274,7 +248,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager),
         ) => MappedSubstateId(
             EntityType::ResourceManager,
-            basic_address_to_vec(&addr),
+            entity_id_to_bytes(&addr),
             SubstateType::ResourceManager,
             vec![0],
         ),
@@ -283,7 +257,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id)),
         ) => MappedSubstateId(
             EntityType::NonFungibleStore,
-            basic_address_to_vec(&store_id),
+            entity_id_to_bytes(&store_id),
             SubstateType::NonFungible,
             prefix(vec![2], id.0),
         ),
@@ -311,7 +285,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
         ) => MappedSubstateId(
             EntityType::KeyValueStore,
-            basic_address_to_vec(&id),
+            entity_id_to_bytes(&id),
             SubstateType::KeyValueStoreEntry,
             prefix(vec![1], key),
         ),
@@ -320,7 +294,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
         SubstateId(RENodeId::Vault(vault_id), SubstateOffset::Vault(VaultOffset::Vault)) => {
             MappedSubstateId(
                 EntityType::Vault,
-                basic_address_to_vec(&vault_id),
+                entity_id_to_bytes(&vault_id),
                 SubstateType::Vault,
                 vec![0],
             )
@@ -362,7 +336,7 @@ pub fn to_api_virtual_substate_id(
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
         ) => MappedSubstateId(
             EntityType::NonFungibleStore,
-            basic_address_to_vec(&store_id),
+            entity_id_to_bytes(&store_id),
             SubstateType::NonFungible,
             prefix(vec![2], key),
         ),
@@ -372,7 +346,7 @@ pub fn to_api_virtual_substate_id(
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
         ) => MappedSubstateId(
             EntityType::KeyValueStore,
-            basic_address_to_vec(&store_id),
+            entity_id_to_bytes(&store_id),
             SubstateType::KeyValueStoreEntry,
             prefix(vec![1], key),
         ),
@@ -385,60 +359,32 @@ pub fn to_api_virtual_substate_id(
     };
     Ok(models::SubstateId {
         entity_type: sub_id.0,
-        entity_address_hex: to_hex(sub_id.1),
+        entity_id_hex: to_hex(sub_id.1),
         substate_type: sub_id.2,
         substate_key_hex: to_hex(sub_id.3),
     })
 }
 
-pub fn to_global_component_entity_id(component_address: &ComponentAddress) -> MappedEntityId {
-    MappedEntityId {
-        entity_type: EntityType::Global,
-        entity_address: component_address.to_vec(),
+pub fn to_global_entity_reference(
+    bech32_encoder: &Bech32Encoder,
+    global_address: &GlobalAddress,
+) -> models::GlobalEntityReference {
+    models::GlobalEntityReference {
+        entity_type: get_entity_type_from_global_address(global_address),
+        global_address_hex: to_hex(global_address_to_vec(global_address)),
+        global_address: encode_to_bech32m_string(bech32_encoder, global_address),
     }
 }
 
-pub fn to_component_entity_id(component_id: &ComponentId) -> MappedEntityId {
+pub fn to_entity_reference(
+    entity_type: EntityType,
+    entity_id: &EntityId,
+) -> models::EntityReference {
     MappedEntityId {
-        entity_type: EntityType::Component,
-        entity_address: basic_address_to_vec(component_id),
+        entity_type,
+        entity_address: entity_id_to_bytes(entity_id),
     }
-}
-
-pub fn to_resource_entity_id(resource_address: &ResourceAddress) -> MappedEntityId {
-    MappedEntityId {
-        entity_type: EntityType::ResourceManager,
-        entity_address: resource_address.to_vec(),
-    }
-}
-
-pub fn to_global_resource_entity_id(resource_address: &ResourceAddress) -> MappedEntityId {
-    MappedEntityId {
-        entity_type: EntityType::Global,
-        entity_address: resource_address.to_vec(),
-    }
-}
-
-#[allow(dead_code)]
-pub fn to_package_entity_id(package_address: &PackageAddress) -> MappedEntityId {
-    MappedEntityId {
-        entity_type: EntityType::Package,
-        entity_address: package_address.to_vec(),
-    }
-}
-
-pub fn to_vault_entity_id(basic_address: &BasicAddress) -> MappedEntityId {
-    MappedEntityId {
-        entity_type: EntityType::Vault,
-        entity_address: basic_address_to_vec(basic_address),
-    }
-}
-
-pub fn to_key_value_store_entity_id(basic_address: &BasicAddress) -> MappedEntityId {
-    MappedEntityId {
-        entity_type: EntityType::KeyValueStore,
-        entity_address: basic_address_to_vec(basic_address),
-    }
+    .into()
 }
 
 pub fn extract_package_address(
@@ -474,14 +420,25 @@ pub fn extract_non_fungible_id(non_fungible_id: &str) -> Result<NonFungibleId, E
 
 // NB - see id_allocator.rs - addresses are formed from (tx_hash, index_in_tx_for_exec_mode + offset_for_exec_mode)
 // There is a separate exec_mode for the manifest and the standard Application executor
-pub fn basic_address_to_vec(basic_address: &BasicAddress) -> Vec<u8> {
+pub fn entity_id_to_bytes(entity_id: &EntityId) -> Vec<u8> {
     // NOTE - this only works because the trunc of basic_address is of fixed length.
     // If basic_address became variable length, we'd need to do something else (eg sbor encode) to ensure a 1:1 mapping here
 
-    prefix(
-        basic_address.0.to_vec(),
-        basic_address.1.to_le_bytes().to_vec(),
-    )
+    prefix(entity_id.0.to_vec(), entity_id.1.to_le_bytes().to_vec())
+}
+
+/// This is used for Global Entities - the only entities which don't have use the standard EntityId format
+pub fn global_address_to_entity_id_bytes(global_address: &GlobalAddress) -> Vec<u8> {
+    // For now, we just use the global address bytes
+    global_address_to_vec(global_address)
+}
+
+pub fn global_address_to_vec(global_address: &GlobalAddress) -> Vec<u8> {
+    match global_address {
+        GlobalAddress::Package(package_addr) => package_addr.to_vec(),
+        GlobalAddress::Resource(resource_addr) => resource_addr.to_vec(),
+        GlobalAddress::Component(component_addr) => component_addr.to_vec(),
+    }
 }
 
 fn prefix(mut prefix: Vec<u8>, mut suffix: Vec<u8>) -> Vec<u8> {
