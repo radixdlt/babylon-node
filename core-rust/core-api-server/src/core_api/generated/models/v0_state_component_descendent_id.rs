@@ -15,18 +15,18 @@
 pub struct V0StateComponentDescendentId {
     #[serde(rename = "parent")]
     pub parent: Box<crate::core_api::generated::models::SubstateId>,
-    #[serde(rename = "entity_id")]
-    pub entity_id: Box<crate::core_api::generated::models::EntityId>,
+    #[serde(rename = "entity")]
+    pub entity: Box<crate::core_api::generated::models::EntityReference>,
     /// Depth under component
     #[serde(rename = "depth")]
     pub depth: i32,
 }
 
 impl V0StateComponentDescendentId {
-    pub fn new(parent: crate::core_api::generated::models::SubstateId, entity_id: crate::core_api::generated::models::EntityId, depth: i32) -> V0StateComponentDescendentId {
+    pub fn new(parent: crate::core_api::generated::models::SubstateId, entity: crate::core_api::generated::models::EntityReference, depth: i32) -> V0StateComponentDescendentId {
         V0StateComponentDescendentId {
             parent: Box::new(parent),
-            entity_id: Box::new(entity_id),
+            entity: Box::new(entity),
             depth,
         }
     }

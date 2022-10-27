@@ -869,7 +869,7 @@ components:
         new_global_entities:
           type: array
           items:
-            $ref: "#/components/schemas/GlobalEntityId"
+            $ref: "#/components/schemas/GlobalEntityAssignment"
     UpSubstate:
       type: object
       required:
@@ -913,49 +913,45 @@ components:
           minimum: 0
           maximum: 100000000000000
           description: An integer between 0 and 10^13, counting the number of times the substate was updated
-    GlobalEntityId:
+    GlobalEntityReference:
       type: object
       required:
         - entity_type
-        - entity_address_hex
         - global_address_hex
         - global_address
       properties:
         entity_type:
           $ref: "#/components/schemas/EntityType"
-        entity_address_hex:
-          type: string
-          description: The hex-encoded bytes of the entity address
         global_address_hex:
           type: string
-          description: The hex-encoded bytes of the entity's global address. This is currently the same as entity_address, but may change in future.
+          description: The hex-encoded bytes of the entity's global address
         global_address:
           type: string
           description: The Bech32m-encoded human readable version of the entity's global address
-    EntityId:
+    EntityReference:
       type: object
       required:
         - entity_type
-        - entity_address_hex
+        - entity_id_hex
       properties:
         entity_type:
           $ref: "#/components/schemas/EntityType"
-        entity_address_hex:
+        entity_id_hex:
           type: string
-          description: The hex-encoded bytes of the entity address
+          description: The hex-encoded bytes of the entity id
     SubstateId:
       type: object
       required:
         - entity_type
-        - entity_address_hex
+        - entity_id_hex
         - substate_type
         - substate_key_hex
       properties:
         entity_type:
           $ref: "#/components/schemas/EntityType"
-        entity_address_hex:
+        entity_id_hex:
           type: string
-          description: The hex-encoded bytes of the entity address
+          description: The hex-encoded bytes of the entity id
         substate_type:
           $ref: "#/components/schemas/SubstateType"
         substate_key_hex:
@@ -974,16 +970,16 @@ components:
       type: object
       required:
         - resource_address
-        - component_address
-        - vault_entity_id
+        - component_entity
+        - vault_entity
         - amount_attos
       properties:
         resource_address:
           $ref: "#/components/schemas/ResourceAddress"
-        component_address:
-          $ref: "#/components/schemas/ComponentAddress"
-        vault_entity_id:
-          $ref: "#/components/schemas/EntityId"
+        component_entity:
+          $ref: "#/components/schemas/EntityReference"
+        vault_entity:
+          $ref: "#/components/schemas/EntityReference"
         amount_attos:
           type: string
           description: |
@@ -1248,11 +1244,11 @@ components:
         owned_entities:
           type: array
           items:
-            $ref: '#/components/schemas/EntityId'
+            $ref: '#/components/schemas/EntityReference'
         referenced_entities:
           type: array
           items:
-            $ref: '#/components/schemas/EntityId'
+            $ref: '#/components/schemas/GlobalEntityReference'
     SborData:
       type: object
       required:
@@ -1376,7 +1372,26 @@ components:
             - target_entity
           properties:
             target_entity:
-              $ref: '#/components/schemas/GlobalEntityId'
+              $ref: '#/components/schemas/GlobalEntityAssignment'
+    GlobalEntityAssignment:
+      type: object
+      required:
+        - target_entity_type
+        - target_entity_id_hex
+        - global_address_hex
+        - global_address
+      properties:
+        target_entity_type:
+          $ref: "#/components/schemas/EntityType"
+        target_entity_id_hex:
+          type: string
+          description: The hex-encoded bytes of the target entity id
+        global_address_hex:
+          type: string
+          description: The hex-encoded bytes of the assigned global address.
+        global_address:
+          type: string
+          description: The Bech32m-encoded human readable version of the assigned global address
 ##########################################
 # REQUEST: /status/network-configuration #
 ##########################################
@@ -1929,13 +1944,13 @@ components:
       type: object
       required:
         - parent
-        - entity_id
+        - entity
         - depth
       properties:
         parent:
           $ref: "#/components/schemas/SubstateId"
-        entity_id:
-          $ref: "#/components/schemas/EntityId"
+        entity:
+          $ref: "#/components/schemas/EntityReference"
         depth:
           description: Depth under component
           type: integer

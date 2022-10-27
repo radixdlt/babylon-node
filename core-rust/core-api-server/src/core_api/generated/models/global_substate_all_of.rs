@@ -14,11 +14,11 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct GlobalSubstateAllOf {
     #[serde(rename = "target_entity")]
-    pub target_entity: Box<crate::core_api::generated::models::GlobalEntityId>,
+    pub target_entity: Box<crate::core_api::generated::models::GlobalEntityAssignment>,
 }
 
 impl GlobalSubstateAllOf {
-    pub fn new(target_entity: crate::core_api::generated::models::GlobalEntityId) -> GlobalSubstateAllOf {
+    pub fn new(target_entity: crate::core_api::generated::models::GlobalEntityAssignment) -> GlobalSubstateAllOf {
         GlobalSubstateAllOf {
             target_entity: Box::new(target_entity),
         }

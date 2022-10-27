@@ -67,7 +67,7 @@ fn map_to_descendent_id(
 ) -> Result<models::V0StateComponentDescendentId, MappingError> {
     Ok(models::V0StateComponentDescendentId {
         parent: Box::new(to_api_substate_id(parent.unwrap())?),
-        entity_id: Box::new(to_api_entity_id(node)?),
+        entity: Box::new(to_api_entity_reference(node)?),
         depth: depth as i32, // Won't go over 100 due to component dumper max depth
     })
 }

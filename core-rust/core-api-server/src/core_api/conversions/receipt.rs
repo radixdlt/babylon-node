@@ -46,7 +46,7 @@ pub fn to_api_receipt(
         .map(to_api_down_virtual_substate)
         .collect::<Result<Vec<_>, _>>()?;
 
-    let new_global_entities: Vec<GlobalEntityId> = up_substates
+    let new_global_entities = up_substates
         .iter()
         .filter_map(|substate| {
             substate.substate_data.as_ref().and_then(|data| match data {
@@ -57,7 +57,7 @@ pub fn to_api_receipt(
                 _ => None,
             })
         })
-        .collect();
+        .collect::<Vec<_>>();
 
     let api_state_updates = StateUpdates {
         up_substates,
