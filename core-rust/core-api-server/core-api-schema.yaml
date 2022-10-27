@@ -765,20 +765,31 @@ components:
         - payload_hash
       properties:
         intent_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+          $ref: "#/components/schemas/IntentHash"
         signatures_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded signed transaction hash. This is the hash which is signed as part of notarization. This hash is SHA256(SHA256(compiled_signed_transaction))
+          $ref: "#/components/schemas/SignaturesHash"
         payload_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+          $ref: "#/components/schemas/PayloadHash"
+    IntentHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+    SignaturesHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: The hex-encoded signed transaction hash. This is the hash which is signed as part of notarization. This hash is SHA256(SHA256(compiled_signed_transaction))
+    PayloadHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+    LedgerHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: The hex-encoded ledger-wrapped transaction hash. This hash is SHA256(SHA256(ledger_transaction_bytes))
     ErrorResponse:
       type: object
       required:
@@ -1493,15 +1504,9 @@ components:
         - payload_hash
       properties:
         intent_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+          $ref: "#/components/schemas/IntentHash"
         payload_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+          $ref: "#/components/schemas/PayloadHash"
 #################################
 # REQUEST: /mempool/transaction #
 #################################
@@ -1514,10 +1519,7 @@ components:
         network:
           "$ref": "#/components/schemas/NetworkIdentifier"
         payload_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+          $ref: "#/components/schemas/PayloadHash"
     MempoolTransactionResponse:
       type: object
       required:
@@ -1630,25 +1632,13 @@ components:
                 - ledger_hash
               properties:
                 intent_hash:
-                  type: string
-                  minLength: 64
-                  maxLength: 64
-                  description: The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+                  $ref: "#/components/schemas/IntentHash"
                 signatures_hash:
-                  type: string
-                  minLength: 64
-                  maxLength: 64
-                  description: The hex-encoded signed transaction hash. This is the hash which is signed as part of notarization. This hash is SHA256(SHA256(compiled_signed_transaction))
+                  $ref: "#/components/schemas/SignaturesHash"
                 payload_hash:
-                  type: string
-                  minLength: 64
-                  maxLength: 64
-                  description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+                  $ref: "#/components/schemas/PayloadHash"
                 ledger_hash:
-                  type: string
-                  minLength: 64
-                  maxLength: 64
-                  description: The hex-encoded ledger-wrapped transaction hash. This hash is SHA256(SHA256(ledger_transaction_bytes))
+                  $ref: "#/components/schemas/LedgerHash"
             validation_error:
               type: object
               description: |
@@ -1685,15 +1675,9 @@ components:
                 - signatures_hash
               properties:
                 intent_hash:
-                  type: string
-                  minLength: 64
-                  maxLength: 64
-                  description: The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+                  $ref: "#/components/schemas/IntentHash"
                 signatures_hash:
-                  type: string
-                  minLength: 64
-                  maxLength: 64
-                  description: The hex-encoded signed transaction hash. This is the hash which is signed as part of notarization. This hash is SHA256(SHA256(compiled_signed_transaction))
+                  $ref: "#/components/schemas/SignaturesHash"
     ParsedTransactionIntent:
       allOf:
         - "$ref": "#/components/schemas/ParsedTransactionType"
@@ -1709,10 +1693,7 @@ components:
                 - intent_hash
               properties:
                 intent_hash:
-                  type: string
-                  minLength: 64
-                  maxLength: 64
-                  description: The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+                  $ref: "#/components/schemas/IntentHash"
     ParsedTransactionManifest:
       allOf:
         - "$ref": "#/components/schemas/ParsedTransactionType"
@@ -1735,25 +1716,13 @@ components:
                 - ledger_hash
               properties:
                 intent_hash:
-                  type: string
-                  minLength: 64
-                  maxLength: 64
-                  description: The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+                  $ref: "#/components/schemas/IntentHash"
                 signatures_hash:
-                  type: string
-                  minLength: 64
-                  maxLength: 64
-                  description: The hex-encoded signed transaction hash. This is the hash which is signed as part of notarization. This hash is SHA256(SHA256(compiled_signed_transaction))
+                  $ref: "#/components/schemas/SignaturesHash"
                 payload_hash:
-                  type: string
-                  minLength: 64
-                  maxLength: 64
-                  description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+                  $ref: "#/components/schemas/PayloadHash"
                 ledger_hash:
-                  type: string
-                  minLength: 64
-                  maxLength: 64
-                  description: The hex-encoded ledger-wrapped transaction hash. This hash is SHA256(SHA256(ledger_transaction_bytes))
+                  $ref: "#/components/schemas/LedgerHash"
 ################################
 # REQUEST: /transaction/submit #
 ################################
@@ -2060,10 +2029,7 @@ components:
         - status
       properties:
         payload_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+          $ref: "#/components/schemas/PayloadHash"
         status:
           type: string
           description: The status of the transaction payload, as per this node
