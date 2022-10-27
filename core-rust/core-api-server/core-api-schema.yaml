@@ -100,7 +100,7 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/NetworkStatusRequest"
+              $ref: "#/components/schemas/NetworkStatusRequest"
       responses:
         '200':
           description: Network Status
@@ -125,7 +125,7 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/MempoolListRequest"
+              $ref: "#/components/schemas/MempoolListRequest"
       responses:
         '200':
           description: Mempool List Response
@@ -150,7 +150,7 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/MempoolTransactionRequest"
+              $ref: "#/components/schemas/MempoolTransactionRequest"
       responses:
         '200':
           description: Mempool Transaction Response
@@ -1459,7 +1459,7 @@ components:
         - network
       properties:
         network:
-          "$ref": "#/components/schemas/NetworkIdentifier"
+          $ref: "#/components/schemas/NetworkIdentifier"
     NetworkStatusResponse:
       type: object
       required:
@@ -1487,7 +1487,7 @@ components:
         - network
       properties:
         network:
-          "$ref": "#/components/schemas/NetworkIdentifier"
+          $ref: "#/components/schemas/NetworkIdentifier"
     MempoolListResponse:
       type: object
       required:
@@ -1496,7 +1496,7 @@ components:
         contents:
           type: array
           items:
-            "$ref": "#/components/schemas/MempoolTransactionHashes"
+            $ref: "#/components/schemas/MempoolTransactionHashes"
     MempoolTransactionHashes:
       type: object
       required:
@@ -1517,7 +1517,7 @@ components:
         - payload_hash
       properties:
         network:
-          "$ref": "#/components/schemas/NetworkIdentifier"
+          $ref: "#/components/schemas/NetworkIdentifier"
         payload_hash:
           $ref: "#/components/schemas/PayloadHash"
     MempoolTransactionResponse:
@@ -1526,7 +1526,7 @@ components:
         - notarized_transaction
       properties:
         notarized_transaction:
-          "$ref": "#/components/schemas/NotarizedTransaction"
+          $ref: "#/components/schemas/NotarizedTransaction"
 ###############################
 # REQUEST: /transaction/parse #
 ###############################
@@ -1537,7 +1537,7 @@ components:
         - payload_hex
       properties:
         network:
-          "$ref": "#/components/schemas/NetworkIdentifier"
+          $ref: "#/components/schemas/NetworkIdentifier"
         payload_hex:
           type: string
           description: |
@@ -1581,7 +1581,7 @@ components:
         - is_valid
       properties:
         parsed:
-          "$ref": "#/components/schemas/ParsedTransaction"
+          $ref: "#/components/schemas/ParsedTransaction"
     ParsedTransactionType:
       type: string
       description: The type of the parsed (partial) transaction payload
@@ -1613,16 +1613,16 @@ components:
         - type
       properties:
         type:
-          "$ref": "#/components/schemas/ParsedTransactionType"
+          $ref: "#/components/schemas/ParsedTransactionType"
     ParsedNotarizedTransaction:
       allOf:
-        - "$ref": "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransactionType"
         - type: object
           required:
             - identifiers
           properties:
             notarized_transaction:
-              "$ref": "#/components/schemas/NotarizedTransaction"
+              $ref: "#/components/schemas/NotarizedTransaction"
             identifiers:
               type: object
               required:
@@ -1661,13 +1661,13 @@ components:
                     This relates to whether the transaction would be rejected permanently or temporarily if submitted.
     ParsedSignedTransactionIntent:
       allOf:
-        - "$ref": "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransactionType"
         - type: object
           required:
             - identifiers
           properties:
             signed_intent:
-              "$ref": "#/components/schemas/SignedTransactionIntent"
+              $ref: "#/components/schemas/SignedTransactionIntent"
             identifiers:
               type: object
               required:
@@ -1680,13 +1680,13 @@ components:
                   $ref: "#/components/schemas/SignaturesHash"
     ParsedTransactionIntent:
       allOf:
-        - "$ref": "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransactionType"
         - type: object
           required:
             - identifiers
           properties:
             intent:
-              "$ref": "#/components/schemas/TransactionIntent"
+              $ref: "#/components/schemas/TransactionIntent"
             identifiers:
               type: object
               required:
@@ -1696,20 +1696,20 @@ components:
                   $ref: "#/components/schemas/IntentHash"
     ParsedTransactionManifest:
       allOf:
-        - "$ref": "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransactionType"
         - type: object
           properties:
             manifest:
-              "$ref": "#/components/schemas/TransactionManifest"
+              $ref: "#/components/schemas/TransactionManifest"
     ParsedLedgerTransaction:
       allOf:
-        - "$ref": "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransactionType"
         - type: object
           required:
             - identifiers
           properties:
             ledger_transaction:
-              "$ref": "#/components/schemas/LedgerTransaction"
+              $ref: "#/components/schemas/LedgerTransaction"
             identifiers:
               type: object
               required:
@@ -1917,25 +1917,25 @@ components:
         - type
       properties:
         type:
-          "$ref": "#/components/schemas/LedgerTransactionType"
+          $ref: "#/components/schemas/LedgerTransactionType"
     UserLedgerTransaction:
       allOf:
-        - "$ref": "#/components/schemas/LedgerTransactionBase"
+        - $ref: "#/components/schemas/LedgerTransactionBase"
         - type: object
           required:
             - notarized_transaction
           properties:
             notarized_transaction:
-              "$ref": "#/components/schemas/NotarizedTransaction"
+              $ref: "#/components/schemas/NotarizedTransaction"
     ValidatorLedgerTransaction:
       allOf:
-        - "$ref": "#/components/schemas/LedgerTransactionBase"
+        - $ref: "#/components/schemas/LedgerTransactionBase"
         - type: object
           required:
             - validator_transaction
           properties:
             validator_transaction:
-              "$ref": "#/components/schemas/ValidatorTransaction"
+              $ref: "#/components/schemas/ValidatorTransaction"
     ValidatorTransactionType:
       type: string
       description: The type of the validator transaction
@@ -1955,10 +1955,10 @@ components:
         - type
       properties:
         type:
-          "$ref": "#/components/schemas/ValidatorTransactionType"
+          $ref: "#/components/schemas/ValidatorTransactionType"
     EpochUpdateValidatorTransaction:
       allOf:
-        - "$ref": "#/components/schemas/ValidatorTransactionBase"
+        - $ref: "#/components/schemas/ValidatorTransactionBase"
         - type: object
           required:
             - epoch
