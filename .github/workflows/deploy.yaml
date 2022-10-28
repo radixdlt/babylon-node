@@ -1,6 +1,7 @@
 name: Deploy
 
 on:
+  pull_request:
   push:
     branches:
       - main
@@ -26,5 +27,5 @@ jobs:
           jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
           job_name: "v2-jobs/job/babylon-deploy-main"
           job_params: |
-            {"":""}
+            {"NETWORK_NAME":"gilganet"}
           job_timeout: "3600"
