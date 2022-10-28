@@ -26,8 +26,5 @@ jobs:
           jenkins_user: ${{ secrets.JENKINS_USER }}
           jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
           job_name: "ephemeral-deployments/job/ephemeral-env-deploy-and-test"
-          job_params: |
-            {
-              "":""
-            }
+          job_params: {"":""}
           job_timeout: "3600"
