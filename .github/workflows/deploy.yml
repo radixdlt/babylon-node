@@ -28,6 +28,6 @@ jobs:
           job_name: "ephemeral-deployments/job/ephemeral-env-deploy-and-test"
           job_params: |
             {
-              
+              "":""
             }
           job_timeout: "3600"
