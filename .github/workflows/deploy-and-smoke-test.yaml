@@ -1,7 +1,6 @@
 name: Deploy
 
 on:
-  pull_request:
   push:
     branches:
       - main
@@ -45,6 +44,6 @@ jobs:
           job_params: |
             {
               "network":"gilganet",
-              "testsToRun":"SmokeTestsWithCrashNode"
+              "testsToRun":"SmokeTests"
             }
           job_timeout: "3600"
