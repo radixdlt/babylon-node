@@ -39,7 +39,7 @@ jobs:
           jenkins_url: "${{ secrets.JENKINS_URL }}"
           jenkins_user: ${{ secrets.JENKINS_USER }}
           jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
-          job_name: "v2-jobs/job/babylon-testnet-smoke-tests/"
+          job_name: "v2-jobs/job/babylon-testnet-smoke-tests"
           job_params: |
             {
               "network":"gilganet",
