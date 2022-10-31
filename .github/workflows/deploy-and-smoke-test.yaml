@@ -42,8 +42,5 @@ jobs:
           jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
           job_name: "v2-jobs/job/babylon-testnet-smoke-tests"
           job_params: |
-            {
-              "network":"gilganet",
-              "testsToRun":"SmokeTests"
-            }
+            {"NETWORK_NAME":"gilganet"}
           job_timeout: "3600"
