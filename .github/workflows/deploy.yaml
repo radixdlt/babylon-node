@@ -1,6 +1,7 @@
 name: Deploy
 
 on:
+  pull_request:
   push:
     branches:
       - main
@@ -14,17 +15,34 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
+#  deploy:
+#    name: Deploy to Gilganet
+#    runs-on: ubuntu-22.04
+#    steps:
+#      - name: Deploy
+#        uses: toptal/jenkins-job-trigger-action@1.0.0
+#        with:
+#          jenkins_url: "${{ secrets.JENKINS_URL }}"
+#          jenkins_user: ${{ secrets.JENKINS_USER }}
+#          jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
+#          job_name: "v2-jobs/job/babylon-deploy-main"
+#          job_params: |
+#            {"NETWORK_NAME":"gilganet"}
+#          job_timeout: "3600"
   deploy:
-    name: Deploy to Gilganet
+    name: Run smoke tests
     runs-on: ubuntu-22.04
     steps:
-      - name: Deploy
+      - name: SmokeTests
         uses: toptal/jenkins-job-trigger-action@1.0.0
         with:
           jenkins_url: "${{ secrets.JENKINS_URL }}"
           jenkins_user: ${{ secrets.JENKINS_USER }}
           jenkins_token: ${{ secrets.BABYLON_NODE_JENKINS_API_TOKEN }}
-          job_name: "v2-jobs/job/babylon-deploy-main"
+          job_name: "v2-jobs/job/babylon-testnet-smoke-tests/"
           job_params: |
-            {"NETWORK_NAME":"gilganet"}
+            {
+              "network":"gilganet",
+              "testsToRun":"SmokeTestsWithCrashNode"
+            }
           job_timeout: "3600"
