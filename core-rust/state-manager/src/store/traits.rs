@@ -86,10 +86,7 @@ pub mod substate {
 
 pub mod transactions {
     use crate::transaction::LedgerTransaction;
-    use crate::{
-        CommittedTransactionIdentifiers, LedgerTransactionReceipt, TransactionPayloadHash,
-    };
-    use transaction::model::NotarizedTransaction;
+    use crate::{CommittedTransactionIdentifiers, LedgerPayloadHash, LedgerTransactionReceipt};
 
     pub trait WriteableTransactionStore {
         fn insert_committed_transactions(
@@ -105,7 +102,7 @@ pub mod transactions {
     pub trait QueryableTransactionStore {
         fn get_committed_transaction(
             &self,
-            payload_hash: &TransactionPayloadHash,
+            payload_hash: &LedgerPayloadHash,
         ) -> Option<(
             LedgerTransaction,
             LedgerTransactionReceipt,
@@ -113,58 +110,44 @@ pub mod transactions {
         )>;
     }
 
-    pub trait UserTransactionIndex<T>: QueryableTransactionStore {
-        fn get_hash(&self, identifier: &T) -> Option<TransactionPayloadHash>;
+    pub trait TransactionIndex<T>: QueryableTransactionStore {
+        fn get_payload_hash(&self, identifier: T) -> Option<LedgerPayloadHash>;
 
         fn get_committed_transaction_by_identifier(
             &self,
-            identifier: &T,
+            identifier: T,
         ) -> Option<(
-            NotarizedTransaction,
+            LedgerTransaction,
             LedgerTransactionReceipt,
             CommittedTransactionIdentifiers,
         )> {
-            let payload_hash = self.get_hash(identifier)?;
+            let payload_hash = self.get_payload_hash(identifier)?;
             let (transaction, receipt, identifiers) =
                 self.get_committed_transaction(&payload_hash).expect(
                     "User payload hash was found for transaction, but payload couldn't be found",
                 );
-            let notarized_transaction = match transaction {
-                LedgerTransaction::User(notarized_transaction) => notarized_transaction,
-                LedgerTransaction::Validator(..) => {
-                    panic!("Found validator transaction with intent")
-                }
-            };
-            Some((notarized_transaction, receipt, identifiers))
+            Some((transaction, receipt, identifiers))
         }
     }
 }
 
 pub mod proofs {
-    use crate::TransactionPayloadHash;
+    use crate::LedgerPayloadHash;
 
     pub trait WriteableProofStore {
         fn insert_tids_and_proof(
             &mut self,
             state_version: u64,
-            payload_hashes: Vec<TransactionPayloadHash>,
+            payload_hashes: Vec<LedgerPayloadHash>,
             proof_bytes: Vec<u8>,
         );
 
-        fn insert_tids_without_proof(
-            &mut self,
-            state_version: u64,
-            ids: Vec<TransactionPayloadHash>,
-        );
+        fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<LedgerPayloadHash>);
     }
 
     pub trait QueryableProofStore {
         fn max_state_version(&self) -> u64;
-        fn get_payload_hash(&self, state_version: u64) -> Option<TransactionPayloadHash>;
-        fn get_next_proof(
-            &self,
-            state_version: u64,
-        ) -> Option<(Vec<TransactionPayloadHash>, Vec<u8>)>;
+        fn get_next_proof(&self, state_version: u64) -> Option<(Vec<LedgerPayloadHash>, Vec<u8>)>;
         fn get_last_proof(&self) -> Option<Vec<u8>>;
     }
 }

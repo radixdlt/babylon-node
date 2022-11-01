@@ -13,14 +13,17 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ParsedSignedTransactionIntentAllOf {
-    #[serde(rename = "signed_intent")]
-    pub signed_intent: Box<crate::core_api::generated::models::SignedTransactionIntent>,
+    #[serde(rename = "signed_intent", skip_serializing_if = "Option::is_none")]
+    pub signed_intent: Option<Box<crate::core_api::generated::models::SignedTransactionIntent>>,
+    #[serde(rename = "identifiers")]
+    pub identifiers: Box<crate::core_api::generated::models::ParsedSignedTransactionIntentAllOfIdentifiers>,
 }
 
 impl ParsedSignedTransactionIntentAllOf {
-    pub fn new(signed_intent: crate::core_api::generated::models::SignedTransactionIntent) -> ParsedSignedTransactionIntentAllOf {
+    pub fn new(identifiers: crate::core_api::generated::models::ParsedSignedTransactionIntentAllOfIdentifiers) -> ParsedSignedTransactionIntentAllOf {
         ParsedSignedTransactionIntentAllOf {
-            signed_intent: Box::new(signed_intent),
+            signed_intent: None,
+            identifiers: Box::new(identifiers),
         }
     }
 }

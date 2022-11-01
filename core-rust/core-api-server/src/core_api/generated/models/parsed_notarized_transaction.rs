@@ -13,22 +13,20 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ParsedNotarizedTransaction {
-    #[serde(rename = "notarized_transaction")]
-    pub notarized_transaction: Box<crate::core_api::generated::models::NotarizedTransaction>,
-    /// Gives if the transaction is statically valid. Note that, even if statically valid, the transaction may still be rejected or fail due to issues at runtime (eg if the loan cannot be repaid). 
-    #[serde(rename = "is_statically_valid")]
-    pub is_statically_valid: bool,
-    /// If the transaction is not statically valid, this gives a reason. 
-    #[serde(rename = "validity_error", skip_serializing_if = "Option::is_none")]
-    pub validity_error: Option<String>,
+    #[serde(rename = "notarized_transaction", skip_serializing_if = "Option::is_none")]
+    pub notarized_transaction: Option<Box<crate::core_api::generated::models::NotarizedTransaction>>,
+    #[serde(rename = "identifiers")]
+    pub identifiers: Box<crate::core_api::generated::models::ParsedNotarizedTransactionAllOfIdentifiers>,
+    #[serde(rename = "validation_error", skip_serializing_if = "Option::is_none")]
+    pub validation_error: Option<Box<crate::core_api::generated::models::ParsedNotarizedTransactionAllOfValidationError>>,
 }
 
 impl ParsedNotarizedTransaction {
-    pub fn new(notarized_transaction: crate::core_api::generated::models::NotarizedTransaction, is_statically_valid: bool) -> ParsedNotarizedTransaction {
+    pub fn new(identifiers: crate::core_api::generated::models::ParsedNotarizedTransactionAllOfIdentifiers) -> ParsedNotarizedTransaction {
         ParsedNotarizedTransaction {
-            notarized_transaction: Box::new(notarized_transaction),
-            is_statically_valid,
-            validity_error: None,
+            notarized_transaction: None,
+            identifiers: Box::new(identifiers),
+            validation_error: None,
         }
     }
 }

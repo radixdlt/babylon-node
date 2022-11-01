@@ -21,6 +21,8 @@ pub enum ParsedTransactionType {
     TransactionIntent,
     #[serde(rename = "TransactionManifest")]
     TransactionManifest,
+    #[serde(rename = "LedgerTransaction")]
+    LedgerTransaction,
 
 }
 
@@ -31,6 +33,7 @@ impl ToString for ParsedTransactionType {
             Self::SignedTransactionIntent => String::from("SignedTransactionIntent"),
             Self::TransactionIntent => String::from("TransactionIntent"),
             Self::TransactionManifest => String::from("TransactionManifest"),
+            Self::LedgerTransaction => String::from("LedgerTransaction"),
         }
     }
 }

@@ -67,7 +67,7 @@ use crate::transaction::LedgerTransaction;
 use crate::types::UserPayloadHash;
 use crate::{
     CommittedTransactionIdentifiers, HasIntentHash, HasUserPayloadHash, IntentHash,
-    LedgerTransactionReceipt, TransactionPayloadHash,
+    LedgerPayloadHash, LedgerTransactionReceipt,
 };
 use scrypto::prelude::{scrypto_decode, scrypto_encode};
 use std::collections::{BTreeMap, HashMap};
@@ -103,11 +103,11 @@ impl Default for InMemoryVertexStore {
 
 #[derive(Debug)]
 pub struct InMemoryStore {
-    transactions: HashMap<TransactionPayloadHash, Vec<u8>>,
-    transaction_intent_lookup: HashMap<IntentHash, TransactionPayloadHash>,
-    user_payload_hash_lookup: HashMap<UserPayloadHash, TransactionPayloadHash>,
+    transactions: HashMap<LedgerPayloadHash, Vec<u8>>,
+    transaction_intent_lookup: HashMap<IntentHash, LedgerPayloadHash>,
+    user_payload_hash_lookup: HashMap<UserPayloadHash, LedgerPayloadHash>,
     proofs: BTreeMap<u64, Vec<u8>>,
-    txids: BTreeMap<u64, TransactionPayloadHash>,
+    txids: BTreeMap<u64, LedgerPayloadHash>,
 }
 
 impl InMemoryStore {
@@ -170,22 +170,28 @@ impl WriteableTransactionStore for InMemoryStore {
     }
 }
 
-impl UserTransactionIndex<UserPayloadHash> for InMemoryStore {
-    fn get_hash(&self, identifier: &UserPayloadHash) -> Option<TransactionPayloadHash> {
+impl TransactionIndex<&UserPayloadHash> for InMemoryStore {
+    fn get_payload_hash(&self, identifier: &UserPayloadHash) -> Option<LedgerPayloadHash> {
         self.user_payload_hash_lookup.get(identifier).cloned()
     }
 }
 
-impl UserTransactionIndex<IntentHash> for InMemoryStore {
-    fn get_hash(&self, identifier: &IntentHash) -> Option<TransactionPayloadHash> {
+impl TransactionIndex<&IntentHash> for InMemoryStore {
+    fn get_payload_hash(&self, identifier: &IntentHash) -> Option<LedgerPayloadHash> {
         self.transaction_intent_lookup.get(identifier).cloned()
+    }
+}
+
+impl TransactionIndex<u64> for InMemoryStore {
+    fn get_payload_hash(&self, state_version: u64) -> Option<LedgerPayloadHash> {
+        self.txids.get(&state_version).cloned()
     }
 }
 
 impl QueryableTransactionStore for InMemoryStore {
     fn get_committed_transaction(
         &self,
-        payload_hash: &TransactionPayloadHash,
+        payload_hash: &LedgerPayloadHash,
     ) -> Option<(
         LedgerTransaction,
         LedgerTransactionReceipt,
@@ -203,7 +209,7 @@ impl WriteableProofStore for InMemoryStore {
     fn insert_tids_and_proof(
         &mut self,
         state_version: u64,
-        ids: Vec<TransactionPayloadHash>,
+        ids: Vec<LedgerPayloadHash>,
         proof_bytes: Vec<u8>,
     ) {
         self.insert_tids_without_proof(state_version, ids);
@@ -211,7 +217,7 @@ impl WriteableProofStore for InMemoryStore {
         self.proofs.insert(state_version, proof_bytes);
     }
 
-    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<TransactionPayloadHash>) {
+    fn insert_tids_without_proof(&mut self, state_version: u64, ids: Vec<LedgerPayloadHash>) {
         if !ids.is_empty() {
             let first_state_version = state_version - u64::try_from(ids.len() - 1).unwrap();
             for (index, id) in ids.into_iter().enumerate() {
@@ -231,12 +237,8 @@ impl QueryableProofStore for InMemoryStore {
             .unwrap_or_default()
     }
 
-    fn get_payload_hash(&self, state_version: u64) -> Option<TransactionPayloadHash> {
-        self.txids.get(&state_version).cloned()
-    }
-
     /// Returns the next proof from a state version (excluded)
-    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<TransactionPayloadHash>, Vec<u8>)> {
+    fn get_next_proof(&self, state_version: u64) -> Option<(Vec<LedgerPayloadHash>, Vec<u8>)> {
         let next_state_version = state_version + 1;
         self.proofs
             .range(next_state_version..)

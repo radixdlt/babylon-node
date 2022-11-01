@@ -76,7 +76,7 @@ use transaction::errors::TransactionValidationError;
 use crate::jni::utils::*;
 use crate::transaction::UserTransactionValidator;
 use crate::types::PendingTransaction;
-use crate::{mempool::*, TransactionPayloadHash, UserPayloadHash};
+use crate::{mempool::*, LedgerPayloadHash, UserPayloadHash};
 
 //
 // JNI Interface
@@ -199,8 +199,8 @@ fn do_get_transactions_to_relay(
 #[derive(Debug, PartialEq, Eq, TypeId, Encode, Decode)]
 pub struct JavaPayloadHash(Vec<u8>);
 
-impl From<TransactionPayloadHash> for JavaPayloadHash {
-    fn from(payload_hash: TransactionPayloadHash) -> Self {
+impl From<LedgerPayloadHash> for JavaPayloadHash {
+    fn from(payload_hash: LedgerPayloadHash) -> Self {
         JavaPayloadHash(payload_hash.into_bytes().to_vec())
     }
 }

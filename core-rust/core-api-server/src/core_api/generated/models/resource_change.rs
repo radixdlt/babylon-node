@@ -20,7 +20,7 @@ pub struct ResourceChange {
     pub component_entity: Box<crate::core_api::generated::models::EntityReference>,
     #[serde(rename = "vault_entity")]
     pub vault_entity: Box<crate::core_api::generated::models::EntityReference>,
-    /// A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in the XRD amount put or taken from the vault 
+    /// A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in the XRD amount put or taken from the vault 
     #[serde(rename = "amount_attos")]
     pub amount_attos: String,
 }

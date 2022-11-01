@@ -153,7 +153,7 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
           RoundDetails roundDetails) {
         return new StateComputerLedger.StateComputerResult(
             proposedTransactions.stream()
-                // This is a cheeky hack which is
+                // This is a workaround for the mocking to keep things lightweight
                 .map(tx -> new MockExecuted(tx.INCORRECTInterpretDirectlyAsRawLedgerTransaction()))
                 .collect(Collectors.toList()),
             Map.of());
@@ -162,9 +162,9 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
       @Override
       public void commit(
           CommittedTransactionsWithProof txnsAndProof, VertexStoreState vertexStoreState) {
-        // TODO: is this okay???
         mempool.handleTransactionsCommitted(
             txnsAndProof.getTransactions().stream()
+                // This is a workaround for the mocking to keep things lightweight
                 .map(RawLedgerTransaction::INCORRECTInterpretDirectlyAsRawNotarizedTransaction)
                 .toList());
         counters.set(SystemCounters.CounterType.MEMPOOL_CURRENT_SIZE, mempool.getCount());

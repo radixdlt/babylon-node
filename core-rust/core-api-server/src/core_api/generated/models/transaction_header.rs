@@ -17,13 +17,13 @@ pub struct TransactionHeader {
     pub version: i32,
     #[serde(rename = "network_id")]
     pub network_id: i32,
-    /// An integer between 0 and 10^10, marking the epoch from which the transaction can be submitted
+    /// An integer between `0` and `10^10`, marking the epoch from which the transaction can be submitted
     #[serde(rename = "start_epoch_inclusive")]
     pub start_epoch_inclusive: i64,
-    /// An integer between 0 and 10^10, marking the epoch from which the transaction will no longer be valid, and be rejected
+    /// An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected
     #[serde(rename = "end_epoch_exclusive")]
     pub end_epoch_exclusive: i64,
-    /// A decimal-string-encoded integer between 0 and 2^64 - 1, chosen to be unique to allow replay of transaction intents
+    /// A decimal-string-encoded integer between `0` and `2^64 - 1`, chosen to be unique to allow replay of transaction intents
     #[serde(rename = "nonce")]
     pub nonce: String,
     #[serde(rename = "notary_public_key")]
@@ -31,10 +31,10 @@ pub struct TransactionHeader {
     /// Specifies whether the notary's signature should be included in transaction signers list
     #[serde(rename = "notary_as_signatory")]
     pub notary_as_signatory: bool,
-    /// An integer between 0 and 2^32 - 1, giving the maximum number of cost units available for transaction execution.
+    /// An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution.
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: i64,
-    /// An integer between 0 and 2^32 - 1, giving the validator tip as a percentage amount. A value of \"1\" corresponds to 1% of the fee.
+    /// An integer between `0` and `2^32 - 1`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: i64,
 }

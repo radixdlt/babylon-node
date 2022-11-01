@@ -15,7 +15,7 @@
 pub struct UpSubstate {
     #[serde(rename = "substate_id")]
     pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
-    /// An integer between 0 and 10^13, counting the number of times the substate was updated
+    /// An integer between `0` and `10^13`, counting the number of times the substate was updated
     #[serde(rename = "version")]
     pub version: i64,
     /// The hex-encoded, SBOR-encoded substate data bytes

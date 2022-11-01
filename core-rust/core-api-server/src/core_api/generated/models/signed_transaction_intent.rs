@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SignedTransactionIntent {
-    /// The hex-encoded double-SHA256 hash of the signed transaction intent. Also known as the signatures hash.
+    /// The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `SHA256(SHA256(compiled_signed_transaction))`
     #[serde(rename = "hash")]
     pub hash: String,
     #[serde(rename = "intent")]

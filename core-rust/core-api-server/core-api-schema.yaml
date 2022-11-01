@@ -100,7 +100,7 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/NetworkStatusRequest"
+              $ref: "#/components/schemas/NetworkStatusRequest"
       responses:
         '200':
           description: Network Status
@@ -125,7 +125,7 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/MempoolListRequest"
+              $ref: "#/components/schemas/MempoolListRequest"
       responses:
         '200':
           description: Mempool List Response
@@ -150,7 +150,7 @@ paths:
         content:
           application/json:
             schema:
-              "$ref": "#/components/schemas/MempoolTransactionRequest"
+              $ref: "#/components/schemas/MempoolTransactionRequest"
       responses:
         '200':
           description: Mempool Transaction Response
@@ -631,8 +631,7 @@ components:
         - notary_signature
       properties:
         hash:
-          type: string
-          description: The hex-encoded double-SHA256 hash of the notarized transaction payload. Also known as the payload_hash or the notarized_transaction_hash.
+          $ref: "#/components/schemas/PayloadHash"
         payload_hex:
           type: string
           description: The hex-encoded full notarized transaction payload
@@ -648,8 +647,7 @@ components:
         - intent_signatures
       properties:
         hash:
-          type: string
-          description: The hex-encoded double-SHA256 hash of the signed transaction intent. Also known as the signatures hash.
+          $ref: "#/components/schemas/SignaturesHash"
         intent:
           $ref: "#/components/schemas/TransactionIntent"
         intent_signatures:
@@ -665,10 +663,7 @@ components:
         - blobs_hex
       properties:
         hash:
-          type: string
-          description: |
-            The hex-encoded double-SHA256 hash of the transaction intent.
-            Also known as the Transaction ID, Transaction Hash, or Intent Hash.
+          $ref: "#/components/schemas/IntentHash"
         header:
           $ref: "#/components/schemas/TransactionHeader"
         manifest:
@@ -699,16 +694,16 @@ components:
           format: int64
           minimum: 0
           maximum: 10000000000
-          description: An integer between 0 and 10^10, marking the epoch from which the transaction can be submitted
+          description: An integer between `0` and `10^10`, marking the epoch from which the transaction can be submitted
         end_epoch_exclusive:
           type: integer
           format: int64
           minimum: 0
           maximum: 10000000000
-          description: An integer between 0 and 10^10, marking the epoch from which the transaction will no longer be valid, and be rejected
+          description: An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected
         nonce:
           type: string
-          description: A decimal-string-encoded integer between 0 and 2^64 - 1, chosen to be unique to allow replay of transaction intents
+          description: A decimal-string-encoded integer between `0` and `2^64 - 1`, chosen to be unique to allow replay of transaction intents
         notary_public_key:
           $ref: "#/components/schemas/PublicKey"
         notary_as_signatory:
@@ -719,13 +714,13 @@ components:
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, giving the maximum number of cost units available for transaction execution.
+          description: An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution.
         tip_percentage:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, giving the validator tip as a percentage amount. A value of "1" corresponds to 1% of the fee.
+          description: An integer between `0` and `2^32 - 1`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     TransactionManifest:
       type: object
       required:
@@ -756,7 +751,7 @@ components:
           format: int64
           minimum: 0
           maximum: 100000000000000
-          description: An integer between 0 and 10^13, representing the state version. The state version increments with each transaction, starting at 0 pre-genesis.
+          description: An integer between `0` and `10^13`, representing the state version. The state version increments with each transaction, starting at `0` pre-genesis.
     TransactionIdentifiers:
       type: object
       required:
@@ -765,20 +760,31 @@ components:
         - payload_hash
       properties:
         intent_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+          $ref: "#/components/schemas/IntentHash"
         signatures_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded signed transaction hash. This is the hash which is signed as part of notarization. This hash is SHA256(SHA256(compiled_signed_transaction))
+          $ref: "#/components/schemas/SignaturesHash"
         payload_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+          $ref: "#/components/schemas/PayloadHash"
+    IntentHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `SHA256(SHA256(compiled_intent))`
+    SignaturesHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `SHA256(SHA256(compiled_signed_transaction))`
+    PayloadHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `SHA256(SHA256(compiled_notarized_transaction))`
+    LedgerHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: The hex-encoded ledger-wrapped transaction hash. This is known as the Ledger Hash. This hash is `SHA256(SHA256(ledger_transaction_bytes))`
     ErrorResponse:
       type: object
       required:
@@ -817,33 +823,33 @@ components:
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, representing the maximum amount of cost units available for the transaction execution.
+          description: An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction execution.
         cost_unit_consumed:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, representing the amount of cost units consumed by the transaction execution.
+          description: An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.
         cost_unit_price_attos:
           type: string
           description: |
-            A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
             the XRD price of a single cost unit.
         tip_percentage:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, specifying the validator tip as a percentage amount. A value of "1" corresponds to 1% of the fee.
+          description: An integer between `0` and `2^32 - 1`, specifying the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
         xrd_burned_attos:
           type: string
           description: |
-            A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
             the total amount of XRD burned in the transaction.
         xrd_tipped_attos:
           type: string
           description: |
-            A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
             the total amount of XRD tipped to validators in the transaction.
     StateUpdates:
       type: object
@@ -886,7 +892,7 @@ components:
           format: int64
           minimum: 0
           maximum: 100000000000000
-          description: An integer between 0 and 10^13, counting the number of times the substate was updated
+          description: An integer between `0` and `10^13`, counting the number of times the substate was updated
         substate_hex:
           type: string
           description: The hex-encoded, SBOR-encoded substate data bytes
@@ -912,7 +918,7 @@ components:
           format: int64
           minimum: 0
           maximum: 100000000000000
-          description: An integer between 0 and 10^13, counting the number of times the substate was updated
+          description: An integer between `0` and `10^13`, counting the number of times the substate was updated
     GlobalEntityReference:
       type: object
       required:
@@ -983,7 +989,7 @@ components:
         amount_attos:
           type: string
           description: |
-            A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
             the XRD amount put or taken from the vault
 #################################################
 # GENERAL / SHARED MODELS - keys and signatures #
@@ -1051,7 +1057,7 @@ components:
           type: string
           minLength: 130
           maxLength: 130
-          description: A hex-encoded recoverable ECDSA Secp256k1 signature (65 bytes). The first byte is the recovery id, the remaining 64 bytes are the compact signature, ie CONCAT(R, s) where R and s are each 32-bytes in padded big-endian format.
+          description: A hex-encoded recoverable ECDSA Secp256k1 signature (65 bytes). The first byte is the recovery id, the remaining 64 bytes are the compact signature, ie `CONCAT(R, s)` where `R` and `s` are each 32-bytes in padded big-endian format.
     EddsaEd25519Signature:
       type: object
       required:
@@ -1064,7 +1070,7 @@ components:
           type: string
           minLength: 128
           maxLength: 128
-          description: A hex-encoded EdDSA Ed25519 signature (64 bytes). This is CONCAT(R, s) where R and s are each 32-bytes in padded big-endian format.
+          description: A hex-encoded EdDSA Ed25519 signature (64 bytes). This is `CONCAT(R, s)` where `R` and `s` are each 32-bytes in padded big-endian format.
     SignatureWithPublicKey:
       oneOf:
         - $ref: '#/components/schemas/EcdsaSecp256k1SignatureWithPublicKey'
@@ -1172,7 +1178,7 @@ components:
               format: int64
               minimum: 0
               maximum: 10000000000
-              description: An integer between 0 and 10^10, marking the current epoch
+              description: An integer between `0` and `10^10`, marking the current epoch
     ResourceManagerSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -1203,7 +1209,7 @@ components:
             total_supply_attos:
               type: string
               description: |
-                A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+                A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
                 the total supply of this resource.
     ResourceType:
       type: string
@@ -1309,7 +1315,7 @@ components:
             amount_attos:
               type: string
               description: |
-                The string-encoded decimal subunits of the amount (10^-18) in a signed 256-bit integer.
+                The string-encoded decimal subunits of the amount (`10^-18`) in a signed 256-bit integer.
                 This is string-encoded as it doesn't fit well into common numeric types.
     NonFungibleResourceAmount:
       allOf:
@@ -1448,7 +1454,7 @@ components:
         - network
       properties:
         network:
-          "$ref": "#/components/schemas/NetworkIdentifier"
+          $ref: "#/components/schemas/NetworkIdentifier"
     NetworkStatusResponse:
       type: object
       required:
@@ -1476,7 +1482,7 @@ components:
         - network
       properties:
         network:
-          "$ref": "#/components/schemas/NetworkIdentifier"
+          $ref: "#/components/schemas/NetworkIdentifier"
     MempoolListResponse:
       type: object
       required:
@@ -1485,7 +1491,7 @@ components:
         contents:
           type: array
           items:
-            "$ref": "#/components/schemas/MempoolTransactionHashes"
+            $ref: "#/components/schemas/MempoolTransactionHashes"
     MempoolTransactionHashes:
       type: object
       required:
@@ -1493,15 +1499,9 @@ components:
         - payload_hash
       properties:
         intent_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+          $ref: "#/components/schemas/IntentHash"
         payload_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+          $ref: "#/components/schemas/PayloadHash"
 #################################
 # REQUEST: /mempool/transaction #
 #################################
@@ -1512,19 +1512,16 @@ components:
         - payload_hash
       properties:
         network:
-          "$ref": "#/components/schemas/NetworkIdentifier"
+          $ref: "#/components/schemas/NetworkIdentifier"
         payload_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+          $ref: "#/components/schemas/PayloadHash"
     MempoolTransactionResponse:
       type: object
       required:
         - notarized_transaction
       properties:
         notarized_transaction:
-          "$ref": "#/components/schemas/NotarizedTransaction"
+          $ref: "#/components/schemas/NotarizedTransaction"
 ###############################
 # REQUEST: /transaction/parse #
 ###############################
@@ -1535,12 +1532,43 @@ components:
         - payload_hex
       properties:
         network:
-          "$ref": "#/components/schemas/NetworkIdentifier"
+          $ref: "#/components/schemas/NetworkIdentifier"
         payload_hex:
           type: string
           description: |
             A hex-encoded payload of a full transaction or a partial transaction - either a notarized transaction,
             a signed transaction intent an unsigned transaction intent, or a transaction manifest.
+        parse_mode:
+          type: string
+          enum:
+            - Any
+            - Notarized
+            - Signed
+            - Unsigned
+            - Manifest
+            - Ledger
+          description: |
+            The type of transaction payload that should be assumed. If omitted, "Any" is used - where the payload is
+            attempted to be parsed as each of the following in turn: Notarized, Signed, Unsigned, Manifest, Ledger.
+        validation_mode:
+          type: string
+          enum:
+            - None
+            - Static
+            - Full
+          description: |
+            The type of validation that should be performed, if the payload correctly decompiles as a Notarized Transaction.
+            This is only relevant for Notarized payloads. If omitted, "Static" is used.
+        response_mode:
+          type: string
+          enum:
+            - Basic
+            - Full
+          description: |
+            The amount of information to return in the response.
+            "Basic" includes the type, validity information, and any relevant identifiers.
+            "Full" also includes the fully parsed information.
+            If omitted, "Full" is used.
     TransactionParseResponse:
       type: object
       required:
@@ -1548,7 +1576,7 @@ components:
         - is_valid
       properties:
         parsed:
-          "$ref": "#/components/schemas/ParsedTransaction"
+          $ref: "#/components/schemas/ParsedTransaction"
     ParsedTransactionType:
       type: string
       description: The type of the parsed (partial) transaction payload
@@ -1557,12 +1585,14 @@ components:
         - SignedTransactionIntent
         - TransactionIntent
         - TransactionManifest
+        - LedgerTransaction
     ParsedTransaction:
       oneOf:
         - $ref: '#/components/schemas/ParsedNotarizedTransaction'
         - $ref: '#/components/schemas/ParsedSignedTransactionIntent'
         - $ref: '#/components/schemas/ParsedTransactionIntent'
         - $ref: '#/components/schemas/ParsedTransactionManifest'
+        - $ref: '#/components/schemas/ParsedLedgerTransaction'
       discriminator:
         propertyName: type
         mapping:
@@ -1571,59 +1601,123 @@ components:
           SignedTransactionIntent: '#/components/schemas/ParsedSignedTransactionIntent'
           TransactionIntent: '#/components/schemas/ParsedTransactionIntent'
           TransactionManifest: '#/components/schemas/ParsedTransactionManifest'
+          LedgerTransaction: '#/components/schemas/ParsedLedgerTransaction'
     ParsedTransactionBase:
       type: object
       required:
         - type
       properties:
         type:
-          "$ref": "#/components/schemas/ParsedTransactionType"
+          $ref: "#/components/schemas/ParsedTransactionType"
     ParsedNotarizedTransaction:
       allOf:
-        - "$ref": "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransactionType"
         - type: object
           required:
-            - notarized_transaction
-            - is_statically_valid
+            - identifiers
           properties:
             notarized_transaction:
-              "$ref": "#/components/schemas/NotarizedTransaction"
-            is_statically_valid:
-              type: boolean
+              $ref: "#/components/schemas/NotarizedTransaction"
+            identifiers:
+              type: object
+              required:
+                - intent_hash
+                - signatures_hash
+                - payload_hash
+                - ledger_hash
+              properties:
+                intent_hash:
+                  $ref: "#/components/schemas/IntentHash"
+                signatures_hash:
+                  $ref: "#/components/schemas/SignaturesHash"
+                payload_hash:
+                  $ref: "#/components/schemas/PayloadHash"
+                ledger_hash:
+                  $ref: "#/components/schemas/LedgerHash"
+            validation_error:
+              type: object
               description: |
-                Gives if the transaction is statically valid. Note that, even if statically valid, the transaction may
+                If the transaction is known to not be valid, this gives a reason.
+                Different levels of validation are performed, dependent on the validation mode.
+                Note that, even if validation mode is Static or Full, the transaction may
                 still be rejected or fail due to issues at runtime (eg if the loan cannot be repaid).
-            validity_error:
-              type: string
-              description: |
-                If the transaction is not statically valid, this gives a reason.
+              required:
+                - reason
+                - is_permanent
+              properties:
+                reason:
+                  type: string
+                  description: |
+                    The error message.
+                is_permanent:
+                  type: boolean
+                  description: |
+                    Whether the error is known to be permanent, or not.
+                    This relates to whether the transaction would be rejected permanently or temporarily if submitted.
     ParsedSignedTransactionIntent:
       allOf:
-        - "$ref": "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransactionType"
         - type: object
           required:
-            - signed_intent
+            - identifiers
           properties:
             signed_intent:
-              "$ref": "#/components/schemas/SignedTransactionIntent"
+              $ref: "#/components/schemas/SignedTransactionIntent"
+            identifiers:
+              type: object
+              required:
+                - intent_hash
+                - signatures_hash
+              properties:
+                intent_hash:
+                  $ref: "#/components/schemas/IntentHash"
+                signatures_hash:
+                  $ref: "#/components/schemas/SignaturesHash"
     ParsedTransactionIntent:
       allOf:
-        - "$ref": "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransactionType"
         - type: object
           required:
-            - intent
+            - identifiers
           properties:
             intent:
-              "$ref": "#/components/schemas/TransactionIntent"
+              $ref: "#/components/schemas/TransactionIntent"
+            identifiers:
+              type: object
+              required:
+                - intent_hash
+              properties:
+                intent_hash:
+                  $ref: "#/components/schemas/IntentHash"
     ParsedTransactionManifest:
       allOf:
-        - "$ref": "#/components/schemas/ParsedTransactionType"
+        - $ref: "#/components/schemas/ParsedTransactionType"
         - type: object
-          required:
-            - manifest
           properties:
             manifest:
-              "$ref": "#/components/schemas/TransactionManifest"
+              $ref: "#/components/schemas/TransactionManifest"
+    ParsedLedgerTransaction:
+      allOf:
+        - $ref: "#/components/schemas/ParsedTransactionType"
+        - type: object
+          required:
+            - identifiers
+          properties:
+            ledger_transaction:
+              $ref: "#/components/schemas/LedgerTransaction"
+            identifiers:
+              type: object
+              required:
+                - ledger_hash
+              properties:
+                intent_hash:
+                  $ref: "#/components/schemas/IntentHash"
+                signatures_hash:
+                  $ref: "#/components/schemas/SignaturesHash"
+                payload_hash:
+                  $ref: "#/components/schemas/PayloadHash"
+                ledger_hash:
+                  $ref: "#/components/schemas/LedgerHash"
 ################################
 # REQUEST: /transaction/submit #
 ################################
@@ -1675,16 +1769,16 @@ components:
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, giving the maximum number of cost units available for transaction execution
+          description: An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution
         tip_percentage:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, specifying the validator tip as a percentage amount. A value of "1" corresponds to 1% of the fee.
+          description: An integer between `0` and `2^32 - 1`, specifying the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
         nonce:
           type: string
-          description: A decimal-string-encoded integer between 0 and 2^64-1, used to ensure the transaction intent is unique.
+          description: A decimal-string-encoded integer between `0` and `2^64 - 1`, used to ensure the transaction intent is unique.
         signer_public_keys:
           type: array
           items:
@@ -1744,7 +1838,7 @@ components:
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between 1 and 10^13, giving the first (resultant) state version to be returned
+          description: An integer between `1` and `10^13`, giving the first (resultant) state version to be returned
         limit:
           description: The maximum number of transactions that will be returned.
           type: integer
@@ -1761,19 +1855,19 @@ components:
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between 1 and 10^13, giving the first (resultant) state version in the returned response
+          description: An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response
         to_state_version:
           type: integer
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between 1 and 10^13, giving the final (resultant) state version in the returned response
+          description: An integer between `1` and `10^13`, giving the final (resultant) state version in the returned response
         max_state_version:
           type: integer
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between 1 and 10^13, giving the maximum state version currently committed
+          description: An integer between `1` and `10^13`, giving the maximum state version currently committed
         transactions:
           description: A committed transactions list starting from the `from_state_version` (inclusive).
           type: array
@@ -1783,8 +1877,7 @@ components:
       type: object
       required:
         - state_version
-        # Not required for EG genesis - need to change this for when we have genesis transactions
-        # - notarized_transaction
+        - ledger_transaction
         - receipt
       properties:
         state_version:
@@ -1792,11 +1885,85 @@ components:
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between 1 and 10^13, giving the resultant state version after the transaction has been committed
-        notarized_transaction:
-          $ref: "#/components/schemas/NotarizedTransaction"
+          description: An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
+        ledger_transaction:
+          $ref: "#/components/schemas/LedgerTransaction"
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
+    LedgerTransactionType:
+      type: string
+      description: The type of the ledger transaction
+      enum:
+        - User
+        - Validator
+    LedgerTransaction:
+      oneOf:
+        - $ref: '#/components/schemas/UserLedgerTransaction'
+        - $ref: '#/components/schemas/ValidatorLedgerTransaction'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match LedgerTransactionType
+          User: '#/components/schemas/UserLedgerTransaction'
+          Validator: '#/components/schemas/ValidatorLedgerTransaction'
+    LedgerTransactionBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/LedgerTransactionType"
+    UserLedgerTransaction:
+      allOf:
+        - $ref: "#/components/schemas/LedgerTransactionBase"
+        - type: object
+          required:
+            - notarized_transaction
+          properties:
+            notarized_transaction:
+              $ref: "#/components/schemas/NotarizedTransaction"
+    ValidatorLedgerTransaction:
+      allOf:
+        - $ref: "#/components/schemas/LedgerTransactionBase"
+        - type: object
+          required:
+            - validator_transaction
+          properties:
+            validator_transaction:
+              $ref: "#/components/schemas/ValidatorTransaction"
+    ValidatorTransactionType:
+      type: string
+      description: The type of the validator transaction
+      enum:
+        - EpochUpdate
+    ValidatorTransaction:
+      oneOf:
+        - $ref: '#/components/schemas/EpochUpdateValidatorTransaction'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match ValidatorTransactionType
+          EpochUpdate: '#/components/schemas/EpochUpdateValidatorTransaction'
+    ValidatorTransactionBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/ValidatorTransactionType"
+    EpochUpdateValidatorTransaction:
+      allOf:
+        - $ref: "#/components/schemas/ValidatorTransactionBase"
+        - type: object
+          required:
+            - epoch
+          properties:
+            epoch:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 10000000000
+              description: An integer between `0` and `10^10`, marking the new epoch
 ############################################################################################################
 # V0
 ###################################
@@ -1827,10 +1994,7 @@ components:
         - intent_hash
       properties:
         intent_hash:
-          description: A hex-encoded transaction intent hash. SHA256(SHA256(compiled_transaction_intent))
-          minLength: 66
-          maxLength: 66
-          type: string
+          $ref: "#/components/schemas/IntentHash"
     V0TransactionStatusResponse:
       type: object
       required:
@@ -1857,10 +2021,7 @@ components:
         - status
       properties:
         payload_hash:
-          type: string
-          minLength: 64
-          maxLength: 64
-          description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+          $ref: "#/components/schemas/PayloadHash"
         status:
           type: string
           description: The status of the transaction payload, as per this node
@@ -1868,7 +2029,8 @@ components:
             - CommittedSuccess
             - CommittedFailure
             - InMempool
-            - Rejected
+            - TransientlyRejected
+            - PermanentlyRejected
         error_message:
           description: An explanation for the error, if failed or rejected
           type: string
@@ -1881,10 +2043,7 @@ components:
         - intent_hash
       properties:
         intent_hash:
-          description: A hex-encoded transaction intent hash. SHA256(SHA256(compiled_transaction_intent))
-          minLength: 66
-          maxLength: 66
-          type: string
+          $ref: "#/components/schemas/IntentHash"
     V0CommittedTransactionResponse:
       type: object
       required:
@@ -1906,7 +2065,7 @@ components:
           format: int64
           minimum: 0
           maximum: 10000000000
-          description: An integer between 0 and 10^10, marking the current epoch
+          description: An integer between `0` and `10^10`, marking the current epoch
 ################################
 # REQUEST: /v0/state/component #
 ################################

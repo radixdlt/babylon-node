@@ -22,13 +22,13 @@ pub struct TransactionPreviewRequest {
     /// An array of hex-encoded blob data (optional)
     #[serde(rename = "blobs_hex", skip_serializing_if = "Option::is_none")]
     pub blobs_hex: Option<Vec<String>>,
-    /// An integer between 0 and 2^32 - 1, giving the maximum number of cost units available for transaction execution
+    /// An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: i64,
-    /// An integer between 0 and 2^32 - 1, specifying the validator tip as a percentage amount. A value of \"1\" corresponds to 1% of the fee.
+    /// An integer between `0` and `2^32 - 1`, specifying the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: i64,
-    /// A decimal-string-encoded integer between 0 and 2^64-1, used to ensure the transaction intent is unique.
+    /// A decimal-string-encoded integer between `0` and `2^64 - 1`, used to ensure the transaction intent is unique.
     #[serde(rename = "nonce")]
     pub nonce: String,
     /// A list of public keys to be used as transaction signers

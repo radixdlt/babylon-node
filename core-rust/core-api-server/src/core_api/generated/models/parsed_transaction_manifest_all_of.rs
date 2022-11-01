@@ -13,14 +13,14 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ParsedTransactionManifestAllOf {
-    #[serde(rename = "manifest")]
-    pub manifest: Box<crate::core_api::generated::models::TransactionManifest>,
+    #[serde(rename = "manifest", skip_serializing_if = "Option::is_none")]
+    pub manifest: Option<Box<crate::core_api::generated::models::TransactionManifest>>,
 }
 
 impl ParsedTransactionManifestAllOf {
-    pub fn new(manifest: crate::core_api::generated::models::TransactionManifest) -> ParsedTransactionManifestAllOf {
+    pub fn new() -> ParsedTransactionManifestAllOf {
         ParsedTransactionManifestAllOf {
-            manifest: Box::new(manifest),
+            manifest: None,
         }
     }
 }

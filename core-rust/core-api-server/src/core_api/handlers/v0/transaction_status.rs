@@ -34,7 +34,10 @@ fn handle_v0_transaction_status_internal(
         .peek_all_rejected_payloads_for_intent(&intent_hash);
 
     if let Some((stored_transaction, receipt, _)) = committed_option {
-        let payload_hash = stored_transaction.user_payload_hash();
+        let payload_hash = stored_transaction
+            .user()
+            .expect("Only user transactions should be able to be looked up by intent hash")
+            .user_payload_hash();
 
         // Remove the committed payload from the rejection list if it's present
         rejected_payloads.remove(&payload_hash);
@@ -94,6 +97,10 @@ fn handle_v0_transaction_status_internal(
     let known_payloads = map_rejected_payloads(rejected_payloads);
 
     let intent_status = if !known_payloads.is_empty() {
+        // NOTE
+        // We can't be more accurate at this level about the permanence of rejection.
+        // Just because all known payloads are permanent rejections, doesn't mean that there isn't a possible payload
+        // for this intent which could be committed. EG all known payloads could just have an invalid notary signature.
         models::v0_transaction_status_response::IntentStatus::Rejected
     } else {
         models::v0_transaction_status_response::IntentStatus::Unknown
@@ -113,7 +120,11 @@ fn map_rejected_payloads(
         .map(
             |(payload_hash, rejection_record)| models::V0TransactionPayloadStatus {
                 payload_hash: to_api_payload_hash(&payload_hash),
-                status: PayloadStatus::Rejected,
+                status: if rejection_record.reason.is_permanent() {
+                    PayloadStatus::PermanentlyRejected
+                } else {
+                    PayloadStatus::TransientlyRejected
+                },
                 error_message: Some(rejection_record.reason.to_string()),
             },
         )
