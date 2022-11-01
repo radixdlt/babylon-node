@@ -15,7 +15,7 @@
 pub struct EpochUpdateValidatorTransaction {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::ValidatorTransactionType,
-    /// An integer between 0 and 10^10, marking the new epoch
+    /// An integer between `0` and `10^10`, marking the new epoch
     #[serde(rename = "epoch")]
     pub epoch: i64,
 }

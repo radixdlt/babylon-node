@@ -15,7 +15,7 @@
 pub enum ValidatorTransaction {
     #[serde(rename="EpochUpdate")]
     EpochUpdateValidatorTransaction {
-        /// An integer between 0 and 10^10, marking the new epoch
+        /// An integer between `0` and `10^10`, marking the new epoch
         #[serde(rename = "epoch")]
         epoch: i64,
     },

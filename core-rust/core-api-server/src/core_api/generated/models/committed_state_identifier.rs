@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct CommittedStateIdentifier {
-    /// An integer between 0 and 10^13, representing the state version. The state version increments with each transaction, starting at 0 pre-genesis.
+    /// An integer between `0` and `10^13`, representing the state version. The state version increments with each transaction, starting at `0` pre-genesis.
     #[serde(rename = "state_version")]
     pub state_version: i64,
 }

@@ -18,7 +18,7 @@ pub enum ResourceAmount {
         /// The Bech32m-encoded human readable version of the resource address
         #[serde(rename = "resource_address")]
         resource_address: String,
-        /// The string-encoded decimal subunits of the amount (10^-18) in a signed 256-bit integer. This is string-encoded as it doesn't fit well into common numeric types. 
+        /// The string-encoded decimal subunits of the amount (`10^-18`) in a signed 256-bit integer. This is string-encoded as it doesn't fit well into common numeric types. 
         #[serde(rename = "amount_attos")]
         amount_attos: String,
     },

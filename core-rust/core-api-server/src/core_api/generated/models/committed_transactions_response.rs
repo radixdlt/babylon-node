@@ -13,13 +13,13 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct CommittedTransactionsResponse {
-    /// An integer between 1 and 10^13, giving the first (resultant) state version in the returned response
+    /// An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response
     #[serde(rename = "from_state_version")]
     pub from_state_version: i64,
-    /// An integer between 1 and 10^13, giving the final (resultant) state version in the returned response
+    /// An integer between `1` and `10^13`, giving the final (resultant) state version in the returned response
     #[serde(rename = "to_state_version")]
     pub to_state_version: i64,
-    /// An integer between 1 and 10^13, giving the maximum state version currently committed
+    /// An integer between `1` and `10^13`, giving the maximum state version currently committed
     #[serde(rename = "max_state_version")]
     pub max_state_version: i64,
     /// A committed transactions list starting from the `from_state_version` (inclusive).

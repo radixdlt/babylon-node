@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct FungibleResourceAmountAllOf {
-    /// The string-encoded decimal subunits of the amount (10^-18) in a signed 256-bit integer. This is string-encoded as it doesn't fit well into common numeric types. 
+    /// The string-encoded decimal subunits of the amount (`10^-18`) in a signed 256-bit integer. This is string-encoded as it doesn't fit well into common numeric types. 
     #[serde(rename = "amount_attos")]
     pub amount_attos: String,
 }

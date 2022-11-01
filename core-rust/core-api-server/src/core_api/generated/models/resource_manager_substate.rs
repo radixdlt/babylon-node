@@ -23,7 +23,7 @@ pub struct ResourceManagerSubstate {
     pub fungible_divisibility: Option<i32>,
     #[serde(rename = "metadata")]
     pub metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>,
-    /// A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in the total supply of this resource. 
+    /// A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in the total supply of this resource. 
     #[serde(rename = "total_supply_attos")]
     pub total_supply_attos: String,
 }

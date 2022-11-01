@@ -15,7 +15,7 @@
 pub struct EddsaEd25519Signature {
     #[serde(rename = "key_type")]
     pub key_type: crate::core_api::generated::models::PublicKeyType,
-    /// A hex-encoded EdDSA Ed25519 signature (64 bytes). This is CONCAT(R, s) where R and s are each 32-bytes in padded big-endian format.
+    /// A hex-encoded EdDSA Ed25519 signature (64 bytes). This is `CONCAT(R, s)` where `R` and `s` are each 32-bytes in padded big-endian format.
     #[serde(rename = "signature_hex")]
     pub signature_hex: String,
 }

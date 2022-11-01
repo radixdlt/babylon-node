@@ -16,7 +16,7 @@ pub struct MempoolTransactionRequest {
     /// The logical name of the network
     #[serde(rename = "network")]
     pub network: String,
-    /// The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+    /// The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `SHA256(SHA256(compiled_notarized_transaction))`
     #[serde(rename = "payload_hash")]
     pub payload_hash: String,
 }

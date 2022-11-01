@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct CommittedTransaction {
-    /// An integer between 1 and 10^13, giving the resultant state version after the transaction has been committed
+    /// An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
     #[serde(rename = "state_version")]
     pub state_version: i64,
     #[serde(rename = "ledger_transaction")]

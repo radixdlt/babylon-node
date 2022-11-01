@@ -13,10 +13,10 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ParsedSignedTransactionIntentAllOfIdentifiers {
-    /// The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+    /// The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `SHA256(SHA256(compiled_intent))`
     #[serde(rename = "intent_hash")]
     pub intent_hash: String,
-    /// The hex-encoded signed transaction hash. This is the hash which is signed as part of notarization. This hash is SHA256(SHA256(compiled_signed_transaction))
+    /// The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `SHA256(SHA256(compiled_signed_transaction))`
     #[serde(rename = "signatures_hash")]
     pub signatures_hash: String,
 }

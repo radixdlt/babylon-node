@@ -13,16 +13,16 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ParsedNotarizedTransactionAllOfIdentifiers {
-    /// The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+    /// The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `SHA256(SHA256(compiled_intent))`
     #[serde(rename = "intent_hash")]
     pub intent_hash: String,
-    /// The hex-encoded signed transaction hash. This is the hash which is signed as part of notarization. This hash is SHA256(SHA256(compiled_signed_transaction))
+    /// The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `SHA256(SHA256(compiled_signed_transaction))`
     #[serde(rename = "signatures_hash")]
     pub signatures_hash: String,
-    /// The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+    /// The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `SHA256(SHA256(compiled_notarized_transaction))`
     #[serde(rename = "payload_hash")]
     pub payload_hash: String,
-    /// The hex-encoded ledger-wrapped transaction hash. This hash is SHA256(SHA256(ledger_transaction_bytes))
+    /// The hex-encoded ledger-wrapped transaction hash. This is known as the Ledger Hash. This hash is `SHA256(SHA256(ledger_transaction_bytes))`
     #[serde(rename = "ledger_hash")]
     pub ledger_hash: String,
 }

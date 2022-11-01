@@ -631,8 +631,7 @@ components:
         - notary_signature
       properties:
         hash:
-          type: string
-          description: The hex-encoded double-SHA256 hash of the notarized transaction payload. Also known as the payload_hash or the notarized_transaction_hash.
+          $ref: "#/components/schemas/PayloadHash"
         payload_hex:
           type: string
           description: The hex-encoded full notarized transaction payload
@@ -648,8 +647,7 @@ components:
         - intent_signatures
       properties:
         hash:
-          type: string
-          description: The hex-encoded double-SHA256 hash of the signed transaction intent. Also known as the signatures hash.
+          $ref: "#/components/schemas/SignaturesHash"
         intent:
           $ref: "#/components/schemas/TransactionIntent"
         intent_signatures:
@@ -665,10 +663,7 @@ components:
         - blobs_hex
       properties:
         hash:
-          type: string
-          description: |
-            The hex-encoded double-SHA256 hash of the transaction intent.
-            Also known as the Transaction ID, Transaction Hash, or Intent Hash.
+          $ref: "#/components/schemas/IntentHash"
         header:
           $ref: "#/components/schemas/TransactionHeader"
         manifest:
@@ -699,16 +694,16 @@ components:
           format: int64
           minimum: 0
           maximum: 10000000000
-          description: An integer between 0 and 10^10, marking the epoch from which the transaction can be submitted
+          description: An integer between `0` and `10^10`, marking the epoch from which the transaction can be submitted
         end_epoch_exclusive:
           type: integer
           format: int64
           minimum: 0
           maximum: 10000000000
-          description: An integer between 0 and 10^10, marking the epoch from which the transaction will no longer be valid, and be rejected
+          description: An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected
         nonce:
           type: string
-          description: A decimal-string-encoded integer between 0 and 2^64 - 1, chosen to be unique to allow replay of transaction intents
+          description: A decimal-string-encoded integer between `0` and `2^64 - 1`, chosen to be unique to allow replay of transaction intents
         notary_public_key:
           $ref: "#/components/schemas/PublicKey"
         notary_as_signatory:
@@ -719,13 +714,13 @@ components:
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, giving the maximum number of cost units available for transaction execution.
+          description: An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution.
         tip_percentage:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, giving the validator tip as a percentage amount. A value of "1" corresponds to 1% of the fee.
+          description: An integer between `0` and `2^32 - 1`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
     TransactionManifest:
       type: object
       required:
@@ -756,7 +751,7 @@ components:
           format: int64
           minimum: 0
           maximum: 100000000000000
-          description: An integer between 0 and 10^13, representing the state version. The state version increments with each transaction, starting at 0 pre-genesis.
+          description: An integer between `0` and `10^13`, representing the state version. The state version increments with each transaction, starting at `0` pre-genesis.
     TransactionIdentifiers:
       type: object
       required:
@@ -774,22 +769,22 @@ components:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded transaction intent hash. This is also known as the Transaction Identifier hash for user transactions. This hash is SHA256(SHA256(compiled_intent))
+      description: The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `SHA256(SHA256(compiled_intent))`
     SignaturesHash:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded signed transaction hash. This is the hash which is signed as part of notarization. This hash is SHA256(SHA256(compiled_signed_transaction))
+      description: The hex-encoded signed transaction hash. This is known as the Signed Transaction Hash or Signatures Hash. This is the hash which is signed as part of notarization. This hash is `SHA256(SHA256(compiled_signed_transaction))`
     PayloadHash:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded notarized transaction hash. This is also known as the payload hash. This hash is SHA256(SHA256(compiled_notarized_transaction))
+      description: The hex-encoded notarized transaction hash. This is known as the Notarized Transaction Hash, Payload Hash or User Payload Hash. This hash is `SHA256(SHA256(compiled_notarized_transaction))`
     LedgerHash:
       type: string
       minLength: 64
       maxLength: 64
-      description: The hex-encoded ledger-wrapped transaction hash. This hash is SHA256(SHA256(ledger_transaction_bytes))
+      description: The hex-encoded ledger-wrapped transaction hash. This is known as the Ledger Hash. This hash is `SHA256(SHA256(ledger_transaction_bytes))`
     ErrorResponse:
       type: object
       required:
@@ -828,33 +823,33 @@ components:
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, representing the maximum amount of cost units available for the transaction execution.
+          description: An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction execution.
         cost_unit_consumed:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, representing the amount of cost units consumed by the transaction execution.
+          description: An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.
         cost_unit_price_attos:
           type: string
           description: |
-            A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
             the XRD price of a single cost unit.
         tip_percentage:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, specifying the validator tip as a percentage amount. A value of "1" corresponds to 1% of the fee.
+          description: An integer between `0` and `2^32 - 1`, specifying the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
         xrd_burned_attos:
           type: string
           description: |
-            A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
             the total amount of XRD burned in the transaction.
         xrd_tipped_attos:
           type: string
           description: |
-            A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
             the total amount of XRD tipped to validators in the transaction.
     StateUpdates:
       type: object
@@ -897,7 +892,7 @@ components:
           format: int64
           minimum: 0
           maximum: 100000000000000
-          description: An integer between 0 and 10^13, counting the number of times the substate was updated
+          description: An integer between `0` and `10^13`, counting the number of times the substate was updated
         substate_hex:
           type: string
           description: The hex-encoded, SBOR-encoded substate data bytes
@@ -923,7 +918,7 @@ components:
           format: int64
           minimum: 0
           maximum: 100000000000000
-          description: An integer between 0 and 10^13, counting the number of times the substate was updated
+          description: An integer between `0` and `10^13`, counting the number of times the substate was updated
     GlobalEntityReference:
       type: object
       required:
@@ -994,7 +989,7 @@ components:
         amount_attos:
           type: string
           description: |
-            A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
             the XRD amount put or taken from the vault
 #################################################
 # GENERAL / SHARED MODELS - keys and signatures #
@@ -1062,7 +1057,7 @@ components:
           type: string
           minLength: 130
           maxLength: 130
-          description: A hex-encoded recoverable ECDSA Secp256k1 signature (65 bytes). The first byte is the recovery id, the remaining 64 bytes are the compact signature, ie CONCAT(R, s) where R and s are each 32-bytes in padded big-endian format.
+          description: A hex-encoded recoverable ECDSA Secp256k1 signature (65 bytes). The first byte is the recovery id, the remaining 64 bytes are the compact signature, ie `CONCAT(R, s)` where `R` and `s` are each 32-bytes in padded big-endian format.
     EddsaEd25519Signature:
       type: object
       required:
@@ -1075,7 +1070,7 @@ components:
           type: string
           minLength: 128
           maxLength: 128
-          description: A hex-encoded EdDSA Ed25519 signature (64 bytes). This is CONCAT(R, s) where R and s are each 32-bytes in padded big-endian format.
+          description: A hex-encoded EdDSA Ed25519 signature (64 bytes). This is `CONCAT(R, s)` where `R` and `s` are each 32-bytes in padded big-endian format.
     SignatureWithPublicKey:
       oneOf:
         - $ref: '#/components/schemas/EcdsaSecp256k1SignatureWithPublicKey'
@@ -1183,7 +1178,7 @@ components:
               format: int64
               minimum: 0
               maximum: 10000000000
-              description: An integer between 0 and 10^10, marking the current epoch
+              description: An integer between `0` and `10^10`, marking the current epoch
     ResourceManagerSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
@@ -1214,7 +1209,7 @@ components:
             total_supply_attos:
               type: string
               description: |
-                A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in
+                A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
                 the total supply of this resource.
     ResourceType:
       type: string
@@ -1320,7 +1315,7 @@ components:
             amount_attos:
               type: string
               description: |
-                The string-encoded decimal subunits of the amount (10^-18) in a signed 256-bit integer.
+                The string-encoded decimal subunits of the amount (`10^-18`) in a signed 256-bit integer.
                 This is string-encoded as it doesn't fit well into common numeric types.
     NonFungibleResourceAmount:
       allOf:
@@ -1774,16 +1769,16 @@ components:
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, giving the maximum number of cost units available for transaction execution
+          description: An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution
         tip_percentage:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
-          description: An integer between 0 and 2^32 - 1, specifying the validator tip as a percentage amount. A value of "1" corresponds to 1% of the fee.
+          description: An integer between `0` and `2^32 - 1`, specifying the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
         nonce:
           type: string
-          description: A decimal-string-encoded integer between 0 and 2^64-1, used to ensure the transaction intent is unique.
+          description: A decimal-string-encoded integer between `0` and `2^64 - 1`, used to ensure the transaction intent is unique.
         signer_public_keys:
           type: array
           items:
@@ -1843,7 +1838,7 @@ components:
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between 1 and 10^13, giving the first (resultant) state version to be returned
+          description: An integer between `1` and `10^13`, giving the first (resultant) state version to be returned
         limit:
           description: The maximum number of transactions that will be returned.
           type: integer
@@ -1860,19 +1855,19 @@ components:
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between 1 and 10^13, giving the first (resultant) state version in the returned response
+          description: An integer between `1` and `10^13`, giving the first (resultant) state version in the returned response
         to_state_version:
           type: integer
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between 1 and 10^13, giving the final (resultant) state version in the returned response
+          description: An integer between `1` and `10^13`, giving the final (resultant) state version in the returned response
         max_state_version:
           type: integer
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between 1 and 10^13, giving the maximum state version currently committed
+          description: An integer between `1` and `10^13`, giving the maximum state version currently committed
         transactions:
           description: A committed transactions list starting from the `from_state_version` (inclusive).
           type: array
@@ -1890,7 +1885,7 @@ components:
           format: int64
           minimum: 1
           maximum: 100000000000000
-          description: An integer between 1 and 10^13, giving the resultant state version after the transaction has been committed
+          description: An integer between `1` and `10^13`, giving the resultant state version after the transaction has been committed
         ledger_transaction:
           $ref: "#/components/schemas/LedgerTransaction"
         receipt:
@@ -1968,7 +1963,7 @@ components:
               format: int64
               minimum: 0
               maximum: 10000000000
-              description: An integer between 0 and 10^10, marking the new epoch
+              description: An integer between `0` and `10^10`, marking the new epoch
 ############################################################################################################
 # V0
 ###################################
@@ -1999,10 +1994,7 @@ components:
         - intent_hash
       properties:
         intent_hash:
-          description: A hex-encoded transaction intent hash. SHA256(SHA256(compiled_transaction_intent))
-          minLength: 66
-          maxLength: 66
-          type: string
+          $ref: "#/components/schemas/IntentHash"
     V0TransactionStatusResponse:
       type: object
       required:
@@ -2051,10 +2043,7 @@ components:
         - intent_hash
       properties:
         intent_hash:
-          description: A hex-encoded transaction intent hash. SHA256(SHA256(compiled_transaction_intent))
-          minLength: 66
-          maxLength: 66
-          type: string
+          $ref: "#/components/schemas/IntentHash"
     V0CommittedTransactionResponse:
       type: object
       required:
@@ -2076,7 +2065,7 @@ components:
           format: int64
           minimum: 0
           maximum: 10000000000
-          description: An integer between 0 and 10^10, marking the current epoch
+          description: An integer between `0` and `10^10`, marking the current epoch
 ################################
 # REQUEST: /v0/state/component #
 ################################

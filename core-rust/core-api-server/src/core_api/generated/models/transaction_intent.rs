@@ -13,7 +13,7 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionIntent {
-    /// The hex-encoded double-SHA256 hash of the transaction intent. Also known as the Transaction ID, Transaction Hash, or Intent Hash. 
+    /// The hex-encoded transaction intent hash. This is known as the Intent Hash, Transaction ID or Transaction Identifier for user transactions. This hash is `SHA256(SHA256(compiled_intent))`
     #[serde(rename = "hash")]
     pub hash: String,
     #[serde(rename = "header")]

@@ -79,7 +79,7 @@ pub enum Substate {
         fungible_divisibility: Option<i32>,
         #[serde(rename = "metadata")]
         metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>,
-        /// A decimal-string-encoded integer between 0 and 2^255-1, which represents the total number of 10^(-18) subunits in the total supply of this resource. 
+        /// A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in the total supply of this resource. 
         #[serde(rename = "total_supply_attos")]
         total_supply_attos: String,
     },
@@ -87,7 +87,7 @@ pub enum Substate {
     SystemSubstate {
         #[serde(rename = "entity_type")]
         entity_type: crate::core_api::generated::models::EntityType,
-        /// An integer between 0 and 10^10, marking the current epoch
+        /// An integer between `0` and `10^10`, marking the current epoch
         #[serde(rename = "epoch")]
         epoch: i64,
     },
