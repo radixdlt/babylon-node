@@ -1,0 +1,131 @@
+name: Sync OpenAPI specs with Postman
+
+on:
+  push:
+    branches:
+    - main
+  workflow_dispatch:
+    inputs:
+      network_name:
+        description: "Testnet to publish collections for"
+        required: true
+        default: gilganet
+        options:
+          - gilganet
+          - enkinet
+          - hammunet
+          - adapanet
+
+jobs:
+  cancel_running_workflows:
+    name: Cancel running workflows
+    runs-on: ubuntu-22.04
+    steps:
+      - name: cancel running workflows
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+  sync_collections:
+    name: Sync Postman collections w/ latest specs
+    environment: Postman
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout core repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%b %d, %H:%M')"
+      - name: Set git tags
+        id: gittag
+        run: echo "::set-output name=gittag::$(git describe --tags --dirty)"
+
+      # ========== Mapping whatever network was selected to postman variables ==========
+      - name: Map network name to its variables
+        uses: kanga333/variable-mapper@v0.3.0
+        with:
+            key: "${{ github.event.inputs.network_name || 'gilganet' }}"
+            map: |
+              {
+                "gilganet": {
+                  "core_api_collection_name": "Core API (${{steps.gittag.outputs.gittag}}) ${{steps.date.outputs.date}} UTC",
+                  "system_api_collection_name": "System API (${{steps.gittag.outputs.gittag}}) ${{steps.date.outputs.date}} UTC",
+                  "core_api_collection_id": "14449947-8696b2db-9d33-4892-b498-cf342d51d93f",
+                  "system_api_collection_id": "14449947-4ce0b70b-0d0f-48da-aba7-ca7894877c4d" 
+                },
+                "enkinet": {
+                  "core_api_collection_name": "Enkinet Core API (${{steps.gittag.outputs.gittag}})",
+                  "system_api_collection_name": "Enkinet System API (${{steps.gittag.outputs.gittag}})",
+                  "core_api_collection_id": "14449947-129acf1b-ad0d-483a-b2a9-b115b357de14",
+                  "system_api_collection_id": "14449947-31bf4098-8854-429a-87e4-b8c52139f7d1"
+                },
+                "hammunet": {
+                  "core_api_collection_name": "Hammunet Core API (${{steps.gittag.outputs.gittag}})",
+                  "system_api_collection_name": "Hammunet System API (${{steps.gittag.outputs.gittag}})",
+                  "core_api_collection_id": "",
+                  "system_api_collection_id": ""
+                },
+                "adapanet": {
+                  "core_api_collection_name": "Adapanet [ALPHANET] Core API (${{steps.gittag.outputs.gittag}})",
+                  "system_api_collection_name": "Adapanet [ALPHANET] System API (${{steps.gittag.outputs.gittag}})",
+                  "core_api_collection_id": "",
+                  "system_api_collection_id": ""
+                },
+                ".*": {
+                  "core_api_collection_name": "Core API (${{steps.gittag.outputs.gittag}}) ${{steps.date.outputs.date}} UTC",
+                  "system_api_collection_name": "System API (${{steps.gittag.outputs.gittag}}) ${{steps.date.outputs.date}} UTC",
+                  "core_api_collection_id": "14449947-8696b2db-9d33-4892-b498-cf342d51d93f",
+                  "system_api_collection_id": "14449947-4ce0b70b-0d0f-48da-aba7-ca7894877c4d" 
+                }
+              }
+      - name: Echo environment
+        run: echo ${{ env.environment }}
+
+      # ==================== Credentials ====================
+      - name: Setup Postman credentials
+        uses: DamianReeves/write-file-action@v1.1
+        with:
+          path: .env
+          contents: POSTMAN_API_KEY=${{ secrets.POSTMAN_API_TOKEN }}
+          write-mode: overwrite
+
+      # ==================== Core API Update ====================
+      - name: Change OpenApi version in the Core API spec
+        run: sed -i 's/3.1.0/3.0.0/' core-rust/core-api-server/core-api-schema.yaml
+      - name: Update Postman's Core API collection from the spec
+        run: |
+          npx @apideck/portman@1.18.1 -l core-rust/core-api-server/core-api-schema.yaml \
+            --postmanUid ${{env.core_api_collection_id}} --syncPostman true --envFile .env
+      - name: Download the Core API collection
+        run: |
+          curl -X GET -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" https://api.getpostman.com/collections/${{env.core_api_collection_id}} > tmp.core.collection.json
+      - name: Update the collection name w/ timestamp and git tag
+        run: |
+          sed -i 's/"name":".*","schema"/"name":"${{env.core_api_collection_name}}","schema"/' tmp.core.collection.json
+      - name: Set the Core API's {{baseUrl}} to {{coreBaseUrl}}
+        run: |
+          sed -i 's/{{baseUrl}}/{{coreBaseUrl}}/g' tmp.core.collection.json
+      - name: Update the Core API collection
+        run: |
+          curl -X PUT -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" -H "Content-Type: application/json" \
+             https://api.getpostman.com/collections/${{env.core_api_collection_id}} --data "@tmp.core.collection.json"
+
+        # ==================== System API Update ====================
+      - name: Update Postman's System API collection from the spec
+        run: |
+          npx @apideck/portman@1.18.1 -l core/src/main/java/com/radixdlt/api/system/system-api-schema.yaml \
+            --postmanUid ${{env.system_api_collection_id}} --syncPostman true --envFile .env
+      - name: Download the System API collection
+        run: |
+          curl -X GET -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" https://api.getpostman.com/collections/${{env.system_api_collection_id}} > tmp.system.collection.json
+      - name: Update the collection name w/ timestamp and git tag
+        run: |
+          sed -i 's/"name":".*","schema"/"name":"${{env.system_api_collection_name}}","schema"/' tmp.system.collection.json
+      - name: Set the System API's {{baseUrl}} to {{systemBaseUrl}}
+        run: |
+          sed -i 's/{{baseUrl}}/{{systemBaseUrl}}/g' tmp.system.collection.json
+      - name: Update the System API collection
+        run: |
+          curl -X PUT -H "X-API-KEY:${{secrets.POSTMAN_API_TOKEN}}" -H "Content-Type: application/json" \
+             https://api.getpostman.com/collections/${{env.system_api_collection_id}} --data "@tmp.system.collection.json"

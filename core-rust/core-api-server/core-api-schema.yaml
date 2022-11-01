@@ -744,7 +744,7 @@ components:
     NetworkIdentifier:
       description: The logical name of the network
       type: string
-      example: mainnet
+      example: "{{network}}"
     CommittedStateIdentifier:
       type: object
       # This should expand to include transaction accumulator and state hash
