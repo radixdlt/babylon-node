@@ -130,5 +130,6 @@ jobs:
           job_params: |
             {
               "nodeDockerTag": "${{ env.DOCKER_TAG }}"
+              "babylonNodeBranch":"${{ GITHUB_REF_NAME }}"
             }
           job_timeout: "3600"
