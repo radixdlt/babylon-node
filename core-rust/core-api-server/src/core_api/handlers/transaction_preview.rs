@@ -1,11 +1,126 @@
-use crate::core_api::*;
-use radix_engine::transaction::{PreviewError, PreviewResult, TransactionResult};
-use scrypto::address::Bech32Encoder;
+use crate::core_api::{generated::models::TransactionReadcallRequestTarget, *};
+use models::transaction_readcall_response::TransactionReadcallResponse;
+use radix_engine::{
+    transaction::{PreviewError, PreviewResult, TransactionOutcome, TransactionResult},
+    types::{
+        Bech32Decoder, Bech32Encoder, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage,
+        ScryptoReceiver,
+    },
+};
 use scrypto::prelude::*;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{LedgerTransactionReceipt, PreviewRequest};
 use transaction::manifest;
-use transaction::model::PreviewFlags;
+use transaction::model::{Instruction, PreviewFlags, TransactionManifest, DEFAULT_COST_UNIT_LIMIT};
+
+#[tracing::instrument(level = "debug", skip_all, err(Debug))]
+pub(crate) async fn handle_transaction_readcall(
+    Extension(state): Extension<CoreApiState>,
+    Json(request): Json<models::TransactionReadcallRequest>,
+) -> Result<Json<models::TransactionReadcallResponse>, RequestHandlingError> {
+    let mut state_manager = state.state_manager.write();
+    let bech32_decoder = Bech32Decoder::new(&state_manager.network);
+    let bech32_encoder = Bech32Encoder::new(&state_manager.network);
+
+    let args: Vec<_> = request
+        .arguments
+        .into_iter()
+        .map(from_hex)
+        .collect::<Result<_, _>>()
+        .map_err(|_| client_error("Invalid hex character in arguments"))?;
+
+    let call_target = request
+        .target
+        .ok_or_else(|| client_error("The `target` property should be present."))?;
+
+    let requested_call = match call_target {
+        TransactionReadcallRequestTarget::BlueprintFunctionIdentifier {
+            package_address,
+            blueprint_name,
+            function_name,
+        } => {
+            let package_address =
+                extract_package_address(&bech32_decoder, package_address.as_str())
+                    .map_err(|extraction_error| server_error(format!("{extraction_error:?}")))?;
+
+            Instruction::CallFunction {
+                function_ident: ScryptoFunctionIdent {
+                    package: ScryptoPackage::Global(package_address),
+                    blueprint_name,
+                    function_name,
+                },
+                args: args_from_bytes_vec!(args),
+            }
+        }
+        TransactionReadcallRequestTarget::MethodIdentifier {
+            component_address,
+            method_name,
+        } => {
+            let component_address =
+                extract_component_address(&bech32_decoder, component_address.as_str())
+                    .map_err(|extraction_error| server_error(format!("{extraction_error:?}")))?;
+
+            Instruction::CallMethod {
+                method_ident: ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(component_address),
+                    method_name,
+                },
+                args: args_from_bytes_vec!(args),
+            }
+        }
+    };
+
+    let result = state_manager
+        .preview(PreviewRequest {
+            cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
+            tip_percentage: 0,
+            // TODO confirm this nonce, make this an actual nonce
+            nonce: 490,
+            manifest: TransactionManifest {
+                instructions: vec![
+                    Instruction::CallMethod {
+                        method_ident: ScryptoMethodIdent {
+                            receiver: ScryptoReceiver::Global(SYS_FAUCET_COMPONENT),
+                            method_name: "lock_fee".to_string(),
+                        },
+                        args: args!(Decimal::from(100u32)),
+                    },
+                    requested_call,
+                ],
+                // TODO confirm this
+                blobs: vec![],
+            },
+            flags: PreviewFlags {
+                unlimited_loan: true,
+                assume_all_signature_proofs: true,
+            },
+            // TODO confirm this
+            signer_public_keys: vec![],
+        })
+        .map_err(|err| match err {
+            PreviewError::TransactionValidationError(err) => {
+                server_error(format!("Transaction validation error: {:?}", err))
+            }
+        })?;
+
+    Ok(TransactionReadcallResponse {
+        output: match result.receipt.result {
+            TransactionResult::Commit(c) => match c.outcome {
+                TransactionOutcome::Success(data) => data
+                    .into_iter()
+                    .skip(1) // Skip the result of `lock_fee`
+                    .map(|line_output| {
+                        scrypto_bytes_to_api_sbor_data(&bech32_encoder, &line_output)
+                    })
+                    .collect::<Result<Vec<_>, _>>()
+                    .ok(),
+                TransactionOutcome::Failure(f) => Err(server_error(format!("{f}")))?,
+            },
+            TransactionResult::Reject(r) => Err(server_error(format!("{:?}", r.error)))?,
+        },
+    })
+    .map(Json)
+}
 
 pub(crate) async fn handle_transaction_preview(
     state: Extension<CoreApiState>,

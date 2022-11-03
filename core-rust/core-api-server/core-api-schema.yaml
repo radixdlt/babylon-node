@@ -232,6 +232,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  "/transaction/readcall":
+    post:
+      summary: Preview a scrypto function call against the latest network state
+      description: Returns the result of the scrypto function call
+      tags:
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionReadcallRequest"
+      responses:
+        '200':
+          description: Result of the scrypto function call
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionReadcallResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   "/transaction/preview":
     post:
       summary: Preview a transaction against the latest network state
@@ -994,6 +1025,29 @@ components:
 #################################################
 # GENERAL / SHARED MODELS - keys and signatures #
 #################################################
+    BlueprintFunctionIdentifier:
+      type: object
+      required:
+        - package_address
+        - blueprint_name
+        - function_name
+      properties:
+        package_address:
+          type: string
+        blueprint_name:
+          type: string
+        function_name:
+          type: string
+    MethodIdentifier:
+      type: object
+      required:
+        - component_address
+        - method_name
+      properties:
+        component_address:
+          $ref: "#/components/schemas/ComponentAddress"
+        method_name:
+          type: string
     PublicKeyType:
       type: string
       enum:
@@ -1740,6 +1794,38 @@ components:
         duplicate:
           description: Is true if the transaction is a duplicate of an existing transaction in the mempool.
           type: boolean
+#################################
+# REQUEST: /transaction/readcall #
+#################################
+    TransactionReadcallRequest:
+      type: object
+      required:
+       - target
+       - arguments
+      properties:
+        target:
+          oneOf:
+            - $ref: '#/components/schemas/MethodIdentifier'
+            - $ref: '#/components/schemas/BlueprintFunctionIdentifier'
+          discriminator:
+            propertyName: type
+            mapping:
+              method: '#/components/schemas/MethodIdentifier'
+              function: '#/components/schemas/BlueprintFunctionIdentifier'
+        arguments:
+          type: array
+          description: Argument list
+          items:
+            type: string
+            description: SBOR-encoded argument, formatted as a hex-string
+    TransactionReadcallResponse:
+      type: object
+      properties:
+        output:
+          type: array
+          description: The manifest line-by-line engine return data
+          items:
+            $ref: "#/components/schemas/SborData"
 #################################
 # REQUEST: /transaction/preview #
 #################################

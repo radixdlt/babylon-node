@@ -110,6 +110,7 @@ def generate_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "ParsedTransaction")
         fix_for_enum_not_implementing_default(file_path, "LedgerTransaction")
         fix_for_enum_not_implementing_default(file_path, "ValidatorTransaction")
+        fix_for_enum_not_implementing_default(file_path, "TransactionReadcallRequestTarget")
 
     logging.info("Successfully fixed up.")
 
