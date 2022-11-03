@@ -121,7 +121,6 @@ jobs:
           DOCKER_TAG=$(echo $TAGS | awk 'NR==1{print $1}' | cut -d':' -f2)
           echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
           echo "BABYLON_NODE_BRANCH=$GITHUB_HEAD_REF" >> $GITHUB_ENV
-
       - name: Deploy and test on ephemeral network
         uses: toptal/jenkins-job-trigger-action@1.0.0
         with:
