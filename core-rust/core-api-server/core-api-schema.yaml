@@ -232,6 +232,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  "/transaction/call-preview":
+    post:
+      summary: Preview a scrypto function or method call against the latest network state
+      description: Returns the result of the scrypto function or method call
+      tags:
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionCallPreviewRequest"
+            examples:
+              method:
+                summary: A method call example
+                value: {"target":{"type":"method","component_address":"component_loc1qftacppvmr9ezmekxqpq58en0nk954x0a7jv2zz0hc7qfxlgx4","method_name":"lock_fee"},"arguments":["a120000000000010632d5ec66b050000000000000000000000000000000000000000000000"]}
+              function:
+                summary: A function call example
+                value: {"target":{"type":"function","package_address":"package_loc1q9ufgsc8yh5fkv8kzny3vnp68gkmuytc004k0j8dkwvs0xq76q","blueprint_name":"GumballMachine","function_name":"instantiate_gumball_machine"},"arguments":["a120000000000010632d5ec66b050000000000000000000000000000000000000000000000"]}
+      responses:
+        '200':
+          description: Result of the scrypto function call
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionCallPreviewResponse"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   "/transaction/preview":
     post:
       summary: Preview a transaction against the latest network state
@@ -1008,6 +1046,29 @@ components:
 #################################################
 # GENERAL / SHARED MODELS - keys and signatures #
 #################################################
+    BlueprintFunctionIdentifier:
+      type: object
+      required:
+        - package_address
+        - blueprint_name
+        - function_name
+      properties:
+        package_address:
+          $ref: "#/components/schemas/PackageAddress"
+        blueprint_name:
+          type: string
+        function_name:
+          type: string
+    ComponentMethodIdentifier:
+      type: object
+      required:
+        - component_address
+        - method_name
+      properties:
+        component_address:
+          $ref: "#/components/schemas/ComponentAddress"
+        method_name:
+          type: string
     PublicKeyType:
       type: string
       enum:
@@ -2469,6 +2530,42 @@ components:
         duplicate:
           description: Is true if the transaction is a duplicate of an existing transaction in the mempool.
           type: boolean
+#################################
+# REQUEST: /transaction/callpreview #
+#################################
+    TransactionCallPreviewRequest:
+      type: object
+      required:
+       - target
+       - arguments
+      properties:
+        target:
+          oneOf:
+            - $ref: '#/components/schemas/ComponentMethodIdentifier'
+            - $ref: '#/components/schemas/BlueprintFunctionIdentifier'
+          discriminator:
+            propertyName: type
+            mapping:
+              method: '#/components/schemas/ComponentMethodIdentifier'
+              function: '#/components/schemas/BlueprintFunctionIdentifier'
+        arguments:
+          type: array
+          description: Argument list
+          items:
+            type: string
+            description: SBOR-encoded argument, formatted as a hex-string
+    TransactionCallPreviewResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: "#/components/schemas/TransactionStatus"
+        output:
+          $ref: "#/components/schemas/SborData"
+        error_message:
+          type: string
+          description: Error message (only present if status is Failed or Rejected)
 #################################
 # REQUEST: /transaction/preview #
 #################################

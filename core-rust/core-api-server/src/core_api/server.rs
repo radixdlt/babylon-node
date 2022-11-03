@@ -127,6 +127,10 @@ pub async fn create_server<F>(
                 .layer(DefaultBodyLimit::disable())
                 .layer(RequestBodyLimitLayer::new(LARGE_REQUEST_MAX_BYTES)),
         )
+        .route(
+            "/transaction/call-preview",
+            post(handle_transaction_callpreview),
+        )
         .route("/transaction/stream", post(handle_transaction_stream))
         .route("/v0", get(handle_provide_info_at_root_path))
         .route("/v0/", get(handle_provide_info_at_root_path))

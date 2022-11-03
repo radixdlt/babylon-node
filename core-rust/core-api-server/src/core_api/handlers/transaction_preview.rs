@@ -1,6 +1,8 @@
 use crate::core_api::*;
-use radix_engine::transaction::{PreviewError, PreviewResult, TransactionResult};
-use scrypto::address::Bech32Encoder;
+use radix_engine::{
+    transaction::{PreviewError, PreviewResult, TransactionResult},
+    types::Bech32Encoder,
+};
 use scrypto::prelude::*;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{LedgerTransactionReceipt, PreviewRequest};
