@@ -129,7 +129,7 @@ jobs:
           job_name: "ephemeral-deployments/job/ephemeral-env-deploy-and-test"
           job_params: |
             {
-              "nodeDockerTag": "${{ env.DOCKER_TAG }}"
+              "nodeDockerTag": "${{ env.DOCKER_TAG }}",
               "babylonNodeBranch":"${{ GITHUB_REF_NAME }}"
             }
           job_timeout: "3600"
