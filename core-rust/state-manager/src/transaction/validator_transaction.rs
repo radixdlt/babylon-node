@@ -1,3 +1,4 @@
+use radix_engine::types::EpochManagerSetEpochInvocation;
 use sbor::*;
 use scrypto::args;
 use scrypto::buffer::scrypto_encode;
@@ -29,7 +30,10 @@ impl ValidatorTransaction {
                     receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
                     method_name: "set_epoch".to_string(),
                 },
-                args: args!(*epoch),
+                args: scrypto_encode(&EpochManagerSetEpochInvocation {
+                    receiver: EPOCH_MANAGER,
+                    epoch: *epoch,
+                }),
             },
         };
 

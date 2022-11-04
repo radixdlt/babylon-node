@@ -82,7 +82,10 @@ pub fn create_set_epoch_intent(
         .call_native_method(
             RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
             "set_epoch",
-            args!(epoch),
+            scrypto_encode(&EpochManagerSetEpochInvocation {
+                receiver: EPOCH_MANAGER,
+                epoch,
+            }),
         )
         .build();
     TransactionIntent {
