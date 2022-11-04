@@ -111,7 +111,6 @@ pub fn to_api_resource_manager_substate(
         .map(|node_id| MappedEntityId::try_from(RENodeId::NonFungibleStore(node_id)))
         .transpose()?;
 
-    // TODO: map method_table, vault_method_table, bucket_method_table, authorization
     Ok(models::Substate::ResourceManagerSubstate {
         entity_type: EntityType::ResourceManager,
         resource_type,
