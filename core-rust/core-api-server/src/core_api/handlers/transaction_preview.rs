@@ -65,6 +65,14 @@ fn parse_preview_request(
             .map_err(|err| err.into_response_error("start_epoch_inclusive"))?,
         end_epoch_exclusive: extract_api_epoch(request.end_epoch_exclusive)
             .map_err(|err| err.into_response_error("end_epoch_exclusive"))?,
+        notary_public_key: request
+            .notary_public_key
+            .map(|pk| {
+                extract_api_public_key(*pk)
+                    .map_err(|err| err.into_response_error("notary_public_key"))
+            })
+            .transpose()?,
+        notary_as_signatory: request.notary_as_signatory.unwrap_or(false),
         cost_unit_limit: extract_api_u32_as_i64(request.cost_unit_limit)
             .map_err(|err| err.into_response_error("cost_unit_limit"))?,
         tip_percentage: extract_api_u32_as_i64(request.tip_percentage)

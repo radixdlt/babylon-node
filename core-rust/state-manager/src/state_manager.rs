@@ -259,8 +259,9 @@ where
     S: ReadableSubstateStore,
 {
     pub fn preview(&self, preview_request: PreviewRequest) -> Result<PreviewResult, PreviewError> {
-        // not really used for preview
-        let notary_private_key = EcdsaSecp256k1PrivateKey::from_u64(2).unwrap();
+        let notary = preview_request.notary_public_key.unwrap_or_else(|| {
+            PublicKey::EcdsaSecp256k1(EcdsaSecp256k1PrivateKey::from_u64(2).unwrap().public_key())
+        });
 
         let preview_intent = PreviewIntent {
             intent: TransactionIntent {
@@ -270,8 +271,8 @@ where
                     start_epoch_inclusive: preview_request.start_epoch_inclusive,
                     end_epoch_exclusive: preview_request.end_epoch_exclusive,
                     nonce: preview_request.nonce,
-                    notary_public_key: PublicKey::EcdsaSecp256k1(notary_private_key.public_key()),
-                    notary_as_signatory: false,
+                    notary_public_key: notary,
+                    notary_as_signatory: preview_request.notary_as_signatory,
                     cost_unit_limit: preview_request.cost_unit_limit,
                     tip_percentage: preview_request.tip_percentage,
                 },

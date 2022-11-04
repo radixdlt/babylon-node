@@ -28,6 +28,11 @@ pub struct TransactionPreviewRequest {
     /// An integer between `0` and `10^10`, marking the epoch at which the transaction is no longer valid
     #[serde(rename = "end_epoch_exclusive")]
     pub end_epoch_exclusive: i64,
+    #[serde(rename = "notary_public_key", skip_serializing_if = "Option::is_none")]
+    pub notary_public_key: Option<Box<crate::core_api::generated::models::PublicKey>>,
+    /// Whether the notary should count as a signatory (optional, default false)
+    #[serde(rename = "notary_as_signatory", skip_serializing_if = "Option::is_none")]
+    pub notary_as_signatory: Option<bool>,
     /// An integer between `0` and `2^32 - 1`, giving the maximum number of cost units available for transaction execution
     #[serde(rename = "cost_unit_limit")]
     pub cost_unit_limit: i64,
@@ -52,6 +57,8 @@ impl TransactionPreviewRequest {
             blobs_hex: None,
             start_epoch_inclusive,
             end_epoch_exclusive,
+            notary_public_key: None,
+            notary_as_signatory: None,
             cost_unit_limit,
             tip_percentage,
             nonce,
