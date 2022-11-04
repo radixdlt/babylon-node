@@ -116,10 +116,10 @@ pub fn to_api_fee_summary(fee_summary: EngineFeeSummary) -> FeeSummary {
     FeeSummary {
         loan_fully_repaid: fee_summary.loan_fully_repaid,
         cost_unit_limit: to_api_u32_as_i64(fee_summary.cost_unit_limit),
-        cost_unit_consumed: to_api_u32_as_i64(fee_summary.cost_unit_consumed),
-        cost_unit_price_attos: to_api_decimal_attos(&fee_summary.cost_unit_price),
+        cost_units_consumed: to_api_u32_as_i64(fee_summary.cost_unit_consumed),
+        cost_unit_price: to_api_decimal(&fee_summary.cost_unit_price),
         tip_percentage: to_api_u32_as_i64(fee_summary.tip_percentage),
-        xrd_burned_attos: to_api_decimal_attos(&fee_summary.burned),
-        xrd_tipped_attos: to_api_decimal_attos(&fee_summary.tipped),
+        xrd_burned: to_api_decimal(&fee_summary.burned),
+        xrd_tipped: to_api_decimal(&fee_summary.tipped),
     }
 }

@@ -45,8 +45,8 @@ pub fn to_api_substate_version(substate_version: u32) -> Result<i64, MappingErro
         .expect("Substate version too large somehow"))
 }
 
-pub fn to_api_decimal_attos(value: &Decimal) -> String {
-    value.0.to_string()
+pub fn to_api_decimal(value: &Decimal) -> String {
+    value.to_string()
 }
 
 pub fn to_api_u32_as_i64(input: u32) -> i64 {

@@ -87,9 +87,9 @@ pub enum Substate {
         fungible_divisibility: Option<i32>,
         #[serde(rename = "metadata")]
         metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>,
-        /// A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in the total supply of this resource. 
-        #[serde(rename = "total_supply_attos")]
-        total_supply_attos: String,
+        /// The string-encoded decimal representing the total supply of this resource. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`. 
+        #[serde(rename = "total_supply")]
+        total_supply: String,
     },
     #[serde(rename="Vault")]
     VaultSubstate {

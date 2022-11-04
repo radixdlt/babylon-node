@@ -123,7 +123,7 @@ fn to_api_response(
                         models::EntityType::Vault,
                         &v.vault_id,
                     )),
-                    amount_attos: to_api_decimal_attos(&v.amount),
+                    amount: to_api_decimal(&v.amount),
                 })
                 .collect();
 

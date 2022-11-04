@@ -809,11 +809,11 @@ components:
       required:
         - loan_fully_repaid
         - cost_unit_limit
-        - cost_unit_consumed
-        - cost_unit_price_attos
+        - cost_units_consumed
+        - cost_unit_price
         - tip_percentage
-        - xrd_burned_attos
-        - xrd_tipped_attos
+        - xrd_burned
+        - xrd_tipped
       properties:
         loan_fully_repaid:
           type: boolean
@@ -824,33 +824,33 @@ components:
           minimum: 0
           maximum: 4294967295
           description: An integer between `0` and `2^32 - 1`, representing the maximum amount of cost units available for the transaction execution.
-        cost_unit_consumed:
+        cost_units_consumed:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
           description: An integer between `0` and `2^32 - 1`, representing the amount of cost units consumed by the transaction execution.
-        cost_unit_price_attos:
+        cost_unit_price:
           type: string
           description: |
-            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
-            the XRD price of a single cost unit.
+            The string-encoded decimal representing the XRD price of a single cost unit.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
         tip_percentage:
           type: integer
           format: int64
           minimum: 0
           maximum: 4294967295
           description: An integer between `0` and `2^32 - 1`, specifying the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
-        xrd_burned_attos:
+        xrd_burned:
           type: string
           description: |
-            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
-            the total amount of XRD burned in the transaction.
-        xrd_tipped_attos:
+            The string-encoded decimal representing the total amount of XRD burned in the transaction.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+        xrd_tipped:
           type: string
           description: |
-            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
-            the total amount of XRD tipped to validators in the transaction.
+            The string-encoded decimal representing the total amount of XRD tipped to validators in the transaction.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     StateUpdates:
       type: object
       description: Transaction state updates (only present if status is Succeeded or Failed)
@@ -973,7 +973,7 @@ components:
         - resource_address
         - component_entity
         - vault_entity
-        - amount_attos
+        - amount
       properties:
         resource_address:
           $ref: "#/components/schemas/ResourceAddress"
@@ -981,11 +981,11 @@ components:
           $ref: "#/components/schemas/EntityReference"
         vault_entity:
           $ref: "#/components/schemas/EntityReference"
-        amount_attos:
+        amount:
           type: string
           description: |
-            A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
-            the XRD amount put or taken from the vault
+            The string-encoded decimal representing the XRD amount put or taken from the vault.
+            A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
 #################################################
 # GENERAL / SHARED MODELS - keys and signatures #
 #################################################
@@ -1181,7 +1181,7 @@ components:
           required:
             - resource_type
             - metadata
-            - total_supply_attos
+            - total_supply
           properties:
             resource_type:
               $ref: '#/components/schemas/ResourceType'
@@ -1201,11 +1201,11 @@ components:
                     type: string
                   value:
                     type: string
-            total_supply_attos:
+            total_supply:
               type: string
               description: |
-                A decimal-string-encoded integer between `0` and `2^255 - 1`, which represents the total number of `10^(-18)` subunits in
-                the total supply of this resource.
+                The string-encoded decimal representing the total supply of this resource.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     ResourceType:
       type: string
       enum:
@@ -1305,13 +1305,13 @@ components:
         - $ref: '#/components/schemas/ResourceAmountBase'
         - type: object
           required:
-            - amount_attos
+            - amount
           properties:
-            amount_attos:
+            amount:
               type: string
               description: |
-                The string-encoded decimal subunits of the amount (`10^-18`) in a signed 256-bit integer.
-                This is string-encoded as it doesn't fit well into common numeric types.
+                The string-encoded decimal representing the amount of this resource (some decimal for fungible resources, a whole integer for non-fungible resources).
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
     NonFungibleResourceAmount:
       allOf:
         - $ref: '#/components/schemas/ResourceAmountBase'

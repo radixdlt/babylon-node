@@ -113,7 +113,7 @@ pub fn to_api_resource_substate(resource_manager: &ResourceManagerSubstate) -> m
                 value: v.clone(),
             })
             .collect(),
-        total_supply_attos: to_api_decimal_attos(&resource_manager.total_supply),
+        total_supply: to_api_decimal(&resource_manager.total_supply),
     }
 }
 
@@ -240,7 +240,7 @@ fn to_api_fungible_resource_amount(
 ) -> Result<models::ResourceAmount, MappingError> {
     Ok(models::ResourceAmount::FungibleResourceAmount {
         resource_address: bech32_encoder.encode_resource_address_to_string(resource_address),
-        amount_attos: to_api_decimal_attos(amount),
+        amount: to_api_decimal(amount),
     })
 }
 
