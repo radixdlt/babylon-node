@@ -284,7 +284,7 @@ pub fn to_api_non_fungible_substate(
 
     Ok(match &non_fungible.0 {
         Some(non_fungible) => models::Substate::NonFungibleSubstate {
-            entity_type: EntityType::KeyValueStore,
+            entity_type: EntityType::NonFungibleStore,
             nf_id_hex: to_hex(nf_id_bytes),
             is_deleted: false,
             non_fungible_data: Some(Box::new(to_api_non_fungible_data(
@@ -293,7 +293,7 @@ pub fn to_api_non_fungible_substate(
             )?)),
         },
         None => models::Substate::NonFungibleSubstate {
-            entity_type: EntityType::KeyValueStore,
+            entity_type: EntityType::NonFungibleStore,
             nf_id_hex: to_hex(nf_id_bytes),
             is_deleted: true,
             non_fungible_data: None,
