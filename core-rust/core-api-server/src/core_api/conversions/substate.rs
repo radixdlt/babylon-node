@@ -3,6 +3,7 @@ use std::collections::BTreeSet;
 use super::*;
 use crate::core_api::models;
 use models::EntityType;
+use scrypto::resource::{SchemaPath, SchemaSubPath};
 
 use crate::core_api::models::SborData;
 use radix_engine::model::{
@@ -13,8 +14,9 @@ use radix_engine::model::{
     VaultSubstate,
 };
 use radix_engine::types::{
-    Decimal, GlobalOffset, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ScryptoValue,
-    SubstateId,
+    AccessRule, AccessRuleNode, AccessRules, Decimal, GlobalOffset, NonFungibleId, ProofRule,
+    ResourceAddress, ResourceMethodAuthKey, ScryptoValue, SoftCount, SoftDecimal, SoftResource,
+    SoftResourceOrNonFungible, SoftResourceOrNonFungibleList, SubstateId,
 };
 use scrypto::address::Bech32Encoder;
 use scrypto::engine::types::{
@@ -41,7 +43,7 @@ pub fn to_api_substate(
             to_api_resource_manager_substate(bech32_encoder, resource_manager)?
         }
         PersistedSubstate::ComponentInfo(component_info) => {
-            to_api_component_info_substate(component_info, bech32_encoder)
+            to_api_component_info_substate(component_info, bech32_encoder)?
         }
         PersistedSubstate::ComponentState(component_state) => {
             to_api_component_state_substate(bech32_encoder, component_state)?
@@ -322,14 +324,241 @@ pub fn to_api_fixed_resource_descriptor(
 pub fn to_api_component_info_substate(
     component_info: &ComponentInfoSubstate,
     bech32_encoder: &Bech32Encoder,
-) -> models::Substate {
-    // TODO: map access_rules
-    models::Substate::ComponentInfoSubstate {
+) -> Result<models::Substate, MappingError> {
+    Ok(models::Substate::ComponentInfoSubstate {
         entity_type: EntityType::Component,
         package_address: bech32_encoder
             .encode_package_address_to_string(&component_info.package_address),
         blueprint_name: component_info.blueprint_name.to_string(),
-    }
+        access_rules_layers: component_info
+            .access_rules
+            .iter()
+            .map(|ar| to_api_component_access_rules_layer(bech32_encoder, ar))
+            .collect::<Result<_, _>>()?,
+    })
+}
+
+pub fn to_api_component_access_rules_layer(
+    bech32_encoder: &Bech32Encoder,
+    access_rules_layer: &AccessRules,
+) -> Result<models::ComponentAccessRulesLayer, MappingError> {
+    Ok(models::ComponentAccessRulesLayer {
+        method_auth: access_rules_layer
+            .iter()
+            .map(|(method_name, auth)| {
+                Ok((
+                    method_name.to_owned(),
+                    to_api_dynamic_authorization(bech32_encoder, auth)?,
+                ))
+            })
+            .collect::<Result<_, _>>()?,
+        default_auth: Some(to_api_dynamic_authorization(
+            bech32_encoder,
+            access_rules_layer.get_default(),
+        )?),
+    })
+}
+
+pub fn to_api_dynamic_authorization(
+    bech32_encoder: &Bech32Encoder,
+    authorization: &AccessRule,
+) -> Result<models::DynamicAuthorization, MappingError> {
+    Ok(match authorization {
+        AccessRule::Protected(auth_rule) => {
+            models::DynamicAuthorization::ProtectedDynamicAuthorization {
+                auth_rule: Box::new(to_api_dynamic_auth_rule(bech32_encoder, auth_rule)?),
+            }
+        }
+        AccessRule::AllowAll => models::DynamicAuthorization::AllowAllDynamicAuthorization {},
+        AccessRule::DenyAll => models::DynamicAuthorization::DenyAllDynamicAuthorization {},
+    })
+}
+
+pub fn to_api_dynamic_auth_rule(
+    bech32_encoder: &Bech32Encoder,
+    auth_rule: &AccessRuleNode,
+) -> Result<models::DynamicAuthRule, MappingError> {
+    Ok(match auth_rule {
+        AccessRuleNode::ProofRule(proof_rule) => models::DynamicAuthRule::ProofDynamicAuthRule {
+            proof_rule: Box::new(to_api_dynamic_proof_rule(bech32_encoder, proof_rule)?),
+        },
+        AccessRuleNode::AnyOf(auth_rules) => models::DynamicAuthRule::AnyOfDynamicAuthRule {
+            auth_rules: auth_rules
+                .iter()
+                .map(|ar| to_api_dynamic_auth_rule(bech32_encoder, ar))
+                .collect::<Result<_, _>>()?,
+        },
+        AccessRuleNode::AllOf(auth_rules) => models::DynamicAuthRule::AllOfDynamicAuthRule {
+            auth_rules: auth_rules
+                .iter()
+                .map(|ar| to_api_dynamic_auth_rule(bech32_encoder, ar))
+                .collect::<Result<_, _>>()?,
+        },
+    })
+}
+
+pub fn to_api_dynamic_proof_rule(
+    bech32_encoder: &Bech32Encoder,
+    proof_rule: &ProofRule,
+) -> Result<models::DynamicProofRule, MappingError> {
+    Ok(match proof_rule {
+        ProofRule::Require(resource) => models::DynamicProofRule::RequireDynamicProofRule {
+            resource: Box::new(to_api_dynamic_resource_descriptor(
+                bech32_encoder,
+                resource,
+            )?),
+        },
+        ProofRule::AmountOf(amount, resource) => {
+            models::DynamicProofRule::AmountOfDynamicProofRule {
+                amount: Box::new(to_api_dynamic_amount_from_soft_decimal(amount)?),
+                resource: Box::new(to_api_dynamic_resource_descriptor_from_resource(
+                    bech32_encoder,
+                    resource,
+                )?),
+            }
+        }
+        ProofRule::AllOf(resources) => models::DynamicProofRule::AllOfDynamicProofRule {
+            list: Box::new(to_api_dynamic_resource_descriptor_list(
+                bech32_encoder,
+                resources,
+            )?),
+        },
+        ProofRule::AnyOf(resources) => models::DynamicProofRule::AnyOfDynamicProofRule {
+            list: Box::new(to_api_dynamic_resource_descriptor_list(
+                bech32_encoder,
+                resources,
+            )?),
+        },
+        ProofRule::CountOf(count, resources) => models::DynamicProofRule::CountOfDynamicProofRule {
+            count: Box::new(to_api_dynamic_count_from_soft_count(count)?),
+            list: Box::new(to_api_dynamic_resource_descriptor_list(
+                bech32_encoder,
+                resources,
+            )?),
+        },
+    })
+}
+
+pub fn to_api_dynamic_amount_from_soft_decimal(
+    soft_decimal: &SoftDecimal,
+) -> Result<models::DynamicAmount, MappingError> {
+    Ok(match soft_decimal {
+        SoftDecimal::Static(amount) => models::DynamicAmount::AmountDynamicAmount {
+            amount: to_api_decimal(amount),
+        },
+        SoftDecimal::Dynamic(schema_path) => models::DynamicAmount::SchemaPathDynamicAmount {
+            schema_path: to_api_schema_path(schema_path)?,
+        },
+    })
+}
+
+pub fn to_api_dynamic_count_from_soft_count(
+    soft_count: &SoftCount,
+) -> Result<models::DynamicCount, MappingError> {
+    Ok(match soft_count {
+        SoftCount::Static(count) => models::DynamicCount::CountDynamicCount {
+            count: (*count)
+                .try_into()
+                .map_err(|err| MappingError::IntegerError {
+                    message: format!("Could not translate count into i32: {:?}", err),
+                })?,
+        },
+        SoftCount::Dynamic(schema_path) => models::DynamicCount::SchemaPathDynamicCount {
+            schema_path: to_api_schema_path(schema_path)?,
+        },
+    })
+}
+
+pub fn to_api_dynamic_resource_descriptor_list(
+    bech32_encoder: &Bech32Encoder,
+    resource_list: &SoftResourceOrNonFungibleList,
+) -> Result<models::DynamicResourceDescriptorList, MappingError> {
+    Ok(match resource_list {
+        SoftResourceOrNonFungibleList::Static(resources) => {
+            models::DynamicResourceDescriptorList::ListDynamicResourceDescriptorList {
+                resources: resources
+                    .iter()
+                    .map(|r| to_api_dynamic_resource_descriptor(bech32_encoder, r))
+                    .collect::<Result<_, _>>()?,
+            }
+        }
+        SoftResourceOrNonFungibleList::Dynamic(schema_path) => {
+            models::DynamicResourceDescriptorList::SchemaPathDynamicResourceDescriptorList {
+                schema_path: to_api_schema_path(schema_path)?,
+            }
+        }
+    })
+}
+
+pub fn to_api_dynamic_resource_descriptor_from_resource(
+    bech32_encoder: &Bech32Encoder,
+    resource: &SoftResource,
+) -> Result<models::DynamicResourceDescriptor, MappingError> {
+    Ok(match resource {
+        SoftResource::Static(resource) => {
+            models::DynamicResourceDescriptor::ResourceDynamicResourceDescriptor {
+                resource_address: bech32_encoder.encode_resource_address_to_string(resource),
+            }
+        }
+        SoftResource::Dynamic(schema_path) => {
+            models::DynamicResourceDescriptor::SchemaPathDynamicResourceDescriptor {
+                schema_path: to_api_schema_path(schema_path)?,
+            }
+        }
+    })
+}
+
+pub fn to_api_dynamic_resource_descriptor(
+    bech32_encoder: &Bech32Encoder,
+    resource: &SoftResourceOrNonFungible,
+) -> Result<models::DynamicResourceDescriptor, MappingError> {
+    Ok(match resource {
+        SoftResourceOrNonFungible::StaticNonFungible(nf) => {
+            models::DynamicResourceDescriptor::NonFungibleDynamicResourceDescriptor {
+                resource_address: bech32_encoder
+                    .encode_resource_address_to_string(&nf.resource_address()),
+                non_fungible_id_hex: to_hex(nf.non_fungible_id().0),
+            }
+        }
+        SoftResourceOrNonFungible::StaticResource(resource) => {
+            models::DynamicResourceDescriptor::ResourceDynamicResourceDescriptor {
+                resource_address: bech32_encoder.encode_resource_address_to_string(resource),
+            }
+        }
+        SoftResourceOrNonFungible::Dynamic(schema_path) => {
+            models::DynamicResourceDescriptor::SchemaPathDynamicResourceDescriptor {
+                schema_path: to_api_schema_path(schema_path)?,
+            }
+        }
+    })
+}
+
+pub fn to_api_schema_path(
+    schema_path: &SchemaPath,
+) -> Result<Vec<models::SchemaSubpath>, MappingError> {
+    let mapped = schema_path
+        .0
+        .iter()
+        .map(to_api_schema_subpath)
+        .collect::<Result<_, _>>()?;
+    Ok(mapped)
+}
+
+pub fn to_api_schema_subpath(
+    schema_subpath: &SchemaSubPath,
+) -> Result<models::SchemaSubpath, MappingError> {
+    Ok(match schema_subpath {
+        SchemaSubPath::Field(field) => models::SchemaSubpath::FieldSchemaSubpath {
+            field: field.to_owned(),
+        },
+        SchemaSubPath::Index(index) => models::SchemaSubpath::IndexSchemaSubpath {
+            index: to_api_u64_as_string((*index).try_into().map_err(|err| {
+                MappingError::IntegerError {
+                    message: format!("Couldn't map usize to u64: {:?}", err),
+                }
+            })?),
+        },
+    })
 }
 
 pub fn to_api_component_state_substate(

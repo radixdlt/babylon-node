@@ -84,7 +84,7 @@ fn read_component_info(
         SubstateOffset::Component(ComponentOffset::Info),
     ) {
         Some(PersistedSubstate::ComponentInfo(component_info)) => Ok(Some(
-            to_api_component_info_substate(&component_info, &bech32_encoder),
+            to_api_component_info_substate(&component_info, &bech32_encoder)?,
         )),
         Some(..) => Err(MappingError::MismatchedSubstateId {
             message: "Component info substate was not of the right type".to_owned(),

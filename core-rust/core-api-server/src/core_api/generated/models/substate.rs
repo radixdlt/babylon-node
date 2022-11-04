@@ -22,6 +22,8 @@ pub enum Substate {
         package_address: String,
         #[serde(rename = "blueprint_name")]
         blueprint_name: String,
+        #[serde(rename = "access_rules_layers")]
+        access_rules_layers: Vec<crate::core_api::generated::models::ComponentAccessRulesLayer>,
     },
     #[serde(rename="ComponentState")]
     ComponentStateSubstate {

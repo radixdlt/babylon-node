@@ -1106,9 +1106,9 @@ components:
           $ref: '#/components/schemas/EddsaEd25519PublicKey'
         signature:
           $ref: '#/components/schemas/EddsaEd25519Signature'
-##########################################
-# GENERAL / SHARED MODELS - access rules #
-##########################################
+##############################################
+# GENERAL / SHARED MODELS - Fixed auth rules #
+##############################################
     FixedActionAuthRules:
       type: object
       required:
@@ -1351,6 +1351,413 @@ components:
           properties:
             resource_address:
               $ref: '#/components/schemas/ResourceAddress'
+################################################
+# GENERAL / SHARED MODELS - Dynamic auth rules #
+################################################
+    DynamicAuthorizationType:
+      type: string
+      enum:
+        - Protected
+        - AllowAll
+        - DenyAll
+    DynamicAuthorization:
+      anyOf:
+        - $ref: '#/components/schemas/ProtectedDynamicAuthorization'
+        - $ref: '#/components/schemas/AllowAllDynamicAuthorization'
+        - $ref: '#/components/schemas/DenyAllDynamicAuthorization'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicAuthorizationType options above
+          Protected: '#/components/schemas/ProtectedDynamicAuthorization'
+          AllowAll: '#/components/schemas/AllowAllDynamicAuthorization'
+          DenyAll: '#/components/schemas/DenyAllDynamicAuthorization'
+    DynamicAuthorizationBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicAuthorizationType'
+    ProtectedDynamicAuthorization:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAuthorizationBase'
+        - type: object
+          required:
+            - auth_rule
+          properties:
+            auth_rule:
+              $ref: '#/components/schemas/DynamicAuthRule'
+    AllowAllDynamicAuthorization:
+      $ref: '#/components/schemas/DynamicAuthorizationBase'
+    DenyAllDynamicAuthorization:
+      $ref: '#/components/schemas/DynamicAuthorizationBase'
+    DynamicAuthRuleType:
+      type: string
+      enum:
+        - ProofRule
+        - AnyOf
+        - AllOf
+    DynamicAuthRule:
+      anyOf:
+        - $ref: '#/components/schemas/ProofDynamicAuthRule'
+        - $ref: '#/components/schemas/AnyOfDynamicAuthRule'
+        - $ref: '#/components/schemas/AllOfDynamicAuthRule'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicAuthRuleType options above
+          ProofRule: '#/components/schemas/ProofDynamicAuthRule'
+          AnyOf: '#/components/schemas/AnyOfDynamicAuthRule'
+          AllOf: '#/components/schemas/AllOfDynamicAuthRule'
+    DynamicAuthRuleBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicAuthRuleType'
+    ProofDynamicAuthRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAuthRuleBase'
+        - type: object
+          required:
+            - proof_rule
+          properties:
+            proof_rule:
+              $ref: '#/components/schemas/DynamicProofRule'
+    AnyOfDynamicAuthRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAuthRuleBase'
+        - type: object
+          required:
+            - auth_rules
+          properties:
+            auth_rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/DynamicAuthRule'
+    AllOfDynamicAuthRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAuthRuleBase'
+        - type: object
+          required:
+            - auth_rules
+          properties:
+            auth_rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/DynamicAuthRule'
+    DynamicProofRuleType:
+      type: string
+      enum:
+        - Require
+        - AmountOf
+        - AllOf
+        - AnyOf
+        - CountOf
+    DynamicProofRule:
+      anyOf:
+        - $ref: '#/components/schemas/RequireDynamicProofRule'
+        - $ref: '#/components/schemas/AmountOfDynamicProofRule'
+        - $ref: '#/components/schemas/AllOfDynamicProofRule'
+        - $ref: '#/components/schemas/AnyOfDynamicProofRule'
+        - $ref: '#/components/schemas/CountOfDynamicProofRule'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicProofRuleType options above
+          Require: '#/components/schemas/RequireDynamicProofRule'
+          AmountOf: '#/components/schemas/AmountOfDynamicProofRule'
+          AllOf: '#/components/schemas/AllOfDynamicProofRule'
+          AnyOf: '#/components/schemas/AnyOfDynamicProofRule'
+          CountOf: '#/components/schemas/CountOfDynamicProofRule'
+    DynamicProofRuleBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicProofRuleType'
+    RequireDynamicProofRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - type: object
+          required:
+            - resource
+          properties:
+            resource:
+              $ref: '#/components/schemas/DynamicResourceDescriptor'
+    AmountOfDynamicProofRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - type: object
+          required:
+            - amount
+            - resource
+          properties:
+            amount:
+              $ref: '#/components/schemas/DynamicAmount'
+            resource:
+              $ref: '#/components/schemas/DynamicResourceDescriptor'
+    AllOfDynamicProofRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - type: object
+          required:
+            - list
+          properties:
+            list:
+              $ref: '#/components/schemas/DynamicResourceDescriptorList'
+    AnyOfDynamicProofRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - type: object
+          required:
+            - list
+          properties:
+            list:
+              $ref: '#/components/schemas/DynamicResourceDescriptorList'
+    CountOfDynamicProofRule:
+      allOf:
+        - $ref: '#/components/schemas/DynamicProofRuleBase'
+        - type: object
+          required:
+            - count
+            - list
+          properties:
+            count:
+              $ref: '#/components/schemas/DynamicCount'
+            list:
+              $ref: '#/components/schemas/DynamicResourceDescriptorList'
+    DynamicAmountType:
+      type: string
+      enum:
+        - Amount
+        - SchemaPath
+    DynamicAmount:
+      anyOf:
+        - $ref: '#/components/schemas/AmountDynamicAmount'
+        - $ref: '#/components/schemas/SchemaPathDynamicAmount'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicAmountType options above
+          Amount: '#/components/schemas/AmountDynamicAmount'
+          SchemaPath: '#/components/schemas/SchemaPathDynamicAmount'
+    DynamicAmountBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicAmountType'
+    AmountDynamicAmount:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAmountBase'
+        - type: object
+          required:
+            - amount
+          properties:
+            amount:
+              type: string
+              description: |
+                The string-encoded decimal representing the amount of resource required to pass the proof rule.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+    SchemaPathDynamicAmount:
+      allOf:
+        - $ref: '#/components/schemas/DynamicAmountBase'
+        - type: object
+          required:
+            - schema_path
+          properties:
+            schema_path:
+              $ref: '#/components/schemas/SchemaPath'
+    DynamicCountType:
+      type: string
+      enum:
+        - Count
+        - SchemaPath
+    DynamicCount:
+      anyOf:
+        - $ref: '#/components/schemas/CountDynamicCount'
+        - $ref: '#/components/schemas/SchemaPathDynamicCount'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicCountType options above
+          Count: '#/components/schemas/CountDynamicCount'
+          SchemaPath: '#/components/schemas/SchemaPathDynamicCount'
+    DynamicCountBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicCountType'
+    CountDynamicCount:
+      allOf:
+        - $ref: '#/components/schemas/DynamicCountBase'
+        - type: object
+          required:
+            - count
+          properties:
+            count:
+              type: integer
+              minimum: 0
+              maximum: 255
+    SchemaPathDynamicCount:
+      allOf:
+        - $ref: '#/components/schemas/DynamicCountBase'
+        - type: object
+          required:
+            - schema_path
+          properties:
+            schema_path:
+              $ref: '#/components/schemas/SchemaPath'
+    DynamicResourceDescriptorListType:
+      type: string
+      enum:
+        - List
+        - SchemaPath
+    DynamicResourceDescriptorList:
+      anyOf:
+        - $ref: '#/components/schemas/ListDynamicResourceDescriptorList'
+        - $ref: '#/components/schemas/SchemaPathDynamicResourceDescriptorList'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicResourceDescriptorListType options above
+          List: '#/components/schemas/ListDynamicResourceDescriptorList'
+          SchemaPath: '#/components/schemas/SchemaPathDynamicResourceDescriptorList'
+    DynamicResourceDescriptorListBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicResourceDescriptorListType'
+    ListDynamicResourceDescriptorList:
+      allOf:
+        - $ref: '#/components/schemas/DynamicResourceDescriptorListBase'
+        - type: object
+          required:
+            - resources
+          properties:
+            resources:
+              type: array
+              items:
+                $ref: '#/components/schemas/DynamicResourceDescriptor'
+    SchemaPathDynamicResourceDescriptorList:
+      allOf:
+        - $ref: '#/components/schemas/DynamicResourceDescriptorListBase'
+        - type: object
+          required:
+            - schema_path
+          properties:
+            schema_path:
+              $ref: '#/components/schemas/SchemaPath'
+    DynamicResourceDescriptorType:
+      type: string
+      enum:
+        - NonFungible
+        - Resource
+    DynamicResourceDescriptor:
+      anyOf:
+        - $ref: '#/components/schemas/NonFungibleDynamicResourceDescriptor'
+        - $ref: '#/components/schemas/ResourceDynamicResourceDescriptor'
+        - $ref: '#/components/schemas/SchemaPathDynamicResourceDescriptor'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match DynamicResourceDescriptorType options above
+          NonFungible: '#/components/schemas/NonFungibleDynamicResourceDescriptor'
+          Resource: '#/components/schemas/ResourceDynamicResourceDescriptor'
+          SchemaPath: '#/components/schemas/SchemaPathDynamicResourceDescriptor'
+    DynamicResourceDescriptorBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/DynamicResourceDescriptorType'
+    NonFungibleDynamicResourceDescriptor:
+      allOf:
+        - $ref: '#/components/schemas/DynamicResourceDescriptorBase'
+        - type: object
+          required:
+            - resource_address
+            - non_fungible_id_hex
+          properties:
+            resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+            non_fungible_id_hex:
+              type: string
+              description: The hex-encoded bytes of a non-fungible id
+    ResourceDynamicResourceDescriptor:
+      allOf:
+        - $ref: '#/components/schemas/DynamicResourceDescriptorBase'
+        - type: object
+          required:
+            - resource_address
+          properties:
+            resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+    SchemaPathDynamicResourceDescriptor:
+      allOf:
+        - $ref: '#/components/schemas/DynamicResourceDescriptorBase'
+        - type: object
+          required:
+            - schema_path
+          properties:
+            schema_path:
+              $ref: '#/components/schemas/SchemaPath'
+    SchemaPath:
+      type: array
+      items:
+        $ref: '#/components/schemas/SchemaSubpath'
+    SchemaSubpathType:
+      type: string
+      enum:
+        - Index
+        - Field
+    SchemaSubpath:
+      anyOf:
+        - $ref: '#/components/schemas/IndexSchemaSubpath'
+        - $ref: '#/components/schemas/FieldSchemaSubpath'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match SchemaSubpathType options above
+          Index: '#/components/schemas/IndexSchemaSubpath'
+          Field: '#/components/schemas/FieldSchemaSubpath'
+    SchemaSubpathBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/SchemaSubpathType'
+    IndexSchemaSubpath:
+      allOf:
+        - $ref: '#/components/schemas/SchemaSubpathBase'
+        - type: object
+          required:
+            - index
+          properties:
+            index:
+              type: string
+              description: A decimal-string-encoded integer between 0 and 2^64 - 1, which captures the index of the schema sub-path
+    FieldSchemaSubpath:
+      allOf:
+        - $ref: '#/components/schemas/SchemaSubpathBase'
+        - type: object
+          required:
+            - field
+          properties:
+            field:
+              type: string
+              description: The name of the field
 #######################################
 # GENERAL / SHARED MODELS - substates #
 #######################################
@@ -1493,11 +1900,28 @@ components:
           required:
             - package_address
             - blueprint_name
+            - access_rules_layers
           properties:
             package_address:
               $ref: '#/components/schemas/PackageAddress'
             blueprint_name:
               type: string
+            access_rules_layers:
+              type: array
+              items:
+                $ref: '#/components/schemas/ComponentAccessRulesLayer'
+    ComponentAccessRulesLayer:
+      type: object
+      required:
+        - method_auth
+        - default_auth
+      properties:
+        method_auth:
+          description: A map from the method name to method access rules
+          additionalProperties:
+            $ref: '#/components/schemas/DynamicAuthorization'
+        default_auth:
+          $ref: '#/components/schemas/DynamicAuthorization'
     ComponentStateSubstate:
       allOf:
         - $ref: '#/components/schemas/SubstateBase'
