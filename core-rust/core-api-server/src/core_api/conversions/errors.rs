@@ -30,6 +30,12 @@ pub enum MappingError {
     IntegerError {
         message: String,
     },
+    AuthRuleNotFound {
+        message: String,
+    },
+    UnsupportedAuthRulePartPersisted {
+        message: String,
+    },
 }
 
 impl From<MappingError> for RequestHandlingError {

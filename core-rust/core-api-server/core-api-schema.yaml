@@ -1106,6 +1106,251 @@ components:
           $ref: '#/components/schemas/EddsaEd25519PublicKey'
         signature:
           $ref: '#/components/schemas/EddsaEd25519Signature'
+##########################################
+# GENERAL / SHARED MODELS - access rules #
+##########################################
+    FixedActionAuthRules:
+      type: object
+      required:
+        - perform_action
+        - update_rules
+      description: The auth rules for method access
+      properties:
+        perform_action:
+          $ref: '#/components/schemas/FixedAuthorization'
+        update_rules:
+          $ref: '#/components/schemas/FixedAuthorization'
+    FixedAuthorizationType:
+      type: string
+      enum:
+        - Protected
+        - AllowAll
+        - DenyAll
+    FixedAuthorization:
+      anyOf:
+        - $ref: '#/components/schemas/ProtectedFixedAuthorization'
+        - $ref: '#/components/schemas/AllowAllFixedAuthorization'
+        - $ref: '#/components/schemas/DenyAllFixedAuthorization'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match FixedAuthorizationType options above
+          Protected: '#/components/schemas/ProtectedFixedAuthorization'
+          AllowAll: '#/components/schemas/AllowAllFixedAuthorization'
+          DenyAll: '#/components/schemas/DenyAllFixedAuthorization'
+    FixedAuthorizationBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/FixedAuthorizationType'
+    ProtectedFixedAuthorization:
+      allOf:
+        - $ref: '#/components/schemas/FixedAuthorizationBase'
+        - type: object
+          required:
+            - auth_rule
+          properties:
+            auth_rule:
+              $ref: '#/components/schemas/FixedAuthRule'
+    AllowAllFixedAuthorization:
+      $ref: '#/components/schemas/FixedAuthorizationBase'
+    DenyAllFixedAuthorization:
+      $ref: '#/components/schemas/FixedAuthorizationBase'
+    FixedAuthRuleType:
+      type: string
+      enum:
+        - ProofRule
+        - AnyOf
+        - AllOf
+    FixedAuthRule:
+      anyOf:
+        - $ref: '#/components/schemas/ProofFixedAuthRule'
+        - $ref: '#/components/schemas/AnyOfFixedAuthRule'
+        - $ref: '#/components/schemas/AllOfFixedAuthRule'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match FixedAuthRuleType options above
+          ProofRule: '#/components/schemas/ProofFixedAuthRule'
+          AnyOf: '#/components/schemas/AnyOfFixedAuthRule'
+          AllOf: '#/components/schemas/AllOfFixedAuthRule'
+    FixedAuthRuleBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/FixedAuthRuleType'
+    ProofFixedAuthRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedAuthRuleBase'
+        - type: object
+          required:
+            - proof_rule
+          properties:
+            proof_rule:
+              $ref: '#/components/schemas/FixedProofRule'
+    AnyOfFixedAuthRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedAuthRuleBase'
+        - type: object
+          required:
+            - auth_rules
+          properties:
+            auth_rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/FixedAuthRule'
+    AllOfFixedAuthRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedAuthRuleBase'
+        - type: object
+          required:
+            - auth_rules
+          properties:
+            auth_rules:
+              type: array
+              items:
+                $ref: '#/components/schemas/FixedAuthRule'
+    FixedProofRuleType:
+      type: string
+      enum:
+        - Require
+        - AmountOf
+        - AllOf
+        - AnyOf
+        - CountOf
+    FixedProofRule:
+      anyOf:
+        - $ref: '#/components/schemas/RequireFixedProofRule'
+        - $ref: '#/components/schemas/AmountOfFixedProofRule'
+        - $ref: '#/components/schemas/AllOfFixedProofRule'
+        - $ref: '#/components/schemas/AnyOfFixedProofRule'
+        - $ref: '#/components/schemas/CountOfFixedProofRule'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match FixedProofRuleType options above
+          Require: '#/components/schemas/RequireFixedProofRule'
+          AmountOf: '#/components/schemas/AmountOfFixedProofRule'
+          AllOf: '#/components/schemas/AllOfFixedProofRule'
+          AnyOf: '#/components/schemas/AnyOfFixedProofRule'
+          CountOf: '#/components/schemas/CountOfFixedProofRule'
+    FixedProofRuleBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/FixedProofRuleType'
+    RequireFixedProofRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedProofRuleBase'
+        - type: object
+          required:
+            - resource
+          properties:
+            resource:
+              $ref: '#/components/schemas/FixedResourceDescriptor'
+    AmountOfFixedProofRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedProofRuleBase'
+        - type: object
+          required:
+            - amount
+            - resource
+          properties:
+            amount:
+              type: string
+              description: |
+                The string-encoded decimal representing the amount of resource required to pass the proof rule.
+                A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
+            resource:
+              $ref: '#/components/schemas/FixedResourceDescriptor'
+    AllOfFixedProofRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedProofRuleBase'
+        - type: object
+          required:
+            - resources
+          properties:
+            resources:
+              type: array
+              items:
+                $ref: '#/components/schemas/FixedResourceDescriptor'
+    AnyOfFixedProofRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedProofRuleBase'
+        - type: object
+          required:
+            - resources
+          properties:
+            resources:
+              type: array
+              items:
+                $ref: '#/components/schemas/FixedResourceDescriptor'
+    CountOfFixedProofRule:
+      allOf:
+        - $ref: '#/components/schemas/FixedProofRuleBase'
+        - type: object
+          required:
+            - count
+            - resources
+          properties:
+            count:
+              type: integer
+              minimum: 0
+              maximum: 255
+            resources:
+              type: array
+              items:
+                $ref: '#/components/schemas/FixedResourceDescriptor'
+    FixedResourceDescriptorType:
+      type: string
+      enum:
+        - NonFungible
+        - Resource
+    FixedResourceDescriptor:
+      anyOf:
+        - $ref: '#/components/schemas/NonFungibleFixedResourceDescriptor'
+        - $ref: '#/components/schemas/ResourceFixedResourceDescriptor'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match FixedResourceDescriptorType options above
+          NonFungible: '#/components/schemas/NonFungibleFixedResourceDescriptor'
+          Resource: '#/components/schemas/ResourceFixedResourceDescriptor'
+    FixedResourceDescriptorBase:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/FixedResourceDescriptorType'
+    NonFungibleFixedResourceDescriptor:
+      allOf:
+        - $ref: '#/components/schemas/FixedResourceDescriptorBase'
+        - type: object
+          required:
+            - resource_address
+            - non_fungible_id_hex
+          properties:
+            resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
+            non_fungible_id_hex:
+              type: string
+              description: The hex-encoded bytes of a non-fungible id
+    ResourceFixedResourceDescriptor:
+      allOf:
+        - $ref: '#/components/schemas/FixedResourceDescriptorBase'
+        - type: object
+          required:
+            - resource_address
+          properties:
+            resource_address:
+              $ref: '#/components/schemas/ResourceAddress'
 #######################################
 # GENERAL / SHARED MODELS - substates #
 #######################################
@@ -1187,6 +1432,7 @@ components:
             - resource_type
             - metadata
             - total_supply
+            - auth_rules
           properties:
             resource_type:
               $ref: '#/components/schemas/ResourceType'
@@ -1213,6 +1459,28 @@ components:
                 A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(256 - 1) <= m < 2^(256 - 1)`.
             owned_non_fungible_store:
               $ref: '#/components/schemas/EntityReference'
+            auth_rules:
+              type: object
+              required:
+                - mint
+                - burn
+                - withdraw
+                - deposit
+                - update_metadata
+                - update_non_fungible_data
+              properties:
+                mint:
+                  $ref: '#/components/schemas/FixedActionAuthRules'
+                burn:
+                  $ref: '#/components/schemas/FixedActionAuthRules'
+                withdraw:
+                  $ref: '#/components/schemas/FixedActionAuthRules'
+                deposit:
+                  $ref: '#/components/schemas/FixedActionAuthRules'
+                update_metadata:
+                  $ref: '#/components/schemas/FixedActionAuthRules'
+                update_non_fungible_data:
+                  $ref: '#/components/schemas/FixedActionAuthRules'
     ResourceType:
       type: string
       enum:

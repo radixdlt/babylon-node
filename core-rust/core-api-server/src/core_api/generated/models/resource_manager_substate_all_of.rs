@@ -24,16 +24,19 @@ pub struct ResourceManagerSubstateAllOf {
     pub total_supply: String,
     #[serde(rename = "owned_non_fungible_store", skip_serializing_if = "Option::is_none")]
     pub owned_non_fungible_store: Option<Box<crate::core_api::generated::models::EntityReference>>,
+    #[serde(rename = "auth_rules")]
+    pub auth_rules: Box<crate::core_api::generated::models::ResourceManagerSubstateAllOfAuthRules>,
 }
 
 impl ResourceManagerSubstateAllOf {
-    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>, total_supply: String) -> ResourceManagerSubstateAllOf {
+    pub fn new(resource_type: crate::core_api::generated::models::ResourceType, metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>, total_supply: String, auth_rules: crate::core_api::generated::models::ResourceManagerSubstateAllOfAuthRules) -> ResourceManagerSubstateAllOf {
         ResourceManagerSubstateAllOf {
             resource_type,
             fungible_divisibility: None,
             metadata,
             total_supply,
             owned_non_fungible_store: None,
+            auth_rules: Box::new(auth_rules),
         }
     }
 }

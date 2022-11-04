@@ -95,6 +95,8 @@ pub enum Substate {
         total_supply: String,
         #[serde(rename = "owned_non_fungible_store", skip_serializing_if = "Option::is_none")]
         owned_non_fungible_store: Option<Box<crate::core_api::generated::models::EntityReference>>,
+        #[serde(rename = "auth_rules")]
+        auth_rules: Box<crate::core_api::generated::models::ResourceManagerSubstateAllOfAuthRules>,
     },
     #[serde(rename="Vault")]
     VaultSubstate {

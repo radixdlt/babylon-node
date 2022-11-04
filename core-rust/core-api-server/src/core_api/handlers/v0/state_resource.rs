@@ -1,6 +1,6 @@
 use crate::core_api::*;
-use radix_engine::model::PersistedSubstate;
 use radix_engine::types::Bech32Decoder;
+use radix_engine::{model::PersistedSubstate, types::Bech32Encoder};
 use scrypto::engine::types::{GlobalAddress, ResourceManagerOffset, SubstateOffset};
 
 use state_manager::jni::state_manager::ActualStateManager;
@@ -17,6 +17,7 @@ fn handle_v0_state_resource_internal(
     request: models::V0StateResourceRequest,
 ) -> Result<models::V0StateResourceResponse, RequestHandlingError> {
     let bech32_decoder = Bech32Decoder::new(&state_manager.network);
+    let bech32_encoder = Bech32Encoder::new(&state_manager.network);
 
     let resource_address = extract_resource_address(&bech32_decoder, &request.resource_address)
         .map_err(|err| err.into_response_error("resource_address"))?;
@@ -28,7 +29,10 @@ fn handle_v0_state_resource_internal(
     ) {
         Some(PersistedSubstate::ResourceManager(resource_manager)) => {
             Ok(models::V0StateResourceResponse {
-                manager: Some(to_api_resource_manager_substate(&resource_manager)?),
+                manager: Some(to_api_resource_manager_substate(
+                    &bech32_encoder,
+                    &resource_manager,
+                )?),
             })
         }
         Some(..) => Err(MappingError::MismatchedSubstateId {

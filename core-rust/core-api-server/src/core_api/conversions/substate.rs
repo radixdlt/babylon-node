@@ -7,11 +7,14 @@ use models::EntityType;
 use crate::core_api::models::SborData;
 use radix_engine::model::{
     ComponentInfoSubstate, ComponentStateSubstate, EpochManagerSubstate, GlobalAddressSubstate,
-    KeyValueStoreEntrySubstate, NonFungible, NonFungibleSubstate, PackageSubstate,
-    PersistedSubstate, Resource, ResourceManagerSubstate, VaultSubstate,
+    HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
+    HardResourceOrNonFungible, KeyValueStoreEntrySubstate, MethodAuthorization, NonFungible,
+    NonFungibleSubstate, PackageSubstate, PersistedSubstate, Resource, ResourceManagerSubstate,
+    VaultSubstate,
 };
 use radix_engine::types::{
-    Decimal, GlobalOffset, NonFungibleId, ResourceAddress, ScryptoValue, SubstateId,
+    Decimal, GlobalOffset, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ScryptoValue,
+    SubstateId,
 };
 use scrypto::address::Bech32Encoder;
 use scrypto::engine::types::{
@@ -35,7 +38,7 @@ pub fn to_api_substate(
             to_api_epoch_manager_substate(epoch_manager)?
         }
         PersistedSubstate::ResourceManager(resource_manager) => {
-            to_api_resource_manager_substate(resource_manager)?
+            to_api_resource_manager_substate(bech32_encoder, resource_manager)?
         }
         PersistedSubstate::ComponentInfo(component_info) => {
             to_api_component_info_substate(component_info, bech32_encoder)
@@ -94,6 +97,7 @@ fn to_api_epoch_manager_substate(
 }
 
 pub fn to_api_resource_manager_substate(
+    bech32_encoder: &Bech32Encoder,
     resource_manager: &ResourceManagerSubstate,
 ) -> Result<models::Substate, MappingError> {
     let (resource_type, fungible_divisibility) = match resource_manager.resource_type {
@@ -122,6 +126,197 @@ pub fn to_api_resource_manager_substate(
             .collect(),
         total_supply: to_api_decimal(&resource_manager.total_supply),
         owned_non_fungible_store: owned_nf_store.map(|entity_id| Box::new(entity_id.into())),
+        auth_rules: Box::new(models::ResourceManagerSubstateAllOfAuthRules {
+            mint: to_api_resource_manager_auth_rule(
+                bech32_encoder,
+                resource_manager,
+                ResourceMethodAuthKey::Mint,
+            )?,
+            burn: to_api_resource_manager_auth_rule(
+                bech32_encoder,
+                resource_manager,
+                ResourceMethodAuthKey::Burn,
+            )?,
+            withdraw: to_api_resource_manager_auth_rule(
+                bech32_encoder,
+                resource_manager,
+                ResourceMethodAuthKey::Withdraw,
+            )?,
+            deposit: to_api_resource_manager_auth_rule(
+                bech32_encoder,
+                resource_manager,
+                ResourceMethodAuthKey::Deposit,
+            )?,
+            update_metadata: to_api_resource_manager_auth_rule(
+                bech32_encoder,
+                resource_manager,
+                ResourceMethodAuthKey::UpdateMetadata,
+            )?,
+            update_non_fungible_data: to_api_resource_manager_auth_rule(
+                bech32_encoder,
+                resource_manager,
+                ResourceMethodAuthKey::UpdateNonFungibleData,
+            )?,
+        }),
+    })
+}
+
+pub fn to_api_resource_manager_auth_rule(
+    bech32_encoder: &Bech32Encoder,
+    resource_manager: &ResourceManagerSubstate,
+    resource_method: ResourceMethodAuthKey,
+) -> Result<Box<models::FixedActionAuthRules>, MappingError> {
+    let auth_rule = resource_manager
+        .authorization
+        .get(&resource_method)
+        .ok_or_else(|| MappingError::AuthRuleNotFound {
+            message: format!("{:?}", &resource_method),
+        })?;
+
+    Ok(Box::new(models::FixedActionAuthRules {
+        perform_action: Some(to_api_fixed_authorization(bech32_encoder, &auth_rule.auth)?),
+        update_rules: Some(to_api_fixed_authorization(
+            bech32_encoder,
+            &auth_rule.update_auth,
+        )?),
+    }))
+}
+
+pub fn to_api_fixed_authorization(
+    bech32_encoder: &Bech32Encoder,
+    authorization: &MethodAuthorization,
+) -> Result<models::FixedAuthorization, MappingError> {
+    Ok(match authorization {
+        MethodAuthorization::Protected(auth_rule) => {
+            models::FixedAuthorization::ProtectedFixedAuthorization {
+                auth_rule: Box::new(to_api_fixed_auth_rule(bech32_encoder, auth_rule)?),
+            }
+        }
+        MethodAuthorization::AllowAll => models::FixedAuthorization::AllowAllFixedAuthorization {},
+        MethodAuthorization::DenyAll => models::FixedAuthorization::DenyAllFixedAuthorization {},
+        MethodAuthorization::Unsupported => Err(MappingError::UnsupportedAuthRulePartPersisted {
+            message: "MethodAuthorization::Unsupported was persisted".to_string(),
+        })?,
+    })
+}
+
+pub fn to_api_fixed_auth_rule(
+    bech32_encoder: &Bech32Encoder,
+    auth_rule: &HardAuthRule,
+) -> Result<models::FixedAuthRule, MappingError> {
+    Ok(match auth_rule {
+        HardAuthRule::ProofRule(proof_rule) => models::FixedAuthRule::ProofFixedAuthRule {
+            proof_rule: Box::new(to_api_fixed_proof_rule(bech32_encoder, proof_rule)?),
+        },
+        HardAuthRule::AnyOf(auth_rules) => models::FixedAuthRule::AnyOfFixedAuthRule {
+            auth_rules: auth_rules
+                .iter()
+                .map(|ar| to_api_fixed_auth_rule(bech32_encoder, ar))
+                .collect::<Result<_, _>>()?,
+        },
+        HardAuthRule::AllOf(auth_rules) => models::FixedAuthRule::AllOfFixedAuthRule {
+            auth_rules: auth_rules
+                .iter()
+                .map(|ar| to_api_fixed_auth_rule(bech32_encoder, ar))
+                .collect::<Result<_, _>>()?,
+        },
+    })
+}
+
+pub fn to_api_fixed_proof_rule(
+    bech32_encoder: &Bech32Encoder,
+    proof_rule: &HardProofRule,
+) -> Result<models::FixedProofRule, MappingError> {
+    Ok(match proof_rule {
+        HardProofRule::Require(resource) => models::FixedProofRule::RequireFixedProofRule {
+            resource: Box::new(to_api_fixed_resource_descriptor(bech32_encoder, resource)?),
+        },
+        HardProofRule::AmountOf(amount, resource) => {
+            models::FixedProofRule::AmountOfFixedProofRule {
+                amount: to_api_decimal_from_hard_decimal(amount)?,
+                resource: Box::new(to_api_fixed_resource_descriptor(bech32_encoder, resource)?),
+            }
+        }
+        HardProofRule::AllOf(resources) => models::FixedProofRule::AllOfFixedProofRule {
+            resources: to_api_fixed_resource_descriptor_list(bech32_encoder, resources)?,
+        },
+        HardProofRule::AnyOf(resources) => models::FixedProofRule::AnyOfFixedProofRule {
+            resources: to_api_fixed_resource_descriptor_list(bech32_encoder, resources)?,
+        },
+        HardProofRule::CountOf(count, resources) => models::FixedProofRule::CountOfFixedProofRule {
+            count: to_api_count(count)?,
+            resources: to_api_fixed_resource_descriptor_list(bech32_encoder, resources)?,
+        },
+    })
+}
+
+pub fn to_api_decimal_from_hard_decimal(
+    hard_decimal: &HardDecimal,
+) -> Result<String, MappingError> {
+    Ok(match hard_decimal {
+        HardDecimal::Amount(amount) => to_api_decimal(amount),
+        HardDecimal::SoftDecimalNotFound => Err(MappingError::UnsupportedAuthRulePartPersisted {
+            message: "HardDecimal::SoftDecimalNotFound was persisted".to_string(),
+        })?,
+    })
+}
+
+pub fn to_api_count(hard_count: &HardCount) -> Result<i32, MappingError> {
+    Ok(match hard_count {
+        HardCount::Count(count) => {
+            (*count)
+                .try_into()
+                .map_err(|err| MappingError::IntegerError {
+                    message: format!("Could not translate count into i32: {:?}", err),
+                })?
+        }
+        HardCount::SoftCountNotFound => Err(MappingError::UnsupportedAuthRulePartPersisted {
+            message: "HardCount::SoftCountNotFound was persisted".to_string(),
+        })?,
+    })
+}
+
+pub fn to_api_fixed_resource_descriptor_list(
+    bech32_encoder: &Bech32Encoder,
+    resource_list: &HardProofRuleResourceList,
+) -> Result<Vec<models::FixedResourceDescriptor>, MappingError> {
+    Ok(match resource_list {
+        HardProofRuleResourceList::List(resources) => resources
+            .iter()
+            .map(|r| to_api_fixed_resource_descriptor(bech32_encoder, r))
+            .collect::<Result<_, _>>()?,
+        HardProofRuleResourceList::SoftResourceListNotFound => {
+            Err(MappingError::UnsupportedAuthRulePartPersisted {
+                message: "HardProofRuleResourceList::SoftResourceListNotFound was persisted"
+                    .to_string(),
+            })?
+        }
+    })
+}
+
+pub fn to_api_fixed_resource_descriptor(
+    bech32_encoder: &Bech32Encoder,
+    resource: &HardResourceOrNonFungible,
+) -> Result<models::FixedResourceDescriptor, MappingError> {
+    Ok(match resource {
+        HardResourceOrNonFungible::NonFungible(nf) => {
+            models::FixedResourceDescriptor::NonFungibleFixedResourceDescriptor {
+                resource_address: bech32_encoder
+                    .encode_resource_address_to_string(&nf.resource_address()),
+                non_fungible_id_hex: to_hex(nf.non_fungible_id().0),
+            }
+        }
+        HardResourceOrNonFungible::Resource(resource) => {
+            models::FixedResourceDescriptor::ResourceFixedResourceDescriptor {
+                resource_address: bech32_encoder.encode_resource_address_to_string(resource),
+            }
+        }
+        HardResourceOrNonFungible::SoftResourceNotFound => {
+            Err(MappingError::UnsupportedAuthRulePartPersisted {
+                message: "HardResourceOrNonFungible::SoftResourceNotFound was persisted"
+                    .to_string(),
+            })?
+        }
     })
 }
 

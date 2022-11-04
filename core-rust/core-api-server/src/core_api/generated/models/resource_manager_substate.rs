@@ -28,10 +28,12 @@ pub struct ResourceManagerSubstate {
     pub total_supply: String,
     #[serde(rename = "owned_non_fungible_store", skip_serializing_if = "Option::is_none")]
     pub owned_non_fungible_store: Option<Box<crate::core_api::generated::models::EntityReference>>,
+    #[serde(rename = "auth_rules")]
+    pub auth_rules: Box<crate::core_api::generated::models::ResourceManagerSubstateAllOfAuthRules>,
 }
 
 impl ResourceManagerSubstate {
-    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, resource_type: crate::core_api::generated::models::ResourceType, metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>, total_supply: String) -> ResourceManagerSubstate {
+    pub fn new(entity_type: crate::core_api::generated::models::EntityType, substate_type: crate::core_api::generated::models::SubstateType, resource_type: crate::core_api::generated::models::ResourceType, metadata: Vec<crate::core_api::generated::models::ResourceManagerSubstateAllOfMetadata>, total_supply: String, auth_rules: crate::core_api::generated::models::ResourceManagerSubstateAllOfAuthRules) -> ResourceManagerSubstate {
         ResourceManagerSubstate {
             entity_type,
             substate_type,
@@ -40,6 +42,7 @@ impl ResourceManagerSubstate {
             metadata,
             total_supply,
             owned_non_fungible_store: None,
+            auth_rules: Box::new(auth_rules),
         }
     }
 }
