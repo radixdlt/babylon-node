@@ -66,7 +66,7 @@ use jni::objects::JClass;
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
-use scrypto::constants::{ACCOUNT_PACKAGE, RADIX_TOKEN, SYS_FAUCET_COMPONENT};
+use scrypto::constants::{ACCOUNT_PACKAGE, FAUCET_COMPONENT, RADIX_TOKEN};
 
 use super::utils::jni_static_sbor_call;
 
@@ -76,7 +76,7 @@ extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getFaucetComponentAdd
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_static_sbor_call(env, request_payload, |_: ()| SYS_FAUCET_COMPONENT)
+    jni_static_sbor_call(env, request_payload, |_: ()| FAUCET_COMPONENT)
 }
 
 #[no_mangle]

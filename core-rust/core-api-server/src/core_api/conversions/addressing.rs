@@ -6,14 +6,14 @@ use models::{EntityType, SubstateType};
 use radix_engine::{
     model::GlobalAddressSubstate,
     types::{
-        Bech32Decoder, Bech32Encoder, ComponentAddress, NonFungibleId, PackageAddress, RENodeId,
-        ResourceAddress, SubstateId,
+        Bech32Decoder, Bech32Encoder, ComponentAddress, EpochManagerOffset, NonFungibleId,
+        PackageAddress, RENodeId, ResourceAddress, SubstateId,
     },
 };
 use scrypto::engine::types::{
     BucketOffset, ComponentOffset, GlobalAddress, GlobalOffset, KeyValueStoreOffset,
     NonFungibleStoreOffset, PackageOffset, ProofOffset, ResourceManagerOffset, SubstateOffset,
-    SystemOffset, VaultOffset, WorktopOffset,
+    VaultOffset, WorktopOffset,
 };
 
 pub fn to_api_global_entity_assignment(
@@ -23,7 +23,7 @@ pub fn to_api_global_entity_assignment(
 ) -> Result<models::GlobalEntityAssignment, MappingError> {
     let target_entity_id = match global_substate {
         GlobalAddressSubstate::Component(scrypto::component::Component(id)) => id,
-        GlobalAddressSubstate::SystemComponent(scrypto::component::Component(id)) => id,
+        GlobalAddressSubstate::System(id) => id,
         GlobalAddressSubstate::Resource(id) => id,
         GlobalAddressSubstate::Package(id) => id,
     };
@@ -44,6 +44,7 @@ pub fn encode_to_bech32m_string(
         GlobalAddress::Component(addr) => bech32_encoder.encode_component_address_to_string(addr),
         GlobalAddress::Package(addr) => bech32_encoder.encode_package_address_to_string(addr),
         GlobalAddress::Resource(addr) => bech32_encoder.encode_resource_address_to_string(addr),
+        GlobalAddress::System(addr) => bech32_encoder.encode_system_address_to_string(addr),
     }
 }
 
@@ -52,6 +53,7 @@ pub fn get_entity_type_from_global_address(global_address: &GlobalAddress) -> mo
         GlobalAddress::Component(_) => models::EntityType::Component,
         GlobalAddress::Package(_) => models::EntityType::Package,
         GlobalAddress::Resource(_) => models::EntityType::ResourceManager,
+        GlobalAddress::System(_) => models::EntityType::EpochManager,
     }
 }
 
@@ -123,8 +125,8 @@ impl TryFrom<RENodeId> for MappedEntityId {
             RENodeId::Package(addr) => {
                 MappedEntityId::new(EntityType::Package, entity_id_to_bytes(&addr))
             }
-            RENodeId::System(id) => {
-                MappedEntityId::new(EntityType::System, entity_id_to_bytes(&id))
+            RENodeId::EpochManager(id) => {
+                MappedEntityId::new(EntityType::EpochManager, entity_id_to_bytes(&id))
             }
             RENodeId::NonFungibleStore(id) => {
                 MappedEntityId::new(EntityType::NonFungibleStore, entity_id_to_bytes(&id))
@@ -206,14 +208,15 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
 
         // SYSTEM SUBSTATES
         SubstateId(
-            RENodeId::System(component_id),
-            SubstateOffset::System(SystemOffset::System),
+            RENodeId::EpochManager(component_id),
+            SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
         ) => MappedSubstateId(
-            EntityType::System,
+            EntityType::EpochManager,
             entity_id_to_bytes(&component_id),
-            SubstateType::System,
+            SubstateType::EpochManager,
             vec![0],
         ),
+
         // COMPONENT SUBSTATES
         SubstateId(
             RENodeId::Component(component_id),
@@ -233,6 +236,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             SubstateType::ComponentState,
             vec![1],
         ),
+
         // PACKAGE SUBSTATES
         SubstateId(RENodeId::Package(addr), SubstateOffset::Package(PackageOffset::Package)) => {
             MappedSubstateId(
@@ -262,24 +266,7 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
             prefix(vec![2], id.0),
         ),
 
-        SubstateId(
-            RENodeId::NonFungibleStore(..),
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
-        ) => {
-            return Err(MappingError::VirtualRootSubstatePersisted {
-                message: "No state_update known/possible for NonFungibleSpace".to_owned(),
-            })
-        }
-
         // KEY VALUE STORE SUBSTATES
-        SubstateId(
-            RENodeId::KeyValueStore(..),
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
-        ) => {
-            return Err(MappingError::VirtualRootSubstatePersisted {
-                message: "No state_update known/possible for KeyValueStoreSpace".to_owned(),
-            })
-        }
         SubstateId(
             RENodeId::KeyValueStore(id),
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
@@ -321,47 +308,6 @@ fn to_mapped_substate_id(substate_id: SubstateId) -> Result<MappedSubstateId, Ma
                 message: format!("Unsupported substate persisted: {:?}", substate_id),
             })
         }
-    })
-}
-
-pub fn to_api_virtual_substate_id(
-    root_substate_id: SubstateId,
-    key: Vec<u8>,
-) -> Result<models::SubstateId, MappingError> {
-    // These should match the ids of the keys
-    let sub_id = match root_substate_id {
-        // NonFungibleSpace key is downed to create a NonFungible
-        SubstateId(
-            RENodeId::NonFungibleStore(store_id),
-            SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Space),
-        ) => MappedSubstateId(
-            EntityType::NonFungibleStore,
-            entity_id_to_bytes(&store_id),
-            SubstateType::NonFungible,
-            prefix(vec![2], key),
-        ),
-        // KeyValueStoreSpace key is downed to create a KeyValueStoreEntry
-        SubstateId(
-            RENodeId::KeyValueStore(store_id),
-            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Space),
-        ) => MappedSubstateId(
-            EntityType::KeyValueStore,
-            entity_id_to_bytes(&store_id),
-            SubstateType::KeyValueStoreEntry,
-            prefix(vec![1], key),
-        ),
-        // Assume all other substates are not root spaces
-        other => {
-            return Err(MappingError::VirtualSubstateDownedWithInvalidParent {
-                message: format!("{:?}", other),
-            })
-        }
-    };
-    Ok(models::SubstateId {
-        entity_type: sub_id.0,
-        entity_id_hex: to_hex(sub_id.1),
-        substate_type: sub_id.2,
-        substate_key_hex: to_hex(sub_id.3),
     })
 }
 
@@ -438,6 +384,7 @@ pub fn global_address_to_vec(global_address: &GlobalAddress) -> Vec<u8> {
         GlobalAddress::Package(package_addr) => package_addr.to_vec(),
         GlobalAddress::Resource(resource_addr) => resource_addr.to_vec(),
         GlobalAddress::Component(component_addr) => component_addr.to_vec(),
+        GlobalAddress::System(system_addr) => system_addr.to_vec(),
     }
 }
 

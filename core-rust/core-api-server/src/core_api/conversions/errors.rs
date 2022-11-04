@@ -8,12 +8,6 @@ use crate::core_api::{client_error, server_error, RequestHandlingError};
 /// Should be used when there's an error mapping to an API response
 #[derive(Debug, Clone)]
 pub enum MappingError {
-    VirtualRootSubstatePersisted {
-        message: String,
-    },
-    VirtualSubstateDownedWithInvalidParent {
-        message: String,
-    },
     UnsupportedSubstatePersisted {
         message: String,
     },

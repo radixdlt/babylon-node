@@ -1,10 +1,10 @@
 use radix_engine::ledger::ReadableSubstateStore;
 use radix_engine::model::PersistedSubstate;
-use scrypto::engine::types::{GlobalAddress, GlobalOffset, RENodeId, SubstateId, SubstateOffset};
+use scrypto::engine::types::{GlobalAddress, SubstateId, SubstateOffset};
 use std::ops::DerefMut;
 
 use super::{Extension, Json};
-use state_manager::jni::state_manager::ActualStateManager;
+use state_manager::{jni::state_manager::ActualStateManager, query::StateManagerSubstateQueries};
 
 use super::*;
 
@@ -50,22 +50,9 @@ pub(crate) fn read_derefed_global_substate(
     state_manager: &ActualStateManager,
     global_address: GlobalAddress,
     substate_offset: SubstateOffset,
-) -> Result<Option<PersistedSubstate>, MappingError> {
-    let substate_id = SubstateId(
-        RENodeId::Global(global_address),
-        SubstateOffset::Global(GlobalOffset::Global),
-    );
-    if let Some(output_value) = state_manager.store.get_substate(&substate_id) {
-        if let PersistedSubstate::Global(global) = output_value.substate {
-            let substate_id = SubstateId(global.node_deref(), substate_offset);
-            let substate = state_manager.store.get_substate(&substate_id);
-            Ok(substate.map(|o| o.substate))
-        } else {
-            Err(MappingError::MismatchedSubstateId {
-                message: "Global address substate was not of the right type".to_owned(),
-            })
-        }
-    } else {
-        Ok(None)
-    }
+) -> Option<PersistedSubstate> {
+    let node = state_manager.store.global_deref(global_address)?;
+    let substate_id = SubstateId(node, substate_offset);
+    let substate = state_manager.store.get_substate(&substate_id)?.substate;
+    Some(substate)
 }

@@ -115,7 +115,7 @@ fn do_get_transaction_at_state_version(
     Some(ExecutedTransaction {
         status: ledger_receipt.status,
         ledger_receipt_bytes,
-        transaction_bytes: stored_transaction.into_payload(),
+        transaction_bytes: stored_transaction.create_payload(),
         new_component_addresses: ledger_receipt.entity_changes.new_component_addresses,
     })
 }

@@ -320,6 +320,8 @@ impl From<NotarizedTransaction> for PendingTransaction {
 #[derive(Debug, Decode, Encode, TypeId)]
 pub struct PreviewRequest {
     pub manifest: TransactionManifest,
+    pub start_epoch_inclusive: u64,
+    pub end_epoch_exclusive: u64,
     pub cost_unit_limit: u32,
     pub tip_percentage: u32,
     pub nonce: u64,

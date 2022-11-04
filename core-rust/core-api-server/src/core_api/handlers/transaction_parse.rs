@@ -23,20 +23,17 @@ pub(crate) async fn handle_transaction_parse(
     state: Extension<CoreApiState>,
     request: Json<models::TransactionParseRequest>,
 ) -> Result<Json<models::TransactionParseResponse>, RequestHandlingError> {
-    // TODO: For full validation, we require &mut so that TransactionExecutor can get a &mut
-    //       When this is fixed, we can make this a read handler
-    core_api_handler(state, request, handle_transaction_parse_internal)
+    core_api_read_handler(state, request, handle_transaction_parse_internal)
 }
 
 pub struct ParseContext<'a> {
     response_mode: ResponseMode,
     validation_mode: ValidationMode,
-    epoch: u64,
-    state_manager: &'a mut ActualStateManager,
+    state_manager: &'a ActualStateManager,
 }
 
 fn handle_transaction_parse_internal(
-    state_manager: &mut ActualStateManager,
+    state_manager: &ActualStateManager,
     request: models::TransactionParseRequest,
 ) -> Result<models::TransactionParseResponse, RequestHandlingError> {
     assert_matching_network(&request.network, &state_manager.network)?;
@@ -44,21 +41,17 @@ fn handle_transaction_parse_internal(
     let bytes =
         from_hex(request.payload_hex).map_err(|err| err.into_response_error("payload_hex"))?;
 
-    // TODO - fix this to not be &mut when a TransactionExecutor no longer needs a &mut substate store
-    let mut context = ParseContext {
+    let context = ParseContext {
         response_mode: request.response_mode.unwrap_or(ResponseMode::Full),
         validation_mode: request.validation_mode.unwrap_or(ValidationMode::_Static),
-        epoch: state_manager.get_epoch(),
         state_manager,
     };
 
     let parse_mode = request.parse_mode.unwrap_or(ParseMode::Any);
 
     let parsed = match parse_mode {
-        ParseMode::Any => {
-            attempt_parsing_as_any_payload_type_and_map_for_api(&mut context, &bytes)?
-        }
-        ParseMode::Notarized => attempt_parsing_as_notarized_transaction(&mut context, &bytes)
+        ParseMode::Any => attempt_parsing_as_any_payload_type_and_map_for_api(&context, &bytes)?,
+        ParseMode::Notarized => attempt_parsing_as_notarized_transaction(&context, &bytes)
             .map(|parsed| to_api_parsed_notarized_transaction(&context, parsed))
             .ok_or_else(|| client_error("The payload isn't a notarized transaction"))??,
         ParseMode::Signed => attempt_parsing_as_signed_intent(&bytes)
@@ -81,7 +74,7 @@ fn handle_transaction_parse_internal(
 }
 
 fn attempt_parsing_as_any_payload_type_and_map_for_api(
-    context: &mut ParseContext,
+    context: &ParseContext,
     bytes: &[u8],
 ) -> Result<models::ParsedTransaction, RequestHandlingError> {
     // Attempt 1 - Try parsing as NotarizedTransaction
@@ -128,7 +121,7 @@ struct ParsedNotarizedTransaction {
 }
 
 fn attempt_parsing_as_notarized_transaction(
-    context: &mut ParseContext,
+    context: &ParseContext,
     bytes: &[u8],
 ) -> Option<ParsedNotarizedTransaction> {
     let notarized_parse_result =
@@ -143,25 +136,27 @@ fn attempt_parsing_as_notarized_transaction(
             transaction: parsed,
             validation: None,
         },
-        ValidationMode::_Static => ParsedNotarizedTransaction {
-            transaction: parsed.clone(),
-            validation: Some(
+        ValidationMode::_Static => {
+            let validation = Some(
                 context
                     .state_manager
                     .user_transaction_validator
-                    .validate_user_transaction(context.epoch, parsed)
+                    .validate_and_create_executable(&parsed)
                     .map(|_| ())
                     .map_err(RejectionReason::ValidationError),
-            ),
-        },
-        ValidationMode::Full => ParsedNotarizedTransaction {
-            transaction: parsed.clone(),
-            validation: Some(
-                context
-                    .state_manager
-                    .check_for_rejection_with_caching(&parsed),
-            ),
-        },
+            );
+            ParsedNotarizedTransaction {
+                transaction: parsed,
+                validation,
+            }
+        }
+        ValidationMode::Full => {
+            let validation = Some(context.state_manager.check_for_rejection_uncached(&parsed));
+            ParsedNotarizedTransaction {
+                transaction: parsed,
+                validation,
+            }
+        }
     })
 }
 

@@ -12,8 +12,8 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum EntityType {
-    #[serde(rename = "System")]
-    System,
+    #[serde(rename = "EpochManager")]
+    EpochManager,
     #[serde(rename = "ResourceManager")]
     ResourceManager,
     #[serde(rename = "Component")]
@@ -34,7 +34,7 @@ pub enum EntityType {
 impl ToString for EntityType {
     fn to_string(&self) -> String {
         match self {
-            Self::System => String::from("System"),
+            Self::EpochManager => String::from("EpochManager"),
             Self::ResourceManager => String::from("ResourceManager"),
             Self::Component => String::from("Component"),
             Self::Package => String::from("Package"),
@@ -48,7 +48,7 @@ impl ToString for EntityType {
 
 impl Default for EntityType {
     fn default() -> EntityType {
-        Self::System
+        Self::EpochManager
     }
 }
 

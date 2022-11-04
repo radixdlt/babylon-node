@@ -25,7 +25,7 @@ fn handle_v0_state_package_internal(
         state_manager,
         GlobalAddress::Package(package_address),
         SubstateOffset::Package(PackageOffset::Package),
-    )? {
+    ) {
         Some(PersistedSubstate::Package(package)) => Ok(models::V0StatePackageResponse {
             package: Some(to_api_package_substate(&package)),
         }),

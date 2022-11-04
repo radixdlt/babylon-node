@@ -17,13 +17,19 @@ pub struct TransactionPreviewRequestFlags {
     pub unlimited_loan: bool,
     #[serde(rename = "assume_all_signature_proofs")]
     pub assume_all_signature_proofs: bool,
+    #[serde(rename = "permit_duplicate_intent_hash")]
+    pub permit_duplicate_intent_hash: bool,
+    #[serde(rename = "permit_invalid_header_epoch")]
+    pub permit_invalid_header_epoch: bool,
 }
 
 impl TransactionPreviewRequestFlags {
-    pub fn new(unlimited_loan: bool, assume_all_signature_proofs: bool) -> TransactionPreviewRequestFlags {
+    pub fn new(unlimited_loan: bool, assume_all_signature_proofs: bool, permit_duplicate_intent_hash: bool, permit_invalid_header_epoch: bool) -> TransactionPreviewRequestFlags {
         TransactionPreviewRequestFlags {
             unlimited_loan,
             assume_all_signature_proofs,
+            permit_duplicate_intent_hash,
+            permit_invalid_header_epoch,
         }
     }
 }

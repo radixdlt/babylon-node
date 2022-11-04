@@ -82,7 +82,7 @@ fn read_component_info(
         state_manager,
         GlobalAddress::Component(*component_address),
         SubstateOffset::Component(ComponentOffset::Info),
-    )? {
+    ) {
         Some(PersistedSubstate::ComponentInfo(component_info)) => Ok(Some(
             to_api_component_info_substate(&component_info, &bech32_encoder),
         )),
@@ -103,7 +103,7 @@ fn read_component_state(
         state_manager,
         GlobalAddress::Component(*component_address),
         substate_offset,
-    )? {
+    ) {
         Some(PersistedSubstate::ComponentState(component_state)) => Ok(Some(
             to_api_component_state_substate(bech32_encoder, &component_state)?,
         )),
