@@ -51,21 +51,31 @@ fn handle_transaction_parse_internal(
 
     let parsed = match parse_mode {
         ParseMode::Any => attempt_parsing_as_any_payload_type_and_map_for_api(&context, &bytes)?,
-        ParseMode::Notarized => attempt_parsing_as_notarized_transaction(&context, &bytes)
-            .map(|parsed| to_api_parsed_notarized_transaction(&context, parsed))
-            .ok_or_else(|| client_error("The payload isn't a notarized transaction"))??,
-        ParseMode::Signed => attempt_parsing_as_signed_intent(&bytes)
-            .map(|parsed| to_api_parsed_signed_intent(&context, parsed))
-            .ok_or_else(|| client_error("The payload isn't a signed transaction intent"))??,
-        ParseMode::Unsigned => attempt_parsing_as_intent(&bytes)
-            .map(|parsed| to_api_parsed_intent(&context, parsed))
-            .ok_or_else(|| client_error("The payload isn't an unsigned transaction intent"))??,
-        ParseMode::Manifest => attempt_parsing_as_manifest(&bytes)
-            .map(|parsed| to_api_parsed_manifest(&context, parsed))
-            .ok_or_else(|| client_error("The payload isn't a transaction manifest"))??,
-        ParseMode::Ledger => attempt_parsing_as_ledger_transaction(&bytes)
-            .map(|parsed| to_api_parsed_ledger_transaction(&context, parsed))
-            .ok_or_else(|| client_error("The payload isn't a ledger transaction"))??,
+        ParseMode::Notarized => {
+            let parsed = attempt_parsing_as_notarized_transaction(&context, &bytes)
+                .ok_or_else(|| client_error("The payload isn't a notarized transaction"))?;
+            to_api_parsed_notarized_transaction(&context, parsed)?
+        }
+        ParseMode::Signed => {
+            let parsed = attempt_parsing_as_signed_intent(&bytes)
+                .ok_or_else(|| client_error("The payload isn't a signed transaction intent"))?;
+            to_api_parsed_signed_intent(&context, parsed)?
+        }
+        ParseMode::Unsigned => {
+            let parsed = attempt_parsing_as_intent(&bytes)
+                .ok_or_else(|| client_error("The payload isn't an unsigned transaction intent"))?;
+            to_api_parsed_intent(&context, parsed)?
+        }
+        ParseMode::Manifest => {
+            let parsed = attempt_parsing_as_manifest(&bytes)
+                .ok_or_else(|| client_error("The payload isn't a transaction manifest"))?;
+            to_api_parsed_manifest(&context, parsed)?
+        }
+        ParseMode::Ledger => {
+            let parsed = attempt_parsing_as_ledger_transaction(&bytes)
+                .ok_or_else(|| client_error("The payload isn't a ledger transaction"))?;
+            to_api_parsed_ledger_transaction(&context, parsed)?
+        }
     };
 
     Ok(TransactionParseResponse {
