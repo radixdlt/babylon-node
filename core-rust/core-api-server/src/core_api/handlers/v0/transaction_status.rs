@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::core_api::*;
+use radix_engine::transaction::TransactionOutcome;
 use state_manager::jni::state_manager::ActualStateManager;
 use state_manager::{HasUserPayloadHash, UserPayloadHash};
 
@@ -42,18 +43,17 @@ fn handle_v0_transaction_status_internal(
         // Remove the committed payload from the rejection list if it's present
         rejected_payloads.remove(&payload_hash);
 
-        let intent_status = match &receipt.status {
-            state_manager::CommittedTransactionStatus::Success(_) => IntentStatus::CommittedSuccess,
-            state_manager::CommittedTransactionStatus::Failure(_) => IntentStatus::CommittedFailure,
+        let intent_status = match &receipt.outcome {
+            TransactionOutcome::Success(_) => IntentStatus::CommittedSuccess,
+            TransactionOutcome::Failure(_) => IntentStatus::CommittedFailure,
         };
 
-        let (payload_status, error_message) = match &receipt.status {
-            state_manager::CommittedTransactionStatus::Success(_) => {
-                (PayloadStatus::CommittedSuccess, None)
-            }
-            state_manager::CommittedTransactionStatus::Failure(reason) => {
-                (PayloadStatus::CommittedFailure, Some(reason.to_owned()))
-            }
+        let (payload_status, error_message) = match &receipt.outcome {
+            TransactionOutcome::Success(_) => (PayloadStatus::CommittedSuccess, None),
+            TransactionOutcome::Failure(reason) => (
+                PayloadStatus::CommittedFailure,
+                Some(format!("{:?}", reason)),
+            ),
         };
 
         let committed_payload = models::V0TransactionPayloadStatus {

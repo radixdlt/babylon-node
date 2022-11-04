@@ -1,49 +1,57 @@
 use super::addressing::*;
-use crate::core_api::models::*;
 use crate::core_api::*;
 use radix_engine::{
     fee::FeeSummary as EngineFeeSummary,
-    ledger::{OutputId, OutputValue},
+    ledger::OutputValue,
+    transaction::TransactionOutcome,
     types::{hash, scrypto_encode, SubstateId},
 };
 use scrypto::address::Bech32Encoder;
 
-use state_manager::{CommittedTransactionStatus, LedgerTransactionReceipt};
+use state_manager::{DeletedSubstateVersion, LedgerTransactionReceipt};
 
 pub fn to_api_receipt(
     bech32_encoder: &Bech32Encoder,
     receipt: LedgerTransactionReceipt,
-) -> Result<TransactionReceipt, MappingError> {
+) -> Result<models::TransactionReceipt, MappingError> {
     let fee_summary = receipt.fee_summary;
 
-    let (status, output, error_message) = match receipt.status {
-        CommittedTransactionStatus::Success(output) => {
-            (TransactionStatus::Succeeded, Some(output), None)
+    let (status, output, error_message) = match receipt.outcome {
+        TransactionOutcome::Success(output) => {
+            (models::TransactionStatus::Succeeded, Some(output), None)
         }
-        CommittedTransactionStatus::Failure(error) => {
-            (TransactionStatus::Failed, None, Some(error))
-        }
+        TransactionOutcome::Failure(error) => (
+            models::TransactionStatus::Failed,
+            None,
+            Some(format!("{:?}", error)),
+        ),
     };
 
-    let state_updates = receipt.state_updates;
+    let substate_changes = receipt.substate_changes;
 
-    let up_substates = state_updates
-        .up_substates
+    let created = substate_changes
+        .created
         .into_iter()
-        .map(|substate_kv| to_api_up_substate(bech32_encoder, substate_kv))
+        .map(|substate_kv| to_api_new_substate_version(bech32_encoder, substate_kv))
         .collect::<Result<Vec<_>, _>>()?;
 
-    let down_substates = state_updates
-        .down_substates
+    let updated = substate_changes
+        .updated
         .into_iter()
-        .map(to_api_down_substate)
+        .map(|substate_kv| to_api_new_substate_version(bech32_encoder, substate_kv))
         .collect::<Result<Vec<_>, _>>()?;
 
-    let new_global_entities = up_substates
+    let deleted = substate_changes
+        .deleted
+        .into_iter()
+        .map(to_api_deleted_substate)
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let new_global_entities = created
         .iter()
         .filter_map(|substate| {
             substate.substate_data.as_ref().and_then(|data| match data {
-                Substate::GlobalSubstate {
+                models::Substate::GlobalSubstate {
                     entity_type: _,
                     target_entity,
                 } => Some(target_entity.as_ref().clone()),
@@ -52,9 +60,10 @@ pub fn to_api_receipt(
         })
         .collect::<Vec<_>>();
 
-    let api_state_updates = StateUpdates {
-        up_substates,
-        down_substates,
+    let api_state_updates = models::StateUpdates {
+        created_substates: created,
+        updated_substates: updated,
+        deleted_substates: deleted,
         new_global_entities,
     };
 
@@ -70,7 +79,7 @@ pub fn to_api_receipt(
         None => None,
     };
 
-    Ok(TransactionReceipt {
+    Ok(models::TransactionReceipt {
         status,
         fee_summary: Box::new(api_fee_summary),
         state_updates: Box::new(api_state_updates),
@@ -80,10 +89,10 @@ pub fn to_api_receipt(
 }
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_up_substate(
+pub fn to_api_new_substate_version(
     bech32_encoder: &Bech32Encoder,
     (substate_id, output_value): (SubstateId, OutputValue),
-) -> Result<UpSubstate, MappingError> {
+) -> Result<models::NewSubstateVersion, MappingError> {
     let substate_bytes = scrypto_encode(&output_value.substate);
     let hash = to_hex(hash(&substate_bytes));
 
@@ -93,7 +102,7 @@ pub fn to_api_up_substate(
         bech32_encoder,
     )?);
 
-    Ok(UpSubstate {
+    Ok(models::NewSubstateVersion {
         substate_id: Box::new(to_api_substate_id(substate_id)?),
         version: to_api_substate_version(output_value.version)?,
         substate_hex: to_hex(substate_bytes),
@@ -103,17 +112,19 @@ pub fn to_api_up_substate(
 }
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_down_substate(output_id: OutputId) -> Result<DownSubstate, MappingError> {
-    Ok(DownSubstate {
-        substate_id: Box::new(to_api_substate_id(output_id.substate_id)?),
-        substate_data_hash: to_hex(output_id.substate_hash),
-        version: to_api_substate_version(output_id.version)?,
+pub fn to_api_deleted_substate(
+    (substate_id, deleted_substate): (SubstateId, DeletedSubstateVersion),
+) -> Result<models::DeletedSubstateVersionRef, MappingError> {
+    Ok(models::DeletedSubstateVersionRef {
+        substate_id: Box::new(to_api_substate_id(substate_id)?),
+        substate_data_hash: to_hex(deleted_substate.substate_hash),
+        version: to_api_substate_version(deleted_substate.version)?,
     })
 }
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_fee_summary(fee_summary: EngineFeeSummary) -> FeeSummary {
-    FeeSummary {
+pub fn to_api_fee_summary(fee_summary: EngineFeeSummary) -> models::FeeSummary {
+    models::FeeSummary {
         loan_fully_repaid: fee_summary.loan_fully_repaid,
         cost_unit_limit: to_api_u32_as_i64(fee_summary.cost_unit_limit),
         cost_units_consumed: to_api_u32_as_i64(fee_summary.cost_unit_consumed),

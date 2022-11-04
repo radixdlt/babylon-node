@@ -12,7 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct UpSubstate {
+pub struct NewSubstateVersion {
     #[serde(rename = "substate_id")]
     pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
     /// An integer between `0` and `10^13`, counting the number of times the substate was updated
@@ -28,9 +28,9 @@ pub struct UpSubstate {
     pub substate_data: Option<crate::core_api::generated::models::Substate>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
-impl UpSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, version: i64, substate_hex: String, substate_data_hash: String, substate_data: crate::core_api::generated::models::Substate) -> UpSubstate {
-        UpSubstate {
+impl NewSubstateVersion {
+    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, version: i64, substate_hex: String, substate_data_hash: String, substate_data: crate::core_api::generated::models::Substate) -> NewSubstateVersion {
+        NewSubstateVersion {
             substate_id: Box::new(substate_id),
             version,
             substate_hex,

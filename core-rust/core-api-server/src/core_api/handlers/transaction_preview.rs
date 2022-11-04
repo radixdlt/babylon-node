@@ -141,11 +141,7 @@ fn to_api_response(
             receipt: Box::new(models::TransactionReceipt {
                 status: models::TransactionStatus::Rejected,
                 fee_summary: Box::new(to_api_fee_summary(receipt.execution.fee_summary)),
-                state_updates: Box::new(models::StateUpdates {
-                    up_substates: vec![],
-                    down_substates: vec![],
-                    new_global_entities: vec![],
-                }),
+                state_updates: Box::new(models::StateUpdates::default()),
                 output: None,
                 error_message: Some(format!("{:?}", reject_result)),
             }),

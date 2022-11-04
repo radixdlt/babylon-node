@@ -12,7 +12,7 @@
 
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
-pub struct DownSubstate {
+pub struct DeletedSubstateVersionRef {
     #[serde(rename = "substate_id")]
     pub substate_id: Box<crate::core_api::generated::models::SubstateId>,
     /// The hex-encoded single-SHA256 hash of the substate data bytes
@@ -23,9 +23,9 @@ pub struct DownSubstate {
     pub version: i64,
 }
 
-impl DownSubstate {
-    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, substate_data_hash: String, version: i64) -> DownSubstate {
-        DownSubstate {
+impl DeletedSubstateVersionRef {
+    pub fn new(substate_id: crate::core_api::generated::models::SubstateId, substate_data_hash: String, version: i64) -> DeletedSubstateVersionRef {
+        DeletedSubstateVersionRef {
             substate_id: Box::new(substate_id),
             substate_data_hash,
             version,

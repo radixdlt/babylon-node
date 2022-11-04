@@ -855,23 +855,28 @@ components:
       type: object
       description: Transaction state updates (only present if status is Succeeded or Failed)
       required:
-        - up_substates
-        - down_substates
+        - created_substates
+        - updated_substates
+        - deleted_substates
         - new_global_entities
       properties:
-        up_substates:
+        created_substates:
           type: array
           items:
-            $ref: "#/components/schemas/UpSubstate"
-        down_substates:
+            $ref: "#/components/schemas/NewSubstateVersion"
+        updated_substates:
           type: array
           items:
-            $ref: "#/components/schemas/DownSubstate"
+            $ref: "#/components/schemas/NewSubstateVersion"
+        deleted_substates:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeletedSubstateVersionRef"
         new_global_entities:
           type: array
           items:
             $ref: "#/components/schemas/GlobalEntityAssignment"
-    UpSubstate:
+    NewSubstateVersion:
       type: object
       required:
         - substate_id
@@ -896,7 +901,7 @@ components:
           description: The hex-encoded single-SHA256 hash of the substate data bytes
         substate_data:
           $ref: "#/components/schemas/Substate"
-    DownSubstate:
+    DeletedSubstateVersionRef:
       type: object
       required:
         - substate_id
